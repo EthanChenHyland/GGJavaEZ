@@ -17,6 +17,8 @@ export interface CameraPose {
 
 export type CameraIntent =
   | { kind: 'home' }
+  | { kind: 'resetView' }
+  | { kind: 'zoom'; direction: 'in' | 'out' }
   | { kind: 'followExecution' }
   | { kind: 'focus'; selection: NonNullable<Selection> }
   | { kind: 'tracePath'; referenceId: ReferenceId }

@@ -44,7 +44,7 @@ test('reference picking, pan, and dolly work in the same world', async ({ page }
   await page.getByRole('button', { name: 'Go to event 18: age: 0 → 18' }).click()
   await page.getByRole('button', { name: 'Home' }).first().click()
   await page.waitForTimeout(700)
-  await page.mouse.click(950, 475)
+  await page.mouse.click(980, 520)
   await expect(page.getByRole('heading', { name: 'Reference path' })).toBeVisible()
   await expect(page.locator('.inspector')).toContainText('Person #17')
   await page.getByRole('button', { name: 'Close inspector' }).click()

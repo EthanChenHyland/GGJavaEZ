@@ -1,0 +1,31 @@
+{
+  "environment": "Installed Chrome headless, ANGLE WebGL, 1440×900, balanced tier. Rendering timestamps recorded from WebGL draw calls; scrub latency includes Playwright roundtrip.",
+  "allocation": {
+    "label": "allocation and guided reframe",
+    "renderedFrames": 8,
+    "medianFrameMs": 16.634000000000015,
+    "p95FrameMs": 16.799999999999955,
+    "approximateFps": 60
+  },
+  "idle": {
+    "label": "idle demand rendering, one second",
+    "renderedFrames": 0,
+    "medianFrameMs": null,
+    "p95FrameMs": null,
+    "approximateFps": 0
+  },
+  "orbit": {
+    "label": "orbit",
+    "renderedFrames": 120,
+    "medianFrameMs": 16.666000000000167,
+    "p95FrameMs": 16.666000000000167,
+    "approximateFps": 60
+  },
+  "scrubRoundtripMedianMs": 5.6259170000003,
+  "scrubRoundtripP95Ms": 10.844624999999724,
+  "memory": {
+    "beforeMB": 17.038330078125,
+    "after100SeeksMB": 18.618732452392578,
+    "after200SeeksMB": 19.13571548461914
+  }
+}

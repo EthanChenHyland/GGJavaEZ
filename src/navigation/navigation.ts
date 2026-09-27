@@ -23,6 +23,9 @@ export interface NavigationStore extends NavigationState {
   intent: CameraIntent | null
   intentRevision: number
   home: () => void
+  resetView: () => void
+  zoomIn: () => void
+  zoomOut: () => void
   followExecution: () => void
   freeExplore: (pose?: CameraPose) => void
   focus: (selection: NonNullable<Selection>) => void
@@ -50,6 +53,19 @@ export const useNavigationStore = create<NavigationStore>((set) => ({
     mode: 'HOME', followEnabled: false, traceReferenceId: null,
     previousPose: null, previousMode: null,
     intent: { kind: 'home' }, intentRevision: state.intentRevision + 1,
+  })),
+  resetView: () => set((state) => ({
+    mode: 'HOME', followEnabled: false, traceReferenceId: null,
+    previousPose: null, previousMode: null,
+    intent: { kind: 'resetView' }, intentRevision: state.intentRevision + 1,
+  })),
+  zoomIn: () => set((state) => ({
+    mode: 'FREE_EXPLORE', followEnabled: false, traceReferenceId: null,
+    intent: { kind: 'zoom', direction: 'in' }, intentRevision: state.intentRevision + 1,
+  })),
+  zoomOut: () => set((state) => ({
+    mode: 'FREE_EXPLORE', followEnabled: false, traceReferenceId: null,
+    intent: { kind: 'zoom', direction: 'out' }, intentRevision: state.intentRevision + 1,
   })),
   followExecution: () => set((state) => ({
     mode: 'GUIDED_FOLLOW', followEnabled: true, traceReferenceId: null,
@@ -83,6 +99,9 @@ export const useNavigationStore = create<NavigationStore>((set) => ({
 }))
 
 export const navigationActions = {
+  resetView: () => useNavigationStore.getState().resetView(),
+  zoomIn: () => useNavigationStore.getState().zoomIn(),
+  zoomOut: () => useNavigationStore.getState().zoomOut(),
   home: () => useNavigationStore.getState().home(),
   followExecution: () => useNavigationStore.getState().followExecution(),
   freeExplore: () => useNavigationStore.getState().freeExplore(),

@@ -66,6 +66,6 @@ await page.waitForTimeout(300)
 const secondBatchMB = await memory()
 latencies.sort((a, b) => a - b)
 const result = { environment: 'Installed Chrome headless, ANGLE WebGL, 1440×900, balanced tier. Rendering timestamps recorded from WebGL draw calls; scrub latency includes Playwright roundtrip.', allocation, idle, orbit, scrubRoundtripMedianMs: latencies[Math.floor(latencies.length / 2)], scrubRoundtripP95Ms: latencies[Math.floor(latencies.length * .95)], memory: { beforeMB, after100SeeksMB: afterMB, after200SeeksMB: secondBatchMB } }
-await writeFile('docs/checkpoints/person-v1/performance.json', JSON.stringify(result, null, 2) + '\n')
+await writeFile(process.env.REVIEW_OUTPUT ?? 'docs/checkpoints/person-v1/performance.json', JSON.stringify(result, null, 2) + '\n')
 console.log(JSON.stringify(result, null, 2))
 await browser.close()

@@ -11,6 +11,8 @@ import { FrameSolid, ObjectSolid, ReferenceCurve } from './primitives'
 import { colors, motionMs, renderQuality, runtimeFont, worldMaterial, worldUnits } from '../theme/tokens'
 
 interface RuntimeCanvasProps {
+  visible: boolean
+  guided: boolean
   playing: boolean
   quality: keyof typeof renderQuality
   scene: SceneModel
@@ -49,11 +51,11 @@ function MutationCue({ scene, event }: { scene: SceneModel; event: TraceEvent | 
     outlineWidth={0.007}
     outlineColor={colors.canvas}
   >
-    {field.name === 'age' ? 'age  0 → 18' : `${field.name} updated`}
+    {event.label}
   </Text>
 }
 
-export function RuntimeCanvas({ playing, quality, scene, event, selection, onSelect, onFocusSelected }: RuntimeCanvasProps) {
+export function RuntimeCanvas({ visible, guided, playing, quality, scene, event, selection, onSelect, onFocusSelected }: RuntimeCanvasProps) {
   const reducedMotion = useReducedMotion()
   const previousFrames = useRef(scene.frames)
   const [returning, setReturning] = useState<SceneFrameNode[]>([])
@@ -74,7 +76,7 @@ export function RuntimeCanvas({ playing, quality, scene, event, selection, onSel
     lastSelected.current = item
     onSelect(item)
   }
-  const activeSlotId = event?.type === 'SET_FIELD' || event?.type === 'ASSIGN_LOCAL' ? event.slotId : undefined
+  const activeSlotId = guided && (event?.type === 'SET_FIELD' || event?.type === 'ASSIGN_LOCAL') ? event.slotId : undefined
   const callSpine = scene.frames.length > 1 ? scene.frames.map((frame) => [
     frame.anchor.position[0] - frame.anchor.size[0] / 2 - 0.12,
     frame.anchor.position[1] + frame.anchor.size[1] / 2 + 0.04,
@@ -88,7 +90,7 @@ export function RuntimeCanvas({ playing, quality, scene, event, selection, onSel
     onDoubleClick={() => { if (lastSelected.current) onFocusSelected(lastSelected.current) }}>
     <Canvas
       shadows={tier.shadows ? "soft" : false}
-      frameloop="demand"
+      frameloop={visible ? "demand" : "never"}
       dpr={[1, tier.dpr]}
       camera={{ position: [...worldUnits.homePosition], fov: 41, near: 0.1, far: 100 }}
       gl={{ antialias: true, powerPreference: 'high-performance' }}
@@ -109,6 +111,7 @@ export function RuntimeCanvas({ playing, quality, scene, event, selection, onSel
         {scene.objects.length > 0 && <Text font={runtimeFont} position={[2.1, 2.18, -0.65]} fontSize={0.31} color={colors.heap} anchorX="left" anchorY="middle" letterSpacing={0.08}>HEAP</Text>}
         {callSpine.length > 1 && <Line points={callSpine} color={colors.stack} lineWidth={1.4} transparent opacity={0.54} />}
         {scene.references.map((edge) => <ReferenceCurve key={edge.id} edge={edge}
+          label={[...scene.frames.flatMap((node) => node.slots), ...scene.objects.flatMap((node) => node.fields)].find((slot) => slot.id === edge.source.slotId)?.name ?? ''}
           selected={selection?.kind === 'reference' && selection.id === edge.id}
           related={selection?.kind === 'object' && edge.targetObjectId === selection.id}
           onSelect={(id) => select({ kind: 'reference', id })} />)}
@@ -123,9 +126,9 @@ export function RuntimeCanvas({ playing, quality, scene, event, selection, onSel
           related={isRelated(selection, node.id, scene)} detailLevel={selection?.id === node.id && scene.detailLevel === 'macro' ? 'meso' : scene.detailLevel}
           activeSlotId={activeSlotId}
           onSelect={(id) => select({ kind: 'object', id })} />)}
-        <MutationCue scene={scene} event={event} />
+        {guided && <MutationCue scene={scene} event={event} />}
       </group>
-      <NavigationController sceneModel={scene} event={event} homeTarget={worldUnits.homeTarget} />
+      <NavigationController visible={visible} sceneModel={scene} event={event} homeTarget={worldUnits.homeTarget} />
     </Canvas>
   </div>
 }

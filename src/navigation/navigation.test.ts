@@ -29,6 +29,26 @@ describe('navigation presentation state', () => {
     expect(useNavigationStore.getState().intent).toBeNull()
   })
 
+  it('issues shared zoom intents and cancels camera guidance', () => {
+    navigationActions.followExecution()
+    navigationActions.zoomIn()
+    expect(useNavigationStore.getState().intent).toEqual({ kind: 'zoom', direction: 'in' })
+    expect(useNavigationStore.getState().followEnabled).toBe(false)
+    navigationActions.zoomOut()
+    expect(useNavigationStore.getState().intent).toEqual({ kind: 'zoom', direction: 'out' })
+    expect(useNavigationStore.getState().intentRevision).toBe(3)
+  })
+
+  it('reset clears camera history without clearing semantic selection', () => {
+    navigationActions.focus({ kind: 'object', id: 'obj-person-17' })
+    navigationActions.resetView()
+    const state = useNavigationStore.getState()
+    expect(state.mode).toBe('HOME')
+    expect(state.intent).toEqual({ kind: 'resetView' })
+    expect(state.previousPose).toBeNull()
+    expect(state.selection).toEqual({ kind: 'object', id: 'obj-person-17' })
+  })
+
   it('remembers the prior pose and mode for Focus return', () => {
     navigationActions.focus({ kind: 'object', id: 'obj-person-17' })
     expect(useNavigationStore.getState().previousPose).toEqual(defaultHomePose)
