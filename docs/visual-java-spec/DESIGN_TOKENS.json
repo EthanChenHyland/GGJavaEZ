@@ -1,0 +1,49 @@
+{
+  "version": "2.6",
+  "color": {
+    "canvas": "#06080D",
+    "canvasRaised": "#090D14",
+    "panel": "#0B1018",
+    "panelRaised": "#111824",
+    "panelHover": "#151E2B",
+    "border": "#223044",
+    "borderStrong": "#354A64",
+    "text": "#F3F6FA",
+    "textSecondary": "#A7B1BF",
+    "textMuted": "#6F7B8B",
+    "execution": "#63E6FF",
+    "stack": "#6F8CFF",
+    "heap": "#B77CFF",
+    "mutation": "#FFC857",
+    "success": "#70E0B2",
+    "exception": "#FF5D6C",
+    "null": "#7A8492"
+  },
+  "radiusPx": {
+    "shell": 8,
+    "control": 6
+  },
+  "spacingPx": [4, 8, 12, 16, 24, 32, 48],
+  "line": {
+    "uiBorderPx": 1,
+    "referenceDefaultPx": 2,
+    "referenceMinPx": 1.5,
+    "referenceMaxPx": 2.5
+  },
+  "typography": {
+    "ui": "Inter, Geist, ui-sans-serif, system-ui, sans-serif",
+    "code": "JetBrains Mono, SFMono-Regular, Consolas, monospace",
+    "runtimeMicroPx": 12,
+    "secondaryUiPx": 13,
+    "primaryUiPx": 14,
+    "inspectorValuePx": 15
+  },
+  "semantic": {
+    "execution": "active instruction and causal pulse only",
+    "stack": "stack identity accents",
+    "heap": "heap object identity accents",
+    "mutation": "value currently changing",
+    "exception": "actual error state only",
+    "null": "absence or disconnected reference"
+  }
+}
