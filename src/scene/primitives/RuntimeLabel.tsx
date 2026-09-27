@@ -1,5 +1,5 @@
 import { Text } from '@react-three/drei'
-import { colors } from '../../theme/tokens'
+import { colors, runtimeFont } from '../../theme/tokens'
 
 export interface RuntimeLabelProps {
   text: string
@@ -21,13 +21,15 @@ export function RuntimeLabel({
 }: RuntimeLabelProps) {
   return (
     <Text
+      font={runtimeFont}
       position={[...position]}
       color={color}
       fontSize={size}
       anchorX={align}
       anchorY="middle"
       maxWidth={maxWidth}
-      overflowWrap="break-word"
+      whiteSpace="nowrap"
+      overflowWrap="normal"
       renderOrder={2}
     >
       {text}

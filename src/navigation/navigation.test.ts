@@ -53,11 +53,11 @@ describe('navigation presentation state', () => {
 describe('semantic camera scale', () => {
   it('uses hysteresis at both detail boundaries', () => {
     expect(detailLevelAtDistance(23, 'meso')).toBe('macro')
-    expect(detailLevelAtDistance(20, 'macro')).toBe('macro')
-    expect(detailLevelAtDistance(18.9, 'macro')).toBe('meso')
-    expect(detailLevelAtDistance(5, 'meso')).toBe('micro')
-    expect(detailLevelAtDistance(6, 'micro')).toBe('micro')
-    expect(detailLevelAtDistance(6.5, 'micro')).toBe('meso')
+    expect(detailLevelAtDistance(19, 'macro')).toBe('macro')
+    expect(detailLevelAtDistance(18, 'macro')).toBe('meso')
+    expect(detailLevelAtDistance(9, 'meso')).toBe('micro')
+    expect(detailLevelAtDistance(11, 'micro')).toBe('micro')
+    expect(detailLevelAtDistance(12, 'micro')).toBe('meso')
   })
 
   it('preserves the overview viewing offset when the world target changes', () => {

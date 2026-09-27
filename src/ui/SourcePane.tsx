@@ -1,58 +1,35 @@
-import { useEffect, useRef } from 'react'
-import Editor, { type OnMount } from '@monaco-editor/react'
-import type { editor } from 'monaco-editor'
+import { lazy, Suspense } from 'react'
 import type { SourceLocation, TraceDocument } from '../contracts/runtime'
+
+// Keep Monaco and its worker setup out of the compact source strip's dependency graph.
+const SourceEditor = lazy(() => import('./SourceEditor'))
 
 interface SourcePaneProps {
   trace: TraceDocument
   location: SourceLocation | null
   onChooseLine: (line: number) => void
+  compact?: boolean
 }
 
-export function SourcePane({ trace, location, onChooseLine }: SourcePaneProps) {
-  const file = trace.sourceFiles[0]
-  const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null)
-  const decorationsRef = useRef<editor.IEditorDecorationsCollection | null>(null)
-  const chooseLineRef = useRef(onChooseLine)
-  chooseLineRef.current = onChooseLine
-
-  const onMount: OnMount = (instance, monaco) => {
-    editorRef.current = instance
-    monaco.editor.defineTheme('visual-java', {
-      base: 'vs-dark', inherit: true,
-      rules: [
-        { token: 'keyword', foreground: '8CA6FF' },
-        { token: 'string', foreground: '83DFC8' },
-        { token: 'number', foreground: 'FFC857' },
-        { token: 'type', foreground: 'C79CFF' },
-      ],
-      colors: {
-        'editor.background': '#090D14',
-        'editor.foreground': '#DCE7F3',
-        'editorLineNumber.foreground': '#536476',
-        'editorLineNumber.activeForeground': '#B9C9DD',
-        'editor.selectionBackground': '#243B58',
-        'editor.lineHighlightBackground': '#0E1928',
-      },
-    })
-    monaco.editor.setTheme('visual-java')
-    decorationsRef.current = instance.createDecorationsCollection()
-    instance.onMouseDown((event) => {
-      const line = event.target.position?.lineNumber
-      if (line) chooseLineRef.current(line)
-    })
+export function SourcePane({ trace, location, onChooseLine, compact = false }: SourcePaneProps) {
+  const file = trace.sourceFiles.find((source) => source.fileId === location?.fileId) ?? trace.sourceFiles[0]
+  if (compact) {
+    const line = location?.fileId === file?.fileId ? location?.line : undefined
+    const currentLine = line !== undefined ? file?.content.split(/\r?\n/)[line - 1] : undefined
+    return (
+      <section className="source-pane" aria-label="Current Java source line">
+        <header className="pane-heading">
+          <span className="pane-title">SOURCE</span>
+          <span className="source-filename" style={{ flexShrink: 0 }}>{file?.name ?? 'No source'}</span>
+          <code className="source-current-line" title={currentLine}>
+            {currentLine !== undefined ? `L${line} · ${currentLine.trim()}` : 'No active source line'}
+          </code>
+        </header>
+      </section>
+    )
   }
 
-  useEffect(() => {
-    const editor = editorRef.current
-    const decorations = decorationsRef.current
-    if (!editor || !decorations) return
-    decorations.set(location && location.fileId === file.fileId ? [{
-      range: { startLineNumber: location.line, endLineNumber: location.line, startColumn: 1, endColumn: 1 },
-      options: { isWholeLine: true, className: 'executing-line', linesDecorationsClassName: 'executing-gutter' },
-    }] : [])
-    if (location) editor.revealLineInCenterIfOutsideViewport(location.line)
-  }, [location, file.fileId])
+  if (!file) return <section className="source-pane" aria-label="Java source code">No source available</section>
 
   return (
     <section className="source-pane" aria-label="Java source code">
@@ -62,29 +39,9 @@ export function SourcePane({ trace, location, onChooseLine }: SourcePaneProps) {
         <span className="pane-meta">READ ONLY</span>
       </header>
       <div className="source-editor">
-        <Editor
-          language="java"
-          value={file.content}
-          theme="visual-java"
-          onMount={onMount}
-          options={{
-            readOnly: true,
-            domReadOnly: true,
-            minimap: { enabled: false },
-            glyphMargin: false,
-            folding: false,
-            scrollBeyondLastLine: false,
-            fontFamily: "JetBrains Mono, SFMono-Regular, Consolas, monospace",
-            fontSize: 13,
-            lineHeight: 24,
-            lineNumbersMinChars: 2,
-            renderLineHighlight: 'none',
-            overviewRulerLanes: 0,
-            hideCursorInOverviewRuler: true,
-            automaticLayout: true,
-            padding: { top: 20, bottom: 20 },
-          }}
-        />
+        <Suspense fallback={<div role="status">Loading source editor…</div>}>
+          <SourceEditor file={file} location={location} onChooseLine={onChooseLine} />
+        </Suspense>
       </div>
       <footer className="source-foot">Click a line to find its trace event</footer>
     </section>

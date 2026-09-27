@@ -7,13 +7,15 @@ import type { CameraPose } from '../contracts/interaction'
 import type { TraceEvent } from '../contracts/runtime'
 import type { SceneModel, Vec3 } from '../contracts/world'
 import { motionMs } from '../theme/tokens'
+import { contextPose, guidedCameraAction, inspectorFocusPose, responsiveHomePose, sampleCameraMove, traceWaypoints } from './cameraMotion'
+import type { CameraMove, CameraWaypoint } from './cameraMotion'
 import {
-  detailLevelAtDistance, distance, homePose, midpoint, selectionPoint, useNavigationStore,
+  detailLevelAtDistance, midpoint, selectionPoint, useNavigationStore,
 } from './navigation'
 
 export interface NavigationControllerProps {
   sceneModel: SceneModel
-  /** The current normalized trace event. Only major events can move Guided Follow. */
+  /** Major events reframe Guided Follow; PROGRAM_END settles at Home while follow is enabled. */
   event?: TraceEvent | null
   /** Optional explicit target for a major event when it is not directly named by the event. */
   activeEntityId?: string | null
@@ -22,8 +24,6 @@ export interface NavigationControllerProps {
 }
 
 type Controls = ComponentRef<typeof OrbitControls>
-type Move = { from: CameraPose; to: CameraPose; elapsedMs: number; durationMs: number }
-type Gesture = { start: CameraPose; moved: boolean }
 
 function readPose(position: Vector3, target: Vector3): CameraPose {
   return {
@@ -67,10 +67,10 @@ function usePrefersReducedMotion(): boolean {
 export function NavigationController({ sceneModel, event, activeEntityId, homeTarget, reducedMotion }: NavigationControllerProps) {
   const { camera, size, invalidate } = useThree()
   const controlsRef = useRef<Controls>(null)
-  const moveRef = useRef<Move | null>(null)
+  const moveRef = useRef<CameraMove | null>(null)
   const guidedEventRef = useRef<string | null>(null)
   const processedIntentRef = useRef(-1)
-  const gestureRef = useRef<Gesture | null>(null)
+  const userInteractingRef = useRef(false)
   const preferredReducedMotion = usePrefersReducedMotion()
   const motionReduced = reducedMotion ?? preferredReducedMotion
   const intentRevision = useNavigationStore((state) => state.intentRevision)
@@ -107,56 +107,47 @@ export function NavigationController({ sceneModel, event, activeEntityId, homeTa
     invalidate()
   }
 
-  const startMove = (to: CameraPose, durationMs: number) => {
+  const startSequence = (waypoints: readonly CameraWaypoint[]) => {
     const from = currentPose()
-    if (motionReduced || durationMs <= 0) {
+    const to = waypoints[waypoints.length - 1].pose
+    if (motionReduced) {
       moveRef.current = null
       applyPose(to)
       useNavigationStore.getState().setPose(to)
       return
     }
-    moveRef.current = { from, to, elapsedMs: 0, durationMs }
+    moveRef.current = { from, to, elapsedMs: 0, waypoints, revision: useNavigationStore.getState().intentRevision }
     invalidate()
   }
 
-  const framePoint = (point: Vec3, extent: Vec3, minimumDistance = 3.2): CameraPose => {
-    const pose = currentPose()
-    const direction = new Vector3(
-      pose.position[0] - pose.target[0],
-      pose.position[1] - pose.target[1],
-      pose.position[2] - pose.target[2],
-    ).normalize()
-    if (direction.lengthSq() === 0) direction.set(0.35, 0.25, 1).normalize()
-    const perspective = camera instanceof PerspectiveCamera ? camera : null
-    const verticalFov = perspective ? (perspective.fov * Math.PI) / 180 : Math.PI / 4
-    const aspect = size.width / Math.max(size.height, 1)
-    const horizontalFov = 2 * Math.atan(Math.tan(verticalFov / 2) * aspect)
-    const fit = Math.max(
-      extent[0] / (2 * Math.tan(horizontalFov / 2)),
-      extent[1] / (2 * Math.tan(verticalFov / 2)),
-      extent[2],
-    ) * 1.45
-    const range = Math.max(minimumDistance, fit)
-    return {
-      target: point,
-      position: [point[0] + direction.x * range, point[1] + direction.y * range, point[2] + direction.z * range],
-    }
-  }
+  const startMove = (to: CameraPose, durationMs: number) => startSequence([{ pose: to, durationMs }])
+
+  const viewFraming = () => ({
+    verticalFov: camera instanceof PerspectiveCamera ? camera.getEffectiveFOV() * Math.PI / 180 : Math.PI / 4,
+    aspect: size.width / Math.max(size.height, 1),
+  })
+
+  const overviewPose = () => responsiveHomePose(world.homeTarget, size.width / Math.max(size.height, 1))
 
   useEffect(() => {
     const controls = controlsRef.current
     if (!controls) return
     const store = useNavigationStore.getState()
-    const initialPose = store.mode === 'HOME' ? homePose(world.homeTarget) : store.pose
+    const initialPose = store.mode === 'HOME' ? overviewPose() : store.pose
     applyPose(initialPose)
     store.setPose(initialPose)
     // Initial camera placement only; later moves are driven by intents and events.
   }, [])
 
   useEffect(() => {
+    if (useNavigationStore.getState().mode === 'HOME') startMove(overviewPose(), motionMs.standard)
+  }, [size.width, size.height])
+
+  useEffect(() => {
     const move = moveRef.current
     if (!motionReduced || !move) return
     moveRef.current = null
+    if (move.revision !== useNavigationStore.getState().intentRevision) return
     applyPose(move.to)
     useNavigationStore.getState().setPose(move.to)
   }, [motionReduced])
@@ -167,21 +158,28 @@ export function NavigationController({ sceneModel, event, activeEntityId, homeTa
     if (!intent || !controlsRef.current) return
     if (processedIntentRef.current === intentRevision) return
     if (intent.kind === 'home') {
-      startMove(homePose(world.homeTarget), motionMs.deliberate)
+      startMove(overviewPose(), motionMs.deliberate)
     } else if (intent.kind === 'focus') {
       const anchor = selectionPoint(intent.selection, world)
       if (!anchor) return
       store.rememberPrevious(currentPose(), store.previousMode ?? 'HOME')
-      startMove(framePoint(anchor.position, anchor.size), motionMs.deliberate)
+      const pose = currentPose()
+      const cameraRight = new Vector3(0, 1, 0).cross(
+        new Vector3(...pose.position).sub(new Vector3(...pose.target)),
+      ).normalize()
+      const center = midpoint(overviewPose().target, anchor.position)
+      const pivot: Vec3 = [center[0] - cameraRight.x, center[1] - cameraRight.y, center[2] - cameraRight.z]
+      startMove(inspectorFocusPose(pivot, anchor.size, currentPose(), [], viewFraming(), {
+        width: size.width, height: size.height,
+      }, anchor.position), motionMs.deliberate)
     } else if (intent.kind === 'tracePath') {
       const edge = world.references.find((reference) => reference.id === intent.referenceId)
       if (!edge) return
       store.rememberPrevious(currentPose(), store.previousMode ?? 'HOME')
-      const length = distance(edge.from, edge.to)
-      startMove(framePoint(midpoint(edge.from, edge.to), [length, length, length], 5), motionMs.cinematic)
+      startSequence(traceWaypoints(edge, currentPose(), world.anchors, viewFraming(), size))
     } else if (intent.kind === 'returnToPrevious') {
       guidedEventRef.current = event?.eventId ?? null
-      startMove(store.previousPose ?? homePose(world.homeTarget), motionMs.deliberate)
+      startMove(store.previousPose ?? overviewPose(), motionMs.deliberate)
     } else if (intent.kind === 'followExecution') {
       guidedEventRef.current = null
     }
@@ -190,29 +188,37 @@ export function NavigationController({ sceneModel, event, activeEntityId, homeTa
   }, [intentRevision, world])
 
   useEffect(() => {
-    if (!followEnabled || !event || event.importance !== 'major') return
+    const action = guidedCameraAction(event, useNavigationStore.getState().followEnabled)
+    if (!action || !event || userInteractingRef.current) return
     if (guidedEventRef.current === event.eventId) return
+    if (action === 'home') {
+      guidedEventRef.current = event.eventId
+      startMove(overviewPose(), motionMs.deliberate)
+      return
+    }
     const id = targetForEvent(event, activeEntityId)
     const anchor = id ? world.anchors[id] : null
     if (!anchor) return
     guidedEventRef.current = event.eventId
-    startMove(framePoint(anchor.position, anchor.size, 6), motionMs.standard)
+    const overview = overviewPose()
+    // Bias attention toward the event without replacing the world overview with a close-up.
+    const pivot = midpoint(overview.target, anchor.position)
+    startMove(contextPose(pivot, currentPose(), Object.values(world.anchors),
+      world.references.flatMap((edge) => [edge.from, edge.to]), viewFraming()), motionMs.standard)
     // A major event may arrive with its anchor on a later scene-model render.
   }, [event?.eventId, event?.importance, activeEntityId, followEnabled, world])
 
   useFrame((_, delta) => {
     const move = moveRef.current
     if (!move || !controlsRef.current) return
+    if (move.revision !== useNavigationStore.getState().intentRevision) {
+      moveRef.current = null
+      return
+    }
     move.elapsedMs += delta * 1000
-    const t = Math.min(1, move.elapsedMs / move.durationMs)
-    const eased = 1 - Math.pow(1 - t, 3)
-    const lerp = (a: Vec3, b: Vec3): Vec3 => [
-      a[0] + (b[0] - a[0]) * eased,
-      a[1] + (b[1] - a[1]) * eased,
-      a[2] + (b[2] - a[2]) * eased,
-    ]
-    applyPose({ position: lerp(move.from.position, move.to.position), target: lerp(move.from.target, move.to.target) })
-    if (t === 1) {
+    const sample = sampleCameraMove(move)
+    applyPose(sample.pose)
+    if (sample.done) {
       moveRef.current = null
       useNavigationStore.getState().setPose(move.to)
     }
@@ -221,23 +227,17 @@ export function NavigationController({ sceneModel, event, activeEntityId, homeTa
   const onUserStart = () => {
     moveRef.current = null
     const pose = currentPose()
-    useNavigationStore.getState().setPose(pose)
-    gestureRef.current = { start: pose, moved: false }
+    useNavigationStore.getState().freeExplore(pose)
+    userInteractingRef.current = true
   }
 
   const onControlsChange = () => {
     updateDetail()
-    const gesture = gestureRef.current
-    if (!gesture || gesture.moved) return
-    const pose = currentPose()
-    if (distance(pose.position, gesture.start.position) + distance(pose.target, gesture.start.target) < 0.001) return
-    gesture.moved = true
-    useNavigationStore.getState().freeExplore(pose)
   }
 
   const onUserEnd = () => {
-    if (gestureRef.current?.moved) useNavigationStore.getState().setPose(currentPose())
-    gestureRef.current = null
+    useNavigationStore.getState().setPose(currentPose())
+    userInteractingRef.current = false
   }
 
   return <OrbitControls
@@ -249,8 +249,9 @@ export function NavigationController({ sceneModel, event, activeEntityId, homeTa
     enableDamping={false}
     minDistance={1.7}
     maxDistance={90}
-    minPolarAngle={0.08}
-    maxPolarAngle={Math.PI * 0.9}
+    rotateSpeed={0.55}
+    minPolarAngle={0.72}
+    maxPolarAngle={1.52}
     onStart={onUserStart}
     onEnd={onUserEnd}
     onChange={onControlsChange}

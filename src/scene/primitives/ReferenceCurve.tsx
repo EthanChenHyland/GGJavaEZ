@@ -1,19 +1,24 @@
-import { useMemo } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 import { Line } from '@react-three/drei'
 import type { ThreeEvent } from '@react-three/fiber'
 import { CubicBezierCurve3, TubeGeometry, Vector3 } from 'three'
+import type { Line2, LineSegments2 } from 'three-stdlib'
 import type { ReferenceId } from '../../contracts/runtime'
 import type { SceneReferenceEdge } from '../../contracts/world'
-import { colors, line } from '../../theme/tokens'
+import { colors, line, motionMs } from '../../theme/tokens'
+import { useMountSettle, useReducedMotion } from './presentationMotion'
 
 export interface ReferenceCurveProps {
   edge: SceneReferenceEdge
   selected: boolean
   related: boolean
   onSelect: (id: ReferenceId) => void
+  reducedMotion?: boolean
 }
 
-export function ReferenceCurve({ edge, selected, related, onSelect }: ReferenceCurveProps) {
+export function ReferenceCurve({ edge, selected, related, onSelect, reducedMotion }: ReferenceCurveProps) {
+  const motionReduced = useReducedMotion(reducedMotion)
+  const lineRef = useRef<Line2 | LineSegments2>(null)
   const curve = useMemo(() => {
     const from = new Vector3(...edge.from)
     const to = new Vector3(...edge.to)
@@ -28,7 +33,15 @@ export function ReferenceCurve({ edge, selected, related, onSelect }: ReferenceC
   }, [edge.from, edge.to])
   const points = useMemo(() => curve.getPoints(24), [curve])
   const hitGeometry = useMemo(() => new TubeGeometry(curve, 24, 0.11, 5, false), [curve])
+  useEffect(() => () => hitGeometry.dispose(), [hitGeometry])
   const opacity = selected ? 1 : related ? 0.86 : 0.62
+  useLayoutEffect(() => {
+    if (lineRef.current && !motionReduced) lineRef.current.material.opacity = opacity * 0.55
+    // Entry opacity is set only on mount; later selection changes use the normal prop.
+  }, [])
+  useMountSettle(motionMs.quick, motionReduced, (progress) => {
+    if (lineRef.current) lineRef.current.material.opacity = opacity * (0.55 + 0.45 * progress)
+  })
 
   const select = (event: ThreeEvent<MouseEvent>) => {
     event.stopPropagation()
@@ -37,7 +50,7 @@ export function ReferenceCurve({ edge, selected, related, onSelect }: ReferenceC
 
   return (
     <group onClick={select}>
-      <Line points={points} color={colors.execution} lineWidth={selected ? line.referenceMaxPx : line.referenceDefaultPx} transparent opacity={opacity} />
+      <Line ref={lineRef} points={points} color={colors.execution} lineWidth={selected ? line.referenceMaxPx : line.referenceDefaultPx} transparent opacity={opacity} />
       <mesh geometry={hitGeometry}>
         <meshBasicMaterial transparent opacity={0} depthWrite={false} color={colors.execution} />
       </mesh>

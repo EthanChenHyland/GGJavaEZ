@@ -30,6 +30,15 @@
     "referenceMinPx": 1.5,
     "referenceMaxPx": 2.5
   },
+  "worldMaterial": {
+    "stackBody": "#253B57",
+    "stackFace": "#152840",
+    "stackSlot": "#1D344D",
+    "heapBody": "#342B52",
+    "heapFace": "#211A38",
+    "heapSlot": "#2C2447",
+    "floor": "#0A111B"
+  },
   "typography": {
     "ui": "Inter, Geist, ui-sans-serif, system-ui, sans-serif",
     "code": "JetBrains Mono, SFMono-Regular, Consolas, monospace",

@@ -71,6 +71,8 @@ Runtime entities should read as physical objects with three parts:
 - semantic edge/accent;
 - readable information face.
 
+The shared `worldMaterial` tokens in `DESIGN_TOKENS.json` give stack and heap solids restrained body and face tints. Their semantic colors remain strongest on edges and active details; the body tints establish visible top and side faces without permanent bloom.
+
 Avoid fully transparent hologram cards. Transparency should reveal depth, not destroy legibility.
 
 ### Glass
@@ -178,3 +180,9 @@ A screen fails the design system if:
 - a scene introduces a new shape/material grammar for no semantic reason;
 - shell UI becomes more visually dominant than the runtime world;
 - different demos look like different products.
+
+## Person slice implementation refinements
+
+The first slice uses the shared deeper solid proportions: stack frames 5.1 × 1.7 × 1.25 world units; heap objects 3.8 × 2.5 × 1.7. These make top and side faces legible in the overview. Labels use locally bundled Inter on information faces. Selection keeps the same geometry and adds a restrained outline.
+
+Desktop inspection occupies a 160px shelf beneath the world; Focus reserves that shelf when fitting the selected entity and its caption. Narrow layouts start with a synchronized source strip, with a visible action to restore the full editor. Rendering tiers alter pixel ratio and shadow resolution only: high (2 / 2048), balanced (1.7 / 1024), low (1 / shadows off). None changes runtime identities, anchors, or values.

@@ -1,17 +1,23 @@
+import { useEffect, useRef, useState } from 'react'
 import { Canvas } from '@react-three/fiber'
-import { Text } from '@react-three/drei'
+import { Line, Text } from '@react-three/drei'
 import type { Selection } from '../contracts/interaction'
 import type { TraceEvent } from '../contracts/runtime'
-import type { SceneModel } from '../contracts/world'
+import type { SceneFrameNode, SceneModel } from '../contracts/world'
 import { NavigationController } from '../navigation'
+import { ReturningFrame } from './primitives/ReturningFrame'
+import { useReducedMotion } from './primitives/presentationMotion'
 import { FrameSolid, ObjectSolid, ReferenceCurve } from './primitives'
-import { colors, worldUnits } from '../theme/tokens'
+import { colors, motionMs, renderQuality, runtimeFont, worldMaterial, worldUnits } from '../theme/tokens'
 
 interface RuntimeCanvasProps {
+  playing: boolean
+  quality: keyof typeof renderQuality
   scene: SceneModel
   event: TraceEvent | null
   selection: Selection
   onSelect: (selection: NonNullable<Selection>) => void
+  onFocusSelected: (selection: NonNullable<Selection>) => void
 }
 
 function isRelated(selection: Selection, entityId: string, scene: SceneModel): boolean {
@@ -34,8 +40,8 @@ function MutationCue({ scene, event }: { scene: SceneModel; event: TraceEvent | 
   const field = object.fields.find((item) => item.id === event.slotId)
   if (!field) return null
   const [x, y, z] = object.anchor.position
-  return <Text
-    position={[x, y + object.anchor.size[1] / 2 + 0.44, z + 0.45]}
+  return <Text font={runtimeFont}
+    position={[x, y + object.anchor.size[1] / 2 + 0.82, z + 0.45]}
     fontSize={0.25}
     color={colors.mutation}
     anchorX="center"
@@ -47,41 +53,76 @@ function MutationCue({ scene, event }: { scene: SceneModel; event: TraceEvent | 
   </Text>
 }
 
-export function RuntimeCanvas({ scene, event, selection, onSelect }: RuntimeCanvasProps) {
+export function RuntimeCanvas({ playing, quality, scene, event, selection, onSelect, onFocusSelected }: RuntimeCanvasProps) {
+  const reducedMotion = useReducedMotion()
+  const previousFrames = useRef(scene.frames)
+  const [returning, setReturning] = useState<SceneFrameNode[]>([])
+  useEffect(() => {
+    const departed = playing && !reducedMotion ? previousFrames.current.filter((node) => !scene.frames.some((frame) => frame.id === node.id)) : []
+    previousFrames.current = scene.frames
+    setReturning(departed)
+    if (!departed.length) return
+    const timer = window.setTimeout(() => setReturning([]), motionMs.quick)
+    return () => window.clearTimeout(timer)
+  }, [playing, reducedMotion, scene.frames])
+  const tier = renderQuality[quality]
+  const pointerStart = useRef<[number, number] | null>(null)
+  const dragged = useRef(false)
+  const lastSelected = useRef<NonNullable<Selection> | null>(null)
+  const select = (item: NonNullable<Selection>) => {
+    if (dragged.current) return
+    lastSelected.current = item
+    onSelect(item)
+  }
   const activeSlotId = event?.type === 'SET_FIELD' || event?.type === 'ASSIGN_LOCAL' ? event.slotId : undefined
-  return <div className="world-canvas" aria-label="Three-dimensional Java runtime world">
+  const callSpine = scene.frames.length > 1 ? scene.frames.map((frame) => [
+    frame.anchor.position[0] - frame.anchor.size[0] / 2 - 0.12,
+    frame.anchor.position[1] + frame.anchor.size[1] / 2 + 0.04,
+    frame.anchor.position[2] - frame.anchor.size[2] / 2,
+  ] as [number, number, number]) : []
+  return <div className="world-canvas" aria-label="Three-dimensional Java runtime world"
+    onPointerDownCapture={(event) => { pointerStart.current = [event.clientX, event.clientY]; dragged.current = false }}
+    onPointerMoveCapture={(event) => {
+      if (pointerStart.current && Math.hypot(event.clientX - pointerStart.current[0], event.clientY - pointerStart.current[1]) > 5) dragged.current = true
+    }}
+    onDoubleClick={() => { if (lastSelected.current) onFocusSelected(lastSelected.current) }}>
     <Canvas
-      shadows
-      dpr={[1, 1.7]}
-      camera={{ position: [...worldUnits.homePosition], fov: 43, near: 0.1, far: 100 }}
+      shadows={tier.shadows ? "soft" : false}
+      frameloop="demand"
+      dpr={[1, tier.dpr]}
+      camera={{ position: [...worldUnits.homePosition], fov: 41, near: 0.1, far: 100 }}
       gl={{ antialias: true, powerPreference: 'high-performance' }}
     >
       <color attach="background" args={[colors.canvas]} />
       <fog attach="fog" args={[colors.canvas, 22, 55]} />
-      <ambientLight intensity={1.2} color="#A8C5E4" />
-      <hemisphereLight intensity={1.1} color="#D6E7FF" groundColor="#0B1018" />
-      <directionalLight position={[-3.5, 8, 8]} intensity={2.3} color="#E2F1FF" castShadow shadow-mapSize={[1024, 1024]} shadow-camera-left={-14} shadow-camera-right={14} shadow-camera-top={10} shadow-camera-bottom={-10} />
+      <ambientLight intensity={1.5} color={colors.textSecondary} />
+      <hemisphereLight intensity={1.4} color={colors.text} groundColor={colors.panel} />
+      <directionalLight position={[-3.5, 8, 8]} intensity={2.6} color={colors.text} castShadow={tier.shadows} shadow-mapSize={[tier.shadowSize, tier.shadowSize]} shadow-camera-left={-14} shadow-camera-right={14} shadow-camera-top={10} shadow-camera-bottom={-10} shadow-radius={3} />
       <pointLight position={[5, 3, 2]} intensity={11} distance={14} color={colors.heap} />
       <pointLight position={[-5, 3, 4]} intensity={10} distance={13} color={colors.stack} />
       <mesh position={[0, -1.58, -1.4]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <planeGeometry args={[20, 16]} />
-        <meshStandardMaterial color={colors.canvasRaised} roughness={0.9} metalness={0.05} />
+        <meshStandardMaterial color={worldMaterial.floor} roughness={0.9} metalness={0.05} />
       </mesh>
       <group>
+        {scene.frames.length > 0 && <Text font={runtimeFont} position={[-5.9, 3.25, -1.5]} fontSize={0.31} color={colors.stack} anchorX="left" anchorY="middle" letterSpacing={0.08}>STACK</Text>}
+        {scene.objects.length > 0 && <Text font={runtimeFont} position={[2.1, 2.18, -0.65]} fontSize={0.31} color={colors.heap} anchorX="left" anchorY="middle" letterSpacing={0.08}>HEAP</Text>}
+        {callSpine.length > 1 && <Line points={callSpine} color={colors.stack} lineWidth={1.4} transparent opacity={0.54} />}
         {scene.references.map((edge) => <ReferenceCurve key={edge.id} edge={edge}
           selected={selection?.kind === 'reference' && selection.id === edge.id}
           related={selection?.kind === 'object' && edge.targetObjectId === selection.id}
-          onSelect={(id) => onSelect({ kind: 'reference', id })} />)}
+          onSelect={(id) => select({ kind: 'reference', id })} />)}
+        {returning.map((node) => <ReturningFrame key={node.id} node={node} />)}
         {scene.frames.map((node) => <FrameSolid key={node.id} node={node}
           selected={selection?.kind === 'frame' && selection.id === node.id}
-          related={isRelated(selection, node.id, scene)} detailLevel={scene.detailLevel}
+          related={isRelated(selection, node.id, scene)} detailLevel={selection?.id === node.id && scene.detailLevel === 'macro' ? 'meso' : scene.detailLevel}
           activeSlotId={activeSlotId}
-          onSelect={(id) => onSelect({ kind: 'frame', id })} />)}
+          onSelect={(id) => select({ kind: 'frame', id })} />)}
         {scene.objects.map((node) => <ObjectSolid key={node.id} node={node}
           selected={selection?.kind === 'object' && selection.id === node.id}
-          related={isRelated(selection, node.id, scene)} detailLevel={scene.detailLevel}
+          related={isRelated(selection, node.id, scene)} detailLevel={selection?.id === node.id && scene.detailLevel === 'macro' ? 'meso' : scene.detailLevel}
           activeSlotId={activeSlotId}
-          onSelect={(id) => onSelect({ kind: 'object', id })} />)}
+          onSelect={(id) => select({ kind: 'object', id })} />)}
         <MutationCue scene={scene} event={event} />
       </group>
       <NavigationController sceneModel={scene} event={event} homeTarget={worldUnits.homeTarget} />

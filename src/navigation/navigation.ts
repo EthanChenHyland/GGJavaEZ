@@ -123,9 +123,9 @@ export function distance(a: Vec3, b: Vec3): number {
 
 /** Zoom bands use different enter/exit distances to prevent label flicker. */
 export function detailLevelAtDistance(distanceToPivot: number, current: DetailLevel): DetailLevel {
-  if (current === 'macro') return distanceToPivot < 19 ? 'meso' : 'macro'
-  if (current === 'micro') return distanceToPivot > 6.4 ? 'meso' : 'micro'
-  if (distanceToPivot > 22) return 'macro'
-  if (distanceToPivot < 5.2) return 'micro'
+  if (current === 'macro') return distanceToPivot < 18.5 ? 'meso' : 'macro'
+  if (current === 'micro') return distanceToPivot > 11.5 ? 'meso' : 'micro'
+  if (distanceToPivot > 20) return 'macro'
+  if (distanceToPivot < 10) return 'micro'
   return 'meso'
 }

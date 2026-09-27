@@ -1,11 +1,38 @@
-# GGJavaEZ
+# Visual Java
 
-Repository shell for **Visual Java**.
+The first Visual Java slice is a trace-driven, navigable 3D view of the `Person` Java program. It uses deterministic mock execution data. The source, timeline, inspector, and Three.js world read one semantic cursor.
 
-The complete product/design contract lives in:
+## Run
 
-`docs/visual-java-spec/`
+```sh
+npm install
+npm run dev -- --port 5173
+```
 
-Start by reading `AGENTS.md`, then `docs/visual-java-spec/CODEX_MASTER_PROMPT.md`.
+Open `http://127.0.0.1:5173/`.
 
-The first implementation milestone is the trace-driven `Person` 3D runtime scene. The app itself has intentionally not been scaffolded yet so the coding agent can propose the architecture after reading the full specification.
+## Explore
+
+- Play, pause, step backward or forward, or scrub the timeline.
+- Drag inside the runtime to orbit; right-drag to pan; scroll or pinch to dolly.
+- Click a frame, object, or reference to inspect it; double-click or use **Focus** to approach it.
+- Use **Trace Path** for the live `p` or `this` relationship, **Home** for the stable overview, and **Follow** to toggle guided camera behavior. User camera input cancels guided motion while playback continues.
+- **Runtime view** compresses source to its executing line; the source divider can be dragged or resized with arrow keys. Narrow viewports start with this source strip.
+- Select an entity from the keyboard-accessible inspection menu. Choose **Low effects** for reduced rendering cost.
+- Space toggles playback, Left/Right arrows step, and H returns Home when the source editor or a form control does not own keyboard focus.
+
+## Validate
+
+```sh
+npm run typecheck
+npm run lint
+npm test
+npm run test:e2e
+npm run build
+```
+
+`npm run capture:visual` saves the reference checkpoints in `docs/checkpoints/person-v1/` while the dev server is running. The browser checks use installed Google Chrome.
+
+## Architecture
+
+`src/demos/person/` contains the mock Java source and versioned trace. `src/runtime/` validates and reduces events into semantic state. `src/world/` reserves stable XYZ anchors and builds a renderer-independent scene model. `src/scene/` draws actual cuboid geometry and reference curves. `src/navigation/` owns camera behavior; `src/playback/` owns the event cursor. The spec and reference images live in `docs/visual-java-spec/`.
