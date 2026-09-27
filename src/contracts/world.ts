@@ -24,6 +24,7 @@ export interface SceneSlot {
   name: string
   javaType: string
   value: RuntimeValue
+  displayValue?: string
   port: Vec3
 }
 

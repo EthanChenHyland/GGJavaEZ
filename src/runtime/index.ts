@@ -1,0 +1,5 @@
+export { loadPersonTrace, validateTrace } from './trace'
+export { createInitialState, applyEvent } from './state'
+export { seek } from './seek'
+export { getReferences } from './selectors'
+export type { DerivedReference } from './selectors'

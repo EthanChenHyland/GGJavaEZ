@@ -1,0 +1,385 @@
+{
+  "schemaVersion": 1,
+  "demoId": "person",
+  "sourceFiles": [
+    {
+      "fileId": "Main.java",
+      "name": "Main.java",
+      "content": "class Person {\n    String name;\n    int age;\n\n    Person(String name) {\n        this.name = name;\n    }\n\n    void setAge(int age) {\n        this.age = age;\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        int x = 5;\n        int y = x * 2;\n        Person p = new Person(\"Ethan\");\n        p.setAge(18);\n    }\n}\n"
+    }
+  ],
+  "events": [
+    {
+      "eventId": "person:00",
+      "seq": 0,
+      "source": {
+        "fileId": "Main.java",
+        "line": 15
+      },
+      "label": "Program starts",
+      "importance": "major",
+      "type": "PROGRAM_START"
+    },
+    {
+      "eventId": "person:01",
+      "seq": 1,
+      "source": {
+        "fileId": "Main.java",
+        "line": 15
+      },
+      "label": "Enter Main.main",
+      "importance": "major",
+      "type": "ENTER_METHOD",
+      "frameId": "frame:main:1",
+      "callerFrameId": null,
+      "className": "Main",
+      "methodName": "main",
+      "locals": []
+    },
+    {
+      "eventId": "person:02",
+      "seq": 2,
+      "source": {
+        "fileId": "Main.java",
+        "line": 16
+      },
+      "label": "Execute x = 5",
+      "importance": "normal",
+      "type": "LINE_EXECUTE",
+      "frameId": "frame:main:1"
+    },
+    {
+      "eventId": "person:03",
+      "seq": 3,
+      "source": {
+        "fileId": "Main.java",
+        "line": 16
+      },
+      "label": "x = 5",
+      "importance": "normal",
+      "type": "DECLARE_LOCAL",
+      "frameId": "frame:main:1",
+      "slot": {
+        "id": "slot:frame:main:1:x",
+        "name": "x",
+        "javaType": "int",
+        "value": {
+          "kind": "primitive",
+          "javaType": "int",
+          "value": 5
+        }
+      }
+    },
+    {
+      "eventId": "person:04",
+      "seq": 4,
+      "source": {
+        "fileId": "Main.java",
+        "line": 17
+      },
+      "label": "Execute y = x * 2",
+      "importance": "normal",
+      "type": "LINE_EXECUTE",
+      "frameId": "frame:main:1"
+    },
+    {
+      "eventId": "person:05",
+      "seq": 5,
+      "source": {
+        "fileId": "Main.java",
+        "line": 17
+      },
+      "label": "y = 10",
+      "importance": "normal",
+      "type": "DECLARE_LOCAL",
+      "frameId": "frame:main:1",
+      "slot": {
+        "id": "slot:frame:main:1:y",
+        "name": "y",
+        "javaType": "int",
+        "value": {
+          "kind": "primitive",
+          "javaType": "int",
+          "value": 10
+        }
+      }
+    },
+    {
+      "eventId": "person:06",
+      "seq": 6,
+      "source": {
+        "fileId": "Main.java",
+        "line": 18
+      },
+      "label": "Execute new Person(\"Ethan\")",
+      "importance": "normal",
+      "type": "LINE_EXECUTE",
+      "frameId": "frame:main:1"
+    },
+    {
+      "eventId": "person:07",
+      "seq": 7,
+      "source": {
+        "fileId": "Main.java",
+        "line": 18
+      },
+      "label": "Declare p",
+      "importance": "normal",
+      "type": "DECLARE_LOCAL",
+      "frameId": "frame:main:1",
+      "slot": {
+        "id": "slot:frame:main:1:p",
+        "name": "p",
+        "javaType": "Person",
+        "value": {
+          "kind": "uninitialized"
+        }
+      }
+    },
+    {
+      "eventId": "person:08",
+      "seq": 8,
+      "source": {
+        "fileId": "Main.java",
+        "line": 18
+      },
+      "label": "Allocate Person #17",
+      "importance": "major",
+      "type": "ALLOCATE_OBJECT",
+      "objectId": "object:person:17",
+      "displayId": 17,
+      "className": "Person",
+      "fields": [
+        {
+          "id": "slot:object:person:17:name",
+          "name": "name",
+          "javaType": "String",
+          "value": {
+            "kind": "null"
+          }
+        },
+        {
+          "id": "slot:object:person:17:age",
+          "name": "age",
+          "javaType": "int",
+          "value": {
+            "kind": "primitive",
+            "javaType": "int",
+            "value": 0
+          }
+        }
+      ]
+    },
+    {
+      "eventId": "person:09",
+      "seq": 9,
+      "source": {
+        "fileId": "Main.java",
+        "line": 5
+      },
+      "label": "Enter Person constructor",
+      "importance": "major",
+      "type": "ENTER_METHOD",
+      "frameId": "frame:person-constructor:1",
+      "callerFrameId": "frame:main:1",
+      "className": "Person",
+      "methodName": "Person",
+      "locals": [
+        {
+          "id": "slot:frame:person-constructor:1:this",
+          "name": "this",
+          "javaType": "Person",
+          "value": {
+            "kind": "reference",
+            "javaType": "Person",
+            "objectId": "object:person:17"
+          }
+        },
+        {
+          "id": "slot:frame:person-constructor:1:name",
+          "name": "name",
+          "javaType": "String",
+          "value": {
+            "kind": "stringSummary",
+            "javaType": "String",
+            "value": "Ethan"
+          }
+        }
+      ]
+    },
+    {
+      "eventId": "person:10",
+      "seq": 10,
+      "source": {
+        "fileId": "Main.java",
+        "line": 6
+      },
+      "label": "Execute this.name = name",
+      "importance": "normal",
+      "type": "LINE_EXECUTE",
+      "frameId": "frame:person-constructor:1"
+    },
+    {
+      "eventId": "person:11",
+      "seq": 11,
+      "source": {
+        "fileId": "Main.java",
+        "line": 6
+      },
+      "label": "name = \"Ethan\"",
+      "importance": "major",
+      "type": "SET_FIELD",
+      "objectId": "object:person:17",
+      "slotId": "slot:object:person:17:name",
+      "value": {
+        "kind": "stringSummary",
+        "javaType": "String",
+        "value": "Ethan"
+      }
+    },
+    {
+      "eventId": "person:12",
+      "seq": 12,
+      "source": {
+        "fileId": "Main.java",
+        "line": 7
+      },
+      "label": "Return from constructor",
+      "importance": "major",
+      "type": "EXIT_METHOD",
+      "frameId": "frame:person-constructor:1"
+    },
+    {
+      "eventId": "person:13",
+      "seq": 13,
+      "source": {
+        "fileId": "Main.java",
+        "line": 18
+      },
+      "label": "p \u2192 Person #17",
+      "importance": "major",
+      "type": "CREATE_REFERENCE",
+      "sourceSlot": {
+        "kind": "frame",
+        "frameId": "frame:main:1",
+        "slotId": "slot:frame:main:1:p"
+      },
+      "targetObjectId": "object:person:17",
+      "javaType": "Person"
+    },
+    {
+      "eventId": "person:14",
+      "seq": 14,
+      "source": {
+        "fileId": "Main.java",
+        "line": 19
+      },
+      "label": "Execute p.setAge(18)",
+      "importance": "normal",
+      "type": "LINE_EXECUTE",
+      "frameId": "frame:main:1"
+    },
+    {
+      "eventId": "person:15",
+      "seq": 15,
+      "source": {
+        "fileId": "Main.java",
+        "line": 9
+      },
+      "label": "Enter Person.setAge",
+      "importance": "major",
+      "type": "ENTER_METHOD",
+      "frameId": "frame:person-setAge:1",
+      "callerFrameId": "frame:main:1",
+      "className": "Person",
+      "methodName": "setAge",
+      "locals": [
+        {
+          "id": "slot:frame:person-setAge:1:this",
+          "name": "this",
+          "javaType": "Person",
+          "value": {
+            "kind": "reference",
+            "javaType": "Person",
+            "objectId": "object:person:17"
+          }
+        },
+        {
+          "id": "slot:frame:person-setAge:1:age",
+          "name": "age",
+          "javaType": "int",
+          "value": {
+            "kind": "primitive",
+            "javaType": "int",
+            "value": 18
+          }
+        }
+      ]
+    },
+    {
+      "eventId": "person:16",
+      "seq": 16,
+      "source": {
+        "fileId": "Main.java",
+        "line": 10
+      },
+      "label": "Execute this.age = age",
+      "importance": "normal",
+      "type": "LINE_EXECUTE",
+      "frameId": "frame:person-setAge:1"
+    },
+    {
+      "eventId": "person:17",
+      "seq": 17,
+      "source": {
+        "fileId": "Main.java",
+        "line": 10
+      },
+      "label": "age: 0 \u2192 18",
+      "importance": "major",
+      "type": "SET_FIELD",
+      "objectId": "object:person:17",
+      "slotId": "slot:object:person:17:age",
+      "value": {
+        "kind": "primitive",
+        "javaType": "int",
+        "value": 18
+      }
+    },
+    {
+      "eventId": "person:18",
+      "seq": 18,
+      "source": {
+        "fileId": "Main.java",
+        "line": 11
+      },
+      "label": "Return from setAge",
+      "importance": "major",
+      "type": "EXIT_METHOD",
+      "frameId": "frame:person-setAge:1"
+    },
+    {
+      "eventId": "person:19",
+      "seq": 19,
+      "source": {
+        "fileId": "Main.java",
+        "line": 20
+      },
+      "label": "Return from main",
+      "importance": "major",
+      "type": "EXIT_METHOD",
+      "frameId": "frame:main:1"
+    },
+    {
+      "eventId": "person:20",
+      "seq": 20,
+      "source": {
+        "fileId": "Main.java",
+        "line": 20
+      },
+      "label": "Program ends",
+      "importance": "major",
+      "type": "PROGRAM_END"
+    }
+  ]
+}
