@@ -99,6 +99,7 @@ function ExecutionWorkspace({ trace, example, onChooseExample }: { trace: TraceD
         <span className="brand-copy"><span className="brand-name">Visual Java</span><span className="brand-subtitle">Explore execution from the inside</span></span>
       </div>
       <div className="top-actions">
+        <a className="toolbar-button is-subtle" href="/ide" aria-label="Open IDE workspace">IDE Workspace</a>
         <label className="example-picker">Example <select aria-label="Runtime example" value={example} onChange={(event) => onChooseExample(event.target.value as ExampleId)}><option value="person">Person</option><option value="recursion">Recursion · factorial(5)</option><option value="arrays">Arrays · bubble sort</option><option value="control">Control flow · scores</option></select></label>
         <button className="toolbar-button is-subtle" aria-label="Runtime focus mode" aria-pressed={runtimeFocus} onClick={() => setRuntimeFocus((value) => !value)}>{runtimeFocus ? <Minimize2 size={15} /> : <Maximize2 size={15} />}<span className="button-text">{runtimeFocus ? 'Restore source' : 'Runtime view'}</span></button>
         <button className="toolbar-button is-subtle" onClick={() => navigationActions.home()} aria-label="Home"><Home size={15} /><span className="button-text">Home</span></button>
