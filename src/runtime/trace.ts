@@ -4,6 +4,8 @@ import rawRecursionTrace from '../demos/recursion/recursion.trace.json'
 import recursionSource from '../demos/recursion/Main.java?raw'
 import rawArrayTrace from '../demos/arrays/trace.json'
 import arraySource from '../demos/arrays/Main.java?raw'
+import rawControlTrace from '../demos/control/trace.json'
+import controlSource from '../demos/control/Main.java?raw'
 import type { RuntimeSlot, RuntimeValue, ScalarValue, SlotOwner, TraceDocument, TraceEvent } from '../contracts/runtime'
 import { applyEvent, createInitialState } from './state'
 
@@ -29,7 +31,8 @@ function isValue(value: unknown): value is RuntimeValue {
       return true
     case 'primitive':
       return (
-        (value.javaType === 'int' && Number.isInteger(value.value)) ||
+        (value.javaType === 'int' && Number.isInteger(value.value) &&
+          (value.value as number) >= -2147483648 && (value.value as number) <= 2147483647) ||
         (value.javaType === 'double' && typeof value.value === 'number' && Number.isFinite(value.value)) ||
         (value.javaType === 'boolean' && typeof value.value === 'boolean')
       )
@@ -57,7 +60,13 @@ function isIndex(value: unknown): boolean {
 
 function isSlot(value: unknown): value is RuntimeSlot {
   return isRecord(value) && isText(value.id) && isText(value.name) && isText(value.javaType) && isValue(value.value) &&
-    (value.role === undefined || ['local', 'parameter', 'operand', 'return'].includes(String(value.role)))
+    (value.role === undefined || ['local', 'parameter', 'operand', 'return'].includes(String(value.role))) &&
+    (value.scopeId === undefined || isText(value.scopeId))
+}
+
+function isOperand(value: unknown): boolean {
+  return isRecord(value) && isText(value.label) && isScalar(value.value) && value.value.kind !== 'uninitialized' &&
+    (value.slotId === undefined || isText(value.slotId))
 }
 
 function isOwner(value: unknown): value is SlotOwner {
@@ -72,6 +81,25 @@ function isEvent(value: unknown): value is TraceEvent {
       !['quiet', 'normal', 'major'].includes(String(value.importance))) return false
 
   switch (value.type) {
+    case 'ENTER_SCOPE':
+      return isText(value.frameId) && isText(value.scopeId) && isText(value.labelScope) &&
+        (value.parentId === null || isText(value.parentId))
+    case 'EXIT_SCOPE':
+      return isText(value.frameId) && isText(value.scopeId)
+    case 'EVALUATE_CONDITION':
+      return isText(value.frameId) && isText(value.conditionId) && ['branch', 'loop'].includes(String(value.kind)) &&
+        isText(value.expression) && Array.isArray(value.operands) && value.operands.length === 2 && value.operands.every(isOperand) &&
+        ['<', '>', '<=', '=='].includes(String(value.operator)) && typeof value.result === 'boolean' &&
+        isText(value.takenLabel) && isText(value.skippedLabel)
+    case 'LOOP_ITERATION':
+      return isText(value.frameId) && isText(value.loopId) && isIndex(value.iteration) &&
+        ['running', 'ended'].includes(String(value.status))
+    case 'INPUT_READ':
+      return isText(value.frameId) && isText(value.readerObjectId) && value.method === 'nextInt' &&
+        isIndex(value.inputIndex) && isText(value.destinationSlotId) && isInt(value.value) && isText(value.text)
+    case 'OUTPUT_WRITE':
+      return isText(value.frameId) && isScalar(value.value) && value.value.kind !== 'uninitialized' &&
+        typeof value.text === 'string' && (value.originSlotId === undefined || isText(value.originSlotId))
     case 'PROGRAM_START':
     case 'PROGRAM_END':
       return true
@@ -142,9 +170,18 @@ export function validateTrace(input: unknown): TraceDocument {
   }
 
   const eventIds = new Set<string>()
+  // Opting into explicit scopes makes every invocation use the scoped entry protocol.
+  // Legacy schema-v1 examples keep their existing eager local/parameter entries.
+  const scoped = input.events.some((event) => isRecord(event) && event.type === 'ENTER_SCOPE')
   let state = createInitialState()
   for (const [seq, rawEvent] of input.events.entries()) {
     if (!isEvent(rawEvent)) throw new Error(`Malformed event at seq ${seq}`)
+    if (scoped && rawEvent.type === 'ENTER_METHOD' && rawEvent.locals.length !== 0) {
+      throw new Error(`Invalid event at seq ${seq}: Scoped ENTER_METHOD must have empty locals`)
+    }
+    if (scoped && rawEvent.type === 'DECLARE_LOCAL' && rawEvent.slot.scopeId === undefined) {
+      throw new Error(`Invalid event at seq ${seq}: Scoped declarations require scopeId`)
+    }
     if (rawEvent.seq !== seq) throw new Error(`Non-contiguous event seq at ${seq}`)
     if (eventIds.has(rawEvent.eventId)) throw new Error(`Duplicate event ID ${rawEvent.eventId}`)
     eventIds.add(rawEvent.eventId)
@@ -188,6 +225,15 @@ export function loadArrayTrace(): TraceDocument {
   if (trace.demoId !== 'arrays' || trace.sourceFiles.length !== 1 ||
       trace.sourceFiles[0].content !== arraySource) {
     throw new Error('Array trace and Java source fixture differ')
+  }
+  return trace
+}
+
+export function loadControlTrace(): TraceDocument {
+  const trace = validateTrace(structuredClone(rawControlTrace))
+  if (trace.demoId !== 'control' || trace.sourceFiles.length !== 1 ||
+      trace.sourceFiles[0].content !== controlSource) {
+    throw new Error('Control trace and Java source fixture differ')
   }
   return trace
 }

@@ -32,7 +32,7 @@ const theme = {
 
 /** An SVG representation of the shared scene, with a presentation-only viewport. */
 export function ClassicRuntime({ visible = true, playing = false, scene, event, guided, selection, onSelect, onFocusSelected }: ClassicRuntimeProps) {
-  const diagram = useMemo(() => buildClassicScene(scene), [scene])
+  const diagram = useMemo(() => buildClassicScene(scene, event), [scene, event])
   const diagramRef = useRef(diagram)
   diagramRef.current = diagram
   const visibleRef = useRef(visible)
@@ -121,10 +121,11 @@ export function ClassicRuntime({ visible = true, playing = false, scene, event, 
     const accent = entity.kind === 'frame' ? colors.stack : colors.heap
     const body = entity.kind === 'frame' ? worldMaterial.stackFace : worldMaterial.heapFace
     const { x, y, width, height } = entity.rect
-    const current = (guided || diagram.deepStack) && entity.active
-    const compact = diagram.deepStack && entity.kind === 'frame'
-    const headingHeight = compact ? 26 : 64
-    const rowTextSize = compact ? 15 : 20
+    const current = (guided || diagram.deepStack || diagram.scoped) && entity.active
+    const compact = diagram.deepStack && !diagram.scoped && entity.kind === 'frame'
+    const scopedFrame = diagram.scoped && entity.kind === 'frame'
+    const headingHeight = entity.headingHeight ?? (compact ? 26 : 64)
+    const rowTextSize = compact ? 15 : scopedFrame ? 17 : 20
     const arrayComplete = !!entity.array?.ascending && event?.type === 'PROGRAM_END'
     const title = entity.array?.name ? `${entity.array.name} · ${entity.label}` : entity.label
     return <g key={entity.id} data-runtime-id={entity.id} data-runtime-kind={entity.kind}>
@@ -132,11 +133,17 @@ export function ClassicRuntime({ visible = true, playing = false, scene, event, 
       <g className="classic-target classic-heading" {...interactions({ kind: entity.kind, id: entity.id })} aria-label={`${entity.kind === 'frame' ? 'Stack frame' : 'Heap object'} ${title}`}>
         <rect x={x} y={y} width={width} height={headingHeight} rx={4} fill={body} />
         <rect x={x} y={y} width={4} height={headingHeight} fill={current ? colors.execution : accent} />
-        <text x={x + 20} y={y + (compact ? 18 : 32)} fontSize={compact ? 18 : 24} fontWeight={600} fill={colors.text}>{title}</text>
-        {!compact && <text x={x + 20} y={y + 52} fontSize={12} letterSpacing={1} fill={accent}>{entity.array ? `INDEX / VALUE · LENGTH ${entity.array.length}` : entity.kind === 'frame' ? 'LOCALS / PARAMETERS' : 'FIELDS'}</text>}
-        {current && <text x={x + width - 16} y={y + (compact ? 18 : 52)} textAnchor="end" fontSize={12} fill={colors.execution}>EXECUTING</text>}
+        <text x={x + 20} y={y + (compact ? 18 : scopedFrame ? Math.min(22, headingHeight - 20) : 32)} fontSize={compact || scopedFrame ? 18 : 24} fontWeight={600} fill={colors.text}>{title}</text>
+        {!compact && headingHeight >= 48 && <text x={x + 20} y={y + headingHeight - (scopedFrame ? 10 : 12)} fontSize={12} letterSpacing={1} fill={accent}>{entity.array ? `INDEX / VALUE · LENGTH ${entity.array.length}` : entity.kind === 'frame' ? 'LOCALS / PARAMETERS' : 'FIELDS'}</text>}
+        {current && <text x={x + width - 16} y={y + (compact ? 18 : scopedFrame ? Math.min(22, headingHeight - 20) : 52)} textAnchor="end" fontSize={12} fill={colors.execution}>EXECUTING</text>}
       </g>
       <line x1={x} y1={y + headingHeight} x2={x + width} y2={y + headingHeight} stroke={accent} strokeOpacity={0.35} />
+      {entity.scopes?.map((scope) => <g key={scope.id} className="classic-scope" data-scope-id={scope.id} data-scope-depth={scope.depth}
+        role="group" aria-label={`Active scope ${scope.label}`}>
+        <rect x={scope.rect.x} y={scope.rect.y} width={scope.rect.width} height={scope.rect.height} fill={worldMaterial.stackSlot}
+          fillOpacity={0.35} stroke={colors.stack} strokeOpacity={0.3} />
+        <text x={scope.rect.x + 12} y={scope.rect.y + scope.headingHeight / 2 + 4} fontSize={12} fill={colors.textSecondary}>{scope.label}</text>
+      </g>)}
       {entity.slots.map((row) => {
         const reading = guided && diagram.arrayActivity?.destinationSlotId === row.slot.id
         const highlighted = row.slot.id === changedSlotId || (guided && event?.type === 'RETURN_VALUE' &&
@@ -144,16 +151,17 @@ export function ClassicRuntime({ visible = true, playing = false, scene, event, 
         const slotSelected = selection?.kind === 'slot' && selection.id === row.slot.id
         const nullValue = row.slot.value.kind === 'null' || row.slot.value.kind === 'uninitialized'
         const rowY = row.rect.y
-        const typeX = x + (compact ? 246 : entity.kind === 'frame' ? 116 : 104)
-        const valueX = x + (compact ? 300 : entity.kind === 'frame' ? 220 : 190)
+        const rowX = row.rect.x, rowWidth = row.rect.width
+        const typeX = scopedFrame ? rowX + rowWidth * 0.49 : x + (compact ? 246 : entity.kind === 'frame' ? 116 : 104)
+        const valueX = scopedFrame ? rowX + rowWidth * 0.73 : x + (compact ? 300 : entity.kind === 'frame' ? 220 : 190)
         return <g key={row.slot.id} className="classic-target classic-slot" data-slot-id={row.slot.id}
           {...interactions({ kind: 'slot', id: row.slot.id })} aria-label={`${entity.label} ${row.slot.name}${row.slot.role === 'operand' ? ' expression operand' : ''}, ${row.slot.javaType}, ${row.value}`}>
-          <rect x={x + 1} y={rowY} width={width - 2} height={row.rect.height} fill={highlighted ? colors.mutation : slotSelected || reading ? colors.execution : linked ? accent : body} fillOpacity={highlighted || slotSelected || reading ? 0.13 : linked ? 0.05 : 1} />
-          {highlighted && <rect x={x + 1} y={rowY + 5} width={3} height={row.rect.height - 10} fill={colors.mutation} />}
-          <text x={x + 20} y={rowY + row.rect.height / 2 + 6} fontSize={rowTextSize} fill={row.slot.role === 'operand' ? colors.textSecondary : colors.text}>{row.slot.role === 'operand' ? 'call result (operand)' : row.slot.name}</text>
+          <rect x={rowX + 1} y={rowY} width={rowWidth - 2} height={row.rect.height} fill={highlighted ? colors.mutation : slotSelected || reading ? colors.execution : linked ? accent : body} fillOpacity={highlighted || slotSelected || reading ? 0.13 : linked ? 0.05 : 1} />
+          {highlighted && <rect x={rowX + 1} y={rowY + 5} width={3} height={row.rect.height - 10} fill={colors.mutation} />}
+          <text x={rowX + 20} y={rowY + row.rect.height / 2 + 6} fontSize={rowTextSize} fill={row.slot.role === 'operand' ? colors.textSecondary : colors.text}>{row.slot.role === 'operand' ? 'call result (operand)' : row.slot.name}</text>
           <text x={typeX} y={rowY + row.rect.height / 2 + 6} fontSize={compact ? 12 : 16} fill={colors.textSecondary}>{row.slot.javaType}</text>
           <text x={valueX} y={rowY + row.rect.height / 2 + 6} fontFamily={typography.code} fontSize={rowTextSize} fill={highlighted ? colors.mutation : row.slot.role === 'return' && !nullValue ? colors.success : nullValue ? colors.null : row.slot.value.kind === 'reference' ? accent : colors.text}>{row.value}</text>
-          <line x1={x + 16} y1={rowY + row.rect.height} x2={x + width - 16} y2={rowY + row.rect.height} stroke={colors.borderStrong} strokeOpacity={0.5} />
+          <line x1={rowX + 16} y1={rowY + row.rect.height} x2={rowX + rowWidth - 16} y2={rowY + row.rect.height} stroke={colors.borderStrong} strokeOpacity={0.5} />
         </g>
       })}
       {entity.array?.cells.map((cell) => {
@@ -175,12 +183,12 @@ export function ClassicRuntime({ visible = true, playing = false, scene, event, 
       {entity.array && <text x={x + 16} y={y + height - 7} fontSize={12} fill={arrayComplete ? colors.success : colors.textMuted}>
         {arrayComplete ? 'Ascending order verified' : 'Equal cells · fixed indices'}
       </text>}
-      {entity.slots.length === 0 && !entity.array && <text x={x + 20} y={y + (compact ? 50 : 100)} fontSize={18} fill={colors.textSecondary}>No locals yet</text>}
+      {entity.slots.length === 0 && !entity.array && !entity.scopes?.length && <text x={x + 20} y={y + (compact ? 50 : 100)} fontSize={18} fill={colors.textSecondary}>{entity.kind === 'frame' ? 'No locals yet' : 'No fields'}</text>}
     </g>
   }
 
   return <div className={`classic-view${selection ? ' has-selection' : ''}`} style={theme} aria-hidden={!visible}><svg ref={svgRef} className="classic-runtime" role="group" aria-label="Classic runtime stack and heap diagram"
-    data-guided={guided} data-stack-depth={scene.stackDepth ?? 1} viewBox={`${view.x} ${view.y} ${view.width} ${view.height}`} preserveAspectRatio="xMidYMid meet"
+    data-guided={guided} data-stack-depth={scene.stackDepth ?? 1} data-layout-kind={scene.layoutKind} viewBox={`${view.x} ${view.y} ${view.width} ${view.height}`} preserveAspectRatio="xMidYMid meet"
     onPointerDown={(pointer) => {
       if (!visible) return
       if (pointer.button !== 0 && pointer.button !== 2) return
@@ -215,9 +223,9 @@ export function ClassicRuntime({ visible = true, playing = false, scene, event, 
       </marker>
     </defs>
     <g aria-hidden="true">
-      <text x={diagram.deepStack ? 104 : 72} y={diagram.deepStack ? 36 : 94} fontSize={16} fontWeight={600} letterSpacing={3} fill={colors.stack}>STACK</text>
+      <text x={diagram.deepStack ? 104 : 72} y={diagram.scoped ? 26 : diagram.deepStack ? 36 : 94} fontSize={16} fontWeight={600} letterSpacing={3} fill={colors.stack}>STACK</text>
       <text x={655} y={diagram.deepStack ? 36 : 94} fontSize={16} fontWeight={600} letterSpacing={3} fill={diagram.deepStack && !scene.objects.length ? colors.success : colors.heap}>{diagram.deepStack && !scene.objects.length ? 'RETURN FLOW' : 'HEAP'}</text>
-      <line x1={diagram.deepStack ? 104 : 72} y1={diagram.deepStack ? 48 : 108} x2={diagram.deepStack ? 524 : 428} y2={diagram.deepStack ? 48 : 108} stroke={colors.stack} strokeOpacity={0.25} />
+      <line x1={diagram.deepStack ? 104 : 72} y1={diagram.deepStack || diagram.scoped ? 36 : 108} x2={diagram.deepStack ? 524 : diagram.scoped ? 492 : 428} y2={diagram.deepStack || diagram.scoped ? 36 : 108} stroke={colors.stack} strokeOpacity={0.25} />
       <line x1={655} y1={diagram.deepStack ? 48 : 108} x2={955} y2={diagram.deepStack ? 48 : 108} stroke={diagram.deepStack && !scene.objects.length ? colors.success : colors.heap} strokeOpacity={0.25} />
       {diagram.deepStack && !scene.objects.length && <text x={655} y={68} fontSize={14} fill={colors.textMuted}>No heap allocations</text>}
     </g>

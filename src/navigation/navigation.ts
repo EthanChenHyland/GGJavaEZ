@@ -17,10 +17,16 @@ export type NavigationWorld = {
 
 /** Live geometry participates in collision/selection; framing stays trace-reserved. */
 export function navigationWorldForScene(scene: SceneModel, homeTarget?: Vec3): NavigationWorld {
-  const reserved = !!scene.bounds && ((scene.stackDepth ?? 0) > 1 || scene.layoutKind === 'array')
+  const reserved = !!scene.bounds && ((scene.stackDepth ?? 0) > 1 || (scene.layoutKind === 'array' || scene.layoutKind === 'scoped'))
   return {
     anchors: Object.fromEntries([
       ...scene.frames.map((node) => [node.id, node.anchor] as const),
+      ...(scene.layoutKind === 'scoped' ? scene.frames.flatMap((node) => node.slots.map((slot) => [slot.id, {
+        entityId: slot.id, region: 'stack' as const,
+        position: [node.anchor.position[0], slot.port[1], slot.port[2]] as Vec3,
+        size: [node.anchor.size[0] - 0.4, worldUnits.scope.rowGap, 0.1] as Vec3,
+        ports: {}, bodyPort: slot.port,
+      }] as const)) : []),
       ...scene.objects.map((node) => [node.id, node.anchor] as const),
       ...scene.objects.flatMap((node) => node.array?.cells.map((cell) => [cell.id, cell.anchor] as const) ?? []),
     ]),
@@ -196,7 +202,7 @@ export function detailLevelAtDistance(distanceToPivot: number, current: DetailLe
  * shallow scenes keep the established absolute Person thresholds.
  */
 export function detailDistanceForScene(distanceToPivot: number, overview: CameraPose, scene: Pick<SceneModel, 'stackDepth' | 'bounds' | 'layoutKind'>): number {
-  if (!scene.bounds || ((scene.stackDepth ?? 0) <= 1 && scene.layoutKind !== 'array')) return distanceToPivot
+  if (!scene.bounds || ((scene.stackDepth ?? 0) <= 1 && scene.layoutKind !== 'array' && scene.layoutKind !== 'scoped')) return distanceToPivot
   const overviewDistance = distance(overview.position, overview.target)
   return distanceToPivot * distance(defaultHomePose.position, defaultHomePose.target) / Math.max(0.01, overviewDistance)
 }

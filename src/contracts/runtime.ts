@@ -4,6 +4,7 @@ export type FrameId = string
 export type ObjectId = string
 export type SlotId = string
 export type ReferenceId = string
+export type ScopeId = string
 
 export type SourceLocation = { fileId: string; line: number }
 
@@ -23,6 +24,7 @@ export interface RuntimeSlot {
   value: RuntimeValue
   /** Expression operands are VM evaluation slots, not invented Java locals. */
   role?: 'local' | 'parameter' | 'operand' | 'return'
+  scopeId?: ScopeId
 }
 
 export interface RuntimeFrame {
@@ -79,6 +81,56 @@ export interface RuntimeObject {
   array?: RuntimeArray
 }
 
+export interface RuntimeScope {
+  id: ScopeId
+  frameId: FrameId
+  parentId: ScopeId | null
+  label: string
+  depth: number
+  status: 'active' | 'closed'
+  enteredAt: EventId
+  exitedAt?: EventId
+}
+export interface VariableLifetime {
+  slot: RuntimeSlot
+  frameId: FrameId
+  scopeId: ScopeId
+  declaredAt: EventId
+  source: SourceLocation | null
+  lastChangedAt: EventId
+  exitedAt?: EventId
+}
+export interface ConditionOperand { label: string; value: ScalarValue; slotId?: SlotId }
+export interface RuntimeCondition {
+  eventId: EventId
+  frameId: FrameId
+  conditionId: string
+  kind: 'branch' | 'loop'
+  expression: string
+  operands: readonly [ConditionOperand, ConditionOperand]
+  operator: '<' | '>' | '<=' | '=='
+  result: boolean
+  takenLabel: string
+  skippedLabel: string
+}
+export interface RuntimeLoop {
+  eventId: EventId
+  frameId: FrameId
+  loopId: string
+  iteration: number
+  status: 'running' | 'ended'
+}
+export interface ConsoleEntry {
+  eventId: EventId
+  frameId: FrameId
+  source: SourceLocation | null
+  kind: 'input' | 'output'
+  text: string
+  value: ScalarValue
+  destinationSlotId?: SlotId
+  readerObjectId?: ObjectId
+}
+
 export interface RuntimeState {
   /** Number of events already applied: 0 is ready, N is after the last event. */
   cursor: number
@@ -91,6 +143,11 @@ export interface RuntimeState {
   returns: ReturnTransfer[]
   arrayActivity: ArrayActivity | null
   arrayMutations: ArrayMutation[]
+  scopes: Record<ScopeId, RuntimeScope>
+  variableLifetimes: VariableLifetime[]
+  conditions: Record<FrameId, RuntimeCondition>
+  loops: Record<string, RuntimeLoop>
+  console: ConsoleEntry[]
 }
 
 export type SlotOwner =
@@ -106,6 +163,12 @@ export interface TraceEventBase {
 }
 
 export type TraceEvent = TraceEventBase & (
+  | { type: 'ENTER_SCOPE'; frameId: FrameId; scopeId: ScopeId; parentId: ScopeId | null; labelScope: string }
+  | { type: 'EXIT_SCOPE'; frameId: FrameId; scopeId: ScopeId }
+  | ({ type: 'EVALUATE_CONDITION' } & Omit<RuntimeCondition, 'eventId'>)
+  | ({ type: 'LOOP_ITERATION' } & Omit<RuntimeLoop, 'eventId'>)
+  | { type: 'INPUT_READ'; frameId: FrameId; readerObjectId: ObjectId; method: 'nextInt'; inputIndex: number; destinationSlotId: SlotId; value: ScalarValue; text: string }
+  | { type: 'OUTPUT_WRITE'; frameId: FrameId; value: ScalarValue; text: string; originSlotId?: SlotId }
   | { type: 'PROGRAM_START' }
   | { type: 'PROGRAM_END' }
   | { type: 'LINE_EXECUTE'; frameId: FrameId }

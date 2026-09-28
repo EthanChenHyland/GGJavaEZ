@@ -79,7 +79,8 @@ export function RuntimeCanvas({ visible, guided, playing, quality, scene, event,
     onSelect(item)
   }
   const activeSlotId = !guided ? undefined : event?.type === 'RETURN_VALUE' ? `return:${event.frameId}`
-    : event?.type === 'SET_FIELD' || event?.type === 'ASSIGN_LOCAL' ? event.slotId : event?.type === 'ARRAY_READ' ? event.destinationSlotId : undefined
+    : event?.type === 'SET_FIELD' || event?.type === 'ASSIGN_LOCAL' ? event.slotId : event?.type === 'ARRAY_READ' || event?.type === 'INPUT_READ' ? event.destinationSlotId : event?.type === 'DECLARE_LOCAL' ? event.slot.id : undefined
+  const scopedWorld = scene.layoutKind === 'scoped'
   const arrayWorld = scene.layoutKind === 'array'
   const origins = Object.assign({}, ...scene.frames.map((node) => node.anchor.ports))
   const deepStack = (scene.stackDepth ?? 0) > 1
@@ -118,10 +119,10 @@ export function RuntimeCanvas({ visible, guided, playing, quality, scene, event,
         <meshStandardMaterial color={worldMaterial.floor} roughness={0.9} metalness={0.05} />
       </mesh>
       <group>
-        {scene.frames.length > 0 && <Text font={runtimeFont} position={deepStack && scene.bounds ? [scene.bounds.center[0] - 4.5, scene.bounds.center[1] + scene.bounds.size[1] / 2 + 0.6, 2.5] : [-5.9, 3.25, -1.5]} fontSize={0.31} color={colors.stack} anchorX="left" anchorY="middle" letterSpacing={0.08}>STACK</Text>}
+        {scene.frames.length > 0 && !scopedWorld && <Text font={runtimeFont} position={deepStack && scene.bounds ? [scene.bounds.center[0] - 4.5, scene.bounds.center[1] + scene.bounds.size[1] / 2 + 0.6, 2.5] : [-5.9, 3.25, -1.5]} fontSize={0.31} color={colors.stack} anchorX="left" anchorY="middle" letterSpacing={0.08}>STACK</Text>}
         {scene.objects.length > 0 && !arrayWorld && <Text font={runtimeFont} position={[2.1, 2.18, -0.65]} fontSize={0.31} color={colors.heap} anchorX="left" anchorY="middle" letterSpacing={0.08}>HEAP</Text>}
         {callSpine.length > 1 && <Line points={callSpine} color={colors.stack} lineWidth={1.4} transparent opacity={0.54} />}
-        {scene.returnFlow && scene.frames.length > 0 && <ReturnFlow flow={scene.returnFlow} guided={guided} playing={playing} />}
+        {scene.returnFlow && scene.frames.length > 0 && (!scopedWorld || event?.type === 'RETURN_VALUE' || event?.type === 'EXIT_METHOD') && <ReturnFlow flow={scene.returnFlow} guided={guided} playing={playing} />}
         {scene.references.map((edge) => <ReferenceCurve key={edge.id} edge={edge}
           label={[...scene.frames.flatMap((node) => node.slots), ...scene.objects.flatMap((node) => node.fields)].find((slot) => slot.id === edge.source.slotId)?.name ?? ''}
           selected={selection?.kind === 'reference' && selection.id === edge.id}
@@ -130,7 +131,7 @@ export function RuntimeCanvas({ visible, guided, playing, quality, scene, event,
           onSelect={(id) => select({ kind: 'reference', id })} />)}
         {returning.map((node) => <ReturningFrame key={node.id} node={node} />)}
         {scene.frames.map((node) => <FrameSolid key={node.id} node={node}
-          readable={deepStack || arrayWorld} spacious={arrayWorld}
+          readable={deepStack || arrayWorld || scopedWorld} spacious={arrayWorld || scopedWorld}
           selected={selection?.kind === 'frame' && selection.id === node.id}
           related={isRelated(selection, node.id, scene)} detailLevel={selection?.id === node.id && scene.detailLevel === 'macro' ? 'meso' : scene.detailLevel}
           activeSlotId={guided && event?.type === 'RETURN_VALUE' && event.destination?.frameId === node.id ? event.destination.slotId : activeSlotId}

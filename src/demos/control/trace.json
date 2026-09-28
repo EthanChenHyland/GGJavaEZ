@@ -1,0 +1,1476 @@
+{
+  "schemaVersion": 1,
+  "demoId": "control",
+  "sourceFiles": [
+    {
+      "fileId": "Main.java",
+      "name": "Main.java",
+      "content": "import java.util.Scanner;\n\npublic class Main {\n    static int clamp(int value) {\n        if (value < 0) {\n            int corrected = 0;\n            return corrected;\n        } else if (value > 100) {\n            int corrected = 100;\n            return corrected;\n        } else {\n            int corrected = value;\n            return corrected;\n        }\n    }\n\n    public static void main(String[] args) {\n        Scanner input = new Scanner(System.in);\n        int total = 0;\n        for (int i = 0; i < 3; i++) {\n            int raw = input.nextInt();\n            int score = clamp(raw);\n            total += score;\n            System.out.println(score);\n        }\n        System.out.println(total);\n    }\n}\n"
+    }
+  ],
+  "events": [
+    {
+      "type": "PROGRAM_START",
+      "eventId": "control:000",
+      "seq": 0,
+      "source": null,
+      "label": "Ready: inputs -7, 42, 130",
+      "importance": "major"
+    },
+    {
+      "type": "ENTER_METHOD",
+      "eventId": "control:001",
+      "seq": 1,
+      "source": {
+        "fileId": "Main.java",
+        "line": 17
+      },
+      "label": "Enter main()",
+      "importance": "major",
+      "frameId": "frame:control-main:1",
+      "callerFrameId": null,
+      "className": "Main",
+      "methodName": "main",
+      "locals": [],
+      "returnType": "void",
+      "invocationLabel": "main()"
+    },
+    {
+      "type": "ENTER_SCOPE",
+      "eventId": "control:002",
+      "seq": 2,
+      "source": {
+        "fileId": "Main.java",
+        "line": 17
+      },
+      "label": "Enter main body",
+      "importance": "normal",
+      "frameId": "frame:control-main:1",
+      "scopeId": "scope:control-main:root",
+      "parentId": null,
+      "labelScope": "main body"
+    },
+    {
+      "type": "DECLARE_LOCAL",
+      "eventId": "control:003",
+      "seq": 3,
+      "source": {
+        "fileId": "Main.java",
+        "line": 18
+      },
+      "label": "Declare input",
+      "importance": "normal",
+      "frameId": "frame:control-main:1",
+      "slot": {
+        "id": "slot:control-main:1:input",
+        "name": "input",
+        "javaType": "Scanner",
+        "value": {
+          "kind": "uninitialized"
+        },
+        "role": "local",
+        "scopeId": "scope:control-main:root"
+      }
+    },
+    {
+      "type": "ALLOCATE_OBJECT",
+      "eventId": "control:004",
+      "seq": 4,
+      "source": {
+        "fileId": "Main.java",
+        "line": 18
+      },
+      "label": "Allocate Scanner #31",
+      "importance": "major",
+      "objectId": "object:scanner:31",
+      "displayId": 31,
+      "className": "Scanner",
+      "fields": []
+    },
+    {
+      "type": "CREATE_REFERENCE",
+      "eventId": "control:005",
+      "seq": 5,
+      "source": {
+        "fileId": "Main.java",
+        "line": 18
+      },
+      "label": "input → Scanner #31",
+      "importance": "major",
+      "sourceSlot": {
+        "kind": "frame",
+        "frameId": "frame:control-main:1",
+        "slotId": "slot:control-main:1:input"
+      },
+      "targetObjectId": "object:scanner:31",
+      "javaType": "Scanner"
+    },
+    {
+      "type": "DECLARE_LOCAL",
+      "eventId": "control:006",
+      "seq": 6,
+      "source": {
+        "fileId": "Main.java",
+        "line": 19
+      },
+      "label": "Declare total",
+      "importance": "normal",
+      "frameId": "frame:control-main:1",
+      "slot": {
+        "id": "slot:control-main:1:total",
+        "name": "total",
+        "javaType": "int",
+        "value": {
+          "kind": "primitive",
+          "javaType": "int",
+          "value": 0
+        },
+        "role": "local",
+        "scopeId": "scope:control-main:root"
+      }
+    },
+    {
+      "type": "ENTER_SCOPE",
+      "eventId": "control:007",
+      "seq": 7,
+      "source": {
+        "fileId": "Main.java",
+        "line": 20
+      },
+      "label": "Enter for loop",
+      "importance": "normal",
+      "frameId": "frame:control-main:1",
+      "scopeId": "scope:control-main:for",
+      "parentId": "scope:control-main:root",
+      "labelScope": "for loop"
+    },
+    {
+      "type": "DECLARE_LOCAL",
+      "eventId": "control:008",
+      "seq": 8,
+      "source": {
+        "fileId": "Main.java",
+        "line": 20
+      },
+      "label": "Declare i",
+      "importance": "normal",
+      "frameId": "frame:control-main:1",
+      "slot": {
+        "id": "slot:control-main:1:i",
+        "name": "i",
+        "javaType": "int",
+        "value": {
+          "kind": "primitive",
+          "javaType": "int",
+          "value": 0
+        },
+        "role": "local",
+        "scopeId": "scope:control-main:for"
+      }
+    },
+    {
+      "type": "EVALUATE_CONDITION",
+      "eventId": "control:009",
+      "seq": 9,
+      "source": {
+        "fileId": "Main.java",
+        "line": 20
+      },
+      "label": "i < 3: 0 < 3 → true",
+      "importance": "normal",
+      "frameId": "frame:control-main:1",
+      "conditionId": "loop:control-main:for",
+      "kind": "loop",
+      "expression": "i < 3",
+      "operands": [
+        {
+          "label": "i",
+          "value": {
+            "kind": "primitive",
+            "javaType": "int",
+            "value": 0
+          },
+          "slotId": "slot:control-main:1:i"
+        },
+        {
+          "label": "3",
+          "value": {
+            "kind": "primitive",
+            "javaType": "int",
+            "value": 3
+          }
+        }
+      ],
+      "operator": "<",
+      "result": true,
+      "takenLabel": "iteration body",
+      "skippedLabel": "leave for loop"
+    },
+    {
+      "type": "LOOP_ITERATION",
+      "eventId": "control:010",
+      "seq": 10,
+      "source": {
+        "fileId": "Main.java",
+        "line": 20
+      },
+      "label": "Iteration 1 of 3",
+      "importance": "major",
+      "frameId": "frame:control-main:1",
+      "loopId": "loop:control-main:for",
+      "iteration": 1,
+      "status": "running"
+    },
+    {
+      "type": "ENTER_SCOPE",
+      "eventId": "control:011",
+      "seq": 11,
+      "source": {
+        "fileId": "Main.java",
+        "line": 20
+      },
+      "label": "Enter iteration body",
+      "importance": "normal",
+      "frameId": "frame:control-main:1",
+      "scopeId": "scope:control-main:body",
+      "parentId": "scope:control-main:for",
+      "labelScope": "iteration body"
+    },
+    {
+      "type": "DECLARE_LOCAL",
+      "eventId": "control:012",
+      "seq": 12,
+      "source": {
+        "fileId": "Main.java",
+        "line": 21
+      },
+      "label": "Declare raw",
+      "importance": "normal",
+      "frameId": "frame:control-main:1",
+      "slot": {
+        "id": "slot:control-main:1:raw",
+        "name": "raw",
+        "javaType": "int",
+        "value": {
+          "kind": "uninitialized"
+        },
+        "role": "local",
+        "scopeId": "scope:control-main:body"
+      }
+    },
+    {
+      "type": "INPUT_READ",
+      "eventId": "control:013",
+      "seq": 13,
+      "source": {
+        "fileId": "Main.java",
+        "line": 21
+      },
+      "label": "input.nextInt() → -7",
+      "importance": "major",
+      "frameId": "frame:control-main:1",
+      "readerObjectId": "object:scanner:31",
+      "method": "nextInt",
+      "inputIndex": 0,
+      "destinationSlotId": "slot:control-main:1:raw",
+      "value": {
+        "kind": "primitive",
+        "javaType": "int",
+        "value": -7
+      },
+      "text": "-7"
+    },
+    {
+      "type": "DECLARE_LOCAL",
+      "eventId": "control:014",
+      "seq": 14,
+      "source": {
+        "fileId": "Main.java",
+        "line": 22
+      },
+      "label": "Declare score",
+      "importance": "normal",
+      "frameId": "frame:control-main:1",
+      "slot": {
+        "id": "slot:control-main:1:score",
+        "name": "score",
+        "javaType": "int",
+        "value": {
+          "kind": "uninitialized"
+        },
+        "role": "local",
+        "scopeId": "scope:control-main:body"
+      }
+    },
+    {
+      "type": "ENTER_METHOD",
+      "eventId": "control:015",
+      "seq": 15,
+      "source": {
+        "fileId": "Main.java",
+        "line": 4
+      },
+      "label": "Enter clamp(-7)",
+      "importance": "major",
+      "frameId": "frame:clamp:1",
+      "callerFrameId": "frame:control-main:1",
+      "className": "Main",
+      "methodName": "clamp",
+      "locals": [],
+      "returnType": "int",
+      "invocationLabel": "clamp(-7)"
+    },
+    {
+      "type": "ENTER_SCOPE",
+      "eventId": "control:016",
+      "seq": 16,
+      "source": {
+        "fileId": "Main.java",
+        "line": 4
+      },
+      "label": "Enter clamp body",
+      "importance": "normal",
+      "frameId": "frame:clamp:1",
+      "scopeId": "scope:clamp:1:root",
+      "parentId": null,
+      "labelScope": "clamp body"
+    },
+    {
+      "type": "DECLARE_LOCAL",
+      "eventId": "control:017",
+      "seq": 17,
+      "source": {
+        "fileId": "Main.java",
+        "line": 4
+      },
+      "label": "Declare value",
+      "importance": "normal",
+      "frameId": "frame:clamp:1",
+      "slot": {
+        "id": "slot:clamp:1:value",
+        "name": "value",
+        "javaType": "int",
+        "value": {
+          "kind": "primitive",
+          "javaType": "int",
+          "value": -7
+        },
+        "role": "parameter",
+        "scopeId": "scope:clamp:1:root"
+      }
+    },
+    {
+      "type": "EVALUATE_CONDITION",
+      "eventId": "control:018",
+      "seq": 18,
+      "source": {
+        "fileId": "Main.java",
+        "line": 5
+      },
+      "label": "value < 0: -7 < 0 → true",
+      "importance": "normal",
+      "frameId": "frame:clamp:1",
+      "conditionId": "condition:clamp:1:low",
+      "kind": "branch",
+      "expression": "value < 0",
+      "operands": [
+        {
+          "label": "value",
+          "value": {
+            "kind": "primitive",
+            "javaType": "int",
+            "value": -7
+          },
+          "slotId": "slot:clamp:1:value"
+        },
+        {
+          "label": "0",
+          "value": {
+            "kind": "primitive",
+            "javaType": "int",
+            "value": 0
+          }
+        }
+      ],
+      "operator": "<",
+      "result": true,
+      "takenLabel": "if: lower bound",
+      "skippedLabel": "else if / else"
+    },
+    {
+      "type": "ENTER_SCOPE",
+      "eventId": "control:019",
+      "seq": 19,
+      "source": {
+        "fileId": "Main.java",
+        "line": 5
+      },
+      "label": "Enter if · value < 0",
+      "importance": "normal",
+      "frameId": "frame:clamp:1",
+      "scopeId": "scope:clamp:1:if",
+      "parentId": "scope:clamp:1:root",
+      "labelScope": "if · value < 0"
+    },
+    {
+      "type": "DECLARE_LOCAL",
+      "eventId": "control:020",
+      "seq": 20,
+      "source": {
+        "fileId": "Main.java",
+        "line": 6
+      },
+      "label": "Declare corrected",
+      "importance": "normal",
+      "frameId": "frame:clamp:1",
+      "slot": {
+        "id": "slot:clamp:1:corrected:if",
+        "name": "corrected",
+        "javaType": "int",
+        "value": {
+          "kind": "primitive",
+          "javaType": "int",
+          "value": 0
+        },
+        "role": "local",
+        "scopeId": "scope:clamp:1:if"
+      }
+    },
+    {
+      "type": "RETURN_VALUE",
+      "eventId": "control:021",
+      "seq": 21,
+      "source": {
+        "fileId": "Main.java",
+        "line": 7
+      },
+      "label": "Return corrected = 0",
+      "importance": "major",
+      "frameId": "frame:clamp:1",
+      "value": {
+        "kind": "primitive",
+        "javaType": "int",
+        "value": 0
+      },
+      "destination": {
+        "frameId": "frame:control-main:1",
+        "slotId": "slot:control-main:1:score"
+      },
+      "expression": "corrected"
+    },
+    {
+      "type": "EXIT_METHOD",
+      "eventId": "control:022",
+      "seq": 22,
+      "source": {
+        "fileId": "Main.java",
+        "line": 7
+      },
+      "label": "Exit clamp(-7); close branch and parameter scopes",
+      "importance": "major",
+      "frameId": "frame:clamp:1"
+    },
+    {
+      "type": "ASSIGN_LOCAL",
+      "eventId": "control:023",
+      "seq": 23,
+      "source": {
+        "fileId": "Main.java",
+        "line": 23
+      },
+      "label": "total += score → 0",
+      "importance": "major",
+      "frameId": "frame:control-main:1",
+      "slotId": "slot:control-main:1:total",
+      "value": {
+        "kind": "primitive",
+        "javaType": "int",
+        "value": 0
+      }
+    },
+    {
+      "type": "OUTPUT_WRITE",
+      "eventId": "control:024",
+      "seq": 24,
+      "source": {
+        "fileId": "Main.java",
+        "line": 24
+      },
+      "label": "Print score 0",
+      "importance": "normal",
+      "frameId": "frame:control-main:1",
+      "value": {
+        "kind": "primitive",
+        "javaType": "int",
+        "value": 0
+      },
+      "text": "0\n",
+      "originSlotId": "slot:control-main:1:score"
+    },
+    {
+      "type": "EXIT_SCOPE",
+      "eventId": "control:025",
+      "seq": 25,
+      "source": {
+        "fileId": "Main.java",
+        "line": 25
+      },
+      "label": "Leave iteration body; raw and score expire",
+      "importance": "normal",
+      "frameId": "frame:control-main:1",
+      "scopeId": "scope:control-main:body"
+    },
+    {
+      "type": "ASSIGN_LOCAL",
+      "eventId": "control:026",
+      "seq": 26,
+      "source": {
+        "fileId": "Main.java",
+        "line": 20
+      },
+      "label": "i++ → 1",
+      "importance": "normal",
+      "frameId": "frame:control-main:1",
+      "slotId": "slot:control-main:1:i",
+      "value": {
+        "kind": "primitive",
+        "javaType": "int",
+        "value": 1
+      }
+    },
+    {
+      "type": "EVALUATE_CONDITION",
+      "eventId": "control:027",
+      "seq": 27,
+      "source": {
+        "fileId": "Main.java",
+        "line": 20
+      },
+      "label": "i < 3: 1 < 3 → true",
+      "importance": "normal",
+      "frameId": "frame:control-main:1",
+      "conditionId": "loop:control-main:for",
+      "kind": "loop",
+      "expression": "i < 3",
+      "operands": [
+        {
+          "label": "i",
+          "value": {
+            "kind": "primitive",
+            "javaType": "int",
+            "value": 1
+          },
+          "slotId": "slot:control-main:1:i"
+        },
+        {
+          "label": "3",
+          "value": {
+            "kind": "primitive",
+            "javaType": "int",
+            "value": 3
+          }
+        }
+      ],
+      "operator": "<",
+      "result": true,
+      "takenLabel": "iteration body",
+      "skippedLabel": "leave for loop"
+    },
+    {
+      "type": "LOOP_ITERATION",
+      "eventId": "control:028",
+      "seq": 28,
+      "source": {
+        "fileId": "Main.java",
+        "line": 20
+      },
+      "label": "Iteration 2 of 3",
+      "importance": "major",
+      "frameId": "frame:control-main:1",
+      "loopId": "loop:control-main:for",
+      "iteration": 2,
+      "status": "running"
+    },
+    {
+      "type": "ENTER_SCOPE",
+      "eventId": "control:029",
+      "seq": 29,
+      "source": {
+        "fileId": "Main.java",
+        "line": 20
+      },
+      "label": "Enter iteration body",
+      "importance": "normal",
+      "frameId": "frame:control-main:1",
+      "scopeId": "scope:control-main:body",
+      "parentId": "scope:control-main:for",
+      "labelScope": "iteration body"
+    },
+    {
+      "type": "DECLARE_LOCAL",
+      "eventId": "control:030",
+      "seq": 30,
+      "source": {
+        "fileId": "Main.java",
+        "line": 21
+      },
+      "label": "Declare raw",
+      "importance": "normal",
+      "frameId": "frame:control-main:1",
+      "slot": {
+        "id": "slot:control-main:1:raw",
+        "name": "raw",
+        "javaType": "int",
+        "value": {
+          "kind": "uninitialized"
+        },
+        "role": "local",
+        "scopeId": "scope:control-main:body"
+      }
+    },
+    {
+      "type": "INPUT_READ",
+      "eventId": "control:031",
+      "seq": 31,
+      "source": {
+        "fileId": "Main.java",
+        "line": 21
+      },
+      "label": "input.nextInt() → 42",
+      "importance": "major",
+      "frameId": "frame:control-main:1",
+      "readerObjectId": "object:scanner:31",
+      "method": "nextInt",
+      "inputIndex": 1,
+      "destinationSlotId": "slot:control-main:1:raw",
+      "value": {
+        "kind": "primitive",
+        "javaType": "int",
+        "value": 42
+      },
+      "text": "42"
+    },
+    {
+      "type": "DECLARE_LOCAL",
+      "eventId": "control:032",
+      "seq": 32,
+      "source": {
+        "fileId": "Main.java",
+        "line": 22
+      },
+      "label": "Declare score",
+      "importance": "normal",
+      "frameId": "frame:control-main:1",
+      "slot": {
+        "id": "slot:control-main:1:score",
+        "name": "score",
+        "javaType": "int",
+        "value": {
+          "kind": "uninitialized"
+        },
+        "role": "local",
+        "scopeId": "scope:control-main:body"
+      }
+    },
+    {
+      "type": "ENTER_METHOD",
+      "eventId": "control:033",
+      "seq": 33,
+      "source": {
+        "fileId": "Main.java",
+        "line": 4
+      },
+      "label": "Enter clamp(42)",
+      "importance": "major",
+      "frameId": "frame:clamp:2",
+      "callerFrameId": "frame:control-main:1",
+      "className": "Main",
+      "methodName": "clamp",
+      "locals": [],
+      "returnType": "int",
+      "invocationLabel": "clamp(42)"
+    },
+    {
+      "type": "ENTER_SCOPE",
+      "eventId": "control:034",
+      "seq": 34,
+      "source": {
+        "fileId": "Main.java",
+        "line": 4
+      },
+      "label": "Enter clamp body",
+      "importance": "normal",
+      "frameId": "frame:clamp:2",
+      "scopeId": "scope:clamp:2:root",
+      "parentId": null,
+      "labelScope": "clamp body"
+    },
+    {
+      "type": "DECLARE_LOCAL",
+      "eventId": "control:035",
+      "seq": 35,
+      "source": {
+        "fileId": "Main.java",
+        "line": 4
+      },
+      "label": "Declare value",
+      "importance": "normal",
+      "frameId": "frame:clamp:2",
+      "slot": {
+        "id": "slot:clamp:2:value",
+        "name": "value",
+        "javaType": "int",
+        "value": {
+          "kind": "primitive",
+          "javaType": "int",
+          "value": 42
+        },
+        "role": "parameter",
+        "scopeId": "scope:clamp:2:root"
+      }
+    },
+    {
+      "type": "EVALUATE_CONDITION",
+      "eventId": "control:036",
+      "seq": 36,
+      "source": {
+        "fileId": "Main.java",
+        "line": 5
+      },
+      "label": "value < 0: 42 < 0 → false",
+      "importance": "normal",
+      "frameId": "frame:clamp:2",
+      "conditionId": "condition:clamp:2:low",
+      "kind": "branch",
+      "expression": "value < 0",
+      "operands": [
+        {
+          "label": "value",
+          "value": {
+            "kind": "primitive",
+            "javaType": "int",
+            "value": 42
+          },
+          "slotId": "slot:clamp:2:value"
+        },
+        {
+          "label": "0",
+          "value": {
+            "kind": "primitive",
+            "javaType": "int",
+            "value": 0
+          }
+        }
+      ],
+      "operator": "<",
+      "result": false,
+      "takenLabel": "else if: upper bound",
+      "skippedLabel": "if: lower bound"
+    },
+    {
+      "type": "EVALUATE_CONDITION",
+      "eventId": "control:037",
+      "seq": 37,
+      "source": {
+        "fileId": "Main.java",
+        "line": 8
+      },
+      "label": "value > 100: 42 > 100 → false",
+      "importance": "normal",
+      "frameId": "frame:clamp:2",
+      "conditionId": "condition:clamp:2:high",
+      "kind": "branch",
+      "expression": "value > 100",
+      "operands": [
+        {
+          "label": "value",
+          "value": {
+            "kind": "primitive",
+            "javaType": "int",
+            "value": 42
+          },
+          "slotId": "slot:clamp:2:value"
+        },
+        {
+          "label": "100",
+          "value": {
+            "kind": "primitive",
+            "javaType": "int",
+            "value": 100
+          }
+        }
+      ],
+      "operator": ">",
+      "result": false,
+      "takenLabel": "else: in range",
+      "skippedLabel": "else if: upper bound"
+    },
+    {
+      "type": "ENTER_SCOPE",
+      "eventId": "control:038",
+      "seq": 38,
+      "source": {
+        "fileId": "Main.java",
+        "line": 11
+      },
+      "label": "Enter else · in range",
+      "importance": "normal",
+      "frameId": "frame:clamp:2",
+      "scopeId": "scope:clamp:2:else",
+      "parentId": "scope:clamp:2:root",
+      "labelScope": "else · in range"
+    },
+    {
+      "type": "DECLARE_LOCAL",
+      "eventId": "control:039",
+      "seq": 39,
+      "source": {
+        "fileId": "Main.java",
+        "line": 12
+      },
+      "label": "Declare corrected",
+      "importance": "normal",
+      "frameId": "frame:clamp:2",
+      "slot": {
+        "id": "slot:clamp:2:corrected:else",
+        "name": "corrected",
+        "javaType": "int",
+        "value": {
+          "kind": "primitive",
+          "javaType": "int",
+          "value": 42
+        },
+        "role": "local",
+        "scopeId": "scope:clamp:2:else"
+      }
+    },
+    {
+      "type": "RETURN_VALUE",
+      "eventId": "control:040",
+      "seq": 40,
+      "source": {
+        "fileId": "Main.java",
+        "line": 13
+      },
+      "label": "Return corrected = 42",
+      "importance": "major",
+      "frameId": "frame:clamp:2",
+      "value": {
+        "kind": "primitive",
+        "javaType": "int",
+        "value": 42
+      },
+      "destination": {
+        "frameId": "frame:control-main:1",
+        "slotId": "slot:control-main:1:score"
+      },
+      "expression": "corrected"
+    },
+    {
+      "type": "EXIT_METHOD",
+      "eventId": "control:041",
+      "seq": 41,
+      "source": {
+        "fileId": "Main.java",
+        "line": 13
+      },
+      "label": "Exit clamp(42); close branch and parameter scopes",
+      "importance": "major",
+      "frameId": "frame:clamp:2"
+    },
+    {
+      "type": "ASSIGN_LOCAL",
+      "eventId": "control:042",
+      "seq": 42,
+      "source": {
+        "fileId": "Main.java",
+        "line": 23
+      },
+      "label": "total += score → 42",
+      "importance": "major",
+      "frameId": "frame:control-main:1",
+      "slotId": "slot:control-main:1:total",
+      "value": {
+        "kind": "primitive",
+        "javaType": "int",
+        "value": 42
+      }
+    },
+    {
+      "type": "OUTPUT_WRITE",
+      "eventId": "control:043",
+      "seq": 43,
+      "source": {
+        "fileId": "Main.java",
+        "line": 24
+      },
+      "label": "Print score 42",
+      "importance": "normal",
+      "frameId": "frame:control-main:1",
+      "value": {
+        "kind": "primitive",
+        "javaType": "int",
+        "value": 42
+      },
+      "text": "42\n",
+      "originSlotId": "slot:control-main:1:score"
+    },
+    {
+      "type": "EXIT_SCOPE",
+      "eventId": "control:044",
+      "seq": 44,
+      "source": {
+        "fileId": "Main.java",
+        "line": 25
+      },
+      "label": "Leave iteration body; raw and score expire",
+      "importance": "normal",
+      "frameId": "frame:control-main:1",
+      "scopeId": "scope:control-main:body"
+    },
+    {
+      "type": "ASSIGN_LOCAL",
+      "eventId": "control:045",
+      "seq": 45,
+      "source": {
+        "fileId": "Main.java",
+        "line": 20
+      },
+      "label": "i++ → 2",
+      "importance": "normal",
+      "frameId": "frame:control-main:1",
+      "slotId": "slot:control-main:1:i",
+      "value": {
+        "kind": "primitive",
+        "javaType": "int",
+        "value": 2
+      }
+    },
+    {
+      "type": "EVALUATE_CONDITION",
+      "eventId": "control:046",
+      "seq": 46,
+      "source": {
+        "fileId": "Main.java",
+        "line": 20
+      },
+      "label": "i < 3: 2 < 3 → true",
+      "importance": "normal",
+      "frameId": "frame:control-main:1",
+      "conditionId": "loop:control-main:for",
+      "kind": "loop",
+      "expression": "i < 3",
+      "operands": [
+        {
+          "label": "i",
+          "value": {
+            "kind": "primitive",
+            "javaType": "int",
+            "value": 2
+          },
+          "slotId": "slot:control-main:1:i"
+        },
+        {
+          "label": "3",
+          "value": {
+            "kind": "primitive",
+            "javaType": "int",
+            "value": 3
+          }
+        }
+      ],
+      "operator": "<",
+      "result": true,
+      "takenLabel": "iteration body",
+      "skippedLabel": "leave for loop"
+    },
+    {
+      "type": "LOOP_ITERATION",
+      "eventId": "control:047",
+      "seq": 47,
+      "source": {
+        "fileId": "Main.java",
+        "line": 20
+      },
+      "label": "Iteration 3 of 3",
+      "importance": "major",
+      "frameId": "frame:control-main:1",
+      "loopId": "loop:control-main:for",
+      "iteration": 3,
+      "status": "running"
+    },
+    {
+      "type": "ENTER_SCOPE",
+      "eventId": "control:048",
+      "seq": 48,
+      "source": {
+        "fileId": "Main.java",
+        "line": 20
+      },
+      "label": "Enter iteration body",
+      "importance": "normal",
+      "frameId": "frame:control-main:1",
+      "scopeId": "scope:control-main:body",
+      "parentId": "scope:control-main:for",
+      "labelScope": "iteration body"
+    },
+    {
+      "type": "DECLARE_LOCAL",
+      "eventId": "control:049",
+      "seq": 49,
+      "source": {
+        "fileId": "Main.java",
+        "line": 21
+      },
+      "label": "Declare raw",
+      "importance": "normal",
+      "frameId": "frame:control-main:1",
+      "slot": {
+        "id": "slot:control-main:1:raw",
+        "name": "raw",
+        "javaType": "int",
+        "value": {
+          "kind": "uninitialized"
+        },
+        "role": "local",
+        "scopeId": "scope:control-main:body"
+      }
+    },
+    {
+      "type": "INPUT_READ",
+      "eventId": "control:050",
+      "seq": 50,
+      "source": {
+        "fileId": "Main.java",
+        "line": 21
+      },
+      "label": "input.nextInt() → 130",
+      "importance": "major",
+      "frameId": "frame:control-main:1",
+      "readerObjectId": "object:scanner:31",
+      "method": "nextInt",
+      "inputIndex": 2,
+      "destinationSlotId": "slot:control-main:1:raw",
+      "value": {
+        "kind": "primitive",
+        "javaType": "int",
+        "value": 130
+      },
+      "text": "130"
+    },
+    {
+      "type": "DECLARE_LOCAL",
+      "eventId": "control:051",
+      "seq": 51,
+      "source": {
+        "fileId": "Main.java",
+        "line": 22
+      },
+      "label": "Declare score",
+      "importance": "normal",
+      "frameId": "frame:control-main:1",
+      "slot": {
+        "id": "slot:control-main:1:score",
+        "name": "score",
+        "javaType": "int",
+        "value": {
+          "kind": "uninitialized"
+        },
+        "role": "local",
+        "scopeId": "scope:control-main:body"
+      }
+    },
+    {
+      "type": "ENTER_METHOD",
+      "eventId": "control:052",
+      "seq": 52,
+      "source": {
+        "fileId": "Main.java",
+        "line": 4
+      },
+      "label": "Enter clamp(130)",
+      "importance": "major",
+      "frameId": "frame:clamp:3",
+      "callerFrameId": "frame:control-main:1",
+      "className": "Main",
+      "methodName": "clamp",
+      "locals": [],
+      "returnType": "int",
+      "invocationLabel": "clamp(130)"
+    },
+    {
+      "type": "ENTER_SCOPE",
+      "eventId": "control:053",
+      "seq": 53,
+      "source": {
+        "fileId": "Main.java",
+        "line": 4
+      },
+      "label": "Enter clamp body",
+      "importance": "normal",
+      "frameId": "frame:clamp:3",
+      "scopeId": "scope:clamp:3:root",
+      "parentId": null,
+      "labelScope": "clamp body"
+    },
+    {
+      "type": "DECLARE_LOCAL",
+      "eventId": "control:054",
+      "seq": 54,
+      "source": {
+        "fileId": "Main.java",
+        "line": 4
+      },
+      "label": "Declare value",
+      "importance": "normal",
+      "frameId": "frame:clamp:3",
+      "slot": {
+        "id": "slot:clamp:3:value",
+        "name": "value",
+        "javaType": "int",
+        "value": {
+          "kind": "primitive",
+          "javaType": "int",
+          "value": 130
+        },
+        "role": "parameter",
+        "scopeId": "scope:clamp:3:root"
+      }
+    },
+    {
+      "type": "EVALUATE_CONDITION",
+      "eventId": "control:055",
+      "seq": 55,
+      "source": {
+        "fileId": "Main.java",
+        "line": 5
+      },
+      "label": "value < 0: 130 < 0 → false",
+      "importance": "normal",
+      "frameId": "frame:clamp:3",
+      "conditionId": "condition:clamp:3:low",
+      "kind": "branch",
+      "expression": "value < 0",
+      "operands": [
+        {
+          "label": "value",
+          "value": {
+            "kind": "primitive",
+            "javaType": "int",
+            "value": 130
+          },
+          "slotId": "slot:clamp:3:value"
+        },
+        {
+          "label": "0",
+          "value": {
+            "kind": "primitive",
+            "javaType": "int",
+            "value": 0
+          }
+        }
+      ],
+      "operator": "<",
+      "result": false,
+      "takenLabel": "else if: upper bound",
+      "skippedLabel": "if: lower bound"
+    },
+    {
+      "type": "EVALUATE_CONDITION",
+      "eventId": "control:056",
+      "seq": 56,
+      "source": {
+        "fileId": "Main.java",
+        "line": 8
+      },
+      "label": "value > 100: 130 > 100 → true",
+      "importance": "normal",
+      "frameId": "frame:clamp:3",
+      "conditionId": "condition:clamp:3:high",
+      "kind": "branch",
+      "expression": "value > 100",
+      "operands": [
+        {
+          "label": "value",
+          "value": {
+            "kind": "primitive",
+            "javaType": "int",
+            "value": 130
+          },
+          "slotId": "slot:clamp:3:value"
+        },
+        {
+          "label": "100",
+          "value": {
+            "kind": "primitive",
+            "javaType": "int",
+            "value": 100
+          }
+        }
+      ],
+      "operator": ">",
+      "result": true,
+      "takenLabel": "else if: upper bound",
+      "skippedLabel": "else: in range"
+    },
+    {
+      "type": "ENTER_SCOPE",
+      "eventId": "control:057",
+      "seq": 57,
+      "source": {
+        "fileId": "Main.java",
+        "line": 8
+      },
+      "label": "Enter else if · value > 100",
+      "importance": "normal",
+      "frameId": "frame:clamp:3",
+      "scopeId": "scope:clamp:3:else-if",
+      "parentId": "scope:clamp:3:root",
+      "labelScope": "else if · value > 100"
+    },
+    {
+      "type": "DECLARE_LOCAL",
+      "eventId": "control:058",
+      "seq": 58,
+      "source": {
+        "fileId": "Main.java",
+        "line": 9
+      },
+      "label": "Declare corrected",
+      "importance": "normal",
+      "frameId": "frame:clamp:3",
+      "slot": {
+        "id": "slot:clamp:3:corrected:else-if",
+        "name": "corrected",
+        "javaType": "int",
+        "value": {
+          "kind": "primitive",
+          "javaType": "int",
+          "value": 100
+        },
+        "role": "local",
+        "scopeId": "scope:clamp:3:else-if"
+      }
+    },
+    {
+      "type": "RETURN_VALUE",
+      "eventId": "control:059",
+      "seq": 59,
+      "source": {
+        "fileId": "Main.java",
+        "line": 10
+      },
+      "label": "Return corrected = 100",
+      "importance": "major",
+      "frameId": "frame:clamp:3",
+      "value": {
+        "kind": "primitive",
+        "javaType": "int",
+        "value": 100
+      },
+      "destination": {
+        "frameId": "frame:control-main:1",
+        "slotId": "slot:control-main:1:score"
+      },
+      "expression": "corrected"
+    },
+    {
+      "type": "EXIT_METHOD",
+      "eventId": "control:060",
+      "seq": 60,
+      "source": {
+        "fileId": "Main.java",
+        "line": 10
+      },
+      "label": "Exit clamp(130); close branch and parameter scopes",
+      "importance": "major",
+      "frameId": "frame:clamp:3"
+    },
+    {
+      "type": "ASSIGN_LOCAL",
+      "eventId": "control:061",
+      "seq": 61,
+      "source": {
+        "fileId": "Main.java",
+        "line": 23
+      },
+      "label": "total += score → 142",
+      "importance": "major",
+      "frameId": "frame:control-main:1",
+      "slotId": "slot:control-main:1:total",
+      "value": {
+        "kind": "primitive",
+        "javaType": "int",
+        "value": 142
+      }
+    },
+    {
+      "type": "OUTPUT_WRITE",
+      "eventId": "control:062",
+      "seq": 62,
+      "source": {
+        "fileId": "Main.java",
+        "line": 24
+      },
+      "label": "Print score 100",
+      "importance": "normal",
+      "frameId": "frame:control-main:1",
+      "value": {
+        "kind": "primitive",
+        "javaType": "int",
+        "value": 100
+      },
+      "text": "100\n",
+      "originSlotId": "slot:control-main:1:score"
+    },
+    {
+      "type": "EXIT_SCOPE",
+      "eventId": "control:063",
+      "seq": 63,
+      "source": {
+        "fileId": "Main.java",
+        "line": 25
+      },
+      "label": "Leave iteration body; raw and score expire",
+      "importance": "normal",
+      "frameId": "frame:control-main:1",
+      "scopeId": "scope:control-main:body"
+    },
+    {
+      "type": "ASSIGN_LOCAL",
+      "eventId": "control:064",
+      "seq": 64,
+      "source": {
+        "fileId": "Main.java",
+        "line": 20
+      },
+      "label": "i++ → 3",
+      "importance": "normal",
+      "frameId": "frame:control-main:1",
+      "slotId": "slot:control-main:1:i",
+      "value": {
+        "kind": "primitive",
+        "javaType": "int",
+        "value": 3
+      }
+    },
+    {
+      "type": "EVALUATE_CONDITION",
+      "eventId": "control:065",
+      "seq": 65,
+      "source": {
+        "fileId": "Main.java",
+        "line": 20
+      },
+      "label": "i < 3: 3 < 3 → false",
+      "importance": "normal",
+      "frameId": "frame:control-main:1",
+      "conditionId": "loop:control-main:for",
+      "kind": "loop",
+      "expression": "i < 3",
+      "operands": [
+        {
+          "label": "i",
+          "value": {
+            "kind": "primitive",
+            "javaType": "int",
+            "value": 3
+          },
+          "slotId": "slot:control-main:1:i"
+        },
+        {
+          "label": "3",
+          "value": {
+            "kind": "primitive",
+            "javaType": "int",
+            "value": 3
+          }
+        }
+      ],
+      "operator": "<",
+      "result": false,
+      "takenLabel": "leave for loop",
+      "skippedLabel": "iteration body"
+    },
+    {
+      "type": "LOOP_ITERATION",
+      "eventId": "control:066",
+      "seq": 66,
+      "source": {
+        "fileId": "Main.java",
+        "line": 20
+      },
+      "label": "Loop ended after 3 iterations",
+      "importance": "major",
+      "frameId": "frame:control-main:1",
+      "loopId": "loop:control-main:for",
+      "iteration": 3,
+      "status": "ended"
+    },
+    {
+      "type": "EXIT_SCOPE",
+      "eventId": "control:067",
+      "seq": 67,
+      "source": {
+        "fileId": "Main.java",
+        "line": 25
+      },
+      "label": "Leave for loop; i expires",
+      "importance": "normal",
+      "frameId": "frame:control-main:1",
+      "scopeId": "scope:control-main:for"
+    },
+    {
+      "type": "OUTPUT_WRITE",
+      "eventId": "control:068",
+      "seq": 68,
+      "source": {
+        "fileId": "Main.java",
+        "line": 26
+      },
+      "label": "Print total 142",
+      "importance": "major",
+      "frameId": "frame:control-main:1",
+      "value": {
+        "kind": "primitive",
+        "javaType": "int",
+        "value": 142
+      },
+      "text": "142\n",
+      "originSlotId": "slot:control-main:1:total"
+    },
+    {
+      "type": "EXIT_SCOPE",
+      "eventId": "control:069",
+      "seq": 69,
+      "source": {
+        "fileId": "Main.java",
+        "line": 27
+      },
+      "label": "Leave main body; input and total expire",
+      "importance": "normal",
+      "frameId": "frame:control-main:1",
+      "scopeId": "scope:control-main:root"
+    },
+    {
+      "type": "EXIT_METHOD",
+      "eventId": "control:070",
+      "seq": 70,
+      "source": {
+        "fileId": "Main.java",
+        "line": 27
+      },
+      "label": "Exit main()",
+      "importance": "major",
+      "frameId": "frame:control-main:1"
+    },
+    {
+      "type": "PROGRAM_END",
+      "eventId": "control:071",
+      "seq": 71,
+      "source": null,
+      "label": "Completed: total = 142",
+      "importance": "major"
+    }
+  ]
+}

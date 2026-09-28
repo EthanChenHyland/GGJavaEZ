@@ -1,6 +1,7 @@
 import type { Selection } from '../contracts/interaction'
 import type { TraceEvent } from '../contracts/runtime'
 import type { SceneModel, SceneSlot } from '../contracts/world'
+import { worldUnits } from '../theme/tokens'
 
 export interface DiagramRect { x: number; y: number; width: number; height: number }
 export interface DiagramSlot { slot: SceneSlot; rect: DiagramRect; value: string }
@@ -12,6 +13,14 @@ export interface DiagramArray {
   /** Verified against the current values; completion is decided by the shared event. */
   ascending: boolean
 }
+export interface DiagramScope {
+  id: string
+  label: string
+  depth: number
+  slotIds: string[]
+  rect: DiagramRect
+  headingHeight: number
+}
 export interface DiagramEntity {
   id: string
   kind: 'frame' | 'object'
@@ -19,6 +28,8 @@ export interface DiagramEntity {
   active: boolean
   rect: DiagramRect
   slots: DiagramSlot[]
+  scopes?: DiagramScope[]
+  headingHeight?: number
   array?: DiagramArray
 }
 export interface DiagramReference {
@@ -48,6 +59,7 @@ export interface ClassicScene {
   entities: DiagramEntity[]
   references: DiagramReference[]
   deepStack: boolean
+  scoped: boolean
   returnTransfer: DiagramReturn | null
   arrayActivity: { eventId: string; objectId: string; slotIds: string[]; destinationSlotId?: string; label: string } | null
   arrayWrites: DiagramArrayWrite[]
@@ -86,21 +98,42 @@ export function slotValue(slot: SceneSlot): string {
 }
 
 /** Presentation projection only. Fixed depth bands keep callers in place as callees enter/return. */
-export function buildClassicScene(scene: SceneModel): ClassicScene {
+export function buildClassicScene(scene: SceneModel, event: TraceEvent | null = null): ClassicScene {
   const stackDepth = scene.stackDepth ?? 1
   const deepStack = stackDepth > 1
+  const scoped = scene.layoutKind === 'scoped'
+  // Each invocation uses a permanent call band. Scale its reserved world height, never
+  // its live row count, to preserve lexical gaps and fit separated caller/callee bands.
+  const scopedRect = (depth: number): DiagramRect => ({ x: 72, y: depth === 0 ? 260 : 45, width: 420, height: depth === 0 ? 300 : 200 })
   const arrayLayout = scene.layoutKind === 'array' || scene.objects.some((object) => object.array)
   const entities: DiagramEntity[] = [
     ...scene.frames.map((frame): DiagramEntity => {
-      const rect = arrayLayout && !deepStack
+      const rect = scoped
+        ? scopedRect(frame.depth)
+        : arrayLayout && !deepStack
         ? { x: 72, y: 260 - frame.depth * 212, width: 356, height: 240 }
         : classicFrameRect(frame.depth, stackDepth, frame.slots.length)
-      const headingHeight = deepStack ? 26 : 64
-      const rowHeight = deepStack ? 18 : 40
+      const scopedScale = rect.height / frame.anchor.size[1]
+      const scopedY = (worldY: number) => rect.y + (frame.anchor.position[1] + frame.anchor.size[1] / 2 - worldY) * scopedScale
+      const headingHeight = scoped ? Math.min(64, 0.82 * scopedScale) : deepStack ? 26 : 64
+      const rowHeight = scoped ? worldUnits.scope.rowGap * scopedScale : deepStack ? 18 : 40
       const reservedSlots = arrayLayout ? Object.keys(frame.anchor.ports) : []
       return {
         id: frame.id, kind: 'frame', label: frame.label, active: frame.active, rect,
+        ...(scoped ? { headingHeight, scopes: (frame.scopes ?? []).filter((scope) => scope.parentId !== null).map((scope) => {
+          const inset = 12 * scope.depth
+          return { id: scope.id, label: scope.label, depth: scope.depth, slotIds: scope.slotIds,
+            rect: { x: rect.x + inset, y: scopedY(scope.anchor.position[1] + scope.anchor.size[1] / 2), width: rect.width - inset * 2, height: scope.anchor.size[1] * scopedScale },
+            headingHeight: Math.min(worldUnits.scope.headingGap * scopedScale,
+              ...Object.values(scope.anchor.ports).map((port) => scopedY(port[1]) - rowHeight / 2 - scopedY(scope.anchor.position[1] + scope.anchor.size[1] / 2))) }
+        }) } : {}),
         slots: frame.slots.map((slot, index) => {
+          if (scoped) {
+            const port = frame.anchor.ports[slot.id] ?? slot.port
+            const depth = slot.scopeDepth ?? frame.scopes?.find((scope) => scope.id === slot.scopeId)?.depth ?? 0
+            const inset = 12 * depth
+            return { slot, value: slotValue(slot), rect: { x: rect.x + inset, y: scopedY(port[1]) - rowHeight / 2, width: rect.width - inset * 2, height: rowHeight } }
+          }
           const reservedIndex = reservedSlots.indexOf(slot.id)
           return { slot, value: slotValue(slot),
             rect: { x: rect.x, y: rect.y + headingHeight + (reservedIndex >= 0 ? reservedIndex : index) * rowHeight, width: rect.width, height: rowHeight } }
@@ -159,10 +192,13 @@ export function buildClassicScene(scene: SceneModel): ClassicScene {
   const caller = destination ? entities.find((node) => node.id === destination.frameId) : undefined
   const destinationRow = caller?.slots.find((row) => row.slot.id === destination?.slotId)
   let returnTransfer: DiagramReturn | null = null
-  if (flow && destination && destinationRow && flow.toDepth !== null) {
+  const currentReturn = flow?.eventId === scene.activeEventId ||
+    (event?.type === 'EXIT_METHOD' && event.eventId === scene.activeEventId && event.frameId === flow?.frameId)
+  if (flow && destination && destinationRow && flow.toDepth !== null && (!scoped || currentReturn)) {
     // The origin remains in its reserved invocation band after EXIT_METHOD. No ghost frame is invented.
     const origin = classicFrameRect(flow.fromDepth, stackDepth)
-    const from = [origin.x + origin.width, origin.y + origin.height / 2] as const
+    const originBand = scoped ? scopedRect(flow.fromDepth) : origin
+    const from = [originBand.x + originBand.width, originBand.y + originBand.height / 2] as const
     const to = [destinationRow.rect.x + destinationRow.rect.width, destinationRow.rect.y + destinationRow.rect.height / 2] as const
     returnTransfer = {
       eventId: flow.eventId, fromFrameId: flow.frameId, toFrameId: destination.frameId,
@@ -211,7 +247,7 @@ export function buildClassicScene(scene: SceneModel): ClassicScene {
     return [{ eventId: mutation.eventId, objectId: mutation.objectId, slotId: receiver.slot.id, sourceSlotId: source.slot.id, before, after,
       label: `${sourceLabel} → ${name}[${mutation.index}]: ${before} → ${after}`, from, to, path }]
   })
-  return { entities, references, deepStack, returnTransfer, arrayActivity, arrayWrites }
+  return { entities, references, deepStack, scoped, returnTransfer, arrayActivity, arrayWrites }
 }
 
 export function emphasizedSlot(event: TraceEvent | null): string | null {
@@ -220,6 +256,7 @@ export function emphasizedSlot(event: TraceEvent | null): string | null {
     case 'SET_FIELD': case 'ASSIGN_LOCAL': return event.slotId
     case 'DECLARE_LOCAL': return event.slot.id
     case 'RETURN_VALUE': return event.destination?.slotId ?? null
+    case 'INPUT_READ': return event.destinationSlotId
     case 'CREATE_REFERENCE': case 'CLEAR_REFERENCE': return event.sourceSlot.slotId
     default: return null
   }

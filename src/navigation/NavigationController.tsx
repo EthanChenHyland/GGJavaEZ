@@ -64,7 +64,7 @@ export function NavigationController({ sceneModel, event, activeEntityId, homeTa
   const intentRevision = useNavigationStore((state) => state.intentRevision)
   const followEnabled = useNavigationStore((state) => state.followEnabled)
   const deepStack = (sceneModel.stackDepth ?? 0) > 1 && !!sceneModel.bounds
-  const reservedWorld = deepStack || (sceneModel.layoutKind === 'array' && !!sceneModel.bounds)
+  const reservedWorld = deepStack || ((sceneModel.layoutKind === 'array' || sceneModel.layoutKind === 'scoped') && !!sceneModel.bounds)
   const framing = {
     verticalFov: camera instanceof PerspectiveCamera ? camera.getEffectiveFOV() * Math.PI / 180 : Math.PI / 4,
     aspect: size.width / Math.max(size.height, 1),
@@ -202,7 +202,12 @@ export function NavigationController({ sceneModel, event, activeEntityId, homeTa
       ).normalize()
       const center = reservedWorld ? anchor.position : midpoint(overviewPose().target, anchor.position)
       const pivot: Vec3 = [center[0] - cameraRight.x, center[1] - cameraRight.y, center[2] - cameraRight.z]
-      startMove(inspectorFocusPose(pivot, anchor.size, currentPose(), arrayInspectionContext(intent.selection, sceneModel), viewFraming(), {
+      const context = arrayInspectionContext(intent.selection, sceneModel)
+      if (sceneModel.layoutKind === 'scoped' && intent.selection.kind === 'slot') {
+        const owner = sceneModel.frames.find((frame) => frame.slots.some((slot) => slot.id === intent.selection.id))
+        if (owner) context.push(owner.anchor)
+      }
+      startMove(inspectorFocusPose(pivot, anchor.size, currentPose(), context, viewFraming(), {
         width: size.width, height: size.height,
       }, anchor.position), motionMs.deliberate)
     } else if (intent.kind === 'tracePath') {

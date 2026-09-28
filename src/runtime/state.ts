@@ -3,8 +3,10 @@ import type {
   RuntimeFrame,
   RuntimeObject,
   RuntimeSlot,
+  RuntimeScope,
   RuntimeState,
   RuntimeValue,
+  ScalarValue,
   SlotOwner,
   TraceEvent,
 } from '../contracts/runtime'
@@ -22,6 +24,11 @@ export function createInitialState(): RuntimeState {
     returns: [],
     arrayActivity: null,
     arrayMutations: [],
+    scopes: {},
+    variableLifetimes: [],
+    conditions: {},
+    loops: {},
+    console: [],
   }
 }
 
@@ -62,6 +69,45 @@ function assertCompatible(slot: RuntimeSlot, value: RuntimeValue): void {
     (value.kind === 'stringSummary' && slot.javaType === 'String') ||
     (value.kind === 'reference' && value.javaType === slot.javaType)
   requireCondition(matches, `Value type mismatch for ${slot.id}`)
+  if (value.kind === 'primitive') {
+    if (value.javaType === 'int') requireInt(value)
+    else requireCondition(value.javaType === 'boolean' ? typeof value.value === 'boolean' :
+      typeof value.value === 'number' && Number.isFinite(value.value), `Invalid primitive value for ${slot.id}`)
+  }
+}
+
+function sameValue(a: RuntimeValue, b: RuntimeValue): boolean {
+  if (a.kind !== b.kind) return false
+  if (a.kind === 'primitive' && b.kind === 'primitive') return a.javaType === b.javaType && a.value === b.value
+  if (a.kind === 'stringSummary' && b.kind === 'stringSummary') return a.value === b.value
+  if (a.kind === 'reference' && b.kind === 'reference') return a.javaType === b.javaType && a.objectId === b.objectId
+  return a.kind === 'null' || a.kind === 'uninitialized'
+}
+
+function scalarText(value: ScalarValue): string {
+  requireCondition(value && (value.kind === 'primitive' || value.kind === 'stringSummary' || value.kind === 'null'),
+    'Console and condition values must be concrete scalars')
+  if (value.kind === 'null') return 'null'
+  if (value.kind === 'primitive') {
+    assertCompatible({ id: 'scalar', name: 'scalar', javaType: value.javaType, value }, value)
+  } else requireCondition(value.javaType === 'String' && typeof value.value === 'string', 'Invalid string scalar')
+  return String(value.value)
+}
+
+function activeScopes(state: RuntimeState, frameId: string): RuntimeScope[] {
+  return Object.values(state.scopes).filter((scope) => scope.frameId === frameId && scope.status === 'active')
+    .sort((a, b) => a.depth - b.depth)
+}
+
+function closeScope(state: RuntimeState, scope: RuntimeScope, eventId: string): RuntimeState {
+  const frame = state.frames[scope.frameId]
+  const locals = Object.fromEntries(Object.entries(frame.locals).filter(([, slot]) => slot.scopeId !== scope.id))
+  return {
+    ...withFrame(state, { ...frame, locals }),
+    scopes: { ...state.scopes, [scope.id]: { ...scope, status: 'closed', exitedAt: eventId } },
+    variableLifetimes: state.variableLifetimes.map((life) =>
+      life.frameId === frame.id && life.scopeId === scope.id && life.exitedAt === undefined ? { ...life, exitedAt: eventId } : life),
+  }
 }
 
 function slotsById(slots: RuntimeSlot[], state: RuntimeState): Record<string, RuntimeSlot> {
@@ -85,17 +131,23 @@ function withObject(state: RuntimeState, object: RuntimeObject): RuntimeState {
   return { ...state, objects: { ...state.objects, [object.id]: object } }
 }
 
-function setSlot(state: RuntimeState, owner: SlotOwner, value: RuntimeValue): RuntimeState {
+function setSlot(state: RuntimeState, owner: SlotOwner, value: RuntimeValue, eventId: string): RuntimeState {
   if (owner.kind === 'frame') {
     const frame = state.frames[owner.frameId]
     requireCondition(frame?.status === 'active', `Frame ${owner.frameId} is not active`)
     const slot = frame.locals[owner.slotId]
     requireCondition(slot, `Unknown slot ${owner.slotId}`)
     assertCompatible(slot, value)
-    return withFrame(state, {
+    if (slot.scopeId !== undefined) requireCondition(state.scopes[slot.scopeId]?.status === 'active' &&
+      state.scopes[slot.scopeId].frameId === frame.id, `Slot ${slot.id} has no active owning scope`)
+    const next = withFrame(state, {
       ...frame,
       locals: { ...frame.locals, [slot.id]: { ...slot, value: { ...value } } },
     })
+    return { ...next, variableLifetimes: state.variableLifetimes.map((life) =>
+      life.frameId === frame.id && life.slot.id === slot.id && life.exitedAt === undefined ? {
+        ...life, slot: { ...slot, value: { ...value } }, lastChangedAt: eventId,
+      } : life) }
   }
 
   const object = state.objects[owner.objectId]
@@ -126,6 +178,136 @@ export function applyEvent(state: RuntimeState, event: TraceEvent): RuntimeState
   }
 
   switch (event.type) {
+    case 'ENTER_SCOPE': {
+      requireCondition(activeFrameId === event.frameId, `Scope entered outside active frame ${event.frameId}`)
+      requireCondition(typeof event.scopeId === 'string' && event.scopeId.length > 0 &&
+        typeof event.labelScope === 'string' && event.labelScope.length > 0, 'Invalid scope identity or label')
+      const innermost = activeScopes(state, event.frameId).at(-1)
+      requireCondition(event.parentId === (innermost?.id ?? null), 'Scope parent must be the innermost active scope')
+      const previous = state.scopes[event.scopeId]
+      requireCondition(previous?.status !== 'active', `Scope ${event.scopeId} already active`)
+      requireCondition(!previous || (previous.frameId === event.frameId && previous.parentId === event.parentId &&
+        previous.label === event.labelScope), `Lexical scope identity changed for ${event.scopeId}`)
+      requireCondition(innermost || Object.keys(state.frames[event.frameId].locals).length === 0,
+        'Root scope must enter before scoped declarations')
+      next = { ...state, scopes: { ...state.scopes, [event.scopeId]: {
+        id: event.scopeId, frameId: event.frameId, parentId: event.parentId, label: event.labelScope,
+        depth: innermost ? innermost.depth + 1 : 0, status: 'active', enteredAt: event.eventId,
+      } } }
+      break
+    }
+
+    case 'EXIT_SCOPE': {
+      requireCondition(activeFrameId === event.frameId, `Scope exited outside active frame ${event.frameId}`)
+      const scope = state.scopes[event.scopeId]
+      requireCondition(scope?.status === 'active' && scope.frameId === event.frameId,
+        `Scope ${event.scopeId} is not active in frame ${event.frameId}`)
+      requireCondition(activeScopes(state, event.frameId).at(-1)?.id === event.scopeId,
+        'Scope must exit in innermost order')
+      next = closeScope(state, scope, event.eventId)
+      break
+    }
+
+    case 'EVALUATE_CONDITION': {
+      requireCondition(activeFrameId === event.frameId, `Condition evaluated outside active frame ${event.frameId}`)
+      requireCondition(typeof event.conditionId === 'string' && event.conditionId.length > 0 &&
+        ['branch', 'loop'].includes(event.kind) && typeof event.expression === 'string' && event.expression.length > 0 &&
+        typeof event.takenLabel === 'string' && event.takenLabel.length > 0 &&
+        typeof event.skippedLabel === 'string' && event.skippedLabel.length > 0 &&
+        Array.isArray(event.operands) && event.operands.length === 2 &&
+        ['<', '>', '<=', '=='].includes(event.operator) && typeof event.result === 'boolean', 'Invalid condition')
+      for (const operand of event.operands) {
+        requireCondition(operand && typeof operand.label === 'string' && operand.label.length > 0,
+          'Invalid condition operand')
+        scalarText(operand.value)
+        if (operand.slotId !== undefined) {
+          const slot = state.frames[event.frameId].locals[operand.slotId]
+          requireCondition(slot, `Unknown observed slot ${operand.slotId}`)
+          requireCondition(sameValue(slot.value, operand.value), `Observed condition value mismatch at ${operand.slotId}`)
+        }
+      }
+      const [left, right] = event.operands.map((operand) => operand.value)
+      requireCondition(left.kind === 'primitive' && right.kind === 'primitive' && left.javaType === right.javaType,
+        'Condition operands must be compatible primitives')
+      let result: boolean
+      if (event.operator === '==') result = left.value === right.value
+      else {
+        requireCondition(typeof left.value === 'number' && typeof right.value === 'number',
+          'Ordered condition operands must be numeric')
+        result = event.operator === '<' ? left.value < right.value :
+          event.operator === '>' ? left.value > right.value : left.value <= right.value
+      }
+      requireCondition(result === event.result, 'Condition result mismatch')
+      const { frameId, conditionId, kind, expression, operator, takenLabel, skippedLabel } = event
+      next = { ...state, conditions: { ...state.conditions, [frameId]: {
+        eventId: event.eventId, frameId, conditionId, kind, expression, operator, result, takenLabel, skippedLabel,
+        operands: [{ ...event.operands[0], value: { ...left } }, { ...event.operands[1], value: { ...right } }],
+      } } }
+      break
+    }
+
+    case 'LOOP_ITERATION': {
+      requireCondition(activeFrameId === event.frameId, `Loop recorded outside active frame ${event.frameId}`)
+      requireCondition(typeof event.loopId === 'string' && event.loopId.length > 0 &&
+        Number.isInteger(event.iteration) && event.iteration >= 0 && ['running', 'ended'].includes(event.status),
+        'Invalid loop iteration')
+      const previous = state.loops[event.loopId]
+      requireCondition(!previous || previous.frameId === event.frameId, 'Loop identity belongs to another frame')
+      requireCondition(previous?.status !== 'ended', 'Loop already ended')
+      const condition = state.conditions[event.frameId]
+      requireCondition(condition?.kind === 'loop' && condition.eventId === state.lastEventId,
+        'Loop iteration requires a fresh loop condition')
+      requireCondition(condition.conditionId === event.loopId, 'Loop iteration must match the fresh condition identity')
+      requireCondition(condition.result === (event.status === 'running'), 'Loop status and condition result mismatch')
+      requireCondition(event.iteration === (previous?.iteration ?? 0) + (event.status === 'running' ? 1 : 0),
+        'Loop iteration must be sequential or end with the completed count')
+      next = { ...state, loops: { ...state.loops, [event.loopId]: {
+        eventId: event.eventId, frameId: event.frameId, loopId: event.loopId,
+        iteration: event.iteration, status: event.status,
+      } } }
+      break
+    }
+
+    case 'INPUT_READ': {
+      requireCondition(activeFrameId === event.frameId, `Input read outside active frame ${event.frameId}`)
+      const reader = state.objects[event.readerObjectId]
+      requireCondition(reader && ['Scanner', 'java.util.Scanner'].includes(reader.className) && !reader.array,
+        'Input reader must be an existing Scanner object')
+      requireCondition(Object.values(state.frames[event.frameId].locals).some((slot) =>
+        slot.value.kind === 'reference' && slot.value.objectId === reader.id &&
+        ['Scanner', 'java.util.Scanner'].includes(slot.javaType)), 'Input reader requires a live Scanner reference')
+      requireCondition(event.method === 'nextInt', 'Input method must be nextInt')
+      requireCondition(Number.isInteger(event.inputIndex) &&
+        event.inputIndex === state.console.filter((entry) => entry.kind === 'input').length,
+        'Input index must match the zero-based consumed input count')
+      requireInt(event.value)
+      requireCondition(typeof event.text === 'string' && /^[+-]?\d+$/.test(event.text) &&
+        Number(event.text) === event.value.value, 'Input text and Java int value mismatch')
+      next = setSlot(state, { kind: 'frame', frameId: event.frameId, slotId: event.destinationSlotId }, event.value, event.eventId)
+      next = { ...next, console: [...state.console, {
+        eventId: event.eventId, frameId: event.frameId, source: event.source ? { ...event.source } : null,
+        kind: 'input', text: event.text, value: { ...event.value },
+        destinationSlotId: event.destinationSlotId, readerObjectId: event.readerObjectId,
+      }] }
+      break
+    }
+
+    case 'OUTPUT_WRITE': {
+      requireCondition(activeFrameId === event.frameId, `Output written outside active frame ${event.frameId}`)
+      const text = scalarText(event.value)
+      requireCondition(event.text === text || event.text === `${text}\n`, 'Output text and scalar value mismatch')
+      if (event.originSlotId !== undefined) {
+        const slot = state.frames[event.frameId].locals[event.originSlotId]
+        requireCondition(slot, `Unknown output origin slot ${event.originSlotId}`)
+        requireCondition(sameValue(slot.value, event.value), `Observed output value mismatch at ${event.originSlotId}`)
+      }
+      next = { ...state, console: [...state.console, {
+        eventId: event.eventId, frameId: event.frameId, source: event.source ? { ...event.source } : null,
+        kind: 'output', text: event.text, value: { ...event.value },
+      }] }
+      break
+    }
+
     case 'PROGRAM_START':
       requireCondition(state.status === 'ready', 'PROGRAM_START can only occur once')
       next = { ...state, status: 'running' }
@@ -143,6 +325,8 @@ export function applyEvent(state: RuntimeState, event: TraceEvent): RuntimeState
     case 'ENTER_METHOD': {
       requireCondition(!state.frames[event.frameId], `Duplicate frame ${event.frameId}`)
       requireCondition(event.callerFrameId === (activeFrameId ?? null), 'Caller must be the active frame')
+      requireCondition(event.locals.every((slot) => slot.scopeId === undefined),
+        'Scoped parameters must be declared after ENTER_SCOPE')
       const frame: RuntimeFrame = {
         id: event.frameId,
         callerFrameId: event.callerFrameId,
@@ -165,7 +349,13 @@ export function applyEvent(state: RuntimeState, event: TraceEvent): RuntimeState
       const frame = state.frames[event.frameId]
       requireCondition(!frame.returnType || frame.returnType === 'void' || frame.returnValue !== undefined,
         `Non-void frame ${event.frameId} must return a value before exit`)
-      next = withFrame(state, { ...frame, status: 'returned', exitedAt: event.eventId })
+      requireCondition(!Object.values(state.loops).some((loop) => loop.frameId === frame.id && loop.status === 'running') ||
+        frame.returnValue !== undefined, 'Running loop must terminate before method exit')
+      for (const scope of activeScopes(state, frame.id).reverse()) next = closeScope(next, scope, event.eventId)
+      next = { ...next, loops: Object.fromEntries(Object.entries(next.loops).map(([id, loop]) =>
+        [id, loop.frameId === frame.id && loop.status === 'running' ?
+          { ...loop, eventId: event.eventId, status: 'ended' as const } : loop])) }
+      next = withFrame(next, { ...next.frames[frame.id], status: 'returned', exitedAt: event.eventId })
       next = { ...next, activeFrameIds: state.activeFrameIds.slice(0, -1) }
       break
     }
@@ -183,7 +373,7 @@ export function applyEvent(state: RuntimeState, event: TraceEvent): RuntimeState
       } else {
         requireCondition(event.destination?.frameId === frame.callerFrameId &&
           state.activeFrameIds.at(-2) === frame.callerFrameId, 'Return destination must be the direct caller')
-        next = setSlot(state, { kind: 'frame', ...event.destination }, event.value)
+        next = setSlot(state, { kind: 'frame', ...event.destination }, event.value, event.eventId)
       }
       next = withFrame(next, { ...frame, returnValue: { ...event.value } })
       next = {
@@ -203,6 +393,20 @@ export function applyEvent(state: RuntimeState, event: TraceEvent): RuntimeState
       requireCondition(activeFrameId === event.frameId, `Local declared outside active frame ${event.frameId}`)
       const frame = state.frames[event.frameId]
       requireCondition(!frame.locals[event.slot.id], `Duplicate slot ${event.slot.id}`)
+      const scopes = activeScopes(state, frame.id)
+      const scopedFrame = Object.values(state.scopes).some((scope) => scope.frameId === frame.id)
+      requireCondition(!scopedFrame || event.slot.scopeId !== undefined, 'Scoped frame declarations require scopeId')
+      if (event.slot.scopeId !== undefined) {
+        requireCondition(scopes.at(-1)?.id === event.slot.scopeId,
+          'Declaration must belong to the innermost active scope')
+        requireCondition(!Object.values(frame.locals).some((slot) => slot.name === event.slot.name),
+          `Duplicate live variable name ${event.slot.name}`)
+        if (event.slot.role === 'parameter') requireCondition(scopes.length === 1, 'Parameter must belong to the root scope')
+        const old = state.variableLifetimes.find((life) => life.slot.id === event.slot.id)
+        requireCondition(!old || (old.frameId === frame.id && old.scopeId === event.slot.scopeId &&
+          old.slot.name === event.slot.name && old.slot.javaType === event.slot.javaType && old.slot.role === event.slot.role),
+        `Lexical slot identity changed for ${event.slot.id}`)
+      }
       assertCompatible(event.slot, event.slot.value)
       if (event.slot.value.kind === 'reference') {
         requireCondition(state.objects[event.slot.value.objectId], `Unknown reference target ${event.slot.value.objectId}`)
@@ -211,6 +415,10 @@ export function applyEvent(state: RuntimeState, event: TraceEvent): RuntimeState
         ...frame,
         locals: { ...frame.locals, [event.slot.id]: { ...event.slot, value: { ...event.slot.value } } },
       })
+      if (event.slot.scopeId !== undefined) next = { ...next, variableLifetimes: [...state.variableLifetimes, {
+        slot: { ...event.slot, value: { ...event.slot.value } }, frameId: frame.id, scopeId: event.slot.scopeId,
+        declaredAt: event.eventId, source: event.source ? { ...event.source } : null, lastChangedAt: event.eventId,
+      }] }
       break
     }
 
@@ -218,6 +426,7 @@ export function applyEvent(state: RuntimeState, event: TraceEvent): RuntimeState
       requireCondition(activeFrameId === event.frameId, `Local removed outside active frame ${event.frameId}`)
       const frame = state.frames[event.frameId]
       requireCondition(frame.locals[event.slotId], `Unknown slot ${event.slotId}`)
+      requireCondition(frame.locals[event.slotId].scopeId === undefined, 'Scoped locals close through EXIT_SCOPE or EXIT_METHOD')
       const locals = { ...frame.locals }
       delete locals[event.slotId]
       next = withFrame(state, { ...frame, locals })
@@ -226,7 +435,7 @@ export function applyEvent(state: RuntimeState, event: TraceEvent): RuntimeState
 
     case 'ASSIGN_LOCAL':
       requireCondition(activeFrameId === event.frameId, `Local assigned outside active frame ${event.frameId}`)
-      next = setSlot(state, { kind: 'frame', frameId: event.frameId, slotId: event.slotId }, event.value)
+      next = setSlot(state, { kind: 'frame', frameId: event.frameId, slotId: event.slotId }, event.value, event.eventId)
       break
 
     case 'ALLOCATE_OBJECT': {
@@ -272,7 +481,7 @@ export function applyEvent(state: RuntimeState, event: TraceEvent): RuntimeState
       const element = requireElement(requireArray(state, event.objectId), event.index)
       requireObserved(element, event.value)
       if (event.destinationSlotId !== undefined) {
-        next = setSlot(state, { kind: 'frame', frameId: event.frameId, slotId: event.destinationSlotId }, event.value)
+        next = setSlot(state, { kind: 'frame', frameId: event.frameId, slotId: event.destinationSlotId }, event.value, event.eventId)
       }
       next = { ...next, arrayActivity: {
         kind: 'read', eventId: event.eventId, objectId: event.objectId, index: event.index,
@@ -335,7 +544,7 @@ export function applyEvent(state: RuntimeState, event: TraceEvent): RuntimeState
     }
 
     case 'SET_FIELD':
-      next = setSlot(state, { kind: 'object', objectId: event.objectId, slotId: event.slotId }, event.value)
+      next = setSlot(state, { kind: 'object', objectId: event.objectId, slotId: event.slotId }, event.value, event.eventId)
       break
 
     case 'CREATE_REFERENCE': {
@@ -350,7 +559,7 @@ export function applyEvent(state: RuntimeState, event: TraceEvent): RuntimeState
         kind: 'reference',
         javaType: event.javaType,
         objectId: event.targetObjectId,
-      })
+      }, event.eventId)
       break
     }
 
@@ -360,7 +569,7 @@ export function applyEvent(state: RuntimeState, event: TraceEvent): RuntimeState
         ? state.frames[owner.frameId]?.locals[owner.slotId]
         : state.objects[owner.objectId]?.fields[owner.slotId]
       requireCondition(slot?.value.kind === 'reference', `Slot ${owner.slotId} has no reference to clear`)
-      next = setSlot(state, owner, { kind: 'null' })
+      next = setSlot(state, owner, { kind: 'null' }, event.eventId)
       break
     }
   }

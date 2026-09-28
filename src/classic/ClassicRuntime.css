@@ -17,3 +17,4 @@
 .classic-reference:hover > path:nth-child(2),
 .classic-reference:focus-visible > path:nth-child(2) { stroke-width: 3; opacity: 1; }
 .classic-reference-hit { pointer-events: stroke; }
+.classic-scope { pointer-events: none; }

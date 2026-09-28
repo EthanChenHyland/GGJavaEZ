@@ -1,0 +1,8 @@
+{
+  "before-input": 13,
+  "input-consumed": 14,
+  "taken-branch": 21,
+  "scope-closed": 26,
+  "loop-iteration": 29,
+  "final-output": 72
+}

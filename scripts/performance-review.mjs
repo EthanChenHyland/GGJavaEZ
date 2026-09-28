@@ -3,8 +3,12 @@ import { writeFile, readFile } from 'node:fs/promises'
 const demo = process.env.REVIEW_DEMO ?? 'person'
 const recursion = demo === 'recursion'
 const arrays = demo === 'arrays'
+const control = demo === 'control'
+const controlTrace = control ? JSON.parse(await readFile('src/demos/control/trace.json','utf8')) : null
+const inputCursor = controlTrace ? controlTrace.events.findIndex((event) => event.type === 'INPUT_READ') + 1 : 0
+const branchCursor = controlTrace ? controlTrace.events.findIndex((event) => event.type === 'DECLARE_LOCAL' && event.slot.name === 'corrected') + 1 : 0
 const arrayTrace = arrays ? JSON.parse(await readFile('src/demos/arrays/trace.json','utf8')) : null
-const eventCount = arrayTrace?.events.length ?? (recursion ? 36 : 21)
+const eventCount = controlTrace?.events.length ?? arrayTrace?.events.length ?? (recursion ? 36 : 21)
 const allocationCursor = arrayTrace ? arrayTrace.events.findIndex((event) => event.type === 'ALLOCATE_ARRAY') + 1 : 0
 const comparisonCursor = arrayTrace ? arrayTrace.events.findIndex((event) => event.type === 'ARRAY_COMPARE') + 1 : 0
 const browser = await chromium.launch({ channel: 'chrome', args: ['--enable-webgl', '--use-gl=angle'] })
@@ -39,13 +43,13 @@ async function sample(label) {
   const deltas = times.slice(1).map((time, i) => time - times[i]).sort((a, b) => a - b)
   return { label, renderedFrames: times.length, medianFrameMs: deltas[Math.floor(deltas.length / 2)] ?? null, p95FrameMs: deltas[Math.floor(deltas.length * .95)] ?? null, continuousSample: times.length >= 10, activeFrameCadenceFps: deltas.length >= 9 ? +(1000 / deltas[Math.floor(deltas.length / 2)]).toFixed(1) : null, approximateFps: times.length > 1 ? +((times.length - 1) * 1000 / (times.at(-1) - times[0])).toFixed(1) : 0 }
 }
-await page.getByRole('slider', { name: 'Scrub execution' }).fill(arrays ? String(allocationCursor - 1) : recursion ? '19' : '8')
+await page.getByRole('slider', { name: 'Scrub execution' }).fill(control ? String(inputCursor - 1) : arrays ? String(allocationCursor - 1) : recursion ? '19' : '8')
 await page.waitForTimeout(800)
 await reset()
-await page.getByRole('slider', { name: 'Scrub execution' }).fill(arrays ? String(allocationCursor) : recursion ? '20' : '9')
+await page.getByRole('slider', { name: 'Scrub execution' }).fill(control ? String(inputCursor) : arrays ? String(allocationCursor) : recursion ? '20' : '9')
 await page.waitForTimeout(800)
-const allocation = await sample(arrays ? 'array allocation and reserved Home framing' : recursion ? 'base-case return and guided reframe' : 'allocation and guided reframe')
-await page.getByRole('slider', { name: 'Scrub execution' }).fill(arrays ? String(comparisonCursor) : recursion ? '19' : '18')
+const allocation = await sample(control ? 'Scanner input and scoped variable update' : arrays ? 'array allocation and reserved Home framing' : recursion ? 'base-case return and guided reframe' : 'allocation and guided reframe')
+await page.getByRole('slider', { name: 'Scrub execution' }).fill(control ? String(branchCursor) : arrays ? String(comparisonCursor) : recursion ? '19' : '18')
 await page.getByRole('button', { name: 'Home', exact: true }).first().click()
 await page.waitForTimeout(900)
 await reset()
@@ -60,8 +64,8 @@ for (let i = 0; i < 120; i++) {
 await page.mouse.up()
 const orbit = await sample('orbit')
 let playback = null
-if (arrays) {
-  const firstWrite = arrayTrace.events.findIndex((event) => event.type === 'ARRAY_WRITE') + 1
+if (arrays || control) {
+  const firstWrite = control ? inputCursor : arrayTrace.events.findIndex((event) => event.type === 'ARRAY_WRITE') + 1
   await page.getByRole('slider', { name:'Scrub execution' }).fill(String(firstWrite - 1))
   await page.getByRole('button', { name:'Home',exact:true }).click()
   await page.waitForTimeout(800)
@@ -69,7 +73,7 @@ if (arrays) {
   await page.getByRole('button', { name:'Play execution',exact:true }).click()
   await page.waitForTimeout(1650)
   await page.getByRole('button', { name:'Pause execution',exact:true }).click()
-  playback = await sample('two indexed writes during playback, including value travel')
+  playback = await sample(control ? 'input and early scoped playback' : 'two indexed writes during playback, including value travel')
 }
 async function memory() {
   await cdp.send('HeapProfiler.collectGarbage')

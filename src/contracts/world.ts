@@ -22,7 +22,8 @@ export interface LayoutState {
   /** Reserved for the entire trace, never recomputed from live frame count. */
   stackDepth?: number
   bounds?: WorldBounds
-  layoutKind?: 'standard' | 'deepStack' | 'array'
+  layoutKind?: 'standard' | 'deepStack' | 'array' | 'scoped'
+  scopes?: Record<string, SceneScopeNode & { frameId: FrameId }>
   theater?: { anchors: Record<string, WorldAnchor>; bounds: WorldBounds; homeTarget: Vec3 }
 }
 
@@ -34,6 +35,17 @@ export interface SceneSlot {
   displayValue?: string
   role?: 'local' | 'parameter' | 'operand' | 'return'
   port: Vec3
+  scopeId?: string
+  scopeDepth?: number
+}
+
+export interface SceneScopeNode {
+  id: string
+  label: string
+  parentId: string | null
+  depth: number
+  slotIds: string[]
+  anchor: WorldAnchor
 }
 
 export interface SceneFrameNode {
@@ -44,6 +56,7 @@ export interface SceneFrameNode {
   active: boolean
   anchor: WorldAnchor
   slots: SceneSlot[]
+  scopes?: SceneScopeNode[]
 }
 
 export interface SceneArrayCell extends SceneSlot { index: number; anchor: WorldAnchor }

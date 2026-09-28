@@ -1,5 +1,6 @@
 import { arrayElementSlotId, type TraceDocument, type RuntimeSlot } from '../contracts/runtime'
 import type { LayoutState, Vec3, WorldAnchor } from '../contracts/world'
+import { createScopedLayout } from './scopedLayout'
 import { worldUnits } from '../theme/tokens'
 
 function portsForSlots(position: Vec3, size: Vec3, slots: RuntimeSlot[], region: 'stack' | 'heap', spacious = false): Record<string, Vec3> {
@@ -13,6 +14,7 @@ function portsForSlots(position: Vec3, size: Vec3, slots: RuntimeSlot[], region:
 
 /** Reserve all known anchors once. Visibility may change with time; coordinates never do. */
 export function createLayout(trace: TraceDocument): LayoutState {
+  if (trace.events.some((event) => event.type === 'ENTER_SCOPE')) return createScopedLayout(trace)
   const anchors: Record<string, WorldAnchor> = {}
   const frameSlots: Record<string, RuntimeSlot[]> = {}
   const frameDepths: Record<string, number> = {}

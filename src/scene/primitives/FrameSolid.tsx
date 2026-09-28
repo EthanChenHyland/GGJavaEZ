@@ -3,7 +3,7 @@ import type { ThreeEvent } from '@react-three/fiber'
 import type { Group } from 'three'
 import type { FrameId } from '../../contracts/runtime'
 import type { DetailLevel, SceneFrameNode } from '../../contracts/world'
-import { colors, motionMs, worldMaterial } from '../../theme/tokens'
+import { colors, motionMs, worldMaterial, worldUnits } from '../../theme/tokens'
 import { RuntimeLabel } from './RuntimeLabel'
 import { RuntimeSlot } from './RuntimeSlot'
 import { SolidBody } from './SolidBody'
@@ -40,6 +40,9 @@ export function FrameSolid({ node, selected, related, onSelect, onSelectSlot, de
   const front = depth / 2 + 0.012
   const textZ = front + 0.018
   const rows = detailLevel === 'macro' ? [] : node.slots
+  const scoped = Boolean(node.scopes?.length)
+  const scopes = node.scopes?.filter((scope) => scope.depth > 0) ?? []
+  const innermostScopeDepth = Math.max(0, ...scopes.map((scope) => scope.depth))
 
   const select = (event: ThreeEvent<MouseEvent>) => {
     event.stopPropagation()
@@ -62,8 +65,29 @@ export function FrameSolid({ node, selected, related, onSelect, onSelectSlot, de
           <meshBasicMaterial color={colors.execution} />
         </mesh>
       )}
+      {scopes.map((scope) => {
+        const [scopeWidth, scopeHeight, plateDepth] = scope.anchor.size
+        const localPosition = scope.anchor.position.map((value, axis) => value - position[axis]) as [number, number, number]
+        return (
+          <group key={scope.id} position={localPosition}>
+            {/* Scale the shared body in Z so its bevel fits a shallow scope plate. */}
+            <group scale={[1, 1, plateDepth / worldUnits.frame[2]]}>
+              <SolidBody size={[scopeWidth, scopeHeight, worldUnits.frame[2]]} accent={colors.stack} bodyColor={worldMaterial.stackBody} selected={false} related={selected || related} />
+            </group>
+            {detailLevel !== 'macro' && (
+              <RuntimeLabel text={scope.label} position={[-scopeWidth / 2 + worldUnits.scope.inset, scopeHeight / 2 - worldUnits.scope.inset, plateDepth / 2 + 0.014]} size={0.23} color={node.active && scope.depth === innermostScopeDepth ? colors.execution : colors.stack} maxWidth={scopeWidth - worldUnits.scope.inset * 2} />
+            )}
+          </group>
+        )
+      })}
       {rows.map((slot) => (
-        <RuntimeSlot key={slot.id} slot={slot} width={width} y={slot.port[1] - position[1]} z={textZ} compact readable={readable} textScale={spacious ? 1.25 : 1} accent={colors.stack} background={worldMaterial.stackSlot} selected={slot.id === selectedSlotId} active={slot.id === activeSlotId} onSelect={onSelectSlot ? () => onSelectSlot(slot.id) : undefined} reducedMotion={motionReduced} />
+        <RuntimeSlot key={slot.id} slot={slot}
+          width={width - (scoped ? (slot.scopeDepth ?? 0) * worldUnits.scope.inset * 2 : 0)}
+          y={slot.port[1] - position[1]} z={scoped ? slot.port[2] - position[2] : textZ}
+          compact fitText={scoped} readable={readable || scoped} textScale={spacious ? 1.25 : 1}
+          accent={colors.stack} background={worldMaterial.stackSlot}
+          selected={slot.id === selectedSlotId} active={slot.id === activeSlotId}
+          onSelect={onSelectSlot ? () => onSelectSlot(slot.id) : undefined} reducedMotion={motionReduced} />
       ))}
       </group>
     </group>

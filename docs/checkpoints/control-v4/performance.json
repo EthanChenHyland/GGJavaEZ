@@ -1,0 +1,48 @@
+{
+  "demo": "control",
+  "representation": "spatial",
+  "environment": "Installed Chrome headless, ANGLE WebGL, 1440×900, balanced tier. Rendering timestamps recorded from WebGL draw calls; scrub latency includes Playwright roundtrip.",
+  "allocation": {
+    "label": "Scanner input and scoped variable update",
+    "renderedFrames": 9,
+    "medianFrameMs": 16.700000000000045,
+    "p95FrameMs": 16.800000000000182,
+    "continuousSample": false,
+    "activeFrameCadenceFps": null,
+    "approximateFps": 60
+  },
+  "idle": {
+    "label": "idle demand rendering, one second",
+    "renderedFrames": 0,
+    "medianFrameMs": null,
+    "p95FrameMs": null,
+    "continuousSample": false,
+    "activeFrameCadenceFps": null,
+    "approximateFps": 0
+  },
+  "orbit": {
+    "label": "orbit",
+    "renderedFrames": 121,
+    "medianFrameMs": 16.666000000000167,
+    "p95FrameMs": 16.666000000000167,
+    "continuousSample": true,
+    "activeFrameCadenceFps": 60,
+    "approximateFps": 60
+  },
+  "playback": {
+    "label": "input and early scoped playback",
+    "renderedFrames": 13,
+    "medianFrameMs": 16.699999999999818,
+    "p95FrameMs": 699.9319999999998,
+    "continuousSample": true,
+    "activeFrameCadenceFps": 59.9,
+    "approximateFps": 7.1
+  },
+  "scrubRoundtripMedianMs": 11.045000000000073,
+  "scrubRoundtripP95Ms": 22.08558400000038,
+  "memory": {
+    "beforeMB": 61.69867706298828,
+    "after100SeeksMB": 62.10081481933594,
+    "after200SeeksMB": 62.96333312988281
+  }
+}

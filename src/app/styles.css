@@ -128,3 +128,34 @@ button:focus-visible { outline: 2px solid var(--color-execution); outline-offset
 .array-status .return-explanation { color:var(--color-textMuted); font-size:11px; }
 .array-status .final-result { font-size:18px; color:var(--color-success); }
 @media(max-width:760px) { .array-status .return-explanation { flex-basis:100%; } }
+
+/* I/O is a secondary shell surface; it never overlays runtime geometry. */
+.source-column { display:flex; flex-direction:column; min-width:0; min-height:0; }
+.source-column > .source-pane { flex:1; }
+.source-column > .console-pane { flex:0 0 206px; min-height:0; border-right:1px solid var(--color-border); }
+.app-shell--console { grid-template-rows:64px minmax(0,1fr) auto 112px; }
+.app-shell--console > .console-pane { max-height:200px; }
+.control-status { position:absolute; top:120px; left:20px; right:20px; display:flex; flex-direction:column; gap:7px; z-index:var(--layer-overlay); pointer-events:none; color:var(--color-textSecondary); font-size:12px; }
+.control-status-heading { display:flex; gap:16px; align-items:center; }
+.loop-context { font:12px JetBrains Mono,monospace; color:var(--color-textSecondary); }
+.condition-fact { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+.condition-fact code { color:var(--color-text); font:13px JetBrains Mono,monospace; }
+.condition-fact strong { font:13px JetBrains Mono,monospace; }
+.condition-true { color:var(--color-success); }
+.condition-false { color:var(--color-textSecondary); }
+.branch-path { font-size:11px; }
+.branch-skipped { color:var(--color-textMuted); }
+.scope-context { color:var(--color-textMuted); font-size:11px; }
+.control-event { color:var(--color-textSecondary); font-size:11px; }
+.world-panel--scoped .spatial-view, .world-panel--scoped .classic-view { top:220px; }
+.world-panel--scoped .event-chip { display:none; }
+@media(max-width:760px) {
+  .app-shell--console { grid-template-rows:56px minmax(0,1fr) auto 118px; }
+  .source-column { height:33%; }
+  .source-column > .source-pane { height:auto; }
+  .source-column > .console-pane { flex-basis:80px; }
+  .control-status { left:12px; right:12px; gap:6px; font-size:11px; }
+  .condition-fact { gap:6px 12px; }
+  .branch-path { flex-basis:100%; }
+  .world-panel--scoped .spatial-view, .world-panel--scoped .classic-view { top:228px; }
+}
