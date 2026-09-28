@@ -13,10 +13,11 @@ export interface TimelineProps {
 const SPEEDS = [0.5, 1, 2, 4] as const
 
 function markerColor(event: TraceEvent): string {
-  if (event.type === 'ALLOCATE_OBJECT') return colors.heap
+  if (event.type === 'ALLOCATE_OBJECT' || event.type === 'ALLOCATE_ARRAY') return colors.heap
   if (event.type === 'RETURN_VALUE') return colors.success
   if (event.type === 'ENTER_METHOD' || event.type === 'EXIT_METHOD') return colors.stack
-  if (event.type === 'SET_FIELD' || event.type === 'ASSIGN_LOCAL') return colors.mutation
+  if (event.type === 'ARRAY_WRITE' || event.type === 'SET_FIELD' || event.type === 'ASSIGN_LOCAL') return colors.mutation
+  if (event.type === 'ARRAY_COMPARE') return colors.execution
   return colors.textMuted
 }
 
@@ -41,7 +42,7 @@ export function Timeline({ trace, playback }: TimelineProps) {
   } as CSSProperties
 
   return (
-    <section className="vj-timeline" style={theme} aria-label="Execution timeline">
+    <section className={`vj-timeline${eventCount > 60 ? ' vj-timeline--dense' : ''}`} style={theme} aria-label="Execution timeline">
       <div className="vj-timeline__transport">
         <button className="vj-timeline__play" type="button" onClick={playPause} disabled={eventCount === 0}
           aria-label={state.playing ? 'Pause execution' : state.cursor === eventCount && eventCount > 0 ? 'Replay execution' : 'Play execution'}>
@@ -72,7 +73,7 @@ export function Timeline({ trace, playback }: TimelineProps) {
           <div className="vj-timeline__markers" aria-label="Events">
             {trace.events.map((event, index) => (
               <button key={event.eventId} type="button"
-                className={`vj-timeline__marker${state.cursor === index + 1 ? ' vj-timeline__marker--current' : ''}${event.importance === 'major' ? ' vj-timeline__marker--major' : ''}`}
+                className={`vj-timeline__marker${state.cursor === index + 1 ? ' vj-timeline__marker--current' : ''}${event.importance === 'quiet' ? ' vj-timeline__marker--quiet' : ''}${event.importance === 'major' ? ' vj-timeline__marker--major' : ''}`}
                 style={{ left: `${((index + 1) / eventCount) * 100}%`, '--marker-color': markerColor(event) } as CSSProperties}
                 onClick={() => seekTo(index + 1)} aria-label={`Go to event ${index + 1}: ${event.label}`} title={event.label} />
             ))}

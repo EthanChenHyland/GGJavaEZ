@@ -25,13 +25,16 @@ export interface RuntimeSlotProps {
   compact?: boolean
   accent: string
   background: string
+  selected?: boolean
   active?: boolean
   reducedMotion?: boolean
+  textScale?: number
+  onSelect?: () => void
   readable?: boolean
 }
 
 /** A named, typed value set into the information face of a runtime solid. */
-export function RuntimeSlot({ slot, width, y, z, compact = false, accent, background, active = false, reducedMotion, readable = false }: RuntimeSlotProps) {
+export function RuntimeSlot({ slot, width, y, z, compact = false, accent, background, active = false, selected = false, reducedMotion, onSelect, textScale = 1, readable = false }: RuntimeSlotProps) {
   const motionReduced = useReducedMotion(reducedMotion)
   const valueRef = useRef<Group>(null)
   const previousValue = useRef<string | null>(null)
@@ -74,21 +77,21 @@ export function RuntimeSlot({ slot, width, y, z, compact = false, accent, backgr
   })
 
   return (
-    <group position={[0, y, 0]}>
+    <group position={[0, y, 0]} onClick={onSelect ? (event) => { event.stopPropagation(); onSelect() } : undefined}>
       <mesh position={[0, 0, z]}>
         <boxGeometry args={[width - 0.28, height, 0.018]} />
         <meshBasicMaterial color={background} />
       </mesh>
-      {active && (
+      {(active || selected) && (
         <mesh position={[-width / 2 + 0.16, 0, z + 0.012]}>
-          <boxGeometry args={[0.025, height - 0.055, 0.012]} />
-          <meshBasicMaterial color={colors.mutation} />
+          <boxGeometry args={[selected ? 0.06 : 0.025, height - 0.055, 0.012]} />
+          <meshBasicMaterial color={selected ? colors.execution : colors.mutation} />
         </mesh>
       )}
-      <RuntimeLabel text={slot.role === 'operand' ? 'call result' : slot.name} position={[left, 0, textZ]} size={readable ? 0.29 : compact ? 0.22 : 0.24} color={colors.textSecondary} maxWidth={compact ? 1.65 : 0.9} />
-      <RuntimeLabel text={slot.javaType} position={[typeX, 0, textZ]} size={readable ? 0.24 : compact ? 0.18 : 0.2} color={colors.textSecondary} maxWidth={compact ? 1.1 : 0.75} />
+      <RuntimeLabel text={slot.role === 'operand' ? 'call result' : slot.name} position={[left, 0, textZ]} size={(readable ? 0.29 : compact ? 0.22 : 0.24) * textScale} color={colors.textSecondary} maxWidth={compact ? 1.65 : 0.9} />
+      <RuntimeLabel text={slot.javaType} position={[typeX, 0, textZ]} size={(readable ? 0.24 : compact ? 0.18 : 0.2) * textScale} color={colors.textSecondary} maxWidth={compact ? 1.1 : 0.75} />
       <group ref={valueRef} position={[0, 0, 0]}>
-        <RuntimeLabel text={value} position={[valueX, 0, textZ]} size={readable ? 0.29 : compact ? 0.22 : 0.24} color={valueColor} maxWidth={compact ? 1.1 : 1.2} />
+        <RuntimeLabel text={value} position={[valueX, 0, textZ]} size={(readable ? 0.29 : compact ? 0.22 : 0.24) * textScale} color={valueColor} maxWidth={compact ? 1.1 : 1.2} />
       </group>
     </group>
   )

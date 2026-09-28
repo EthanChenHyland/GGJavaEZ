@@ -1,8 +1,8 @@
 import { Vector3 } from 'three'
-import type { CameraPose } from '../contracts/interaction'
+import type { CameraPose, Selection } from '../contracts/interaction'
 import type { TraceEvent } from '../contracts/runtime'
 import type { SceneModel, SceneReferenceEdge, Vec3, WorldAnchor } from '../contracts/world'
-import { easeOutCubic, motionMs } from '../theme/tokens'
+import { easeOutCubic, motionMs, worldUnits } from '../theme/tokens'
 import { distance, homePose, midpoint } from './navigation'
 
 export interface CameraWaypoint {
@@ -45,7 +45,7 @@ export function sampleCameraMove(move: CameraMove): { pose: CameraPose; done: bo
 
 export function guidedCameraAction(event: TraceEvent | null | undefined, followEnabled: boolean): 'home' | 'event' | null {
   if (!followEnabled || !event) return null
-  if (event.type === 'PROGRAM_END') return 'home'
+  if (event.type === 'PROGRAM_END' || event.type === 'ALLOCATE_ARRAY') return 'home'
   return event.importance === 'major' ? 'event' : null
 }
 
@@ -74,17 +74,46 @@ export function responsiveHomePose(target: Vec3 | undefined, aspect: number): Ca
  * Person deliberately retains its established composition; deeper stacks fit
  * their reserved geometry and attached headings at the same canonical yaw.
  */
-export function sceneHomePose(scene: Pick<SceneModel, 'stackDepth' | 'bounds'>, target: Vec3 | undefined, view: ViewFraming): CameraPose {
-  if (!scene.bounds || (scene.stackDepth ?? 0) <= 1) return responsiveHomePose(target, view.aspect)
-  const { center, size } = scene.bounds
+export function sceneHomePose(scene: Pick<SceneModel, 'stackDepth' | 'bounds' | 'layoutKind'>, target: Vec3 | undefined, view: ViewFraming): CameraPose {
+  if (!scene.bounds || ((scene.stackDepth ?? 0) <= 1 && scene.layoutKind !== 'array')) return responsiveHomePose(target, view.aspect)
+  return reservedWorldPose(scene.bounds, target, homePose(target ?? scene.bounds.center), view)
+}
+
+/** The reserved envelope fits both Spatial and expanded Theater at any yaw. */
+function reservedWorldPose(bounds: NonNullable<SceneModel['bounds']>, target: Vec3 | undefined, viewingPose: CameraPose, view: ViewFraming): CameraPose {
+  const { center, size } = bounds
   const pivot = target ?? center
-  if (scene.bounds.points) return contextPose(pivot, homePose(pivot), [], scene.bounds.points, view)
+  if (bounds.points) return contextPose(pivot, viewingPose, [], bounds.points, view)
   const envelope: WorldAnchor = {
     entityId: 'navigation:reserved-bounds', region: 'stack',
     position: [center[0], center[1] + 0.35, center[2]],
     size: [size[0] + 1.4, size[1] + 1.8, size[2] + 0.8], ports: {}, bodyPort: center,
   }
-  return contextPose(pivot, homePose(pivot), [envelope], [], view)
+  return contextPose(pivot, viewingPose, [envelope], [], view)
+}
+
+/** Kept in the controller ref, independently of the transient Focus history. */
+export interface RepresentationMemory {
+  presentation: 'spatial' | 'theater'
+  spatialPose: CameraPose | null
+}
+
+export function representationTransition(
+  presentation: 'spatial' | 'theater',
+  memory: RepresentationMemory,
+  currentPose: CameraPose,
+  scene: SceneModel,
+  target: Vec3 | undefined,
+  view: ViewFraming,
+): { memory: RepresentationMemory; pose: CameraPose | null } {
+  if ((scene.presentation ?? 'spatial') !== presentation) return { memory, pose: null }
+  if (memory.presentation === presentation) return { memory, pose: null }
+  if (presentation === 'theater') {
+    const pose = scene.bounds ? reservedWorldPose(scene.bounds, target, currentPose, view) : currentPose
+    return { memory: { presentation, spatialPose: currentPose }, pose }
+  }
+  return { memory: { presentation, spatialPose: null },
+    pose: memory.spatialPose ?? sceneHomePose(scene, target, view) }
 }
 
 /** Resolve semantic attention after reduction: an exited frame is no longer a
@@ -93,6 +122,11 @@ export function sceneHomePose(scene: Pick<SceneModel, 'stackDepth' | 'bounds'>, 
 export function eventFocusAnchor(event: TraceEvent, scene: SceneModel, activeEntityId?: string | null): WorldAnchor | null {
   const anchorFor = (id: string | null | undefined) => scene.frames.find((node) => node.id === id)?.anchor
     ?? scene.objects.find((node) => node.id === id)?.anchor ?? null
+  if (event.type === 'ALLOCATE_ARRAY' || event.type === 'ARRAY_COMPARE') return anchorFor(event.objectId)
+  if (event.type === 'ARRAY_READ' || event.type === 'ARRAY_WRITE') {
+    const array = scene.objects.find((node) => node.id === event.objectId)
+    return array?.array?.cells.find((cell) => cell.index === event.index)?.anchor ?? array?.anchor ?? null
+  }
   if (event.type === 'EXIT_METHOD') {
     return anchorFor(activeEntityId) ?? scene.frames.reduce<typeof scene.frames[number] | null>(
       (deepest, frame) => !deepest || frame.depth > deepest.depth ? frame : deepest, null,
@@ -120,6 +154,26 @@ export function invocationContextPose(anchor: WorldAnchor, scene: SceneModel, vi
   const points = flow && (flow.frameId === anchor.entityId || flow.destination?.frameId === anchor.entityId)
     ? [flow.from, ...(flow.to ? [flow.to] : [])] : []
   return contextPose(anchor.position, viewingPose, padded, points, view, 12)
+}
+
+/** Array inspection retains identity and the visible algorithm explanation above a cell. */
+export function arrayInspectionContext(selection: NonNullable<Selection>, scene: SceneModel): WorldAnchor[] {
+  const array = scene.objects.find((node) => node.array &&
+    (selection.kind === 'object' ? node.id === selection.id : selection.kind === 'slot' && node.array.cells.some((cell) => cell.id === selection.id)))
+  if (!array?.array) return []
+  const { position, size } = array.anchor
+  const header = worldUnits.arrayHeader
+  const context: WorldAnchor[] = [{ ...array.anchor,
+    position: [position[0], position[1] + size[1] / 2 - header.topInset, position[2]],
+    size: [Math.min(size[0], header.maxWidth), header.height, header.depth] }]
+  if (scene.presentation === 'theater' && scene.arrayActivity?.objectId === array.id) {
+    const activity = scene.arrayActivity
+    if (activity.kind === 'compare') context.push(...array.array.cells.filter((cell) => activity.indices.includes(cell.index)).map((cell) => cell.anchor))
+    context.push({ entityId: 'navigation:array-explanation', region: 'heap',
+      position: [position[0], position[1] + size[1] / 2 + 0.93, position[2] + size[2] / 2 + 0.05],
+      size: [Math.min(size[0], 6.6), 0.4, 0.1], ports: {}, bodyPort: position })
+  }
+  return context
 }
 
 /** Fit focus and nearby runtime bodies above the bottom inspector shelf.

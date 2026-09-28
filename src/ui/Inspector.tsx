@@ -42,13 +42,16 @@ export function Inspector({ selection, runtime, scene, onClose, onReturn, onFocu
   const frame = selection.kind === 'frame' ? runtime.frames[selection.id] : undefined
   const edge = selection.kind === 'reference' ? scene.references.find((item) => item.id === selection.id) : undefined
   const slot = selection.kind === 'slot'
-    ? [...Object.values(runtime.frames).flatMap((f) => Object.values(f.locals)), ...Object.values(runtime.objects).flatMap((o) => Object.values(o.fields)), ...scene.frames.flatMap((f) => f.slots)].find((item) => item.id === selection.id)
+    ? [...Object.values(runtime.frames).flatMap((f) => Object.values(f.locals)), ...Object.values(runtime.objects).flatMap((o) => [...Object.values(o.fields), ...(o.array?.elements ?? [])]), ...scene.frames.flatMap((f) => f.slots)].find((item) => item.id === selection.id)
     : undefined
+  const arrayOwner = slot && Object.values(runtime.objects).find((object) => object.array?.elements.some((cell) => cell.id === slot.id))
+  const elementIndex = arrayOwner?.array?.elements.findIndex((cell) => cell.id === slot?.id)
+  const writes = runtime.arrayMutations.filter((item) => item.objectId === (object?.id ?? arrayOwner?.id) && (elementIndex === undefined || item.index === elementIndex))
   const available = Boolean(object || frame || edge || slot)
   const heading = object ? `${object.className} #${object.displayId}`
     : frame ? `${frame.className}.${frame.invocationLabel ?? `${frame.methodName}()`}`
       : edge ? 'Reference path'
-        : slot ? slot.name : 'Outside this moment'
+        : slot ? arrayOwner ? `${arrayOwner.className} #${arrayOwner.displayId} ${slot.name}` : slot.name : 'Outside this moment'
 
   const side = selection.kind === 'object' || selection.kind === 'reference' ? ' inspector--left' : ''
   return <aside className={`inspector${side}`} aria-label="Runtime inspector">
@@ -58,7 +61,7 @@ export function Inspector({ selection, runtime, scene, onClose, onReturn, onFocu
     </header>
     {!available ? <div className="inspector-body"><p className="inspector-empty">This entity is outside the live runtime at this step. Its identity is retained; seek to an event where it exists to inspect it.</p></div> : <div className="inspector-body">
       {object && <>
-        <section className="inspector-group"><h3>Fields</h3><SlotRows slots={Object.values(object.fields)} objects={runtime.objects} /></section>
+        {object.array ? <><div className="inspector-key"><span>TYPE · LENGTH</span><strong>{object.className} · {object.array.length}</strong></div><section className="inspector-group"><h3>Indexed elements</h3><SlotRows slots={object.array.elements} objects={runtime.objects} /></section></> : <section className="inspector-group"><h3>Fields</h3><SlotRows slots={Object.values(object.fields)} objects={runtime.objects} /></section>}
         <section className="inspector-group"><h3>Inbound references</h3>
         <div className="reference-list">{scene.references.filter((ref) => ref.targetObjectId === object.id).map((ref) => (
           <button key={ref.id} onClick={() => onTrace(ref.id)}>
@@ -68,7 +71,8 @@ export function Inspector({ selection, runtime, scene, onClose, onReturn, onFocu
       </>}
       {frame && <><div className="inspector-key"><span>CALL DEPTH · {frame.status.toUpperCase()}</span><strong>{frame.depth}</strong></div><section className="inspector-group"><h3>Locals & operands</h3><SlotRows slots={Object.values(frame.locals)} objects={runtime.objects} /></section>{frame.returnValue && <div className="inspector-key"><span>RETURN VALUE</span><strong>{formatValue(frame.returnValue)}</strong></div>}</>}
       {edge && <><div className="inspector-key"><span>SOURCE</span><strong>{edge.source.slotId.split(':').at(-1)}</strong></div><div className="inspector-key"><span>TARGET</span><strong>{runtime.objects[edge.targetObjectId]?.className} #{runtime.objects[edge.targetObjectId]?.displayId}</strong></div><button className="inspector-action" onClick={() => onTrace(edge.id)}>Follow this path</button></>}
-      {slot && <><div className="inspector-key"><span>TYPE</span><strong>{slot.javaType}</strong></div><div className="inspector-key"><span>VALUE</span><strong>{formatValue(slot.value, runtime.objects)}</strong></div></>}
+      {slot && <>{arrayOwner?.array && <div className="inspector-key"><span>ARRAY · LENGTH · INDEX</span><strong>#{arrayOwner.displayId} · {arrayOwner.array.length} · {elementIndex}</strong></div>}<div className="inspector-key"><span>TYPE</span><strong>{slot.javaType}</strong></div><div className="inspector-key"><span>VALUE</span><strong>{formatValue(slot.value, runtime.objects)}</strong></div></>}
+      {(object?.array || arrayOwner) && <div className="inspector-key"><span>INDEXED WRITES</span><strong>{writes.length}</strong></div>}
     </div>}
     <footer className="inspector-footer">
       <button onClick={onFocus} disabled={!available || frame?.status === 'returned'}><Crosshair size={15} /> Focus</button>

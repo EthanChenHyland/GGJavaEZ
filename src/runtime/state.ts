@@ -1,4 +1,5 @@
 import type {
+  RuntimeArray,
   RuntimeFrame,
   RuntimeObject,
   RuntimeSlot,
@@ -7,6 +8,7 @@ import type {
   SlotOwner,
   TraceEvent,
 } from '../contracts/runtime'
+import { arrayElementSlotId } from '../contracts/runtime'
 
 export function createInitialState(): RuntimeState {
   return {
@@ -18,11 +20,39 @@ export function createInitialState(): RuntimeState {
     frames: {},
     objects: {},
     returns: [],
+    arrayActivity: null,
+    arrayMutations: [],
   }
 }
 
 function requireCondition(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(message)
+}
+
+function requireInt(value: RuntimeValue): asserts value is { kind: 'primitive'; javaType: 'int'; value: number } {
+  requireCondition(value.kind === 'primitive' && value.javaType === 'int' &&
+    typeof value.value === 'number' && Number.isInteger(value.value) &&
+    value.value >= -2147483648 && value.value <= 2147483647,
+  'Array value must be a concrete Java int')
+}
+
+function requireArray(state: RuntimeState, objectId: string): RuntimeObject & { array: RuntimeArray } {
+  const object = state.objects[objectId]
+  requireCondition(object, `Unknown object ${objectId}`)
+  requireCondition(object.array && object.className === 'int[]', `Object ${objectId} is not an int array`)
+  return object as RuntimeObject & { array: RuntimeArray }
+}
+
+function requireElement(object: RuntimeObject & { array: RuntimeArray }, index: number): RuntimeSlot {
+  requireCondition(Number.isInteger(index) && index >= 0 && index < object.array.length,
+    `Array index ${index} outside bounds of ${object.id}`)
+  return object.array.elements[index]
+}
+
+function requireObserved(slot: RuntimeSlot, value: RuntimeValue): void {
+  requireInt(value)
+  requireInt(slot.value)
+  requireCondition(slot.value.value === value.value, `Observed array value mismatch at ${slot.id}`)
 }
 
 function assertCompatible(slot: RuntimeSlot, value: RuntimeValue): void {
@@ -184,6 +214,16 @@ export function applyEvent(state: RuntimeState, event: TraceEvent): RuntimeState
       break
     }
 
+    case 'REMOVE_LOCAL': {
+      requireCondition(activeFrameId === event.frameId, `Local removed outside active frame ${event.frameId}`)
+      const frame = state.frames[event.frameId]
+      requireCondition(frame.locals[event.slotId], `Unknown slot ${event.slotId}`)
+      const locals = { ...frame.locals }
+      delete locals[event.slotId]
+      next = withFrame(state, { ...frame, locals })
+      break
+    }
+
     case 'ASSIGN_LOCAL':
       requireCondition(activeFrameId === event.frameId, `Local assigned outside active frame ${event.frameId}`)
       next = setSlot(state, { kind: 'frame', frameId: event.frameId, slotId: event.slotId }, event.value)
@@ -202,6 +242,95 @@ export function applyEvent(state: RuntimeState, event: TraceEvent): RuntimeState
         fields: slotsById(event.fields, state),
         allocatedAt: event.eventId,
       })
+      break
+    }
+
+    case 'ALLOCATE_ARRAY': {
+      requireCondition(activeFrameId, 'Array allocation requires an active frame')
+      requireCondition(!state.objects[event.objectId], `Duplicate object ${event.objectId}`)
+      requireCondition(Number.isInteger(event.displayId) && event.displayId > 0, 'Invalid array display ID')
+      requireCondition(!Object.values(state.objects).some((object) => object.displayId === event.displayId),
+        `Duplicate display ID ${event.displayId}`)
+      requireCondition(event.elementType === 'int', 'Array element type must be int')
+      const elements = event.elements.map((value, index) => {
+        requireInt(value)
+        return {
+          id: arrayElementSlotId(event.objectId, index), name: `[${index}]`, javaType: 'int',
+          value: { ...value },
+        }
+      })
+      next = withObject(state, {
+        id: event.objectId, displayId: event.displayId, className: 'int[]', fields: {},
+        allocatedAt: event.eventId,
+        array: { elementType: 'int', length: elements.length, elements },
+      })
+      break
+    }
+
+    case 'ARRAY_READ': {
+      requireCondition(activeFrameId === event.frameId, `Array read outside active frame ${event.frameId}`)
+      const element = requireElement(requireArray(state, event.objectId), event.index)
+      requireObserved(element, event.value)
+      if (event.destinationSlotId !== undefined) {
+        next = setSlot(state, { kind: 'frame', frameId: event.frameId, slotId: event.destinationSlotId }, event.value)
+      }
+      next = { ...next, arrayActivity: {
+        kind: 'read', eventId: event.eventId, objectId: event.objectId, index: event.index,
+        value: { ...event.value },
+        ...(event.destinationSlotId !== undefined ? { destinationSlotId: event.destinationSlotId } : {}),
+      } }
+      break
+    }
+
+    case 'ARRAY_COMPARE': {
+      requireCondition(activeFrameId === event.frameId, `Array comparison outside active frame ${event.frameId}`)
+      requireCondition(event.indices.length === 2 && event.values.length === 2 && event.operator === '>' &&
+        typeof event.result === 'boolean', 'Invalid array comparison')
+      const object = requireArray(state, event.objectId)
+      requireObserved(requireElement(object, event.indices[0]), event.values[0])
+      requireObserved(requireElement(object, event.indices[1]), event.values[1])
+      requireInt(event.values[0])
+      requireInt(event.values[1])
+      requireCondition(event.result === (event.values[0].value > event.values[1].value),
+        'Array comparison result mismatch')
+      next = { ...state, arrayActivity: {
+        kind: 'compare', eventId: event.eventId, objectId: event.objectId,
+        indices: [...event.indices], values: [{ ...event.values[0] }, { ...event.values[1] }],
+        operator: event.operator, result: event.result,
+      } }
+      break
+    }
+
+    case 'ARRAY_WRITE': {
+      requireCondition(activeFrameId === event.frameId, `Array write outside active frame ${event.frameId}`)
+      const object = requireArray(state, event.objectId)
+      const element = requireElement(object, event.index)
+      requireInt(event.value)
+      requireInt(element.value)
+      let origin: RuntimeSlot
+      if (event.from.kind === 'element') {
+        origin = requireElement(object, event.from.index)
+      } else {
+        requireCondition(event.from.kind === 'slot' && event.from.frameId === event.frameId,
+          'Array write origin must be a local in the active frame')
+        origin = state.frames[event.from.frameId].locals[event.from.slotId]
+        requireCondition(origin, `Unknown origin slot ${event.from.slotId}`)
+        requireCondition(origin.javaType === 'int', `Array origin slot ${origin.id} must be int`)
+      }
+      requireInt(origin.value)
+      requireCondition(origin.value.value === event.value.value, 'Array write origin value mismatch')
+      const elements = [...object.array.elements]
+      elements[event.index] = { ...element, value: { ...event.value } }
+      next = withObject(state, { ...object, array: { ...object.array, elements } })
+      const mutation = {
+        eventId: event.eventId, objectId: event.objectId, index: event.index,
+        before: { ...element.value }, after: { ...event.value }, from: { ...event.from },
+      }
+      next = { ...next,
+        arrayActivity: { kind: 'write', ...mutation,
+          before: { ...mutation.before }, after: { ...mutation.after }, from: { ...mutation.from } },
+        arrayMutations: [...state.arrayMutations, mutation],
+      }
       break
     }
 
@@ -241,5 +370,7 @@ export function applyEvent(state: RuntimeState, event: TraceEvent): RuntimeState
     cursor: state.cursor + 1,
     currentSource: event.source ? { ...event.source } : null,
     lastEventId: event.eventId,
+    // Activity describes the current array instruction, not a lingering visual effect.
+    arrayActivity: ['ARRAY_READ', 'ARRAY_COMPARE', 'ARRAY_WRITE'].includes(event.type) ? next.arrayActivity : null,
   }
 }

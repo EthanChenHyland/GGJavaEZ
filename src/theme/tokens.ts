@@ -20,6 +20,9 @@ export const motionMs = {
 export const worldUnits = {
   frame: [5.1, 1.7, 1.25] as const,
   object: [3.8, 2.5, 1.7] as const,
+  arraySpatial: { cell: [1.12, 1.15, 1.15] as const, step: 1.28, boundaryHeight: 3.2, boundaryDepth: 1.45 },
+  arrayTheater: { cell: [1.5, 1.45, 1.35] as const, step: 2.05, boundaryHeight: 3.8, boundaryDepth: 1.65 },
+  arrayHeader: { maxWidth: 5.1, height: 0.85, depth: 0.45, topInset: 0.38 },
   homePosition: [5.2, 4.9, 11.6] as const,
   homeTarget: [0, 0.15, -0.2] as const,
 } as const

@@ -117,7 +117,7 @@ export function ClassicRuntime({ visible = true, playing = false, scene, event, 
 
   function entity(entity: DiagramEntity) {
     const selected = selection?.kind === entity.kind && selection.id === entity.id
-    const linked = diagram.references.some((edge) => relatedReference(edge, selection) && (edge.sourceEntityId === entity.id || edge.targetObjectId === entity.id))
+    const linked = diagram.references.some((edge) => relatedReference(edge, selection, diagram) && (edge.sourceEntityId === entity.id || edge.targetObjectId === entity.id))
     const accent = entity.kind === 'frame' ? colors.stack : colors.heap
     const body = entity.kind === 'frame' ? worldMaterial.stackFace : worldMaterial.heapFace
     const { x, y, width, height } = entity.rect
@@ -125,17 +125,20 @@ export function ClassicRuntime({ visible = true, playing = false, scene, event, 
     const compact = diagram.deepStack && entity.kind === 'frame'
     const headingHeight = compact ? 26 : 64
     const rowTextSize = compact ? 15 : 20
+    const arrayComplete = !!entity.array?.ascending && event?.type === 'PROGRAM_END'
+    const title = entity.array?.name ? `${entity.array.name} · ${entity.label}` : entity.label
     return <g key={entity.id} data-runtime-id={entity.id} data-runtime-kind={entity.kind}>
       <rect x={x} y={y} width={width} height={height} rx={4} fill={body} stroke={selected ? colors.execution : accent} strokeWidth={selected ? 3 : 1.5} />
-      <g className="classic-target classic-heading" {...interactions({ kind: entity.kind, id: entity.id })} aria-label={`${entity.kind === 'frame' ? 'Stack frame' : 'Heap object'} ${entity.label}`}>
+      <g className="classic-target classic-heading" {...interactions({ kind: entity.kind, id: entity.id })} aria-label={`${entity.kind === 'frame' ? 'Stack frame' : 'Heap object'} ${title}`}>
         <rect x={x} y={y} width={width} height={headingHeight} rx={4} fill={body} />
         <rect x={x} y={y} width={4} height={headingHeight} fill={current ? colors.execution : accent} />
-        <text x={x + 20} y={y + (compact ? 18 : 32)} fontSize={compact ? 18 : 24} fontWeight={600} fill={colors.text}>{entity.label}</text>
-        {!compact && <text x={x + 20} y={y + 52} fontSize={12} letterSpacing={1} fill={accent}>{entity.kind === 'frame' ? 'LOCALS / PARAMETERS' : 'FIELDS'}</text>}
+        <text x={x + 20} y={y + (compact ? 18 : 32)} fontSize={compact ? 18 : 24} fontWeight={600} fill={colors.text}>{title}</text>
+        {!compact && <text x={x + 20} y={y + 52} fontSize={12} letterSpacing={1} fill={accent}>{entity.array ? `INDEX / VALUE · LENGTH ${entity.array.length}` : entity.kind === 'frame' ? 'LOCALS / PARAMETERS' : 'FIELDS'}</text>}
         {current && <text x={x + width - 16} y={y + (compact ? 18 : 52)} textAnchor="end" fontSize={12} fill={colors.execution}>EXECUTING</text>}
       </g>
       <line x1={x} y1={y + headingHeight} x2={x + width} y2={y + headingHeight} stroke={accent} strokeOpacity={0.35} />
       {entity.slots.map((row) => {
+        const reading = guided && diagram.arrayActivity?.destinationSlotId === row.slot.id
         const highlighted = row.slot.id === changedSlotId || (guided && event?.type === 'RETURN_VALUE' &&
           event.frameId === entity.id && row.slot.role === 'return')
         const slotSelected = selection?.kind === 'slot' && selection.id === row.slot.id
@@ -145,7 +148,7 @@ export function ClassicRuntime({ visible = true, playing = false, scene, event, 
         const valueX = x + (compact ? 300 : entity.kind === 'frame' ? 220 : 190)
         return <g key={row.slot.id} className="classic-target classic-slot" data-slot-id={row.slot.id}
           {...interactions({ kind: 'slot', id: row.slot.id })} aria-label={`${entity.label} ${row.slot.name}${row.slot.role === 'operand' ? ' expression operand' : ''}, ${row.slot.javaType}, ${row.value}`}>
-          <rect x={x + 1} y={rowY} width={width - 2} height={row.rect.height} fill={highlighted ? colors.mutation : slotSelected ? colors.execution : linked ? accent : body} fillOpacity={highlighted || slotSelected ? 0.13 : linked ? 0.05 : 1} />
+          <rect x={x + 1} y={rowY} width={width - 2} height={row.rect.height} fill={highlighted ? colors.mutation : slotSelected || reading ? colors.execution : linked ? accent : body} fillOpacity={highlighted || slotSelected || reading ? 0.13 : linked ? 0.05 : 1} />
           {highlighted && <rect x={x + 1} y={rowY + 5} width={3} height={row.rect.height - 10} fill={colors.mutation} />}
           <text x={x + 20} y={rowY + row.rect.height / 2 + 6} fontSize={rowTextSize} fill={row.slot.role === 'operand' ? colors.textSecondary : colors.text}>{row.slot.role === 'operand' ? 'call result (operand)' : row.slot.name}</text>
           <text x={typeX} y={rowY + row.rect.height / 2 + 6} fontSize={compact ? 12 : 16} fill={colors.textSecondary}>{row.slot.javaType}</text>
@@ -153,7 +156,26 @@ export function ClassicRuntime({ visible = true, playing = false, scene, event, 
           <line x1={x + 16} y1={rowY + row.rect.height} x2={x + width - 16} y2={rowY + row.rect.height} stroke={colors.borderStrong} strokeOpacity={0.5} />
         </g>
       })}
-      {entity.slots.length === 0 && <text x={x + 20} y={y + (compact ? 50 : 100)} fontSize={18} fill={colors.textSecondary}>No locals yet</text>}
+      {entity.array?.cells.map((cell) => {
+        const cellSelected = selection?.kind === 'slot' && selection.id === cell.slot.id
+        const write = guided ? diagram.arrayWrites.find((mutation) => mutation.slotId === cell.slot.id) : undefined
+        const reading = guided && diagram.arrayActivity?.slotIds.includes(cell.slot.id)
+        const emphasis = write ? colors.mutation : reading ? colors.execution : arrayComplete ? colors.success : accent
+        const rect = cell.rect
+        return <g key={cell.slot.id} className="classic-target classic-slot classic-array-cell" data-slot-id={cell.slot.id} data-array-index={cell.index}
+          data-array-state={write ? 'write' : reading ? 'read-or-compare' : arrayComplete ? 'ascending' : 'idle'}
+          {...interactions({ kind: 'slot', id: cell.slot.id })} aria-label={`${title} index ${cell.index}, ${cell.slot.javaType}, value ${cell.value}${write ? `, changed from ${write.before} to ${write.after}` : ''}`}>
+          <rect x={rect.x + 1} y={rect.y + 1} width={rect.width - 2} height={rect.height - 2} fill={cellSelected ? colors.execution : worldMaterial.heapSlot} fillOpacity={cellSelected ? 0.14 : 1}
+            stroke={cellSelected ? colors.execution : emphasis} strokeWidth={cellSelected ? 3.5 : write || reading ? 2.5 : 1} />
+          {cellSelected && <circle data-array-selection={cell.slot.id} cx={rect.x + rect.width - 9} cy={rect.y + 11} r={3.5} fill={colors.execution} />}
+          <text x={rect.x + rect.width / 2} y={rect.y + 20} textAnchor="middle" fontSize={14} fontFamily={typography.code} fill={colors.textSecondary}>[{cell.index}]</text>
+          <text x={rect.x + rect.width / 2} y={rect.y + 51} textAnchor="middle" fontSize={24} fontFamily={typography.code} fill={write || reading || arrayComplete ? emphasis : colors.text}>{cell.value}</text>
+        </g>
+      })}
+      {entity.array && <text x={x + 16} y={y + height - 7} fontSize={12} fill={arrayComplete ? colors.success : colors.textMuted}>
+        {arrayComplete ? 'Ascending order verified' : 'Equal cells · fixed indices'}
+      </text>}
+      {entity.slots.length === 0 && !entity.array && <text x={x + 20} y={y + (compact ? 50 : 100)} fontSize={18} fill={colors.textSecondary}>No locals yet</text>}
     </g>
   }
 
@@ -182,6 +204,9 @@ export function ClassicRuntime({ visible = true, playing = false, scene, event, 
     onPointerCancel={() => { dragging.current = null }} onContextMenu={(context) => context.preventDefault()}>
     <title>Stack frames on the left, heap objects on the right. Arrows connect named references to their objects.</title>
     <defs>
+      <marker id={`${arrowId}-mutation`} viewBox="0 0 10 10" refX={9} refY={5} markerWidth={8} markerHeight={8} orient="auto" markerUnits="userSpaceOnUse">
+        <path d="M 1 1 L 9 5 L 1 9" fill="none" stroke={colors.mutation} strokeWidth={1.7} strokeLinejoin="round" />
+      </marker>
       <marker id={returnArrowId} viewBox="0 0 10 10" refX={9} refY={5} markerWidth={8} markerHeight={8} orient="auto" markerUnits="userSpaceOnUse">
         <path d="M 1 1 L 9 5 L 1 9" fill="none" stroke={colors.success} strokeWidth={1.7} strokeLinejoin="round" />
       </marker>
@@ -198,7 +223,7 @@ export function ClassicRuntime({ visible = true, playing = false, scene, event, 
     </g>
     {diagram.entities.map(entity)}
     {diagram.references.map((edge) => {
-      const related = relatedReference(edge, selection) || traceReferenceId === edge.id
+      const related = relatedReference(edge, selection, diagram) || traceReferenceId === edge.id
       const source = diagram.entities.find((node) => node.id === edge.sourceEntityId)
       const target = diagram.entities.find((node) => node.id === edge.targetObjectId)
       const middleX = (edge.from[0] + edge.to[0]) / 2, middleY = (edge.from[1] + edge.to[1]) / 2
@@ -208,6 +233,23 @@ export function ClassicRuntime({ visible = true, playing = false, scene, event, 
         <path d={edge.path} fill="none" stroke={colors.execution} strokeWidth={related ? line.referenceMaxPx : line.referenceDefaultPx} opacity={selection && !related ? 0.5 : 0.9} markerEnd={`url(#${arrowId})`} vectorEffect="non-scaling-stroke" />
         <circle cx={edge.from[0]} cy={edge.from[1]} r={3.5} fill={colors.execution} />
         <text x={middleX} y={middleY - 13} textAnchor="middle" fontSize={16} fill={colors.execution} paintOrder="stroke" stroke={colors.canvas} strokeWidth={6} strokeLinejoin="round">{edge.label}</text>
+      </g>
+    })}
+    {guided && diagram.arrayActivity && (() => {
+      const array = diagram.entities.find((node) => node.id === diagram.arrayActivity!.objectId)!
+      return <g data-array-activity={diagram.arrayActivity.eventId} role="img" aria-label={diagram.arrayActivity.label}>
+        <text x={array.rect.x} y={array.rect.y + array.rect.height + 40} fontSize={15} fontFamily={typography.code} fill={colors.execution}>{diagram.arrayActivity.label}</text>
+      </g>
+    })()}
+    {guided && diagram.arrayWrites.map((write) => {
+      const array = diagram.entities.find((node) => node.id === write.objectId)!
+      return <g key={write.eventId} data-array-write={write.eventId} role="img" aria-label={write.label}>
+        <path d={write.path} fill="none" stroke={colors.mutation} strokeWidth={line.referenceDefaultPx} markerEnd={`url(#${arrowId}-mutation)`} vectorEffect="non-scaling-stroke" />
+        <circle cx={write.to[0]} cy={write.to[1]} r={3.5} fill={colors.mutation} />
+        <text x={array.rect.x} y={array.rect.y + array.rect.height + 56} fontSize={16} fontFamily={typography.code} fill={colors.mutation}>{write.label}</text>
+        {visible && playing && !motionReduced && event?.eventId === write.eventId && <circle key={write.eventId} r={4} fill={colors.mutation} aria-hidden="true">
+          <animateMotion dur={`${motionMs.standard}ms`} path={write.path} fill="freeze" />
+        </circle>}
       </g>
     })}
     {diagram.returnTransfer && <g className="classic-return" data-return-event={diagram.returnTransfer.eventId}

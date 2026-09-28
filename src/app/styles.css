@@ -122,3 +122,9 @@ button:focus-visible { outline: 2px solid var(--color-execution); outline-offset
 .return-explanation { color:var(--color-success); }
 .final-result { color:var(--color-success); font:20px JetBrains Mono,monospace; }
 @media(max-width:760px) { .example-picker { font-size:10px; } .example-picker select { max-width:165px; } .call-status { left:12px; right:12px; font-size:11px; top:120px; } }
+
+.array-status { gap:8px 14px; }
+.array-status > strong { font:13px JetBrains Mono,monospace; color:var(--color-text); }
+.array-status .return-explanation { color:var(--color-textMuted); font-size:11px; }
+.array-status .final-result { font-size:18px; color:var(--color-success); }
+@media(max-width:760px) { .array-status .return-explanation { flex-basis:100%; } }

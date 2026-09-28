@@ -1,0 +1,2328 @@
+{
+  "schemaVersion": 1,
+  "demoId": "arrays",
+  "sourceFiles": [
+    {
+      "fileId": "Main.java",
+      "name": "Main.java",
+      "content": "public class Main {\n    public static void main(String[] args) {\n        int[] nums = {8, 3, 6, 1, 5};\n\n        for (int i = 0; i < nums.length - 1; i++) {\n            for (int j = 0; j < nums.length - i - 1; j++) {\n                if (nums[j] > nums[j + 1]) {\n                    int temp = nums[j];\n                    nums[j] = nums[j + 1];\n                    nums[j + 1] = temp;\n                }\n            }\n        }\n    }\n}\n"
+    }
+  ],
+  "events": [
+    {
+      "eventId": "arrays:000",
+      "seq": 0,
+      "type": "PROGRAM_START",
+      "source": null,
+      "label": "Start array bubble sort",
+      "importance": "major"
+    },
+    {
+      "eventId": "arrays:001",
+      "seq": 1,
+      "type": "ENTER_METHOD",
+      "source": {
+        "fileId": "Main.java",
+        "line": 2
+      },
+      "label": "Enter main()",
+      "importance": "major",
+      "frameId": "frame:arrays-main:1",
+      "callerFrameId": null,
+      "className": "Main",
+      "methodName": "main",
+      "returnType": "void",
+      "locals": []
+    },
+    {
+      "eventId": "arrays:002",
+      "seq": 2,
+      "type": "DECLARE_LOCAL",
+      "source": {
+        "fileId": "Main.java",
+        "line": 3
+      },
+      "label": "Declare nums",
+      "importance": "normal",
+      "frameId": "frame:arrays-main:1",
+      "slot": {
+        "id": "slot:arrays-main:1:nums",
+        "name": "nums",
+        "javaType": "int[]",
+        "role": "local",
+        "value": {
+          "kind": "uninitialized"
+        }
+      }
+    },
+    {
+      "eventId": "arrays:003",
+      "seq": 3,
+      "type": "ALLOCATE_ARRAY",
+      "source": {
+        "fileId": "Main.java",
+        "line": 3
+      },
+      "label": "Allocate int[] #23 = {8, 3, 6, 1, 5}",
+      "importance": "major",
+      "objectId": "object:array:23",
+      "displayId": 23,
+      "elementType": "int",
+      "elements": [
+        {
+          "kind": "primitive",
+          "javaType": "int",
+          "value": 8
+        },
+        {
+          "kind": "primitive",
+          "javaType": "int",
+          "value": 3
+        },
+        {
+          "kind": "primitive",
+          "javaType": "int",
+          "value": 6
+        },
+        {
+          "kind": "primitive",
+          "javaType": "int",
+          "value": 1
+        },
+        {
+          "kind": "primitive",
+          "javaType": "int",
+          "value": 5
+        }
+      ]
+    },
+    {
+      "eventId": "arrays:004",
+      "seq": 4,
+      "type": "CREATE_REFERENCE",
+      "source": {
+        "fileId": "Main.java",
+        "line": 3
+      },
+      "label": "nums → int[] #23",
+      "importance": "major",
+      "sourceSlot": {
+        "kind": "frame",
+        "frameId": "frame:arrays-main:1",
+        "slotId": "slot:arrays-main:1:nums"
+      },
+      "targetObjectId": "object:array:23",
+      "javaType": "int[]"
+    },
+    {
+      "eventId": "arrays:005",
+      "seq": 5,
+      "type": "DECLARE_LOCAL",
+      "source": {
+        "fileId": "Main.java",
+        "line": 5
+      },
+      "label": "i = 0",
+      "importance": "normal",
+      "frameId": "frame:arrays-main:1",
+      "slot": {
+        "id": "slot:arrays-main:1:i",
+        "name": "i",
+        "javaType": "int",
+        "role": "local",
+        "value": {
+          "kind": "primitive",
+          "javaType": "int",
+          "value": 0
+        }
+      }
+    },
+    {
+      "eventId": "arrays:006",
+      "seq": 6,
+      "type": "LINE_EXECUTE",
+      "source": {
+        "fileId": "Main.java",
+        "line": 5
+      },
+      "label": "i < nums.length - 1: 0 < 4 → true",
+      "importance": "quiet",
+      "frameId": "frame:arrays-main:1"
+    },
+    {
+      "eventId": "arrays:007",
+      "seq": 7,
+      "type": "DECLARE_LOCAL",
+      "source": {
+        "fileId": "Main.java",
+        "line": 6
+      },
+      "label": "j = 0",
+      "importance": "normal",
+      "frameId": "frame:arrays-main:1",
+      "slot": {
+        "id": "slot:arrays-main:1:j",
+        "name": "j",
+        "javaType": "int",
+        "role": "local",
+        "value": {
+          "kind": "primitive",
+          "javaType": "int",
+          "value": 0
+        }
+      }
+    },
+    {
+      "eventId": "arrays:008",
+      "seq": 8,
+      "type": "LINE_EXECUTE",
+      "source": {
+        "fileId": "Main.java",
+        "line": 6
+      },
+      "label": "j < nums.length - i - 1: 0 < 4 → true",
+      "importance": "quiet",
+      "frameId": "frame:arrays-main:1"
+    },
+    {
+      "eventId": "arrays:009",
+      "seq": 9,
+      "type": "ARRAY_READ",
+      "source": {
+        "fileId": "Main.java",
+        "line": 7
+      },
+      "label": "Read nums[0] = 8 for comparison",
+      "importance": "normal",
+      "frameId": "frame:arrays-main:1",
+      "objectId": "object:array:23",
+      "index": 0,
+      "value": {
+        "kind": "primitive",
+        "javaType": "int",
+        "value": 8
+      }
+    },
+    {
+      "eventId": "arrays:010",
+      "seq": 10,
+      "type": "ARRAY_READ",
+      "source": {
+        "fileId": "Main.java",
+        "line": 7
+      },
+      "label": "Read nums[1] = 3 for comparison",
+      "importance": "normal",
+      "frameId": "frame:arrays-main:1",
+      "objectId": "object:array:23",
+      "index": 1,
+      "value": {
+        "kind": "primitive",
+        "javaType": "int",
+        "value": 3
+      }
+    },
+    {
+      "eventId": "arrays:011",
+      "seq": 11,
+      "type": "ARRAY_COMPARE",
+      "source": {
+        "fileId": "Main.java",
+        "line": 7
+      },
+      "label": "nums[0] > nums[1]: 8 > 3 → true",
+      "importance": "major",
+      "frameId": "frame:arrays-main:1",
+      "objectId": "object:array:23",
+      "indices": [
+        0,
+        1
+      ],
+      "values": [
+        {
+          "kind": "primitive",
+          "javaType": "int",
+          "value": 8
+        },
+        {
+          "kind": "primitive",
+          "javaType": "int",
+          "value": 3
+        }
+      ],
+      "operator": ">",
+      "result": true
+    },
+    {
+      "eventId": "arrays:012",
+      "seq": 12,
+      "type": "DECLARE_LOCAL",
+      "source": {
+        "fileId": "Main.java",
+        "line": 8
+      },
+      "label": "Declare temp",
+      "importance": "normal",
+      "frameId": "frame:arrays-main:1",
+      "slot": {
+        "id": "slot:arrays-main:1:temp",
+        "name": "temp",
+        "javaType": "int",
+        "role": "local",
+        "value": {
+          "kind": "uninitialized"
+        }
+      }
+    },
+    {
+      "eventId": "arrays:013",
+      "seq": 13,
+      "type": "ARRAY_READ",
+      "source": {
+        "fileId": "Main.java",
+        "line": 8
+      },
+      "label": "temp = nums[0] = 8",
+      "importance": "normal",
+      "frameId": "frame:arrays-main:1",
+      "objectId": "object:array:23",
+      "index": 0,
+      "value": {
+        "kind": "primitive",
+        "javaType": "int",
+        "value": 8
+      },
+      "destinationSlotId": "slot:arrays-main:1:temp"
+    },
+    {
+      "eventId": "arrays:014",
+      "seq": 14,
+      "type": "ARRAY_READ",
+      "source": {
+        "fileId": "Main.java",
+        "line": 9
+      },
+      "label": "Read nums[1] = 3 for assignment",
+      "importance": "normal",
+      "frameId": "frame:arrays-main:1",
+      "objectId": "object:array:23",
+      "index": 1,
+      "value": {
+        "kind": "primitive",
+        "javaType": "int",
+        "value": 3
+      }
+    },
+    {
+      "eventId": "arrays:015",
+      "seq": 15,
+      "type": "ARRAY_WRITE",
+      "source": {
+        "fileId": "Main.java",
+        "line": 9
+      },
+      "label": "nums[0] = nums[1]: 8 → 3",
+      "importance": "major",
+      "frameId": "frame:arrays-main:1",
+      "objectId": "object:array:23",
+      "index": 0,
+      "value": {
+        "kind": "primitive",
+        "javaType": "int",
+        "value": 3
+      },
+      "from": {
+        "kind": "element",
+        "index": 1
+      }
+    },
+    {
+      "eventId": "arrays:016",
+      "seq": 16,
+      "type": "ARRAY_WRITE",
+      "source": {
+        "fileId": "Main.java",
+        "line": 10
+      },
+      "label": "nums[1] = temp: 3 → 8",
+      "importance": "major",
+      "frameId": "frame:arrays-main:1",
+      "objectId": "object:array:23",
+      "index": 1,
+      "value": {
+        "kind": "primitive",
+        "javaType": "int",
+        "value": 8
+      },
+      "from": {
+        "kind": "slot",
+        "frameId": "frame:arrays-main:1",
+        "slotId": "slot:arrays-main:1:temp"
+      }
+    },
+    {
+      "eventId": "arrays:017",
+      "seq": 17,
+      "type": "REMOVE_LOCAL",
+      "source": {
+        "fileId": "Main.java",
+        "line": 11
+      },
+      "label": "temp leaves swap scope",
+      "importance": "quiet",
+      "frameId": "frame:arrays-main:1",
+      "slotId": "slot:arrays-main:1:temp"
+    },
+    {
+      "eventId": "arrays:018",
+      "seq": 18,
+      "type": "ASSIGN_LOCAL",
+      "source": {
+        "fileId": "Main.java",
+        "line": 6
+      },
+      "label": "j++: 0 → 1",
+      "importance": "quiet",
+      "frameId": "frame:arrays-main:1",
+      "slotId": "slot:arrays-main:1:j",
+      "value": {
+        "kind": "primitive",
+        "javaType": "int",
+        "value": 1
+      }
+    },
+    {
+      "eventId": "arrays:019",
+      "seq": 19,
+      "type": "LINE_EXECUTE",
+      "source": {
+        "fileId": "Main.java",
+        "line": 6
+      },
+      "label": "j < nums.length - i - 1: 1 < 4 → true",
+      "importance": "quiet",
+      "frameId": "frame:arrays-main:1"
+    },
+    {
+      "eventId": "arrays:020",
+      "seq": 20,
+      "type": "ARRAY_READ",
+      "source": {
+        "fileId": "Main.java",
+        "line": 7
+      },
+      "label": "Read nums[1] = 8 for comparison",
+      "importance": "normal",
+      "frameId": "frame:arrays-main:1",
+      "objectId": "object:array:23",
+      "index": 1,
+      "value": {
+        "kind": "primitive",
+        "javaType": "int",
+        "value": 8
+      }
+    },
+    {
+      "eventId": "arrays:021",
+      "seq": 21,
+      "type": "ARRAY_READ",
+      "source": {
+        "fileId": "Main.java",
+        "line": 7
+      },
+      "label": "Read nums[2] = 6 for comparison",
+      "importance": "normal",
+      "frameId": "frame:arrays-main:1",
+      "objectId": "object:array:23",
+      "index": 2,
+      "value": {
+        "kind": "primitive",
+        "javaType": "int",
+        "value": 6
+      }
+    },
+    {
+      "eventId": "arrays:022",
+      "seq": 22,
+      "type": "ARRAY_COMPARE",
+      "source": {
+        "fileId": "Main.java",
+        "line": 7
+      },
+      "label": "nums[1] > nums[2]: 8 > 6 → true",
+      "importance": "major",
+      "frameId": "frame:arrays-main:1",
+      "objectId": "object:array:23",
+      "indices": [
+        1,
+        2
+      ],
+      "values": [
+        {
+          "kind": "primitive",
+          "javaType": "int",
+          "value": 8
+        },
+        {
+          "kind": "primitive",
+          "javaType": "int",
+          "value": 6
+        }
+      ],
+      "operator": ">",
+      "result": true
+    },
+    {
+      "eventId": "arrays:023",
+      "seq": 23,
+      "type": "DECLARE_LOCAL",
+      "source": {
+        "fileId": "Main.java",
+        "line": 8
+      },
+      "label": "Declare temp",
+      "importance": "normal",
+      "frameId": "frame:arrays-main:1",
+      "slot": {
+        "id": "slot:arrays-main:1:temp",
+        "name": "temp",
+        "javaType": "int",
+        "role": "local",
+        "value": {
+          "kind": "uninitialized"
+        }
+      }
+    },
+    {
+      "eventId": "arrays:024",
+      "seq": 24,
+      "type": "ARRAY_READ",
+      "source": {
+        "fileId": "Main.java",
+        "line": 8
+      },
+      "label": "temp = nums[1] = 8",
+      "importance": "normal",
+      "frameId": "frame:arrays-main:1",
+      "objectId": "object:array:23",
+      "index": 1,
+      "value": {
+        "kind": "primitive",
+        "javaType": "int",
+        "value": 8
+      },
+      "destinationSlotId": "slot:arrays-main:1:temp"
+    },
+    {
+      "eventId": "arrays:025",
+      "seq": 25,
+      "type": "ARRAY_READ",
+      "source": {
+        "fileId": "Main.java",
+        "line": 9
+      },
+      "label": "Read nums[2] = 6 for assignment",
+      "importance": "normal",
+      "frameId": "frame:arrays-main:1",
+      "objectId": "object:array:23",
+      "index": 2,
+      "value": {
+        "kind": "primitive",
+        "javaType": "int",
+        "value": 6
+      }
+    },
+    {
+      "eventId": "arrays:026",
+      "seq": 26,
+      "type": "ARRAY_WRITE",
+      "source": {
+        "fileId": "Main.java",
+        "line": 9
+      },
+      "label": "nums[1] = nums[2]: 8 → 6",
+      "importance": "major",
+      "frameId": "frame:arrays-main:1",
+      "objectId": "object:array:23",
+      "index": 1,
+      "value": {
+        "kind": "primitive",
+        "javaType": "int",
+        "value": 6
+      },
+      "from": {
+        "kind": "element",
+        "index": 2
+      }
+    },
+    {
+      "eventId": "arrays:027",
+      "seq": 27,
+      "type": "ARRAY_WRITE",
+      "source": {
+        "fileId": "Main.java",
+        "line": 10
+      },
+      "label": "nums[2] = temp: 6 → 8",
+      "importance": "major",
+      "frameId": "frame:arrays-main:1",
+      "objectId": "object:array:23",
+      "index": 2,
+      "value": {
+        "kind": "primitive",
+        "javaType": "int",
+        "value": 8
+      },
+      "from": {
+        "kind": "slot",
+        "frameId": "frame:arrays-main:1",
+        "slotId": "slot:arrays-main:1:temp"
+      }
+    },
+    {
+      "eventId": "arrays:028",
+      "seq": 28,
+      "type": "REMOVE_LOCAL",
+      "source": {
+        "fileId": "Main.java",
+        "line": 11
+      },
+      "label": "temp leaves swap scope",
+      "importance": "quiet",
+      "frameId": "frame:arrays-main:1",
+      "slotId": "slot:arrays-main:1:temp"
+    },
+    {
+      "eventId": "arrays:029",
+      "seq": 29,
+      "type": "ASSIGN_LOCAL",
+      "source": {
+        "fileId": "Main.java",
+        "line": 6
+      },
+      "label": "j++: 1 → 2",
+      "importance": "quiet",
+      "frameId": "frame:arrays-main:1",
+      "slotId": "slot:arrays-main:1:j",
+      "value": {
+        "kind": "primitive",
+        "javaType": "int",
+        "value": 2
+      }
+    },
+    {
+      "eventId": "arrays:030",
+      "seq": 30,
+      "type": "LINE_EXECUTE",
+      "source": {
+        "fileId": "Main.java",
+        "line": 6
+      },
+      "label": "j < nums.length - i - 1: 2 < 4 → true",
+      "importance": "quiet",
+      "frameId": "frame:arrays-main:1"
+    },
+    {
+      "eventId": "arrays:031",
+      "seq": 31,
+      "type": "ARRAY_READ",
+      "source": {
+        "fileId": "Main.java",
+        "line": 7
+      },
+      "label": "Read nums[2] = 8 for comparison",
+      "importance": "normal",
+      "frameId": "frame:arrays-main:1",
+      "objectId": "object:array:23",
+      "index": 2,
+      "value": {
+        "kind": "primitive",
+        "javaType": "int",
+        "value": 8
+      }
+    },
+    {
+      "eventId": "arrays:032",
+      "seq": 32,
+      "type": "ARRAY_READ",
+      "source": {
+        "fileId": "Main.java",
+        "line": 7
+      },
+      "label": "Read nums[3] = 1 for comparison",
+      "importance": "normal",
+      "frameId": "frame:arrays-main:1",
+      "objectId": "object:array:23",
+      "index": 3,
+      "value": {
+        "kind": "primitive",
+        "javaType": "int",
+        "value": 1
+      }
+    },
+    {
+      "eventId": "arrays:033",
+      "seq": 33,
+      "type": "ARRAY_COMPARE",
+      "source": {
+        "fileId": "Main.java",
+        "line": 7
+      },
+      "label": "nums[2] > nums[3]: 8 > 1 → true",
+      "importance": "major",
+      "frameId": "frame:arrays-main:1",
+      "objectId": "object:array:23",
+      "indices": [
+        2,
+        3
+      ],
+      "values": [
+        {
+          "kind": "primitive",
+          "javaType": "int",
+          "value": 8
+        },
+        {
+          "kind": "primitive",
+          "javaType": "int",
+          "value": 1
+        }
+      ],
+      "operator": ">",
+      "result": true
+    },
+    {
+      "eventId": "arrays:034",
+      "seq": 34,
+      "type": "DECLARE_LOCAL",
+      "source": {
+        "fileId": "Main.java",
+        "line": 8
+      },
+      "label": "Declare temp",
+      "importance": "normal",
+      "frameId": "frame:arrays-main:1",
+      "slot": {
+        "id": "slot:arrays-main:1:temp",
+        "name": "temp",
+        "javaType": "int",
+        "role": "local",
+        "value": {
+          "kind": "uninitialized"
+        }
+      }
+    },
+    {
+      "eventId": "arrays:035",
+      "seq": 35,
+      "type": "ARRAY_READ",
+      "source": {
+        "fileId": "Main.java",
+        "line": 8
+      },
+      "label": "temp = nums[2] = 8",
+      "importance": "normal",
+      "frameId": "frame:arrays-main:1",
+      "objectId": "object:array:23",
+      "index": 2,
+      "value": {
+        "kind": "primitive",
+        "javaType": "int",
+        "value": 8
+      },
+      "destinationSlotId": "slot:arrays-main:1:temp"
+    },
+    {
+      "eventId": "arrays:036",
+      "seq": 36,
+      "type": "ARRAY_READ",
+      "source": {
+        "fileId": "Main.java",
+        "line": 9
+      },
+      "label": "Read nums[3] = 1 for assignment",
+      "importance": "normal",
+      "frameId": "frame:arrays-main:1",
+      "objectId": "object:array:23",
+      "index": 3,
+      "value": {
+        "kind": "primitive",
+        "javaType": "int",
+        "value": 1
+      }
+    },
+    {
+      "eventId": "arrays:037",
+      "seq": 37,
+      "type": "ARRAY_WRITE",
+      "source": {
+        "fileId": "Main.java",
+        "line": 9
+      },
+      "label": "nums[2] = nums[3]: 8 → 1",
+      "importance": "major",
+      "frameId": "frame:arrays-main:1",
+      "objectId": "object:array:23",
+      "index": 2,
+      "value": {
+        "kind": "primitive",
+        "javaType": "int",
+        "value": 1
+      },
+      "from": {
+        "kind": "element",
+        "index": 3
+      }
+    },
+    {
+      "eventId": "arrays:038",
+      "seq": 38,
+      "type": "ARRAY_WRITE",
+      "source": {
+        "fileId": "Main.java",
+        "line": 10
+      },
+      "label": "nums[3] = temp: 1 → 8",
+      "importance": "major",
+      "frameId": "frame:arrays-main:1",
+      "objectId": "object:array:23",
+      "index": 3,
+      "value": {
+        "kind": "primitive",
+        "javaType": "int",
+        "value": 8
+      },
+      "from": {
+        "kind": "slot",
+        "frameId": "frame:arrays-main:1",
+        "slotId": "slot:arrays-main:1:temp"
+      }
+    },
+    {
+      "eventId": "arrays:039",
+      "seq": 39,
+      "type": "REMOVE_LOCAL",
+      "source": {
+        "fileId": "Main.java",
+        "line": 11
+      },
+      "label": "temp leaves swap scope",
+      "importance": "quiet",
+      "frameId": "frame:arrays-main:1",
+      "slotId": "slot:arrays-main:1:temp"
+    },
+    {
+      "eventId": "arrays:040",
+      "seq": 40,
+      "type": "ASSIGN_LOCAL",
+      "source": {
+        "fileId": "Main.java",
+        "line": 6
+      },
+      "label": "j++: 2 → 3",
+      "importance": "quiet",
+      "frameId": "frame:arrays-main:1",
+      "slotId": "slot:arrays-main:1:j",
+      "value": {
+        "kind": "primitive",
+        "javaType": "int",
+        "value": 3
+      }
+    },
+    {
+      "eventId": "arrays:041",
+      "seq": 41,
+      "type": "LINE_EXECUTE",
+      "source": {
+        "fileId": "Main.java",
+        "line": 6
+      },
+      "label": "j < nums.length - i - 1: 3 < 4 → true",
+      "importance": "quiet",
+      "frameId": "frame:arrays-main:1"
+    },
+    {
+      "eventId": "arrays:042",
+      "seq": 42,
+      "type": "ARRAY_READ",
+      "source": {
+        "fileId": "Main.java",
+        "line": 7
+      },
+      "label": "Read nums[3] = 8 for comparison",
+      "importance": "normal",
+      "frameId": "frame:arrays-main:1",
+      "objectId": "object:array:23",
+      "index": 3,
+      "value": {
+        "kind": "primitive",
+        "javaType": "int",
+        "value": 8
+      }
+    },
+    {
+      "eventId": "arrays:043",
+      "seq": 43,
+      "type": "ARRAY_READ",
+      "source": {
+        "fileId": "Main.java",
+        "line": 7
+      },
+      "label": "Read nums[4] = 5 for comparison",
+      "importance": "normal",
+      "frameId": "frame:arrays-main:1",
+      "objectId": "object:array:23",
+      "index": 4,
+      "value": {
+        "kind": "primitive",
+        "javaType": "int",
+        "value": 5
+      }
+    },
+    {
+      "eventId": "arrays:044",
+      "seq": 44,
+      "type": "ARRAY_COMPARE",
+      "source": {
+        "fileId": "Main.java",
+        "line": 7
+      },
+      "label": "nums[3] > nums[4]: 8 > 5 → true",
+      "importance": "major",
+      "frameId": "frame:arrays-main:1",
+      "objectId": "object:array:23",
+      "indices": [
+        3,
+        4
+      ],
+      "values": [
+        {
+          "kind": "primitive",
+          "javaType": "int",
+          "value": 8
+        },
+        {
+          "kind": "primitive",
+          "javaType": "int",
+          "value": 5
+        }
+      ],
+      "operator": ">",
+      "result": true
+    },
+    {
+      "eventId": "arrays:045",
+      "seq": 45,
+      "type": "DECLARE_LOCAL",
+      "source": {
+        "fileId": "Main.java",
+        "line": 8
+      },
+      "label": "Declare temp",
+      "importance": "normal",
+      "frameId": "frame:arrays-main:1",
+      "slot": {
+        "id": "slot:arrays-main:1:temp",
+        "name": "temp",
+        "javaType": "int",
+        "role": "local",
+        "value": {
+          "kind": "uninitialized"
+        }
+      }
+    },
+    {
+      "eventId": "arrays:046",
+      "seq": 46,
+      "type": "ARRAY_READ",
+      "source": {
+        "fileId": "Main.java",
+        "line": 8
+      },
+      "label": "temp = nums[3] = 8",
+      "importance": "normal",
+      "frameId": "frame:arrays-main:1",
+      "objectId": "object:array:23",
+      "index": 3,
+      "value": {
+        "kind": "primitive",
+        "javaType": "int",
+        "value": 8
+      },
+      "destinationSlotId": "slot:arrays-main:1:temp"
+    },
+    {
+      "eventId": "arrays:047",
+      "seq": 47,
+      "type": "ARRAY_READ",
+      "source": {
+        "fileId": "Main.java",
+        "line": 9
+      },
+      "label": "Read nums[4] = 5 for assignment",
+      "importance": "normal",
+      "frameId": "frame:arrays-main:1",
+      "objectId": "object:array:23",
+      "index": 4,
+      "value": {
+        "kind": "primitive",
+        "javaType": "int",
+        "value": 5
+      }
+    },
+    {
+      "eventId": "arrays:048",
+      "seq": 48,
+      "type": "ARRAY_WRITE",
+      "source": {
+        "fileId": "Main.java",
+        "line": 9
+      },
+      "label": "nums[3] = nums[4]: 8 → 5",
+      "importance": "major",
+      "frameId": "frame:arrays-main:1",
+      "objectId": "object:array:23",
+      "index": 3,
+      "value": {
+        "kind": "primitive",
+        "javaType": "int",
+        "value": 5
+      },
+      "from": {
+        "kind": "element",
+        "index": 4
+      }
+    },
+    {
+      "eventId": "arrays:049",
+      "seq": 49,
+      "type": "ARRAY_WRITE",
+      "source": {
+        "fileId": "Main.java",
+        "line": 10
+      },
+      "label": "nums[4] = temp: 5 → 8",
+      "importance": "major",
+      "frameId": "frame:arrays-main:1",
+      "objectId": "object:array:23",
+      "index": 4,
+      "value": {
+        "kind": "primitive",
+        "javaType": "int",
+        "value": 8
+      },
+      "from": {
+        "kind": "slot",
+        "frameId": "frame:arrays-main:1",
+        "slotId": "slot:arrays-main:1:temp"
+      }
+    },
+    {
+      "eventId": "arrays:050",
+      "seq": 50,
+      "type": "REMOVE_LOCAL",
+      "source": {
+        "fileId": "Main.java",
+        "line": 11
+      },
+      "label": "temp leaves swap scope",
+      "importance": "quiet",
+      "frameId": "frame:arrays-main:1",
+      "slotId": "slot:arrays-main:1:temp"
+    },
+    {
+      "eventId": "arrays:051",
+      "seq": 51,
+      "type": "ASSIGN_LOCAL",
+      "source": {
+        "fileId": "Main.java",
+        "line": 6
+      },
+      "label": "j++: 3 → 4",
+      "importance": "quiet",
+      "frameId": "frame:arrays-main:1",
+      "slotId": "slot:arrays-main:1:j",
+      "value": {
+        "kind": "primitive",
+        "javaType": "int",
+        "value": 4
+      }
+    },
+    {
+      "eventId": "arrays:052",
+      "seq": 52,
+      "type": "LINE_EXECUTE",
+      "source": {
+        "fileId": "Main.java",
+        "line": 6
+      },
+      "label": "j < nums.length - i - 1: 4 < 4 → false",
+      "importance": "quiet",
+      "frameId": "frame:arrays-main:1"
+    },
+    {
+      "eventId": "arrays:053",
+      "seq": 53,
+      "type": "REMOVE_LOCAL",
+      "source": {
+        "fileId": "Main.java",
+        "line": 12
+      },
+      "label": "j leaves inner loop scope",
+      "importance": "quiet",
+      "frameId": "frame:arrays-main:1",
+      "slotId": "slot:arrays-main:1:j"
+    },
+    {
+      "eventId": "arrays:054",
+      "seq": 54,
+      "type": "ASSIGN_LOCAL",
+      "source": {
+        "fileId": "Main.java",
+        "line": 5
+      },
+      "label": "i++: 0 → 1",
+      "importance": "quiet",
+      "frameId": "frame:arrays-main:1",
+      "slotId": "slot:arrays-main:1:i",
+      "value": {
+        "kind": "primitive",
+        "javaType": "int",
+        "value": 1
+      }
+    },
+    {
+      "eventId": "arrays:055",
+      "seq": 55,
+      "type": "LINE_EXECUTE",
+      "source": {
+        "fileId": "Main.java",
+        "line": 5
+      },
+      "label": "i < nums.length - 1: 1 < 4 → true",
+      "importance": "quiet",
+      "frameId": "frame:arrays-main:1"
+    },
+    {
+      "eventId": "arrays:056",
+      "seq": 56,
+      "type": "DECLARE_LOCAL",
+      "source": {
+        "fileId": "Main.java",
+        "line": 6
+      },
+      "label": "j = 0",
+      "importance": "normal",
+      "frameId": "frame:arrays-main:1",
+      "slot": {
+        "id": "slot:arrays-main:1:j",
+        "name": "j",
+        "javaType": "int",
+        "role": "local",
+        "value": {
+          "kind": "primitive",
+          "javaType": "int",
+          "value": 0
+        }
+      }
+    },
+    {
+      "eventId": "arrays:057",
+      "seq": 57,
+      "type": "LINE_EXECUTE",
+      "source": {
+        "fileId": "Main.java",
+        "line": 6
+      },
+      "label": "j < nums.length - i - 1: 0 < 3 → true",
+      "importance": "quiet",
+      "frameId": "frame:arrays-main:1"
+    },
+    {
+      "eventId": "arrays:058",
+      "seq": 58,
+      "type": "ARRAY_READ",
+      "source": {
+        "fileId": "Main.java",
+        "line": 7
+      },
+      "label": "Read nums[0] = 3 for comparison",
+      "importance": "normal",
+      "frameId": "frame:arrays-main:1",
+      "objectId": "object:array:23",
+      "index": 0,
+      "value": {
+        "kind": "primitive",
+        "javaType": "int",
+        "value": 3
+      }
+    },
+    {
+      "eventId": "arrays:059",
+      "seq": 59,
+      "type": "ARRAY_READ",
+      "source": {
+        "fileId": "Main.java",
+        "line": 7
+      },
+      "label": "Read nums[1] = 6 for comparison",
+      "importance": "normal",
+      "frameId": "frame:arrays-main:1",
+      "objectId": "object:array:23",
+      "index": 1,
+      "value": {
+        "kind": "primitive",
+        "javaType": "int",
+        "value": 6
+      }
+    },
+    {
+      "eventId": "arrays:060",
+      "seq": 60,
+      "type": "ARRAY_COMPARE",
+      "source": {
+        "fileId": "Main.java",
+        "line": 7
+      },
+      "label": "nums[0] > nums[1]: 3 > 6 → false",
+      "importance": "major",
+      "frameId": "frame:arrays-main:1",
+      "objectId": "object:array:23",
+      "indices": [
+        0,
+        1
+      ],
+      "values": [
+        {
+          "kind": "primitive",
+          "javaType": "int",
+          "value": 3
+        },
+        {
+          "kind": "primitive",
+          "javaType": "int",
+          "value": 6
+        }
+      ],
+      "operator": ">",
+      "result": false
+    },
+    {
+      "eventId": "arrays:061",
+      "seq": 61,
+      "type": "ASSIGN_LOCAL",
+      "source": {
+        "fileId": "Main.java",
+        "line": 6
+      },
+      "label": "j++: 0 → 1",
+      "importance": "quiet",
+      "frameId": "frame:arrays-main:1",
+      "slotId": "slot:arrays-main:1:j",
+      "value": {
+        "kind": "primitive",
+        "javaType": "int",
+        "value": 1
+      }
+    },
+    {
+      "eventId": "arrays:062",
+      "seq": 62,
+      "type": "LINE_EXECUTE",
+      "source": {
+        "fileId": "Main.java",
+        "line": 6
+      },
+      "label": "j < nums.length - i - 1: 1 < 3 → true",
+      "importance": "quiet",
+      "frameId": "frame:arrays-main:1"
+    },
+    {
+      "eventId": "arrays:063",
+      "seq": 63,
+      "type": "ARRAY_READ",
+      "source": {
+        "fileId": "Main.java",
+        "line": 7
+      },
+      "label": "Read nums[1] = 6 for comparison",
+      "importance": "normal",
+      "frameId": "frame:arrays-main:1",
+      "objectId": "object:array:23",
+      "index": 1,
+      "value": {
+        "kind": "primitive",
+        "javaType": "int",
+        "value": 6
+      }
+    },
+    {
+      "eventId": "arrays:064",
+      "seq": 64,
+      "type": "ARRAY_READ",
+      "source": {
+        "fileId": "Main.java",
+        "line": 7
+      },
+      "label": "Read nums[2] = 1 for comparison",
+      "importance": "normal",
+      "frameId": "frame:arrays-main:1",
+      "objectId": "object:array:23",
+      "index": 2,
+      "value": {
+        "kind": "primitive",
+        "javaType": "int",
+        "value": 1
+      }
+    },
+    {
+      "eventId": "arrays:065",
+      "seq": 65,
+      "type": "ARRAY_COMPARE",
+      "source": {
+        "fileId": "Main.java",
+        "line": 7
+      },
+      "label": "nums[1] > nums[2]: 6 > 1 → true",
+      "importance": "major",
+      "frameId": "frame:arrays-main:1",
+      "objectId": "object:array:23",
+      "indices": [
+        1,
+        2
+      ],
+      "values": [
+        {
+          "kind": "primitive",
+          "javaType": "int",
+          "value": 6
+        },
+        {
+          "kind": "primitive",
+          "javaType": "int",
+          "value": 1
+        }
+      ],
+      "operator": ">",
+      "result": true
+    },
+    {
+      "eventId": "arrays:066",
+      "seq": 66,
+      "type": "DECLARE_LOCAL",
+      "source": {
+        "fileId": "Main.java",
+        "line": 8
+      },
+      "label": "Declare temp",
+      "importance": "normal",
+      "frameId": "frame:arrays-main:1",
+      "slot": {
+        "id": "slot:arrays-main:1:temp",
+        "name": "temp",
+        "javaType": "int",
+        "role": "local",
+        "value": {
+          "kind": "uninitialized"
+        }
+      }
+    },
+    {
+      "eventId": "arrays:067",
+      "seq": 67,
+      "type": "ARRAY_READ",
+      "source": {
+        "fileId": "Main.java",
+        "line": 8
+      },
+      "label": "temp = nums[1] = 6",
+      "importance": "normal",
+      "frameId": "frame:arrays-main:1",
+      "objectId": "object:array:23",
+      "index": 1,
+      "value": {
+        "kind": "primitive",
+        "javaType": "int",
+        "value": 6
+      },
+      "destinationSlotId": "slot:arrays-main:1:temp"
+    },
+    {
+      "eventId": "arrays:068",
+      "seq": 68,
+      "type": "ARRAY_READ",
+      "source": {
+        "fileId": "Main.java",
+        "line": 9
+      },
+      "label": "Read nums[2] = 1 for assignment",
+      "importance": "normal",
+      "frameId": "frame:arrays-main:1",
+      "objectId": "object:array:23",
+      "index": 2,
+      "value": {
+        "kind": "primitive",
+        "javaType": "int",
+        "value": 1
+      }
+    },
+    {
+      "eventId": "arrays:069",
+      "seq": 69,
+      "type": "ARRAY_WRITE",
+      "source": {
+        "fileId": "Main.java",
+        "line": 9
+      },
+      "label": "nums[1] = nums[2]: 6 → 1",
+      "importance": "major",
+      "frameId": "frame:arrays-main:1",
+      "objectId": "object:array:23",
+      "index": 1,
+      "value": {
+        "kind": "primitive",
+        "javaType": "int",
+        "value": 1
+      },
+      "from": {
+        "kind": "element",
+        "index": 2
+      }
+    },
+    {
+      "eventId": "arrays:070",
+      "seq": 70,
+      "type": "ARRAY_WRITE",
+      "source": {
+        "fileId": "Main.java",
+        "line": 10
+      },
+      "label": "nums[2] = temp: 1 → 6",
+      "importance": "major",
+      "frameId": "frame:arrays-main:1",
+      "objectId": "object:array:23",
+      "index": 2,
+      "value": {
+        "kind": "primitive",
+        "javaType": "int",
+        "value": 6
+      },
+      "from": {
+        "kind": "slot",
+        "frameId": "frame:arrays-main:1",
+        "slotId": "slot:arrays-main:1:temp"
+      }
+    },
+    {
+      "eventId": "arrays:071",
+      "seq": 71,
+      "type": "REMOVE_LOCAL",
+      "source": {
+        "fileId": "Main.java",
+        "line": 11
+      },
+      "label": "temp leaves swap scope",
+      "importance": "quiet",
+      "frameId": "frame:arrays-main:1",
+      "slotId": "slot:arrays-main:1:temp"
+    },
+    {
+      "eventId": "arrays:072",
+      "seq": 72,
+      "type": "ASSIGN_LOCAL",
+      "source": {
+        "fileId": "Main.java",
+        "line": 6
+      },
+      "label": "j++: 1 → 2",
+      "importance": "quiet",
+      "frameId": "frame:arrays-main:1",
+      "slotId": "slot:arrays-main:1:j",
+      "value": {
+        "kind": "primitive",
+        "javaType": "int",
+        "value": 2
+      }
+    },
+    {
+      "eventId": "arrays:073",
+      "seq": 73,
+      "type": "LINE_EXECUTE",
+      "source": {
+        "fileId": "Main.java",
+        "line": 6
+      },
+      "label": "j < nums.length - i - 1: 2 < 3 → true",
+      "importance": "quiet",
+      "frameId": "frame:arrays-main:1"
+    },
+    {
+      "eventId": "arrays:074",
+      "seq": 74,
+      "type": "ARRAY_READ",
+      "source": {
+        "fileId": "Main.java",
+        "line": 7
+      },
+      "label": "Read nums[2] = 6 for comparison",
+      "importance": "normal",
+      "frameId": "frame:arrays-main:1",
+      "objectId": "object:array:23",
+      "index": 2,
+      "value": {
+        "kind": "primitive",
+        "javaType": "int",
+        "value": 6
+      }
+    },
+    {
+      "eventId": "arrays:075",
+      "seq": 75,
+      "type": "ARRAY_READ",
+      "source": {
+        "fileId": "Main.java",
+        "line": 7
+      },
+      "label": "Read nums[3] = 5 for comparison",
+      "importance": "normal",
+      "frameId": "frame:arrays-main:1",
+      "objectId": "object:array:23",
+      "index": 3,
+      "value": {
+        "kind": "primitive",
+        "javaType": "int",
+        "value": 5
+      }
+    },
+    {
+      "eventId": "arrays:076",
+      "seq": 76,
+      "type": "ARRAY_COMPARE",
+      "source": {
+        "fileId": "Main.java",
+        "line": 7
+      },
+      "label": "nums[2] > nums[3]: 6 > 5 → true",
+      "importance": "major",
+      "frameId": "frame:arrays-main:1",
+      "objectId": "object:array:23",
+      "indices": [
+        2,
+        3
+      ],
+      "values": [
+        {
+          "kind": "primitive",
+          "javaType": "int",
+          "value": 6
+        },
+        {
+          "kind": "primitive",
+          "javaType": "int",
+          "value": 5
+        }
+      ],
+      "operator": ">",
+      "result": true
+    },
+    {
+      "eventId": "arrays:077",
+      "seq": 77,
+      "type": "DECLARE_LOCAL",
+      "source": {
+        "fileId": "Main.java",
+        "line": 8
+      },
+      "label": "Declare temp",
+      "importance": "normal",
+      "frameId": "frame:arrays-main:1",
+      "slot": {
+        "id": "slot:arrays-main:1:temp",
+        "name": "temp",
+        "javaType": "int",
+        "role": "local",
+        "value": {
+          "kind": "uninitialized"
+        }
+      }
+    },
+    {
+      "eventId": "arrays:078",
+      "seq": 78,
+      "type": "ARRAY_READ",
+      "source": {
+        "fileId": "Main.java",
+        "line": 8
+      },
+      "label": "temp = nums[2] = 6",
+      "importance": "normal",
+      "frameId": "frame:arrays-main:1",
+      "objectId": "object:array:23",
+      "index": 2,
+      "value": {
+        "kind": "primitive",
+        "javaType": "int",
+        "value": 6
+      },
+      "destinationSlotId": "slot:arrays-main:1:temp"
+    },
+    {
+      "eventId": "arrays:079",
+      "seq": 79,
+      "type": "ARRAY_READ",
+      "source": {
+        "fileId": "Main.java",
+        "line": 9
+      },
+      "label": "Read nums[3] = 5 for assignment",
+      "importance": "normal",
+      "frameId": "frame:arrays-main:1",
+      "objectId": "object:array:23",
+      "index": 3,
+      "value": {
+        "kind": "primitive",
+        "javaType": "int",
+        "value": 5
+      }
+    },
+    {
+      "eventId": "arrays:080",
+      "seq": 80,
+      "type": "ARRAY_WRITE",
+      "source": {
+        "fileId": "Main.java",
+        "line": 9
+      },
+      "label": "nums[2] = nums[3]: 6 → 5",
+      "importance": "major",
+      "frameId": "frame:arrays-main:1",
+      "objectId": "object:array:23",
+      "index": 2,
+      "value": {
+        "kind": "primitive",
+        "javaType": "int",
+        "value": 5
+      },
+      "from": {
+        "kind": "element",
+        "index": 3
+      }
+    },
+    {
+      "eventId": "arrays:081",
+      "seq": 81,
+      "type": "ARRAY_WRITE",
+      "source": {
+        "fileId": "Main.java",
+        "line": 10
+      },
+      "label": "nums[3] = temp: 5 → 6",
+      "importance": "major",
+      "frameId": "frame:arrays-main:1",
+      "objectId": "object:array:23",
+      "index": 3,
+      "value": {
+        "kind": "primitive",
+        "javaType": "int",
+        "value": 6
+      },
+      "from": {
+        "kind": "slot",
+        "frameId": "frame:arrays-main:1",
+        "slotId": "slot:arrays-main:1:temp"
+      }
+    },
+    {
+      "eventId": "arrays:082",
+      "seq": 82,
+      "type": "REMOVE_LOCAL",
+      "source": {
+        "fileId": "Main.java",
+        "line": 11
+      },
+      "label": "temp leaves swap scope",
+      "importance": "quiet",
+      "frameId": "frame:arrays-main:1",
+      "slotId": "slot:arrays-main:1:temp"
+    },
+    {
+      "eventId": "arrays:083",
+      "seq": 83,
+      "type": "ASSIGN_LOCAL",
+      "source": {
+        "fileId": "Main.java",
+        "line": 6
+      },
+      "label": "j++: 2 → 3",
+      "importance": "quiet",
+      "frameId": "frame:arrays-main:1",
+      "slotId": "slot:arrays-main:1:j",
+      "value": {
+        "kind": "primitive",
+        "javaType": "int",
+        "value": 3
+      }
+    },
+    {
+      "eventId": "arrays:084",
+      "seq": 84,
+      "type": "LINE_EXECUTE",
+      "source": {
+        "fileId": "Main.java",
+        "line": 6
+      },
+      "label": "j < nums.length - i - 1: 3 < 3 → false",
+      "importance": "quiet",
+      "frameId": "frame:arrays-main:1"
+    },
+    {
+      "eventId": "arrays:085",
+      "seq": 85,
+      "type": "REMOVE_LOCAL",
+      "source": {
+        "fileId": "Main.java",
+        "line": 12
+      },
+      "label": "j leaves inner loop scope",
+      "importance": "quiet",
+      "frameId": "frame:arrays-main:1",
+      "slotId": "slot:arrays-main:1:j"
+    },
+    {
+      "eventId": "arrays:086",
+      "seq": 86,
+      "type": "ASSIGN_LOCAL",
+      "source": {
+        "fileId": "Main.java",
+        "line": 5
+      },
+      "label": "i++: 1 → 2",
+      "importance": "quiet",
+      "frameId": "frame:arrays-main:1",
+      "slotId": "slot:arrays-main:1:i",
+      "value": {
+        "kind": "primitive",
+        "javaType": "int",
+        "value": 2
+      }
+    },
+    {
+      "eventId": "arrays:087",
+      "seq": 87,
+      "type": "LINE_EXECUTE",
+      "source": {
+        "fileId": "Main.java",
+        "line": 5
+      },
+      "label": "i < nums.length - 1: 2 < 4 → true",
+      "importance": "quiet",
+      "frameId": "frame:arrays-main:1"
+    },
+    {
+      "eventId": "arrays:088",
+      "seq": 88,
+      "type": "DECLARE_LOCAL",
+      "source": {
+        "fileId": "Main.java",
+        "line": 6
+      },
+      "label": "j = 0",
+      "importance": "normal",
+      "frameId": "frame:arrays-main:1",
+      "slot": {
+        "id": "slot:arrays-main:1:j",
+        "name": "j",
+        "javaType": "int",
+        "role": "local",
+        "value": {
+          "kind": "primitive",
+          "javaType": "int",
+          "value": 0
+        }
+      }
+    },
+    {
+      "eventId": "arrays:089",
+      "seq": 89,
+      "type": "LINE_EXECUTE",
+      "source": {
+        "fileId": "Main.java",
+        "line": 6
+      },
+      "label": "j < nums.length - i - 1: 0 < 2 → true",
+      "importance": "quiet",
+      "frameId": "frame:arrays-main:1"
+    },
+    {
+      "eventId": "arrays:090",
+      "seq": 90,
+      "type": "ARRAY_READ",
+      "source": {
+        "fileId": "Main.java",
+        "line": 7
+      },
+      "label": "Read nums[0] = 3 for comparison",
+      "importance": "normal",
+      "frameId": "frame:arrays-main:1",
+      "objectId": "object:array:23",
+      "index": 0,
+      "value": {
+        "kind": "primitive",
+        "javaType": "int",
+        "value": 3
+      }
+    },
+    {
+      "eventId": "arrays:091",
+      "seq": 91,
+      "type": "ARRAY_READ",
+      "source": {
+        "fileId": "Main.java",
+        "line": 7
+      },
+      "label": "Read nums[1] = 1 for comparison",
+      "importance": "normal",
+      "frameId": "frame:arrays-main:1",
+      "objectId": "object:array:23",
+      "index": 1,
+      "value": {
+        "kind": "primitive",
+        "javaType": "int",
+        "value": 1
+      }
+    },
+    {
+      "eventId": "arrays:092",
+      "seq": 92,
+      "type": "ARRAY_COMPARE",
+      "source": {
+        "fileId": "Main.java",
+        "line": 7
+      },
+      "label": "nums[0] > nums[1]: 3 > 1 → true",
+      "importance": "major",
+      "frameId": "frame:arrays-main:1",
+      "objectId": "object:array:23",
+      "indices": [
+        0,
+        1
+      ],
+      "values": [
+        {
+          "kind": "primitive",
+          "javaType": "int",
+          "value": 3
+        },
+        {
+          "kind": "primitive",
+          "javaType": "int",
+          "value": 1
+        }
+      ],
+      "operator": ">",
+      "result": true
+    },
+    {
+      "eventId": "arrays:093",
+      "seq": 93,
+      "type": "DECLARE_LOCAL",
+      "source": {
+        "fileId": "Main.java",
+        "line": 8
+      },
+      "label": "Declare temp",
+      "importance": "normal",
+      "frameId": "frame:arrays-main:1",
+      "slot": {
+        "id": "slot:arrays-main:1:temp",
+        "name": "temp",
+        "javaType": "int",
+        "role": "local",
+        "value": {
+          "kind": "uninitialized"
+        }
+      }
+    },
+    {
+      "eventId": "arrays:094",
+      "seq": 94,
+      "type": "ARRAY_READ",
+      "source": {
+        "fileId": "Main.java",
+        "line": 8
+      },
+      "label": "temp = nums[0] = 3",
+      "importance": "normal",
+      "frameId": "frame:arrays-main:1",
+      "objectId": "object:array:23",
+      "index": 0,
+      "value": {
+        "kind": "primitive",
+        "javaType": "int",
+        "value": 3
+      },
+      "destinationSlotId": "slot:arrays-main:1:temp"
+    },
+    {
+      "eventId": "arrays:095",
+      "seq": 95,
+      "type": "ARRAY_READ",
+      "source": {
+        "fileId": "Main.java",
+        "line": 9
+      },
+      "label": "Read nums[1] = 1 for assignment",
+      "importance": "normal",
+      "frameId": "frame:arrays-main:1",
+      "objectId": "object:array:23",
+      "index": 1,
+      "value": {
+        "kind": "primitive",
+        "javaType": "int",
+        "value": 1
+      }
+    },
+    {
+      "eventId": "arrays:096",
+      "seq": 96,
+      "type": "ARRAY_WRITE",
+      "source": {
+        "fileId": "Main.java",
+        "line": 9
+      },
+      "label": "nums[0] = nums[1]: 3 → 1",
+      "importance": "major",
+      "frameId": "frame:arrays-main:1",
+      "objectId": "object:array:23",
+      "index": 0,
+      "value": {
+        "kind": "primitive",
+        "javaType": "int",
+        "value": 1
+      },
+      "from": {
+        "kind": "element",
+        "index": 1
+      }
+    },
+    {
+      "eventId": "arrays:097",
+      "seq": 97,
+      "type": "ARRAY_WRITE",
+      "source": {
+        "fileId": "Main.java",
+        "line": 10
+      },
+      "label": "nums[1] = temp: 1 → 3",
+      "importance": "major",
+      "frameId": "frame:arrays-main:1",
+      "objectId": "object:array:23",
+      "index": 1,
+      "value": {
+        "kind": "primitive",
+        "javaType": "int",
+        "value": 3
+      },
+      "from": {
+        "kind": "slot",
+        "frameId": "frame:arrays-main:1",
+        "slotId": "slot:arrays-main:1:temp"
+      }
+    },
+    {
+      "eventId": "arrays:098",
+      "seq": 98,
+      "type": "REMOVE_LOCAL",
+      "source": {
+        "fileId": "Main.java",
+        "line": 11
+      },
+      "label": "temp leaves swap scope",
+      "importance": "quiet",
+      "frameId": "frame:arrays-main:1",
+      "slotId": "slot:arrays-main:1:temp"
+    },
+    {
+      "eventId": "arrays:099",
+      "seq": 99,
+      "type": "ASSIGN_LOCAL",
+      "source": {
+        "fileId": "Main.java",
+        "line": 6
+      },
+      "label": "j++: 0 → 1",
+      "importance": "quiet",
+      "frameId": "frame:arrays-main:1",
+      "slotId": "slot:arrays-main:1:j",
+      "value": {
+        "kind": "primitive",
+        "javaType": "int",
+        "value": 1
+      }
+    },
+    {
+      "eventId": "arrays:100",
+      "seq": 100,
+      "type": "LINE_EXECUTE",
+      "source": {
+        "fileId": "Main.java",
+        "line": 6
+      },
+      "label": "j < nums.length - i - 1: 1 < 2 → true",
+      "importance": "quiet",
+      "frameId": "frame:arrays-main:1"
+    },
+    {
+      "eventId": "arrays:101",
+      "seq": 101,
+      "type": "ARRAY_READ",
+      "source": {
+        "fileId": "Main.java",
+        "line": 7
+      },
+      "label": "Read nums[1] = 3 for comparison",
+      "importance": "normal",
+      "frameId": "frame:arrays-main:1",
+      "objectId": "object:array:23",
+      "index": 1,
+      "value": {
+        "kind": "primitive",
+        "javaType": "int",
+        "value": 3
+      }
+    },
+    {
+      "eventId": "arrays:102",
+      "seq": 102,
+      "type": "ARRAY_READ",
+      "source": {
+        "fileId": "Main.java",
+        "line": 7
+      },
+      "label": "Read nums[2] = 5 for comparison",
+      "importance": "normal",
+      "frameId": "frame:arrays-main:1",
+      "objectId": "object:array:23",
+      "index": 2,
+      "value": {
+        "kind": "primitive",
+        "javaType": "int",
+        "value": 5
+      }
+    },
+    {
+      "eventId": "arrays:103",
+      "seq": 103,
+      "type": "ARRAY_COMPARE",
+      "source": {
+        "fileId": "Main.java",
+        "line": 7
+      },
+      "label": "nums[1] > nums[2]: 3 > 5 → false",
+      "importance": "major",
+      "frameId": "frame:arrays-main:1",
+      "objectId": "object:array:23",
+      "indices": [
+        1,
+        2
+      ],
+      "values": [
+        {
+          "kind": "primitive",
+          "javaType": "int",
+          "value": 3
+        },
+        {
+          "kind": "primitive",
+          "javaType": "int",
+          "value": 5
+        }
+      ],
+      "operator": ">",
+      "result": false
+    },
+    {
+      "eventId": "arrays:104",
+      "seq": 104,
+      "type": "ASSIGN_LOCAL",
+      "source": {
+        "fileId": "Main.java",
+        "line": 6
+      },
+      "label": "j++: 1 → 2",
+      "importance": "quiet",
+      "frameId": "frame:arrays-main:1",
+      "slotId": "slot:arrays-main:1:j",
+      "value": {
+        "kind": "primitive",
+        "javaType": "int",
+        "value": 2
+      }
+    },
+    {
+      "eventId": "arrays:105",
+      "seq": 105,
+      "type": "LINE_EXECUTE",
+      "source": {
+        "fileId": "Main.java",
+        "line": 6
+      },
+      "label": "j < nums.length - i - 1: 2 < 2 → false",
+      "importance": "quiet",
+      "frameId": "frame:arrays-main:1"
+    },
+    {
+      "eventId": "arrays:106",
+      "seq": 106,
+      "type": "REMOVE_LOCAL",
+      "source": {
+        "fileId": "Main.java",
+        "line": 12
+      },
+      "label": "j leaves inner loop scope",
+      "importance": "quiet",
+      "frameId": "frame:arrays-main:1",
+      "slotId": "slot:arrays-main:1:j"
+    },
+    {
+      "eventId": "arrays:107",
+      "seq": 107,
+      "type": "ASSIGN_LOCAL",
+      "source": {
+        "fileId": "Main.java",
+        "line": 5
+      },
+      "label": "i++: 2 → 3",
+      "importance": "quiet",
+      "frameId": "frame:arrays-main:1",
+      "slotId": "slot:arrays-main:1:i",
+      "value": {
+        "kind": "primitive",
+        "javaType": "int",
+        "value": 3
+      }
+    },
+    {
+      "eventId": "arrays:108",
+      "seq": 108,
+      "type": "LINE_EXECUTE",
+      "source": {
+        "fileId": "Main.java",
+        "line": 5
+      },
+      "label": "i < nums.length - 1: 3 < 4 → true",
+      "importance": "quiet",
+      "frameId": "frame:arrays-main:1"
+    },
+    {
+      "eventId": "arrays:109",
+      "seq": 109,
+      "type": "DECLARE_LOCAL",
+      "source": {
+        "fileId": "Main.java",
+        "line": 6
+      },
+      "label": "j = 0",
+      "importance": "normal",
+      "frameId": "frame:arrays-main:1",
+      "slot": {
+        "id": "slot:arrays-main:1:j",
+        "name": "j",
+        "javaType": "int",
+        "role": "local",
+        "value": {
+          "kind": "primitive",
+          "javaType": "int",
+          "value": 0
+        }
+      }
+    },
+    {
+      "eventId": "arrays:110",
+      "seq": 110,
+      "type": "LINE_EXECUTE",
+      "source": {
+        "fileId": "Main.java",
+        "line": 6
+      },
+      "label": "j < nums.length - i - 1: 0 < 1 → true",
+      "importance": "quiet",
+      "frameId": "frame:arrays-main:1"
+    },
+    {
+      "eventId": "arrays:111",
+      "seq": 111,
+      "type": "ARRAY_READ",
+      "source": {
+        "fileId": "Main.java",
+        "line": 7
+      },
+      "label": "Read nums[0] = 1 for comparison",
+      "importance": "normal",
+      "frameId": "frame:arrays-main:1",
+      "objectId": "object:array:23",
+      "index": 0,
+      "value": {
+        "kind": "primitive",
+        "javaType": "int",
+        "value": 1
+      }
+    },
+    {
+      "eventId": "arrays:112",
+      "seq": 112,
+      "type": "ARRAY_READ",
+      "source": {
+        "fileId": "Main.java",
+        "line": 7
+      },
+      "label": "Read nums[1] = 3 for comparison",
+      "importance": "normal",
+      "frameId": "frame:arrays-main:1",
+      "objectId": "object:array:23",
+      "index": 1,
+      "value": {
+        "kind": "primitive",
+        "javaType": "int",
+        "value": 3
+      }
+    },
+    {
+      "eventId": "arrays:113",
+      "seq": 113,
+      "type": "ARRAY_COMPARE",
+      "source": {
+        "fileId": "Main.java",
+        "line": 7
+      },
+      "label": "nums[0] > nums[1]: 1 > 3 → false",
+      "importance": "major",
+      "frameId": "frame:arrays-main:1",
+      "objectId": "object:array:23",
+      "indices": [
+        0,
+        1
+      ],
+      "values": [
+        {
+          "kind": "primitive",
+          "javaType": "int",
+          "value": 1
+        },
+        {
+          "kind": "primitive",
+          "javaType": "int",
+          "value": 3
+        }
+      ],
+      "operator": ">",
+      "result": false
+    },
+    {
+      "eventId": "arrays:114",
+      "seq": 114,
+      "type": "ASSIGN_LOCAL",
+      "source": {
+        "fileId": "Main.java",
+        "line": 6
+      },
+      "label": "j++: 0 → 1",
+      "importance": "quiet",
+      "frameId": "frame:arrays-main:1",
+      "slotId": "slot:arrays-main:1:j",
+      "value": {
+        "kind": "primitive",
+        "javaType": "int",
+        "value": 1
+      }
+    },
+    {
+      "eventId": "arrays:115",
+      "seq": 115,
+      "type": "LINE_EXECUTE",
+      "source": {
+        "fileId": "Main.java",
+        "line": 6
+      },
+      "label": "j < nums.length - i - 1: 1 < 1 → false",
+      "importance": "quiet",
+      "frameId": "frame:arrays-main:1"
+    },
+    {
+      "eventId": "arrays:116",
+      "seq": 116,
+      "type": "REMOVE_LOCAL",
+      "source": {
+        "fileId": "Main.java",
+        "line": 12
+      },
+      "label": "j leaves inner loop scope",
+      "importance": "quiet",
+      "frameId": "frame:arrays-main:1",
+      "slotId": "slot:arrays-main:1:j"
+    },
+    {
+      "eventId": "arrays:117",
+      "seq": 117,
+      "type": "ASSIGN_LOCAL",
+      "source": {
+        "fileId": "Main.java",
+        "line": 5
+      },
+      "label": "i++: 3 → 4",
+      "importance": "quiet",
+      "frameId": "frame:arrays-main:1",
+      "slotId": "slot:arrays-main:1:i",
+      "value": {
+        "kind": "primitive",
+        "javaType": "int",
+        "value": 4
+      }
+    },
+    {
+      "eventId": "arrays:118",
+      "seq": 118,
+      "type": "LINE_EXECUTE",
+      "source": {
+        "fileId": "Main.java",
+        "line": 5
+      },
+      "label": "i < nums.length - 1: 4 < 4 → false",
+      "importance": "quiet",
+      "frameId": "frame:arrays-main:1"
+    },
+    {
+      "eventId": "arrays:119",
+      "seq": 119,
+      "type": "REMOVE_LOCAL",
+      "source": {
+        "fileId": "Main.java",
+        "line": 13
+      },
+      "label": "i leaves outer loop scope",
+      "importance": "quiet",
+      "frameId": "frame:arrays-main:1",
+      "slotId": "slot:arrays-main:1:i"
+    },
+    {
+      "eventId": "arrays:120",
+      "seq": 120,
+      "type": "EXIT_METHOD",
+      "source": {
+        "fileId": "Main.java",
+        "line": 14
+      },
+      "label": "Return from main(); nums = [1, 3, 5, 6, 8]",
+      "importance": "major",
+      "frameId": "frame:arrays-main:1"
+    },
+    {
+      "eventId": "arrays:121",
+      "seq": 121,
+      "type": "PROGRAM_END",
+      "source": null,
+      "label": "Bubble sort complete",
+      "importance": "major"
+    }
+  ]
+}

@@ -2,12 +2,13 @@ import { referenceIdForSlot, type RuntimeState, type SlotOwner } from '../contra
 import type { DetailLevel, LayoutState, SceneFrameNode, SceneModel, SceneObjectNode, SceneReferenceEdge } from '../contracts/world'
 import { getReferences } from '../runtime/selectors'
 
-export function buildSceneModel(runtime: RuntimeState, layout: LayoutState, detailLevel: DetailLevel): SceneModel {
+export function buildSceneModel(runtime: RuntimeState, layout: LayoutState, detailLevel: DetailLevel, presentation: 'spatial' | 'theater' = 'spatial'): SceneModel {
+  const stage = presentation === 'theater' && layout.theater ? layout.theater : layout
   const displayValue = (value: { kind: string; objectId?: string }) => value.kind === 'reference' && value.objectId
     ? `→ #${runtime.objects[value.objectId]?.displayId ?? '?'}` : undefined
   const frames: SceneFrameNode[] = runtime.activeFrameIds.flatMap((id) => {
     const frame = runtime.frames[id]
-    const anchor = layout.anchors[id]
+    const anchor = stage.anchors[id]
     if (!frame || !anchor) return []
     return [{
       kind: 'frame' as const,
@@ -25,7 +26,7 @@ export function buildSceneModel(runtime: RuntimeState, layout: LayoutState, deta
   })
 
   const objects: SceneObjectNode[] = Object.values(runtime.objects).flatMap((object) => {
-    const anchor = layout.anchors[object.id]
+    const anchor = stage.anchors[object.id]
     if (!anchor) return []
     return [{
       kind: 'object' as const,
@@ -34,6 +35,7 @@ export function buildSceneModel(runtime: RuntimeState, layout: LayoutState, deta
       className: object.className,
       displayId: object.displayId,
       anchor,
+      array: object.array ? { elementType: object.array.elementType, length: object.array.length, cells: object.array.elements.map((slot, index) => ({ ...slot, index, anchor: stage.anchors[slot.id], port: stage.anchors[slot.id]?.bodyPort ?? anchor.bodyPort })) } : undefined,
       fields: Object.values(object.fields).map((slot) => ({ ...slot, displayValue: displayValue(slot.value), port: anchor.ports[slot.id] ?? anchor.bodyPort })),
     }]
   })
@@ -41,8 +43,8 @@ export function buildSceneModel(runtime: RuntimeState, layout: LayoutState, deta
   const references: SceneReferenceEdge[] = []
   const addReference = (source: SlotOwner, slotId: string, targetObjectId: string) => {
     const sourceId = source.kind === 'frame' ? source.frameId : source.objectId
-    const from = layout.anchors[sourceId]?.ports[slotId]
-    const to = layout.anchors[targetObjectId]?.bodyPort
+    const from = stage.anchors[sourceId]?.ports[slotId]
+    const to = stage.anchors[targetObjectId]?.bodyPort
     if (from && to && runtime.objects[targetObjectId]) {
       references.push({ id: referenceIdForSlot(slotId), source, targetObjectId, from, to })
     }
@@ -52,11 +54,11 @@ export function buildSceneModel(runtime: RuntimeState, layout: LayoutState, deta
   const returned = runtime.returns?.at(-1)
   const fromFrame = returned && runtime.frames[returned.frameId]
   const toFrame = returned?.destination && runtime.frames[returned.destination.frameId]
-  const from = returned && layout.anchors[returned.frameId]?.ports[`return:${returned.frameId}`]
-  const to = returned?.destination ? layout.anchors[returned.destination.frameId]?.ports[returned.destination.slotId] ?? null : null
+  const from = returned && stage.anchors[returned.frameId]?.ports[`return:${returned.frameId}`]
+  const to = returned?.destination ? stage.anchors[returned.destination.frameId]?.ports[returned.destination.slotId] ?? null : null
   const returnFlow = returned && fromFrame && from ? { ...returned, from, to,
     fromDepth: fromFrame.depth, toDepth: toFrame ? toFrame.depth : null,
     fromLabel: fromFrame.invocationLabel ?? `${fromFrame.methodName}()`,
     toLabel: toFrame ? toFrame.invocationLabel ?? `${toFrame.methodName}()` : null } : undefined
-  return { frames, objects, references, activeEventId: runtime.lastEventId, detailLevel, stackDepth: layout.stackDepth, bounds: layout.bounds, returnFlow }
+  return { frames, objects, references, activeEventId: runtime.lastEventId, detailLevel, stackDepth: layout.stackDepth, bounds: stage.bounds, presentation, layoutKind: layout.layoutKind, arrayActivity: runtime.arrayActivity, arrayMutations: runtime.arrayMutations, returnFlow }
 }

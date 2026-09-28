@@ -14,10 +14,11 @@ export interface ReferenceCurveProps {
   related: boolean
   label: string
   onSelect: (id: ReferenceId) => void
+  labelSize?: number
   reducedMotion?: boolean
 }
 
-export function ReferenceCurve({ edge, selected, related, label, onSelect, reducedMotion }: ReferenceCurveProps) {
+export function ReferenceCurve({ edge, selected, related, label, onSelect, labelSize = 0.19, reducedMotion }: ReferenceCurveProps) {
   const motionReduced = useReducedMotion(reducedMotion)
   const lineRef = useRef<Line2 | LineSegments2>(null)
   const curve = useMemo(() => {
@@ -68,7 +69,7 @@ export function ReferenceCurve({ edge, selected, related, label, onSelect, reduc
         <meshBasicMaterial color={colors.execution} toneMapped={false} transparent opacity={opacity} />
       </mesh>
       <Billboard position={curve.getPoint(0.48).add(new Vector3(0, 0.18, 0))}>
-        <Text font={runtimeFont} fontSize={0.19} color={colors.execution} outlineWidth={0.014} outlineColor={colors.canvas} anchorX="center">{label}</Text>
+        <Text font={runtimeFont} fontSize={labelSize} color={colors.execution} outlineWidth={0.014} outlineColor={colors.canvas} anchorX="center">{label}</Text>
       </Billboard>
       <mesh position={[...edge.to]}>
         <sphereGeometry args={[selected ? 0.09 : 0.065, 10, 8]} />

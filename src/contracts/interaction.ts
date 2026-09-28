@@ -16,6 +16,7 @@ export interface CameraPose {
 }
 
 export type CameraIntent =
+  | { kind: 'representation'; presentation: 'spatial' | 'theater' }
   | { kind: 'home' }
   | { kind: 'resetView' }
   | { kind: 'zoom'; direction: 'in' | 'out' }

@@ -15,6 +15,37 @@ export type NavigationWorld = {
   homeTarget?: Vec3
 }
 
+/** Live geometry participates in collision/selection; framing stays trace-reserved. */
+export function navigationWorldForScene(scene: SceneModel, homeTarget?: Vec3): NavigationWorld {
+  const reserved = !!scene.bounds && ((scene.stackDepth ?? 0) > 1 || scene.layoutKind === 'array')
+  return {
+    anchors: Object.fromEntries([
+      ...scene.frames.map((node) => [node.id, node.anchor] as const),
+      ...scene.objects.map((node) => [node.id, node.anchor] as const),
+      ...scene.objects.flatMap((node) => node.array?.cells.map((cell) => [cell.id, cell.anchor] as const) ?? []),
+    ]),
+    references: scene.references,
+    homeTarget: reserved ? homeTarget ?? scene.bounds?.center : homeTarget,
+  }
+}
+
+/** Collision follows physical runtime geometry, not an array's empty framing envelope. */
+export function collisionAnchorsForScene(scene: SceneModel): WorldAnchor[] {
+  return [
+    ...scene.frames.map((node) => node.anchor),
+    ...scene.objects.flatMap((node) => {
+      if (!node.array) return [node.anchor]
+      const { position, size } = node.anchor
+      const header = worldUnits.arrayHeader
+      return [
+        { ...node.anchor, position: [position[0], position[1] + size[1] / 2 - header.topInset, position[2]] as Vec3,
+          size: [Math.min(size[0], header.maxWidth), header.height, Math.min(size[2], header.depth)] as Vec3 },
+        ...node.array.cells.map((cell) => cell.anchor),
+      ]
+    }),
+  ]
+}
+
 export interface NavigationStore extends NavigationState {
   followEnabled: boolean
   selection: Selection
@@ -22,6 +53,7 @@ export interface NavigationStore extends NavigationState {
   previousMode: CameraMode | null
   intent: CameraIntent | null
   intentRevision: number
+  setRepresentation: (presentation: 'spatial' | 'theater') => void
   home: () => void
   resetView: () => void
   zoomIn: () => void
@@ -49,6 +81,12 @@ export const useNavigationStore = create<NavigationStore>((set) => ({
   previousMode: null,
   intent: null,
   intentRevision: 0,
+  setRepresentation: (presentation) => set((state) => ({
+    mode: presentation === 'theater' ? 'THEATER' : 'FREE_EXPLORE',
+    followEnabled: false, traceReferenceId: null,
+    previousPose: null, previousMode: null,
+    intent: { kind: 'representation', presentation }, intentRevision: state.intentRevision + 1,
+  })),
   home: () => set((state) => ({
     mode: 'HOME', followEnabled: false, traceReferenceId: null,
     previousPose: null, previousMode: null,
@@ -99,6 +137,7 @@ export const useNavigationStore = create<NavigationStore>((set) => ({
 }))
 
 export const navigationActions = {
+  setRepresentation: (presentation: 'spatial' | 'theater') => useNavigationStore.getState().setRepresentation(presentation),
   resetView: () => useNavigationStore.getState().resetView(),
   zoomIn: () => useNavigationStore.getState().zoomIn(),
   zoomOut: () => useNavigationStore.getState().zoomOut(),
@@ -122,6 +161,9 @@ export function selectionPoint(selection: NonNullable<Selection>, world: Navigat
     return edge ? { position: midpoint(edge.from, edge.to), size: [distance(edge.from, edge.to), 1, 1] } : null
   }
   if (selection.kind === 'slot') {
+    // Indexed locations are volumes, with their own identity and focus extent.
+    const cell = world.anchors[selection.id]
+    if (cell) return { position: cell.position, size: cell.size }
     for (const anchor of Object.values(world.anchors)) {
       const port = anchor.ports[selection.id]
       if (port) return { position: port, size: [1, 1, 1] }
@@ -153,8 +195,8 @@ export function detailLevelAtDistance(distanceToPivot: number, current: DetailLe
  * Zoom bands describe inspection scale relative to that reserved world, while
  * shallow scenes keep the established absolute Person thresholds.
  */
-export function detailDistanceForScene(distanceToPivot: number, overview: CameraPose, scene: Pick<SceneModel, 'stackDepth' | 'bounds'>): number {
-  if (!scene.bounds || (scene.stackDepth ?? 0) <= 1) return distanceToPivot
+export function detailDistanceForScene(distanceToPivot: number, overview: CameraPose, scene: Pick<SceneModel, 'stackDepth' | 'bounds' | 'layoutKind'>): number {
+  if (!scene.bounds || ((scene.stackDepth ?? 0) <= 1 && scene.layoutKind !== 'array')) return distanceToPivot
   const overviewDistance = distance(overview.position, overview.target)
   return distanceToPivot * distance(defaultHomePose.position, defaultHomePose.target) / Math.max(0.01, overviewDistance)
 }

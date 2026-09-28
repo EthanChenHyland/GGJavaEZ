@@ -14,13 +14,16 @@ export interface FrameSolidProps {
   selected: boolean
   related: boolean
   onSelect: (id: FrameId) => void
+  onSelectSlot?: (id: string) => void
   detailLevel?: DetailLevel
+  selectedSlotId?: string
   activeSlotId?: string
   reducedMotion?: boolean
+  spacious?: boolean
   readable?: boolean
 }
 
-export function FrameSolid({ node, selected, related, onSelect, detailLevel = 'meso', activeSlotId, reducedMotion, readable = false }: FrameSolidProps) {
+export function FrameSolid({ node, selected, related, onSelect, onSelectSlot, detailLevel = 'meso', activeSlotId, selectedSlotId, reducedMotion, readable = false, spacious = false }: FrameSolidProps) {
   const motionReduced = useReducedMotion(reducedMotion)
   const entranceRef = useRef<Group>(null)
   useLayoutEffect(() => {
@@ -51,16 +54,16 @@ export function FrameSolid({ node, selected, related, onSelect, detailLevel = 'm
         <boxGeometry args={[width - 0.14, height - 0.14, 0.018]} />
         <meshBasicMaterial color={worldMaterial.stackFace} />
       </mesh>
-      <RuntimeLabel text={readable && node.active ? 'STACK FRAME · ACTIVE' : 'STACK FRAME'} position={[-width / 2 + 0.22, height / 2 - 0.21, textZ]} size={readable ? 0.22 : 0.16} color={node.active && readable ? colors.execution : colors.stack} maxWidth={readable ? width - 0.6 : 1.7} />
-      <RuntimeLabel text={node.label} position={[-width / 2 + 0.22, height / 2 - 0.5, textZ]} size={readable ? 0.38 : 0.32} maxWidth={width - 0.85} />
+      <RuntimeLabel text={readable && node.active ? 'STACK FRAME · ACTIVE' : 'STACK FRAME'} position={[-width / 2 + 0.22, height / 2 - (spacious ? 0.25 : 0.21), textZ]} size={spacious ? 0.25 : readable ? 0.22 : 0.16} color={node.active && readable ? colors.execution : colors.stack} maxWidth={readable ? width - 0.6 : 1.7} />
+      <RuntimeLabel text={node.label} position={[-width / 2 + 0.22, height / 2 - (spacious ? 0.66 : 0.5), textZ]} size={spacious ? 0.44 : readable ? 0.38 : 0.32} maxWidth={width - 0.85} />
       {node.active && (
-        <mesh position={[-width / 2 + 0.1, height / 2 - 0.5, textZ]}>
+        <mesh position={[-width / 2 + 0.1, height / 2 - (spacious ? 0.66 : 0.5), textZ]}>
           <boxGeometry args={[readable ? 0.09 : 0.04, 0.33, 0.012]} />
           <meshBasicMaterial color={colors.execution} />
         </mesh>
       )}
-      {rows.map((slot, index) => (
-        <RuntimeSlot key={slot.id} slot={slot} width={width} y={height / 2 - 0.95 - index * 0.32} z={textZ} compact readable={readable} accent={colors.stack} background={worldMaterial.stackSlot} active={slot.id === activeSlotId} reducedMotion={motionReduced} />
+      {rows.map((slot) => (
+        <RuntimeSlot key={slot.id} slot={slot} width={width} y={slot.port[1] - position[1]} z={textZ} compact readable={readable} textScale={spacious ? 1.25 : 1} accent={colors.stack} background={worldMaterial.stackSlot} selected={slot.id === selectedSlotId} active={slot.id === activeSlotId} onSelect={onSelectSlot ? () => onSelectSlot(slot.id) : undefined} reducedMotion={motionReduced} />
       ))}
       </group>
     </group>

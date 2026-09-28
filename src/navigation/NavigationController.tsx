@@ -7,11 +7,11 @@ import type { CameraPose } from '../contracts/interaction'
 import type { TraceEvent } from '../contracts/runtime'
 import type { SceneModel, Vec3 } from '../contracts/world'
 import { motionMs } from '../theme/tokens'
-import { contextPose, eventFocusAnchor, guidedCameraAction, inspectorFocusPose, invocationContextPose, sampleCameraMove, sceneHomePose, traceWaypoints } from './cameraMotion'
-import type { CameraMove, CameraWaypoint } from './cameraMotion'
+import { arrayInspectionContext, contextPose, eventFocusAnchor, guidedCameraAction, inspectorFocusPose, invocationContextPose, representationTransition, sampleCameraMove, sceneHomePose, traceWaypoints } from './cameraMotion'
+import type { CameraMove, CameraWaypoint, RepresentationMemory } from './cameraMotion'
 import { cameraCollisionBoxes, collisionSafeRoute, constrainCameraPose, limitsForOverview, zoomPose } from './cameraConstraints'
 import {
-  detailDistanceForScene, detailLevelAtDistance, midpoint, selectionPoint, useNavigationStore,
+  collisionAnchorsForScene, detailDistanceForScene, detailLevelAtDistance, midpoint, navigationWorldForScene, selectionPoint, useNavigationStore,
 } from './navigation'
 
 export interface NavigationControllerProps {
@@ -58,29 +58,24 @@ export function NavigationController({ sceneModel, event, activeEntityId, homeTa
   const userInteractingRef = useRef(false)
   const applyingPoseRef = useRef(false)
   const lastSafePoseRef = useRef<CameraPose | null>(null)
+  const representationMemoryRef = useRef<RepresentationMemory>({ presentation: 'spatial', spatialPose: null })
   const preferredReducedMotion = usePrefersReducedMotion()
   const motionReduced = reducedMotion ?? preferredReducedMotion
   const intentRevision = useNavigationStore((state) => state.intentRevision)
   const followEnabled = useNavigationStore((state) => state.followEnabled)
   const deepStack = (sceneModel.stackDepth ?? 0) > 1 && !!sceneModel.bounds
+  const reservedWorld = deepStack || (sceneModel.layoutKind === 'array' && !!sceneModel.bounds)
   const framing = {
     verticalFov: camera instanceof PerspectiveCamera ? camera.getEffectiveFOV() * Math.PI / 180 : Math.PI / 4,
     aspect: size.width / Math.max(size.height, 1),
   }
   const canonicalOverview = sceneHomePose(sceneModel, homeTarget, framing)
-  const limits = limitsForOverview(canonicalOverview, deepStack ? sceneModel.bounds?.size : undefined)
-  const world = useMemo(() => ({
-    anchors: Object.fromEntries([
-      ...sceneModel.frames.map((node) => [node.id, node.anchor] as const),
-      ...sceneModel.objects.map((node) => [node.id, node.anchor] as const),
-    ]),
-    references: sceneModel.references,
-    homeTarget: deepStack ? homeTarget ?? sceneModel.bounds?.center : homeTarget,
-  }), [sceneModel, homeTarget])
+  const limits = limitsForOverview(canonicalOverview, reservedWorld ? sceneModel.bounds?.size : undefined)
+  const world = useMemo(() => navigationWorldForScene(sceneModel, homeTarget), [sceneModel, homeTarget])
 
-  const collisionBoxes = useMemo(() => cameraCollisionBoxes(Object.values(world.anchors),
+  const collisionBoxes = useMemo(() => cameraCollisionBoxes(collisionAnchorsForScene(sceneModel),
     camera.near, camera instanceof PerspectiveCamera ? camera.getEffectiveFOV() * Math.PI / 180 : Math.PI / 4,
-    size.width / Math.max(size.height, 1)), [world.anchors, camera, size.width, size.height])
+    size.width / Math.max(size.height, 1)), [sceneModel, camera, size.width, size.height])
 
   const currentPose = () => {
     const controls = controlsRef.current
@@ -162,7 +157,7 @@ export function NavigationController({ sceneModel, event, activeEntityId, homeTa
   useEffect(() => {
     if (!visible) return
     if (useNavigationStore.getState().mode === 'HOME') startMove(overviewPose(), motionMs.standard)
-  }, [size.width, size.height, visible, homeTarget, sceneModel.bounds, sceneModel.stackDepth])
+  }, [size.width, size.height, visible, homeTarget, sceneModel.bounds, sceneModel.stackDepth, sceneModel.layoutKind])
 
   useEffect(() => {
     if (!visible) return
@@ -185,7 +180,15 @@ export function NavigationController({ sceneModel, event, activeEntityId, homeTa
     const intent = store.intent
     if (!intent || !controlsRef.current) return
     if (processedIntentRef.current === intentRevision) return
-    if (intent.kind === 'home' || intent.kind === 'resetView') {
+    if (intent.kind === 'representation') {
+      // App projection may reach this controller one render after the intent.
+      if ((sceneModel.presentation ?? 'spatial') !== intent.presentation) return
+      const transition = representationTransition(intent.presentation, representationMemoryRef.current,
+        currentPose(), sceneModel, world.homeTarget, viewFraming())
+      representationMemoryRef.current = transition.memory
+      guidedEventRef.current = event?.eventId ?? null
+      if (transition.pose) startMove(transition.pose, motionMs.cinematic)
+    } else if (intent.kind === 'home' || intent.kind === 'resetView') {
       startMove(overviewPose(), motionMs.deliberate)
     } else if (intent.kind === 'zoom') {
       startMove(zoomPose(currentPose(), intent.direction, limits), motionMs.quick)
@@ -197,9 +200,9 @@ export function NavigationController({ sceneModel, event, activeEntityId, homeTa
       const cameraRight = new Vector3(0, 1, 0).cross(
         new Vector3(...pose.position).sub(new Vector3(...pose.target)),
       ).normalize()
-      const center = deepStack ? anchor.position : midpoint(overviewPose().target, anchor.position)
+      const center = reservedWorld ? anchor.position : midpoint(overviewPose().target, anchor.position)
       const pivot: Vec3 = [center[0] - cameraRight.x, center[1] - cameraRight.y, center[2] - cameraRight.z]
-      startMove(inspectorFocusPose(pivot, anchor.size, currentPose(), [], viewFraming(), {
+      startMove(inspectorFocusPose(pivot, anchor.size, currentPose(), arrayInspectionContext(intent.selection, sceneModel), viewFraming(), {
         width: size.width, height: size.height,
       }, anchor.position), motionMs.deliberate)
     } else if (intent.kind === 'tracePath') {

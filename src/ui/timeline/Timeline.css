@@ -194,3 +194,7 @@
     margin-left: auto;
   }
 }
+
+.vj-timeline--dense .vj-timeline__marker { width:3px; }
+.vj-timeline--dense .vj-timeline__marker--quiet { opacity:.35; height:7px; width:2px; }
+.vj-timeline--dense .vj-timeline__marker--major { width:5px; }

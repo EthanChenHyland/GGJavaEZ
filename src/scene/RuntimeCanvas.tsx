@@ -5,6 +5,7 @@ import type { Selection } from '../contracts/interaction'
 import type { TraceEvent } from '../contracts/runtime'
 import type { SceneFrameNode, SceneModel } from '../contracts/world'
 import { NavigationController, navigationActions } from '../navigation'
+import { ArraySolid } from './primitives/ArraySolid'
 import { ReturningFrame } from './primitives/ReturningFrame'
 import { ReturnFlow } from './primitives/ReturnFlow'
 import { useReducedMotion } from './primitives/presentationMotion'
@@ -78,7 +79,9 @@ export function RuntimeCanvas({ visible, guided, playing, quality, scene, event,
     onSelect(item)
   }
   const activeSlotId = !guided ? undefined : event?.type === 'RETURN_VALUE' ? `return:${event.frameId}`
-    : event?.type === 'SET_FIELD' || event?.type === 'ASSIGN_LOCAL' ? event.slotId : undefined
+    : event?.type === 'SET_FIELD' || event?.type === 'ASSIGN_LOCAL' ? event.slotId : event?.type === 'ARRAY_READ' ? event.destinationSlotId : undefined
+  const arrayWorld = scene.layoutKind === 'array'
+  const origins = Object.assign({}, ...scene.frames.map((node) => node.anchor.ports))
   const deepStack = (scene.stackDepth ?? 0) > 1
   const floorY = scene.bounds ? scene.bounds.center[1] - scene.bounds.size[1] / 2 - 0.22 : -1.58
   const callSpine = scene.frames.length > 1 ? scene.frames.map((frame) => [
@@ -111,27 +114,30 @@ export function RuntimeCanvas({ visible, guided, playing, quality, scene, event,
       <pointLight position={[5, 3, 2]} intensity={11} distance={14} color={colors.heap} />
       <pointLight position={[-5, 3, 4]} intensity={10} distance={13} color={colors.stack} />
       <mesh position={[0, floorY, -1.4]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-        <planeGeometry args={deepStack ? [24, 26] : [20, 16]} />
+        <planeGeometry args={deepStack || arrayWorld ? [24, 26] : [20, 16]} />
         <meshStandardMaterial color={worldMaterial.floor} roughness={0.9} metalness={0.05} />
       </mesh>
       <group>
         {scene.frames.length > 0 && <Text font={runtimeFont} position={deepStack && scene.bounds ? [scene.bounds.center[0] - 4.5, scene.bounds.center[1] + scene.bounds.size[1] / 2 + 0.6, 2.5] : [-5.9, 3.25, -1.5]} fontSize={0.31} color={colors.stack} anchorX="left" anchorY="middle" letterSpacing={0.08}>STACK</Text>}
-        {scene.objects.length > 0 && <Text font={runtimeFont} position={[2.1, 2.18, -0.65]} fontSize={0.31} color={colors.heap} anchorX="left" anchorY="middle" letterSpacing={0.08}>HEAP</Text>}
+        {scene.objects.length > 0 && !arrayWorld && <Text font={runtimeFont} position={[2.1, 2.18, -0.65]} fontSize={0.31} color={colors.heap} anchorX="left" anchorY="middle" letterSpacing={0.08}>HEAP</Text>}
         {callSpine.length > 1 && <Line points={callSpine} color={colors.stack} lineWidth={1.4} transparent opacity={0.54} />}
         {scene.returnFlow && scene.frames.length > 0 && <ReturnFlow flow={scene.returnFlow} guided={guided} playing={playing} />}
         {scene.references.map((edge) => <ReferenceCurve key={edge.id} edge={edge}
           label={[...scene.frames.flatMap((node) => node.slots), ...scene.objects.flatMap((node) => node.fields)].find((slot) => slot.id === edge.source.slotId)?.name ?? ''}
           selected={selection?.kind === 'reference' && selection.id === edge.id}
           related={selection?.kind === 'object' && edge.targetObjectId === selection.id}
+          labelSize={arrayWorld ? 0.28 : undefined}
           onSelect={(id) => select({ kind: 'reference', id })} />)}
         {returning.map((node) => <ReturningFrame key={node.id} node={node} />)}
         {scene.frames.map((node) => <FrameSolid key={node.id} node={node}
-          readable={deepStack}
+          readable={deepStack || arrayWorld} spacious={arrayWorld}
           selected={selection?.kind === 'frame' && selection.id === node.id}
           related={isRelated(selection, node.id, scene)} detailLevel={selection?.id === node.id && scene.detailLevel === 'macro' ? 'meso' : scene.detailLevel}
           activeSlotId={guided && event?.type === 'RETURN_VALUE' && event.destination?.frameId === node.id ? event.destination.slotId : activeSlotId}
+          selectedSlotId={selection?.kind === 'slot' ? selection.id : undefined}
+          onSelectSlot={(id) => select({ kind: 'slot', id })}
           onSelect={(id) => select({ kind: 'frame', id })} />)}
-        {scene.objects.map((node) => <ObjectSolid key={node.id} node={node}
+        {scene.objects.map((node) => node.array ? <ArraySolid key={node.id} node={node} selection={selection} onSelect={select} guided={guided} playing={playing} activity={scene.arrayActivity} mutations={scene.arrayMutations} presentation={scene.presentation} detailLevel={scene.detailLevel} origins={origins} /> : <ObjectSolid key={node.id} node={node}
           selected={selection?.kind === 'object' && selection.id === node.id}
           related={isRelated(selection, node.id, scene)} detailLevel={selection?.id === node.id && scene.detailLevel === 'macro' ? 'meso' : scene.detailLevel}
           activeSlotId={activeSlotId}

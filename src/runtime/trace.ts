@@ -2,6 +2,8 @@ import rawPersonTrace from '../demos/person/person.trace.json'
 import personSource from '../demos/person/Main.java?raw'
 import rawRecursionTrace from '../demos/recursion/recursion.trace.json'
 import recursionSource from '../demos/recursion/Main.java?raw'
+import rawArrayTrace from '../demos/arrays/trace.json'
+import arraySource from '../demos/arrays/Main.java?raw'
 import type { RuntimeSlot, RuntimeValue, ScalarValue, SlotOwner, TraceDocument, TraceEvent } from '../contracts/runtime'
 import { applyEvent, createInitialState } from './state'
 
@@ -44,6 +46,15 @@ function isScalar(value: unknown): value is ScalarValue {
   return isValue(value) && value.kind !== 'reference'
 }
 
+function isInt(value: unknown): boolean {
+  return isScalar(value) && value.kind === 'primitive' && value.javaType === 'int' &&
+    typeof value.value === 'number' && value.value >= -2147483648 && value.value <= 2147483647
+}
+
+function isIndex(value: unknown): boolean {
+  return Number.isInteger(value) && (value as number) >= 0
+}
+
 function isSlot(value: unknown): value is RuntimeSlot {
   return isRecord(value) && isText(value.id) && isText(value.name) && isText(value.javaType) && isValue(value.value) &&
     (value.role === undefined || ['local', 'parameter', 'operand', 'return'].includes(String(value.role)))
@@ -81,6 +92,22 @@ function isEvent(value: unknown): value is TraceEvent {
         (value.expression === undefined || isText(value.expression))
     case 'DECLARE_LOCAL':
       return isText(value.frameId) && isSlot(value.slot)
+    case 'REMOVE_LOCAL':
+      return isText(value.frameId) && isText(value.slotId)
+    case 'ALLOCATE_ARRAY':
+      return isText(value.objectId) && Number.isInteger(value.displayId) && (value.displayId as number) > 0 &&
+        value.elementType === 'int' && Array.isArray(value.elements) && value.elements.every(isInt)
+    case 'ARRAY_READ':
+      return isText(value.frameId) && isText(value.objectId) && isIndex(value.index) && isInt(value.value) &&
+        (value.destinationSlotId === undefined || isText(value.destinationSlotId))
+    case 'ARRAY_COMPARE':
+      return isText(value.frameId) && isText(value.objectId) && value.operator === '>' &&
+        typeof value.result === 'boolean' && Array.isArray(value.indices) && value.indices.length === 2 &&
+        value.indices.every(isIndex) && Array.isArray(value.values) && value.values.length === 2 && value.values.every(isInt)
+    case 'ARRAY_WRITE':
+      return isText(value.frameId) && isText(value.objectId) && isIndex(value.index) && isInt(value.value) &&
+        isRecord(value.from) && ((value.from.kind === 'element' && isIndex(value.from.index)) ||
+          (value.from.kind === 'slot' && isText(value.from.frameId) && isText(value.from.slotId)))
     case 'ASSIGN_LOCAL':
       return isText(value.frameId) && isText(value.slotId) && isScalar(value.value)
     case 'ALLOCATE_OBJECT':
@@ -152,6 +179,15 @@ export function loadRecursionTrace(): TraceDocument {
   if (trace.demoId !== 'recursion' || trace.sourceFiles.length !== 1 ||
       trace.sourceFiles[0].content !== recursionSource) {
     throw new Error('Recursion trace and Java source fixture differ')
+  }
+  return trace
+}
+
+export function loadArrayTrace(): TraceDocument {
+  const trace = validateTrace(structuredClone(rawArrayTrace))
+  if (trace.demoId !== 'arrays' || trace.sourceFiles.length !== 1 ||
+      trace.sourceFiles[0].content !== arraySource) {
+    throw new Error('Array trace and Java source fixture differ')
   }
   return trace
 }

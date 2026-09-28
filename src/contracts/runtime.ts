@@ -48,12 +48,35 @@ export interface ReturnTransfer {
   expression?: string
 }
 
+export interface RuntimeArray {
+  elementType: 'int'
+  length: number
+  elements: RuntimeSlot[]
+}
+
+export type ArrayValueOrigin = { kind: 'element'; index: number } | { kind: 'slot'; frameId: FrameId; slotId: SlotId }
+export interface ArrayMutation {
+  eventId: EventId
+  objectId: ObjectId
+  index: number
+  before: ScalarValue
+  after: ScalarValue
+  from: ArrayValueOrigin
+}
+export type ArrayActivity =
+  | { kind: 'read'; eventId: EventId; objectId: ObjectId; index: number; value: ScalarValue; destinationSlotId?: SlotId }
+  | { kind: 'compare'; eventId: EventId; objectId: ObjectId; indices: readonly [number, number]; values: readonly [ScalarValue, ScalarValue]; operator: '>'; result: boolean }
+  | ({ kind: 'write' } & ArrayMutation)
+
+export function arrayElementSlotId(objectId: ObjectId, index: number): SlotId { return `${objectId}:element:${index}` }
+
 export interface RuntimeObject {
   id: ObjectId
   displayId: number
   className: string
   fields: Record<SlotId, RuntimeSlot>
   allocatedAt: EventId
+  array?: RuntimeArray
 }
 
 export interface RuntimeState {
@@ -66,6 +89,8 @@ export interface RuntimeState {
   frames: Record<FrameId, RuntimeFrame>
   objects: Record<ObjectId, RuntimeObject>
   returns: ReturnTransfer[]
+  arrayActivity: ArrayActivity | null
+  arrayMutations: ArrayMutation[]
 }
 
 export type SlotOwner =
@@ -88,6 +113,11 @@ export type TraceEvent = TraceEventBase & (
   | { type: 'EXIT_METHOD'; frameId: FrameId }
   | { type: 'RETURN_VALUE'; frameId: FrameId; value: ScalarValue; destination: ReturnTransfer['destination']; expression?: string }
   | { type: 'DECLARE_LOCAL'; frameId: FrameId; slot: RuntimeSlot }
+  | { type: 'REMOVE_LOCAL'; frameId: FrameId; slotId: SlotId }
+  | { type: 'ALLOCATE_ARRAY'; objectId: ObjectId; displayId: number; elementType: 'int'; elements: ScalarValue[] }
+  | { type: 'ARRAY_READ'; frameId: FrameId; objectId: ObjectId; index: number; value: ScalarValue; destinationSlotId?: SlotId }
+  | { type: 'ARRAY_COMPARE'; frameId: FrameId; objectId: ObjectId; indices: readonly [number, number]; values: readonly [ScalarValue, ScalarValue]; operator: '>'; result: boolean }
+  | { type: 'ARRAY_WRITE'; frameId: FrameId; objectId: ObjectId; index: number; value: ScalarValue; from: ArrayValueOrigin }
   | { type: 'ASSIGN_LOCAL'; frameId: FrameId; slotId: SlotId; value: ScalarValue }
   | { type: 'ALLOCATE_OBJECT'; objectId: ObjectId; displayId: number; className: string; fields: RuntimeSlot[] }
   | { type: 'SET_FIELD'; objectId: ObjectId; slotId: SlotId; value: ScalarValue }

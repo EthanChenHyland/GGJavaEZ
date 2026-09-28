@@ -1,0 +1,48 @@
+{
+  "demo": "arrays",
+  "representation": "theater",
+  "environment": "Installed Chrome headless, ANGLE WebGL, 1440×900, balanced tier. Rendering timestamps recorded from WebGL draw calls; scrub latency includes Playwright roundtrip.",
+  "allocation": {
+    "label": "array allocation and reserved Home framing",
+    "renderedFrames": 4,
+    "medianFrameMs": 16.700000000000045,
+    "p95FrameMs": 33.281999999999925,
+    "continuousSample": false,
+    "activeFrameCadenceFps": null,
+    "approximateFps": 45
+  },
+  "idle": {
+    "label": "idle demand rendering, one second",
+    "renderedFrames": 0,
+    "medianFrameMs": null,
+    "p95FrameMs": null,
+    "continuousSample": false,
+    "activeFrameCadenceFps": null,
+    "approximateFps": 0
+  },
+  "orbit": {
+    "label": "orbit",
+    "renderedFrames": 120,
+    "medianFrameMs": 16.666000000000167,
+    "p95FrameMs": 16.666000000000167,
+    "continuousSample": true,
+    "activeFrameCadenceFps": 60,
+    "approximateFps": 60
+  },
+  "playback": {
+    "label": "two indexed writes during playback, including value travel",
+    "renderedFrames": 47,
+    "medianFrameMs": 16.69999999999891,
+    "p95FrameMs": 16.80000000000109,
+    "continuousSample": true,
+    "activeFrameCadenceFps": 59.9,
+    "approximateFps": 27.3
+  },
+  "scrubRoundtripMedianMs": 4.024790999999823,
+  "scrubRoundtripP95Ms": 9.741041999999652,
+  "memory": {
+    "beforeMB": 18.59933853149414,
+    "after100SeeksMB": 19.467079162597656,
+    "after200SeeksMB": 19.786808013916016
+  }
+}

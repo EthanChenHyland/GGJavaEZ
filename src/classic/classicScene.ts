@@ -4,6 +4,14 @@ import type { SceneModel, SceneSlot } from '../contracts/world'
 
 export interface DiagramRect { x: number; y: number; width: number; height: number }
 export interface DiagramSlot { slot: SceneSlot; rect: DiagramRect; value: string }
+export interface DiagramArrayCell extends DiagramSlot { index: number }
+export interface DiagramArray {
+  length: number
+  name: string | null
+  cells: DiagramArrayCell[]
+  /** Verified against the current values; completion is decided by the shared event. */
+  ascending: boolean
+}
 export interface DiagramEntity {
   id: string
   kind: 'frame' | 'object'
@@ -11,6 +19,7 @@ export interface DiagramEntity {
   active: boolean
   rect: DiagramRect
   slots: DiagramSlot[]
+  array?: DiagramArray
 }
 export interface DiagramReference {
   id: string
@@ -40,6 +49,21 @@ export interface ClassicScene {
   references: DiagramReference[]
   deepStack: boolean
   returnTransfer: DiagramReturn | null
+  arrayActivity: { eventId: string; objectId: string; slotIds: string[]; destinationSlotId?: string; label: string } | null
+  arrayWrites: DiagramArrayWrite[]
+}
+
+export interface DiagramArrayWrite {
+  eventId: string
+  objectId: string
+  slotId: string
+  sourceSlotId: string
+  before: string
+  after: string
+  label: string
+  from: readonly [number, number]
+  to: readonly [number, number]
+  path: string
 }
 
 /** Entire-trace depth reserves these bands; live counts never change their positions. */
@@ -65,20 +89,42 @@ export function slotValue(slot: SceneSlot): string {
 export function buildClassicScene(scene: SceneModel): ClassicScene {
   const stackDepth = scene.stackDepth ?? 1
   const deepStack = stackDepth > 1
+  const arrayLayout = scene.layoutKind === 'array' || scene.objects.some((object) => object.array)
   const entities: DiagramEntity[] = [
     ...scene.frames.map((frame): DiagramEntity => {
-      const rect = classicFrameRect(frame.depth, stackDepth, frame.slots.length)
+      const rect = arrayLayout && !deepStack
+        ? { x: 72, y: 260 - frame.depth * 212, width: 356, height: 240 }
+        : classicFrameRect(frame.depth, stackDepth, frame.slots.length)
       const headingHeight = deepStack ? 26 : 64
       const rowHeight = deepStack ? 18 : 40
+      const reservedSlots = arrayLayout ? Object.keys(frame.anchor.ports) : []
       return {
         id: frame.id, kind: 'frame', label: frame.label, active: frame.active, rect,
-        slots: frame.slots.map((slot, index) => ({
-          slot, value: slotValue(slot),
-          rect: { x: rect.x, y: rect.y + headingHeight + index * rowHeight, width: rect.width, height: rowHeight },
-        })),
+        slots: frame.slots.map((slot, index) => {
+          const reservedIndex = reservedSlots.indexOf(slot.id)
+          return { slot, value: slotValue(slot),
+            rect: { x: rect.x, y: rect.y + headingHeight + (reservedIndex >= 0 ? reservedIndex : index) * rowHeight, width: rect.width, height: rowHeight } }
+        }),
       }
     }),
     ...scene.objects.map((object): DiagramEntity => {
+      if (object.array) {
+        // Classic cell coordinates encode index, never numeric value or 3D theater staging.
+        const rect = { x: 600, y: 238, width: 330, height: 160 }
+        const sourceReference = scene.references.find((edge) => edge.targetObjectId === object.id && edge.source.kind === 'frame')
+        const name = sourceReference ? scene.frames.flatMap((frame) => frame.slots).find((slot) => slot.id === sourceReference.source.slotId)?.name ?? null : null
+        const cells = [...object.array.cells].sort((a, b) => a.index - b.index).map((cell): DiagramArrayCell => ({
+          slot: cell, index: cell.index, value: slotValue(cell),
+          rect: { x: rect.x + cell.index * rect.width / Math.max(1, object.array!.length), y: rect.y + 64, width: rect.width / Math.max(1, object.array!.length), height: 72 },
+        }))
+        const values = cells.map((cell) => cell.slot.value.kind === 'primitive' && cell.slot.value.javaType === 'int' &&
+          typeof cell.slot.value.value === 'number' && Number.isFinite(cell.slot.value.value) ? cell.slot.value.value : null)
+        const ascending = values.length === object.array.length && values.every((value, index) => {
+          const previous = values[index - 1]
+          return value !== null && (index === 0 || (previous !== null && previous <= value))
+        })
+        return { id: object.id, kind: 'object', label: object.label, active: false, rect, slots: [], array: { length: object.array.length, name, cells, ascending } }
+      }
       // Project persistent heap anchors, never a live-object count or camera-dependent order.
       const x = 600 + object.anchor.position[0] * 16
       const y = 238 - object.anchor.position[1] * 40 + object.anchor.position[2] * 8
@@ -94,7 +140,7 @@ export function buildClassicScene(scene: SceneModel): ClassicScene {
   const references = scene.references.flatMap((edge): DiagramReference[] => {
     const sourceId = edge.source.kind === 'frame' ? edge.source.frameId : edge.source.objectId
     const source = entities.find((entity) => entity.id === sourceId)
-    const slot = source?.slots.find((row) => row.slot.id === edge.source.slotId)
+    const slot = source && [...source.slots, ...(source.array?.cells ?? [])].find((row) => row.slot.id === edge.source.slotId)
     const target = entities.find((entity) => entity.id === edge.targetObjectId)
     if (!source || !slot || !target) return []
     const from = [slot.rect.x + slot.rect.width, slot.rect.y + slot.rect.height / 2] as const
@@ -127,7 +173,45 @@ export function buildClassicScene(scene: SceneModel): ClassicScene {
       path: `M ${from[0]} ${from[1]} C ${from[0] + 88} ${from[1]}, ${to[0] + 88} ${to[1]}, ${to[0]} ${to[1]}`,
     }
   }
-  return { entities, references, deepStack, returnTransfer }
+  const activity = scene.arrayActivity
+  const activeArray = activity && activity.eventId === scene.activeEventId ? entities.find((node) => node.id === activity.objectId)?.array : undefined
+  let arrayActivity: ClassicScene['arrayActivity'] = null
+  if (activity && activeArray && activity.kind !== 'write') {
+    const indices = activity.kind === 'read' ? [activity.index] : activity.indices
+    const cells = indices.map((index) => activeArray.cells.find((cell) => cell.index === index))
+    if (cells.every((cell) => cell !== undefined)) {
+      const name = activeArray.name ?? 'array'
+      const label = activity.kind === 'read'
+        ? `Read ${name}[${activity.index}] = ${cells[0]!.value}`
+        : `${name}[${activity.indices[0]}] > ${name}[${activity.indices[1]}]: ${cells[0]!.value} > ${cells[1]!.value} = ${activity.result}`
+      arrayActivity = { eventId: activity.eventId, objectId: activity.objectId, slotIds: cells.map((cell) => cell!.slot.id), label,
+        destinationSlotId: activity.kind === 'read' ? activity.destinationSlotId : undefined }
+    }
+  }
+  const arrayWrites = (scene.arrayMutations ?? []).flatMap((mutation): DiagramArrayWrite[] => {
+    if (mutation.eventId !== scene.activeEventId) return []
+    const array = entities.find((node) => node.id === mutation.objectId)?.array
+    const receiver = array?.cells.find((cell) => cell.index === mutation.index)
+    const origin = mutation.from
+    const source = origin.kind === 'element'
+      ? array?.cells.find((cell) => cell.index === origin.index)
+      : entities.find((node) => node.id === origin.frameId)?.slots.find((row) => row.slot.id === origin.slotId)
+    if (!array || !receiver || !source) return []
+    const before = slotValue({ ...receiver.slot, value: mutation.before, displayValue: undefined })
+    const after = slotValue({ ...receiver.slot, value: mutation.after, displayValue: undefined })
+    const name = array.name ?? 'array'
+    const sourceLabel = mutation.from.kind === 'element' ? `${name}[${mutation.from.index}]` : source.slot.name
+    const from = mutation.from.kind === 'element'
+      ? [source.rect.x + source.rect.width / 2, source.rect.y + source.rect.height] as const
+      : [source.rect.x + source.rect.width, source.rect.y + source.rect.height / 2] as const
+    const to = [receiver.rect.x + receiver.rect.width / 2, receiver.rect.y + receiver.rect.height] as const
+    const path = mutation.from.kind === 'element'
+      ? `M ${from[0]} ${from[1]} C ${from[0]} ${from[1] + 48}, ${to[0]} ${to[1] + 48}, ${to[0]} ${to[1]}`
+      : `M ${from[0]} ${from[1]} C ${from[0] + 72} ${from[1]}, ${to[0]} ${to[1] + 64}, ${to[0]} ${to[1]}`
+    return [{ eventId: mutation.eventId, objectId: mutation.objectId, slotId: receiver.slot.id, sourceSlotId: source.slot.id, before, after,
+      label: `${sourceLabel} → ${name}[${mutation.index}]: ${before} → ${after}`, from, to, path }]
+  })
+  return { entities, references, deepStack, returnTransfer, arrayActivity, arrayWrites }
 }
 
 export function emphasizedSlot(event: TraceEvent | null): string | null {
@@ -141,10 +225,10 @@ export function emphasizedSlot(event: TraceEvent | null): string | null {
   }
 }
 
-export function relatedReference(edge: DiagramReference, selection: Selection): boolean {
+export function relatedReference(edge: DiagramReference, selection: Selection, diagram?: ClassicScene): boolean {
   if (!selection) return false
   if (selection.kind === 'reference') return edge.id === selection.id
-  if (selection.kind === 'slot') return edge.sourceSlotId === selection.id
+  if (selection.kind === 'slot') return edge.sourceSlotId === selection.id || !!diagram?.entities.find((node) => node.id === edge.targetObjectId)?.array?.cells.some((cell) => cell.slot.id === selection.id)
   return edge.sourceEntityId === selection.id || edge.targetObjectId === selection.id
 }
 
@@ -154,6 +238,6 @@ export function selectedBounds(diagram: ClassicScene, selection: NonNullable<Sel
     if (!edge) return null
     return { x: Math.min(edge.from[0], edge.to[0]), y: Math.min(edge.from[1], edge.to[1]), width: Math.abs(edge.to[0] - edge.from[0]), height: Math.abs(edge.to[1] - edge.from[1]) }
   }
-  if (selection.kind === 'slot') return diagram.entities.flatMap((entity) => entity.slots).find((row) => row.slot.id === selection.id)?.rect ?? null
+  if (selection.kind === 'slot') return diagram.entities.flatMap((entity) => [...entity.slots, ...(entity.array?.cells ?? [])]).find((row) => row.slot.id === selection.id)?.rect ?? null
   return diagram.entities.find((entity) => entity.id === selection.id)?.rect ?? null
 }
