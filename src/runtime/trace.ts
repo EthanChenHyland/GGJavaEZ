@@ -33,7 +33,10 @@ function isValue(value: unknown): value is RuntimeValue {
       return (
         (value.javaType === 'int' && Number.isInteger(value.value) &&
           (value.value as number) >= -2147483648 && (value.value as number) <= 2147483647) ||
-        (value.javaType === 'double' && typeof value.value === 'number' && Number.isFinite(value.value)) ||
+        (['byte', 'short'].includes(String(value.javaType)) && typeof value.value === 'number' && Number.isInteger(value.value)) ||
+        (['double', 'float'].includes(String(value.javaType)) && typeof value.value === 'number' && Number.isFinite(value.value)) ||
+        (value.javaType === 'long' && typeof value.value === 'string' && /^-?\d+$/.test(value.value)) ||
+        (value.javaType === 'char' && typeof value.value === 'string' && value.value.length === 1) ||
         (value.javaType === 'boolean' && typeof value.value === 'boolean')
       )
     case 'stringSummary':
@@ -75,7 +78,7 @@ function isOwner(value: unknown): value is SlotOwner {
     (value.kind === 'object' && isText(value.objectId))
 }
 
-function isEvent(value: unknown): value is TraceEvent {
+function isEvent(value: unknown, schemaVersion: 1 | 2): value is TraceEvent {
   if (!isRecord(value) || !isText(value.eventId) || !Number.isInteger(value.seq) ||
       (value.source !== null && !isSource(value.source)) || !isText(value.label) ||
       !['quiet', 'normal', 'major'].includes(String(value.importance))) return false
@@ -103,6 +106,8 @@ function isEvent(value: unknown): value is TraceEvent {
     case 'PROGRAM_START':
     case 'PROGRAM_END':
       return true
+    case 'PROGRAM_ABORT':
+      return schemaVersion === 2 && ['program_crashed', 'instrumentation_failed', 'limit_exceeded', 'unsupported'].includes(String(value.reason)) && typeof value.message === 'string'
     case 'LINE_EXECUTE':
       return isText(value.frameId) && isSource(value.source)
     case 'EXIT_METHOD':
@@ -134,8 +139,9 @@ function isEvent(value: unknown): value is TraceEvent {
         value.indices.every(isIndex) && Array.isArray(value.values) && value.values.length === 2 && value.values.every(isInt)
     case 'ARRAY_WRITE':
       return isText(value.frameId) && isText(value.objectId) && isIndex(value.index) && isInt(value.value) &&
-        isRecord(value.from) && ((value.from.kind === 'element' && isIndex(value.from.index)) ||
-          (value.from.kind === 'slot' && isText(value.from.frameId) && isText(value.from.slotId)))
+        (schemaVersion === 2 && value.from === undefined ||
+          isRecord(value.from) && ((value.from.kind === 'element' && isIndex(value.from.index)) ||
+            (value.from.kind === 'slot' && isText(value.from.frameId) && isText(value.from.slotId))))
     case 'ASSIGN_LOCAL':
       return isText(value.frameId) && isText(value.slotId) && isScalar(value.value)
     case 'ALLOCATE_OBJECT':
@@ -147,6 +153,15 @@ function isEvent(value: unknown): value is TraceEvent {
       return isOwner(value.sourceSlot) && isText(value.targetObjectId) && isText(value.javaType)
     case 'CLEAR_REFERENCE':
       return isOwner(value.sourceSlot)
+    case 'BRANCH_EVALUATE':
+      return schemaVersion === 2 && isText(value.frameId) && isIndex(value.opcode) && isIndex(value.site) &&
+        isScalar(value.left) && (value.right === undefined || isScalar(value.right)) && typeof value.taken === 'boolean'
+    case 'THROW_EXCEPTION':
+      return schemaVersion === 2 && isText(value.frameId) && isText(value.exceptionId) && isText(value.className) &&
+        (value.message === null || typeof value.message === 'string') && typeof value.explicit === 'boolean'
+    case 'UNWIND_EXCEPTION':
+    case 'CATCH_EXCEPTION':
+      return schemaVersion === 2 && isText(value.frameId) && isText(value.exceptionId)
     default:
       return false
   }
@@ -154,7 +169,7 @@ function isEvent(value: unknown): value is TraceEvent {
 
 /** Validate structure, source locations, and the entire semantic lifecycle before playback. */
 export function validateTrace(input: unknown): TraceDocument {
-  if (!isRecord(input) || input.schemaVersion !== 1 || !isText(input.demoId) ||
+  if (!isRecord(input) || (input.schemaVersion !== 1 && input.schemaVersion !== 2) || !isText(input.demoId) ||
       !Array.isArray(input.sourceFiles) || input.sourceFiles.length === 0 ||
       !Array.isArray(input.events) || input.events.length < 2) {
     throw new Error('Invalid trace document header')
@@ -175,7 +190,10 @@ export function validateTrace(input: unknown): TraceDocument {
   const scoped = input.events.some((event) => isRecord(event) && event.type === 'ENTER_SCOPE')
   let state = createInitialState()
   for (const [seq, rawEvent] of input.events.entries()) {
-    if (!isEvent(rawEvent)) throw new Error(`Malformed event at seq ${seq}`)
+    if (!isEvent(rawEvent, input.schemaVersion)) throw new Error(`Malformed event at seq ${seq}`)
+    if (input.schemaVersion === 1 && rawEvent.type === 'RETURN_VALUE' && state.frames[rawEvent.frameId]?.callerFrameId && !rawEvent.destination) {
+      throw new Error(`Invalid event at seq ${seq}: schema-v1 returns require a direct caller destination`)
+    }
     if (scoped && rawEvent.type === 'ENTER_METHOD' && rawEvent.locals.length !== 0) {
       throw new Error(`Invalid event at seq ${seq}: Scoped ENTER_METHOD must have empty locals`)
     }
@@ -198,7 +216,7 @@ export function validateTrace(input: unknown): TraceDocument {
     }
   }
 
-  if (state.status !== 'ended') throw new Error('Trace must end with PROGRAM_END')
+  if (state.status !== 'ended' && !(input.schemaVersion === 2 && state.status === 'aborted')) throw new Error('Trace must end with PROGRAM_END or v2 PROGRAM_ABORT')
   return input as unknown as TraceDocument
 }
 

@@ -1,0 +1,137 @@
+{
+  "person": {
+    "status": "complete",
+    "requestMs": 764,
+    "compileMs": 252,
+    "transformMs": 429,
+    "jvmStartupMs": 75,
+    "executionMs": 3,
+    "rawBytes": 2930,
+    "rawEvents": 12,
+    "normalizedCapability": "partial",
+    "sourceFiles": 2,
+    "stdoutBytes": 0,
+    "stderrBytes": 0
+  },
+  "recursion": {
+    "status": "complete",
+    "requestMs": 754,
+    "compileMs": 263,
+    "transformMs": 413,
+    "jvmStartupMs": 73,
+    "executionMs": 0,
+    "rawBytes": 5630,
+    "rawEvents": 28,
+    "normalizedCapability": "partial",
+    "sourceFiles": 1,
+    "stdoutBytes": 4,
+    "stderrBytes": 0
+  },
+  "arrays": {
+    "status": "complete",
+    "requestMs": 774,
+    "compileMs": 239,
+    "transformMs": 448,
+    "jvmStartupMs": 78,
+    "executionMs": 6,
+    "rawBytes": 27357,
+    "rawEvents": 123,
+    "normalizedCapability": "partial",
+    "sourceFiles": 1,
+    "stdoutBytes": 0,
+    "stderrBytes": 0
+  },
+  "exception": {
+    "status": "program_crashed",
+    "requestMs": 718,
+    "compileMs": 243,
+    "transformMs": 398,
+    "jvmStartupMs": 72,
+    "executionMs": 0,
+    "rawBytes": 1230,
+    "rawEvents": 5,
+    "normalizedCapability": "partial",
+    "sourceFiles": 1,
+    "stdoutBytes": 0,
+    "stderrBytes": 142
+  },
+  "browser": {
+    "viewport": "1440x900",
+    "seekToNextPaintMedianMs": 33,
+    "seekToNextPaintP95Ms": 833,
+    "seekPaintMs": [
+      {
+        "cursor": 4,
+        "ms": 49
+      },
+      {
+        "cursor": 5,
+        "ms": 833
+      },
+      {
+        "cursor": 6,
+        "ms": 60
+      },
+      {
+        "cursor": 7,
+        "ms": 33
+      },
+      {
+        "cursor": 8,
+        "ms": 33
+      },
+      {
+        "cursor": 9,
+        "ms": 33
+      },
+      {
+        "cursor": 10,
+        "ms": 33
+      },
+      {
+        "cursor": 11,
+        "ms": 31
+      },
+      {
+        "cursor": 12,
+        "ms": 34
+      },
+      {
+        "cursor": 13,
+        "ms": 33
+      },
+      {
+        "cursor": 14,
+        "ms": 35
+      },
+      {
+        "cursor": 15,
+        "ms": 32
+      },
+      {
+        "cursor": 16,
+        "ms": 33
+      },
+      {
+        "cursor": 17,
+        "ms": 34
+      },
+      {
+        "cursor": 18,
+        "ms": 35
+      },
+      {
+        "cursor": 19,
+        "ms": 31
+      },
+      {
+        "cursor": 20,
+        "ms": 33
+      }
+    ],
+    "canvas": {
+      "width": 750,
+      "height": 418
+    }
+  }
+}

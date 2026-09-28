@@ -11,7 +11,7 @@ export type SourceLocation = { fileId: string; line: number }
 export type RuntimeValue =
   | { kind: 'uninitialized' }
   | { kind: 'null' }
-  | { kind: 'primitive'; javaType: 'int' | 'boolean' | 'double'; value: number | boolean }
+  | { kind: 'primitive'; javaType: 'int' | 'boolean' | 'double' | 'long' | 'float' | 'short' | 'byte' | 'char'; value: number | boolean | string }
   | { kind: 'stringSummary'; javaType: 'String'; value: string }
   | { kind: 'reference'; javaType: string; objectId: ObjectId }
 
@@ -33,7 +33,7 @@ export interface RuntimeFrame {
   className: string
   methodName: string
   depth: number
-  status: 'active' | 'returned'
+  status: 'active' | 'returned' | 'unwound'
   locals: Record<SlotId, RuntimeSlot>
   enteredAt: EventId
   exitedAt?: EventId
@@ -63,7 +63,8 @@ export interface ArrayMutation {
   index: number
   before: ScalarValue
   after: ScalarValue
-  from: ArrayValueOrigin
+  /** Absent when the JVM store operand has no provable named origin. */
+  from?: ArrayValueOrigin
 }
 export type ArrayActivity =
   | { kind: 'read'; eventId: EventId; objectId: ObjectId; index: number; value: ScalarValue; destinationSlotId?: SlotId }
@@ -131,10 +132,32 @@ export interface ConsoleEntry {
   readerObjectId?: ObjectId
 }
 
+export interface RuntimeExceptionFact {
+  eventId: EventId
+  exceptionId: ObjectId
+  className: string
+  message: string | null
+  explicit: boolean
+  source: SourceLocation | null
+  frameIds: FrameId[]
+  caughtBy?: FrameId
+  unwoundFrameIds: FrameId[]
+}
+
+export interface RuntimeBranchFact {
+  eventId: EventId
+  frameId: FrameId
+  opcode: number
+  site: number
+  left: ScalarValue
+  right?: ScalarValue
+  taken: boolean
+}
+
 export interface RuntimeState {
   /** Number of events already applied: 0 is ready, N is after the last event. */
   cursor: number
-  status: 'ready' | 'running' | 'ended'
+  status: 'ready' | 'running' | 'ended' | 'aborted'
   currentSource: SourceLocation | null
   lastEventId: EventId | null
   activeFrameIds: FrameId[]
@@ -148,6 +171,9 @@ export interface RuntimeState {
   conditions: Record<FrameId, RuntimeCondition>
   loops: Record<string, RuntimeLoop>
   console: ConsoleEntry[]
+  exceptions: RuntimeExceptionFact[]
+  branch: RuntimeBranchFact | null
+  abortReason: string | null
 }
 
 export type SlotOwner =
@@ -171,6 +197,7 @@ export type TraceEvent = TraceEventBase & (
   | { type: 'OUTPUT_WRITE'; frameId: FrameId; value: ScalarValue; text: string; originSlotId?: SlotId }
   | { type: 'PROGRAM_START' }
   | { type: 'PROGRAM_END' }
+  | { type: 'PROGRAM_ABORT'; reason: 'program_crashed' | 'instrumentation_failed' | 'limit_exceeded' | 'unsupported'; message: string }
   | { type: 'LINE_EXECUTE'; frameId: FrameId }
   | { type: 'ENTER_METHOD'; frameId: FrameId; callerFrameId: FrameId | null; className: string; methodName: string; locals: RuntimeSlot[]; invocationLabel?: string; returnType?: string }
   | { type: 'EXIT_METHOD'; frameId: FrameId }
@@ -180,19 +207,24 @@ export type TraceEvent = TraceEventBase & (
   | { type: 'ALLOCATE_ARRAY'; objectId: ObjectId; displayId: number; elementType: 'int'; elements: ScalarValue[] }
   | { type: 'ARRAY_READ'; frameId: FrameId; objectId: ObjectId; index: number; value: ScalarValue; destinationSlotId?: SlotId }
   | { type: 'ARRAY_COMPARE'; frameId: FrameId; objectId: ObjectId; indices: readonly [number, number]; values: readonly [ScalarValue, ScalarValue]; operator: '>'; result: boolean }
-  | { type: 'ARRAY_WRITE'; frameId: FrameId; objectId: ObjectId; index: number; value: ScalarValue; from: ArrayValueOrigin }
+  | { type: 'ARRAY_WRITE'; frameId: FrameId; objectId: ObjectId; index: number; value: ScalarValue; from?: ArrayValueOrigin }
   | { type: 'ASSIGN_LOCAL'; frameId: FrameId; slotId: SlotId; value: ScalarValue }
   | { type: 'ALLOCATE_OBJECT'; objectId: ObjectId; displayId: number; className: string; fields: RuntimeSlot[] }
   | { type: 'SET_FIELD'; objectId: ObjectId; slotId: SlotId; value: ScalarValue }
   | { type: 'CREATE_REFERENCE'; sourceSlot: SlotOwner; targetObjectId: ObjectId; javaType: string }
   | { type: 'CLEAR_REFERENCE'; sourceSlot: SlotOwner }
+  | { type: 'BRANCH_EVALUATE'; frameId: FrameId; opcode: number; site: number; left: ScalarValue; right?: ScalarValue; taken: boolean }
+  | { type: 'THROW_EXCEPTION'; frameId: FrameId; exceptionId: ObjectId; className: string; message: string | null; explicit: boolean }
+  | { type: 'UNWIND_EXCEPTION'; frameId: FrameId; exceptionId: ObjectId }
+  | { type: 'CATCH_EXCEPTION'; frameId: FrameId; exceptionId: ObjectId }
 )
 
 export interface TraceDocument {
-  schemaVersion: 1
+  schemaVersion: 1 | 2
   demoId: string
   sourceFiles: Array<{ fileId: string; name: string; content: string }>
   events: TraceEvent[]
+  capture?: { origin: 'jvm'; sourceHashes: Record<string, string>; recordedAt: string }
 }
 
 /** A reference's identity belongs to its named source slot; its target may change. */

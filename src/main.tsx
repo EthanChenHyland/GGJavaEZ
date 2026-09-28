@@ -11,7 +11,7 @@ for (const [name, value] of Object.entries(shellLayers)) document.documentElemen
 for (const [name, value] of Object.entries(colors)) document.documentElement.style.setProperty(`--color-${name}`, value)
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
-    {window.location.pathname === '/ide' ? <Suspense fallback={<div className="ide-loading">Opening Java workspace…</div>}><IdeWorkspace /></Suspense> : <App />}
-  </React.StrictMode>,
+  window.location.pathname === '/ide'
+    ? <Suspense fallback={<div className="ide-loading">Opening Java workspace…</div>}><IdeWorkspace /></Suspense>
+    : <React.StrictMode><App /></React.StrictMode>,
 )

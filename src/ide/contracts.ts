@@ -1,4 +1,6 @@
 /** Milestone 5 bridge DTOs. The browser never receives host filesystem paths. */
+import type { InstrumentedRunMetrics, RawRuntimeEvent, VisualizationCapabilityReport, VisualizationTerminalStatus } from '../instrumentation/contracts'
+import type { InstrumentationSourceManifest } from '../instrumentation/normalize'
 export interface SourceLocation { path: string; line: number; column: number | null }
 export interface ProjectSummary { id: string; name: string; createdAt: string }
 export interface ProjectEntry { path: string; name: string; kind: 'file' | 'directory'; children?: ProjectEntry[] }
@@ -12,3 +14,15 @@ export interface ExecutionFailure { kind: 'compile' | 'runtime' | 'launch'; mess
 export interface RunEvent { id: number; kind: 'stdout' | 'stderr' | 'stdin' | 'exit'; text?: string; exitCode?: number | null; signal?: string | null; elapsedMs?: number; exception?: RuntimeException | null }
 export interface RunSnapshot { runId: string; projectId: string; mainClass: string; status: 'running' | 'exited'; startedAt: string; events: RunEvent[]; exitCode: number | null; exception: RuntimeException | null }
 export interface RunResponse { build: BuildResult; run: RunSnapshot | null }
+export interface VisualizeResponse {
+  build: BuildResult
+  status: VisualizationTerminalStatus | 'compile_failed'
+  diagnostic: string | null
+  sourceManifest: InstrumentationSourceManifest
+  rawEvents: RawRuntimeEvent[]
+  capability: VisualizationCapabilityReport | null
+  stdout: string
+  stderr: string
+  exitCode: number | null
+  metrics: InstrumentedRunMetrics | null
+}

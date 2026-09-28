@@ -159,7 +159,7 @@ export function ArraySolid({ node, selection, onSelect, guided, playing, activit
   let flow: ValueFlow | null = null
   if (write) {
     const target = cellAt(write.index)
-    const origin = write.from.kind === 'element' ? cellAt(write.from.index)?.port : origins[write.from.slotId]
+    const origin = write.from?.kind === 'element' ? cellAt(write.from.index)?.port : write.from?.kind === 'slot' ? origins[write.from.slotId] : undefined
     if (target && origin) flow = { eventId: write.eventId, from: origin, to: target.port,
       value: formatRuntimeValue(write.after), accent: colors.mutation }
   } else if (read?.destinationSlotId) {
@@ -174,7 +174,7 @@ export function ArraySolid({ node, selection, onSelect, guided, playing, activit
   if (compare) {
     explanation = `[${compare.indices[0]}] ${formatRuntimeValue(compare.values[0])} > [${compare.indices[1]}] ${formatRuntimeValue(compare.values[1])}  =  ${compare.result ? 'true' : 'false'}`
   } else if (write) {
-    const origin = write.from.kind === 'element' ? `[${write.from.index}]` : localLabel(write.from.slotId)
+    const origin = write.from?.kind === 'element' ? `[${write.from.index}]` : write.from?.kind === 'slot' ? localLabel(write.from.slotId) : 'observed store'
     explanation = `${origin} → [${write.index}]  ·  ${formatRuntimeValue(write.before)} → ${formatRuntimeValue(write.after)}`
     explanationColor = colors.mutation
   } else if (read) {

@@ -6,16 +6,20 @@ export function buildSceneModel(runtime: RuntimeState, layout: LayoutState, deta
   const stage = presentation === 'theater' && layout.theater ? layout.theater : layout
   const displayValue = (value: { kind: string; objectId?: string }) => value.kind === 'reference' && value.objectId
     ? `→ #${runtime.objects[value.objectId]?.displayId ?? '?'}` : undefined
-  const frames: SceneFrameNode[] = runtime.activeFrameIds.flatMap((id) => {
+  const displayedFrameIds = runtime.status === 'aborted' && runtime.activeFrameIds.length === 0
+    ? runtime.exceptions.at(-1)?.unwoundFrameIds.slice().reverse() ?? []
+    : runtime.activeFrameIds
+  const frames: SceneFrameNode[] = displayedFrameIds.flatMap((id) => {
     const frame = runtime.frames[id]
     const anchor = stage.anchors[id]
     if (!frame || !anchor) return []
     return [{
       kind: 'frame' as const,
       id,
-      label: frame.invocationLabel ?? `${frame.methodName}()`,
+      label: frame.status === 'unwound' ? `${frame.methodName}() · unwound` : frame.invocationLabel ?? `${frame.methodName}()`,
       depth: frame.depth,
       active: id === runtime.activeFrameIds.at(-1),
+      historical: frame.status === 'unwound',
       anchor,
       scopes: layout.scopes ? Object.values(layout.scopes).filter((scope) => scope.frameId === id && runtime.scopes[scope.id]?.status === 'active') : undefined,
       slots: [

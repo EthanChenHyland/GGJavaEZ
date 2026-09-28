@@ -1,4 +1,4 @@
-import type { BuildResult, JdkStatus, ProjectEntry, ProjectFile, ProjectSummary, RunEvent, RunResponse, RunSnapshot } from './contracts'
+import type { BuildResult, JdkStatus, ProjectEntry, ProjectFile, ProjectSummary, RunEvent, RunResponse, RunSnapshot, VisualizeResponse } from './contracts'
 
 async function request<T>(url: string, method = 'GET', data?: unknown): Promise<T> {
   const response = await fetch(url, { method, headers: data === undefined ? undefined : { 'content-type': 'application/json' }, body: data === undefined ? undefined : JSON.stringify(data) })
@@ -23,6 +23,7 @@ export const bridge = {
   delete: (id: string, path: string) => request<{ ok: boolean }>(`${project(id)}/entries?path=${encodeURIComponent(path)}`, 'DELETE'),
   build: (id: string) => request<BuildResult>(`${project(id)}/build`, 'POST', {}),
   run: (id: string, mainClass: string) => request<RunResponse>(`${project(id)}/run`, 'POST', { mainClass }),
+  visualize: (id: string, mainClass: string) => request<VisualizeResponse>(`${project(id)}/visualize`, 'POST', { mainClass }),
   currentRun: () => request<RunSnapshot | null>('/api/runs/current'),
   runSnapshot: (id: string) => request<RunSnapshot>(`/api/runs/${encodeURIComponent(id)}`),
   stop: (id: string) => request<RunSnapshot>(`/api/runs/${encodeURIComponent(id)}/stop`, 'POST', {}),

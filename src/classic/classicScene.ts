@@ -229,6 +229,7 @@ export function buildClassicScene(scene: SceneModel, event: TraceEvent | null = 
     const array = entities.find((node) => node.id === mutation.objectId)?.array
     const receiver = array?.cells.find((cell) => cell.index === mutation.index)
     const origin = mutation.from
+    if (!origin) return []
     const source = origin.kind === 'element'
       ? array?.cells.find((cell) => cell.index === origin.index)
       : entities.find((node) => node.id === origin.frameId)?.slots.find((row) => row.slot.id === origin.slotId)
@@ -236,12 +237,12 @@ export function buildClassicScene(scene: SceneModel, event: TraceEvent | null = 
     const before = slotValue({ ...receiver.slot, value: mutation.before, displayValue: undefined })
     const after = slotValue({ ...receiver.slot, value: mutation.after, displayValue: undefined })
     const name = array.name ?? 'array'
-    const sourceLabel = mutation.from.kind === 'element' ? `${name}[${mutation.from.index}]` : source.slot.name
-    const from = mutation.from.kind === 'element'
+    const sourceLabel = origin.kind === 'element' ? `${name}[${origin.index}]` : source.slot.name
+    const from = origin.kind === 'element'
       ? [source.rect.x + source.rect.width / 2, source.rect.y + source.rect.height] as const
       : [source.rect.x + source.rect.width, source.rect.y + source.rect.height / 2] as const
     const to = [receiver.rect.x + receiver.rect.width / 2, receiver.rect.y + receiver.rect.height] as const
-    const path = mutation.from.kind === 'element'
+    const path = origin.kind === 'element'
       ? `M ${from[0]} ${from[1]} C ${from[0]} ${from[1] + 48}, ${to[0]} ${to[1] + 48}, ${to[0]} ${to[1]}`
       : `M ${from[0]} ${from[1]} C ${from[0] + 72} ${from[1]}, ${to[0]} ${to[1] + 64}, ${to[0]} ${to[1]}`
     return [{ eventId: mutation.eventId, objectId: mutation.objectId, slotId: receiver.slot.id, sourceSlotId: source.slot.id, before, after,

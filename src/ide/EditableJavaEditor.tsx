@@ -50,13 +50,17 @@ export function EditableJavaEditor({ projectId, path, value, onChange, diagnosti
   const onMount: OnMount = (instance, monaco) => {
     editorRef.current = instance
     decorationsRef.current = instance.createDecorationsCollection()
-    if (executionRef.current && executionRef.current > 0) decorationsRef.current.set([{ range: { startLineNumber: executionRef.current, endLineNumber: executionRef.current, startColumn: 1, endColumn: 1 }, options: { isWholeLine: true, className: 'executing-line', linesDecorationsClassName: 'executing-gutter' } }])
+    if (executionRef.current && executionRef.current > 0) {
+      decorationsRef.current.set([{ range: { startLineNumber: executionRef.current, endLineNumber: executionRef.current, startColumn: 1, endColumn: 1 }, options: { isWholeLine: true, className: 'executing-line', linesDecorationsClassName: 'executing-gutter' } }])
+      instance.revealLineInCenter(executionRef.current)
+    }
     instance.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => saveRef.current())
     showLocation(instance, navigationRef.current)
     showMarkers(instance, monaco, diagnosticsRef.current)
   }
   useEffect(() => {
     decorationsRef.current?.set(executingLine && executingLine > 0 ? [{ range: { startLineNumber: executingLine, endLineNumber: executingLine, startColumn: 1, endColumn: 1 }, options: { isWholeLine: true, className: 'executing-line', linesDecorationsClassName: 'executing-gutter' } }] : [])
+    if (executingLine && executingLine > 0) editorRef.current?.revealLineInCenter(executingLine)
   }, [executingLine, path])
   useEffect(() => {
     const instance = editorRef.current

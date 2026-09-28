@@ -54,6 +54,8 @@ export interface SceneFrameNode {
   label: string
   depth: number
   active: boolean
+  /** Exception history shown after the JVM has unwound this frame. */
+  historical?: boolean
   anchor: WorldAnchor
   slots: SceneSlot[]
   scopes?: SceneScopeNode[]

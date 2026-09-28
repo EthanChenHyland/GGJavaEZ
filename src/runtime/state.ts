@@ -29,6 +29,9 @@ export function createInitialState(): RuntimeState {
     conditions: {},
     loops: {},
     console: [],
+    exceptions: [],
+    branch: null,
+    abortReason: null,
   }
 }
 
@@ -64,7 +67,7 @@ function requireObserved(slot: RuntimeSlot, value: RuntimeValue): void {
 
 function assertCompatible(slot: RuntimeSlot, value: RuntimeValue): void {
   const matches = value.kind === 'uninitialized' ||
-    (value.kind === 'null' && !['int', 'boolean', 'double'].includes(slot.javaType)) ||
+    (value.kind === 'null' && !['int', 'boolean', 'double', 'long', 'float', 'short', 'byte', 'char'].includes(slot.javaType)) ||
     (value.kind === 'primitive' && value.javaType === slot.javaType) ||
     (value.kind === 'stringSummary' && slot.javaType === 'String') ||
     (value.kind === 'reference' && value.javaType === slot.javaType)
@@ -72,6 +75,8 @@ function assertCompatible(slot: RuntimeSlot, value: RuntimeValue): void {
   if (value.kind === 'primitive') {
     if (value.javaType === 'int') requireInt(value)
     else requireCondition(value.javaType === 'boolean' ? typeof value.value === 'boolean' :
+      value.javaType === 'long' ? typeof value.value === 'string' && /^-?\d+$/.test(value.value) :
+      value.javaType === 'char' ? typeof value.value === 'string' && value.value.length === 1 :
       typeof value.value === 'number' && Number.isFinite(value.value), `Invalid primitive value for ${slot.id}`)
   }
 }
@@ -164,7 +169,8 @@ function setSlot(state: RuntimeState, owner: SlotOwner, value: RuntimeValue, eve
 /** Apply exactly the next semantic event. The input state and event are never mutated. */
 export function applyEvent(state: RuntimeState, event: TraceEvent): RuntimeState {
   requireCondition(event.seq === state.cursor, `Expected event seq ${state.cursor}, received ${event.seq}`)
-  requireCondition(state.status !== 'ended', 'Cannot apply an event after PROGRAM_END')
+  requireCondition(state.status !== 'ended' && state.status !== 'aborted', state.status === 'ended'
+    ? 'Cannot apply an event after PROGRAM_END' : 'Cannot apply an event after PROGRAM_ABORT')
   requireCondition(
     state.status !== 'ready' || event.type === 'PROGRAM_START',
     'First event must be PROGRAM_START',
@@ -318,6 +324,11 @@ export function applyEvent(state: RuntimeState, event: TraceEvent): RuntimeState
       next = { ...state, status: 'ended' }
       break
 
+    case 'PROGRAM_ABORT':
+      requireCondition(state.status === 'running', 'Only a running program can abort')
+      next = { ...state, status: 'aborted', abortReason: `${event.reason}: ${event.message}` }
+      break
+
     case 'LINE_EXECUTE':
       requireCondition(activeFrameId === event.frameId, `Line executed outside active frame ${event.frameId}`)
       break
@@ -370,8 +381,8 @@ export function applyEvent(state: RuntimeState, event: TraceEvent): RuntimeState
 
       if (frame.callerFrameId === null) {
         requireCondition(event.destination === null, 'Root return cannot have a caller destination')
-      } else {
-        requireCondition(event.destination?.frameId === frame.callerFrameId &&
+      } else if (event.destination) {
+        requireCondition(event.destination.frameId === frame.callerFrameId &&
           state.activeFrameIds.at(-2) === frame.callerFrameId, 'Return destination must be the direct caller')
         next = setSlot(state, { kind: 'frame', ...event.destination }, event.value, event.eventId)
       }
@@ -516,28 +527,32 @@ export function applyEvent(state: RuntimeState, event: TraceEvent): RuntimeState
       const element = requireElement(object, event.index)
       requireInt(event.value)
       requireInt(element.value)
-      let origin: RuntimeSlot
-      if (event.from.kind === 'element') {
-        origin = requireElement(object, event.from.index)
-      } else {
-        requireCondition(event.from.kind === 'slot' && event.from.frameId === event.frameId,
-          'Array write origin must be a local in the active frame')
-        origin = state.frames[event.from.frameId].locals[event.from.slotId]
-        requireCondition(origin, `Unknown origin slot ${event.from.slotId}`)
-        requireCondition(origin.javaType === 'int', `Array origin slot ${origin.id} must be int`)
+      if (event.from) {
+        let origin: RuntimeSlot
+        if (event.from.kind === 'element') {
+          origin = requireElement(object, event.from.index)
+        } else {
+          requireCondition(event.from.kind === 'slot' && event.from.frameId === event.frameId,
+            'Array write origin must be a local in the active frame')
+          origin = state.frames[event.from.frameId].locals[event.from.slotId]
+          requireCondition(origin, `Unknown origin slot ${event.from.slotId}`)
+          requireCondition(origin.javaType === 'int', `Array origin slot ${origin.id} must be int`)
+        }
+        requireInt(origin.value)
+        requireCondition(origin.value.value === event.value.value, 'Array write origin value mismatch')
       }
-      requireInt(origin.value)
-      requireCondition(origin.value.value === event.value.value, 'Array write origin value mismatch')
       const elements = [...object.array.elements]
       elements[event.index] = { ...element, value: { ...event.value } }
       next = withObject(state, { ...object, array: { ...object.array, elements } })
       const mutation = {
         eventId: event.eventId, objectId: event.objectId, index: event.index,
-        before: { ...element.value }, after: { ...event.value }, from: { ...event.from },
+        before: { ...element.value }, after: { ...event.value },
+        ...(event.from ? { from: { ...event.from } } : {}),
       }
       next = { ...next,
         arrayActivity: { kind: 'write', ...mutation,
-          before: { ...mutation.before }, after: { ...mutation.after }, from: { ...mutation.from } },
+          before: { ...mutation.before }, after: { ...mutation.after },
+          ...(mutation.from ? { from: { ...mutation.from } } : {}) },
         arrayMutations: [...state.arrayMutations, mutation],
       }
       break
@@ -572,12 +587,54 @@ export function applyEvent(state: RuntimeState, event: TraceEvent): RuntimeState
       next = setSlot(state, owner, { kind: 'null' }, event.eventId)
       break
     }
+
+    case 'BRANCH_EVALUATE':
+      requireCondition(activeFrameId === event.frameId, `Branch evaluated outside active frame ${event.frameId}`)
+      next = { ...state, branch: {
+        eventId: event.eventId, frameId: event.frameId, opcode: event.opcode, site: event.site,
+        left: { ...event.left }, ...(event.right ? { right: { ...event.right } } : {}), taken: event.taken,
+      } }
+      break
+
+    case 'THROW_EXCEPTION':
+      requireCondition(activeFrameId === event.frameId, `Exception thrown outside active frame ${event.frameId}`)
+      requireCondition(!state.exceptions.some((item) => item.exceptionId === event.exceptionId && !item.caughtBy),
+        `Exception ${event.exceptionId} already active`)
+      next = { ...state, exceptions: [...state.exceptions, {
+        eventId: event.eventId, exceptionId: event.exceptionId, className: event.className,
+        message: event.message, explicit: event.explicit, source: event.source,
+        frameIds: [...state.activeFrameIds], unwoundFrameIds: [],
+      }] }
+      break
+
+    case 'UNWIND_EXCEPTION': {
+      requireCondition(activeFrameId === event.frameId, `Exception unwind outside top frame ${event.frameId}`)
+      const index = state.exceptions.map((item) => item.exceptionId === event.exceptionId && !item.caughtBy).lastIndexOf(true)
+      requireCondition(index >= 0, `Unknown active exception ${event.exceptionId}`)
+      const frame = state.frames[event.frameId]
+      for (const scope of activeScopes(state, frame.id).reverse()) next = closeScope(next, scope, event.eventId)
+      next = withFrame(next, { ...next.frames[frame.id], status: 'unwound', exitedAt: event.eventId })
+      const exceptions = [...next.exceptions]
+      exceptions[index] = { ...exceptions[index], unwoundFrameIds: [...exceptions[index].unwoundFrameIds, frame.id] }
+      next = { ...next, activeFrameIds: state.activeFrameIds.slice(0, -1), exceptions }
+      break
+    }
+
+    case 'CATCH_EXCEPTION': {
+      requireCondition(activeFrameId === event.frameId, `Exception caught outside top frame ${event.frameId}`)
+      const index = state.exceptions.map((item) => item.exceptionId === event.exceptionId && !item.caughtBy).lastIndexOf(true)
+      requireCondition(index >= 0, `Unknown active exception ${event.exceptionId}`)
+      const exceptions = [...state.exceptions]
+      exceptions[index] = { ...exceptions[index], caughtBy: event.frameId }
+      next = { ...state, exceptions }
+      break
+    }
   }
 
   return {
     ...next,
     cursor: state.cursor + 1,
-    currentSource: event.source ? { ...event.source } : null,
+    currentSource: event.source ? { ...event.source } : event.type === 'PROGRAM_ABORT' ? state.currentSource : null,
     lastEventId: event.eventId,
     // Activity describes the current array instruction, not a lingering visual effect.
     arrayActivity: ['ARRAY_READ', 'ARRAY_COMPARE', 'ARRAY_WRITE'].includes(event.type) ? next.arrayActivity : null,

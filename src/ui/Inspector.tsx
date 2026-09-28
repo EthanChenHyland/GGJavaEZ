@@ -1,6 +1,6 @@
 import { X, Crosshair, CornerUpLeft } from 'lucide-react'
 import type { Selection } from '../contracts/interaction'
-import type { RuntimeSlot, RuntimeState, RuntimeValue } from '../contracts/runtime'
+import type { RuntimeSlot, RuntimeState, RuntimeValue, SlotOwner } from '../contracts/runtime'
 import type { SceneModel } from '../contracts/world'
 
 export function formatValue(value: RuntimeValue, objects?: RuntimeState['objects']): string {
@@ -37,6 +37,9 @@ interface InspectorProps {
 
 export function Inspector({ selection, runtime, scene, onClose, onReturn, onFocus, onTrace }: InspectorProps) {
   if (!selection) return null
+  const sourceName = (source: SlotOwner) => source.kind === 'frame'
+    ? runtime.frames[source.frameId]?.locals[source.slotId]?.name ?? source.slotId
+    : runtime.objects[source.objectId]?.fields[source.slotId]?.name ?? source.slotId
 
   const object = selection.kind === 'object' ? runtime.objects[selection.id] : undefined
   const frame = selection.kind === 'frame' ? runtime.frames[selection.id] : undefined
@@ -69,12 +72,12 @@ export function Inspector({ selection, runtime, scene, onClose, onReturn, onFocu
         <section className="inspector-group"><h3>Inbound references</h3>
         <div className="reference-list">{scene.references.filter((ref) => ref.targetObjectId === object.id).map((ref) => (
           <button key={ref.id} onClick={() => onTrace(ref.id)}>
-            <span>{ref.source.slotId.split(':').at(-1)}</span><span>Trace path ↗</span>
+            <span>{sourceName(ref.source)}</span><span>Trace path ↗</span>
           </button>
         ))}</div></section>
       </>}
       {frame && <><div className="inspector-key"><span>CALL DEPTH · {frame.status.toUpperCase()}</span><strong>{frame.depth}</strong></div><section className="inspector-group"><h3>Locals & operands</h3><SlotRows slots={Object.values(frame.locals)} objects={runtime.objects} /></section>{frame.returnValue && <div className="inspector-key"><span>RETURN VALUE</span><strong>{formatValue(frame.returnValue)}</strong></div>}</>}
-      {edge && <><div className="inspector-key"><span>SOURCE</span><strong>{edge.source.slotId.split(':').at(-1)}</strong></div><div className="inspector-key"><span>TARGET</span><strong>{runtime.objects[edge.targetObjectId]?.className} #{runtime.objects[edge.targetObjectId]?.displayId}</strong></div><button className="inspector-action" onClick={() => onTrace(edge.id)}>Follow this path</button></>}
+      {edge && <><div className="inspector-key"><span>SOURCE</span><strong>{sourceName(edge.source)}</strong></div><div className="inspector-key"><span>TARGET</span><strong>{runtime.objects[edge.targetObjectId]?.className} #{runtime.objects[edge.targetObjectId]?.displayId}</strong></div><button className="inspector-action" onClick={() => onTrace(edge.id)}>Follow this path</button></>}
       {inspectedSlot && <>{arrayOwner?.array && <div className="inspector-key"><span>ARRAY · LENGTH · INDEX</span><strong>#{arrayOwner.displayId} · {arrayOwner.array.length} · {elementIndex}</strong></div>}<div className="inspector-key"><span>TYPE</span><strong>{inspectedSlot.javaType}</strong></div><div className="inspector-key"><span>VALUE</span><strong>{formatValue(inspectedSlot.value, runtime.objects)}</strong></div></>}
       {lifetime && <div className="inspector-key"><span>SCOPE · {lifetimeLive ? 'LIVE' : 'CLOSED'}</span><strong>{scope?.label ?? lifetime.scopeId}</strong><span>{lifetime.source ? `Declared L${lifetime.source.line}` : 'Declaration'} · {lifetimeLive ? 'current value' : 'last value'}</span></div>}
       {(object?.array || arrayOwner) && <div className="inspector-key"><span>INDEXED WRITES</span><strong>{writes.length}</strong></div>}

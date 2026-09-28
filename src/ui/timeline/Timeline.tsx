@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react'
+import { useMemo, type CSSProperties } from 'react'
 import { Pause, Play, RotateCcw, SkipBack, SkipForward } from 'lucide-react'
 import type { TraceDocument, TraceEvent } from '../../contracts/runtime'
 import type { PlaybackApi } from '../../playback'
@@ -11,6 +11,21 @@ export interface TimelineProps {
 }
 
 const SPEEDS = [0.5, 1, 2, 4] as const
+const MAX_MARKERS = 240
+
+/** Keep large real traces seekable without mounting one button per JVM probe. */
+export function markerIndices(events: readonly TraceEvent[], limit = MAX_MARKERS): number[] {
+  if (events.length <= limit) return events.map((_, index) => index)
+  const important = events.flatMap((event, index) => event.importance === 'major' ? [index] : [])
+  const selected = new Set<number>()
+  const addSpread = (indices: readonly number[], count: number) => {
+    if (count <= 0 || indices.length === 0) return
+    for (let i = 0; i < count; i++) selected.add(indices[Math.floor(i * (indices.length - 1) / Math.max(count - 1, 1))])
+  }
+  addSpread(important, Math.min(Math.floor(limit / 2), important.length))
+  addSpread(events.map((_, index) => index), limit - selected.size)
+  return [...selected].sort((a, b) => a - b)
+}
 
 function markerColor(event: TraceEvent): string {
   if (event.type === 'ALLOCATE_OBJECT' || event.type === 'ALLOCATE_ARRAY') return colors.heap
@@ -26,6 +41,7 @@ export function Timeline({ trace, playback }: TimelineProps) {
   const eventCount = trace.events.length
   const progress = eventCount > 0 ? (state.cursor / eventCount) * 100 : 0
   const currentEvent = trace.events[state.cursor - 1]
+  const markers = useMemo(() => markerIndices(trace.events), [trace])
   const theme = {
     '--timeline-panel': colors.panel,
     '--timeline-panel-raised': colors.panelRaised,
@@ -71,12 +87,12 @@ export function Timeline({ trace, playback }: TimelineProps) {
             aria-valuetext={`Event ${state.cursor} of ${eventCount}: ${currentEvent?.label ?? 'Ready to run'}`}
             style={{ background: `linear-gradient(to right, ${colors.execution} ${progress}%, ${colors.borderStrong} ${progress}%)` }} />
           <div className="vj-timeline__markers" aria-label="Events">
-            {trace.events.map((event, index) => (
+            {markers.map((index) => { const event = trace.events[index]; return (
               <button key={event.eventId} type="button"
                 className={`vj-timeline__marker${state.cursor === index + 1 ? ' vj-timeline__marker--current' : ''}${event.importance === 'quiet' ? ' vj-timeline__marker--quiet' : ''}${event.importance === 'major' ? ' vj-timeline__marker--major' : ''}`}
                 style={{ left: `${((index + 1) / eventCount) * 100}%`, '--marker-color': markerColor(event) } as CSSProperties}
                 onClick={() => seekTo(index + 1)} aria-label={`Go to event ${index + 1}: ${event.label}`} title={event.label} />
-            ))}
+            ) })}
           </div>
         </div>
       </div>

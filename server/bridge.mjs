@@ -6,6 +6,8 @@ import { ProjectStore } from './projects.mjs'
 import { detectJdk } from './jdk.mjs'
 import { compileProject } from './compiler.mjs'
 import { RunManager } from './runner.mjs'
+import { runInstrumented } from './instrumentation-provider.mjs'
+import { buildInstrumentationSourceManifest } from './instrumentation-sources.mjs'
 
 const repository = resolve(fileURLToPath(new URL('..', import.meta.url)))
 const workspace = resolve(process.env.GGJAVA_WORKSPACE || join(repository, '.ggjavaez'))
@@ -55,7 +57,7 @@ async function body(request) {
   try { return JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}') } catch { throw Object.assign(new Error('Invalid JSON'), { status: 400 }) }
 }
 
-async function build(projectId) {
+async function build(projectId, debug = false) {
   const projectRoot = await projects.getProjectRoot(projectId)
   const buildDir = join(workspace, 'build', projectId, 'classes')
   for (const directory of [workspace, join(workspace, 'build'), join(workspace, 'build', projectId), buildDir]) {
@@ -63,7 +65,7 @@ async function build(projectId) {
     const stat = await lstat(directory)
     if (stat.isSymbolicLink() || !stat.isDirectory()) throw Object.assign(new Error('Invalid managed build directory'), { status: 400 })
   }
-  return compileProject(projectRoot, buildDir, settings.jdkHome)
+  return compileProject(projectRoot, buildDir, settings.jdkHome, { debug })
 }
 
 function segments(pathname) { return pathname.split('/').filter(Boolean) }
@@ -121,6 +123,27 @@ const server = http.createServer(async (request, response) => {
           if (!result.mainClasses.includes(selected)) throw Object.assign(new Error('Select a main class found in the compiled project'), { status: 400 })
           const run = await runs.start({ projectId: id, mainClass: selected, classesDir: join(workspace, 'build', id, 'classes'), projectRoot: await projects.getProjectRoot(id), javaPath: result.jdk.javaPath, sourcePaths: await projects.listJavaFiles(id) })
           return { build: result, run }
+        }))
+      }
+      if (action === 'visualize' && method === 'POST') {
+        const { mainClass } = await body(request)
+        return json(response, 200, await serialized(async () => {
+          await runs.stop()
+          const compilation = await build(id, true)
+          const emptyManifest = { sources: [], classes: [] }
+          if (!compilation.success) return { build: compilation, status: 'compile_failed', diagnostic: 'Compilation failed',
+            sourceManifest: emptyManifest, rawEvents: [], capability: null, stdout: '', stderr: '', exitCode: null, metrics: null }
+          if (!compilation.mainClasses.length) return { build: compilation, status: 'unsupported', diagnostic: 'No public static main(String[]) entry point found',
+            sourceManifest: emptyManifest, rawEvents: [], capability: null, stdout: '', stderr: '', exitCode: null, metrics: null }
+          const selected = compilation.mainClasses.includes(mainClass) ? mainClass : compilation.mainClasses[0]
+          const projectRoot = await projects.getProjectRoot(id)
+          const classesDir = join(workspace, 'build', id, 'classes')
+          const manifest = await buildInstrumentationSourceManifest(projectRoot, classesDir)
+          const capture = await runInstrumented({ projectId: id, projectRoot, classesDir, mainClass: selected,
+            javaPath: compilation.jdk.javaPath, javacPath: compilation.jdk.javacPath,
+            sourcePaths: manifest.sources.map((source) => source.fileId), rawEventLimit: 20000,
+            rawByteLimit: 8 * 1024 * 1024, timeoutMs: 30000 })
+          return { build: compilation, ...capture, sourceManifest: manifest }
         }))
       }
     }

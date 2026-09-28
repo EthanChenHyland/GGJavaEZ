@@ -16,4 +16,40 @@
 .ide-console-output .ide-console-stdout,.ide-console-output .ide-console-stderr{display:inline}.ide-console-output .ide-console-exit{display:block}.ide-runtime-panel .ide-panel-heading span:last-child{font-size:8px;letter-spacing:.03em;white-space:nowrap}.ide-status-line{overflow:hidden}.ide-status-line>span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ide-console-input input:focus-visible{outline:none}.ide-console-input:focus-within{box-shadow:inset 0 1px var(--color-execution)}
 .ide-problem-entry{border-bottom:1px solid var(--color-border)}.ide-problem-entry .ide-problem{border-bottom:0;padding-bottom:5px}.ide-problem-entry>details{padding:0 15px 9px 44px;color:var(--color-textMuted);font-size:10px}.ide-problem-entry summary{cursor:pointer;width:max-content}.ide-problem-entry pre{white-space:pre-wrap;font:11px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--color-textSecondary);margin:8px 0 0}.ide-problem--error .ide-problem-icon,.ide-status-line .is-error,.ide-console-stderr,.ide-stack strong{color:var(--color-exception)}.ide-stack{border-left-color:var(--color-exception)}.ide-badge{background:var(--color-exception)}.ide-problem--warning .ide-problem-icon{color:var(--color-mutation)}
 @media(max-width:760px){.ide-upper{flex-direction:column}.ide-editor-panel{width:100%;flex:1;min-height:0}.ide-runtime-panel{order:-1;flex:none;min-height:0}.ide-runtime-panel .ide-panel-heading{display:none}.ide-runtime-content{flex:none;padding:9px 14px;flex-direction:row;align-items:center;justify-content:space-between;border-bottom:1px solid var(--color-border);gap:12px}.ide-runtime-content h2,.ide-runtime-content p,.ide-runtime-mode{display:none}.ide-runtime-content a{font-size:11px;padding:7px 10px}.ide-project-panel{max-height:150px;min-height:112px}.ide-bottom-panel{min-height:155px}}
+.ide-visualize-action { border-color:var(--color-execution)!important; color:var(--color-execution)!important; background:var(--color-panelRaised)!important; }
+.ide-visualize-action:hover { background:var(--color-panelHover)!important; }
+.ide-visualize-status { color:var(--color-execution); font-weight:700; white-space:nowrap; }
+.ide-visualize-status.is-warning { color:var(--color-exception); }
+.ide-runtime-live { flex:1; min-height:0; overflow:hidden; }
+.ide-runtime-heading-actions { display:flex; align-items:center; gap:8px; }
+.ide-runtime-heading-actions button { display:grid; place-items:center; width:25px; height:25px; border:1px solid var(--color-border); border-radius:4px; background:var(--color-panelRaised); color:var(--color-textSecondary); }
+.ide-runtime-heading-actions button:hover { color:var(--color-text); border-color:var(--color-borderStrong); }
+.ide-runtime-live .representation-bar { top:9px; left:12px; right:12px; }
+.ide-runtime-live .world-controls { left:12px; right:12px; top:48px; }
+.ide-runtime-live .spatial-view { inset:104px 0 0; }
+.ide-runtime-live .theater-reason { top:87px; left:12px; }
+.ide-runtime-live .world-access { right:12px; }
+.ide-runtime-live .world-hint { left:12px; }
+@media(max-width:760px) {
+  .ide-project-panel { flex:none; height:145px; min-height:145px; max-height:145px; }
+  .ide-project-select { margin-top:5px; margin-bottom:2px; }
+  .ide-bottom-panel { flex:none; height:110px; min-height:110px; }
+  .ide-runtime-panel:has(.ide-runtime-live) { flex:none; height:390px; min-height:390px; }
+  .ide-runtime-panel:has(.ide-runtime-live) .ide-panel-heading { display:flex; }
+  .ide-runtime-live .app-shell--embedded { grid-template-rows:minmax(0,1fr) 74px; }
+  .ide-runtime-live .spatial-view { inset:86px 0 0; }
+  .ide-runtime-live .theater-reason, .ide-runtime-live .world-hint { display:none; }
+  .ide-runtime-live .world-access { bottom:8px; }
+}
 .ide-process-status.is-error{color:var(--color-exception)}.ide-process-status.is-stopped{color:var(--color-textMuted)}
+.ide-console-capture-note { margin:0 0 7px!important; color:var(--color-textMuted); font:700 9px/1.4 Inter,system-ui,sans-serif!important; letter-spacing:.12em; }
+.ide-shell--runtime-expanded .ide-project-panel,
+.ide-shell--runtime-expanded .ide-editor-panel,
+.ide-shell--runtime-expanded .ide-bottom-panel,
+.ide-shell--runtime-expanded .ide-divider { display:none; }
+.ide-shell--runtime-expanded .ide-code-workspace,
+.ide-shell--runtime-expanded .ide-upper,
+.ide-shell--runtime-expanded .ide-runtime-panel { flex:1; width:100%; height:auto; min-height:0; }
+.ide-shell--runtime-expanded .ide-runtime-panel:has(.ide-runtime-live) { flex:1; height:auto; min-height:0; }
+.ide-shell:has(.ide-runtime-live) .ide-console-input { display:none; }
+@media(max-width:760px) { .ide-shell:has(.ide-runtime-live) .ide-bottom-panel { height:85px; min-height:85px; } }

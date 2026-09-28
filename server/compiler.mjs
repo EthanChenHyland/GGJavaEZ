@@ -137,7 +137,7 @@ async function mainClasses(buildDir) {
 }
 
 /** Compile every project Java source into a freshly recreated classes directory. */
-export async function compileProject(projectRoot, buildDir, jdkHome) {
+export async function compileProject(projectRoot, buildDir, jdkHome, { debug = false } = {}) {
   const start = performance.now();
   const root = await realpath(projectRoot);
   const target = resolve(buildDir);
@@ -150,7 +150,7 @@ export async function compileProject(projectRoot, buildDir, jdkHome) {
   if (!jdk.available) return result(false, jdk.error);
   const files = await javaFiles(root, target);
   if (!files.length) return result(false, 'No Java source files found.');
-  const { code, output } = await runJavac(jdk.javacPath, ['-encoding', 'UTF-8', '-d', target, ...files.map((file) => `.${sep}${file}`)], root);
+  const { code, output } = await runJavac(jdk.javacPath, ['-encoding', 'UTF-8', ...(debug ? ['-g:lines,vars,source'] : []), '-d', target, ...files.map((file) => `.${sep}${file}`)], root);
   if (code !== 0) {
     await rm(target, { recursive: true, force: true });
     await mkdir(target, { recursive: true });
