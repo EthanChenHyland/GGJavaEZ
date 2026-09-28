@@ -18,17 +18,29 @@ export function createLayout(trace: TraceDocument): LayoutState {
   const frameDepths: Record<string, number> = {}
   let childOrdinal = 0
   let objectOrdinal = 0
+  let stackDepth = 0
 
   for (const event of trace.events) {
-    if (event.type === 'ENTER_METHOD') frameSlots[event.frameId] = [...event.locals]
+    if (event.type === 'ENTER_METHOD') {
+      frameSlots[event.frameId] = [...event.locals]
+      frameDepths[event.frameId] = event.callerFrameId ? (frameDepths[event.callerFrameId] ?? 0) + 1 : 0
+      stackDepth = Math.max(stackDepth, frameDepths[event.frameId])
+    }
     if (event.type === 'DECLARE_LOCAL') frameSlots[event.frameId]?.push(event.slot)
+  }
+  for (const event of trace.events) {
+    if (event.type === 'ENTER_METHOD' && event.returnType && event.returnType !== 'void') {
+      frameSlots[event.frameId].push({ id: `return:${event.frameId}`, name: 'return', javaType: event.returnType, role: 'return', value: { kind: 'uninitialized' } })
+    }
   }
 
   for (const event of trace.events) {
     if (event.type === 'ENTER_METHOD') {
       const depth = event.callerFrameId ? (frameDepths[event.callerFrameId] ?? 0) + 1 : 0
       frameDepths[event.frameId] = depth
-      const position: Vec3 = depth === 0
+      const position: Vec3 = stackDepth > 1
+        ? [-4.7 + depth * 0.9, (stackDepth - depth) * 2.2 - 0.3, -3 + depth * 1.1]
+        : depth === 0
         ? [-3.45, -0.25, 1.1]
         : [-3.35 + (depth - 1) * 0.32, 1.65 + (depth - 1) * 1.65, -0.8 - childOrdinal++ * 0.85]
       const slots = frameSlots[event.frameId] ?? []
@@ -58,5 +70,16 @@ export function createLayout(trace: TraceDocument): LayoutState {
     }
   }
 
-  return { anchors, homeTarget: worldUnits.homeTarget }
+  if (stackDepth <= 1) return { anchors, homeTarget: worldUnits.homeTarget, stackDepth }
+  const nodes = Object.values(anchors)
+  const min = [0, 1, 2].map((axis) => Math.min(...nodes.map((node) => node.position[axis] - node.size[axis] / 2)))
+  const max = [0, 1, 2].map((axis) => Math.max(...nodes.map((node) => node.position[axis] + node.size[axis] / 2)))
+  const center = min.map((value, axis) => (value + max[axis]) / 2) as unknown as Vec3
+  const size = min.map((value, axis) => max[axis] - value) as unknown as Vec3
+  const points: Vec3[] = nodes.flatMap((node) => [-1, 1].flatMap((x) => [-1, 1].flatMap((y) => [-1, 1].map((z) => [
+    node.position[0] + x * (node.size[0] / 2 + 0.35),
+    node.position[1] + y * (node.size[1] / 2 + 0.5),
+    node.position[2] + z * (node.size[2] / 2 + 0.12),
+  ] as Vec3))))
+  return { anchors, homeTarget: center, stackDepth, bounds: { center, size, points } }
 }

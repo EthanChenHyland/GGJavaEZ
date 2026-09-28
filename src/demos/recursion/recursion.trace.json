@@ -1,0 +1,627 @@
+{
+  "schemaVersion": 1,
+  "demoId": "recursion",
+  "sourceFiles": [
+    {
+      "fileId": "Main.java",
+      "name": "Main.java",
+      "content": "public class Main {\n    static int factorial(int n) {\n        if (n <= 1) {\n            return 1;\n        }\n        return n * factorial(n - 1);\n    }\n\n    public static void main(String[] args) {\n        int result = factorial(5);\n        System.out.println(result);\n    }\n}\n"
+    }
+  ],
+  "events": [
+    {
+      "type": "PROGRAM_START",
+      "eventId": "event:recursion:000",
+      "seq": 0,
+      "source": null,
+      "label": "Start factorial program",
+      "importance": "major"
+    },
+    {
+      "type": "ENTER_METHOD",
+      "eventId": "event:recursion:001",
+      "seq": 1,
+      "source": {
+        "fileId": "Main.java",
+        "line": 9
+      },
+      "label": "Enter main()",
+      "importance": "major",
+      "frameId": "frame:recursion-main:1",
+      "callerFrameId": null,
+      "className": "Main",
+      "methodName": "main",
+      "invocationLabel": "main()",
+      "locals": []
+    },
+    {
+      "type": "LINE_EXECUTE",
+      "eventId": "event:recursion:002",
+      "seq": 2,
+      "source": {
+        "fileId": "Main.java",
+        "line": 10
+      },
+      "label": "Evaluate factorial(5)",
+      "importance": "quiet",
+      "frameId": "frame:recursion-main:1"
+    },
+    {
+      "type": "DECLARE_LOCAL",
+      "eventId": "event:recursion:003",
+      "seq": 3,
+      "source": {
+        "fileId": "Main.java",
+        "line": 10
+      },
+      "label": "Reserve result until factorial(5) returns",
+      "importance": "normal",
+      "frameId": "frame:recursion-main:1",
+      "slot": {
+        "id": "slot:recursion-main:1:result",
+        "name": "result",
+        "javaType": "int",
+        "role": "local",
+        "value": {
+          "kind": "uninitialized"
+        }
+      }
+    },
+    {
+      "type": "ENTER_METHOD",
+      "eventId": "event:recursion:004",
+      "seq": 4,
+      "source": {
+        "fileId": "Main.java",
+        "line": 2
+      },
+      "label": "Call factorial(5)",
+      "importance": "major",
+      "frameId": "frame:factorial:5",
+      "callerFrameId": "frame:recursion-main:1",
+      "className": "Main",
+      "methodName": "factorial",
+      "invocationLabel": "factorial(5)",
+      "returnType": "int",
+      "locals": [
+        {
+          "id": "slot:factorial:5:n",
+          "name": "n",
+          "javaType": "int",
+          "role": "parameter",
+          "value": {
+            "kind": "primitive",
+            "javaType": "int",
+            "value": 5
+          }
+        },
+        {
+          "id": "slot:factorial:5:child",
+          "name": "child",
+          "javaType": "int",
+          "role": "operand",
+          "value": {
+            "kind": "uninitialized"
+          }
+        }
+      ]
+    },
+    {
+      "type": "LINE_EXECUTE",
+      "eventId": "event:recursion:005",
+      "seq": 5,
+      "source": {
+        "fileId": "Main.java",
+        "line": 3
+      },
+      "label": "Check 5 <= 1: false",
+      "importance": "quiet",
+      "frameId": "frame:factorial:5"
+    },
+    {
+      "type": "LINE_EXECUTE",
+      "eventId": "event:recursion:006",
+      "seq": 6,
+      "source": {
+        "fileId": "Main.java",
+        "line": 6
+      },
+      "label": "Evaluate 5 × factorial(4)",
+      "importance": "quiet",
+      "frameId": "frame:factorial:5"
+    },
+    {
+      "type": "ENTER_METHOD",
+      "eventId": "event:recursion:007",
+      "seq": 7,
+      "source": {
+        "fileId": "Main.java",
+        "line": 2
+      },
+      "label": "Call factorial(4)",
+      "importance": "major",
+      "frameId": "frame:factorial:4",
+      "callerFrameId": "frame:factorial:5",
+      "className": "Main",
+      "methodName": "factorial",
+      "invocationLabel": "factorial(4)",
+      "returnType": "int",
+      "locals": [
+        {
+          "id": "slot:factorial:4:n",
+          "name": "n",
+          "javaType": "int",
+          "role": "parameter",
+          "value": {
+            "kind": "primitive",
+            "javaType": "int",
+            "value": 4
+          }
+        },
+        {
+          "id": "slot:factorial:4:child",
+          "name": "child",
+          "javaType": "int",
+          "role": "operand",
+          "value": {
+            "kind": "uninitialized"
+          }
+        }
+      ]
+    },
+    {
+      "type": "LINE_EXECUTE",
+      "eventId": "event:recursion:008",
+      "seq": 8,
+      "source": {
+        "fileId": "Main.java",
+        "line": 3
+      },
+      "label": "Check 4 <= 1: false",
+      "importance": "quiet",
+      "frameId": "frame:factorial:4"
+    },
+    {
+      "type": "LINE_EXECUTE",
+      "eventId": "event:recursion:009",
+      "seq": 9,
+      "source": {
+        "fileId": "Main.java",
+        "line": 6
+      },
+      "label": "Evaluate 4 × factorial(3)",
+      "importance": "quiet",
+      "frameId": "frame:factorial:4"
+    },
+    {
+      "type": "ENTER_METHOD",
+      "eventId": "event:recursion:010",
+      "seq": 10,
+      "source": {
+        "fileId": "Main.java",
+        "line": 2
+      },
+      "label": "Call factorial(3)",
+      "importance": "major",
+      "frameId": "frame:factorial:3",
+      "callerFrameId": "frame:factorial:4",
+      "className": "Main",
+      "methodName": "factorial",
+      "invocationLabel": "factorial(3)",
+      "returnType": "int",
+      "locals": [
+        {
+          "id": "slot:factorial:3:n",
+          "name": "n",
+          "javaType": "int",
+          "role": "parameter",
+          "value": {
+            "kind": "primitive",
+            "javaType": "int",
+            "value": 3
+          }
+        },
+        {
+          "id": "slot:factorial:3:child",
+          "name": "child",
+          "javaType": "int",
+          "role": "operand",
+          "value": {
+            "kind": "uninitialized"
+          }
+        }
+      ]
+    },
+    {
+      "type": "LINE_EXECUTE",
+      "eventId": "event:recursion:011",
+      "seq": 11,
+      "source": {
+        "fileId": "Main.java",
+        "line": 3
+      },
+      "label": "Check 3 <= 1: false",
+      "importance": "quiet",
+      "frameId": "frame:factorial:3"
+    },
+    {
+      "type": "LINE_EXECUTE",
+      "eventId": "event:recursion:012",
+      "seq": 12,
+      "source": {
+        "fileId": "Main.java",
+        "line": 6
+      },
+      "label": "Evaluate 3 × factorial(2)",
+      "importance": "quiet",
+      "frameId": "frame:factorial:3"
+    },
+    {
+      "type": "ENTER_METHOD",
+      "eventId": "event:recursion:013",
+      "seq": 13,
+      "source": {
+        "fileId": "Main.java",
+        "line": 2
+      },
+      "label": "Call factorial(2)",
+      "importance": "major",
+      "frameId": "frame:factorial:2",
+      "callerFrameId": "frame:factorial:3",
+      "className": "Main",
+      "methodName": "factorial",
+      "invocationLabel": "factorial(2)",
+      "returnType": "int",
+      "locals": [
+        {
+          "id": "slot:factorial:2:n",
+          "name": "n",
+          "javaType": "int",
+          "role": "parameter",
+          "value": {
+            "kind": "primitive",
+            "javaType": "int",
+            "value": 2
+          }
+        },
+        {
+          "id": "slot:factorial:2:child",
+          "name": "child",
+          "javaType": "int",
+          "role": "operand",
+          "value": {
+            "kind": "uninitialized"
+          }
+        }
+      ]
+    },
+    {
+      "type": "LINE_EXECUTE",
+      "eventId": "event:recursion:014",
+      "seq": 14,
+      "source": {
+        "fileId": "Main.java",
+        "line": 3
+      },
+      "label": "Check 2 <= 1: false",
+      "importance": "quiet",
+      "frameId": "frame:factorial:2"
+    },
+    {
+      "type": "LINE_EXECUTE",
+      "eventId": "event:recursion:015",
+      "seq": 15,
+      "source": {
+        "fileId": "Main.java",
+        "line": 6
+      },
+      "label": "Evaluate 2 × factorial(1)",
+      "importance": "quiet",
+      "frameId": "frame:factorial:2"
+    },
+    {
+      "type": "ENTER_METHOD",
+      "eventId": "event:recursion:016",
+      "seq": 16,
+      "source": {
+        "fileId": "Main.java",
+        "line": 2
+      },
+      "label": "Call factorial(1)",
+      "importance": "major",
+      "frameId": "frame:factorial:1",
+      "callerFrameId": "frame:factorial:2",
+      "className": "Main",
+      "methodName": "factorial",
+      "invocationLabel": "factorial(1)",
+      "returnType": "int",
+      "locals": [
+        {
+          "id": "slot:factorial:1:n",
+          "name": "n",
+          "javaType": "int",
+          "role": "parameter",
+          "value": {
+            "kind": "primitive",
+            "javaType": "int",
+            "value": 1
+          }
+        }
+      ]
+    },
+    {
+      "type": "LINE_EXECUTE",
+      "eventId": "event:recursion:017",
+      "seq": 17,
+      "source": {
+        "fileId": "Main.java",
+        "line": 3
+      },
+      "label": "Check 1 <= 1: true",
+      "importance": "quiet",
+      "frameId": "frame:factorial:1"
+    },
+    {
+      "type": "LINE_EXECUTE",
+      "eventId": "event:recursion:018",
+      "seq": 18,
+      "source": {
+        "fileId": "Main.java",
+        "line": 4
+      },
+      "label": "Base case returns 1",
+      "importance": "quiet",
+      "frameId": "frame:factorial:1"
+    },
+    {
+      "type": "RETURN_VALUE",
+      "eventId": "event:recursion:019",
+      "seq": 19,
+      "source": {
+        "fileId": "Main.java",
+        "line": 4
+      },
+      "label": "factorial(1) returns 1",
+      "importance": "major",
+      "frameId": "frame:factorial:1",
+      "value": {
+        "kind": "primitive",
+        "javaType": "int",
+        "value": 1
+      },
+      "destination": {
+        "frameId": "frame:factorial:2",
+        "slotId": "slot:factorial:2:child"
+      },
+      "expression": "1"
+    },
+    {
+      "type": "EXIT_METHOD",
+      "eventId": "event:recursion:020",
+      "seq": 20,
+      "source": {
+        "fileId": "Main.java",
+        "line": 4
+      },
+      "label": "Exit factorial(1)",
+      "importance": "normal",
+      "frameId": "frame:factorial:1"
+    },
+    {
+      "type": "LINE_EXECUTE",
+      "eventId": "event:recursion:021",
+      "seq": 21,
+      "source": {
+        "fileId": "Main.java",
+        "line": 6
+      },
+      "label": "Compute 2 × 1",
+      "importance": "quiet",
+      "frameId": "frame:factorial:2"
+    },
+    {
+      "type": "RETURN_VALUE",
+      "eventId": "event:recursion:022",
+      "seq": 22,
+      "source": {
+        "fileId": "Main.java",
+        "line": 6
+      },
+      "label": "factorial(2) returns 2",
+      "importance": "major",
+      "frameId": "frame:factorial:2",
+      "value": {
+        "kind": "primitive",
+        "javaType": "int",
+        "value": 2
+      },
+      "destination": {
+        "frameId": "frame:factorial:3",
+        "slotId": "slot:factorial:3:child"
+      },
+      "expression": "2 × 1"
+    },
+    {
+      "type": "EXIT_METHOD",
+      "eventId": "event:recursion:023",
+      "seq": 23,
+      "source": {
+        "fileId": "Main.java",
+        "line": 6
+      },
+      "label": "Exit factorial(2)",
+      "importance": "normal",
+      "frameId": "frame:factorial:2"
+    },
+    {
+      "type": "LINE_EXECUTE",
+      "eventId": "event:recursion:024",
+      "seq": 24,
+      "source": {
+        "fileId": "Main.java",
+        "line": 6
+      },
+      "label": "Compute 3 × 2",
+      "importance": "quiet",
+      "frameId": "frame:factorial:3"
+    },
+    {
+      "type": "RETURN_VALUE",
+      "eventId": "event:recursion:025",
+      "seq": 25,
+      "source": {
+        "fileId": "Main.java",
+        "line": 6
+      },
+      "label": "factorial(3) returns 6",
+      "importance": "major",
+      "frameId": "frame:factorial:3",
+      "value": {
+        "kind": "primitive",
+        "javaType": "int",
+        "value": 6
+      },
+      "destination": {
+        "frameId": "frame:factorial:4",
+        "slotId": "slot:factorial:4:child"
+      },
+      "expression": "3 × 2"
+    },
+    {
+      "type": "EXIT_METHOD",
+      "eventId": "event:recursion:026",
+      "seq": 26,
+      "source": {
+        "fileId": "Main.java",
+        "line": 6
+      },
+      "label": "Exit factorial(3)",
+      "importance": "normal",
+      "frameId": "frame:factorial:3"
+    },
+    {
+      "type": "LINE_EXECUTE",
+      "eventId": "event:recursion:027",
+      "seq": 27,
+      "source": {
+        "fileId": "Main.java",
+        "line": 6
+      },
+      "label": "Compute 4 × 6",
+      "importance": "quiet",
+      "frameId": "frame:factorial:4"
+    },
+    {
+      "type": "RETURN_VALUE",
+      "eventId": "event:recursion:028",
+      "seq": 28,
+      "source": {
+        "fileId": "Main.java",
+        "line": 6
+      },
+      "label": "factorial(4) returns 24",
+      "importance": "major",
+      "frameId": "frame:factorial:4",
+      "value": {
+        "kind": "primitive",
+        "javaType": "int",
+        "value": 24
+      },
+      "destination": {
+        "frameId": "frame:factorial:5",
+        "slotId": "slot:factorial:5:child"
+      },
+      "expression": "4 × 6"
+    },
+    {
+      "type": "EXIT_METHOD",
+      "eventId": "event:recursion:029",
+      "seq": 29,
+      "source": {
+        "fileId": "Main.java",
+        "line": 6
+      },
+      "label": "Exit factorial(4)",
+      "importance": "normal",
+      "frameId": "frame:factorial:4"
+    },
+    {
+      "type": "LINE_EXECUTE",
+      "eventId": "event:recursion:030",
+      "seq": 30,
+      "source": {
+        "fileId": "Main.java",
+        "line": 6
+      },
+      "label": "Compute 5 × 24",
+      "importance": "quiet",
+      "frameId": "frame:factorial:5"
+    },
+    {
+      "type": "RETURN_VALUE",
+      "eventId": "event:recursion:031",
+      "seq": 31,
+      "source": {
+        "fileId": "Main.java",
+        "line": 6
+      },
+      "label": "factorial(5) returns 120",
+      "importance": "major",
+      "frameId": "frame:factorial:5",
+      "value": {
+        "kind": "primitive",
+        "javaType": "int",
+        "value": 120
+      },
+      "destination": {
+        "frameId": "frame:recursion-main:1",
+        "slotId": "slot:recursion-main:1:result"
+      },
+      "expression": "5 × 24"
+    },
+    {
+      "type": "EXIT_METHOD",
+      "eventId": "event:recursion:032",
+      "seq": 32,
+      "source": {
+        "fileId": "Main.java",
+        "line": 6
+      },
+      "label": "Exit factorial(5)",
+      "importance": "normal",
+      "frameId": "frame:factorial:5"
+    },
+    {
+      "type": "LINE_EXECUTE",
+      "eventId": "event:recursion:033",
+      "seq": 33,
+      "source": {
+        "fileId": "Main.java",
+        "line": 11
+      },
+      "label": "Print result: 120",
+      "importance": "quiet",
+      "frameId": "frame:recursion-main:1"
+    },
+    {
+      "type": "EXIT_METHOD",
+      "eventId": "event:recursion:034",
+      "seq": 34,
+      "source": {
+        "fileId": "Main.java",
+        "line": 12
+      },
+      "label": "Exit main()",
+      "importance": "normal",
+      "frameId": "frame:recursion-main:1"
+    },
+    {
+      "type": "PROGRAM_END",
+      "eventId": "event:recursion:035",
+      "seq": 35,
+      "source": null,
+      "label": "Program complete · result = 120",
+      "importance": "major"
+    }
+  ]
+}

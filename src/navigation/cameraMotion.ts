@@ -1,7 +1,7 @@
 import { Vector3 } from 'three'
 import type { CameraPose } from '../contracts/interaction'
 import type { TraceEvent } from '../contracts/runtime'
-import type { SceneReferenceEdge, Vec3, WorldAnchor } from '../contracts/world'
+import type { SceneModel, SceneReferenceEdge, Vec3, WorldAnchor } from '../contracts/world'
 import { easeOutCubic, motionMs } from '../theme/tokens'
 import { distance, homePose, midpoint } from './navigation'
 
@@ -68,6 +68,58 @@ export function responsiveHomePose(target: Vec3 | undefined, aspect: number): Ca
     pose.target[1] + (pose.position[1] - pose.target[1]) * scale,
     pose.target[2] + (pose.position[2] - pose.target[2]) * scale,
   ] }
+}
+
+/** The full-trace envelope is independent of the currently visible frames.
+ * Person deliberately retains its established composition; deeper stacks fit
+ * their reserved geometry and attached headings at the same canonical yaw.
+ */
+export function sceneHomePose(scene: Pick<SceneModel, 'stackDepth' | 'bounds'>, target: Vec3 | undefined, view: ViewFraming): CameraPose {
+  if (!scene.bounds || (scene.stackDepth ?? 0) <= 1) return responsiveHomePose(target, view.aspect)
+  const { center, size } = scene.bounds
+  const pivot = target ?? center
+  if (scene.bounds.points) return contextPose(pivot, homePose(pivot), [], scene.bounds.points, view)
+  const envelope: WorldAnchor = {
+    entityId: 'navigation:reserved-bounds', region: 'stack',
+    position: [center[0], center[1] + 0.35, center[2]],
+    size: [size[0] + 1.4, size[1] + 1.8, size[2] + 0.8], ports: {}, bodyPort: center,
+  }
+  return contextPose(pivot, homePose(pivot), [envelope], [], view)
+}
+
+/** Resolve semantic attention after reduction: an exited frame is no longer a
+ * valid focus target, and a return transfers attention to its direct caller.
+ */
+export function eventFocusAnchor(event: TraceEvent, scene: SceneModel, activeEntityId?: string | null): WorldAnchor | null {
+  const anchorFor = (id: string | null | undefined) => scene.frames.find((node) => node.id === id)?.anchor
+    ?? scene.objects.find((node) => node.id === id)?.anchor ?? null
+  if (event.type === 'EXIT_METHOD') {
+    return anchorFor(activeEntityId) ?? scene.frames.reduce<typeof scene.frames[number] | null>(
+      (deepest, frame) => !deepest || frame.depth > deepest.depth ? frame : deepest, null,
+    )?.anchor ?? null
+  }
+  if (event.type === 'RETURN_VALUE') return anchorFor(event.destination?.frameId) ?? anchorFor(event.frameId)
+  if (activeEntityId && anchorFor(activeEntityId)) return anchorFor(activeEntityId)
+  if ('frameId' in event) return anchorFor(event.frameId)
+  if ('objectId' in event) return anchorFor(event.objectId)
+  if (event.type === 'CREATE_REFERENCE') return anchorFor(event.targetObjectId)
+  return null
+}
+
+/** Follow one invocation with its immediate callers/callees. This makes the
+ * descent and unwind readable while retaining orientation and user ownership.
+ */
+export function invocationContextPose(anchor: WorldAnchor, scene: SceneModel, viewingPose: CameraPose, view: ViewFraming): CameraPose {
+  const frame = scene.frames.find((node) => node.id === anchor.entityId)
+  const neighbors = frame ? scene.frames.filter((node) => Math.abs(node.depth - frame.depth) <= 1).map((node) => node.anchor) : [anchor]
+  const padded = neighbors.map((node) => ({ ...node,
+    position: [node.position[0], node.position[1] + 0.3, node.position[2]] as Vec3,
+    size: [node.size[0] + 0.8, node.size[1] + 1.2, node.size[2] + 0.4] as Vec3,
+  }))
+  const flow = scene.returnFlow
+  const points = flow && (flow.frameId === anchor.entityId || flow.destination?.frameId === anchor.entityId)
+    ? [flow.from, ...(flow.to ? [flow.to] : [])] : []
+  return contextPose(anchor.position, viewingPose, padded, points, view, 12)
 }
 
 /** Fit focus and nearby runtime bodies above the bottom inspector shelf.

@@ -11,13 +11,20 @@ import { Inspector } from '../ui/Inspector'
 import { Timeline } from '../ui/timeline/Timeline'
 import { navigationActions, useNavigationStore } from '../navigation'
 import { usePlayback } from '../playback'
-import { loadPersonTrace, seek } from '../runtime'
+import { loadPersonTrace, loadRecursionTrace, seek } from '../runtime'
 import { createLayout } from '../world/layout'
 import { buildSceneModel } from '../world/sceneModel'
 
-const defaultTrace = loadPersonTrace()
+const examples = { person: loadPersonTrace(), recursion: loadRecursionTrace() }
+type ExampleId = keyof typeof examples
 
-export function App({ trace = defaultTrace }: { trace?: TraceDocument }) {
+export function App({ trace: suppliedTrace }: { trace?: TraceDocument }) {
+  const [example, setExample] = useState<ExampleId>('person')
+  const trace = suppliedTrace ?? examples[example]
+  return <ExecutionWorkspace key={trace.demoId} trace={trace} example={example} onChooseExample={setExample} />
+}
+
+function ExecutionWorkspace({ trace, example, onChooseExample }: { trace: TraceDocument; example: ExampleId; onChooseExample: (example: ExampleId) => void }) {
   const layout = useMemo(() => createLayout(trace), [trace])
   const [view, setView] = useState<VisualizationMode>('spatial')
   const [guided, setGuided] = useState(true)
@@ -25,6 +32,8 @@ export function App({ trace = defaultTrace }: { trace?: TraceDocument }) {
   const { cursor, playing } = playback.state
   const runtime = useMemo(() => seek(trace, cursor), [trace, cursor])
   const event = trace.events[cursor - 1] ?? null
+  const finalTransfer = runtime.returns.at(-1)
+  const finalSlot = finalTransfer?.destination ? runtime.frames[finalTransfer.destination.frameId]?.locals[finalTransfer.destination.slotId] : undefined
   const detailLevel = useNavigationStore((state) => state.detailLevel)
   const mode = useNavigationStore((state) => state.mode)
   const followEnabled = useNavigationStore((state) => state.followEnabled)
@@ -35,7 +44,7 @@ export function App({ trace = defaultTrace }: { trace?: TraceDocument }) {
   const [selection, setSelection] = useState<Selection>(null)
   const scene = useMemo(() => buildSceneModel(runtime, layout, detailLevel), [runtime, layout, detailLevel])
 
-  useEffect(() => { navigationActions.followExecution() }, [])
+  useEffect(() => { navigationActions.resetView(); navigationActions.followExecution() }, [])
 
   const focusSelection = () => {
     if (selection) navigationActions.focus(selection)
@@ -73,7 +82,7 @@ export function App({ trace = defaultTrace }: { trace?: TraceDocument }) {
         <span className="brand-copy"><span className="brand-name">Visual Java</span><span className="brand-subtitle">Explore execution from the inside</span></span>
       </div>
       <div className="top-actions">
-        <span className="mode-pill">PERSON / DEMO 01</span>
+        <label className="example-picker">Example <select aria-label="Runtime example" value={example} onChange={(event) => onChooseExample(event.target.value as ExampleId)}><option value="person">Person</option><option value="recursion">Recursion · factorial(5)</option></select></label>
         <button className="toolbar-button is-subtle" aria-label="Runtime focus mode" aria-pressed={runtimeFocus} onClick={() => setRuntimeFocus((value) => !value)}>{runtimeFocus ? <Minimize2 size={15} /> : <Maximize2 size={15} />}<span className="button-text">{runtimeFocus ? 'Restore source' : 'Runtime view'}</span></button>
         <button className="toolbar-button is-subtle" onClick={() => navigationActions.home()} aria-label="Home"><Home size={15} /><span className="button-text">Home</span></button>
       </div>
@@ -86,12 +95,12 @@ export function App({ trace = defaultTrace }: { trace?: TraceDocument }) {
         onPointerMove={(event) => { if (event.currentTarget.hasPointerCapture(event.pointerId)) { const bounds = workbenchRef.current!.getBoundingClientRect(); setSourceWidth(Math.max(24, Math.min(46, (event.clientX - bounds.left) / bounds.width * 100))) } }} /> }
       <section className={`world-panel ${selection ? 'world-panel--inspecting' : ''}`} aria-label="Runtime world">
         <div className={`spatial-view ${view !== 'spatial' ? 'is-hidden' : ''}`} aria-hidden={view !== 'spatial'}><RuntimeCanvas visible={view === 'spatial'} guided={guided} playing={playing} quality={quality} scene={scene} event={event} selection={selection} onSelect={setSelection} onFocusSelected={navigationActions.focus} /></div>
-        <ClassicRuntime visible={view === 'classic'} scene={scene} event={event} guided={guided} selection={selection} onSelect={setSelection} onFocusSelected={navigationActions.focus} />
+        <ClassicRuntime visible={view === 'classic'} playing={playing} scene={scene} event={event} guided={guided} selection={selection} onSelect={setSelection} onFocusSelected={navigationActions.focus} />
         <div className="representation-bar">
           <div role="group" aria-label="Visualization mode" className="view-selector">{visualizationModes.map((item) => <button key={item.id} className={`toolbar-button ${view === item.id ? 'is-active' : ''}`} aria-pressed={view === item.id} disabled={!item.available} title={'reason' in item ? item.reason : `${item.label} representation`} onClick={() => setView(item.id)}>{item.label}</button>)}</div>
           <button className={`toolbar-button ${guided ? 'is-active' : ''}`} aria-label="Guided execution" aria-pressed={guided} onClick={() => { setGuided((value) => !value); if (guided) navigationActions.freeExplore() }}>Guided Execution: {guided ? 'On' : 'Off'}</button>
         </div>
-        <p className="theater-reason">Theater: unavailable for Person; standard stack and heap views show this program.</p>
+        <p className="theater-reason">{trace.demoId === 'person' ? 'Theater: unavailable for Person; standard stack and heap views show this program.' : 'Theater: Spatial already exposes this call stack and its return path.'}</p>
         <div className="world-overlay-top">
           <span className="mode-pill">{playing ? 'EXECUTING' : runtime.status === 'ready' ? 'READY' : 'PAUSED'}</span>
           <span className={`world-label ${mode === 'FOCUS_ENTITY' || mode === 'TRACE_PATH' ? 'world-label--navigating' : ''}`}><strong>RUNTIME WORLD</strong><span>{mode.replaceAll('_', ' ')} · {detailLevel.toUpperCase()}</span></span>
@@ -106,6 +115,12 @@ export function App({ trace = defaultTrace }: { trace?: TraceDocument }) {
           <button className="toolbar-button" onClick={() => traceSelection()} disabled={!scene.references.length} title="Trace selected relationship" aria-label="Trace selected relationship"><Route size={15} /><span className="button-text">Trace Path</span></button>
           <button className={`toolbar-button ${followEnabled ? 'is-active' : ''}`} onClick={() => { if (followEnabled) navigationActions.freeExplore(); else { setGuided(true); navigationActions.followExecution() } }} title="Follow execution" aria-label="Follow execution" aria-pressed={followEnabled}><ScanEye size={15} /><span className="button-text">Follow</span></button>
         </div>
+        {scene.stackDepth !== undefined && scene.stackDepth > 1 && <section className="call-status" aria-label="Call and return state">
+          <span className="eyebrow">{runtime.status === 'ended' ? 'COMPLETE' : `${runtime.activeFrameIds.length} LIVE FRAMES`}</span>
+          {runtime.returns.length > 0 && <div className="return-history"><span>Returns</span>{runtime.returns.map((item) => <span key={item.eventId} title={item.expression}>{item.value.kind === 'primitive' ? String(item.value.value) : ''}</span>)}</div>}
+          {runtime.status === 'ended' && <strong className="final-result">{finalSlot?.name ?? 'Return'} = {finalTransfer?.value.kind === 'primitive' ? String(finalTransfer.value.value) : ''}</strong>}
+          {guided && scene.returnFlow && runtime.status !== 'ended' && <span className="return-explanation">{scene.returnFlow.expression ?? `${scene.returnFlow.fromLabel} returns`}: {scene.returnFlow.value.kind === 'primitive' ? String(scene.returnFlow.value.value) : ''} → {scene.returnFlow.toLabel}</span>}
+        </section>}
         {cursor === 0 && <div className="event-chip">Press <strong>Play</strong> to enter the runtime</div>}
         {guided && event?.type === 'SET_FIELD' && <div className="event-chip"><strong>Mutation</strong> · {event.label}</div>}
         <div className="world-access">

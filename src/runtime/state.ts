@@ -17,6 +17,7 @@ export function createInitialState(): RuntimeState {
     activeFrameIds: [],
     frames: {},
     objects: {},
+    returns: [],
   }
 }
 
@@ -89,6 +90,10 @@ export function applyEvent(state: RuntimeState, event: TraceEvent): RuntimeState
 
   let next: RuntimeState = state
   const activeFrameId = state.activeFrameIds.at(-1)
+  if (activeFrameId && state.frames[activeFrameId].returnValue !== undefined) {
+    requireCondition(event.type === 'EXIT_METHOD' || event.type === 'RETURN_VALUE',
+      `Frame ${activeFrameId} must exit after returning a value`)
+  }
 
   switch (event.type) {
     case 'PROGRAM_START':
@@ -117,6 +122,8 @@ export function applyEvent(state: RuntimeState, event: TraceEvent): RuntimeState
         status: 'active',
         locals: slotsById(event.locals, state),
         enteredAt: event.eventId,
+        ...(event.invocationLabel !== undefined ? { invocationLabel: event.invocationLabel } : {}),
+        ...(event.returnType !== undefined ? { returnType: event.returnType } : {}),
       }
       next = withFrame(state, frame)
       next = { ...next, activeFrameIds: [...state.activeFrameIds, frame.id] }
@@ -126,8 +133,39 @@ export function applyEvent(state: RuntimeState, event: TraceEvent): RuntimeState
     case 'EXIT_METHOD': {
       requireCondition(activeFrameId === event.frameId, `Method return is not top of stack: ${event.frameId}`)
       const frame = state.frames[event.frameId]
+      requireCondition(!frame.returnType || frame.returnType === 'void' || frame.returnValue !== undefined,
+        `Non-void frame ${event.frameId} must return a value before exit`)
       next = withFrame(state, { ...frame, status: 'returned', exitedAt: event.eventId })
       next = { ...next, activeFrameIds: state.activeFrameIds.slice(0, -1) }
+      break
+    }
+
+    case 'RETURN_VALUE': {
+      requireCondition(activeFrameId === event.frameId, `Value returned outside top frame ${event.frameId}`)
+      const frame = state.frames[event.frameId]
+      requireCondition(frame.returnType && frame.returnType !== 'void', `Frame ${event.frameId} has no return type`)
+      requireCondition(frame.returnValue === undefined, `Duplicate return from ${event.frameId}`)
+      requireCondition(event.value.kind !== 'uninitialized', 'Return value must be concrete')
+      assertCompatible({ id: `${frame.id}:return`, name: 'return', javaType: frame.returnType, value: event.value }, event.value)
+
+      if (frame.callerFrameId === null) {
+        requireCondition(event.destination === null, 'Root return cannot have a caller destination')
+      } else {
+        requireCondition(event.destination?.frameId === frame.callerFrameId &&
+          state.activeFrameIds.at(-2) === frame.callerFrameId, 'Return destination must be the direct caller')
+        next = setSlot(state, { kind: 'frame', ...event.destination }, event.value)
+      }
+      next = withFrame(next, { ...frame, returnValue: { ...event.value } })
+      next = {
+        ...next,
+        returns: [...state.returns, {
+          eventId: event.eventId,
+          frameId: event.frameId,
+          destination: event.destination ? { ...event.destination } : null,
+          value: { ...event.value },
+          ...(event.expression !== undefined ? { expression: event.expression } : {}),
+        }],
+      }
       break
     }
 

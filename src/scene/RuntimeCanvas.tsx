@@ -4,8 +4,9 @@ import { Line, Text } from '@react-three/drei'
 import type { Selection } from '../contracts/interaction'
 import type { TraceEvent } from '../contracts/runtime'
 import type { SceneFrameNode, SceneModel } from '../contracts/world'
-import { NavigationController } from '../navigation'
+import { NavigationController, navigationActions } from '../navigation'
 import { ReturningFrame } from './primitives/ReturningFrame'
+import { ReturnFlow } from './primitives/ReturnFlow'
 import { useReducedMotion } from './primitives/presentationMotion'
 import { FrameSolid, ObjectSolid, ReferenceCurve } from './primitives'
 import { colors, motionMs, renderQuality, runtimeFont, worldMaterial, worldUnits } from '../theme/tokens'
@@ -76,14 +77,21 @@ export function RuntimeCanvas({ visible, guided, playing, quality, scene, event,
     lastSelected.current = item
     onSelect(item)
   }
-  const activeSlotId = guided && (event?.type === 'SET_FIELD' || event?.type === 'ASSIGN_LOCAL') ? event.slotId : undefined
+  const activeSlotId = !guided ? undefined : event?.type === 'RETURN_VALUE' ? `return:${event.frameId}`
+    : event?.type === 'SET_FIELD' || event?.type === 'ASSIGN_LOCAL' ? event.slotId : undefined
+  const deepStack = (scene.stackDepth ?? 0) > 1
+  const floorY = scene.bounds ? scene.bounds.center[1] - scene.bounds.size[1] / 2 - 0.22 : -1.58
   const callSpine = scene.frames.length > 1 ? scene.frames.map((frame) => [
     frame.anchor.position[0] - frame.anchor.size[0] / 2 - 0.12,
     frame.anchor.position[1] + frame.anchor.size[1] / 2 + 0.04,
     frame.anchor.position[2] - frame.anchor.size[2] / 2,
   ] as [number, number, number]) : []
   return <div className="world-canvas" aria-label="Three-dimensional Java runtime world"
-    onPointerDownCapture={(event) => { pointerStart.current = [event.clientX, event.clientY]; dragged.current = false }}
+    onPointerDownCapture={(event) => {
+      pointerStart.current = [event.clientX, event.clientY]; dragged.current = false
+      // Take ownership immediately, including while WebGL primitives are loading.
+      if (visible) navigationActions.freeExplore()
+    }}
     onPointerMoveCapture={(event) => {
       if (pointerStart.current && Math.hypot(event.clientX - pointerStart.current[0], event.clientY - pointerStart.current[1]) > 5) dragged.current = true
     }}
@@ -102,14 +110,15 @@ export function RuntimeCanvas({ visible, guided, playing, quality, scene, event,
       <directionalLight position={[-3.5, 8, 8]} intensity={2.6} color={colors.text} castShadow={tier.shadows} shadow-mapSize={[tier.shadowSize, tier.shadowSize]} shadow-camera-left={-14} shadow-camera-right={14} shadow-camera-top={10} shadow-camera-bottom={-10} shadow-radius={3} />
       <pointLight position={[5, 3, 2]} intensity={11} distance={14} color={colors.heap} />
       <pointLight position={[-5, 3, 4]} intensity={10} distance={13} color={colors.stack} />
-      <mesh position={[0, -1.58, -1.4]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-        <planeGeometry args={[20, 16]} />
+      <mesh position={[0, floorY, -1.4]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+        <planeGeometry args={deepStack ? [24, 26] : [20, 16]} />
         <meshStandardMaterial color={worldMaterial.floor} roughness={0.9} metalness={0.05} />
       </mesh>
       <group>
-        {scene.frames.length > 0 && <Text font={runtimeFont} position={[-5.9, 3.25, -1.5]} fontSize={0.31} color={colors.stack} anchorX="left" anchorY="middle" letterSpacing={0.08}>STACK</Text>}
+        {scene.frames.length > 0 && <Text font={runtimeFont} position={deepStack && scene.bounds ? [scene.bounds.center[0] - 4.5, scene.bounds.center[1] + scene.bounds.size[1] / 2 + 0.6, 2.5] : [-5.9, 3.25, -1.5]} fontSize={0.31} color={colors.stack} anchorX="left" anchorY="middle" letterSpacing={0.08}>STACK</Text>}
         {scene.objects.length > 0 && <Text font={runtimeFont} position={[2.1, 2.18, -0.65]} fontSize={0.31} color={colors.heap} anchorX="left" anchorY="middle" letterSpacing={0.08}>HEAP</Text>}
         {callSpine.length > 1 && <Line points={callSpine} color={colors.stack} lineWidth={1.4} transparent opacity={0.54} />}
+        {scene.returnFlow && scene.frames.length > 0 && <ReturnFlow flow={scene.returnFlow} guided={guided} playing={playing} />}
         {scene.references.map((edge) => <ReferenceCurve key={edge.id} edge={edge}
           label={[...scene.frames.flatMap((node) => node.slots), ...scene.objects.flatMap((node) => node.fields)].find((slot) => slot.id === edge.source.slotId)?.name ?? ''}
           selected={selection?.kind === 'reference' && selection.id === edge.id}
@@ -117,9 +126,10 @@ export function RuntimeCanvas({ visible, guided, playing, quality, scene, event,
           onSelect={(id) => select({ kind: 'reference', id })} />)}
         {returning.map((node) => <ReturningFrame key={node.id} node={node} />)}
         {scene.frames.map((node) => <FrameSolid key={node.id} node={node}
+          readable={deepStack}
           selected={selection?.kind === 'frame' && selection.id === node.id}
           related={isRelated(selection, node.id, scene)} detailLevel={selection?.id === node.id && scene.detailLevel === 'macro' ? 'meso' : scene.detailLevel}
-          activeSlotId={activeSlotId}
+          activeSlotId={guided && event?.type === 'RETURN_VALUE' && event.destination?.frameId === node.id ? event.destination.slotId : activeSlotId}
           onSelect={(id) => select({ kind: 'frame', id })} />)}
         {scene.objects.map((node) => <ObjectSolid key={node.id} node={node}
           selected={selection?.kind === 'object' && selection.id === node.id}
@@ -128,7 +138,7 @@ export function RuntimeCanvas({ visible, guided, playing, quality, scene, event,
           onSelect={(id) => select({ kind: 'object', id })} />)}
         {guided && <MutationCue scene={scene} event={event} />}
       </group>
-      <NavigationController visible={visible} sceneModel={scene} event={event} homeTarget={worldUnits.homeTarget} />
+      <NavigationController visible={visible} sceneModel={scene} event={event} homeTarget={scene.bounds?.center ?? worldUnits.homeTarget} />
     </Canvas>
   </div>
 }

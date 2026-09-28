@@ -27,10 +27,11 @@ export interface RuntimeSlotProps {
   background: string
   active?: boolean
   reducedMotion?: boolean
+  readable?: boolean
 }
 
 /** A named, typed value set into the information face of a runtime solid. */
-export function RuntimeSlot({ slot, width, y, z, compact = false, accent, background, active = false, reducedMotion }: RuntimeSlotProps) {
+export function RuntimeSlot({ slot, width, y, z, compact = false, accent, background, active = false, reducedMotion, readable = false }: RuntimeSlotProps) {
   const motionReduced = useReducedMotion(reducedMotion)
   const valueRef = useRef<Group>(null)
   const previousValue = useRef<string | null>(null)
@@ -44,7 +45,7 @@ export function RuntimeSlot({ slot, width, y, z, compact = false, accent, backgr
   const value = slot.displayValue ?? formatRuntimeValue(slot.value)
   const valueColor = active ? colors.mutation : slot.value.kind === 'null' || slot.value.kind === 'uninitialized'
     ? colors.null
-    : slot.value.kind === 'reference' ? accent : colors.text
+    : slot.role === 'return' ? colors.success : slot.value.kind === 'reference' ? accent : colors.text
 
   useEffect(() => {
     const changed = previousValue.current !== null && previousValue.current !== value
@@ -84,10 +85,10 @@ export function RuntimeSlot({ slot, width, y, z, compact = false, accent, backgr
           <meshBasicMaterial color={colors.mutation} />
         </mesh>
       )}
-      <RuntimeLabel text={slot.name} position={[left, 0, textZ]} size={compact ? 0.22 : 0.24} color={colors.textSecondary} maxWidth={compact ? 1.45 : 0.9} />
-      <RuntimeLabel text={slot.javaType} position={[typeX, 0, textZ]} size={compact ? 0.18 : 0.2} color={colors.textSecondary} maxWidth={compact ? 1.1 : 0.75} />
+      <RuntimeLabel text={slot.role === 'operand' ? 'call result' : slot.name} position={[left, 0, textZ]} size={readable ? 0.29 : compact ? 0.22 : 0.24} color={colors.textSecondary} maxWidth={compact ? 1.65 : 0.9} />
+      <RuntimeLabel text={slot.javaType} position={[typeX, 0, textZ]} size={readable ? 0.24 : compact ? 0.18 : 0.2} color={colors.textSecondary} maxWidth={compact ? 1.1 : 0.75} />
       <group ref={valueRef} position={[0, 0, 0]}>
-        <RuntimeLabel text={value} position={[valueX, 0, textZ]} size={compact ? 0.22 : 0.24} color={valueColor} maxWidth={compact ? 0.88 : 1.2} />
+        <RuntimeLabel text={value} position={[valueX, 0, textZ]} size={readable ? 0.29 : compact ? 0.22 : 0.24} color={valueColor} maxWidth={compact ? 1.1 : 1.2} />
       </group>
     </group>
   )

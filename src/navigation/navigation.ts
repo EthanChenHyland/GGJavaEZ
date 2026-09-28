@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import type { CameraIntent, CameraMode, CameraPose, NavigationState, Selection } from '../contracts/interaction'
 import type { ReferenceId } from '../contracts/runtime'
-import type { DetailLevel, SceneReferenceEdge, Vec3, WorldAnchor } from '../contracts/world'
+import type { DetailLevel, SceneModel, SceneReferenceEdge, Vec3, WorldAnchor } from '../contracts/world'
 import { worldUnits } from '../theme/tokens'
 
 export const defaultHomePose: CameraPose = {
@@ -147,4 +147,14 @@ export function detailLevelAtDistance(distanceToPivot: number, current: DetailLe
   if (distanceToPivot > 20) return 'macro'
   if (distanceToPivot < 10) return 'micro'
   return 'meso'
+}
+
+/** A larger trace envelope should not hide locals at its canonical overview.
+ * Zoom bands describe inspection scale relative to that reserved world, while
+ * shallow scenes keep the established absolute Person thresholds.
+ */
+export function detailDistanceForScene(distanceToPivot: number, overview: CameraPose, scene: Pick<SceneModel, 'stackDepth' | 'bounds'>): number {
+  if (!scene.bounds || (scene.stackDepth ?? 0) <= 1) return distanceToPivot
+  const overviewDistance = distance(overview.position, overview.target)
+  return distanceToPivot * distance(defaultHomePose.position, defaultHomePose.target) / Math.max(0.01, overviewDistance)
 }

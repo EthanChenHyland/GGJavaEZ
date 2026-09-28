@@ -4,6 +4,20 @@ import type { Vec3, WorldAnchor } from '../contracts/world'
 import { defaultHomePose } from './navigation'
 
 export const cameraBounds = { minDistance: 1.7, maxDistance: 32, pan: [12, 8, 12] as Vec3 }
+export type CameraLimits = typeof cameraBounds
+
+/** Larger reserved worlds need a larger finite exploration envelope. The
+ * default Person limits remain exact; limits never depend on live frame count.
+ */
+export function limitsForOverview(overview: CameraPose, size?: Vec3): CameraLimits {
+  if (!size) return cameraBounds
+  return {
+    minDistance: cameraBounds.minDistance,
+    maxDistance: Math.max(cameraBounds.maxDistance, new Vector3(...overview.position).distanceTo(new Vector3(...overview.target)) * 1.65),
+    pan: [Math.max(cameraBounds.pan[0], size[0] / 2 + 6),
+      Math.max(cameraBounds.pan[1], size[1] / 2 + 6), Math.max(cameraBounds.pan[2], size[2] / 2 + 6)],
+  }
+}
 const clearance = 0.18
 const epsilon = 0.0001
 const tuple = (v: Vector3): Vec3 => [v.x, v.y, v.z]
@@ -67,18 +81,19 @@ export function constrainCameraPose(
   previous: CameraPose,
   boxes: readonly Box3[],
   center: Vec3 = defaultHomePose.target,
+  limits: CameraLimits = cameraBounds,
 ): CameraPose {
   const safePrevious = finite(previous) ? previous : defaultHomePose
   const pose = finite(requested) ? requested : safePrevious
   const rawTarget = new Vector3(...pose.target)
   const target = rawTarget.clone()
   ;(['x', 'y', 'z'] as const).forEach((axis, index) => {
-    target[axis] = Math.max(center[index] - cameraBounds.pan[index], Math.min(center[index] + cameraBounds.pan[index], target[axis]))
+    target[axis] = Math.max(center[index] - limits.pan[index], Math.min(center[index] + limits.pan[index], target[axis]))
   })
   const offset = new Vector3(...pose.position).sub(rawTarget)
   if (offset.lengthSq() < 1e-12) offset.copy(new Vector3(...defaultHomePose.position).sub(new Vector3(...defaultHomePose.target)))
   const rangeBefore = offset.length()
-  const boundedRange = Math.max(cameraBounds.minDistance, Math.min(cameraBounds.maxDistance, rangeBefore))
+  const boundedRange = Math.max(limits.minDistance, Math.min(limits.maxDistance, rangeBefore))
   const eye = boundedRange === rangeBefore
     ? new Vector3(...pose.position).add(target.clone().sub(rawTarget))
     : target.clone().add(offset.setLength(boundedRange))
@@ -93,23 +108,23 @@ export function constrainCameraPose(
   // A blocked pan must not leave its pivot moving away while the eye is stationary.
   if (fraction < 1) target.lerpVectors(new Vector3(...safePrevious.target), target, fraction)
   const range = position.distanceTo(target)
-  if (range < cameraBounds.minDistance || range > cameraBounds.maxDistance) {
+  if (range < limits.minDistance || range > limits.maxDistance) {
     const direction = target.clone().sub(position)
     if (direction.lengthSq() < 1e-12) direction.copy(offset).negate()
-    target.copy(position).add(direction.setLength(Math.max(cameraBounds.minDistance, Math.min(cameraBounds.maxDistance, range))))
+    target.copy(position).add(direction.setLength(Math.max(limits.minDistance, Math.min(limits.maxDistance, range))))
   }
   return { position: tuple(position), target: tuple(target) }
 }
 
-export function zoomPose(pose: CameraPose, direction: 'in' | 'out'): CameraPose {
+export function zoomPose(pose: CameraPose, direction: 'in' | 'out', limits: CameraLimits = cameraBounds): CameraPose {
   const offset = new Vector3(...pose.position).sub(new Vector3(...pose.target))
   if (offset.lengthSq() < 1e-12) offset.set(0.35, 0.25, 1)
-  const range = Math.max(cameraBounds.minDistance, Math.min(cameraBounds.maxDistance, offset.length() * (direction === 'in' ? 0.8 : 1.25)))
+  const range = Math.max(limits.minDistance, Math.min(limits.maxDistance, offset.length() * (direction === 'in' ? 0.8 : 1.25)))
   return { target: pose.target, position: tuple(new Vector3(...pose.target).add(offset.setLength(range))) }
 }
 
 /** Route explicit commands around solid corners instead of stopping Reset behind a body. */
-export function collisionSafeRoute(from: CameraPose, to: CameraPose, boxes: readonly Box3[]): CameraPose[] {
+export function collisionSafeRoute(from: CameraPose, to: CameraPose, boxes: readonly Box3[], center?: Vec3, limits: CameraLimits = cameraBounds): CameraPose[] {
   const start = escape(new Vector3(...from.position), boxes)
   const end = escape(new Vector3(...to.position), boxes)
   const visible = (a: Vector3, b: Vector3) => boxes.every((box) => cameraSegmentHit(a, b, box) === null)
@@ -139,7 +154,7 @@ export function collisionSafeRoute(from: CameraPose, to: CameraPose, boxes: read
       if (cost < ranges[i]) { ranges[i] = cost; parents[i] = nearest }
     }
   }
-  if (parents[1] < 0) return [constrainCameraPose(to, from, boxes)]
+  if (parents[1] < 0) return [constrainCameraPose(to, from, boxes, center, limits)]
   const path: number[] = []
   for (let i = 1; i !== 0; i = parents[i]) path.unshift(i)
   const viewingOffset = start.clone().sub(new Vector3(...from.target))

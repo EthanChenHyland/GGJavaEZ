@@ -1,6 +1,6 @@
 # Visual Java
 
-The first Visual Java slice is a trace-driven, navigable 3D view of the `Person` Java program. It uses deterministic mock execution data. The source, timeline, inspector, and Three.js world read one semantic cursor.
+Visual Java provides trace-driven Classic and navigable 3D Spatial views of the `Person` and recursive `factorial(5)` Java programs. It uses deterministic mock execution data. The source, timeline, inspector, and runtime representations read one semantic cursor.
 
 ## Run
 
@@ -13,6 +13,8 @@ Open `http://127.0.0.1:5173/`.
 
 ## Explore
 
+- Choose **Person** or **Recursion · factorial(5)** in the Example selector. Switching examples starts its trace from the beginning; switching Classic/Spatial preserves execution and inspection state.
+- Recursion exposes six invocation frames, each parameter and evaluated call result, and the return chain **1 → 2 → 6 → 24 → 120**. Playback stops naturally; **Replay** restarts explicitly. Theater remains unavailable because the expanded Spatial stack already explains this fixture.
 - Play, pause, step backward or forward, or scrub the timeline.
 - Drag inside the runtime to orbit; right-drag to pan; scroll or pinch to dolly.
 - Click a frame, object, or reference to inspect it; double-click or use **Focus** to approach it.
@@ -33,6 +35,8 @@ npm run build
 
 `npm run capture:visual` saves the reference checkpoints in `docs/checkpoints/person-v1/` while the dev server is running. The browser checks use installed Google Chrome.
 
+`node scripts/capture-recursion.mjs` captures the recursion comparison matrix and Person regressions. Final review and performance evidence: [Recursion QA](docs/checkpoints/recursion-v2/QA.md).
+
 ## Architecture
 
-`src/demos/person/` contains the mock Java source and versioned trace. `src/runtime/` validates and reduces events into semantic state. `src/world/` reserves stable XYZ anchors and builds a renderer-independent scene model. `src/scene/` draws actual cuboid geometry and reference curves. `src/navigation/` owns camera behavior; `src/playback/` owns the event cursor. The spec and reference images live in `docs/visual-java-spec/`.
+`src/demos/` contains curated Java source and versioned traces. `src/runtime/` validates and reduces all traces through one semantic pipeline, including typed direct-caller returns. `src/world/` reserves stable XYZ anchors and builds a renderer-independent scene model. `src/classic/` projects that model into conventional stack/heap diagrams; `src/scene/` draws actual cuboid geometry and reference/return curves. `src/navigation/` owns camera behavior; `src/playback/` owns the event cursor. The spec and reference images live in `docs/visual-java-spec/`.

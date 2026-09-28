@@ -7,11 +7,11 @@ import type { CameraPose } from '../contracts/interaction'
 import type { TraceEvent } from '../contracts/runtime'
 import type { SceneModel, Vec3 } from '../contracts/world'
 import { motionMs } from '../theme/tokens'
-import { contextPose, guidedCameraAction, inspectorFocusPose, responsiveHomePose, sampleCameraMove, traceWaypoints } from './cameraMotion'
+import { contextPose, eventFocusAnchor, guidedCameraAction, inspectorFocusPose, invocationContextPose, sampleCameraMove, sceneHomePose, traceWaypoints } from './cameraMotion'
 import type { CameraMove, CameraWaypoint } from './cameraMotion'
-import { cameraBounds, cameraCollisionBoxes, collisionSafeRoute, constrainCameraPose, zoomPose } from './cameraConstraints'
+import { cameraCollisionBoxes, collisionSafeRoute, constrainCameraPose, limitsForOverview, zoomPose } from './cameraConstraints'
 import {
-  detailLevelAtDistance, midpoint, selectionPoint, useNavigationStore,
+  detailDistanceForScene, detailLevelAtDistance, midpoint, selectionPoint, useNavigationStore,
 } from './navigation'
 
 export interface NavigationControllerProps {
@@ -32,25 +32,6 @@ function readPose(position: Vector3, target: Vector3): CameraPose {
   return {
     position: [position.x, position.y, position.z],
     target: [target.x, target.y, target.z],
-  }
-}
-
-function targetForEvent(event: TraceEvent, activeEntityId?: string | null): string | null {
-  if (activeEntityId) return activeEntityId
-  switch (event.type) {
-    case 'ENTER_METHOD':
-    case 'EXIT_METHOD':
-    case 'LINE_EXECUTE':
-    case 'DECLARE_LOCAL':
-    case 'ASSIGN_LOCAL':
-      return event.frameId
-    case 'ALLOCATE_OBJECT':
-    case 'SET_FIELD':
-      return event.objectId
-    case 'CREATE_REFERENCE':
-      return event.targetObjectId
-    default:
-      return null
   }
 }
 
@@ -81,13 +62,20 @@ export function NavigationController({ sceneModel, event, activeEntityId, homeTa
   const motionReduced = reducedMotion ?? preferredReducedMotion
   const intentRevision = useNavigationStore((state) => state.intentRevision)
   const followEnabled = useNavigationStore((state) => state.followEnabled)
+  const deepStack = (sceneModel.stackDepth ?? 0) > 1 && !!sceneModel.bounds
+  const framing = {
+    verticalFov: camera instanceof PerspectiveCamera ? camera.getEffectiveFOV() * Math.PI / 180 : Math.PI / 4,
+    aspect: size.width / Math.max(size.height, 1),
+  }
+  const canonicalOverview = sceneHomePose(sceneModel, homeTarget, framing)
+  const limits = limitsForOverview(canonicalOverview, deepStack ? sceneModel.bounds?.size : undefined)
   const world = useMemo(() => ({
     anchors: Object.fromEntries([
       ...sceneModel.frames.map((node) => [node.id, node.anchor] as const),
       ...sceneModel.objects.map((node) => [node.id, node.anchor] as const),
     ]),
     references: sceneModel.references,
-    homeTarget,
+    homeTarget: deepStack ? homeTarget ?? sceneModel.bounds?.center : homeTarget,
   }), [sceneModel, homeTarget])
 
   const collisionBoxes = useMemo(() => cameraCollisionBoxes(Object.values(world.anchors),
@@ -103,21 +91,21 @@ export function NavigationController({ sceneModel, event, activeEntityId, homeTa
     const controls = controlsRef.current
     if (!controls) return
     const store = useNavigationStore.getState()
-    const next = detailLevelAtDistance(camera.position.distanceTo(controls.target), store.detailLevel)
+    const next = detailLevelAtDistance(detailDistanceForScene(camera.position.distanceTo(controls.target), canonicalOverview, sceneModel), store.detailLevel)
     if (next !== store.detailLevel) store.setDetailLevel(next)
   }
 
   const applyPose = (pose: CameraPose, sweep = true) => {
     const controls = controlsRef.current
     if (!controls) return
-    const safe = constrainCameraPose(pose, sweep ? lastSafePoseRef.current ?? pose : pose, collisionBoxes, world.homeTarget)
+    const safe = constrainCameraPose(pose, sweep ? lastSafePoseRef.current ?? pose : pose, collisionBoxes, world.homeTarget, limits)
     applyingPoseRef.current = true
     camera.position.set(...safe.position)
     controls.target.set(...safe.target)
     controls.update()
     // OrbitControls may apply angular limits during update; constrain its result too.
     const finalPose = constrainCameraPose(currentPose(), sweep ? lastSafePoseRef.current ?? safe : safe,
-      collisionBoxes, world.homeTarget)
+      collisionBoxes, world.homeTarget, limits)
     camera.position.set(...finalPose.position)
     controls.target.set(...finalPose.target)
     camera.lookAt(controls.target)
@@ -134,8 +122,8 @@ export function NavigationController({ sceneModel, event, activeEntityId, homeTa
     let prior = from
     for (const waypoint of waypoints) {
       // Bound endpoints before routing; no swept test until the route is sampled.
-      const destination = constrainCameraPose(waypoint.pose, waypoint.pose, collisionBoxes, world.homeTarget)
-      const route = collisionSafeRoute(prior, destination, collisionBoxes)
+      const destination = constrainCameraPose(waypoint.pose, waypoint.pose, collisionBoxes, world.homeTarget, limits)
+      const route = collisionSafeRoute(prior, destination, collisionBoxes, world.homeTarget, limits)
       for (const pose of route) routed.push({ pose, durationMs: waypoint.durationMs / route.length })
       prior = destination
     }
@@ -157,7 +145,7 @@ export function NavigationController({ sceneModel, event, activeEntityId, homeTa
     aspect: size.width / Math.max(size.height, 1),
   })
 
-  const overviewPose = () => responsiveHomePose(world.homeTarget, size.width / Math.max(size.height, 1))
+  const overviewPose = () => canonicalOverview
 
   useEffect(() => {
     if (!visible || initiallyPlacedRef.current) return
@@ -174,7 +162,7 @@ export function NavigationController({ sceneModel, event, activeEntityId, homeTa
   useEffect(() => {
     if (!visible) return
     if (useNavigationStore.getState().mode === 'HOME') startMove(overviewPose(), motionMs.standard)
-  }, [size.width, size.height, visible])
+  }, [size.width, size.height, visible, homeTarget, sceneModel.bounds, sceneModel.stackDepth])
 
   useEffect(() => {
     if (!visible) return
@@ -200,7 +188,7 @@ export function NavigationController({ sceneModel, event, activeEntityId, homeTa
     if (intent.kind === 'home' || intent.kind === 'resetView') {
       startMove(overviewPose(), motionMs.deliberate)
     } else if (intent.kind === 'zoom') {
-      startMove(zoomPose(currentPose(), intent.direction), motionMs.quick)
+      startMove(zoomPose(currentPose(), intent.direction, limits), motionMs.quick)
     } else if (intent.kind === 'focus') {
       const anchor = selectionPoint(intent.selection, world)
       if (!anchor) return
@@ -209,7 +197,7 @@ export function NavigationController({ sceneModel, event, activeEntityId, homeTa
       const cameraRight = new Vector3(0, 1, 0).cross(
         new Vector3(...pose.position).sub(new Vector3(...pose.target)),
       ).normalize()
-      const center = midpoint(overviewPose().target, anchor.position)
+      const center = deepStack ? anchor.position : midpoint(overviewPose().target, anchor.position)
       const pivot: Vec3 = [center[0] - cameraRight.x, center[1] - cameraRight.y, center[2] - cameraRight.z]
       startMove(inspectorFocusPose(pivot, anchor.size, currentPose(), [], viewFraming(), {
         width: size.width, height: size.height,
@@ -242,15 +230,23 @@ export function NavigationController({ sceneModel, event, activeEntityId, homeTa
       startMove(overviewPose(), motionMs.deliberate)
       return
     }
-    const id = targetForEvent(event, activeEntityId)
-    const anchor = id ? world.anchors[id] : null
-    if (!anchor) return
+    // Person historically leaves its camera still for departed void frames.
+    const anchor = !deepStack && event.type === 'EXIT_METHOD' && !activeEntityId
+      ? world.anchors[event.frameId] ?? null : eventFocusAnchor(event, sceneModel, activeEntityId)
+    if (!anchor) {
+      if (deepStack && event.type === 'EXIT_METHOD' && !sceneModel.frames.length) {
+        guidedEventRef.current = event.eventId
+        startMove(overviewPose(), motionMs.deliberate)
+      }
+      return
+    }
     guidedEventRef.current = event.eventId
     const overview = overviewPose()
     // Bias attention toward the event without replacing the world overview with a close-up.
     const pivot = midpoint(overview.target, anchor.position)
-    startMove(contextPose(pivot, currentPose(), Object.values(world.anchors),
-      world.references.flatMap((edge) => [edge.from, edge.to]), viewFraming()), motionMs.standard)
+    startMove(deepStack ? invocationContextPose(anchor, sceneModel, currentPose(), viewFraming())
+      : contextPose(pivot, currentPose(), Object.values(world.anchors),
+        world.references.flatMap((edge) => [edge.from, edge.to]), viewFraming()), motionMs.standard)
     // A major event may arrive with its anchor on a later scene-model render.
   }, [event?.eventId, event?.importance, activeEntityId, followEnabled, world, visible])
 
@@ -305,8 +301,8 @@ export function NavigationController({ sceneModel, event, activeEntityId, homeTa
     enablePan
     enableZoom
     enableDamping={false}
-    minDistance={cameraBounds.minDistance}
-    maxDistance={cameraBounds.maxDistance}
+    minDistance={limits.minDistance}
+    maxDistance={limits.maxDistance}
     rotateSpeed={0.55}
     minPolarAngle={0.72}
     maxPolarAngle={1.52}

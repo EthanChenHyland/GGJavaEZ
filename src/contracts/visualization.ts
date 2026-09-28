@@ -3,5 +3,5 @@ export type VisualizationMode = 'classic' | 'spatial' | 'theater'
 export const visualizationModes = [
   { id: 'classic', label: 'Classic', available: true },
   { id: 'spatial', label: 'Spatial', available: true },
-  { id: 'theater', label: 'Theater', available: false, reason: 'Person uses standard stack and heap views. Theater becomes available when a specialized representation helps.' },
+  { id: 'theater', label: 'Theater', available: false, reason: 'The current runtime is explained by Classic and Spatial. Theater becomes available when a specialized representation helps.' },
 ] as const

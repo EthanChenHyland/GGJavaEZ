@@ -12,11 +12,15 @@ export function buildSceneModel(runtime: RuntimeState, layout: LayoutState, deta
     return [{
       kind: 'frame' as const,
       id,
-      label: `${frame.methodName}()`,
+      label: frame.invocationLabel ?? `${frame.methodName}()`,
       depth: frame.depth,
       active: id === runtime.activeFrameIds.at(-1),
       anchor,
-      slots: Object.values(frame.locals).map((slot) => ({ ...slot, displayValue: displayValue(slot.value), port: anchor.ports[slot.id] ?? anchor.bodyPort })),
+      slots: [
+        ...Object.values(frame.locals).map((slot) => ({ ...slot, displayValue: displayValue(slot.value), port: anchor.ports[slot.id] ?? anchor.bodyPort })),
+        ...(frame.returnType && frame.returnType !== 'void' ? [{ id: `return:${id}`, name: 'return', javaType: frame.returnType, role: 'return' as const,
+          value: frame.returnValue ?? { kind: 'uninitialized' as const }, displayValue: frame.returnValue ? undefined : 'pending', port: anchor.ports[`return:${id}`] ?? anchor.bodyPort }] : []),
+      ],
     }]
   })
 
@@ -45,5 +49,14 @@ export function buildSceneModel(runtime: RuntimeState, layout: LayoutState, deta
   }
   for (const edge of getReferences(runtime)) addReference(edge.source, edge.source.slotId, edge.targetObjectId)
 
-  return { frames, objects, references, activeEventId: runtime.lastEventId, detailLevel }
+  const returned = runtime.returns?.at(-1)
+  const fromFrame = returned && runtime.frames[returned.frameId]
+  const toFrame = returned?.destination && runtime.frames[returned.destination.frameId]
+  const from = returned && layout.anchors[returned.frameId]?.ports[`return:${returned.frameId}`]
+  const to = returned?.destination ? layout.anchors[returned.destination.frameId]?.ports[returned.destination.slotId] ?? null : null
+  const returnFlow = returned && fromFrame && from ? { ...returned, from, to,
+    fromDepth: fromFrame.depth, toDepth: toFrame ? toFrame.depth : null,
+    fromLabel: fromFrame.invocationLabel ?? `${fromFrame.methodName}()`,
+    toLabel: toFrame ? toFrame.invocationLabel ?? `${toFrame.methodName}()` : null } : undefined
+  return { frames, objects, references, activeEventId: runtime.lastEventId, detailLevel, stackDepth: layout.stackDepth, bounds: layout.bounds, returnFlow }
 }

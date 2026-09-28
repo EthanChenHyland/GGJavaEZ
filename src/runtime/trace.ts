@@ -1,6 +1,8 @@
 import rawPersonTrace from '../demos/person/person.trace.json'
 import personSource from '../demos/person/Main.java?raw'
-import type { RuntimeSlot, RuntimeValue, SlotOwner, TraceDocument, TraceEvent } from '../contracts/runtime'
+import rawRecursionTrace from '../demos/recursion/recursion.trace.json'
+import recursionSource from '../demos/recursion/Main.java?raw'
+import type { RuntimeSlot, RuntimeValue, ScalarValue, SlotOwner, TraceDocument, TraceEvent } from '../contracts/runtime'
 import { applyEvent, createInitialState } from './state'
 
 type RecordValue = Record<string, unknown>
@@ -38,12 +40,13 @@ function isValue(value: unknown): value is RuntimeValue {
   }
 }
 
-function isScalar(value: unknown): boolean {
+function isScalar(value: unknown): value is ScalarValue {
   return isValue(value) && value.kind !== 'reference'
 }
 
 function isSlot(value: unknown): value is RuntimeSlot {
-  return isRecord(value) && isText(value.id) && isText(value.name) && isText(value.javaType) && isValue(value.value)
+  return isRecord(value) && isText(value.id) && isText(value.name) && isText(value.javaType) && isValue(value.value) &&
+    (value.role === undefined || ['local', 'parameter', 'operand', 'return'].includes(String(value.role)))
 }
 
 function isOwner(value: unknown): value is SlotOwner {
@@ -68,7 +71,14 @@ function isEvent(value: unknown): value is TraceEvent {
     case 'ENTER_METHOD':
       return isText(value.frameId) && (value.callerFrameId === null || isText(value.callerFrameId)) &&
         isText(value.className) && isText(value.methodName) &&
-        Array.isArray(value.locals) && value.locals.every(isSlot)
+        Array.isArray(value.locals) && value.locals.every(isSlot) &&
+        (value.invocationLabel === undefined || isText(value.invocationLabel)) &&
+        (value.returnType === undefined || isText(value.returnType))
+    case 'RETURN_VALUE':
+      return isText(value.frameId) && isScalar(value.value) && value.value.kind !== 'uninitialized' &&
+        (value.destination === null || (isRecord(value.destination) &&
+          isText(value.destination.frameId) && isText(value.destination.slotId))) &&
+        (value.expression === undefined || isText(value.expression))
     case 'DECLARE_LOCAL':
       return isText(value.frameId) && isSlot(value.slot)
     case 'ASSIGN_LOCAL':
@@ -133,6 +143,15 @@ export function loadPersonTrace(): TraceDocument {
   if (trace.demoId !== 'person' || trace.sourceFiles.length !== 1 ||
       trace.sourceFiles[0].content !== personSource) {
     throw new Error('Person trace and Java source fixture differ')
+  }
+  return trace
+}
+
+export function loadRecursionTrace(): TraceDocument {
+  const trace = validateTrace(structuredClone(rawRecursionTrace))
+  if (trace.demoId !== 'recursion' || trace.sourceFiles.length !== 1 ||
+      trace.sourceFiles[0].content !== recursionSource) {
+    throw new Error('Recursion trace and Java source fixture differ')
   }
   return trace
 }

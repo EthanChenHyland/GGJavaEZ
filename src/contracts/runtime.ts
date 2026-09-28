@@ -21,6 +21,8 @@ export interface RuntimeSlot {
   name: string
   javaType: string
   value: RuntimeValue
+  /** Expression operands are VM evaluation slots, not invented Java locals. */
+  role?: 'local' | 'parameter' | 'operand' | 'return'
 }
 
 export interface RuntimeFrame {
@@ -33,6 +35,17 @@ export interface RuntimeFrame {
   locals: Record<SlotId, RuntimeSlot>
   enteredAt: EventId
   exitedAt?: EventId
+  invocationLabel?: string
+  returnType?: string
+  returnValue?: ScalarValue
+}
+
+export interface ReturnTransfer {
+  eventId: EventId
+  frameId: FrameId
+  destination: { frameId: FrameId; slotId: SlotId } | null
+  value: ScalarValue
+  expression?: string
 }
 
 export interface RuntimeObject {
@@ -52,6 +65,7 @@ export interface RuntimeState {
   activeFrameIds: FrameId[]
   frames: Record<FrameId, RuntimeFrame>
   objects: Record<ObjectId, RuntimeObject>
+  returns: ReturnTransfer[]
 }
 
 export type SlotOwner =
@@ -70,8 +84,9 @@ export type TraceEvent = TraceEventBase & (
   | { type: 'PROGRAM_START' }
   | { type: 'PROGRAM_END' }
   | { type: 'LINE_EXECUTE'; frameId: FrameId }
-  | { type: 'ENTER_METHOD'; frameId: FrameId; callerFrameId: FrameId | null; className: string; methodName: string; locals: RuntimeSlot[] }
+  | { type: 'ENTER_METHOD'; frameId: FrameId; callerFrameId: FrameId | null; className: string; methodName: string; locals: RuntimeSlot[]; invocationLabel?: string; returnType?: string }
   | { type: 'EXIT_METHOD'; frameId: FrameId }
+  | { type: 'RETURN_VALUE'; frameId: FrameId; value: ScalarValue; destination: ReturnTransfer['destination']; expression?: string }
   | { type: 'DECLARE_LOCAL'; frameId: FrameId; slot: RuntimeSlot }
   | { type: 'ASSIGN_LOCAL'; frameId: FrameId; slotId: SlotId; value: ScalarValue }
   | { type: 'ALLOCATE_OBJECT'; objectId: ObjectId; displayId: number; className: string; fields: RuntimeSlot[] }

@@ -1,4 +1,4 @@
-import type { EventId, FrameId, ObjectId, ReferenceId, RuntimeValue, SlotId, SlotOwner } from './runtime'
+import type { EventId, FrameId, ObjectId, ReferenceId, ReturnTransfer, RuntimeValue, SlotId, SlotOwner } from './runtime'
 
 export type Vec3 = readonly [number, number, number]
 export type Region = 'stack' | 'heap'
@@ -17,6 +17,9 @@ export interface WorldAnchor {
 export interface LayoutState {
   anchors: Record<string, WorldAnchor>
   homeTarget: Vec3
+  /** Reserved for the entire trace, never recomputed from live frame count. */
+  stackDepth?: number
+  bounds?: { center: Vec3; size: Vec3; points?: Vec3[] }
 }
 
 export interface SceneSlot {
@@ -25,6 +28,7 @@ export interface SceneSlot {
   javaType: string
   value: RuntimeValue
   displayValue?: string
+  role?: 'local' | 'parameter' | 'operand' | 'return'
   port: Vec3
 }
 
@@ -62,4 +66,7 @@ export interface SceneModel {
   references: SceneReferenceEdge[]
   activeEventId: EventId | null
   detailLevel: DetailLevel
+  stackDepth?: number
+  bounds?: LayoutState['bounds']
+  returnFlow?: ReturnTransfer & { from: Vec3; to: Vec3 | null; fromLabel: string; toLabel: string | null; fromDepth: number; toDepth: number | null }
 }

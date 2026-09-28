@@ -14,6 +14,7 @@ const SPEEDS = [0.5, 1, 2, 4] as const
 
 function markerColor(event: TraceEvent): string {
   if (event.type === 'ALLOCATE_OBJECT') return colors.heap
+  if (event.type === 'RETURN_VALUE') return colors.success
   if (event.type === 'ENTER_METHOD' || event.type === 'EXIT_METHOD') return colors.stack
   if (event.type === 'SET_FIELD' || event.type === 'ASSIGN_LOCAL') return colors.mutation
   return colors.textMuted
