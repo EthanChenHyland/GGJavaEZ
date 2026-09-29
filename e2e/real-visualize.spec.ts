@@ -52,7 +52,8 @@ test('editable Person reaches real 3D/Classic, stable scrubbing, source and insp
   const compactWidth = (await canvas.boundingBox())!.width
   await page.getByRole('button', { name: 'Expand runtime' }).click()
   await expect(page.locator('.ide-editor-panel')).toBeHidden()
-  await expect.poll(async () => (await canvas.boundingBox())!.width).toBeGreaterThan(compactWidth * 1.5)
+  await expect.poll(async () => (await canvas.boundingBox())!.width).toBeGreaterThan(compactWidth)
+  expect((await canvas.boundingBox())!.width).toBeGreaterThan(1440 * 0.95)
   await page.getByRole('button', { name: 'Restore IDE layout' }).click()
   await expect(page.locator('.ide-editor-panel')).toBeVisible()
   await expect(scrub).toHaveValue(String(max))

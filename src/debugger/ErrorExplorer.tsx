@@ -18,6 +18,7 @@ export function ErrorExplorer({ trace, runtime, selection, stderr, onNavigate }:
   const snapshot = useMemo(() => seek(trace, throwCursor), [trace, throwCursor])
   const [target, setTarget] = useState<CauseTarget | null>(null)
   const [tracing, setTracing] = useState(false)
+  const [section, setSection] = useState<'failure' | 'stack' | 'cause'>('failure')
   const findTarget = (id: string): CauseTarget | null => {
     for (const frame of Object.values(snapshot.frames)) if (frame.locals[id]) return { kind: 'frame', frameId: frame.id, slotId: id }
     for (const object of Object.values(snapshot.objects)) {
@@ -28,9 +29,12 @@ export function ErrorExplorer({ trace, runtime, selection, stderr, onNavigate }:
     return null
   }
   const effectiveTarget = tracing && target ? target : selection?.kind === 'slot' ? findTarget(selection.id) ?? target : target
+  const targetLabel = effectiveTarget?.kind === 'frame' ? snapshot.frames[effectiveTarget.frameId]?.locals[effectiveTarget.slotId]?.name
+    : effectiveTarget?.kind === 'object' ? snapshot.objects[effectiveTarget.objectId]?.fields[effectiveTarget.slotId]?.name
+      : effectiveTarget?.kind === 'array' ? `[${effectiveTarget.index}]` : ''
   const causes = effectiveTarget ? causeHistory(trace, effectiveTarget, throwCursor) : []
   const valueRow = (slot: RuntimeSlot, owner: SlotOwner) => <button key={slot.id} className={`debug-value ${selection?.id === slot.id ? 'is-selected' : ''}`} onClick={() => {
-    setTarget(owner); setTracing(false); onNavigate(throwCursor, { kind: 'slot', id: slot.id })
+    setTarget(owner); setTracing(false); setSection('cause'); onNavigate(throwCursor, { kind: 'slot', id: slot.id })
   }}><span>{slot.name}<small>{slot.role === 'parameter' ? 'parameter · ' : ''}{slot.javaType}</small></span><code className={slot.value.kind === 'null' ? 'is-null' : ''}>{slot.value.kind === 'uninitialized' ? 'unavailable' : formatValue(slot.value, snapshot.objects)}</code></button>
   if (!failure) return <p className="debug-empty">No exception was observed in this execution.</p>
   const sourceLine = failure.source ? trace.sourceFiles.find((file) => file.fileId === failure.source!.fileId)?.content.split('\n')[failure.source.line - 1] : null
@@ -38,10 +42,15 @@ export function ErrorExplorer({ trace, runtime, selection, stderr, onNavigate }:
   const liveFailure = runtime?.exceptions.find((item) => item.eventId === failure.eventId)
   const terminalEvent = trace.events.at(-1)
   const runCrashed = terminalEvent?.type === 'PROGRAM_ABORT' && terminalEvent.reason === 'program_crashed'
-  return <section className="error-explorer" aria-label="Error Explorer">
+  return <section className="error-explorer" aria-label="Error Explorer" data-section={section}>
+    <nav className="error-section-nav" aria-label="Error Explorer sections">
+      <button type="button" aria-pressed={section === 'failure'} onClick={() => setSection('failure')}>Failure</button>
+      <button type="button" aria-pressed={section === 'stack'} onClick={() => setSection('stack')}>Stack & path</button>
+      <button type="button" aria-pressed={section === 'cause'} onClick={() => setSection('cause')}>Cause</button>
+    </nav>
     <div className="error-summary">
       <span className="debug-eyebrow">ERROR EXPLORER · {failure.caughtBy ? 'CAUGHT' : 'OBSERVED'}{runCrashed ? ' · RUN CRASHED' : ''}</span>
-      {failures.length > 1 && <select aria-label="Exception episode" value={failure.eventId} onChange={(event) => { setChosen(event.target.value); setTarget(null); setTracing(false) }}>{failures.map((item, index) => <option key={item.eventId} value={item.eventId}>{index + 1} · {item.className}</option>)}</select>}
+      {failures.length > 1 && <select aria-label="Exception episode" value={failure.eventId} onChange={(event) => { setChosen(event.target.value); setTarget(null); setTracing(false); setSection('failure') }}>{failures.map((item, index) => <option key={item.eventId} value={item.eventId}>{index + 1} · {item.className}</option>)}</select>}
       <h2>{failure.className.split('.').at(-1)}</h2><p>{failure.message || 'Message unavailable or empty'}</p>
       <button className="debug-source" onClick={() => onNavigate(throwCursor, { kind: 'frame', id: failure.frameIds.at(-1)! })}>{failure.source ? `${failure.source.fileId}:${failure.source.line}` : 'Source unavailable'}<code>{sourceLine?.trim()}</code></button>
       <button className="debug-action" onClick={() => onNavigate(throwCursor)}>Return to failure</button>
@@ -53,11 +62,12 @@ export function ErrorExplorer({ trace, runtime, selection, stderr, onNavigate }:
       const status = liveFailure?.unwoundFrameIds.includes(id) ? 'unwound' : liveFailure?.caughtBy === id ? 'caught here' : 'at throw'
       return <details key={id} open={id === failure.frameIds.at(-1)}><summary><button onClick={() => onNavigate(throwCursor, { kind: 'frame', id })}>{frame.className}.{frame.methodName}()</button><span>{status}</span></summary>{Object.values(frame.locals).map((slot) => valueRow(slot, { kind: 'frame', frameId: id, slotId: slot.id }))}</details>
     })}<h3>Observed exception path</h3><div className="exception-path">{lifecycle.map(({ event, cursor }) => <button key={event.eventId} aria-current={runtime?.cursor === cursor ? 'step' : undefined} onClick={() => onNavigate(cursor, 'frameId' in event ? { kind: 'frame', id: event.frameId } : undefined)}>{event.type === 'THROW_EXCEPTION' ? 'Throw' : event.type === 'UNWIND_EXCEPTION' ? 'Unwind' : event.type === 'FINALLY_ENTER' ? 'Finally / cleanup handler' : 'Catch'}<small>{event.source ? `${event.source.fileId}:${event.source.line}` : 'source unavailable'}</small></button>)}</div></div>
-    <div className="error-causes"><h3>Trace Cause</h3><p>Select an observed value to inspect its recorded writes and proven bindings.</p>
+    <div className="error-causes"><h3>Trace Cause{targetLabel && <span className="error-cause-target"> · {targetLabel}</span>}</h3>
+      {!effectiveTarget && <p className="debug-empty">Select a value in Stack at throw or an object below.</p>}
       {Object.values(snapshot.objects).map((object) => <details key={object.id}><summary>{object.className} #{object.displayId}</summary>{Object.values(object.fields).map((slot) => valueRow(slot, { kind: 'object', objectId: object.id, slotId: slot.id }))}{object.array?.elements.map((slot, index) => <button key={slot.id} className="debug-value" onClick={() => { setTarget({ kind: 'array', objectId: object.id, index }); setTracing(false); onNavigate(throwCursor, { kind: 'slot', id: slot.id }) }}><span>[{index}]</span><code>{formatValue(slot.value)}</code></button>)}</details>)}
       <button className="debug-action" disabled={!causes.length} onClick={() => { setTarget(effectiveTarget); setTracing(true) }}>Trace Cause</button>
       {tracing && <ol className="cause-list">{causes.map((node) => <li key={JSON.stringify([node.eventId, node.selection.kind, node.selection.id])}><button aria-current={runtime?.cursor === node.cursor ? 'step' : undefined} onClick={() => onNavigate(node.cursor, node.selection)}><strong>{node.label}</strong><small>{node.source ? `${node.source.fileId}:${node.source.line}` : 'source unavailable'}</small></button></li>)}</ol>}
-      <p className="debug-limit">Earlier writes are value history. Expression dependencies and unnamed return destinations are not inferred.</p>
+      <details className="debug-notes"><summary>Trace limits</summary><p>Earlier writes are value history. Expression dependencies and unnamed return destinations are not inferred.</p></details>
     </div>
   </section>
 }

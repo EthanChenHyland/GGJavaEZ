@@ -124,6 +124,7 @@ test('real gutter toggles persist, remove, and distinguish a nonexecutable break
   const session = await current(request)
   expect(session!.breakpoints).toContainEqual(expect.objectContaining({ fileId: 'Main.java', line: 5, status: 'verified' }))
   expect(session!.breakpoints).toContainEqual(expect.objectContaining({ fileId: 'Person.java', line: 3, status: 'non_executable' }))
+  await page.getByRole('button', { name: 'Inspect Debugger', exact: true }).click()
   await page.locator('.debug-breakpoint-row').filter({ hasText: 'Person.java:3' }).click()
   await expect(page.locator('.debug-breakpoint-row')).toHaveCount(1)
   await expect.poll(async () => (await current(request))!.breakpoints.length).toBe(1)

@@ -157,7 +157,7 @@ test('folder import preserves Java source paths and pane resizing is keyboard ac
     const before = (await editor.boundingBox())!.width
     await page.getByRole('separator', { name: 'Resize runtime pane' }).focus()
     await page.keyboard.press('ArrowRight')
-    expect((await editor.boundingBox())!.width).toBeGreaterThan(before)
+    await expect.poll(async () => (await editor.boundingBox())!.width).toBeGreaterThan(before)
     await page.getByRole('button', { name: 'Run', exact: true }).click()
     await expect(page.locator('.ide-console-output')).toContainText('Imported')
   } finally { await rm(root, { recursive: true, force: true }) }

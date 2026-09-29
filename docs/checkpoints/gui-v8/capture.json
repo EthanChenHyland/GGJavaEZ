@@ -1,0 +1,358 @@
+{
+  "capturedAt": "2026-09-29T03:51:03.517Z",
+  "captures": [
+    {
+      "name": "code",
+      "width": 1728,
+      "height": 1117,
+      "path": "docs/checkpoints/gui-v8/code-1728x1117.png",
+      "world": null
+    },
+    {
+      "name": "code",
+      "width": 1440,
+      "height": 900,
+      "path": "docs/checkpoints/gui-v8/code-1440x900.png",
+      "world": null
+    },
+    {
+      "name": "code",
+      "width": 1280,
+      "height": 800,
+      "path": "docs/checkpoints/gui-v8/code-1280x800.png",
+      "world": null
+    },
+    {
+      "name": "code",
+      "width": 760,
+      "height": 900,
+      "path": "docs/checkpoints/gui-v8/code-760x900.png",
+      "world": null
+    },
+    {
+      "name": "visualize-person",
+      "width": 1728,
+      "height": 1117,
+      "path": "docs/checkpoints/gui-v8/visualize-person-1728x1117.png",
+      "world": {
+        "x": 522.390625,
+        "y": 106,
+        "width": 1205.609375,
+        "height": 980
+      }
+    },
+    {
+      "name": "visualize-person",
+      "width": 1440,
+      "height": 900,
+      "path": "docs/checkpoints/gui-v8/visualize-person-1440x900.png",
+      "world": {
+        "x": 436,
+        "y": 106,
+        "width": 1004,
+        "height": 763
+      }
+    },
+    {
+      "name": "visualize-person",
+      "width": 1280,
+      "height": 800,
+      "path": "docs/checkpoints/gui-v8/visualize-person-1280x800.png",
+      "world": {
+        "x": 388,
+        "y": 106,
+        "width": 892,
+        "height": 663
+      }
+    },
+    {
+      "name": "visualize-person",
+      "width": 760,
+      "height": 900,
+      "path": "docs/checkpoints/gui-v8/visualize-person-760x900.png",
+      "world": {
+        "x": 0,
+        "y": 106,
+        "width": 760,
+        "height": 540.125
+      }
+    },
+    {
+      "name": "runtime-focus",
+      "width": 1728,
+      "height": 1117,
+      "path": "docs/checkpoints/gui-v8/runtime-focus-1728x1117.png",
+      "world": {
+        "x": 0,
+        "y": 83,
+        "width": 1728,
+        "height": 1034
+      }
+    },
+    {
+      "name": "runtime-focus",
+      "width": 1440,
+      "height": 900,
+      "path": "docs/checkpoints/gui-v8/runtime-focus-1440x900.png",
+      "world": {
+        "x": 0,
+        "y": 83,
+        "width": 1440,
+        "height": 817
+      }
+    },
+    {
+      "name": "runtime-focus",
+      "width": 1280,
+      "height": 800,
+      "path": "docs/checkpoints/gui-v8/runtime-focus-1280x800.png",
+      "world": {
+        "x": 0,
+        "y": 83,
+        "width": 1280,
+        "height": 717
+      }
+    },
+    {
+      "name": "runtime-focus",
+      "width": 760,
+      "height": 900,
+      "path": "docs/checkpoints/gui-v8/runtime-focus-760x900.png",
+      "world": {
+        "x": 0,
+        "y": 83,
+        "width": 760,
+        "height": 817
+      }
+    },
+    {
+      "name": "runtime-focus-source",
+      "width": 1440,
+      "height": 900,
+      "path": "docs/checkpoints/gui-v8/runtime-focus-source-1440x900.png",
+      "world": {
+        "x": 434,
+        "y": 83,
+        "width": 1006,
+        "height": 817
+      }
+    },
+    {
+      "name": "runtime-focus-tools",
+      "width": 1440,
+      "height": 900,
+      "path": "docs/checkpoints/gui-v8/runtime-focus-tools-1440x900.png",
+      "world": {
+        "x": 0,
+        "y": 83,
+        "width": 1440,
+        "height": 566.5
+      }
+    },
+    {
+      "name": "person-inspector",
+      "width": 1440,
+      "height": 900,
+      "path": "docs/checkpoints/gui-v8/person-inspector-1440x900.png",
+      "world": {
+        "x": 436,
+        "y": 106,
+        "width": 1004,
+        "height": 763
+      }
+    },
+    {
+      "name": "person-inspector",
+      "width": 760,
+      "height": 900,
+      "path": "docs/checkpoints/gui-v8/person-inspector-760x900.png",
+      "world": {
+        "x": 0,
+        "y": 106,
+        "width": 760,
+        "height": 540.125
+      }
+    },
+    {
+      "name": "debug-breakpoint",
+      "width": 1728,
+      "height": 1117,
+      "path": "docs/checkpoints/gui-v8/debug-breakpoint-1728x1117.png",
+      "world": {
+        "x": 608.796875,
+        "y": 143.1875,
+        "width": 1119.203125,
+        "height": 942.8125
+      }
+    },
+    {
+      "name": "debug-breakpoint",
+      "width": 1440,
+      "height": 900,
+      "path": "docs/checkpoints/gui-v8/debug-breakpoint-1440x900.png",
+      "world": {
+        "x": 508,
+        "y": 143.1875,
+        "width": 932,
+        "height": 725.8125
+      }
+    },
+    {
+      "name": "debug-breakpoint",
+      "width": 1280,
+      "height": 800,
+      "path": "docs/checkpoints/gui-v8/debug-breakpoint-1280x800.png",
+      "world": {
+        "x": 452,
+        "y": 143.1875,
+        "width": 828,
+        "height": 625.8125
+      }
+    },
+    {
+      "name": "debug-breakpoint",
+      "width": 760,
+      "height": 900,
+      "path": "docs/checkpoints/gui-v8/debug-breakpoint-760x900.png",
+      "world": {
+        "x": 0,
+        "y": 160,
+        "width": 760,
+        "height": 501.25
+      }
+    },
+    {
+      "name": "debug-inspection",
+      "width": 1440,
+      "height": 900,
+      "path": "docs/checkpoints/gui-v8/debug-inspection-1440x900.png",
+      "world": {
+        "x": 508,
+        "y": 143.1875,
+        "width": 932,
+        "height": 476.390625
+      }
+    },
+    {
+      "name": "debug-inspection",
+      "width": 760,
+      "height": 900,
+      "path": "docs/checkpoints/gui-v8/debug-inspection-760x900.png",
+      "world": {
+        "x": 0,
+        "y": 160,
+        "width": 760,
+        "height": 351.484375
+      }
+    },
+    {
+      "name": "error-explorer",
+      "width": 1728,
+      "height": 1117,
+      "path": "docs/checkpoints/gui-v8/error-explorer-1728x1117.png",
+      "world": {
+        "x": 522.390625,
+        "y": 106,
+        "width": 1205.609375,
+        "height": 641.609375
+      }
+    },
+    {
+      "name": "error-explorer",
+      "width": 1440,
+      "height": 900,
+      "path": "docs/checkpoints/gui-v8/error-explorer-1440x900.png",
+      "world": {
+        "x": 436,
+        "y": 106,
+        "width": 1004,
+        "height": 500.5625
+      }
+    },
+    {
+      "name": "error-explorer",
+      "width": 1280,
+      "height": 800,
+      "path": "docs/checkpoints/gui-v8/error-explorer-1280x800.png",
+      "world": {
+        "x": 388,
+        "y": 106,
+        "width": 892,
+        "height": 435.5625
+      }
+    },
+    {
+      "name": "error-explorer",
+      "width": 760,
+      "height": 900,
+      "path": "docs/checkpoints/gui-v8/error-explorer-760x900.png",
+      "world": {
+        "x": 0,
+        "y": 106,
+        "width": 760,
+        "height": 390.375
+      }
+    },
+    {
+      "name": "trace-cause",
+      "width": 1440,
+      "height": 900,
+      "path": "docs/checkpoints/gui-v8/trace-cause-1440x900.png",
+      "world": {
+        "x": 436,
+        "y": 106,
+        "width": 1004,
+        "height": 500.5625
+      }
+    },
+    {
+      "name": "trace-cause",
+      "width": 760,
+      "height": 900,
+      "path": "docs/checkpoints/gui-v8/trace-cause-760x900.png",
+      "world": {
+        "x": 0,
+        "y": 106,
+        "width": 760,
+        "height": 390.375
+      }
+    },
+    {
+      "name": "recursion",
+      "width": 1440,
+      "height": 900,
+      "path": "docs/checkpoints/gui-v8/recursion-1440x900.png",
+      "world": {
+        "x": 436,
+        "y": 106,
+        "width": 1004,
+        "height": 763
+      }
+    },
+    {
+      "name": "array-theater",
+      "width": 1440,
+      "height": 900,
+      "path": "docs/checkpoints/gui-v8/array-theater-1440x900.png",
+      "world": {
+        "x": 436,
+        "y": 106,
+        "width": 1004,
+        "height": 763
+      }
+    },
+    {
+      "name": "control",
+      "width": 1440,
+      "height": 900,
+      "path": "docs/checkpoints/gui-v8/control-1440x900.png",
+      "world": {
+        "x": 436,
+        "y": 106,
+        "width": 1004,
+        "height": 763
+      }
+    }
+  ],
+  "errors": []
+}

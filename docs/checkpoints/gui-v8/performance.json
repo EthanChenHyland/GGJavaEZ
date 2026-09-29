@@ -1,0 +1,6756 @@
+{
+  "version": 1,
+  "measuredAt": "2026-09-29T03:51:46.738Z",
+  "environment": {
+    "browser": "installed Chrome headless",
+    "frontend": "Vite development server",
+    "base": "http://127.0.0.1:5173",
+    "viewport": {
+      "width": 1440,
+      "height": 900
+    },
+    "deviceScaleFactor": 1,
+    "quality": "balanced"
+  },
+  "provenance": {
+    "fixturePath": "/Users/ethius/VSCode/GGJavaEZ/docs/checkpoints/debug-v7/performance.json",
+    "sha256": "a23385501bb44c22c874cb1ad093e6ebb48df980bf7e6b6aadaaa7182c70bd4e",
+    "recorderCommit": "34111e4",
+    "method": "Accepted M7 Person/recursion payloads; all /api routes fulfilled locally or blocked; no bridge/JVM/server mutations"
+  },
+  "method": {
+    "durationMs": 3000,
+    "scenes": [
+      "person",
+      "recursion"
+    ],
+    "layouts": [
+      "Compact layout-only baseline",
+      "Visualize",
+      "Runtime Focus"
+    ],
+    "baseline": {
+      "label": "Compact layout-only baseline",
+      "renderViewport": {
+        "width": 752,
+        "height": 257
+      },
+      "method": "Same current frontend and renderer, browser-only CSS constrains the Spatial render viewport to 752×257 at 1440×900. Dimension-equivalent compact baseline, NOT historical M7 source or an M7 performance rerun.",
+      "cache": "One warmed context/renderer per fixture is reused sequentially across compact, Visualize, then Focus; accepted trace and render quality remain identical. Fixed ordering is not a controlled historical benchmark."
+    },
+    "phases": [
+      "playback",
+      "orbit",
+      "idle"
+    ],
+    "renders": "Three WebGLRenderer.render completions with one or more actual WebGL draw commands; timestamps from performance.now()",
+    "cadence": "WebGL render submissions/draw commands and separately sampled RAF callbacks are software cadence, not physical display/GPU presentation or GPU percentiles",
+    "cpu": "JavaScript renderer submission wall time including WebGL calls, not GPU completion time",
+    "idle": "Demand rendering is expected to stop; zero idle draws is success, not zero interactive FPS",
+    "scrub": "Eight fixed forward/reverse slider seeks per scene/layout; wall-clock roundtrip includes Playwright fill and two subsequent RAF callbacks. This is not physical presentation or synchronized-label readiness.",
+    "scope": "Warm representative playback and pointer orbit, one 3-second sample per phase/layout/scene; compact comparison isolates viewport layout on current code. No historical-source or hardware-wide performance claim."
+  },
+  "samples": [
+    {
+      "fixture": "person",
+      "layout": "Compact layout-only baseline",
+      "phase": "playback",
+      "start": 4498.400000095367,
+      "deadline": 7498.400000095367,
+      "frames": [
+        {
+          "at": 4591,
+          "submitMs": 0.6000001430511475,
+          "drawCommands": 30,
+          "triangles": 4388,
+          "geometries": 28,
+          "textures": 4
+        },
+        {
+          "at": 4624.200000047684,
+          "submitMs": 0.40000009536743164,
+          "drawCommands": 30,
+          "triangles": 4388,
+          "geometries": 28,
+          "textures": 4
+        },
+        {
+          "at": 5291.800000190735,
+          "submitMs": 1.3999998569488525,
+          "drawCommands": 37,
+          "triangles": 6516,
+          "geometries": 35,
+          "textures": 4
+        },
+        {
+          "at": 5325,
+          "submitMs": 2.6000001430511475,
+          "drawCommands": 37,
+          "triangles": 6516,
+          "geometries": 34,
+          "textures": 4
+        },
+        {
+          "at": 5357.200000047684,
+          "submitMs": 0.5,
+          "drawCommands": 37,
+          "triangles": 6516,
+          "geometries": 34,
+          "textures": 4
+        },
+        {
+          "at": 5390.400000095367,
+          "submitMs": 0.5,
+          "drawCommands": 37,
+          "triangles": 6516,
+          "geometries": 34,
+          "textures": 4
+        },
+        {
+          "at": 5423.900000095367,
+          "submitMs": 0.40000009536743164,
+          "drawCommands": 37,
+          "triangles": 6516,
+          "geometries": 34,
+          "textures": 4
+        },
+        {
+          "at": 5961.400000095367,
+          "submitMs": 1.5,
+          "drawCommands": 42,
+          "triangles": null,
+          "geometries": 40,
+          "textures": 4
+        },
+        {
+          "at": 5991.100000143051,
+          "submitMs": 3.200000047683716,
+          "drawCommands": 42,
+          "triangles": 6562,
+          "geometries": 39,
+          "textures": 4
+        },
+        {
+          "at": 6664.400000095367,
+          "submitMs": 8.099999904632568,
+          "drawCommands": 48,
+          "triangles": 7258,
+          "geometries": 45,
+          "textures": 4
+        },
+        {
+          "at": 6691.100000143051,
+          "submitMs": 2.799999952316284,
+          "drawCommands": 48,
+          "triangles": 7258,
+          "geometries": 44,
+          "textures": 4
+        },
+        {
+          "at": 6723.400000095367,
+          "submitMs": 0.5,
+          "drawCommands": 48,
+          "triangles": 7258,
+          "geometries": 44,
+          "textures": 4
+        },
+        {
+          "at": 6757.700000047684,
+          "submitMs": 0.6000001430511475,
+          "drawCommands": 48,
+          "triangles": 7258,
+          "geometries": 44,
+          "textures": 4
+        },
+        {
+          "at": 6791.700000047684,
+          "submitMs": 0.9000000953674316,
+          "drawCommands": 48,
+          "triangles": 7258,
+          "geometries": 44,
+          "textures": 4
+        },
+        {
+          "at": 7358.5,
+          "submitMs": 2.9000000953674316,
+          "drawCommands": 53,
+          "triangles": 7316,
+          "geometries": 49,
+          "textures": 4
+        },
+        {
+          "at": 7391.800000190735,
+          "submitMs": 2.6999998092651367,
+          "drawCommands": 53,
+          "triangles": 7316,
+          "geometries": 49,
+          "textures": 4
+        }
+      ],
+      "rafTimestamps": [
+        4523.2,
+        4556.5,
+        4589.8,
+        4623.2,
+        4656.5,
+        4689.9,
+        4723.2,
+        4756.5,
+        4789.9,
+        4823.2,
+        4856.5,
+        4889.8,
+        4923.2,
+        4956.5,
+        4989.8,
+        5023.2,
+        5056.5,
+        5089.9,
+        5123.2,
+        5156.5,
+        5189.8,
+        5223.1,
+        5256.4,
+        5289.8,
+        5323.2,
+        5356.4,
+        5389.8,
+        5423.2,
+        5456.5,
+        5489.8,
+        5523.2,
+        5556.5,
+        5589.9,
+        5623.1,
+        5656.5,
+        5689.8,
+        5723.1,
+        5756.5,
+        5789.8,
+        5823.1,
+        5856.5,
+        5889.8,
+        5923.1,
+        5956.4,
+        5989.8,
+        6023.1,
+        6056.5,
+        6089.8,
+        6123.1,
+        6156.4,
+        6189.7,
+        6223.1,
+        6256.5,
+        6289.8,
+        6323.1,
+        6356.4,
+        6389.8,
+        6423.1,
+        6456.4,
+        6489.8,
+        6523.2,
+        6556.5,
+        6589.7,
+        6623.1,
+        6656.4,
+        6689.8,
+        6723.1,
+        6756.4,
+        6789.8,
+        6823.1,
+        6856.4,
+        6889.8,
+        6923.1,
+        6956.4,
+        6989.7,
+        7023.1,
+        7056.4,
+        7089.8,
+        7123,
+        7156.4,
+        7189.8,
+        7223.1,
+        7256.4,
+        7289.7,
+        7323.1,
+        7356.4,
+        7389.8,
+        7423.1,
+        7456.4,
+        7489.8
+      ],
+      "cursorStart": "5 / 24",
+      "end": 7500.600000143051,
+      "cursorEnd": "9 / 24",
+      "longTasks": [],
+      "elapsedMs": 3002.2000000476837,
+      "renderCount": 16,
+      "rendersPerSecond": 5.329425088183956,
+      "intervalsMs": {
+        "count": 15,
+        "median": 33.30000019073486,
+        "max": 673.2999999523163,
+        "over25": 15,
+        "over50": 4
+      },
+      "raf": {
+        "count": 90,
+        "callbacksPerSecond": 29.978016121034752,
+        "intervalsMs": {
+          "count": 89,
+          "median": 33.30000000000018,
+          "max": 33.400000000000546,
+          "over25": 89,
+          "over50": 0
+        },
+        "note": "Observation callbacks only; idle RAF callbacks do not imply WebGL draws."
+      },
+      "submissionMs": {
+        "mean": 1.850000023841858,
+        "max": 8.099999904632568
+      },
+      "drawCommands": 675,
+      "geometry": {
+        "cssWidth": 752,
+        "cssHeight": 257,
+        "drawingWidth": 752,
+        "drawingHeight": 257,
+        "adapter": {
+          "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+          "vendor": "Google Inc. (Apple)",
+          "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4 Pro, Unspecified Version)"
+        },
+        "visibility": "visible"
+      },
+      "traceEvents": 24,
+      "rawEvents": 14
+    },
+    {
+      "fixture": "person",
+      "layout": "Compact layout-only baseline",
+      "phase": "orbit",
+      "start": 9027.400000095367,
+      "deadline": 12027.400000095367,
+      "frames": [
+        {
+          "at": 9042.300000190735,
+          "submitMs": 3.799999952316284,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 9108.800000190735,
+          "submitMs": 0.6999998092651367,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 9175.5,
+          "submitMs": 0.9000000953674316,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 9242.5,
+          "submitMs": 2.8000001907348633,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 9309.700000047684,
+          "submitMs": 1.6000001430511475,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 9375.700000047684,
+          "submitMs": 0.9000000953674316,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 9443.200000047684,
+          "submitMs": 1.9000000953674316,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 9509.800000190735,
+          "submitMs": 2.799999952316284,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 9575.800000190735,
+          "submitMs": 1.7999999523162842,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 9643.200000047684,
+          "submitMs": 2.200000047683716,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 9708.800000190735,
+          "submitMs": 0.8999998569488525,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 9776.400000095367,
+          "submitMs": 2.200000047683716,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 9876.900000095367,
+          "submitMs": 2.799999952316284,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 9942.600000143051,
+          "submitMs": 1.7999999523162842,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 10009.400000095367,
+          "submitMs": 1.4000000953674316,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 10075.900000095367,
+          "submitMs": 1.7999999523162842,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 10142.300000190735,
+          "submitMs": 2.1999998092651367,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 10210.100000143051,
+          "submitMs": 3,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 10276.200000047684,
+          "submitMs": 1.9000000953674316,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 10343.300000190735,
+          "submitMs": 2.5,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 10409.600000143051,
+          "submitMs": 2.5999999046325684,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 10475.5,
+          "submitMs": 1,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 10542.800000190735,
+          "submitMs": 1.6999998092651367,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 10609.700000047684,
+          "submitMs": 2.5,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 10709.200000047684,
+          "submitMs": 2.200000047683716,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 10775.700000047684,
+          "submitMs": 2.1000001430511475,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 10842.400000095367,
+          "submitMs": 2.5,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 10910.200000047684,
+          "submitMs": 2.700000047683716,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 10975.800000190735,
+          "submitMs": 2.8999998569488525,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 11042.300000190735,
+          "submitMs": 1.1999998092651367,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 11109.900000095367,
+          "submitMs": 2.5999999046325684,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 11175.600000143051,
+          "submitMs": 1,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 11242.400000095367,
+          "submitMs": 2.0999999046325684,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 11310.200000047684,
+          "submitMs": 2.799999952316284,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 11375.400000095367,
+          "submitMs": 0.7999999523162842,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 11441.900000095367,
+          "submitMs": 0.5999999046325684,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 11508.600000143051,
+          "submitMs": 0.5999999046325684,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 11575.400000095367,
+          "submitMs": 0.7999999523162842,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 11642,
+          "submitMs": 0.7000000476837158,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 11709.400000095367,
+          "submitMs": 2.0999999046325684,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 11776.100000143051,
+          "submitMs": 1.8999998569488525,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 11843.600000143051,
+          "submitMs": 2.8999998569488525,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 11942.600000143051,
+          "submitMs": 1.5,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 12010.200000047684,
+          "submitMs": 2.700000047683716,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        }
+      ],
+      "rafTimestamps": [
+        9039.766,
+        9073,
+        9106.3,
+        9139.6,
+        9173,
+        9206.3,
+        9239.6,
+        9273,
+        9306.3,
+        9339.7,
+        9373,
+        9406.3,
+        9439.6,
+        9473,
+        9506.3,
+        9539.7,
+        9573,
+        9606.4,
+        9639.6,
+        9673,
+        9706.3,
+        9739.6,
+        9773,
+        9806.3,
+        9839.7,
+        9872.9,
+        9906.3,
+        9939.7,
+        9973,
+        10006.3,
+        10039.7,
+        10072.9,
+        10106.3,
+        10139.6,
+        10173,
+        10206.3,
+        10239.6,
+        10272.9,
+        10306.3,
+        10339.6,
+        10373,
+        10406.3,
+        10439.6,
+        10473,
+        10506.3,
+        10539.7,
+        10572.9,
+        10606.3,
+        10639.7,
+        10673,
+        10706.2,
+        10739.6,
+        10773,
+        10806.3,
+        10839.6,
+        10872.9,
+        10906.2,
+        10939.6,
+        10972.9,
+        11006.2,
+        11039.6,
+        11072.9,
+        11106.3,
+        11139.5,
+        11172.9,
+        11206.3,
+        11239.6,
+        11272.9,
+        11306.2,
+        11339.5,
+        11372.9,
+        11406.3,
+        11439.6,
+        11472.9,
+        11506.3,
+        11539.6,
+        11572.9,
+        11606.2,
+        11639.5,
+        11672.9,
+        11706.2,
+        11739.6,
+        11772.9,
+        11806.2,
+        11839.6,
+        11872.9,
+        11906.2,
+        11939.5,
+        11972.9,
+        12006.2
+      ],
+      "cursorStart": "20 / 24",
+      "end": 12030.400000095367,
+      "cursorEnd": "20 / 24",
+      "longTasks": [],
+      "elapsedMs": 3003,
+      "renderCount": 44,
+      "rendersPerSecond": 14.652014652014651,
+      "intervalsMs": {
+        "count": 43,
+        "median": 66.70000004768372,
+        "max": 100.5,
+        "over25": 43,
+        "over50": 43
+      },
+      "raf": {
+        "count": 90,
+        "callbacksPerSecond": 29.97002997002997,
+        "intervalsMs": {
+          "count": 89,
+          "median": 33.30000000000109,
+          "max": 33.400000000001455,
+          "over25": 89,
+          "over50": 0
+        },
+        "note": "Observation callbacks only; idle RAF callbacks do not imply WebGL draws."
+      },
+      "submissionMs": {
+        "mean": 1.9181817932562395,
+        "max": 3.799999952316284
+      },
+      "drawCommands": 2904,
+      "pointerMoves": 44,
+      "geometry": {
+        "cssWidth": 752,
+        "cssHeight": 257,
+        "drawingWidth": 752,
+        "drawingHeight": 257,
+        "adapter": {
+          "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+          "vendor": "Google Inc. (Apple)",
+          "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4 Pro, Unspecified Version)"
+        },
+        "visibility": "visible"
+      },
+      "traceEvents": 24,
+      "rawEvents": 14
+    },
+    {
+      "fixture": "person",
+      "layout": "Compact layout-only baseline",
+      "phase": "idle",
+      "start": 13387.400000095367,
+      "deadline": 16387.400000095367,
+      "frames": [],
+      "rafTimestamps": [
+        13372.9,
+        13406.2,
+        13439.5,
+        13472.8,
+        13506.2,
+        13539.5,
+        13572.8,
+        13606.1,
+        13639.5,
+        13672.8,
+        13706.1,
+        13739.4,
+        13772.8,
+        13806.1,
+        13839.5,
+        13872.8,
+        13906.1,
+        13939.5,
+        13972.8,
+        14006.1,
+        14039.5,
+        14072.8,
+        14106.1,
+        14139.5,
+        14172.8,
+        14206.1,
+        14239.4,
+        14272.8,
+        14306.2,
+        14339.5,
+        14372.8,
+        14406.1,
+        14439.5,
+        14472.8,
+        14506.1,
+        14539.4,
+        14572.8,
+        14606.1,
+        14639.5,
+        14672.8,
+        14706.2,
+        14739.5,
+        14772.8,
+        14806.1,
+        14839.4,
+        14872.7,
+        14906.1,
+        14939.4,
+        14972.7,
+        15006.1,
+        15039.4,
+        15072.8,
+        15106.1,
+        15139.4,
+        15172.7,
+        15206.1,
+        15239.4,
+        15272.8,
+        15306.1,
+        15339.4,
+        15372.7,
+        15406,
+        15439.4,
+        15472.7,
+        15506.1,
+        15539.5,
+        15572.7,
+        15606,
+        15639.4,
+        15672.7,
+        15706.1,
+        15739.4,
+        15772.7,
+        15806.1,
+        15839.4,
+        15872.7,
+        15906.1,
+        15939.4,
+        15972.8,
+        16006,
+        16039.4,
+        16072.7,
+        16106.1,
+        16139.4,
+        16172.8,
+        16206,
+        16239.4,
+        16272.7,
+        16306.1,
+        16339.4,
+        16372.7
+      ],
+      "cursorStart": "20 / 24",
+      "end": 16389.900000095367,
+      "cursorEnd": "20 / 24",
+      "longTasks": [],
+      "elapsedMs": 3002.5,
+      "renderCount": 0,
+      "rendersPerSecond": 0,
+      "intervalsMs": {
+        "count": 0,
+        "median": null,
+        "max": null,
+        "over25": 0,
+        "over50": 0
+      },
+      "raf": {
+        "count": 91,
+        "callbacksPerSecond": 30.308076602830972,
+        "intervalsMs": {
+          "count": 90,
+          "median": 33.30000000000109,
+          "max": 33.400000000001455,
+          "over25": 90,
+          "over50": 0
+        },
+        "note": "Observation callbacks only; idle RAF callbacks do not imply WebGL draws."
+      },
+      "submissionMs": {
+        "mean": null,
+        "max": null
+      },
+      "drawCommands": 0,
+      "geometry": {
+        "cssWidth": 752,
+        "cssHeight": 257,
+        "drawingWidth": 752,
+        "drawingHeight": 257,
+        "adapter": {
+          "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+          "vendor": "Google Inc. (Apple)",
+          "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4 Pro, Unspecified Version)"
+        },
+        "visibility": "visible"
+      },
+      "traceEvents": 24,
+      "rawEvents": 14
+    },
+    {
+      "fixture": "person",
+      "layout": "Visualize",
+      "phase": "playback",
+      "start": 18409.60000014305,
+      "deadline": 21409.60000014305,
+      "frames": [
+        {
+          "at": 18508.400000095367,
+          "submitMs": 0.5999999046325684,
+          "drawCommands": 30,
+          "triangles": 4388,
+          "geometries": 28,
+          "textures": 4
+        },
+        {
+          "at": 18541.200000047684,
+          "submitMs": 0.40000009536743164,
+          "drawCommands": 30,
+          "triangles": 4388,
+          "geometries": 28,
+          "textures": 4
+        },
+        {
+          "at": 19207.400000095367,
+          "submitMs": 1.0999999046325684,
+          "drawCommands": 37,
+          "triangles": 6516,
+          "geometries": 34,
+          "textures": 4
+        },
+        {
+          "at": 19241.400000095367,
+          "submitMs": 0.40000009536743164,
+          "drawCommands": 37,
+          "triangles": 6516,
+          "geometries": 34,
+          "textures": 4
+        },
+        {
+          "at": 19274,
+          "submitMs": 0.5,
+          "drawCommands": 37,
+          "triangles": 6516,
+          "geometries": 34,
+          "textures": 4
+        },
+        {
+          "at": 19308,
+          "submitMs": 0.40000009536743164,
+          "drawCommands": 37,
+          "triangles": 6516,
+          "geometries": 34,
+          "textures": 4
+        },
+        {
+          "at": 19341.5,
+          "submitMs": 0.40000009536743164,
+          "drawCommands": 37,
+          "triangles": 6516,
+          "geometries": 34,
+          "textures": 4
+        },
+        {
+          "at": 19882.900000095367,
+          "submitMs": 3.0999999046325684,
+          "drawCommands": 42,
+          "triangles": 6562,
+          "geometries": 39,
+          "textures": 4
+        },
+        {
+          "at": 19907.60000014305,
+          "submitMs": 2.5999999046325684,
+          "drawCommands": 42,
+          "triangles": 6562,
+          "geometries": 39,
+          "textures": 4
+        },
+        {
+          "at": 20583.400000095367,
+          "submitMs": 8.400000095367432,
+          "drawCommands": 48,
+          "triangles": 7258,
+          "geometries": 45,
+          "textures": 4
+        },
+        {
+          "at": 20607.900000095367,
+          "submitMs": 2.799999952316284,
+          "drawCommands": 48,
+          "triangles": 7258,
+          "geometries": 44,
+          "textures": 4
+        },
+        {
+          "at": 20640.700000047684,
+          "submitMs": 0.5,
+          "drawCommands": 48,
+          "triangles": 7258,
+          "geometries": 44,
+          "textures": 4
+        },
+        {
+          "at": 20674.700000047684,
+          "submitMs": 0.2999999523162842,
+          "drawCommands": 48,
+          "triangles": 7258,
+          "geometries": 44,
+          "textures": 4
+        },
+        {
+          "at": 20708.10000014305,
+          "submitMs": 0.5,
+          "drawCommands": 48,
+          "triangles": 7258,
+          "geometries": 44,
+          "textures": 4
+        },
+        {
+          "at": 21275.700000047684,
+          "submitMs": 3.799999952316284,
+          "drawCommands": 53,
+          "triangles": 7316,
+          "geometries": 49,
+          "textures": 4
+        },
+        {
+          "at": 21308,
+          "submitMs": 2.9000000953674316,
+          "drawCommands": 53,
+          "triangles": 7316,
+          "geometries": 49,
+          "textures": 4
+        }
+      ],
+      "rafTimestamps": [
+        18439.3,
+        18472.7,
+        18505.9,
+        18539.3,
+        18572.7,
+        18606,
+        18639.3,
+        18672.6,
+        18706,
+        18739.3,
+        18772.6,
+        18805.9,
+        18839.2,
+        18872.6,
+        18905.9,
+        18939.3,
+        18972.7,
+        19005.9,
+        19039.3,
+        19072.6,
+        19106,
+        19139.3,
+        19172.6,
+        19205.9,
+        19239.3,
+        19272.6,
+        19306,
+        19339.3,
+        19372.6,
+        19405.9,
+        19439.3,
+        19472.6,
+        19505.9,
+        19539.2,
+        19572.6,
+        19605.9,
+        19639.2,
+        19672.6,
+        19705.9,
+        19739.2,
+        19772.6,
+        19805.9,
+        19839.3,
+        19872.6,
+        19905.9,
+        19939.3,
+        19972.6,
+        20005.9,
+        20039.2,
+        20072.6,
+        20105.9,
+        20139.2,
+        20172.6,
+        20205.9,
+        20239.2,
+        20272.5,
+        20305.9,
+        20339.3,
+        20372.5,
+        20405.8,
+        20439.2,
+        20472.5,
+        20505.9,
+        20539.2,
+        20572.5,
+        20605.9,
+        20639.2,
+        20672.5,
+        20705.9,
+        20739.2,
+        20772.5,
+        20805.8,
+        20839.2,
+        20872.5,
+        20905.9,
+        20939.2,
+        20972.6,
+        21005.8,
+        21039.2,
+        21072.5,
+        21105.9,
+        21139.2,
+        21172.6,
+        21205.8,
+        21239.2,
+        21272.6,
+        21305.8,
+        21339.1,
+        21372.5,
+        21405.9
+      ],
+      "cursorStart": "5 / 24",
+      "end": 21410.60000014305,
+      "cursorEnd": "9 / 24",
+      "longTasks": [],
+      "elapsedMs": 3001,
+      "renderCount": 16,
+      "rendersPerSecond": 5.331556147950683,
+      "intervalsMs": {
+        "count": 15,
+        "median": 33.5,
+        "max": 675.7999999523163,
+        "over25": 13,
+        "over50": 4
+      },
+      "raf": {
+        "count": 90,
+        "callbacksPerSecond": 29.990003332222592,
+        "intervalsMs": {
+          "count": 89,
+          "median": 33.30000000000291,
+          "max": 33.400000000001455,
+          "over25": 89,
+          "over50": 0
+        },
+        "note": "Observation callbacks only; idle RAF callbacks do not imply WebGL draws."
+      },
+      "submissionMs": {
+        "mean": 1.7937500029802322,
+        "max": 8.400000095367432
+      },
+      "drawCommands": 675,
+      "geometry": {
+        "cssWidth": 1004,
+        "cssHeight": 647,
+        "drawingWidth": 1004,
+        "drawingHeight": 647,
+        "adapter": {
+          "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+          "vendor": "Google Inc. (Apple)",
+          "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4 Pro, Unspecified Version)"
+        },
+        "visibility": "visible"
+      },
+      "traceEvents": 24,
+      "rawEvents": 14
+    },
+    {
+      "fixture": "person",
+      "layout": "Visualize",
+      "phase": "orbit",
+      "start": 22903.900000095367,
+      "deadline": 25903.900000095367,
+      "frames": [
+        {
+          "at": 22908.400000095367,
+          "submitMs": 3.299999952316284,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 22974.300000190735,
+          "submitMs": 0.7999999523162842,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 23041.10000014305,
+          "submitMs": 0.8999998569488525,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 23106.900000095367,
+          "submitMs": 0.9000000953674316,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 23174.10000014305,
+          "submitMs": 1.5,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 23242.700000047684,
+          "submitMs": 2.700000047683716,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 23309.10000014305,
+          "submitMs": 1.5999999046325684,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 23374,
+          "submitMs": 2,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 23474.400000095367,
+          "submitMs": 0.5999999046325684,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 23540.700000047684,
+          "submitMs": 0.5,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 23606.700000047684,
+          "submitMs": 0.6000001430511475,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 23673.300000190735,
+          "submitMs": 0.7999999523162842,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 23741.200000047684,
+          "submitMs": 3,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 23807.700000047684,
+          "submitMs": 0.5,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 23874.5,
+          "submitMs": 1.1000001430511475,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 23940.800000190735,
+          "submitMs": 1,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 24008.10000014305,
+          "submitMs": 1.2000000476837158,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 24074.800000190735,
+          "submitMs": 1.1999998092651367,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 24141.200000047684,
+          "submitMs": 1.2000000476837158,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 24209.900000095367,
+          "submitMs": 2.799999952316284,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 24308.60000014305,
+          "submitMs": 1.8999998569488525,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 24374.10000014305,
+          "submitMs": 1.2999999523162842,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 24442.400000095367,
+          "submitMs": 2.299999952316284,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 24507.10000014305,
+          "submitMs": 1.5999999046325684,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 24575.900000095367,
+          "submitMs": 1.5999999046325684,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 24675.400000095367,
+          "submitMs": 1.2000000476837158,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 24773.5,
+          "submitMs": 1.9000000953674316,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 24841.60000014305,
+          "submitMs": 1.0999999046325684,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 24906.900000095367,
+          "submitMs": 1.5,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 24976.200000047684,
+          "submitMs": 2.200000047683716,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 25040.300000190735,
+          "submitMs": 2,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 25108.200000047684,
+          "submitMs": 1.1000001430511475,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 25174.300000190735,
+          "submitMs": 1.6999998092651367,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 25241.900000095367,
+          "submitMs": 1.9000000953674316,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 25308,
+          "submitMs": 0.40000009536743164,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 25374,
+          "submitMs": 1.6000001430511475,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 25442.400000095367,
+          "submitMs": 1.7000000476837158,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 25507.300000190735,
+          "submitMs": 1.3999998569488525,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 25574.700000047684,
+          "submitMs": 1.7999999523162842,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 25641.700000047684,
+          "submitMs": 1.6000001430511475,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 25706.60000014305,
+          "submitMs": 1.5,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 25775.200000047684,
+          "submitMs": 1.2000000476837158,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 25840.10000014305,
+          "submitMs": 1.5,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        }
+      ],
+      "rafTimestamps": [
+        22905.832,
+        22939.1,
+        22972.4,
+        23005.8,
+        23039.1,
+        23072.4,
+        23105.8,
+        23139.1,
+        23172.4,
+        23205.8,
+        23239.1,
+        23272.5,
+        23305.8,
+        23339.1,
+        23372.4,
+        23405.7,
+        23439.1,
+        23472.4,
+        23505.7,
+        23539.1,
+        23572.4,
+        23605.8,
+        23639,
+        23672.4,
+        23705.8,
+        23739.1,
+        23772.4,
+        23805.8,
+        23839.1,
+        23872.4,
+        23905.7,
+        23939.1,
+        23972.4,
+        24005.7,
+        24039.1,
+        24072.4,
+        24105.8,
+        24139.1,
+        24172.4,
+        24205.8,
+        24239.1,
+        24272.4,
+        24305.7,
+        24339,
+        24372.4,
+        24405.7,
+        24439.1,
+        24472.4,
+        24505.8,
+        24539.1,
+        24572.4,
+        24605.7,
+        24639.1,
+        24672.4,
+        24705.7,
+        24739.1,
+        24772.4,
+        24805.7,
+        24839,
+        24872.4,
+        24905.7,
+        24939,
+        24972.4,
+        25005.7,
+        25039,
+        25072.3,
+        25105.7,
+        25139,
+        25172.4,
+        25205.7,
+        25239,
+        25272.4,
+        25305.7,
+        25339,
+        25372.3,
+        25405.6,
+        25439,
+        25472.4,
+        25505.7,
+        25539,
+        25572.3,
+        25605.7,
+        25639,
+        25672.3,
+        25705.6,
+        25739,
+        25772.4,
+        25805.7,
+        25839,
+        25872.4
+      ],
+      "cursorStart": "20 / 24",
+      "end": 25906.200000047684,
+      "cursorEnd": "20 / 24",
+      "longTasks": [],
+      "elapsedMs": 3002.2999999523163,
+      "renderCount": 43,
+      "rendersPerSecond": 14.322352863032656,
+      "intervalsMs": {
+        "count": 42,
+        "median": 66.79999995231628,
+        "max": 100.40000009536743,
+        "over25": 42,
+        "over50": 42
+      },
+      "raf": {
+        "count": 90,
+        "callbacksPerSecond": 29.97701762030091,
+        "intervalsMs": {
+          "count": 89,
+          "median": 33.30000000000291,
+          "max": 33.400000000001455,
+          "over25": 89,
+          "over50": 0
+        },
+        "note": "Observation callbacks only; idle RAF callbacks do not imply WebGL draws."
+      },
+      "submissionMs": {
+        "mean": 1.493023251378259,
+        "max": 3.299999952316284
+      },
+      "drawCommands": 2838,
+      "pointerMoves": 44,
+      "geometry": {
+        "cssWidth": 1004,
+        "cssHeight": 647,
+        "drawingWidth": 1004,
+        "drawingHeight": 647,
+        "adapter": {
+          "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+          "vendor": "Google Inc. (Apple)",
+          "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4 Pro, Unspecified Version)"
+        },
+        "visibility": "visible"
+      },
+      "traceEvents": 24,
+      "rawEvents": 14
+    },
+    {
+      "fixture": "person",
+      "layout": "Visualize",
+      "phase": "idle",
+      "start": 27275.5,
+      "deadline": 30275.5,
+      "frames": [],
+      "rafTimestamps": [
+        27272.3,
+        27305.6,
+        27338.9,
+        27372.2,
+        27405.6,
+        27438.9,
+        27472.3,
+        27505.6,
+        27539,
+        27572.3,
+        27605.6,
+        27638.9,
+        27672.2,
+        27705.6,
+        27738.9,
+        27772.2,
+        27805.6,
+        27839,
+        27872.3,
+        27905.5,
+        27938.9,
+        27972.2,
+        28005.5,
+        28038.9,
+        28072.3,
+        28105.5,
+        28138.9,
+        28172.3,
+        28205.5,
+        28238.9,
+        28272.3,
+        28305.6,
+        28338.9,
+        28372.3,
+        28405.5,
+        28438.9,
+        28472.2,
+        28505.5,
+        28538.9,
+        28572.3,
+        28605.6,
+        28638.9,
+        28672.2,
+        28705.6,
+        28738.9,
+        28772.2,
+        28805.5,
+        28838.9,
+        28872.3,
+        28905.5,
+        28938.9,
+        28972.2,
+        29005.6,
+        29038.9,
+        29072.2,
+        29105.5,
+        29138.8,
+        29172.2,
+        29205.5,
+        29238.9,
+        29272.2,
+        29305.5,
+        29338.8,
+        29372.2,
+        29405.6,
+        29438.9,
+        29472.1,
+        29505.6,
+        29538.9,
+        29572.2,
+        29605.5,
+        29638.8,
+        29672.2,
+        29705.5,
+        29738.8,
+        29772.2,
+        29805.5,
+        29838.8,
+        29872.2,
+        29905.5,
+        29938.8,
+        29972.2,
+        30005.5,
+        30038.9,
+        30072.2,
+        30105.5,
+        30138.8,
+        30172.1,
+        30205.5,
+        30238.9,
+        30272.1
+      ],
+      "cursorStart": "20 / 24",
+      "end": 30276.60000014305,
+      "cursorEnd": "20 / 24",
+      "longTasks": [],
+      "elapsedMs": 3001.100000143051,
+      "renderCount": 0,
+      "rendersPerSecond": 0,
+      "intervalsMs": {
+        "count": 0,
+        "median": null,
+        "max": null,
+        "over25": 0,
+        "over50": 0
+      },
+      "raf": {
+        "count": 91,
+        "callbacksPerSecond": 30.32221518631914,
+        "intervalsMs": {
+          "count": 90,
+          "median": 33.29999999999927,
+          "max": 33.5,
+          "over25": 90,
+          "over50": 0
+        },
+        "note": "Observation callbacks only; idle RAF callbacks do not imply WebGL draws."
+      },
+      "submissionMs": {
+        "mean": null,
+        "max": null
+      },
+      "drawCommands": 0,
+      "geometry": {
+        "cssWidth": 1004,
+        "cssHeight": 647,
+        "drawingWidth": 1004,
+        "drawingHeight": 647,
+        "adapter": {
+          "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+          "vendor": "Google Inc. (Apple)",
+          "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4 Pro, Unspecified Version)"
+        },
+        "visibility": "visible"
+      },
+      "traceEvents": 24,
+      "rawEvents": 14
+    },
+    {
+      "fixture": "person",
+      "layout": "Runtime Focus",
+      "phase": "playback",
+      "start": 32367.800000190735,
+      "deadline": 35367.800000190735,
+      "frames": [
+        {
+          "at": 32457,
+          "submitMs": 0.6000001430511475,
+          "drawCommands": 30,
+          "triangles": 4388,
+          "geometries": 28,
+          "textures": 4
+        },
+        {
+          "at": 32490.5,
+          "submitMs": 0.40000009536743164,
+          "drawCommands": 30,
+          "triangles": 4388,
+          "geometries": 28,
+          "textures": 4
+        },
+        {
+          "at": 33159.5,
+          "submitMs": 1.2000000476837158,
+          "drawCommands": 37,
+          "triangles": 6516,
+          "geometries": 34,
+          "textures": 4
+        },
+        {
+          "at": 33190.90000009537,
+          "submitMs": 0.5,
+          "drawCommands": 37,
+          "triangles": 6516,
+          "geometries": 34,
+          "textures": 4
+        },
+        {
+          "at": 33223.5,
+          "submitMs": 0.40000009536743164,
+          "drawCommands": 37,
+          "triangles": 6516,
+          "geometries": 34,
+          "textures": 4
+        },
+        {
+          "at": 33256.700000047684,
+          "submitMs": 0.6000001430511475,
+          "drawCommands": 37,
+          "triangles": 6516,
+          "geometries": 34,
+          "textures": 4
+        },
+        {
+          "at": 33289.90000009537,
+          "submitMs": 0.5,
+          "drawCommands": 37,
+          "triangles": 6516,
+          "geometries": 34,
+          "textures": 4
+        },
+        {
+          "at": 33825,
+          "submitMs": 2.3000001907348633,
+          "drawCommands": 42,
+          "triangles": 6562,
+          "geometries": 39,
+          "textures": 4
+        },
+        {
+          "at": 33856.10000014305,
+          "submitMs": 2.200000047683716,
+          "drawCommands": 42,
+          "triangles": 6562,
+          "geometries": 39,
+          "textures": 4
+        },
+        {
+          "at": 34528.60000014305,
+          "submitMs": 8.5,
+          "drawCommands": 48,
+          "triangles": 7258,
+          "geometries": 45,
+          "textures": 4
+        },
+        {
+          "at": 34556.10000014305,
+          "submitMs": 2.700000047683716,
+          "drawCommands": 48,
+          "triangles": 7258,
+          "geometries": 44,
+          "textures": 4
+        },
+        {
+          "at": 34590.10000014305,
+          "submitMs": 0.39999985694885254,
+          "drawCommands": 48,
+          "triangles": 7258,
+          "geometries": 44,
+          "textures": 4
+        },
+        {
+          "at": 34624.10000014305,
+          "submitMs": 0.5,
+          "drawCommands": 48,
+          "triangles": 7258,
+          "geometries": 44,
+          "textures": 4
+        },
+        {
+          "at": 34656,
+          "submitMs": 0.6000001430511475,
+          "drawCommands": 48,
+          "triangles": 7258,
+          "geometries": 44,
+          "textures": 4
+        },
+        {
+          "at": 35224.90000009537,
+          "submitMs": 3.4000000953674316,
+          "drawCommands": 53,
+          "triangles": 7316,
+          "geometries": 49,
+          "textures": 4
+        }
+      ],
+      "rafTimestamps": [
+        32388.766,
+        32422.1,
+        32455.4,
+        32488.7,
+        32522.1,
+        32555.4,
+        32588.7,
+        32622.1,
+        32655.4,
+        32688.8,
+        32722.1,
+        32755.4,
+        32788.7,
+        32822,
+        32855.4,
+        32888.7,
+        32922,
+        32955.4,
+        32988.8,
+        33022,
+        33055.4,
+        33088.8,
+        33122.1,
+        33155.4,
+        33188.7,
+        33222,
+        33255.4,
+        33288.7,
+        33322,
+        33355.4,
+        33388.7,
+        33422,
+        33455.3,
+        33488.7,
+        33522,
+        33555.4,
+        33588.7,
+        33622.1,
+        33655.4,
+        33688.7,
+        33722,
+        33755.4,
+        33788.7,
+        33822,
+        33855.3,
+        33888.7,
+        33922.1,
+        33955.3,
+        33988.7,
+        34022,
+        34055.4,
+        34088.7,
+        34122,
+        34155.3,
+        34188.7,
+        34222,
+        34255.4,
+        34288.7,
+        34322,
+        34355.4,
+        34388.6,
+        34422,
+        34455.4,
+        34488.6,
+        34522,
+        34555.3,
+        34588.7,
+        34622,
+        34655.3,
+        34688.6,
+        34722,
+        34755.3,
+        34788.7,
+        34821.9,
+        34855.3,
+        34888.6,
+        34922,
+        34955.3,
+        34988.6,
+        35022,
+        35055.3,
+        35088.6,
+        35121.9,
+        35155.3,
+        35188.6,
+        35222,
+        35255.3,
+        35288.6,
+        35322,
+        35355.3
+      ],
+      "cursorStart": "5 / 24",
+      "end": 35369,
+      "cursorEnd": "9 / 24",
+      "longTasks": [],
+      "elapsedMs": 3001.199999809265,
+      "renderCount": 15,
+      "rendersPerSecond": 4.998000799997765,
+      "intervalsMs": {
+        "count": 14,
+        "median": 33.5,
+        "max": 672.5,
+        "over25": 14,
+        "over50": 4
+      },
+      "raf": {
+        "count": 90,
+        "callbacksPerSecond": 29.98800479998659,
+        "intervalsMs": {
+          "count": 89,
+          "median": 33.30000000000291,
+          "max": 33.400000000001455,
+          "over25": 89,
+          "over50": 0
+        },
+        "note": "Observation callbacks only; idle RAF callbacks do not imply WebGL draws."
+      },
+      "submissionMs": {
+        "mean": 1.6533333937327066,
+        "max": 8.5
+      },
+      "drawCommands": 622,
+      "geometry": {
+        "cssWidth": 1440,
+        "cssHeight": 701,
+        "drawingWidth": 1440,
+        "drawingHeight": 701,
+        "adapter": {
+          "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+          "vendor": "Google Inc. (Apple)",
+          "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4 Pro, Unspecified Version)"
+        },
+        "visibility": "visible"
+      },
+      "traceEvents": 24,
+      "rawEvents": 14
+    },
+    {
+      "fixture": "person",
+      "layout": "Runtime Focus",
+      "phase": "orbit",
+      "start": 36889.90000009537,
+      "deadline": 39889.90000009537,
+      "frames": [
+        {
+          "at": 36906.800000190735,
+          "submitMs": 3.299999952316284,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 36974.5,
+          "submitMs": 0.8000001907348633,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 37041.200000047684,
+          "submitMs": 2.4000000953674316,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 37106.10000014305,
+          "submitMs": 1,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 37174.5,
+          "submitMs": 2.1000001430511475,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 37242.200000047684,
+          "submitMs": 2.4000000953674316,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 37306.300000190735,
+          "submitMs": 1.1999998092651367,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 37377,
+          "submitMs": 2.200000047683716,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 37475.5,
+          "submitMs": 2.200000047683716,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 37542.10000014305,
+          "submitMs": 2.200000047683716,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 37642.10000014305,
+          "submitMs": 2,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 37706.700000047684,
+          "submitMs": 1.6000001430511475,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 37773.700000047684,
+          "submitMs": 1.6000001430511475,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 37840.90000009537,
+          "submitMs": 2.700000047683716,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 37907.40000009537,
+          "submitMs": 2.299999952316284,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 38006.700000047684,
+          "submitMs": 2.1000001430511475,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 38074.90000009537,
+          "submitMs": 1.4000000953674316,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 38140.40000009537,
+          "submitMs": 1.5,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 38208.60000014305,
+          "submitMs": 2.5999999046325684,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 38273.60000014305,
+          "submitMs": 3.299999952316284,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 38340.60000014305,
+          "submitMs": 0.5,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 38407.700000047684,
+          "submitMs": 0.6000001430511475,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 38474.200000047684,
+          "submitMs": 0.7000000476837158,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 38539.300000190735,
+          "submitMs": 0.6999998092651367,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 38608.60000014305,
+          "submitMs": 2.5,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 38674.40000009537,
+          "submitMs": 1.7000000476837158,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 38740.5,
+          "submitMs": 1.2000000476837158,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 38807,
+          "submitMs": 2.8000001907348633,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 38873.40000009537,
+          "submitMs": 1,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 38939,
+          "submitMs": 0.8000001907348633,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 39007.40000009537,
+          "submitMs": 1.2999999523162842,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 39074.300000190735,
+          "submitMs": 2.299999952316284,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 39141,
+          "submitMs": 1.4000000953674316,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 39207.10000014305,
+          "submitMs": 2,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 39272.60000014305,
+          "submitMs": 0.8999998569488525,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 39340.40000009537,
+          "submitMs": 2.9000000953674316,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 39407.90000009537,
+          "submitMs": 2.5,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 39475.5,
+          "submitMs": 2.8000001907348633,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 39541.60000014305,
+          "submitMs": 2.3999998569488525,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 39606.800000190735,
+          "submitMs": 2.6999998092651367,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 39675,
+          "submitMs": 1.7000000476837158,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 39742,
+          "submitMs": 2,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 39809.200000047684,
+          "submitMs": 2.6000001430511475,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        },
+        {
+          "at": 39874.700000047684,
+          "submitMs": 2.700000047683716,
+          "drawCommands": 66,
+          "triangles": 8062,
+          "geometries": 60,
+          "textures": 4
+        }
+      ],
+      "rafTimestamps": [
+        36905.266,
+        36938.6,
+        36971.9,
+        37005.2,
+        37038.6,
+        37071.9,
+        37105.2,
+        37138.5,
+        37171.9,
+        37205.3,
+        37238.5,
+        37271.9,
+        37305.2,
+        37338.5,
+        37371.9,
+        37405.2,
+        37438.5,
+        37471.9,
+        37505.2,
+        37538.6,
+        37571.9,
+        37605.2,
+        37638.5,
+        37671.9,
+        37705.2,
+        37738.5,
+        37771.9,
+        37805.2,
+        37838.5,
+        37871.8,
+        37905.2,
+        37938.5,
+        37971.8,
+        38005.2,
+        38038.5,
+        38071.9,
+        38105.2,
+        38138.5,
+        38171.8,
+        38205.1,
+        38238.5,
+        38271.8,
+        38305.1,
+        38338.5,
+        38371.8,
+        38405.1,
+        38438.5,
+        38471.9,
+        38505.2,
+        38538.5,
+        38571.8,
+        38605.2,
+        38638.5,
+        38671.8,
+        38705.2,
+        38738.5,
+        38771.8,
+        38805.1,
+        38838.5,
+        38871.8,
+        38905.2,
+        38938.5,
+        38971.8,
+        39005.1,
+        39038.5,
+        39071.8,
+        39105.1,
+        39138.5,
+        39171.8,
+        39205.1,
+        39238.5,
+        39271.8,
+        39305.2,
+        39338.4,
+        39371.8,
+        39405.1,
+        39438.4,
+        39471.8,
+        39505.1,
+        39538.4,
+        39571.8,
+        39605.1,
+        39638.5,
+        39671.8,
+        39705.1,
+        39738.4,
+        39771.8,
+        39805.1,
+        39838.4,
+        39871.8
+      ],
+      "cursorStart": "20 / 24",
+      "end": 39892.200000047684,
+      "cursorEnd": "20 / 24",
+      "longTasks": [],
+      "elapsedMs": 3002.2999999523163,
+      "renderCount": 44,
+      "rendersPerSecond": 14.655430836591554,
+      "intervalsMs": {
+        "count": 43,
+        "median": 66.90000009536743,
+        "max": 100,
+        "over25": 43,
+        "over50": 43
+      },
+      "raf": {
+        "count": 90,
+        "callbacksPerSecond": 29.97701762030091,
+        "intervalsMs": {
+          "count": 89,
+          "median": 33.30000000000291,
+          "max": 33.400000000001455,
+          "over25": 89,
+          "over50": 0
+        },
+        "note": "Observation callbacks only; idle RAF callbacks do not imply WebGL draws."
+      },
+      "submissionMs": {
+        "mean": 1.9000000303441829,
+        "max": 3.299999952316284
+      },
+      "drawCommands": 2904,
+      "pointerMoves": 44,
+      "geometry": {
+        "cssWidth": 1440,
+        "cssHeight": 701,
+        "drawingWidth": 1440,
+        "drawingHeight": 701,
+        "adapter": {
+          "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+          "vendor": "Google Inc. (Apple)",
+          "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4 Pro, Unspecified Version)"
+        },
+        "visibility": "visible"
+      },
+      "traceEvents": 24,
+      "rawEvents": 14
+    },
+    {
+      "fixture": "person",
+      "layout": "Runtime Focus",
+      "phase": "idle",
+      "start": 41249.5,
+      "deadline": 44249.5,
+      "frames": [],
+      "rafTimestamps": [
+        41238.4,
+        41271.7,
+        41305,
+        41338.4,
+        41371.7,
+        41405.1,
+        41438.3,
+        41471.7,
+        41505,
+        41538.3,
+        41571.7,
+        41605,
+        41638.4,
+        41671.7,
+        41705,
+        41738.3,
+        41771.7,
+        41805,
+        41838.3,
+        41871.7,
+        41905.1,
+        41938.3,
+        41971.7,
+        42005.1,
+        42038.4,
+        42071.7,
+        42105,
+        42138.3,
+        42171.7,
+        42205,
+        42238.3,
+        42271.7,
+        42305,
+        42338.3,
+        42371.7,
+        42405,
+        42438.3,
+        42471.7,
+        42505,
+        42538.3,
+        42571.7,
+        42605,
+        42638.4,
+        42671.7,
+        42705,
+        42738.3,
+        42771.7,
+        42805,
+        42838.3,
+        42871.6,
+        42905,
+        42938.3,
+        42971.7,
+        43005,
+        43038.4,
+        43071.6,
+        43105,
+        43138.3,
+        43171.6,
+        43205,
+        43238.3,
+        43271.6,
+        43304.9,
+        43338.3,
+        43371.6,
+        43404.9,
+        43438.3,
+        43471.6,
+        43504.9,
+        43538.3,
+        43571.6,
+        43605,
+        43638.3,
+        43671.6,
+        43705,
+        43738.3,
+        43771.6,
+        43804.9,
+        43838.3,
+        43871.6,
+        43904.9,
+        43938.3,
+        43971.6,
+        44004.9,
+        44038.3,
+        44071.6,
+        44104.9,
+        44138.2,
+        44171.6,
+        44204.9,
+        44238.3
+      ],
+      "cursorStart": "20 / 24",
+      "end": 44252.700000047684,
+      "cursorEnd": "20 / 24",
+      "longTasks": [],
+      "elapsedMs": 3003.2000000476837,
+      "renderCount": 0,
+      "rendersPerSecond": 0,
+      "intervalsMs": {
+        "count": 0,
+        "median": null,
+        "max": null,
+        "over25": 0,
+        "over50": 0
+      },
+      "raf": {
+        "count": 91,
+        "callbacksPerSecond": 30.301012253115054,
+        "intervalsMs": {
+          "count": 90,
+          "median": 33.30000000000291,
+          "max": 33.400000000001455,
+          "over25": 90,
+          "over50": 0
+        },
+        "note": "Observation callbacks only; idle RAF callbacks do not imply WebGL draws."
+      },
+      "submissionMs": {
+        "mean": null,
+        "max": null
+      },
+      "drawCommands": 0,
+      "geometry": {
+        "cssWidth": 1440,
+        "cssHeight": 701,
+        "drawingWidth": 1440,
+        "drawingHeight": 701,
+        "adapter": {
+          "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+          "vendor": "Google Inc. (Apple)",
+          "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4 Pro, Unspecified Version)"
+        },
+        "visibility": "visible"
+      },
+      "traceEvents": 24,
+      "rawEvents": 14
+    },
+    {
+      "fixture": "recursion",
+      "layout": "Compact layout-only baseline",
+      "phase": "playback",
+      "start": 4413.299999952316,
+      "deadline": 7413.299999952316,
+      "frames": [
+        {
+          "at": 4520.099999904633,
+          "submitMs": 3.1000001430511475,
+          "drawCommands": 23,
+          "triangles": 6398,
+          "geometries": 30,
+          "textures": 4
+        },
+        {
+          "at": 4553.200000047684,
+          "submitMs": 2.8999998569488525,
+          "drawCommands": 23,
+          "triangles": 6398,
+          "geometries": 30,
+          "textures": 4
+        },
+        {
+          "at": 5219.900000095367,
+          "submitMs": 3.0999999046325684,
+          "drawCommands": 25,
+          "triangles": 6422,
+          "geometries": 32,
+          "textures": 4
+        },
+        {
+          "at": 5886.900000095367,
+          "submitMs": 0.6999998092651367,
+          "drawCommands": 24,
+          "triangles": 6410,
+          "geometries": 33,
+          "textures": 4
+        },
+        {
+          "at": 5919.900000095367,
+          "submitMs": 2.799999952316284,
+          "drawCommands": 24,
+          "triangles": 6410,
+          "geometries": 31,
+          "textures": 4
+        },
+        {
+          "at": 6586.299999952316,
+          "submitMs": 2.299999952316284,
+          "drawCommands": 24,
+          "triangles": 6410,
+          "geometries": 31,
+          "textures": 4
+        },
+        {
+          "at": 7286.5,
+          "submitMs": 2.799999952316284,
+          "drawCommands": 24,
+          "triangles": 6410,
+          "geometries": 31,
+          "textures": 4
+        }
+      ],
+      "rafTimestamps": [
+        4419.266,
+        4452.6,
+        4485.9,
+        4519.3,
+        4552.6,
+        4585.9,
+        4619.3,
+        4652.6,
+        4685.9,
+        4719.3,
+        4752.6,
+        4785.9,
+        4819.3,
+        4852.5,
+        4885.9,
+        4919.2,
+        4952.6,
+        4985.9,
+        5019.2,
+        5052.6,
+        5085.9,
+        5119.2,
+        5152.6,
+        5185.9,
+        5219.2,
+        5252.6,
+        5285.9,
+        5319.2,
+        5352.6,
+        5385.9,
+        5419.2,
+        5452.5,
+        5485.9,
+        5519.2,
+        5552.6,
+        5585.9,
+        5619.2,
+        5652.5,
+        5685.8,
+        5719.2,
+        5752.5,
+        5785.9,
+        5819.2,
+        5852.5,
+        5885.8,
+        5919.2,
+        5952.5,
+        5985.8,
+        6019.1,
+        6052.6,
+        6085.8,
+        6119.2,
+        6152.5,
+        6185.9,
+        6219.1,
+        6252.5,
+        6285.8,
+        6319.2,
+        6352.5,
+        6385.8,
+        6419.2,
+        6452.5,
+        6485.9,
+        6519.2,
+        6552.5,
+        6585.9,
+        6619.1,
+        6652.5,
+        6685.8,
+        6719.1,
+        6752.5,
+        6785.9,
+        6819.1,
+        6852.5,
+        6885.8,
+        6919.2,
+        6952.5,
+        6985.8,
+        7019.1,
+        7052.4,
+        7085.8,
+        7119.1,
+        7152.4,
+        7185.8,
+        7219.1,
+        7252.4,
+        7285.8,
+        7319.2,
+        7352.4,
+        7385.8
+      ],
+      "cursorStart": "10 / 40",
+      "end": 7413.799999952316,
+      "cursorEnd": "14 / 40",
+      "longTasks": [],
+      "elapsedMs": 3000.5,
+      "renderCount": 7,
+      "rendersPerSecond": 2.3329445092484584,
+      "intervalsMs": {
+        "count": 6,
+        "median": 666.7000000476837,
+        "max": 700.2000000476837,
+        "over25": 6,
+        "over50": 4
+      },
+      "raf": {
+        "count": 90,
+        "callbacksPerSecond": 29.995000833194467,
+        "intervalsMs": {
+          "count": 89,
+          "median": 33.30000000000018,
+          "max": 33.5,
+          "over25": 89,
+          "over50": 0
+        },
+        "note": "Observation callbacks only; idle RAF callbacks do not imply WebGL draws."
+      },
+      "submissionMs": {
+        "mean": 2.528571367263794,
+        "max": 3.1000001430511475
+      },
+      "drawCommands": 167,
+      "geometry": {
+        "cssWidth": 752,
+        "cssHeight": 257,
+        "drawingWidth": 752,
+        "drawingHeight": 257,
+        "adapter": {
+          "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+          "vendor": "Google Inc. (Apple)",
+          "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4 Pro, Unspecified Version)"
+        },
+        "visibility": "visible"
+      },
+      "traceEvents": 40,
+      "rawEvents": 32
+    },
+    {
+      "fixture": "recursion",
+      "layout": "Compact layout-only baseline",
+      "phase": "orbit",
+      "start": 8961.200000047684,
+      "deadline": 11961.200000047684,
+      "frames": [
+        {
+          "at": 9053.400000095367,
+          "submitMs": 0.6999998092651367,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 48,
+          "textures": 4
+        },
+        {
+          "at": 9120.799999952316,
+          "submitMs": 1.2000000476837158,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 48,
+          "textures": 4
+        },
+        {
+          "at": 9188.099999904633,
+          "submitMs": 1.9000000953674316,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 48,
+          "textures": 4
+        },
+        {
+          "at": 9287.5,
+          "submitMs": 2.799999952316284,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 48,
+          "textures": 4
+        },
+        {
+          "at": 9354.400000095367,
+          "submitMs": 2.299999952316284,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 48,
+          "textures": 4
+        },
+        {
+          "at": 9421.299999952316,
+          "submitMs": 2,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 48,
+          "textures": 4
+        },
+        {
+          "at": 9487.900000095367,
+          "submitMs": 2,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 48,
+          "textures": 4
+        },
+        {
+          "at": 9554.099999904633,
+          "submitMs": 2.6000001430511475,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 48,
+          "textures": 4
+        },
+        {
+          "at": 9620.299999952316,
+          "submitMs": 0.7999999523162842,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 48,
+          "textures": 4
+        },
+        {
+          "at": 9687.700000047684,
+          "submitMs": 1.8999998569488525,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 48,
+          "textures": 4
+        },
+        {
+          "at": 9754,
+          "submitMs": 1.7000000476837158,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 48,
+          "textures": 4
+        },
+        {
+          "at": 9820.299999952316,
+          "submitMs": 0.7999999523162842,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 48,
+          "textures": 4
+        },
+        {
+          "at": 9888.200000047684,
+          "submitMs": 1.7999999523162842,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 48,
+          "textures": 4
+        },
+        {
+          "at": 9954.299999952316,
+          "submitMs": 2,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 48,
+          "textures": 4
+        },
+        {
+          "at": 10020.400000095367,
+          "submitMs": 1,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 48,
+          "textures": 4
+        },
+        {
+          "at": 10088.099999904633,
+          "submitMs": 2.1000001430511475,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 48,
+          "textures": 4
+        },
+        {
+          "at": 10153.400000095367,
+          "submitMs": 0.6999998092651367,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 48,
+          "textures": 4
+        },
+        {
+          "at": 10220,
+          "submitMs": 0.5,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 48,
+          "textures": 4
+        },
+        {
+          "at": 10286.700000047684,
+          "submitMs": 0.39999985694885254,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 48,
+          "textures": 4
+        },
+        {
+          "at": 10354.400000095367,
+          "submitMs": 0.5,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 48,
+          "textures": 4
+        },
+        {
+          "at": 10420.099999904633,
+          "submitMs": 0.6000001430511475,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 48,
+          "textures": 4
+        },
+        {
+          "at": 10488.799999952316,
+          "submitMs": 1.5,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 48,
+          "textures": 4
+        },
+        {
+          "at": 10553.5,
+          "submitMs": 0.7999999523162842,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 48,
+          "textures": 4
+        },
+        {
+          "at": 10621.400000095367,
+          "submitMs": 2,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 48,
+          "textures": 4
+        },
+        {
+          "at": 10687.5,
+          "submitMs": 1.5,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 48,
+          "textures": 4
+        },
+        {
+          "at": 10753.799999952316,
+          "submitMs": 0.7999999523162842,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 48,
+          "textures": 4
+        },
+        {
+          "at": 10821.299999952316,
+          "submitMs": 1.7999999523162842,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 48,
+          "textures": 4
+        },
+        {
+          "at": 10887.200000047684,
+          "submitMs": 0.8999998569488525,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 48,
+          "textures": 4
+        },
+        {
+          "at": 10953.599999904633,
+          "submitMs": 1.2000000476837158,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 48,
+          "textures": 4
+        },
+        {
+          "at": 11020.799999952316,
+          "submitMs": 2,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 48,
+          "textures": 4
+        },
+        {
+          "at": 11088.099999904633,
+          "submitMs": 1.6000001430511475,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 48,
+          "textures": 4
+        },
+        {
+          "at": 11153.5,
+          "submitMs": 0.5999999046325684,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 48,
+          "textures": 4
+        },
+        {
+          "at": 11220.700000047684,
+          "submitMs": 1.5,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 48,
+          "textures": 4
+        },
+        {
+          "at": 11287.599999904633,
+          "submitMs": 1.6000001430511475,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 48,
+          "textures": 4
+        },
+        {
+          "at": 11353.700000047684,
+          "submitMs": 0.8999998569488525,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 48,
+          "textures": 4
+        },
+        {
+          "at": 11420.5,
+          "submitMs": 1.5,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 48,
+          "textures": 4
+        },
+        {
+          "at": 11487.799999952316,
+          "submitMs": 2.1000001430511475,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 48,
+          "textures": 4
+        },
+        {
+          "at": 11587.599999904633,
+          "submitMs": 1.5,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 48,
+          "textures": 4
+        },
+        {
+          "at": 11654,
+          "submitMs": 0.7999999523162842,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 48,
+          "textures": 4
+        },
+        {
+          "at": 11720.599999904633,
+          "submitMs": 1.3000001907348633,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 48,
+          "textures": 4
+        },
+        {
+          "at": 11788.099999904633,
+          "submitMs": 1.3000001907348633,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 48,
+          "textures": 4
+        },
+        {
+          "at": 11853.700000047684,
+          "submitMs": 0.7000000476837158,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 48,
+          "textures": 4
+        },
+        {
+          "at": 11921.299999952316,
+          "submitMs": 1.6000001430511475,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 48,
+          "textures": 4
+        }
+      ],
+      "rafTimestamps": [
+        8985.732,
+        9019.1,
+        9052.4,
+        9085.8,
+        9119.1,
+        9152.4,
+        9185.7,
+        9219.1,
+        9252.4,
+        9285.7,
+        9319.1,
+        9352.3,
+        9385.7,
+        9419.1,
+        9452.4,
+        9485.7,
+        9519,
+        9552.3,
+        9585.7,
+        9619.1,
+        9652.4,
+        9685.7,
+        9719.1,
+        9752.4,
+        9785.7,
+        9819.1,
+        9852.4,
+        9885.7,
+        9919.1,
+        9952.4,
+        9985.7,
+        10019,
+        10052.3,
+        10085.7,
+        10119,
+        10152.4,
+        10185.7,
+        10219,
+        10252.3,
+        10285.7,
+        10319,
+        10352.4,
+        10385.7,
+        10419,
+        10452.4,
+        10485.7,
+        10519,
+        10552.3,
+        10585.7,
+        10619,
+        10652.3,
+        10685.7,
+        10719,
+        10752.4,
+        10785.7,
+        10818.9,
+        10852.3,
+        10885.7,
+        10919,
+        10952.4,
+        10985.7,
+        11019,
+        11052.3,
+        11085.6,
+        11119,
+        11152.3,
+        11185.7,
+        11219,
+        11252.3,
+        11285.7,
+        11319,
+        11352.3,
+        11385.6,
+        11418.9,
+        11452.3,
+        11485.6,
+        11519,
+        11552.3,
+        11585.6,
+        11618.9,
+        11652.3,
+        11685.6,
+        11718.9,
+        11752.3,
+        11785.6,
+        11819,
+        11852.3,
+        11885.6,
+        11919,
+        11952.3
+      ],
+      "cursorStart": "25 / 40",
+      "end": 11963.400000095367,
+      "cursorEnd": "25 / 40",
+      "longTasks": [],
+      "elapsedMs": 3002.2000000476837,
+      "renderCount": 43,
+      "rendersPerSecond": 14.322829924494382,
+      "intervalsMs": {
+        "count": 42,
+        "median": 66.79999995231628,
+        "max": 99.79999995231628,
+        "over25": 42,
+        "over50": 42
+      },
+      "raf": {
+        "count": 90,
+        "callbacksPerSecond": 29.978016121034752,
+        "intervalsMs": {
+          "count": 89,
+          "median": 33.30000000000109,
+          "max": 33.400000000001455,
+          "over25": 89,
+          "over50": 0
+        },
+        "note": "Observation callbacks only; idle RAF callbacks do not imply WebGL draws."
+      },
+      "submissionMs": {
+        "mean": 1.390697678854299,
+        "max": 2.799999952316284
+      },
+      "drawCommands": 1892,
+      "pointerMoves": 44,
+      "geometry": {
+        "cssWidth": 752,
+        "cssHeight": 257,
+        "drawingWidth": 752,
+        "drawingHeight": 257,
+        "adapter": {
+          "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+          "vendor": "Google Inc. (Apple)",
+          "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4 Pro, Unspecified Version)"
+        },
+        "visibility": "visible"
+      },
+      "traceEvents": 40,
+      "rawEvents": 32
+    },
+    {
+      "fixture": "recursion",
+      "layout": "Compact layout-only baseline",
+      "phase": "idle",
+      "start": 13294.599999904633,
+      "deadline": 16294.599999904633,
+      "frames": [],
+      "rafTimestamps": [
+        13285.5,
+        13318.9,
+        13352.2,
+        13385.5,
+        13418.9,
+        13452.3,
+        13485.5,
+        13518.9,
+        13552.2,
+        13585.6,
+        13618.9,
+        13652.2,
+        13685.5,
+        13718.8,
+        13752.3,
+        13785.5,
+        13818.9,
+        13852.2,
+        13885.6,
+        13918.8,
+        13952.3,
+        13985.5,
+        14018.8,
+        14052.2,
+        14085.5,
+        14118.9,
+        14152.2,
+        14185.5,
+        14218.8,
+        14252.2,
+        14285.6,
+        14318.9,
+        14352.2,
+        14385.5,
+        14418.8,
+        14452.2,
+        14485.5,
+        14518.8,
+        14552.2,
+        14585.5,
+        14618.8,
+        14652.2,
+        14685.5,
+        14718.8,
+        14752.1,
+        14785.5,
+        14818.9,
+        14852.1,
+        14885.5,
+        14918.8,
+        14952.2,
+        14985.5,
+        15018.8,
+        15052.1,
+        15085.5,
+        15118.8,
+        15152.1,
+        15185.5,
+        15218.8,
+        15252.2,
+        15285.5,
+        15318.8,
+        15352.1,
+        15385.5,
+        15418.8,
+        15452.2,
+        15485.5,
+        15518.8,
+        15552.2,
+        15585.4,
+        15618.8,
+        15652.1,
+        15685.4,
+        15718.8,
+        15752.1,
+        15785.5,
+        15818.8,
+        15852.2,
+        15885.4,
+        15918.7,
+        15952.1,
+        15985.5,
+        16018.7,
+        16052.1,
+        16085.5,
+        16118.8,
+        16152.1,
+        16185.5,
+        16218.8,
+        16252.1,
+        16285.4
+      ],
+      "cursorStart": "25 / 40",
+      "end": 16297.700000047684,
+      "cursorEnd": "25 / 40",
+      "longTasks": [],
+      "elapsedMs": 3003.100000143051,
+      "renderCount": 0,
+      "rendersPerSecond": 0,
+      "intervalsMs": {
+        "count": 0,
+        "median": null,
+        "max": null,
+        "over25": 0,
+        "over50": 0
+      },
+      "raf": {
+        "count": 91,
+        "callbacksPerSecond": 30.302021243270374,
+        "intervalsMs": {
+          "count": 90,
+          "median": 33.30000000000109,
+          "max": 33.5,
+          "over25": 90,
+          "over50": 0
+        },
+        "note": "Observation callbacks only; idle RAF callbacks do not imply WebGL draws."
+      },
+      "submissionMs": {
+        "mean": null,
+        "max": null
+      },
+      "drawCommands": 0,
+      "geometry": {
+        "cssWidth": 752,
+        "cssHeight": 257,
+        "drawingWidth": 752,
+        "drawingHeight": 257,
+        "adapter": {
+          "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+          "vendor": "Google Inc. (Apple)",
+          "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4 Pro, Unspecified Version)"
+        },
+        "visibility": "visible"
+      },
+      "traceEvents": 40,
+      "rawEvents": 32
+    },
+    {
+      "fixture": "recursion",
+      "layout": "Visualize",
+      "phase": "playback",
+      "start": 18360.700000047684,
+      "deadline": 21360.700000047684,
+      "frames": [
+        {
+          "at": 18436.5,
+          "submitMs": 2.9000000953674316,
+          "drawCommands": 23,
+          "triangles": 6398,
+          "geometries": 34,
+          "textures": 4
+        },
+        {
+          "at": 18469.599999904633,
+          "submitMs": 3,
+          "drawCommands": 23,
+          "triangles": 6398,
+          "geometries": 34,
+          "textures": 4
+        },
+        {
+          "at": 19136.299999952316,
+          "submitMs": 3.1000001430511475,
+          "drawCommands": 25,
+          "triangles": 6422,
+          "geometries": 36,
+          "textures": 4
+        },
+        {
+          "at": 19816,
+          "submitMs": 3.0999999046325684,
+          "drawCommands": 24,
+          "triangles": 6410,
+          "geometries": 36,
+          "textures": 4
+        },
+        {
+          "at": 19837,
+          "submitMs": 2.5999999046325684,
+          "drawCommands": 24,
+          "triangles": 6410,
+          "geometries": 35,
+          "textures": 4
+        },
+        {
+          "at": 20510.400000095367,
+          "submitMs": 2.8999998569488525,
+          "drawCommands": 24,
+          "triangles": 6410,
+          "geometries": 35,
+          "textures": 4
+        },
+        {
+          "at": 20536.299999952316,
+          "submitMs": 2.799999952316284,
+          "drawCommands": 24,
+          "triangles": 6410,
+          "geometries": 35,
+          "textures": 4
+        },
+        {
+          "at": 21204.099999904633,
+          "submitMs": 2.9000000953674316,
+          "drawCommands": 24,
+          "triangles": 6410,
+          "geometries": 35,
+          "textures": 4
+        },
+        {
+          "at": 21237,
+          "submitMs": 2.5999999046325684,
+          "drawCommands": 24,
+          "triangles": 6410,
+          "geometries": 35,
+          "textures": 4
+        }
+      ],
+      "rafTimestamps": [
+        18368.7,
+        18402,
+        18435.3,
+        18468.7,
+        18502,
+        18535.4,
+        18568.7,
+        18602,
+        18635.3,
+        18668.7,
+        18702,
+        18735.3,
+        18768.7,
+        18802.1,
+        18835.3,
+        18868.6,
+        18902,
+        18935.4,
+        18968.6,
+        19002,
+        19035.3,
+        19068.6,
+        19102,
+        19135.4,
+        19168.7,
+        19202,
+        19235.3,
+        19268.6,
+        19302,
+        19335.3,
+        19368.7,
+        19402,
+        19435.3,
+        19468.7,
+        19502,
+        19535.3,
+        19568.7,
+        19602,
+        19635.3,
+        19668.7,
+        19702,
+        19735.3,
+        19768.7,
+        19801.9,
+        19835.3,
+        19868.6,
+        19901.9,
+        19935.3,
+        19968.6,
+        20001.9,
+        20035.3,
+        20068.7,
+        20101.9,
+        20135.3,
+        20168.6,
+        20201.9,
+        20235.3,
+        20268.7,
+        20302,
+        20335.3,
+        20368.6,
+        20401.9,
+        20435.3,
+        20468.6,
+        20501.9,
+        20535.3,
+        20568.6,
+        20601.9,
+        20635.2,
+        20668.6,
+        20702,
+        20735.3,
+        20768.6,
+        20802,
+        20835.2,
+        20868.6,
+        20901.9,
+        20935.2,
+        20968.6,
+        21001.9,
+        21035.3,
+        21068.6,
+        21102,
+        21135.2,
+        21168.6,
+        21201.9,
+        21235.3,
+        21268.5,
+        21301.9,
+        21335.3
+      ],
+      "cursorStart": "10 / 40",
+      "end": 21363.400000095367,
+      "cursorEnd": "14 / 40",
+      "longTasks": [],
+      "elapsedMs": 3002.7000000476837,
+      "renderCount": 9,
+      "rendersPerSecond": 2.9973024277673685,
+      "intervalsMs": {
+        "count": 8,
+        "median": 666.7000000476837,
+        "max": 679.7000000476837,
+        "over25": 7,
+        "over50": 4
+      },
+      "raf": {
+        "count": 90,
+        "callbacksPerSecond": 29.973024277673684,
+        "intervalsMs": {
+          "count": 89,
+          "median": 33.30000000000291,
+          "max": 33.400000000001455,
+          "over25": 89,
+          "over50": 0
+        },
+        "note": "Observation callbacks only; idle RAF callbacks do not imply WebGL draws."
+      },
+      "submissionMs": {
+        "mean": 2.877777761883206,
+        "max": 3.1000001430511475
+      },
+      "drawCommands": 215,
+      "geometry": {
+        "cssWidth": 1004,
+        "cssHeight": 647,
+        "drawingWidth": 1004,
+        "drawingHeight": 647,
+        "adapter": {
+          "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+          "vendor": "Google Inc. (Apple)",
+          "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4 Pro, Unspecified Version)"
+        },
+        "visibility": "visible"
+      },
+      "traceEvents": 40,
+      "rawEvents": 32
+    },
+    {
+      "fixture": "recursion",
+      "layout": "Visualize",
+      "phase": "orbit",
+      "start": 22892.299999952316,
+      "deadline": 25892.299999952316,
+      "frames": [
+        {
+          "at": 22903.299999952316,
+          "submitMs": 2.9000000953674316,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 52,
+          "textures": 4
+        },
+        {
+          "at": 22969.799999952316,
+          "submitMs": 0.40000009536743164,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 52,
+          "textures": 4
+        },
+        {
+          "at": 23036.599999904633,
+          "submitMs": 0.40000009536743164,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 52,
+          "textures": 4
+        },
+        {
+          "at": 23104.200000047684,
+          "submitMs": 0.5,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 52,
+          "textures": 4
+        },
+        {
+          "at": 23169.900000095367,
+          "submitMs": 0.7999999523162842,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 52,
+          "textures": 4
+        },
+        {
+          "at": 23239.599999904633,
+          "submitMs": 1.6000001430511475,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 52,
+          "textures": 4
+        },
+        {
+          "at": 23304.099999904633,
+          "submitMs": 1.6000001430511475,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 52,
+          "textures": 4
+        },
+        {
+          "at": 23370.799999952316,
+          "submitMs": 1.5,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 52,
+          "textures": 4
+        },
+        {
+          "at": 23437.400000095367,
+          "submitMs": 1.2999999523162842,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 52,
+          "textures": 4
+        },
+        {
+          "at": 23503.799999952316,
+          "submitMs": 1.2999999523162842,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 52,
+          "textures": 4
+        },
+        {
+          "at": 23570.900000095367,
+          "submitMs": 1.3999998569488525,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 52,
+          "textures": 4
+        },
+        {
+          "at": 23636.700000047684,
+          "submitMs": 0.5999999046325684,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 52,
+          "textures": 4
+        },
+        {
+          "at": 23704.200000047684,
+          "submitMs": 1.3999998569488525,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 52,
+          "textures": 4
+        },
+        {
+          "at": 23770.799999952316,
+          "submitMs": 1.5,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 52,
+          "textures": 4
+        },
+        {
+          "at": 23837.400000095367,
+          "submitMs": 1.3999998569488525,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 52,
+          "textures": 4
+        },
+        {
+          "at": 23903.5,
+          "submitMs": 1,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 52,
+          "textures": 4
+        },
+        {
+          "at": 23970.400000095367,
+          "submitMs": 1.3999998569488525,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 52,
+          "textures": 4
+        },
+        {
+          "at": 24038.400000095367,
+          "submitMs": 0.7999999523162842,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 52,
+          "textures": 4
+        },
+        {
+          "at": 24103.700000047684,
+          "submitMs": 1.3999998569488525,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 52,
+          "textures": 4
+        },
+        {
+          "at": 24170.099999904633,
+          "submitMs": 1.4000000953674316,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 52,
+          "textures": 4
+        },
+        {
+          "at": 24237.5,
+          "submitMs": 1.2999999523162842,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 52,
+          "textures": 4
+        },
+        {
+          "at": 24304.099999904633,
+          "submitMs": 1.6000001430511475,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 52,
+          "textures": 4
+        },
+        {
+          "at": 24370.599999904633,
+          "submitMs": 1.4000000953674316,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 52,
+          "textures": 4
+        },
+        {
+          "at": 24437.5,
+          "submitMs": 1.5999999046325684,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 52,
+          "textures": 4
+        },
+        {
+          "at": 24503.400000095367,
+          "submitMs": 0.7999999523162842,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 52,
+          "textures": 4
+        },
+        {
+          "at": 24570.599999904633,
+          "submitMs": 1.3000001907348633,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 52,
+          "textures": 4
+        },
+        {
+          "at": 24637.5,
+          "submitMs": 1.7000000476837158,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 52,
+          "textures": 4
+        },
+        {
+          "at": 24703.299999952316,
+          "submitMs": 1,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 52,
+          "textures": 4
+        },
+        {
+          "at": 24770.200000047684,
+          "submitMs": 1.2999999523162842,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 52,
+          "textures": 4
+        },
+        {
+          "at": 24836.900000095367,
+          "submitMs": 1.7999999523162842,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 52,
+          "textures": 4
+        },
+        {
+          "at": 24937,
+          "submitMs": 1.9000000953674316,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 52,
+          "textures": 4
+        },
+        {
+          "at": 25003.200000047684,
+          "submitMs": 0.5,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 52,
+          "textures": 4
+        },
+        {
+          "at": 25070.599999904633,
+          "submitMs": 1.6000001430511475,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 52,
+          "textures": 4
+        },
+        {
+          "at": 25136.700000047684,
+          "submitMs": 0.7000000476837158,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 52,
+          "textures": 4
+        },
+        {
+          "at": 25203.900000095367,
+          "submitMs": 1.2999999523162842,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 52,
+          "textures": 4
+        },
+        {
+          "at": 25270.900000095367,
+          "submitMs": 1.5,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 52,
+          "textures": 4
+        },
+        {
+          "at": 25336.900000095367,
+          "submitMs": 1.1999998092651367,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 52,
+          "textures": 4
+        },
+        {
+          "at": 25404,
+          "submitMs": 0.9000000953674316,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 52,
+          "textures": 4
+        },
+        {
+          "at": 25470.200000047684,
+          "submitMs": 1.2999999523162842,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 52,
+          "textures": 4
+        },
+        {
+          "at": 25536.599999904633,
+          "submitMs": 0.7000000476837158,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 52,
+          "textures": 4
+        },
+        {
+          "at": 25604.099999904633,
+          "submitMs": 1.6000001430511475,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 52,
+          "textures": 4
+        },
+        {
+          "at": 25671,
+          "submitMs": 1.2999999523162842,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 52,
+          "textures": 4
+        },
+        {
+          "at": 25737.400000095367,
+          "submitMs": 1.2999999523162842,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 52,
+          "textures": 4
+        },
+        {
+          "at": 25803.5,
+          "submitMs": 1.2000000476837158,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 52,
+          "textures": 4
+        },
+        {
+          "at": 25871.099999904633,
+          "submitMs": 1.8000001907348633,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 52,
+          "textures": 4
+        }
+      ],
+      "rafTimestamps": [
+        22901.9,
+        22935.2,
+        22968.5,
+        23001.8,
+        23035.1,
+        23068.5,
+        23101.8,
+        23135.2,
+        23168.5,
+        23201.8,
+        23235.1,
+        23268.5,
+        23301.9,
+        23335.1,
+        23368.5,
+        23401.8,
+        23435.1,
+        23468.5,
+        23501.8,
+        23535.1,
+        23568.5,
+        23601.8,
+        23635.1,
+        23668.5,
+        23701.8,
+        23735.2,
+        23768.5,
+        23801.8,
+        23835.1,
+        23868.4,
+        23901.8,
+        23935.2,
+        23968.5,
+        24001.8,
+        24035.1,
+        24068.4,
+        24101.8,
+        24135.1,
+        24168.5,
+        24201.8,
+        24235.1,
+        24268.5,
+        24301.8,
+        24335.1,
+        24368.5,
+        24401.8,
+        24435.1,
+        24468.4,
+        24501.8,
+        24535.2,
+        24568.5,
+        24601.7,
+        24635.1,
+        24668.4,
+        24701.8,
+        24735.1,
+        24768.4,
+        24801.8,
+        24835.1,
+        24868.5,
+        24901.8,
+        24935.1,
+        24968.4,
+        25001.8,
+        25035.1,
+        25068.4,
+        25101.7,
+        25135.1,
+        25168.4,
+        25201.7,
+        25235.1,
+        25268.5,
+        25301.7,
+        25335.1,
+        25368.4,
+        25401.7,
+        25435,
+        25468.4,
+        25501.8,
+        25535.1,
+        25568.4,
+        25601.7,
+        25635.1,
+        25668.4,
+        25701.8,
+        25735.1,
+        25768.4,
+        25801.7,
+        25835.1,
+        25868.3
+      ],
+      "cursorStart": "25 / 40",
+      "end": 25894.799999952316,
+      "cursorEnd": "25 / 40",
+      "longTasks": [],
+      "elapsedMs": 3002.5,
+      "renderCount": 45,
+      "rendersPerSecond": 14.987510407993339,
+      "intervalsMs": {
+        "count": 44,
+        "median": 66.70000004768372,
+        "max": 100.09999990463257,
+        "over25": 44,
+        "over50": 44
+      },
+      "raf": {
+        "count": 90,
+        "callbacksPerSecond": 29.975020815986678,
+        "intervalsMs": {
+          "count": 89,
+          "median": 33.29999999999927,
+          "max": 33.400000000001455,
+          "over25": 89,
+          "over50": 0
+        },
+        "note": "Observation callbacks only; idle RAF callbacks do not imply WebGL draws."
+      },
+      "submissionMs": {
+        "mean": 1.2711111174689398,
+        "max": 2.9000000953674316
+      },
+      "drawCommands": 1980,
+      "pointerMoves": 45,
+      "geometry": {
+        "cssWidth": 1004,
+        "cssHeight": 647,
+        "drawingWidth": 1004,
+        "drawingHeight": 647,
+        "adapter": {
+          "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+          "vendor": "Google Inc. (Apple)",
+          "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4 Pro, Unspecified Version)"
+        },
+        "visibility": "visible"
+      },
+      "traceEvents": 40,
+      "rawEvents": 32
+    },
+    {
+      "fixture": "recursion",
+      "layout": "Visualize",
+      "phase": "idle",
+      "start": 27240.099999904633,
+      "deadline": 30240.099999904633,
+      "frames": [],
+      "rafTimestamps": [
+        27235,
+        27268.3,
+        27301.6,
+        27335,
+        27368.3,
+        27401.6,
+        27435,
+        27468.3,
+        27501.7,
+        27535,
+        27568.4,
+        27601.7,
+        27635,
+        27668.3,
+        27701.7,
+        27735,
+        27768.3,
+        27801.7,
+        27835,
+        27868.3,
+        27901.7,
+        27935,
+        27968.3,
+        28001.6,
+        28035,
+        28068.3,
+        28101.7,
+        28134.9,
+        28168.3,
+        28201.6,
+        28235,
+        28268.3,
+        28301.7,
+        28334.9,
+        28368.3,
+        28401.7,
+        28435,
+        28468.3,
+        28501.6,
+        28535,
+        28568.3,
+        28601.6,
+        28634.9,
+        28668.3,
+        28701.6,
+        28734.9,
+        28768.3,
+        28801.6,
+        28834.9,
+        28868.3,
+        28901.6,
+        28934.9,
+        28968.3,
+        29001.6,
+        29034.9,
+        29068.3,
+        29101.6,
+        29134.9,
+        29168.2,
+        29201.6,
+        29234.9,
+        29268.2,
+        29301.6,
+        29334.9,
+        29368.3,
+        29401.6,
+        29434.9,
+        29468.2,
+        29501.6,
+        29534.9,
+        29568.2,
+        29601.6,
+        29634.9,
+        29668.2,
+        29701.6,
+        29734.9,
+        29768.3,
+        29801.6,
+        29834.9,
+        29868.2,
+        29901.5,
+        29934.9,
+        29968.2,
+        30001.5,
+        30034.9,
+        30068.3,
+        30101.6,
+        30134.9,
+        30168.2,
+        30201.5,
+        30234.9
+      ],
+      "cursorStart": "25 / 40",
+      "end": 30242.299999952316,
+      "cursorEnd": "25 / 40",
+      "longTasks": [],
+      "elapsedMs": 3002.2000000476837,
+      "renderCount": 0,
+      "rendersPerSecond": 0,
+      "intervalsMs": {
+        "count": 0,
+        "median": null,
+        "max": null,
+        "over25": 0,
+        "over50": 0
+      },
+      "raf": {
+        "count": 91,
+        "callbacksPerSecond": 30.311105189046252,
+        "intervalsMs": {
+          "count": 90,
+          "median": 33.30000000000291,
+          "max": 33.400000000001455,
+          "over25": 90,
+          "over50": 0
+        },
+        "note": "Observation callbacks only; idle RAF callbacks do not imply WebGL draws."
+      },
+      "submissionMs": {
+        "mean": null,
+        "max": null
+      },
+      "drawCommands": 0,
+      "geometry": {
+        "cssWidth": 1004,
+        "cssHeight": 647,
+        "drawingWidth": 1004,
+        "drawingHeight": 647,
+        "adapter": {
+          "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+          "vendor": "Google Inc. (Apple)",
+          "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4 Pro, Unspecified Version)"
+        },
+        "visibility": "visible"
+      },
+      "traceEvents": 40,
+      "rawEvents": 32
+    },
+    {
+      "fixture": "recursion",
+      "layout": "Runtime Focus",
+      "phase": "playback",
+      "start": 32368.700000047684,
+      "deadline": 35368.700000047684,
+      "frames": [
+        {
+          "at": 32453,
+          "submitMs": 3.299999952316284,
+          "drawCommands": 23,
+          "triangles": 6398,
+          "geometries": 20,
+          "textures": 4
+        },
+        {
+          "at": 32486.200000047684,
+          "submitMs": 2.700000047683716,
+          "drawCommands": 23,
+          "triangles": 6398,
+          "geometries": 20,
+          "textures": 4
+        },
+        {
+          "at": 33152.700000047684,
+          "submitMs": 3.0999999046325684,
+          "drawCommands": 25,
+          "triangles": 6422,
+          "geometries": 22,
+          "textures": 4
+        },
+        {
+          "at": 33852.799999952316,
+          "submitMs": 2.9000000953674316,
+          "drawCommands": 24,
+          "triangles": 6410,
+          "geometries": 21,
+          "textures": 4
+        },
+        {
+          "at": 34532.200000047684,
+          "submitMs": 2.799999952316284,
+          "drawCommands": 24,
+          "triangles": 6410,
+          "geometries": 21,
+          "textures": 4
+        },
+        {
+          "at": 34552.90000009537,
+          "submitMs": 2.3999998569488525,
+          "drawCommands": 24,
+          "triangles": 6410,
+          "geometries": 21,
+          "textures": 4
+        },
+        {
+          "at": 35222.799999952316,
+          "submitMs": 2.9000000953674316,
+          "drawCommands": 24,
+          "triangles": 6410,
+          "geometries": 21,
+          "textures": 4
+        },
+        {
+          "at": 35253.40000009537,
+          "submitMs": 2.6999998092651367,
+          "drawCommands": 24,
+          "triangles": 6410,
+          "geometries": 21,
+          "textures": 4
+        }
+      ],
+      "rafTimestamps": [
+        32384.832,
+        32418.2,
+        32451.5,
+        32484.8,
+        32518.1,
+        32551.4,
+        32584.8,
+        32618.1,
+        32651.4,
+        32684.8,
+        32718.2,
+        32751.5,
+        32784.8,
+        32818.1,
+        32851.4,
+        32884.8,
+        32918.1,
+        32951.5,
+        32984.8,
+        33018.1,
+        33051.5,
+        33084.7,
+        33118.1,
+        33151.4,
+        33184.7,
+        33218.1,
+        33251.4,
+        33284.8,
+        33318.1,
+        33351.5,
+        33384.8,
+        33418,
+        33451.4,
+        33484.7,
+        33518.1,
+        33551.4,
+        33584.8,
+        33618.1,
+        33651.4,
+        33684.7,
+        33718.1,
+        33751.4,
+        33784.8,
+        33818.1,
+        33851.4,
+        33884.8,
+        33918.1,
+        33951.4,
+        33984.7,
+        34018,
+        34051.4,
+        34084.8,
+        34118.1,
+        34151.4,
+        34184.7,
+        34218.1,
+        34251.4,
+        34284.7,
+        34318,
+        34351.4,
+        34384.7,
+        34418.1,
+        34451.4,
+        34484.7,
+        34518.1,
+        34551.4,
+        34584.7,
+        34618,
+        34651.3,
+        34684.7,
+        34718.1,
+        34751.4,
+        34784.7,
+        34818,
+        34851.3,
+        34884.7,
+        34918.1,
+        34951.4,
+        34984.7,
+        35018.1,
+        35051.3,
+        35084.7,
+        35118,
+        35151.4,
+        35184.7,
+        35218,
+        35251.4,
+        35284.7,
+        35318.1,
+        35351.3
+      ],
+      "cursorStart": "10 / 40",
+      "end": 35370.700000047684,
+      "cursorEnd": "14 / 40",
+      "longTasks": [],
+      "elapsedMs": 3002,
+      "renderCount": 8,
+      "rendersPerSecond": 2.664890073284477,
+      "intervalsMs": {
+        "count": 7,
+        "median": 666.5,
+        "max": 700.0999999046326,
+        "over25": 6,
+        "over50": 4
+      },
+      "raf": {
+        "count": 90,
+        "callbacksPerSecond": 29.980013324450365,
+        "intervalsMs": {
+          "count": 89,
+          "median": 33.30000000000291,
+          "max": 33.400000000001455,
+          "over25": 89,
+          "over50": 0
+        },
+        "note": "Observation callbacks only; idle RAF callbacks do not imply WebGL draws."
+      },
+      "submissionMs": {
+        "mean": 2.849999964237213,
+        "max": 3.299999952316284
+      },
+      "drawCommands": 191,
+      "geometry": {
+        "cssWidth": 1440,
+        "cssHeight": 701,
+        "drawingWidth": 1440,
+        "drawingHeight": 701,
+        "adapter": {
+          "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+          "vendor": "Google Inc. (Apple)",
+          "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4 Pro, Unspecified Version)"
+        },
+        "visibility": "visible"
+      },
+      "traceEvents": 40,
+      "rawEvents": 32
+    },
+    {
+      "fixture": "recursion",
+      "layout": "Runtime Focus",
+      "phase": "orbit",
+      "start": 36922.90000009537,
+      "deadline": 39922.90000009537,
+      "frames": [
+        {
+          "at": 36936.59999990463,
+          "submitMs": 3.3000001907348633,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 38,
+          "textures": 4
+        },
+        {
+          "at": 37003,
+          "submitMs": 0.40000009536743164,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 38,
+          "textures": 4
+        },
+        {
+          "at": 37071,
+          "submitMs": 1.2000000476837158,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 38,
+          "textures": 4
+        },
+        {
+          "at": 37136.5,
+          "submitMs": 0.7000000476837158,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 38,
+          "textures": 4
+        },
+        {
+          "at": 37203.40000009537,
+          "submitMs": 1.7999999523162842,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 38,
+          "textures": 4
+        },
+        {
+          "at": 37270.799999952316,
+          "submitMs": 1.6000001430511475,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 38,
+          "textures": 4
+        },
+        {
+          "at": 37336.40000009537,
+          "submitMs": 0.5999999046325684,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 38,
+          "textures": 4
+        },
+        {
+          "at": 37403.700000047684,
+          "submitMs": 1.7999999523162842,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 38,
+          "textures": 4
+        },
+        {
+          "at": 37503.90000009537,
+          "submitMs": 1.8999998569488525,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 38,
+          "textures": 4
+        },
+        {
+          "at": 37570.200000047684,
+          "submitMs": 1.3999998569488525,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 38,
+          "textures": 4
+        },
+        {
+          "at": 37636.799999952316,
+          "submitMs": 0.7999999523162842,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 38,
+          "textures": 4
+        },
+        {
+          "at": 37703.40000009537,
+          "submitMs": 1.0999999046325684,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 38,
+          "textures": 4
+        },
+        {
+          "at": 37770.40000009537,
+          "submitMs": 1.5,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 38,
+          "textures": 4
+        },
+        {
+          "at": 37837.200000047684,
+          "submitMs": 1.5999999046325684,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 38,
+          "textures": 4
+        },
+        {
+          "at": 37903.299999952316,
+          "submitMs": 0.9000000953674316,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 38,
+          "textures": 4
+        },
+        {
+          "at": 37970.40000009537,
+          "submitMs": 1.7999999523162842,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 38,
+          "textures": 4
+        },
+        {
+          "at": 38036.59999990463,
+          "submitMs": 1.5,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 38,
+          "textures": 4
+        },
+        {
+          "at": 38103.200000047684,
+          "submitMs": 1.2999999523162842,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 38,
+          "textures": 4
+        },
+        {
+          "at": 38170,
+          "submitMs": 0.9000000953674316,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 38,
+          "textures": 4
+        },
+        {
+          "at": 38236.799999952316,
+          "submitMs": 0.7999999523162842,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 38,
+          "textures": 4
+        },
+        {
+          "at": 38303,
+          "submitMs": 0.5,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 38,
+          "textures": 4
+        },
+        {
+          "at": 38369.59999990463,
+          "submitMs": 0.40000009536743164,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 38,
+          "textures": 4
+        },
+        {
+          "at": 38437.59999990463,
+          "submitMs": 1.1000001430511475,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 38,
+          "textures": 4
+        },
+        {
+          "at": 38503.40000009537,
+          "submitMs": 1.3999998569488525,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 38,
+          "textures": 4
+        },
+        {
+          "at": 38570.5,
+          "submitMs": 1.5999999046325684,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 38,
+          "textures": 4
+        },
+        {
+          "at": 38636.90000009537,
+          "submitMs": 1.6999998092651367,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 38,
+          "textures": 4
+        },
+        {
+          "at": 38703.299999952316,
+          "submitMs": 1.2999999523162842,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 38,
+          "textures": 4
+        },
+        {
+          "at": 38769.90000009537,
+          "submitMs": 0.7999999523162842,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 38,
+          "textures": 4
+        },
+        {
+          "at": 38837.40000009537,
+          "submitMs": 1.6999998092651367,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 38,
+          "textures": 4
+        },
+        {
+          "at": 38903.299999952316,
+          "submitMs": 0.6000001430511475,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 38,
+          "textures": 4
+        },
+        {
+          "at": 38969.59999990463,
+          "submitMs": 0.40000009536743164,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 38,
+          "textures": 4
+        },
+        {
+          "at": 39036.5,
+          "submitMs": 0.7000000476837158,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 38,
+          "textures": 4
+        },
+        {
+          "at": 39103.09999990463,
+          "submitMs": 0.8000001907348633,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 38,
+          "textures": 4
+        },
+        {
+          "at": 39169.799999952316,
+          "submitMs": 0.7000000476837158,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 38,
+          "textures": 4
+        },
+        {
+          "at": 39236.5,
+          "submitMs": 0.7999999523162842,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 38,
+          "textures": 4
+        },
+        {
+          "at": 39303.09999990463,
+          "submitMs": 0.8000001907348633,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 38,
+          "textures": 4
+        },
+        {
+          "at": 39369.799999952316,
+          "submitMs": 0.7000000476837158,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 38,
+          "textures": 4
+        },
+        {
+          "at": 39436.700000047684,
+          "submitMs": 1.2000000476837158,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 38,
+          "textures": 4
+        },
+        {
+          "at": 39503.200000047684,
+          "submitMs": 0.7000000476837158,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 38,
+          "textures": 4
+        },
+        {
+          "at": 39570,
+          "submitMs": 1,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 38,
+          "textures": 4
+        },
+        {
+          "at": 39637.09999990463,
+          "submitMs": 1.4000000953674316,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 38,
+          "textures": 4
+        },
+        {
+          "at": 39703.40000009537,
+          "submitMs": 1.1999998092651367,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 38,
+          "textures": 4
+        },
+        {
+          "at": 39769.90000009537,
+          "submitMs": 1.0999999046325684,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 38,
+          "textures": 4
+        },
+        {
+          "at": 39836.59999990463,
+          "submitMs": 1,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 38,
+          "textures": 4
+        },
+        {
+          "at": 39903.299999952316,
+          "submitMs": 0.9000000953674316,
+          "drawCommands": 44,
+          "triangles": 12812,
+          "geometries": 38,
+          "textures": 4
+        }
+      ],
+      "rafTimestamps": [
+        36934.7,
+        36967.9,
+        37001.3,
+        37034.6,
+        37067.9,
+        37101.3,
+        37134.6,
+        37167.9,
+        37201.3,
+        37234.6,
+        37268,
+        37301.2,
+        37334.6,
+        37367.9,
+        37401.2,
+        37434.6,
+        37467.9,
+        37501.2,
+        37534.6,
+        37568,
+        37601.3,
+        37634.5,
+        37667.9,
+        37701.2,
+        37734.6,
+        37767.9,
+        37801.3,
+        37834.6,
+        37867.9,
+        37901.2,
+        37934.6,
+        37967.9,
+        38001.3,
+        38034.6,
+        38067.9,
+        38101.2,
+        38134.6,
+        38167.9,
+        38201.3,
+        38234.6,
+        38267.9,
+        38301.2,
+        38334.6,
+        38367.9,
+        38401.2,
+        38434.6,
+        38467.8,
+        38501.2,
+        38534.6,
+        38567.9,
+        38601.2,
+        38634.5,
+        38667.9,
+        38701.2,
+        38734.5,
+        38767.9,
+        38801.2,
+        38834.6,
+        38867.9,
+        38901.2,
+        38934.5,
+        38967.9,
+        39001.2,
+        39034.5,
+        39067.8,
+        39101.2,
+        39134.5,
+        39167.9,
+        39201.2,
+        39234.5,
+        39267.9,
+        39301.2,
+        39334.6,
+        39367.8,
+        39401.2,
+        39434.5,
+        39467.8,
+        39501.2,
+        39534.5,
+        39567.8,
+        39601.2,
+        39634.5,
+        39667.9,
+        39701.2,
+        39734.5,
+        39767.9,
+        39801.2,
+        39834.5,
+        39867.8,
+        39901.1
+      ],
+      "cursorStart": "25 / 40",
+      "end": 39925.59999990463,
+      "cursorEnd": "25 / 40",
+      "longTasks": [],
+      "elapsedMs": 3002.699999809265,
+      "renderCount": 45,
+      "rendersPerSecond": 14.986512140026793,
+      "intervalsMs": {
+        "count": 44,
+        "median": 66.69999980926514,
+        "max": 100.20000004768372,
+        "over25": 44,
+        "over50": 44
+      },
+      "raf": {
+        "count": 90,
+        "callbacksPerSecond": 29.973024280053586,
+        "intervalsMs": {
+          "count": 89,
+          "median": 33.30000000000291,
+          "max": 33.400000000001455,
+          "over25": 89,
+          "over50": 0
+        },
+        "note": "Observation callbacks only; idle RAF callbacks do not imply WebGL draws."
+      },
+      "submissionMs": {
+        "mean": 1.1422222243414986,
+        "max": 3.3000001907348633
+      },
+      "drawCommands": 1980,
+      "pointerMoves": 45,
+      "geometry": {
+        "cssWidth": 1440,
+        "cssHeight": 701,
+        "drawingWidth": 1440,
+        "drawingHeight": 701,
+        "adapter": {
+          "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+          "vendor": "Google Inc. (Apple)",
+          "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4 Pro, Unspecified Version)"
+        },
+        "visibility": "visible"
+      },
+      "traceEvents": 40,
+      "rawEvents": 32
+    },
+    {
+      "fixture": "recursion",
+      "layout": "Runtime Focus",
+      "phase": "idle",
+      "start": 41275.90000009537,
+      "deadline": 44275.90000009537,
+      "frames": [],
+      "rafTimestamps": [
+        41267.8,
+        41301.1,
+        41334.4,
+        41367.8,
+        41401.1,
+        41434.5,
+        41467.7,
+        41501.1,
+        41534.5,
+        41567.7,
+        41601.1,
+        41634.4,
+        41667.8,
+        41701,
+        41734.4,
+        41767.8,
+        41801.1,
+        41834.4,
+        41867.7,
+        41901,
+        41934.4,
+        41967.8,
+        42001.1,
+        42034.4,
+        42067.7,
+        42101.1,
+        42134.4,
+        42167.7,
+        42201.1,
+        42234.4,
+        42267.7,
+        42301,
+        42334.4,
+        42367.8,
+        42401,
+        42434.4,
+        42467.7,
+        42501.1,
+        42534.4,
+        42567.8,
+        42601,
+        42634.4,
+        42667.7,
+        42701,
+        42734.4,
+        42767.8,
+        42801.1,
+        42834.4,
+        42867.7,
+        42901.1,
+        42934.4,
+        42967.7,
+        43001,
+        43034.4,
+        43067.8,
+        43101,
+        43134.3,
+        43167.7,
+        43201,
+        43234.4,
+        43267.7,
+        43301.1,
+        43334.3,
+        43367.7,
+        43401,
+        43434.4,
+        43467.7,
+        43501,
+        43534.3,
+        43567.7,
+        43601,
+        43634.3,
+        43667.7,
+        43701,
+        43734.4,
+        43767.7,
+        43801,
+        43834.3,
+        43867.7,
+        43901,
+        43934.4,
+        43967.7,
+        44001,
+        44034.3,
+        44067.7,
+        44101,
+        44134.4,
+        44167.6,
+        44201,
+        44234.3,
+        44267.6
+      ],
+      "cursorStart": "25 / 40",
+      "end": 44278.200000047684,
+      "cursorEnd": "25 / 40",
+      "longTasks": [],
+      "elapsedMs": 3002.2999999523163,
+      "renderCount": 0,
+      "rendersPerSecond": 0,
+      "intervalsMs": {
+        "count": 0,
+        "median": null,
+        "max": null,
+        "over25": 0,
+        "over50": 0
+      },
+      "raf": {
+        "count": 91,
+        "callbacksPerSecond": 30.310095593859806,
+        "intervalsMs": {
+          "count": 90,
+          "median": 33.30000000000291,
+          "max": 33.400000000001455,
+          "over25": 90,
+          "over50": 0
+        },
+        "note": "Observation callbacks only; idle RAF callbacks do not imply WebGL draws."
+      },
+      "submissionMs": {
+        "mean": null,
+        "max": null
+      },
+      "drawCommands": 0,
+      "geometry": {
+        "cssWidth": 1440,
+        "cssHeight": 701,
+        "drawingWidth": 1440,
+        "drawingHeight": 701,
+        "adapter": {
+          "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+          "vendor": "Google Inc. (Apple)",
+          "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4 Pro, Unspecified Version)"
+        },
+        "visibility": "visible"
+      },
+      "traceEvents": 40,
+      "rawEvents": 32
+    }
+  ],
+  "scrubSamples": [
+    {
+      "fixture": "person",
+      "layout": "Compact layout-only baseline",
+      "samples": [
+        {
+          "cursor": 0,
+          "roundtripMs": 57.29829199999949,
+          "drawCommandsDuringRoundtrip": 1
+        },
+        {
+          "cursor": 5,
+          "roundtripMs": 66.79129099999773,
+          "drawCommandsDuringRoundtrip": 60
+        },
+        {
+          "cursor": 20,
+          "roundtripMs": 63.73341699999946,
+          "drawCommandsDuringRoundtrip": 132
+        },
+        {
+          "cursor": 24,
+          "roundtripMs": 64.06062500000189,
+          "drawCommandsDuringRoundtrip": 18
+        },
+        {
+          "cursor": 20,
+          "roundtripMs": 68.75420899999881,
+          "drawCommandsDuringRoundtrip": 132
+        },
+        {
+          "cursor": 5,
+          "roundtripMs": 66.10237499999857,
+          "drawCommandsDuringRoundtrip": 60
+        },
+        {
+          "cursor": 0,
+          "roundtripMs": 64.46591699999772,
+          "drawCommandsDuringRoundtrip": 1
+        },
+        {
+          "cursor": 20,
+          "roundtripMs": 67.99600000000282,
+          "drawCommandsDuringRoundtrip": 132
+        }
+      ],
+      "count": 8,
+      "medianMs": 66.10237499999857,
+      "maxMs": 68.75420899999881,
+      "method": "Slider fill + two RAF callbacks including automation roundtrip. Draw count is evidence of submission only, not physical presentation."
+    },
+    {
+      "fixture": "person",
+      "layout": "Visualize",
+      "samples": [
+        {
+          "cursor": 0,
+          "roundtripMs": 57.26758300000074,
+          "drawCommandsDuringRoundtrip": 1
+        },
+        {
+          "cursor": 5,
+          "roundtripMs": 67.0489579999994,
+          "drawCommandsDuringRoundtrip": 60
+        },
+        {
+          "cursor": 20,
+          "roundtripMs": 63.217916999998124,
+          "drawCommandsDuringRoundtrip": 132
+        },
+        {
+          "cursor": 24,
+          "roundtripMs": 65.059957999998,
+          "drawCommandsDuringRoundtrip": 18
+        },
+        {
+          "cursor": 20,
+          "roundtripMs": 66.66479099999924,
+          "drawCommandsDuringRoundtrip": 132
+        },
+        {
+          "cursor": 5,
+          "roundtripMs": 65.08987499999785,
+          "drawCommandsDuringRoundtrip": 60
+        },
+        {
+          "cursor": 0,
+          "roundtripMs": 63.99816699999792,
+          "drawCommandsDuringRoundtrip": 1
+        },
+        {
+          "cursor": 20,
+          "roundtripMs": 70.60475000000224,
+          "drawCommandsDuringRoundtrip": 132
+        }
+      ],
+      "count": 8,
+      "medianMs": 65.08987499999785,
+      "maxMs": 70.60475000000224,
+      "method": "Slider fill + two RAF callbacks including automation roundtrip. Draw count is evidence of submission only, not physical presentation."
+    },
+    {
+      "fixture": "person",
+      "layout": "Runtime Focus",
+      "samples": [
+        {
+          "cursor": 0,
+          "roundtripMs": 57.928665999999794,
+          "drawCommandsDuringRoundtrip": 1
+        },
+        {
+          "cursor": 5,
+          "roundtripMs": 66.87299999999959,
+          "drawCommandsDuringRoundtrip": 60
+        },
+        {
+          "cursor": 20,
+          "roundtripMs": 66.44283300000097,
+          "drawCommandsDuringRoundtrip": 132
+        },
+        {
+          "cursor": 24,
+          "roundtripMs": 65.04391699999542,
+          "drawCommandsDuringRoundtrip": 18
+        },
+        {
+          "cursor": 20,
+          "roundtripMs": 66.97400000000198,
+          "drawCommandsDuringRoundtrip": 132
+        },
+        {
+          "cursor": 5,
+          "roundtripMs": 65.70020900000236,
+          "drawCommandsDuringRoundtrip": 60
+        },
+        {
+          "cursor": 0,
+          "roundtripMs": 65.6449169999978,
+          "drawCommandsDuringRoundtrip": 1
+        },
+        {
+          "cursor": 20,
+          "roundtripMs": 67.24429199999577,
+          "drawCommandsDuringRoundtrip": 132
+        }
+      ],
+      "count": 8,
+      "medianMs": 66.44283300000097,
+      "maxMs": 67.24429199999577,
+      "method": "Slider fill + two RAF callbacks including automation roundtrip. Draw count is evidence of submission only, not physical presentation."
+    },
+    {
+      "fixture": "recursion",
+      "layout": "Compact layout-only baseline",
+      "samples": [
+        {
+          "cursor": 0,
+          "roundtripMs": 58.97362499999872,
+          "drawCommandsDuringRoundtrip": 1
+        },
+        {
+          "cursor": 10,
+          "roundtripMs": 67.99470799999835,
+          "drawCommandsDuringRoundtrip": 61
+        },
+        {
+          "cursor": 25,
+          "roundtripMs": 66.44441599999845,
+          "drawCommandsDuringRoundtrip": 106
+        },
+        {
+          "cursor": 40,
+          "roundtripMs": 63.93879100000049,
+          "drawCommandsDuringRoundtrip": 1
+        },
+        {
+          "cursor": 25,
+          "roundtripMs": 68.39033299999574,
+          "drawCommandsDuringRoundtrip": 124
+        },
+        {
+          "cursor": 10,
+          "roundtripMs": 64.23849999999948,
+          "drawCommandsDuringRoundtrip": 46
+        },
+        {
+          "cursor": 0,
+          "roundtripMs": 65.90683300000092,
+          "drawCommandsDuringRoundtrip": 1
+        },
+        {
+          "cursor": 25,
+          "roundtripMs": 100.127542000002,
+          "drawCommandsDuringRoundtrip": 168
+        }
+      ],
+      "count": 8,
+      "medianMs": 66.44441599999845,
+      "maxMs": 100.127542000002,
+      "method": "Slider fill + two RAF callbacks including automation roundtrip. Draw count is evidence of submission only, not physical presentation."
+    },
+    {
+      "fixture": "recursion",
+      "layout": "Visualize",
+      "samples": [
+        {
+          "cursor": 0,
+          "roundtripMs": 57.48058299999684,
+          "drawCommandsDuringRoundtrip": 1
+        },
+        {
+          "cursor": 10,
+          "roundtripMs": 68.13120800000615,
+          "drawCommandsDuringRoundtrip": 61
+        },
+        {
+          "cursor": 25,
+          "roundtripMs": 66.28250000000116,
+          "drawCommandsDuringRoundtrip": 106
+        },
+        {
+          "cursor": 40,
+          "roundtripMs": 64.07649999999558,
+          "drawCommandsDuringRoundtrip": 1
+        },
+        {
+          "cursor": 25,
+          "roundtripMs": 68.24866700000712,
+          "drawCommandsDuringRoundtrip": 124
+        },
+        {
+          "cursor": 10,
+          "roundtripMs": 64.48541699998896,
+          "drawCommandsDuringRoundtrip": 46
+        },
+        {
+          "cursor": 0,
+          "roundtripMs": 65.7872500000085,
+          "drawCommandsDuringRoundtrip": 1
+        },
+        {
+          "cursor": 25,
+          "roundtripMs": 100.02858399999968,
+          "drawCommandsDuringRoundtrip": 168
+        }
+      ],
+      "count": 8,
+      "medianMs": 66.28250000000116,
+      "maxMs": 100.02858399999968,
+      "method": "Slider fill + two RAF callbacks including automation roundtrip. Draw count is evidence of submission only, not physical presentation."
+    },
+    {
+      "fixture": "recursion",
+      "layout": "Runtime Focus",
+      "samples": [
+        {
+          "cursor": 0,
+          "roundtripMs": 57.596292000001995,
+          "drawCommandsDuringRoundtrip": 1
+        },
+        {
+          "cursor": 10,
+          "roundtripMs": 66.61291700000584,
+          "drawCommandsDuringRoundtrip": 61
+        },
+        {
+          "cursor": 25,
+          "roundtripMs": 66.2194579999923,
+          "drawCommandsDuringRoundtrip": 106
+        },
+        {
+          "cursor": 40,
+          "roundtripMs": 65.7455420000042,
+          "drawCommandsDuringRoundtrip": 1
+        },
+        {
+          "cursor": 25,
+          "roundtripMs": 68.30929199999082,
+          "drawCommandsDuringRoundtrip": 124
+        },
+        {
+          "cursor": 10,
+          "roundtripMs": 64.34945799999696,
+          "drawCommandsDuringRoundtrip": 46
+        },
+        {
+          "cursor": 0,
+          "roundtripMs": 65.89933299999393,
+          "drawCommandsDuringRoundtrip": 1
+        },
+        {
+          "cursor": 25,
+          "roundtripMs": 68.38812499999767,
+          "drawCommandsDuringRoundtrip": 124
+        }
+      ],
+      "count": 8,
+      "medianMs": 66.2194579999923,
+      "maxMs": 68.38812499999767,
+      "method": "Slider fill + two RAF callbacks including automation roundtrip. Draw count is evidence of submission only, not physical presentation."
+    }
+  ],
+  "errors": [],
+  "blockedApiRequests": [],
+  "comparison": [
+    {
+      "fixture": "person",
+      "label": "Same current frontend/layout-only comparison; compact viewport is not historical M7 source",
+      "layouts": [
+        {
+          "layout": "Compact layout-only baseline",
+          "windows": [
+            {
+              "phase": "playback",
+              "geometry": {
+                "cssWidth": 752,
+                "cssHeight": 257,
+                "drawingWidth": 752,
+                "drawingHeight": 257,
+                "adapter": {
+                  "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+                  "vendor": "Google Inc. (Apple)",
+                  "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4 Pro, Unspecified Version)"
+                },
+                "visibility": "visible"
+              },
+              "renderCount": 16,
+              "rendersPerSecond": 5.329425088183956,
+              "intervalsMs": {
+                "count": 15,
+                "median": 33.30000019073486,
+                "max": 673.2999999523163,
+                "over25": 15,
+                "over50": 4
+              },
+              "submissionMs": {
+                "mean": 1.850000023841858,
+                "max": 8.099999904632568
+              },
+              "drawCommands": 675,
+              "raf": {
+                "count": 90,
+                "callbacksPerSecond": 29.978016121034752,
+                "intervalsMs": {
+                  "count": 89,
+                  "median": 33.30000000000018,
+                  "max": 33.400000000000546,
+                  "over25": 89,
+                  "over50": 0
+                },
+                "note": "Observation callbacks only; idle RAF callbacks do not imply WebGL draws."
+              }
+            },
+            {
+              "phase": "orbit",
+              "geometry": {
+                "cssWidth": 752,
+                "cssHeight": 257,
+                "drawingWidth": 752,
+                "drawingHeight": 257,
+                "adapter": {
+                  "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+                  "vendor": "Google Inc. (Apple)",
+                  "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4 Pro, Unspecified Version)"
+                },
+                "visibility": "visible"
+              },
+              "renderCount": 44,
+              "rendersPerSecond": 14.652014652014651,
+              "intervalsMs": {
+                "count": 43,
+                "median": 66.70000004768372,
+                "max": 100.5,
+                "over25": 43,
+                "over50": 43
+              },
+              "submissionMs": {
+                "mean": 1.9181817932562395,
+                "max": 3.799999952316284
+              },
+              "drawCommands": 2904,
+              "raf": {
+                "count": 90,
+                "callbacksPerSecond": 29.97002997002997,
+                "intervalsMs": {
+                  "count": 89,
+                  "median": 33.30000000000109,
+                  "max": 33.400000000001455,
+                  "over25": 89,
+                  "over50": 0
+                },
+                "note": "Observation callbacks only; idle RAF callbacks do not imply WebGL draws."
+              }
+            },
+            {
+              "phase": "idle",
+              "geometry": {
+                "cssWidth": 752,
+                "cssHeight": 257,
+                "drawingWidth": 752,
+                "drawingHeight": 257,
+                "adapter": {
+                  "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+                  "vendor": "Google Inc. (Apple)",
+                  "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4 Pro, Unspecified Version)"
+                },
+                "visibility": "visible"
+              },
+              "renderCount": 0,
+              "rendersPerSecond": 0,
+              "intervalsMs": {
+                "count": 0,
+                "median": null,
+                "max": null,
+                "over25": 0,
+                "over50": 0
+              },
+              "submissionMs": {
+                "mean": null,
+                "max": null
+              },
+              "drawCommands": 0,
+              "raf": {
+                "count": 91,
+                "callbacksPerSecond": 30.308076602830972,
+                "intervalsMs": {
+                  "count": 90,
+                  "median": 33.30000000000109,
+                  "max": 33.400000000001455,
+                  "over25": 90,
+                  "over50": 0
+                },
+                "note": "Observation callbacks only; idle RAF callbacks do not imply WebGL draws."
+              }
+            }
+          ],
+          "scrub": {
+            "fixture": "person",
+            "layout": "Compact layout-only baseline",
+            "samples": [
+              {
+                "cursor": 0,
+                "roundtripMs": 57.29829199999949,
+                "drawCommandsDuringRoundtrip": 1
+              },
+              {
+                "cursor": 5,
+                "roundtripMs": 66.79129099999773,
+                "drawCommandsDuringRoundtrip": 60
+              },
+              {
+                "cursor": 20,
+                "roundtripMs": 63.73341699999946,
+                "drawCommandsDuringRoundtrip": 132
+              },
+              {
+                "cursor": 24,
+                "roundtripMs": 64.06062500000189,
+                "drawCommandsDuringRoundtrip": 18
+              },
+              {
+                "cursor": 20,
+                "roundtripMs": 68.75420899999881,
+                "drawCommandsDuringRoundtrip": 132
+              },
+              {
+                "cursor": 5,
+                "roundtripMs": 66.10237499999857,
+                "drawCommandsDuringRoundtrip": 60
+              },
+              {
+                "cursor": 0,
+                "roundtripMs": 64.46591699999772,
+                "drawCommandsDuringRoundtrip": 1
+              },
+              {
+                "cursor": 20,
+                "roundtripMs": 67.99600000000282,
+                "drawCommandsDuringRoundtrip": 132
+              }
+            ],
+            "count": 8,
+            "medianMs": 66.10237499999857,
+            "maxMs": 68.75420899999881,
+            "method": "Slider fill + two RAF callbacks including automation roundtrip. Draw count is evidence of submission only, not physical presentation."
+          }
+        },
+        {
+          "layout": "Visualize",
+          "windows": [
+            {
+              "phase": "playback",
+              "geometry": {
+                "cssWidth": 1004,
+                "cssHeight": 647,
+                "drawingWidth": 1004,
+                "drawingHeight": 647,
+                "adapter": {
+                  "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+                  "vendor": "Google Inc. (Apple)",
+                  "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4 Pro, Unspecified Version)"
+                },
+                "visibility": "visible"
+              },
+              "renderCount": 16,
+              "rendersPerSecond": 5.331556147950683,
+              "intervalsMs": {
+                "count": 15,
+                "median": 33.5,
+                "max": 675.7999999523163,
+                "over25": 13,
+                "over50": 4
+              },
+              "submissionMs": {
+                "mean": 1.7937500029802322,
+                "max": 8.400000095367432
+              },
+              "drawCommands": 675,
+              "raf": {
+                "count": 90,
+                "callbacksPerSecond": 29.990003332222592,
+                "intervalsMs": {
+                  "count": 89,
+                  "median": 33.30000000000291,
+                  "max": 33.400000000001455,
+                  "over25": 89,
+                  "over50": 0
+                },
+                "note": "Observation callbacks only; idle RAF callbacks do not imply WebGL draws."
+              }
+            },
+            {
+              "phase": "orbit",
+              "geometry": {
+                "cssWidth": 1004,
+                "cssHeight": 647,
+                "drawingWidth": 1004,
+                "drawingHeight": 647,
+                "adapter": {
+                  "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+                  "vendor": "Google Inc. (Apple)",
+                  "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4 Pro, Unspecified Version)"
+                },
+                "visibility": "visible"
+              },
+              "renderCount": 43,
+              "rendersPerSecond": 14.322352863032656,
+              "intervalsMs": {
+                "count": 42,
+                "median": 66.79999995231628,
+                "max": 100.40000009536743,
+                "over25": 42,
+                "over50": 42
+              },
+              "submissionMs": {
+                "mean": 1.493023251378259,
+                "max": 3.299999952316284
+              },
+              "drawCommands": 2838,
+              "raf": {
+                "count": 90,
+                "callbacksPerSecond": 29.97701762030091,
+                "intervalsMs": {
+                  "count": 89,
+                  "median": 33.30000000000291,
+                  "max": 33.400000000001455,
+                  "over25": 89,
+                  "over50": 0
+                },
+                "note": "Observation callbacks only; idle RAF callbacks do not imply WebGL draws."
+              }
+            },
+            {
+              "phase": "idle",
+              "geometry": {
+                "cssWidth": 1004,
+                "cssHeight": 647,
+                "drawingWidth": 1004,
+                "drawingHeight": 647,
+                "adapter": {
+                  "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+                  "vendor": "Google Inc. (Apple)",
+                  "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4 Pro, Unspecified Version)"
+                },
+                "visibility": "visible"
+              },
+              "renderCount": 0,
+              "rendersPerSecond": 0,
+              "intervalsMs": {
+                "count": 0,
+                "median": null,
+                "max": null,
+                "over25": 0,
+                "over50": 0
+              },
+              "submissionMs": {
+                "mean": null,
+                "max": null
+              },
+              "drawCommands": 0,
+              "raf": {
+                "count": 91,
+                "callbacksPerSecond": 30.32221518631914,
+                "intervalsMs": {
+                  "count": 90,
+                  "median": 33.29999999999927,
+                  "max": 33.5,
+                  "over25": 90,
+                  "over50": 0
+                },
+                "note": "Observation callbacks only; idle RAF callbacks do not imply WebGL draws."
+              }
+            }
+          ],
+          "scrub": {
+            "fixture": "person",
+            "layout": "Visualize",
+            "samples": [
+              {
+                "cursor": 0,
+                "roundtripMs": 57.26758300000074,
+                "drawCommandsDuringRoundtrip": 1
+              },
+              {
+                "cursor": 5,
+                "roundtripMs": 67.0489579999994,
+                "drawCommandsDuringRoundtrip": 60
+              },
+              {
+                "cursor": 20,
+                "roundtripMs": 63.217916999998124,
+                "drawCommandsDuringRoundtrip": 132
+              },
+              {
+                "cursor": 24,
+                "roundtripMs": 65.059957999998,
+                "drawCommandsDuringRoundtrip": 18
+              },
+              {
+                "cursor": 20,
+                "roundtripMs": 66.66479099999924,
+                "drawCommandsDuringRoundtrip": 132
+              },
+              {
+                "cursor": 5,
+                "roundtripMs": 65.08987499999785,
+                "drawCommandsDuringRoundtrip": 60
+              },
+              {
+                "cursor": 0,
+                "roundtripMs": 63.99816699999792,
+                "drawCommandsDuringRoundtrip": 1
+              },
+              {
+                "cursor": 20,
+                "roundtripMs": 70.60475000000224,
+                "drawCommandsDuringRoundtrip": 132
+              }
+            ],
+            "count": 8,
+            "medianMs": 65.08987499999785,
+            "maxMs": 70.60475000000224,
+            "method": "Slider fill + two RAF callbacks including automation roundtrip. Draw count is evidence of submission only, not physical presentation."
+          }
+        },
+        {
+          "layout": "Runtime Focus",
+          "windows": [
+            {
+              "phase": "playback",
+              "geometry": {
+                "cssWidth": 1440,
+                "cssHeight": 701,
+                "drawingWidth": 1440,
+                "drawingHeight": 701,
+                "adapter": {
+                  "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+                  "vendor": "Google Inc. (Apple)",
+                  "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4 Pro, Unspecified Version)"
+                },
+                "visibility": "visible"
+              },
+              "renderCount": 15,
+              "rendersPerSecond": 4.998000799997765,
+              "intervalsMs": {
+                "count": 14,
+                "median": 33.5,
+                "max": 672.5,
+                "over25": 14,
+                "over50": 4
+              },
+              "submissionMs": {
+                "mean": 1.6533333937327066,
+                "max": 8.5
+              },
+              "drawCommands": 622,
+              "raf": {
+                "count": 90,
+                "callbacksPerSecond": 29.98800479998659,
+                "intervalsMs": {
+                  "count": 89,
+                  "median": 33.30000000000291,
+                  "max": 33.400000000001455,
+                  "over25": 89,
+                  "over50": 0
+                },
+                "note": "Observation callbacks only; idle RAF callbacks do not imply WebGL draws."
+              }
+            },
+            {
+              "phase": "orbit",
+              "geometry": {
+                "cssWidth": 1440,
+                "cssHeight": 701,
+                "drawingWidth": 1440,
+                "drawingHeight": 701,
+                "adapter": {
+                  "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+                  "vendor": "Google Inc. (Apple)",
+                  "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4 Pro, Unspecified Version)"
+                },
+                "visibility": "visible"
+              },
+              "renderCount": 44,
+              "rendersPerSecond": 14.655430836591554,
+              "intervalsMs": {
+                "count": 43,
+                "median": 66.90000009536743,
+                "max": 100,
+                "over25": 43,
+                "over50": 43
+              },
+              "submissionMs": {
+                "mean": 1.9000000303441829,
+                "max": 3.299999952316284
+              },
+              "drawCommands": 2904,
+              "raf": {
+                "count": 90,
+                "callbacksPerSecond": 29.97701762030091,
+                "intervalsMs": {
+                  "count": 89,
+                  "median": 33.30000000000291,
+                  "max": 33.400000000001455,
+                  "over25": 89,
+                  "over50": 0
+                },
+                "note": "Observation callbacks only; idle RAF callbacks do not imply WebGL draws."
+              }
+            },
+            {
+              "phase": "idle",
+              "geometry": {
+                "cssWidth": 1440,
+                "cssHeight": 701,
+                "drawingWidth": 1440,
+                "drawingHeight": 701,
+                "adapter": {
+                  "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+                  "vendor": "Google Inc. (Apple)",
+                  "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4 Pro, Unspecified Version)"
+                },
+                "visibility": "visible"
+              },
+              "renderCount": 0,
+              "rendersPerSecond": 0,
+              "intervalsMs": {
+                "count": 0,
+                "median": null,
+                "max": null,
+                "over25": 0,
+                "over50": 0
+              },
+              "submissionMs": {
+                "mean": null,
+                "max": null
+              },
+              "drawCommands": 0,
+              "raf": {
+                "count": 91,
+                "callbacksPerSecond": 30.301012253115054,
+                "intervalsMs": {
+                  "count": 90,
+                  "median": 33.30000000000291,
+                  "max": 33.400000000001455,
+                  "over25": 90,
+                  "over50": 0
+                },
+                "note": "Observation callbacks only; idle RAF callbacks do not imply WebGL draws."
+              }
+            }
+          ],
+          "scrub": {
+            "fixture": "person",
+            "layout": "Runtime Focus",
+            "samples": [
+              {
+                "cursor": 0,
+                "roundtripMs": 57.928665999999794,
+                "drawCommandsDuringRoundtrip": 1
+              },
+              {
+                "cursor": 5,
+                "roundtripMs": 66.87299999999959,
+                "drawCommandsDuringRoundtrip": 60
+              },
+              {
+                "cursor": 20,
+                "roundtripMs": 66.44283300000097,
+                "drawCommandsDuringRoundtrip": 132
+              },
+              {
+                "cursor": 24,
+                "roundtripMs": 65.04391699999542,
+                "drawCommandsDuringRoundtrip": 18
+              },
+              {
+                "cursor": 20,
+                "roundtripMs": 66.97400000000198,
+                "drawCommandsDuringRoundtrip": 132
+              },
+              {
+                "cursor": 5,
+                "roundtripMs": 65.70020900000236,
+                "drawCommandsDuringRoundtrip": 60
+              },
+              {
+                "cursor": 0,
+                "roundtripMs": 65.6449169999978,
+                "drawCommandsDuringRoundtrip": 1
+              },
+              {
+                "cursor": 20,
+                "roundtripMs": 67.24429199999577,
+                "drawCommandsDuringRoundtrip": 132
+              }
+            ],
+            "count": 8,
+            "medianMs": 66.44283300000097,
+            "maxMs": 67.24429199999577,
+            "method": "Slider fill + two RAF callbacks including automation roundtrip. Draw count is evidence of submission only, not physical presentation."
+          }
+        }
+      ]
+    },
+    {
+      "fixture": "recursion",
+      "label": "Same current frontend/layout-only comparison; compact viewport is not historical M7 source",
+      "layouts": [
+        {
+          "layout": "Compact layout-only baseline",
+          "windows": [
+            {
+              "phase": "playback",
+              "geometry": {
+                "cssWidth": 752,
+                "cssHeight": 257,
+                "drawingWidth": 752,
+                "drawingHeight": 257,
+                "adapter": {
+                  "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+                  "vendor": "Google Inc. (Apple)",
+                  "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4 Pro, Unspecified Version)"
+                },
+                "visibility": "visible"
+              },
+              "renderCount": 7,
+              "rendersPerSecond": 2.3329445092484584,
+              "intervalsMs": {
+                "count": 6,
+                "median": 666.7000000476837,
+                "max": 700.2000000476837,
+                "over25": 6,
+                "over50": 4
+              },
+              "submissionMs": {
+                "mean": 2.528571367263794,
+                "max": 3.1000001430511475
+              },
+              "drawCommands": 167,
+              "raf": {
+                "count": 90,
+                "callbacksPerSecond": 29.995000833194467,
+                "intervalsMs": {
+                  "count": 89,
+                  "median": 33.30000000000018,
+                  "max": 33.5,
+                  "over25": 89,
+                  "over50": 0
+                },
+                "note": "Observation callbacks only; idle RAF callbacks do not imply WebGL draws."
+              }
+            },
+            {
+              "phase": "orbit",
+              "geometry": {
+                "cssWidth": 752,
+                "cssHeight": 257,
+                "drawingWidth": 752,
+                "drawingHeight": 257,
+                "adapter": {
+                  "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+                  "vendor": "Google Inc. (Apple)",
+                  "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4 Pro, Unspecified Version)"
+                },
+                "visibility": "visible"
+              },
+              "renderCount": 43,
+              "rendersPerSecond": 14.322829924494382,
+              "intervalsMs": {
+                "count": 42,
+                "median": 66.79999995231628,
+                "max": 99.79999995231628,
+                "over25": 42,
+                "over50": 42
+              },
+              "submissionMs": {
+                "mean": 1.390697678854299,
+                "max": 2.799999952316284
+              },
+              "drawCommands": 1892,
+              "raf": {
+                "count": 90,
+                "callbacksPerSecond": 29.978016121034752,
+                "intervalsMs": {
+                  "count": 89,
+                  "median": 33.30000000000109,
+                  "max": 33.400000000001455,
+                  "over25": 89,
+                  "over50": 0
+                },
+                "note": "Observation callbacks only; idle RAF callbacks do not imply WebGL draws."
+              }
+            },
+            {
+              "phase": "idle",
+              "geometry": {
+                "cssWidth": 752,
+                "cssHeight": 257,
+                "drawingWidth": 752,
+                "drawingHeight": 257,
+                "adapter": {
+                  "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+                  "vendor": "Google Inc. (Apple)",
+                  "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4 Pro, Unspecified Version)"
+                },
+                "visibility": "visible"
+              },
+              "renderCount": 0,
+              "rendersPerSecond": 0,
+              "intervalsMs": {
+                "count": 0,
+                "median": null,
+                "max": null,
+                "over25": 0,
+                "over50": 0
+              },
+              "submissionMs": {
+                "mean": null,
+                "max": null
+              },
+              "drawCommands": 0,
+              "raf": {
+                "count": 91,
+                "callbacksPerSecond": 30.302021243270374,
+                "intervalsMs": {
+                  "count": 90,
+                  "median": 33.30000000000109,
+                  "max": 33.5,
+                  "over25": 90,
+                  "over50": 0
+                },
+                "note": "Observation callbacks only; idle RAF callbacks do not imply WebGL draws."
+              }
+            }
+          ],
+          "scrub": {
+            "fixture": "recursion",
+            "layout": "Compact layout-only baseline",
+            "samples": [
+              {
+                "cursor": 0,
+                "roundtripMs": 58.97362499999872,
+                "drawCommandsDuringRoundtrip": 1
+              },
+              {
+                "cursor": 10,
+                "roundtripMs": 67.99470799999835,
+                "drawCommandsDuringRoundtrip": 61
+              },
+              {
+                "cursor": 25,
+                "roundtripMs": 66.44441599999845,
+                "drawCommandsDuringRoundtrip": 106
+              },
+              {
+                "cursor": 40,
+                "roundtripMs": 63.93879100000049,
+                "drawCommandsDuringRoundtrip": 1
+              },
+              {
+                "cursor": 25,
+                "roundtripMs": 68.39033299999574,
+                "drawCommandsDuringRoundtrip": 124
+              },
+              {
+                "cursor": 10,
+                "roundtripMs": 64.23849999999948,
+                "drawCommandsDuringRoundtrip": 46
+              },
+              {
+                "cursor": 0,
+                "roundtripMs": 65.90683300000092,
+                "drawCommandsDuringRoundtrip": 1
+              },
+              {
+                "cursor": 25,
+                "roundtripMs": 100.127542000002,
+                "drawCommandsDuringRoundtrip": 168
+              }
+            ],
+            "count": 8,
+            "medianMs": 66.44441599999845,
+            "maxMs": 100.127542000002,
+            "method": "Slider fill + two RAF callbacks including automation roundtrip. Draw count is evidence of submission only, not physical presentation."
+          }
+        },
+        {
+          "layout": "Visualize",
+          "windows": [
+            {
+              "phase": "playback",
+              "geometry": {
+                "cssWidth": 1004,
+                "cssHeight": 647,
+                "drawingWidth": 1004,
+                "drawingHeight": 647,
+                "adapter": {
+                  "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+                  "vendor": "Google Inc. (Apple)",
+                  "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4 Pro, Unspecified Version)"
+                },
+                "visibility": "visible"
+              },
+              "renderCount": 9,
+              "rendersPerSecond": 2.9973024277673685,
+              "intervalsMs": {
+                "count": 8,
+                "median": 666.7000000476837,
+                "max": 679.7000000476837,
+                "over25": 7,
+                "over50": 4
+              },
+              "submissionMs": {
+                "mean": 2.877777761883206,
+                "max": 3.1000001430511475
+              },
+              "drawCommands": 215,
+              "raf": {
+                "count": 90,
+                "callbacksPerSecond": 29.973024277673684,
+                "intervalsMs": {
+                  "count": 89,
+                  "median": 33.30000000000291,
+                  "max": 33.400000000001455,
+                  "over25": 89,
+                  "over50": 0
+                },
+                "note": "Observation callbacks only; idle RAF callbacks do not imply WebGL draws."
+              }
+            },
+            {
+              "phase": "orbit",
+              "geometry": {
+                "cssWidth": 1004,
+                "cssHeight": 647,
+                "drawingWidth": 1004,
+                "drawingHeight": 647,
+                "adapter": {
+                  "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+                  "vendor": "Google Inc. (Apple)",
+                  "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4 Pro, Unspecified Version)"
+                },
+                "visibility": "visible"
+              },
+              "renderCount": 45,
+              "rendersPerSecond": 14.987510407993339,
+              "intervalsMs": {
+                "count": 44,
+                "median": 66.70000004768372,
+                "max": 100.09999990463257,
+                "over25": 44,
+                "over50": 44
+              },
+              "submissionMs": {
+                "mean": 1.2711111174689398,
+                "max": 2.9000000953674316
+              },
+              "drawCommands": 1980,
+              "raf": {
+                "count": 90,
+                "callbacksPerSecond": 29.975020815986678,
+                "intervalsMs": {
+                  "count": 89,
+                  "median": 33.29999999999927,
+                  "max": 33.400000000001455,
+                  "over25": 89,
+                  "over50": 0
+                },
+                "note": "Observation callbacks only; idle RAF callbacks do not imply WebGL draws."
+              }
+            },
+            {
+              "phase": "idle",
+              "geometry": {
+                "cssWidth": 1004,
+                "cssHeight": 647,
+                "drawingWidth": 1004,
+                "drawingHeight": 647,
+                "adapter": {
+                  "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+                  "vendor": "Google Inc. (Apple)",
+                  "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4 Pro, Unspecified Version)"
+                },
+                "visibility": "visible"
+              },
+              "renderCount": 0,
+              "rendersPerSecond": 0,
+              "intervalsMs": {
+                "count": 0,
+                "median": null,
+                "max": null,
+                "over25": 0,
+                "over50": 0
+              },
+              "submissionMs": {
+                "mean": null,
+                "max": null
+              },
+              "drawCommands": 0,
+              "raf": {
+                "count": 91,
+                "callbacksPerSecond": 30.311105189046252,
+                "intervalsMs": {
+                  "count": 90,
+                  "median": 33.30000000000291,
+                  "max": 33.400000000001455,
+                  "over25": 90,
+                  "over50": 0
+                },
+                "note": "Observation callbacks only; idle RAF callbacks do not imply WebGL draws."
+              }
+            }
+          ],
+          "scrub": {
+            "fixture": "recursion",
+            "layout": "Visualize",
+            "samples": [
+              {
+                "cursor": 0,
+                "roundtripMs": 57.48058299999684,
+                "drawCommandsDuringRoundtrip": 1
+              },
+              {
+                "cursor": 10,
+                "roundtripMs": 68.13120800000615,
+                "drawCommandsDuringRoundtrip": 61
+              },
+              {
+                "cursor": 25,
+                "roundtripMs": 66.28250000000116,
+                "drawCommandsDuringRoundtrip": 106
+              },
+              {
+                "cursor": 40,
+                "roundtripMs": 64.07649999999558,
+                "drawCommandsDuringRoundtrip": 1
+              },
+              {
+                "cursor": 25,
+                "roundtripMs": 68.24866700000712,
+                "drawCommandsDuringRoundtrip": 124
+              },
+              {
+                "cursor": 10,
+                "roundtripMs": 64.48541699998896,
+                "drawCommandsDuringRoundtrip": 46
+              },
+              {
+                "cursor": 0,
+                "roundtripMs": 65.7872500000085,
+                "drawCommandsDuringRoundtrip": 1
+              },
+              {
+                "cursor": 25,
+                "roundtripMs": 100.02858399999968,
+                "drawCommandsDuringRoundtrip": 168
+              }
+            ],
+            "count": 8,
+            "medianMs": 66.28250000000116,
+            "maxMs": 100.02858399999968,
+            "method": "Slider fill + two RAF callbacks including automation roundtrip. Draw count is evidence of submission only, not physical presentation."
+          }
+        },
+        {
+          "layout": "Runtime Focus",
+          "windows": [
+            {
+              "phase": "playback",
+              "geometry": {
+                "cssWidth": 1440,
+                "cssHeight": 701,
+                "drawingWidth": 1440,
+                "drawingHeight": 701,
+                "adapter": {
+                  "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+                  "vendor": "Google Inc. (Apple)",
+                  "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4 Pro, Unspecified Version)"
+                },
+                "visibility": "visible"
+              },
+              "renderCount": 8,
+              "rendersPerSecond": 2.664890073284477,
+              "intervalsMs": {
+                "count": 7,
+                "median": 666.5,
+                "max": 700.0999999046326,
+                "over25": 6,
+                "over50": 4
+              },
+              "submissionMs": {
+                "mean": 2.849999964237213,
+                "max": 3.299999952316284
+              },
+              "drawCommands": 191,
+              "raf": {
+                "count": 90,
+                "callbacksPerSecond": 29.980013324450365,
+                "intervalsMs": {
+                  "count": 89,
+                  "median": 33.30000000000291,
+                  "max": 33.400000000001455,
+                  "over25": 89,
+                  "over50": 0
+                },
+                "note": "Observation callbacks only; idle RAF callbacks do not imply WebGL draws."
+              }
+            },
+            {
+              "phase": "orbit",
+              "geometry": {
+                "cssWidth": 1440,
+                "cssHeight": 701,
+                "drawingWidth": 1440,
+                "drawingHeight": 701,
+                "adapter": {
+                  "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+                  "vendor": "Google Inc. (Apple)",
+                  "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4 Pro, Unspecified Version)"
+                },
+                "visibility": "visible"
+              },
+              "renderCount": 45,
+              "rendersPerSecond": 14.986512140026793,
+              "intervalsMs": {
+                "count": 44,
+                "median": 66.69999980926514,
+                "max": 100.20000004768372,
+                "over25": 44,
+                "over50": 44
+              },
+              "submissionMs": {
+                "mean": 1.1422222243414986,
+                "max": 3.3000001907348633
+              },
+              "drawCommands": 1980,
+              "raf": {
+                "count": 90,
+                "callbacksPerSecond": 29.973024280053586,
+                "intervalsMs": {
+                  "count": 89,
+                  "median": 33.30000000000291,
+                  "max": 33.400000000001455,
+                  "over25": 89,
+                  "over50": 0
+                },
+                "note": "Observation callbacks only; idle RAF callbacks do not imply WebGL draws."
+              }
+            },
+            {
+              "phase": "idle",
+              "geometry": {
+                "cssWidth": 1440,
+                "cssHeight": 701,
+                "drawingWidth": 1440,
+                "drawingHeight": 701,
+                "adapter": {
+                  "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+                  "vendor": "Google Inc. (Apple)",
+                  "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4 Pro, Unspecified Version)"
+                },
+                "visibility": "visible"
+              },
+              "renderCount": 0,
+              "rendersPerSecond": 0,
+              "intervalsMs": {
+                "count": 0,
+                "median": null,
+                "max": null,
+                "over25": 0,
+                "over50": 0
+              },
+              "submissionMs": {
+                "mean": null,
+                "max": null
+              },
+              "drawCommands": 0,
+              "raf": {
+                "count": 91,
+                "callbacksPerSecond": 30.310095593859806,
+                "intervalsMs": {
+                  "count": 90,
+                  "median": 33.30000000000291,
+                  "max": 33.400000000001455,
+                  "over25": 90,
+                  "over50": 0
+                },
+                "note": "Observation callbacks only; idle RAF callbacks do not imply WebGL draws."
+              }
+            }
+          ],
+          "scrub": {
+            "fixture": "recursion",
+            "layout": "Runtime Focus",
+            "samples": [
+              {
+                "cursor": 0,
+                "roundtripMs": 57.596292000001995,
+                "drawCommandsDuringRoundtrip": 1
+              },
+              {
+                "cursor": 10,
+                "roundtripMs": 66.61291700000584,
+                "drawCommandsDuringRoundtrip": 61
+              },
+              {
+                "cursor": 25,
+                "roundtripMs": 66.2194579999923,
+                "drawCommandsDuringRoundtrip": 106
+              },
+              {
+                "cursor": 40,
+                "roundtripMs": 65.7455420000042,
+                "drawCommandsDuringRoundtrip": 1
+              },
+              {
+                "cursor": 25,
+                "roundtripMs": 68.30929199999082,
+                "drawCommandsDuringRoundtrip": 124
+              },
+              {
+                "cursor": 10,
+                "roundtripMs": 64.34945799999696,
+                "drawCommandsDuringRoundtrip": 46
+              },
+              {
+                "cursor": 0,
+                "roundtripMs": 65.89933299999393,
+                "drawCommandsDuringRoundtrip": 1
+              },
+              {
+                "cursor": 25,
+                "roundtripMs": 68.38812499999767,
+                "drawCommandsDuringRoundtrip": 124
+              }
+            ],
+            "count": 8,
+            "medianMs": 66.2194579999923,
+            "maxMs": 68.38812499999767,
+            "method": "Slider fill + two RAF callbacks including automation roundtrip. Draw count is evidence of submission only, not physical presentation."
+          }
+        }
+      ]
+    }
+  ],
+  "completed": true
+}

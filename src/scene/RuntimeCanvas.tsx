@@ -11,6 +11,7 @@ import { ReturnFlow } from './primitives/ReturnFlow'
 import { useReducedMotion } from './primitives/presentationMotion'
 import { FrameSolid, ObjectSolid, ReferenceCurve } from './primitives'
 import { colors, motionMs, renderQuality, runtimeFont, worldMaterial, worldUnits } from '../theme/tokens'
+import { stackHeadingPosition } from '../world/runtimeHeadings'
 
 interface RuntimeCanvasProps {
   visible: boolean
@@ -120,7 +121,7 @@ export function RuntimeCanvas({ visible, fitShallow = false, guided, playing, qu
         <meshStandardMaterial color={worldMaterial.floor} roughness={0.9} metalness={0.05} />
       </mesh>
       <group>
-        {scene.frames.length > 0 && !scopedWorld && <Text font={runtimeFont} position={deepStack && scene.bounds ? [scene.bounds.center[0] - 4.5, scene.bounds.center[1] + scene.bounds.size[1] / 2 + 0.6, 2.5] : [-5.9, 3.25, -1.5]} fontSize={0.31} color={colors.stack} anchorX="left" anchorY="middle" letterSpacing={0.08}>STACK</Text>}
+        {scene.frames.length > 0 && !scopedWorld && <Text font={runtimeFont} position={[...stackHeadingPosition(scene)]} fontSize={0.31} color={colors.stack} anchorX="left" anchorY="middle" letterSpacing={0.08}>STACK</Text>}
         {scene.objects.length > 0 && !arrayWorld && <Text font={runtimeFont} position={[2.1, 2.18, -0.65]} fontSize={0.31} color={colors.heap} anchorX="left" anchorY="middle" letterSpacing={0.08}>HEAP</Text>}
         {callSpine.length > 1 && <Line points={callSpine} color={colors.stack} lineWidth={1.4} transparent opacity={0.54} />}
         {scene.returnFlow && scene.frames.length > 0 && (!scopedWorld || event?.type === 'RETURN_VALUE' || event?.type === 'EXIT_METHOD') && <ReturnFlow flow={scene.returnFlow} guided={guided} playing={playing} />}

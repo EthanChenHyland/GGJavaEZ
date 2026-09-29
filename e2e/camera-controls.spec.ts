@@ -5,7 +5,12 @@ test('visible zoom controls reset each representation without changing runtime s
   await page.goto('/')
   await page.getByRole('slider', { name: 'Scrub execution' }).fill('18')
   const spatialPose = () => page.evaluate(async () => {
-    const { useNavigationStore } = await import('/src/navigation/navigation.ts')
+    // Read the controller's actual Vite module instance. After HMR, a bare
+    // import creates a second Zustand store without the app's timestamp query.
+    const source = await (await fetch('/src/navigation/NavigationController.tsx')).text()
+    const storeUrl = source.match(/from\s+["']([^"']*\/navigation\/navigation\.ts[^"']*)["']/)?.[1]
+    if (!storeUrl) throw new Error('Could not locate the runtime navigation store')
+    const { useNavigationStore } = await import(/* @vite-ignore */ storeUrl)
     return useNavigationStore.getState().pose
   })
   for (const representation of ['Classic', 'Spatial']) {

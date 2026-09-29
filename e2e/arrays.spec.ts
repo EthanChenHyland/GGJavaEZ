@@ -110,7 +110,8 @@ test('3D cell picking and guidance toggle preserve committed values and indexed 
   await page.getByRole('button', { name:'Theater',exact:true }).click()
   await page.getByRole('button', { name:'Overview',exact:true }).click()
   await page.waitForTimeout(900)
-  await page.mouse.click(1005,500)
+  // The compact canvas toolbar moves the projected cell upward.
+  await page.mouse.click(1005,460)
   await expect(page.getByLabel('Select runtime entity')).toHaveValue(`${objectId}:element:1`)
   await expect(page.locator('.inspector')).toContainText('VALUE3')
   await page.getByRole('button', { name:'Guided execution',exact:true }).click()

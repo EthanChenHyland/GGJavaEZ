@@ -3,6 +3,7 @@ import type { CameraPose, Selection } from '../contracts/interaction'
 import type { TraceEvent } from '../contracts/runtime'
 import type { SceneModel, SceneReferenceEdge, Vec3, WorldAnchor } from '../contracts/world'
 import { easeOutCubic, motionMs, worldUnits } from '../theme/tokens'
+import { stackHeadingFootprint } from '../world/runtimeHeadings'
 import { distance, homePose, midpoint } from './navigation'
 
 export interface CameraWaypoint {
@@ -78,20 +79,21 @@ export function sceneHomePose(scene: Pick<SceneModel, 'stackDepth' | 'bounds' | 
   // Curated single-frame scenes retain their established camera pose, even when
   // a caller supplies bounds. A live debugger may explicitly fit its reserved world.
   if (!scene.bounds || (!fitShallow && (scene.stackDepth ?? 0) <= 1 && scene.layoutKind !== 'array' && scene.layoutKind !== 'scoped')) return responsiveHomePose(target, view.aspect)
-  return reservedWorldPose(scene.bounds, target, homePose(target ?? scene.bounds.center), view)
+  const heading = fitShallow && scene.layoutKind !== 'array' && scene.layoutKind !== 'scoped' ? stackHeadingFootprint(scene) : []
+  return reservedWorldPose(scene.bounds, target, homePose(target ?? scene.bounds.center), view, heading)
 }
 
 /** The reserved envelope fits both Spatial and expanded Theater at any yaw. */
-function reservedWorldPose(bounds: NonNullable<SceneModel['bounds']>, target: Vec3 | undefined, viewingPose: CameraPose, view: ViewFraming): CameraPose {
+function reservedWorldPose(bounds: NonNullable<SceneModel['bounds']>, target: Vec3 | undefined, viewingPose: CameraPose, view: ViewFraming, heading: readonly Vec3[] = []): CameraPose {
   const { center, size } = bounds
   const pivot = target ?? center
-  if (bounds.points) return contextPose(pivot, viewingPose, [], bounds.points, view)
+  if (bounds.points) return contextPose(pivot, viewingPose, [], [...bounds.points, ...heading], view)
   const envelope: WorldAnchor = {
     entityId: 'navigation:reserved-bounds', region: 'stack',
     position: [center[0], center[1] + 0.35, center[2]],
     size: [size[0] + 1.4, size[1] + 1.8, size[2] + 0.8], ports: {}, bodyPort: center,
   }
-  return contextPose(pivot, viewingPose, [envelope], [], view)
+  return contextPose(pivot, viewingPose, [envelope], [...heading], view)
 }
 
 /** Kept in the controller ref, independently of the transient Focus history. */

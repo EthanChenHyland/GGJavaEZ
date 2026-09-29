@@ -85,3 +85,13 @@ npm run build
 `instrumentation/java/` owns the offline ASM transformer and JVM recorder. `server/instrumentation-provider.mjs` owns the bounded instrumented run. `server/instrumentation-sources.mjs` resolves unique project-relative source paths. `src/instrumentation/normalize.ts` turns observed raw events into the versioned trace consumed by `src/runtime/`. [ADR 006](docs/architecture/ADR-006-real-jvm-traces.md) records the approach and [trace contract](docs/architecture/M6_TRACE_CONTRACT.md) defines the recorder boundary.
 
 `server/debug-manager.mjs` and `instrumentation/java/visualjava/DebugControl.java` control a cooperative project-source JVM session; debugger metadata never becomes a second variable model. `src/debugger/` contains the shared control DTO, Error Explorer, Debugger panel, and pure causal query. [ADR 007](docs/architecture/ADR-007-visual-debugger.md) documents stepping, exception, console, and security limits.
+
+## Spatial workspace
+
+**Code** gives Monaco most of the workspace. **Visualize** opens Runtime emphasis with about 70% of desktop width for the world. **Debug** keeps about 65% for the world with contextual JVM controls. **Expand runtime** enters Runtime Focus; **Exit Focus** restores the layout. Source, tools and the selected inspector remain revealable. The timeline stays with the world.
+
+At narrow widths, source sits below the world and the explorer becomes a drawer. Error Explorer switches between Failure, Stack & path and Cause. Home frames the current viewport; free exploration is preserved through layout changes.
+
+**Shortcuts** in the IDE status strip lists Alt+Shift+R Run, V Visualize, D Debug, X Stop, F Runtime Focus, E explorer, I inspector and B bottom tools. Ctrl/Cmd+S saves the active model; Ctrl/Cmd+Shift+S saves all open files. Escape exits Focus outside Monaco. Manual editor widths are remembered per emphasis; transient debug/Focus state is not saved.
+
+See [workspace contract](docs/visual-java-spec/WORKSPACE_UX_CONTRACT.md) and [M8 QA](docs/checkpoints/gui-v8/QA.md).

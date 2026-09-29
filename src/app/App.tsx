@@ -76,7 +76,7 @@ function ExecutionWorkspace({ trace, example, onChooseExample, embedded, onSourc
   const mode = useNavigationStore((state) => state.mode)
   const followEnabled = useNavigationStore((state) => state.followEnabled)
   const [quality, setQuality] = useState<keyof typeof renderQuality>('balanced')
-  const [runtimeFocus, setRuntimeFocus] = useState(() => window.matchMedia('(max-width: 760px)').matches)
+  const [runtimeFocus, setRuntimeFocus] = useState(() => !embedded && window.matchMedia('(max-width: 760px)').matches)
   const [sourceWidth, setSourceWidth] = useState(34)
   const workbenchRef = useRef<HTMLDivElement>(null)
   const [selection, setSelection] = useState<Selection>(null)
@@ -148,13 +148,13 @@ function ExecutionWorkspace({ trace, example, onChooseExample, embedded, onSourc
         <span className="brand-copy"><span className="brand-name">Visual Java</span><span className="brand-subtitle">Explore execution from the inside</span></span>
       </div>
       <div className="top-actions">
+        <button className="toolbar-button is-subtle" onClick={navigationActions.home} title="Frame the runtime world" aria-label="Home"><Home size={15}/><span className="button-text">Home</span></button>
         <a className="toolbar-button is-subtle" href="/ide" aria-label="Open IDE workspace">IDE Workspace</a>
         <label className="example-picker">Example <select aria-label="Runtime example" value={example} onChange={(event) => onChooseExample(event.target.value as ExampleId)}><option value="person">Person</option><option value="recursion">Recursion · factorial(5)</option><option value="arrays">Arrays · bubble sort</option><option value="control">Control flow · scores</option></select></label>
         <button className="toolbar-button is-subtle" aria-label="Runtime focus mode" aria-pressed={runtimeFocus} onClick={() => setRuntimeFocus((value) => !value)}>{runtimeFocus ? <Minimize2 size={15} /> : <Maximize2 size={15} />}<span className="button-text">{runtimeFocus ? 'Restore source' : 'Runtime view'}</span></button>
-        <button className="toolbar-button is-subtle" onClick={() => navigationActions.home()} aria-label="Home"><Home size={15} /><span className="button-text">Home</span></button>
       </div>
     </header>}
-    <div ref={workbenchRef} className={`workbench ${runtimeFocus ? 'workbench--focus' : ''}`} style={{ '--source-width': `${sourceWidth}%` } as React.CSSProperties}>
+    <div ref={workbenchRef} className={`workbench ${!embedded && runtimeFocus ? 'workbench--focus' : ''}`} style={{ '--source-width': `${sourceWidth}%` } as React.CSSProperties}>
       {!embedded && (hasConsole && !runtimeFocus ? <div className="source-column">
         <SourcePane trace={trace} location={runtime.currentSource} onChooseLine={chooseLine} />
         <ConsolePane entries={runtime.console} activeEventId={runtime.lastEventId} status={runtime.status} />
@@ -168,23 +168,23 @@ function ExecutionWorkspace({ trace, example, onChooseExample, embedded, onSourc
         <ClassicRuntime visible={view === 'classic'} playing={playing} scene={scene} event={event} guided={guided} selection={selection} onSelect={selectEntity} onFocusSelected={navigationActions.focus} />
         <div className="representation-bar">
           <div role="group" aria-label="Visualization mode" className="view-selector">{visualizationModes.map((item) => <button key={item.id} className={`toolbar-button ${view === item.id ? 'is-active' : ''}`} aria-pressed={view === item.id} disabled={!item.available && !(item.id === 'theater' && layout.theater)} title={item.id === 'theater' && layout.theater ? 'Expand the same array to examine comparisons and writes' : 'reason' in item ? item.reason : `${item.label} representation`} onClick={() => chooseView(item.id)}>{item.label}</button>)}</div>
-          <button className={`toolbar-button ${guided ? 'is-active' : ''}`} aria-label="Guided execution" aria-pressed={guided} onClick={() => { setGuided((value) => !value); if (guided) navigationActions.freeExplore() }}>Guided Execution: {guided ? 'On' : 'Off'}</button>
+          <button className={`toolbar-button guided-toggle ${guided ? 'is-active' : ''}`} title="Toggle explanatory motion and cues" aria-label="Guided execution" aria-pressed={guided} onClick={() => { setGuided((value) => !value); if (guided) navigationActions.freeExplore() }}>Guided <span className="guided-toggle__state">{guided ? 'On' : 'Off'}</span></button>
         </div>
-        {!layout.theater && <p className="theater-reason">{hasScopes ? 'Theater: scopes and control flow use the same method frames in Classic and Spatial.' : trace.demoId === 'person' ? 'Theater: unavailable for Person; standard stack and heap views show this program.' : 'Theater: Spatial already exposes this call stack and its return path.'}</p>}
-        <div className="world-overlay-top">
-          <span className="mode-pill">{playing ? 'EXECUTING' : runtime.status === 'ready' ? 'READY' : runtime.status === 'ended' ? 'COMPLETE' : runtime.status === 'aborted' ? 'INCOMPLETE' : 'PAUSED'}</span>
-          <span className={`world-label ${mode === 'FOCUS_ENTITY' || mode === 'TRACE_PATH' ? 'world-label--navigating' : ''}`}><strong>RUNTIME WORLD</strong><span>{mode.replaceAll('_', ' ')} · {detailLevel.toUpperCase()}</span></span>
+        <div className="world-controls" role="group" aria-label="Runtime camera controls">
+          <div className="world-controls__group">
+            <button className="toolbar-button" onClick={navigationActions.home} title="Home · frame the runtime world" aria-label="Overview"><Home size={16}/></button>
+            <button className="toolbar-button" onClick={navigationActions.resetView} title="Reset camera view" aria-label="Reset view"><RotateCcw size={16}/></button>
+            <button className="toolbar-button" onClick={focusSelection} disabled={!selectionLive} title="Focus selected entity" aria-label="Focus selected entity"><Crosshair size={16}/></button>
+            <button className="toolbar-button" onClick={() => traceSelection()} disabled={!selectedReference} title="Trace selected relationship" aria-label="Trace selected relationship"><Route size={16}/></button>
+          </div>
+          <div className="world-controls__group">
+            <button className={`toolbar-button ${mode === 'FREE_EXPLORE' ? 'is-active' : ''}`} onClick={() => navigationActions.freeExplore()} title="Explore · drag to orbit, right drag to pan, scroll to dolly" aria-label="Explore runtime"><MousePointer2 size={16}/></button>
+            <button className={`toolbar-button ${followEnabled ? 'is-active' : ''}`} onClick={() => { if (followEnabled) navigationActions.freeExplore(); else { setGuided(true); navigationActions.followExecution() } }} title="Follow execution" aria-label="Follow execution" aria-pressed={followEnabled}><ScanEye size={16}/></button>
+            <button className="toolbar-button" onClick={navigationActions.zoomIn} title="Zoom in" aria-label="Zoom in"><ZoomIn size={16}/></button>
+            <button className="toolbar-button" onClick={navigationActions.zoomOut} title="Zoom out" aria-label="Zoom out"><ZoomOut size={16}/></button>
+          </div>
         </div>
-        <div className="world-controls">
-          <button className="toolbar-button" onClick={navigationActions.zoomIn} aria-label="Zoom in"><ZoomIn size={15}/><span className="button-text">Zoom In</span></button>
-          <button className="toolbar-button" onClick={navigationActions.zoomOut} aria-label="Zoom out"><ZoomOut size={15}/><span className="button-text">Zoom Out</span></button>
-          <button className="toolbar-button" onClick={navigationActions.resetView} aria-label="Reset view"><RotateCcw size={15}/><span className="button-text">Reset View</span></button>
-          <button className="toolbar-button" onClick={navigationActions.home} aria-label="Overview"><Home size={15}/><span className="button-text">Overview</span></button>
-          <button className={`toolbar-button ${mode === 'FREE_EXPLORE' ? 'is-active' : ''}`} onClick={() => navigationActions.freeExplore()} title="Orbit, pan and dolly in the runtime world" aria-label="Explore runtime"><MousePointer2 size={15} /><span className="button-text">Explore</span></button>
-          <button className="toolbar-button" onClick={focusSelection} disabled={!selectionLive} title="Focus selected entity" aria-label="Focus selected entity"><Crosshair size={15} /><span className="button-text">Focus</span></button>
-          <button className="toolbar-button" onClick={() => traceSelection()} disabled={!selectedReference} title="Trace selected relationship" aria-label="Trace selected relationship"><Route size={15} /><span className="button-text">Trace Path</span></button>
-          <button className={`toolbar-button ${followEnabled ? 'is-active' : ''}`} onClick={() => { if (followEnabled) navigationActions.freeExplore(); else { setGuided(true); navigationActions.followExecution() } }} title="Follow execution" aria-label="Follow execution" aria-pressed={followEnabled}><ScanEye size={15} /><span className="button-text">Follow</span></button>
-        </div>
+        <span className="world-label world-label--compact" aria-live="polite">{mode.replaceAll('_', ' ')}</span>
         {scene.stackDepth !== undefined && scene.stackDepth > 1 && <section className="call-status" aria-label="Call and return state">
           <span className="eyebrow">{runtime.status === 'ended' ? 'COMPLETE' : `${runtime.activeFrameIds.length} LIVE FRAMES`}</span>
           {runtime.returns.length > 0 && <div className="return-history"><span>Returns</span>{runtime.returns.map((item) => <span key={item.eventId} title={item.expression}>{item.value.kind === 'primitive' ? String(item.value.value) : ''}</span>)}</div>}
@@ -200,7 +200,6 @@ function ExecutionWorkspace({ trace, example, onChooseExample, embedded, onSourc
           {activity && runtime.status !== 'ended' && <span className="return-explanation">{activity.kind === 'compare' ? `Compare indices ${activity.indices.join(' and ')}` : activity.kind === 'write' ? `Value from ${activity.from?.kind === 'element' ? `[${activity.from.index}]` : activity.from?.kind === 'slot' ? 'local slot' : 'observed JVM store'} · cells stay at their indices` : activity.destinationSlotId ? 'Value assigned to a local slot' : 'Observed indexed read'}</span>}
         </section>}
         {hasScopes && <ControlFlowStatus runtime={runtime} event={event} guided={guided} />}
-        {cursor === 0 && <div className="event-chip">Press <strong>Play</strong> to enter the runtime</div>}
         {runtime.status === 'aborted' && <div className="event-chip event-chip--failure" title={latestException?.message ?? runtime.abortReason ?? undefined}><strong>{latestException ? latestException.className.split('.').at(-1) : 'Recording stopped'}</strong> · {latestException?.message ?? runtime.abortReason}</div>}
         {guided && event?.type === 'SET_FIELD' && <div className="event-chip"><strong>Mutation</strong> · {event.label}</div>}
         <div className="world-access">
@@ -217,9 +216,10 @@ function ExecutionWorkspace({ trace, example, onChooseExample, embedded, onSourc
         </div>
         <div className="world-hint"><kbd>Drag</kbd> {view === 'classic' ? 'pan' : 'orbit'} · {view !== 'classic' && <><kbd>Right drag</kbd> pan · </>}<kbd>Scroll</kbd> {view === 'classic' ? 'zoom' : 'dolly'} · <kbd>Home</kbd> reset</div>
         {!suppressInspector && <Inspector selection={selection} runtime={runtime} scene={scene} onClose={() => setSelection(null)} onReturn={() => { navigationActions.returnToPrevious(); setSelection(null) }} onFocus={focusSelection} onTrace={traceSelection} />}
+        {embedded && <div className="world-timeline"><Timeline trace={trace} playback={playback} /></div>}
       </section>
     </div>
     {!embedded && hasConsole && runtimeFocus && <ConsolePane entries={runtime.console} activeEventId={runtime.lastEventId} status={runtime.status} compact />}
-    <Timeline trace={trace} playback={playback} />
+    {!embedded && <Timeline trace={trace} playback={playback} />}
   </div>
 }

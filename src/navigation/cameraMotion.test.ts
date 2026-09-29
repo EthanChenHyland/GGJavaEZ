@@ -4,7 +4,8 @@ import type { CameraPose } from '../contracts/interaction'
 import type { TraceEvent } from '../contracts/runtime'
 import type { SceneReferenceEdge, Vec3, WorldAnchor } from '../contracts/world'
 import { motionMs } from '../theme/tokens'
-import { contextPose, guidedCameraAction, inspectorFocusPose, responsiveHomePose, sampleCameraMove, traceWaypoints } from './cameraMotion'
+import { stackHeadingFootprint } from '../world/runtimeHeadings'
+import { contextPose, guidedCameraAction, inspectorFocusPose, responsiveHomePose, sampleCameraMove, sceneHomePose, traceWaypoints } from './cameraMotion'
 import type { CameraMove } from './cameraMotion'
 import { defaultHomePose, midpoint } from './navigation'
 
@@ -48,6 +49,15 @@ const corners = Object.values(anchors).flatMap((anchor) => {
     anchor.position[2] + z * anchor.size[2] / 2,
   ])
   return points
+})
+
+it.each([[1, 760 / 400], [1, 934 / 340], [2, 760 / 400], [2, 934 / 340]])('debugger Home includes the reserved STACK heading and solids, depth %s aspect %s', (stackDepth, aspect) => {
+  const scene = { stackDepth, bounds: { center: [0, 0, 0] as Vec3, size: [14, 4, 4] as Vec3, points: corners } }
+  const pose = sceneHomePose(scene, scene.bounds.center, { ...view, aspect }, true)
+  expect(pose.target).toEqual(scene.bounds.center)
+  expectInView(pose, [...corners, ...stackHeadingFootprint(scene)], aspect)
+  // Curated shallow Home retains its established pose.
+  if (stackDepth === 1) expect(sceneHomePose(scene, undefined, { ...view, aspect })).toEqual(responsiveHomePose(undefined, aspect))
 })
 
 describe('Trace Path choreography', () => {

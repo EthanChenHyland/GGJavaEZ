@@ -21,6 +21,11 @@ export const motionMs = {
   hero: 950,
 } as const
 
+/** Fixed region heading; Home framing includes its presentation footprint. */
+export const stackRegionLabel = {
+  position: [-5.9, 3.25, -1.5] as const,
+}
+
 export const worldUnits = {
   frame: [5.1, 1.7, 1.25] as const,
   object: [3.8, 2.5, 1.7] as const,
