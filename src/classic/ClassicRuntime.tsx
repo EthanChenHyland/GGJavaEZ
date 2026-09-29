@@ -118,7 +118,7 @@ export function ClassicRuntime({ visible = true, playing = false, scene, event, 
   function entity(entity: DiagramEntity) {
     const selected = selection?.kind === entity.kind && selection.id === entity.id
     const linked = diagram.references.some((edge) => relatedReference(edge, selection, diagram) && (edge.sourceEntityId === entity.id || edge.targetObjectId === entity.id))
-    const accent = entity.kind === 'frame' ? colors.stack : colors.heap
+    const accent = entity.exceptionState ? colors.exception : entity.kind === 'frame' ? colors.stack : colors.heap
     const body = entity.kind === 'frame' ? worldMaterial.stackFace : worldMaterial.heapFace
     const { x, y, width, height } = entity.rect
     const current = (guided || diagram.deepStack || diagram.scoped) && entity.active
@@ -128,14 +128,14 @@ export function ClassicRuntime({ visible = true, playing = false, scene, event, 
     const rowTextSize = compact ? 15 : scopedFrame ? 17 : 20
     const arrayComplete = !!entity.array?.ascending && event?.type === 'PROGRAM_END'
     const title = entity.array?.name ? `${entity.array.name} · ${entity.label}` : entity.label
-    return <g key={entity.id} data-runtime-id={entity.id} data-runtime-kind={entity.kind}>
+    return <g key={entity.id} data-runtime-id={entity.id} data-runtime-kind={entity.kind} data-exception-state={entity.exceptionState}>
       <rect x={x} y={y} width={width} height={height} rx={4} fill={body} stroke={selected ? colors.execution : accent} strokeWidth={selected ? 3 : 1.5} />
       <g className="classic-target classic-heading" {...interactions({ kind: entity.kind, id: entity.id })} aria-label={`${entity.kind === 'frame' ? 'Stack frame' : 'Heap object'} ${title}`}>
         <rect x={x} y={y} width={width} height={headingHeight} rx={4} fill={body} />
         <rect x={x} y={y} width={4} height={headingHeight} fill={current ? colors.execution : accent} />
         <text x={x + 20} y={y + (compact ? 18 : scopedFrame ? Math.min(22, headingHeight - 20) : 32)} fontSize={compact || scopedFrame ? 18 : 24} fontWeight={600} fill={colors.text}>{title}</text>
         {!compact && headingHeight >= 48 && <text x={x + 20} y={y + headingHeight - (scopedFrame ? 10 : 12)} fontSize={12} letterSpacing={1} fill={accent}>{entity.array ? `INDEX / VALUE · LENGTH ${entity.array.length}` : entity.kind === 'frame' ? 'LOCALS / PARAMETERS' : 'FIELDS'}</text>}
-        {current && <text x={x + width - 16} y={y + (compact ? 18 : scopedFrame ? Math.min(22, headingHeight - 20) : 52)} textAnchor="end" fontSize={12} fill={colors.execution}>EXECUTING</text>}
+        {(current || entity.exceptionState) && <text x={x + width - 16} y={y + (compact ? 18 : scopedFrame ? Math.min(22, headingHeight - 20) : 52)} textAnchor="end" fontSize={12} fill={entity.exceptionState ? colors.exception : colors.execution}>{entity.exceptionState?.toUpperCase() ?? 'EXECUTING'}</text>}
       </g>
       <line x1={x} y1={y + headingHeight} x2={x + width} y2={y + headingHeight} stroke={accent} strokeOpacity={0.35} />
       {entity.scopes?.map((scope) => <g key={scope.id} className="classic-scope" data-scope-id={scope.id} data-scope-depth={scope.depth}

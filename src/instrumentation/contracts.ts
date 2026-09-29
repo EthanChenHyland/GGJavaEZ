@@ -37,7 +37,8 @@ export type RawRuntimeEvent = RawSourceContext & (
   | { type: 'return'; frameId: string; value: RawValue }
   | { type: 'exit'; frameId: string }
   | { type: 'throw'; frameId: string; objectId: string; className: string; message: string | null; explicit: boolean }
-  | { type: 'unwind' | 'catch'; frameId: string; objectId: string }
+  | { type: 'unwind' | 'catch' | 'finally'; frameId: string; objectId: string }
+  | { type: 'console'; channel: 'stdout' | 'stderr'; text: string }
 )
 
 export type VisualizationTerminalStatus = 'complete' | 'program_crashed' | 'instrumentation_failed' | 'limit_exceeded' | 'unsupported'

@@ -15,7 +15,7 @@ export interface InstrumentationSourceManifest {
 }
 
 export interface NormalizationTerminal {
-  status: VisualizationTerminalStatus
+  status: VisualizationTerminalStatus | 'live'
   exitCode: number | null
   diagnostic: string | null
   capability?: VisualizationCapabilityReport
@@ -96,10 +96,10 @@ export function normalizeTrace(
     }
     features[feature].observedEvents++
   }
-  // Bytecode has neither lexical blocks nor Java loop labels, and process output has no probe ordering.
+  // Bytecode has neither lexical blocks nor Java loop labels.
   mark('loops', 'unsupported', 'Raw branches do not identify source-level loops')
   mark('scopes', 'unsupported', 'Debug local ranges do not prove lexical block entry or exit')
-  mark('console', 'partial', 'Process stdout/stderr has no observed ordering relative to probes')
+  mark('console', 'partial', 'Wrapped stdout/stderr writes share the probe clock; replaced streams and direct native/file-descriptor output have unknown ordering')
   const sourceFiles = manifest.sources.map(({ fileId, name, content, sha256 }) => ({ fileId, name, content, sha256 }))
   const files = new Map(sourceFiles.map((file) => [file.fileId, file]))
   const classes = new Map(manifest.classes.map((entry) => [entry.className, entry]))
@@ -118,9 +118,11 @@ export function normalizeTrace(
   let state = createInitialState()
   const events: TraceEvent[] = []
   let failure: string | null = null
+  let currentThreadId: string | undefined
   const emit = (event: EventPayload, source: SourceLocation | null, label: string,
     importance: TraceEvent['importance'] = 'normal') => {
-    const full = { ...event, eventId: `jvm:event:${events.length}`, seq: events.length, source, label, importance } as TraceEvent
+    const full = { ...event, eventId: `jvm:event:${events.length}`, seq: events.length, source, label, importance,
+      ...(currentThreadId ? { threadId: currentThreadId } : {}) } as TraceEvent
     state = applyEvent(state, full)
     events.push(full)
   }
@@ -156,7 +158,15 @@ export function normalizeTrace(
       : state.objects[owner.objectId]?.fields[owner.slotId]
     if (!slot) throw new Error(`Unknown source slot ${owner.slotId}`)
     const current = slot.value
-    if (raw.kind === 'unsupported') { mark(owner.kind === 'frame' ? 'locals' : 'fields', 'partial', `Unsupported value ${raw.javaType}`); return }
+    if (raw.kind === 'unsupported') {
+      mark(owner.kind === 'frame' ? 'locals' : 'fields', 'partial', `Unsupported value ${raw.javaType}`)
+      const value: ScalarValue = { kind: 'uninitialized' }
+      emit(owner.kind === 'frame'
+        ? { type: 'ASSIGN_LOCAL', frameId: owner.frameId, slotId: owner.slotId, value }
+        : { type: 'SET_FIELD', objectId: owner.objectId, slotId: owner.slotId, value },
+      source, `${slot.name}: value unavailable (${raw.javaType})`)
+      return
+    }
     if (raw.kind === 'ref') { reference(owner, type, raw.objectId, source); return }
     const value = rawScalar(raw)
     if (!value) { mark(owner.kind === 'frame' ? 'locals' : 'fields', 'partial', 'Unrepresentable scalar value'); return }
@@ -189,13 +199,17 @@ export function normalizeTrace(
     try {
       if (raw.v !== 1 || raw.seq !== expectedSeq) throw new Error(`Raw sequence gap or version mismatch at ${expectedSeq}`)
       expectedSeq++
-      if (thread === null) thread = raw.threadId
-      if (raw.threadId !== thread) throw new Error('Multiple project threads are unsupported')
-      if (raw.className) coveredClasses.add(raw.className)
+      currentThreadId = raw.threadId
+      if (raw.type !== 'console') {
+        if (thread === null) thread = raw.threadId
+        if (raw.threadId !== thread) throw new Error('Multiple project threads are unsupported')
+      }
       const frame = raw.frameId === null ? null : frameId(raw.frameId)
-      // `throw.className` names the exception, unlike the operation context on other records.
-      const source = sourceFor(raw, raw.type === 'throw' && frame
-        ? state.frames[frame]?.className ?? null : raw.className)
+      const contextClass = raw.type === 'throw' || raw.type === 'object'
+        ? frame ? state.frames[frame]?.className ?? null : null : raw.className
+      if (contextClass && classes.has(contextClass)) coveredClasses.add(contextClass)
+      // Throw/object className names a semantic type, not the emitting frame's source owner.
+      const source = sourceFor(raw, contextClass)
       switch (raw.type) {
         case 'object': {
           if (registered.has(raw.objectId)) throw new Error(`Duplicate object ${raw.objectId}`)
@@ -323,18 +337,28 @@ export function normalizeTrace(
           break
         case 'throw':
           if (!frame) throw new Error('Throw without frame')
+          // Older captures repeated the same implicit exception on every unwind.
+          // Keep the earliest observed episode; a real catch closes it for a later rethrow.
+          if (state.exceptions.some(item => item.exceptionId === objectId(raw.objectId) && !item.caughtBy)) break
           emit({ type: 'THROW_EXCEPTION', frameId: frame, exceptionId: objectId(raw.objectId),
             className: raw.className, message: raw.message, explicit: raw.explicit }, source,
           'Exception observed', 'major')
           observed('exceptions')
+          mark('exceptions', 'partial', 'Project throw/handler/unwind sites are observed; catch-all handlers prove exceptional cleanup, not lexical finally. Custom getMessage overrides are not invoked and their messages remain unavailable')
           break
         case 'unwind':
         case 'catch':
+        case 'finally':
           if (!frame) throw new Error('Exception transition without frame')
-          emit({ type: raw.type === 'unwind' ? 'UNWIND_EXCEPTION' : 'CATCH_EXCEPTION',
+          emit({ type: raw.type === 'unwind' ? 'UNWIND_EXCEPTION' : raw.type === 'finally' ? 'FINALLY_ENTER' : 'CATCH_EXCEPTION',
             frameId: frame, exceptionId: objectId(raw.objectId) }, source,
-          raw.type === 'unwind' ? 'Frame unwound' : 'Exception caught', 'major')
+          raw.type === 'unwind' ? 'Frame unwound' : raw.type === 'finally' ? 'Exceptional cleanup handler entered' : 'Exception caught', 'major')
           observed('exceptions')
+          break
+        case 'console':
+          emit({ type: 'CONSOLE_WRITE', frameId: frame, channel: raw.channel, text: raw.text }, source,
+            `${raw.channel} write`, 'quiet')
+          observed('console')
           break
       }
     } catch (error) {
@@ -343,6 +367,7 @@ export function normalizeTrace(
       break
     }
   }
+  currentThreadId = undefined
   let terminalStatus = terminal.status
   if (failure || (terminalStatus === 'complete' &&
       (state.activeFrameIds.length !== 0 || expectedSeq === 0 || terminal.exitCode !== 0))) {
@@ -356,7 +381,7 @@ export function normalizeTrace(
       diagnostics.push(`Cannot complete trace: ${(error as Error).message}`)
     }
   }
-  if (terminalStatus !== 'complete') {
+  if (terminalStatus !== 'complete' && terminalStatus !== 'live') {
     const message = failure ?? terminal.diagnostic ?? `Visualization ${terminalStatus}`
     emit({ type: 'PROGRAM_ABORT', reason: terminalStatus, message }, null, 'Visualization stopped', 'major')
     mark('methods', 'partial', `Trace ended with ${terminalStatus}`)

@@ -81,6 +81,7 @@ function isOwner(value: unknown): value is SlotOwner {
 function isEvent(value: unknown, schemaVersion: 1 | 2): value is TraceEvent {
   if (!isRecord(value) || !isText(value.eventId) || !Number.isInteger(value.seq) ||
       (value.source !== null && !isSource(value.source)) || !isText(value.label) ||
+      (value.threadId !== undefined && !isText(value.threadId)) ||
       !['quiet', 'normal', 'major'].includes(String(value.importance))) return false
 
   switch (value.type) {
@@ -103,6 +104,9 @@ function isEvent(value: unknown, schemaVersion: 1 | 2): value is TraceEvent {
     case 'OUTPUT_WRITE':
       return isText(value.frameId) && isScalar(value.value) && value.value.kind !== 'uninitialized' &&
         typeof value.text === 'string' && (value.originSlotId === undefined || isText(value.originSlotId))
+    case 'CONSOLE_WRITE':
+      return schemaVersion === 2 && (value.frameId === null || isText(value.frameId)) &&
+        ['stdout', 'stderr'].includes(String(value.channel)) && typeof value.text === 'string'
     case 'PROGRAM_START':
     case 'PROGRAM_END':
       return true
@@ -161,6 +165,7 @@ function isEvent(value: unknown, schemaVersion: 1 | 2): value is TraceEvent {
         (value.message === null || typeof value.message === 'string') && typeof value.explicit === 'boolean'
     case 'UNWIND_EXCEPTION':
     case 'CATCH_EXCEPTION':
+    case 'FINALLY_ENTER':
       return schemaVersion === 2 && isText(value.frameId) && isText(value.exceptionId)
     default:
       return false
@@ -168,10 +173,10 @@ function isEvent(value: unknown, schemaVersion: 1 | 2): value is TraceEvent {
 }
 
 /** Validate structure, source locations, and the entire semantic lifecycle before playback. */
-export function validateTrace(input: unknown): TraceDocument {
+export function validateTrace(input: unknown, options: { allowLive?: boolean } = {}): TraceDocument {
   if (!isRecord(input) || (input.schemaVersion !== 1 && input.schemaVersion !== 2) || !isText(input.demoId) ||
       !Array.isArray(input.sourceFiles) || input.sourceFiles.length === 0 ||
-      !Array.isArray(input.events) || input.events.length < 2) {
+      !Array.isArray(input.events) || input.events.length < (options.allowLive && input.schemaVersion === 2 ? 1 : 2)) {
     throw new Error('Invalid trace document header')
   }
 
@@ -216,7 +221,8 @@ export function validateTrace(input: unknown): TraceDocument {
     }
   }
 
-  if (state.status !== 'ended' && !(input.schemaVersion === 2 && state.status === 'aborted')) throw new Error('Trace must end with PROGRAM_END or v2 PROGRAM_ABORT')
+  if (state.status !== 'ended' && !(input.schemaVersion === 2 && (state.status === 'aborted' ||
+      options.allowLive && state.status === 'running'))) throw new Error('Trace must end with PROGRAM_END or v2 PROGRAM_ABORT')
   return input as unknown as TraceDocument
 }
 

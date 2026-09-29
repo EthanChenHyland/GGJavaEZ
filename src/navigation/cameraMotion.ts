@@ -74,8 +74,10 @@ export function responsiveHomePose(target: Vec3 | undefined, aspect: number): Ca
  * Person deliberately retains its established composition; deeper stacks fit
  * their reserved geometry and attached headings at the same canonical yaw.
  */
-export function sceneHomePose(scene: Pick<SceneModel, 'stackDepth' | 'bounds' | 'layoutKind'>, target: Vec3 | undefined, view: ViewFraming): CameraPose {
-  if (!scene.bounds || ((scene.stackDepth ?? 0) <= 1 && scene.layoutKind !== 'array' && scene.layoutKind !== 'scoped')) return responsiveHomePose(target, view.aspect)
+export function sceneHomePose(scene: Pick<SceneModel, 'stackDepth' | 'bounds' | 'layoutKind'>, target: Vec3 | undefined, view: ViewFraming, fitShallow = false): CameraPose {
+  // Curated single-frame scenes retain their established camera pose, even when
+  // a caller supplies bounds. A live debugger may explicitly fit its reserved world.
+  if (!scene.bounds || (!fitShallow && (scene.stackDepth ?? 0) <= 1 && scene.layoutKind !== 'array' && scene.layoutKind !== 'scoped')) return responsiveHomePose(target, view.aspect)
   return reservedWorldPose(scene.bounds, target, homePose(target ?? scene.bounds.center), view)
 }
 

@@ -6,8 +6,9 @@ export function buildSceneModel(runtime: RuntimeState, layout: LayoutState, deta
   const stage = presentation === 'theater' && layout.theater ? layout.theater : layout
   const displayValue = (value: { kind: string; objectId?: string }) => value.kind === 'reference' && value.objectId
     ? `→ #${runtime.objects[value.objectId]?.displayId ?? '?'}` : undefined
-  const displayedFrameIds = runtime.status === 'aborted' && runtime.activeFrameIds.length === 0
-    ? runtime.exceptions.at(-1)?.unwoundFrameIds.slice().reverse() ?? []
+  const exception = runtime.exceptions.at(-1)
+  const displayedFrameIds = exception && !exception.caughtBy
+    ? [...new Set([...exception.frameIds, ...runtime.activeFrameIds])]
     : runtime.activeFrameIds
   const frames: SceneFrameNode[] = displayedFrameIds.flatMap((id) => {
     const frame = runtime.frames[id]
@@ -20,6 +21,10 @@ export function buildSceneModel(runtime: RuntimeState, layout: LayoutState, deta
       depth: frame.depth,
       active: id === runtime.activeFrameIds.at(-1),
       historical: frame.status === 'unwound',
+      exceptionState: exception?.unwoundFrameIds.includes(id) ? 'unwound'
+        : exception?.caughtBy === id ? 'caught'
+          : exception?.finallyFrameIds?.includes(id) && !exception.caughtBy ? 'finally'
+            : !exception?.caughtBy && exception?.frameIds.at(-1) === id ? 'origin' : undefined,
       anchor,
       scopes: layout.scopes ? Object.values(layout.scopes).filter((scope) => scope.frameId === id && runtime.scopes[scope.id]?.status === 'active') : undefined,
       slots: [

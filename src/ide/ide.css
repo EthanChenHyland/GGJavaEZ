@@ -51,5 +51,5 @@
 .ide-shell--runtime-expanded .ide-upper,
 .ide-shell--runtime-expanded .ide-runtime-panel { flex:1; width:100%; height:auto; min-height:0; }
 .ide-shell--runtime-expanded .ide-runtime-panel:has(.ide-runtime-live) { flex:1; height:auto; min-height:0; }
-.ide-shell:has(.ide-runtime-live) .ide-console-input { display:none; }
+.ide-shell:has(.ide-runtime-live):not(.ide-shell--debug-active) .ide-console-input { display:none; }
 @media(max-width:760px) { .ide-shell:has(.ide-runtime-live) .ide-bottom-panel { height:85px; min-height:85px; } }

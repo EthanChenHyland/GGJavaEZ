@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Box, Crosshair, Home, MousePointer2, Route, ScanEye, Maximize2, Minimize2, ZoomIn, ZoomOut, RotateCcw } from 'lucide-react'
 import { ClassicRuntime } from '../classic/ClassicRuntime'
 import { visualizationModes, type VisualizationMode } from '../contracts/visualization'
-import type { SourceLocation, TraceDocument, TraceEvent } from '../contracts/runtime'
+import type { RuntimeState, SourceLocation, TraceDocument, TraceEvent } from '../contracts/runtime'
 import type { Selection } from '../contracts/interaction'
 import { renderQuality } from '../theme/tokens'
 import { RuntimeCanvas } from '../scene/RuntimeCanvas'
@@ -34,19 +34,26 @@ function eventDescribesSelection(event: TraceEvent, selection: NonNullable<Selec
   return false
 }
 
-export function App({ trace: suppliedTrace, embedded = false, onSourceChange }: {
+export interface RuntimeNavigation { revision: number; cursor: number; selection?: Selection }
+export function App({ trace: suppliedTrace, embedded = false, onSourceChange, onRuntimeChange, navigation, suppressInspector = false }: {
   trace?: TraceDocument
   embedded?: boolean
   onSourceChange?: (location: SourceLocation | null) => void
+  onRuntimeChange?: (runtime: RuntimeState, selection: Selection) => void
+  navigation?: RuntimeNavigation | null
+  suppressInspector?: boolean
 }) {
   const [example, setExample] = useState<ExampleId>('person')
   const trace = suppliedTrace ?? examples[example]
-  return <ExecutionWorkspace key={trace.demoId} trace={trace} example={example} onChooseExample={setExample} embedded={embedded} onSourceChange={onSourceChange} />
+  return <ExecutionWorkspace key={trace.demoId} trace={trace} example={example} onChooseExample={setExample} embedded={embedded} onSourceChange={onSourceChange} onRuntimeChange={onRuntimeChange} navigation={navigation} suppressInspector={suppressInspector}/>
 }
 
-function ExecutionWorkspace({ trace, example, onChooseExample, embedded, onSourceChange }: {
+function ExecutionWorkspace({ trace, example, onChooseExample, embedded, onSourceChange, onRuntimeChange, navigation, suppressInspector }: {
   trace: TraceDocument; example: ExampleId; onChooseExample: (example: ExampleId) => void
   embedded: boolean; onSourceChange?: (location: SourceLocation | null) => void
+  onRuntimeChange?: (runtime: RuntimeState, selection: Selection) => void
+  navigation?: RuntimeNavigation | null
+  suppressInspector: boolean
 }) {
   const hasConsole = trace.events.some((event) => event.type === 'INPUT_READ' || event.type === 'OUTPUT_WRITE')
   const hasScopes = trace.events.some((event) => event.type === 'ENTER_SCOPE')
@@ -73,6 +80,14 @@ function ExecutionWorkspace({ trace, example, onChooseExample, embedded, onSourc
   const [sourceWidth, setSourceWidth] = useState(34)
   const workbenchRef = useRef<HTMLDivElement>(null)
   const [selection, setSelection] = useState<Selection>(null)
+  const lastNavigation = useRef(-1)
+  useEffect(() => {
+    if (!navigation || navigation.revision === lastNavigation.current) return
+    lastNavigation.current = navigation.revision
+    playback.seekTo(navigation.cursor)
+    if (navigation.selection !== undefined) setSelection(navigation.selection)
+  }, [navigation, playback])
+  useEffect(() => { onRuntimeChange?.(runtime, selection) }, [runtime, selection, onRuntimeChange])
   const scene = useMemo(() => buildSceneModel(runtime, layout, detailLevel, presentation), [runtime, layout, detailLevel, presentation])
   const selectEntity = (next: Selection) => {
     setSelection(next)
@@ -148,8 +163,8 @@ function ExecutionWorkspace({ trace, example, onChooseExample, embedded, onSourc
         onKeyDown={(event) => { if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') { event.preventDefault(); event.stopPropagation(); setSourceWidth((width) => Math.max(24, Math.min(46, width + (event.key === 'ArrowRight' ? 2 : -2)))) } }}
         onPointerDown={(event) => event.currentTarget.setPointerCapture(event.pointerId)}
         onPointerMove={(event) => { if (event.currentTarget.hasPointerCapture(event.pointerId)) { const bounds = workbenchRef.current!.getBoundingClientRect(); setSourceWidth(Math.max(24, Math.min(46, (event.clientX - bounds.left) / bounds.width * 100))) } }} /> }
-      <section className={`world-panel ${selection ? 'world-panel--inspecting' : ''} ${hasScopes ? 'world-panel--scoped' : ''}`} aria-label="Runtime world">
-        <div className={`spatial-view ${view === 'classic' ? 'is-hidden' : ''}`} aria-hidden={view === 'classic'}><RuntimeCanvas visible={view !== 'classic'} guided={guided} playing={playing} quality={quality} scene={scene} event={event} selection={selection} onSelect={selectEntity} onFocusSelected={navigationActions.focus} /></div>
+      <section className={`world-panel ${selection && !suppressInspector ? 'world-panel--inspecting' : ''} ${hasScopes ? 'world-panel--scoped' : ''}`} aria-label="Runtime world">
+        <div className={`spatial-view ${view === 'classic' ? 'is-hidden' : ''}`} aria-hidden={view === 'classic'}><RuntimeCanvas visible={view !== 'classic'} fitShallow={trace.demoId.startsWith('debug:')} guided={guided} playing={playing} quality={quality} scene={scene} event={event} selection={selection} onSelect={selectEntity} onFocusSelected={navigationActions.focus} /></div>
         <ClassicRuntime visible={view === 'classic'} playing={playing} scene={scene} event={event} guided={guided} selection={selection} onSelect={selectEntity} onFocusSelected={navigationActions.focus} />
         <div className="representation-bar">
           <div role="group" aria-label="Visualization mode" className="view-selector">{visualizationModes.map((item) => <button key={item.id} className={`toolbar-button ${view === item.id ? 'is-active' : ''}`} aria-pressed={view === item.id} disabled={!item.available && !(item.id === 'theater' && layout.theater)} title={item.id === 'theater' && layout.theater ? 'Expand the same array to examine comparisons and writes' : 'reason' in item ? item.reason : `${item.label} representation`} onClick={() => chooseView(item.id)}>{item.label}</button>)}</div>
@@ -201,7 +216,7 @@ function ExecutionWorkspace({ trace, example, onChooseExample, embedded, onSourc
           </select>
         </div>
         <div className="world-hint"><kbd>Drag</kbd> {view === 'classic' ? 'pan' : 'orbit'} · {view !== 'classic' && <><kbd>Right drag</kbd> pan · </>}<kbd>Scroll</kbd> {view === 'classic' ? 'zoom' : 'dolly'} · <kbd>Home</kbd> reset</div>
-        <Inspector selection={selection} runtime={runtime} scene={scene} onClose={() => setSelection(null)} onReturn={() => { navigationActions.returnToPrevious(); setSelection(null) }} onFocus={focusSelection} onTrace={traceSelection} />
+        {!suppressInspector && <Inspector selection={selection} runtime={runtime} scene={scene} onClose={() => setSelection(null)} onReturn={() => { navigationActions.returnToPrevious(); setSelection(null) }} onFocus={focusSelection} onTrace={traceSelection} />}
       </section>
     </div>
     {!embedded && hasConsole && runtimeFocus && <ConsolePane entries={runtime.console} activeEventId={runtime.lastEventId} status={runtime.status} compact />}

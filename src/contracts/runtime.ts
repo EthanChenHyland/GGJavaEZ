@@ -123,13 +123,14 @@ export interface RuntimeLoop {
 }
 export interface ConsoleEntry {
   eventId: EventId
-  frameId: FrameId
+  frameId: FrameId | null
   source: SourceLocation | null
   kind: 'input' | 'output'
   text: string
   value: ScalarValue
   destinationSlotId?: SlotId
   readerObjectId?: ObjectId
+  channel?: 'stdout' | 'stderr'
 }
 
 export interface RuntimeExceptionFact {
@@ -142,6 +143,7 @@ export interface RuntimeExceptionFact {
   frameIds: FrameId[]
   caughtBy?: FrameId
   unwoundFrameIds: FrameId[]
+  finallyFrameIds?: FrameId[]
 }
 
 export interface RuntimeBranchFact {
@@ -186,6 +188,8 @@ export interface TraceEventBase {
   source: SourceLocation | null
   label: string
   importance: 'quiet' | 'normal' | 'major'
+  /** Actual recorder thread; absent on curated fixtures. */
+  threadId?: string
 }
 
 export type TraceEvent = TraceEventBase & (
@@ -195,6 +199,7 @@ export type TraceEvent = TraceEventBase & (
   | ({ type: 'LOOP_ITERATION' } & Omit<RuntimeLoop, 'eventId'>)
   | { type: 'INPUT_READ'; frameId: FrameId; readerObjectId: ObjectId; method: 'nextInt'; inputIndex: number; destinationSlotId: SlotId; value: ScalarValue; text: string }
   | { type: 'OUTPUT_WRITE'; frameId: FrameId; value: ScalarValue; text: string; originSlotId?: SlotId }
+  | { type: 'CONSOLE_WRITE'; frameId: FrameId | null; channel: 'stdout' | 'stderr'; text: string }
   | { type: 'PROGRAM_START' }
   | { type: 'PROGRAM_END' }
   | { type: 'PROGRAM_ABORT'; reason: 'program_crashed' | 'instrumentation_failed' | 'limit_exceeded' | 'unsupported'; message: string }
@@ -217,6 +222,7 @@ export type TraceEvent = TraceEventBase & (
   | { type: 'THROW_EXCEPTION'; frameId: FrameId; exceptionId: ObjectId; className: string; message: string | null; explicit: boolean }
   | { type: 'UNWIND_EXCEPTION'; frameId: FrameId; exceptionId: ObjectId }
   | { type: 'CATCH_EXCEPTION'; frameId: FrameId; exceptionId: ObjectId }
+  | { type: 'FINALLY_ENTER'; frameId: FrameId; exceptionId: ObjectId }
 )
 
 export interface TraceDocument {

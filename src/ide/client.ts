@@ -1,4 +1,5 @@
 import type { BuildResult, JdkStatus, ProjectEntry, ProjectFile, ProjectSummary, RunEvent, RunResponse, RunSnapshot, VisualizeResponse } from './contracts'
+import type { DebugCommand, DebugSession, SourceBreakpoint } from '../debugger/contracts'
 
 async function request<T>(url: string, method = 'GET', data?: unknown): Promise<T> {
   const response = await fetch(url, { method, headers: data === undefined ? undefined : { 'content-type': 'application/json' }, body: data === undefined ? undefined : JSON.stringify(data) })
@@ -24,6 +25,12 @@ export const bridge = {
   build: (id: string) => request<BuildResult>(`${project(id)}/build`, 'POST', {}),
   run: (id: string, mainClass: string) => request<RunResponse>(`${project(id)}/run`, 'POST', { mainClass }),
   visualize: (id: string, mainClass: string) => request<VisualizeResponse>(`${project(id)}/visualize`, 'POST', { mainClass }),
+  debug: (id: string, mainClass: string, breakpoints: SourceBreakpoint[]) => request<DebugSession>(`${project(id)}/debug`, 'POST', { mainClass, breakpoints }),
+  debugCurrent: () => request<DebugSession | null>('/api/debug/current'),
+  debugSnapshot: (id: string) => request<DebugSession>(`/api/debug/${encodeURIComponent(id)}`),
+  debugCommand: (id: string, command: DebugCommand) => request<DebugSession>(`/api/debug/${encodeURIComponent(id)}/command`, 'POST', { command }),
+  debugInput: (id: string, text: string) => request<{ ok: boolean }>(`/api/debug/${encodeURIComponent(id)}/input`, 'POST', { text }),
+  debugBreakpoints: (id: string, breakpoints: SourceBreakpoint[]) => request<DebugSession>(`/api/debug/${encodeURIComponent(id)}/breakpoints`, 'POST', { breakpoints }),
   currentRun: () => request<RunSnapshot | null>('/api/runs/current'),
   runSnapshot: (id: string) => request<RunSnapshot>(`/api/runs/${encodeURIComponent(id)}`),
   stop: (id: string) => request<RunSnapshot>(`/api/runs/${encodeURIComponent(id)}/stop`, 'POST', {}),

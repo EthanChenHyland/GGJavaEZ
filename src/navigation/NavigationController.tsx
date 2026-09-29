@@ -16,6 +16,7 @@ import {
 
 export interface NavigationControllerProps {
   sceneModel: SceneModel
+  fitShallow?: boolean
   /** Hidden renderers consume commands without changing the shared navigation pose. */
   visible?: boolean
   /** Major events reframe Guided Follow; PROGRAM_END settles at Home while follow is enabled. */
@@ -48,7 +49,7 @@ function usePrefersReducedMotion(): boolean {
 }
 
 /** Must be mounted inside Canvas. Camera changes are centralized and user input always interrupts them. */
-export function NavigationController({ sceneModel, event, activeEntityId, homeTarget, reducedMotion, visible = true }: NavigationControllerProps) {
+export function NavigationController({ sceneModel, event, activeEntityId, homeTarget, fitShallow = false, reducedMotion, visible = true }: NavigationControllerProps) {
   const { camera, size, invalidate } = useThree()
   const controlsRef = useRef<Controls>(null)
   const initiallyPlacedRef = useRef(false)
@@ -64,12 +65,12 @@ export function NavigationController({ sceneModel, event, activeEntityId, homeTa
   const intentRevision = useNavigationStore((state) => state.intentRevision)
   const followEnabled = useNavigationStore((state) => state.followEnabled)
   const deepStack = (sceneModel.stackDepth ?? 0) > 1 && !!sceneModel.bounds
-  const reservedWorld = deepStack || ((sceneModel.layoutKind === 'array' || sceneModel.layoutKind === 'scoped') && !!sceneModel.bounds)
+  const reservedWorld = deepStack || (fitShallow && !!sceneModel.bounds) || ((sceneModel.layoutKind === 'array' || sceneModel.layoutKind === 'scoped') && !!sceneModel.bounds)
   const framing = {
     verticalFov: camera instanceof PerspectiveCamera ? camera.getEffectiveFOV() * Math.PI / 180 : Math.PI / 4,
     aspect: size.width / Math.max(size.height, 1),
   }
-  const canonicalOverview = sceneHomePose(sceneModel, homeTarget, framing)
+  const canonicalOverview = sceneHomePose(sceneModel, homeTarget, framing, fitShallow)
   const limits = limitsForOverview(canonicalOverview, reservedWorld ? sceneModel.bounds?.size : undefined)
   const world = useMemo(() => navigationWorldForScene(sceneModel, homeTarget), [sceneModel, homeTarget])
 
@@ -157,7 +158,7 @@ export function NavigationController({ sceneModel, event, activeEntityId, homeTa
   useEffect(() => {
     if (!visible) return
     if (useNavigationStore.getState().mode === 'HOME') startMove(overviewPose(), motionMs.standard)
-  }, [size.width, size.height, visible, homeTarget, sceneModel.bounds, sceneModel.stackDepth, sceneModel.layoutKind])
+  }, [size.width, size.height, visible, homeTarget, sceneModel.bounds, sceneModel.stackDepth, sceneModel.layoutKind, fitShallow])
 
   useEffect(() => {
     if (!visible) return

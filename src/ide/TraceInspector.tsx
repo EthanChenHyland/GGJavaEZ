@@ -50,7 +50,7 @@ export function traceInspectorRows(events: readonly TraceEvent[] | readonly RawR
     return {
       seq: event.seq,
       type: event.type,
-      thread: view === 'raw' ? textId(record.threadId) : absent,
+      thread: textId(record.threadId),
       frame: textId(record.frameId),
       object: objectIds(record),
       source: rawLocation,

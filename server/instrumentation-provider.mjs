@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { performance } from 'node:perf_hooks';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const javaSources = [join(root, 'instrumentation/java/visualjava/Recorder.java'), join(root, 'instrumentation/java/visualjava/OfflineTransformer.java')];
+const javaSources = ['Recorder', 'OfflineTransformer', 'DebugControl'].map((name) => join(root, `instrumentation/java/visualjava/${name}.java`));
 const jars = ['asm', 'asm-tree', 'asm-util', 'asm-analysis'].map((name) => join(root, `instrumentation/lib/${name}-9.10.1.jar`));
 const hashes = {
   'asm-9.10.1.jar': 'ed825d10ab1399c8c0cb669e688cf0c8c82629b4c8399b58352b68e92ca10fcb',
@@ -113,10 +113,10 @@ function capability(events, coveredClasses, transformInfo, terminalStatus, diagn
     loops: set(tally('branch') ? 'partial' : 'supported', 'Branch observations do not establish source-level loop labels or iterations', tally('branch')),
     scopes: set('partial', 'Debug local lifetime ends observed; source lexical scopes are not reconstructed', tally('local_end')),
     returns: set('supported', 'Return operands and normal exits observed', tally('return', 'exit')),
-    exceptions: set('partial', 'Explicit throws, handler entry and project-frame unwind observed; implicit throw site is unknown', tally('throw', 'catch', 'unwind')),
-    console: set('supported', 'JVM stdout and stderr captured in separate process streams', 0),
+    exceptions: set('partial', 'First propagation origin instruction captured before catch/finally/unwind; library/native internal origins are outside project capture', tally('throw', 'catch', 'finally', 'unwind')),
+    console: set('partial', 'Wrapped stdout/stderr shares the probe sequence; replaced streams, direct file descriptor and native output have unknown ordering', tally('console')),
   };
-  const threads = new Set(events.map((event) => event.threadId));
+  const threads = new Set(events.filter((event) => event.type !== 'console' || event.frameId !== null).map((event) => event.threadId));
   const diagnostics = [];
   if (threads.size > 1) { diagnostics.push('Multiple project threads observed; initial normalizer supports one'); features.methods = set('unsupported', diagnostics.at(-1), features.methods.observedEvents); }
   if (diagnostic) diagnostics.push(diagnostic);
@@ -130,8 +130,9 @@ function capability(events, coveredClasses, transformInfo, terminalStatus, diagn
 export class AsmInstrumentationProvider {
   async run(request) { return runInstrumented(request); }
 }
-export async function runInstrumented(request) {
-  const result = emptyResult();
+
+/** Prepare one isolated verified capture. The caller owns execution and must call cleanup. */
+export async function prepareInstrumented(request) {
   const rawEventLimit = Math.min(EVENT_LIMIT, Math.max(1, Number(request.rawEventLimit) || EVENT_LIMIT));
   const rawByteLimit = Math.min(BYTE_LIMIT, Math.max(1, Number(request.rawByteLimit) || BYTE_LIMIT));
   const timeoutMs = Math.min(DEADLINE, Math.max(1, Number(request.timeoutMs) || DEADLINE));
@@ -153,11 +154,38 @@ export async function runInstrumented(request) {
     if (stage.code !== 0 || stage.stopped) throw new Error(`Offline transform failed: ${stage.stderr || stage.stopped}`);
     let transformInfo; try { transformInfo = JSON.parse(stage.stdout.trim()); } catch { throw new Error(`Invalid transform report: ${stage.stdout}`); }
     if (transformInfo.classes !== coveredClasses.length) throw new Error('Transform did not cover every compiled project class');
-    result.metrics.transformMs = Math.round(performance.now() - transformStart);
+    const executableLines = transformInfo.executableLines;
+    if (!executableLines || typeof executableLines !== 'object' || Array.isArray(executableLines)) throw new Error('Transform did not report safe executable lines');
+    for (const [className, lines] of Object.entries(executableLines)) {
+      if (!coveredClasses.includes(className) || !Array.isArray(lines) || lines.some((line, index) =>
+        !Number.isSafeInteger(line) || line < 1 || index > 0 && line <= lines[index - 1])) throw new Error('Invalid executable line report');
+    }
     const jvmClasspath = [transformed, helper].join(sep === '\\' ? ';' : ':');
+    const args = ['-Xverify:all', `-Dvisualjava.trace=${trace}`, `-Dvisualjava.classes=${coveredClasses.join(',')}`,
+      `-Dvisualjava.eventLimit=${rawEventLimit}`, `-Dvisualjava.byteLimit=${rawByteLimit}`, '-cp', jvmClasspath, request.mainClass];
+    let cleaned = false;
+    return { temp, helper, transformed, trace, args, coveredClasses, transformInfo, executableLines,
+      rawEventLimit, rawByteLimit, timeoutMs, transformMs: Math.round(performance.now() - transformStart),
+      cleanup: async () => { if (!cleaned) { cleaned = true; await rm(temp, { recursive: true, force: true }); } } };
+  } catch (error) {
+    if (temp) await rm(temp, { recursive: true, force: true });
+    throw error;
+  }
+}
+
+export async function runInstrumented(request) {
+  const result = emptyResult();
+  const rawEventLimit = Math.min(EVENT_LIMIT, Math.max(1, Number(request.rawEventLimit) || EVENT_LIMIT));
+  const rawByteLimit = Math.min(BYTE_LIMIT, Math.max(1, Number(request.rawByteLimit) || BYTE_LIMIT));
+  const timeoutMs = Math.min(DEADLINE, Math.max(1, Number(request.timeoutMs) || DEADLINE));
+  let prepared;
+  try {
+    prepared = await prepareInstrumented(request);
+    const { trace, coveredClasses, transformInfo } = prepared;
+    result.metrics.transformMs = prepared.transformMs;
     const executionStart = performance.now(); let firstTraceMs = null;
-    const execution = await run(request.javaPath, ['-Xverify:all', `-Dvisualjava.trace=${trace}`, `-Dvisualjava.classes=${coveredClasses.join(',')}`, `-Dvisualjava.eventLimit=${rawEventLimit}`, `-Dvisualjava.byteLimit=${rawByteLimit}`, '-cp', jvmClasspath, request.mainClass], {
-      cwd: request.projectRoot || classesDir, timeoutMs,
+    const execution = await run(request.javaPath, prepared.args, {
+      cwd: request.projectRoot || request.classesDir, timeoutMs,
       monitor: async () => { const info = await stat(trace).catch(() => null); if (info?.size > 0 && firstTraceMs === null) firstTraceMs = performance.now() - executionStart; return info && info.size > rawByteLimit ? 'raw_byte_limit' : null; },
     });
     result.metrics.jvmStartupMs = Math.round(firstTraceMs ?? execution.duration); // Approximate spawn-to-first-record latency.
@@ -184,6 +212,6 @@ export async function runInstrumented(request) {
   } catch (error) {
     result.status = 'instrumentation_failed';result.diagnostic = error.message;
     result.capability.diagnostics.push(error.message);
-  } finally { if (temp) await rm(temp, { recursive: true, force: true }); }
+  } finally { if (prepared) await prepared.cleanup(); }
   return result;
 }

@@ -3,10 +3,11 @@ import Editor, { type OnMount } from '@monaco-editor/react'
 import type { editor } from 'monaco-editor'
 import * as monacoApi from 'monaco-editor/editor/editor.api.js'
 import type { CompileDiagnostic, SourceLocation } from './contracts'
+import type { ResolvedBreakpoint } from '../debugger/contracts'
 import { typography } from '../theme/tokens'
 import '../ui/monacoSetup'
 
-export function EditableJavaEditor({ projectId, path, value, onChange, diagnostics, navigate, onSave, executingLine = null }: {
+export function EditableJavaEditor({ projectId, path, value, onChange, diagnostics, navigate, onSave, executingLine = null, pausedLine = null, breakpoints = [], onToggleBreakpoint }: {
   projectId: string
   path: string
   value: string
@@ -15,9 +16,23 @@ export function EditableJavaEditor({ projectId, path, value, onChange, diagnosti
   navigate: SourceLocation | null
   onSave: () => void
   executingLine?: number | null
+  pausedLine?: number | null
+  breakpoints?: ResolvedBreakpoint[]
+  onToggleBreakpoint?: (line: number) => void
 }) {
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null)
   const decorationsRef = useRef<editor.IEditorDecorationsCollection | null>(null)
+  const breakpointDecorations = useRef<editor.IEditorDecorationsCollection | null>(null)
+  const breakpointRef = useRef(breakpoints)
+  breakpointRef.current = breakpoints
+  const toggleRef = useRef(onToggleBreakpoint)
+  toggleRef.current = onToggleBreakpoint
+  const pausedRef = useRef(pausedLine)
+  pausedRef.current = pausedLine
+  const showBreakpoints = () => breakpointDecorations.current?.set(breakpointRef.current.filter((point) => point.fileId === pathRef.current).map((point) => ({
+    range: { startLineNumber: point.line, endLineNumber: point.line, startColumn: 1, endColumn: 1 },
+    options: { glyphMarginClassName: point.status === 'verified' || point.status === 'pending' ? 'debug-breakpoint' : 'debug-breakpoint-unverified', glyphMarginHoverMessage: { value: point.reason ?? `Breakpoint · line ${point.line}` } },
+  })))
   const pathRef = useRef(path)
   pathRef.current = path
   const executionRef = useRef(executingLine)
@@ -50,18 +65,31 @@ export function EditableJavaEditor({ projectId, path, value, onChange, diagnosti
   const onMount: OnMount = (instance, monaco) => {
     editorRef.current = instance
     decorationsRef.current = instance.createDecorationsCollection()
+    breakpointDecorations.current = instance.createDecorationsCollection()
+    showBreakpoints()
+    instance.onMouseDown((event) => {
+      if (event.target.type === monaco.editor.MouseTargetType.GUTTER_GLYPH_MARGIN && event.target.position) toggleRef.current?.(event.target.position.lineNumber)
+    })
     if (executionRef.current && executionRef.current > 0) {
-      decorationsRef.current.set([{ range: { startLineNumber: executionRef.current, endLineNumber: executionRef.current, startColumn: 1, endColumn: 1 }, options: { isWholeLine: true, className: 'executing-line', linesDecorationsClassName: 'executing-gutter' } }])
+      decorationsRef.current.set([{ range: { startLineNumber: executionRef.current, endLineNumber: executionRef.current, startColumn: 1, endColumn: 1 }, options: { isWholeLine: true, className: pausedRef.current ? 'debug-paused-line' : 'executing-line', linesDecorationsClassName: pausedRef.current ? 'debug-paused-gutter' : 'executing-gutter' } }])
       instance.revealLineInCenter(executionRef.current)
     }
+    // The IDE stacks panels at narrow widths. Monaco can keep its old scroll position
+    // when that resize leaves only a few source lines visible.
+    instance.onDidLayoutChange(() => {
+      const line = pausedRef.current ?? executionRef.current
+      if (line && line > 0) instance.revealLineInCenterIfOutsideViewport(line)
+    })
     instance.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => saveRef.current())
     showLocation(instance, navigationRef.current)
     showMarkers(instance, monaco, diagnosticsRef.current)
   }
   useEffect(() => {
-    decorationsRef.current?.set(executingLine && executingLine > 0 ? [{ range: { startLineNumber: executingLine, endLineNumber: executingLine, startColumn: 1, endColumn: 1 }, options: { isWholeLine: true, className: 'executing-line', linesDecorationsClassName: 'executing-gutter' } }] : [])
-    if (executingLine && executingLine > 0) editorRef.current?.revealLineInCenter(executingLine)
-  }, [executingLine, path])
+    const line = pausedLine ?? executingLine
+    decorationsRef.current?.set(line && line > 0 ? [{ range: { startLineNumber: line, endLineNumber: line, startColumn: 1, endColumn: 1 }, options: { isWholeLine: true, className: pausedLine ? 'debug-paused-line' : 'executing-line', linesDecorationsClassName: pausedLine ? 'debug-paused-gutter' : 'executing-gutter' } }] : [])
+    if (line && line > 0) editorRef.current?.revealLineInCenter(line)
+  }, [executingLine, pausedLine, path])
+  useEffect(() => { showBreakpoints() }, [breakpoints, path])
   useEffect(() => {
     const instance = editorRef.current
     if (!instance || !navigate || navigate.path !== path) return
@@ -88,6 +116,7 @@ export function EditableJavaEditor({ projectId, path, value, onChange, diagnosti
       fontSize: 13,
       lineHeight: 21,
       lineNumbersMinChars: 3,
+      glyphMargin: true,
       scrollBeyondLastLine: false,
       padding: { top: 16, bottom: 16 },
       renderLineHighlight: 'line',

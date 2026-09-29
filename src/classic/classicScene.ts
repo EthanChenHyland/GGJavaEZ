@@ -1,6 +1,6 @@
 import type { Selection } from '../contracts/interaction'
 import type { TraceEvent } from '../contracts/runtime'
-import type { SceneModel, SceneSlot } from '../contracts/world'
+import type { SceneFrameNode, SceneModel, SceneSlot } from '../contracts/world'
 import { worldUnits } from '../theme/tokens'
 
 export interface DiagramRect { x: number; y: number; width: number; height: number }
@@ -26,6 +26,7 @@ export interface DiagramEntity {
   kind: 'frame' | 'object'
   label: string
   active: boolean
+  exceptionState?: SceneFrameNode['exceptionState']
   rect: DiagramRect
   slots: DiagramSlot[]
   scopes?: DiagramScope[]
@@ -119,7 +120,7 @@ export function buildClassicScene(scene: SceneModel, event: TraceEvent | null = 
       const rowHeight = scoped ? worldUnits.scope.rowGap * scopedScale : deepStack ? 18 : 40
       const reservedSlots = arrayLayout ? Object.keys(frame.anchor.ports) : []
       return {
-        id: frame.id, kind: 'frame', label: frame.label, active: frame.active, rect,
+        id: frame.id, kind: 'frame', label: frame.label, active: frame.active, exceptionState: frame.exceptionState, rect,
         ...(scoped ? { headingHeight, scopes: (frame.scopes ?? []).filter((scope) => scope.parentId !== null).map((scope) => {
           const inset = 12 * scope.depth
           return { id: scope.id, label: scope.label, depth: scope.depth, slotIds: scope.slotIds,

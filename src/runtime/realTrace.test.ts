@@ -62,4 +62,43 @@ describe('real trace schema v2', () => {
     delete write.from
     expect(() => validateTrace(changed)).toThrow('Malformed event')
   })
+
+  it('reconstructs finally, ordered console, catch and continuation at every reverse and shuffled cursor', () => {
+    const trace = validateTrace(document([
+      event(0, { type: 'PROGRAM_START' }),
+      event(1, { type: 'ENTER_METHOD', frameId: 'main', callerFrameId: null, className: 'Main', methodName: 'main', locals: [] }),
+      event(2, { type: 'ENTER_METHOD', frameId: 'call', callerFrameId: 'main', className: 'Main', methodName: 'fail', locals: [] }),
+      event(3, { type: 'CONSOLE_WRITE', frameId: 'call', channel: 'stdout', text: 'start\n' }),
+      event(4, { type: 'THROW_EXCEPTION', frameId: 'call', exceptionId: 'exception', className: 'java.lang.ArithmeticException', message: '/ by zero', explicit: false }),
+      event(5, { type: 'FINALLY_ENTER', frameId: 'call', exceptionId: 'exception' }),
+      event(6, { type: 'CONSOLE_WRITE', frameId: 'call', channel: 'stderr', text: 'cleanup\n' }),
+      event(7, { type: 'UNWIND_EXCEPTION', frameId: 'call', exceptionId: 'exception' }),
+      event(8, { type: 'CATCH_EXCEPTION', frameId: 'main', exceptionId: 'exception' }),
+      event(9, { type: 'CONSOLE_WRITE', frameId: 'main', channel: 'stdout', text: 'continued\n' }),
+      event(10, { type: 'EXIT_METHOD', frameId: 'main' }),
+      event(11, { type: 'CONSOLE_WRITE', frameId: null, channel: 'stderr', text: 'shutdown\n' }),
+      event(12, { type: 'PROGRAM_END' }),
+    ]))
+    const states = [createInitialState()]
+    for (const item of trace.events) states.push(applyEvent(states.at(-1)!, item))
+    for (const cursor of [13, 12, 8, 5, 0, 11, 6, 4, 7, 9, 2, 1, 10, 3]) expect(seek(trace, cursor)).toEqual(states[cursor])
+    expect(states[5].exceptions[0].finallyFrameIds).toBeUndefined()
+    expect(states[6].exceptions[0].finallyFrameIds).toEqual(['call'])
+    expect(states[8].exceptions[0].unwoundFrameIds).toEqual(['call'])
+    expect(states[9].exceptions[0].caughtBy).toBe('main')
+    expect(states[7].console.map(entry => entry.text)).toEqual(['start\n', 'cleanup\n'])
+    expect(states[13].console).toHaveLength(4)
+    expect(states[13].status).toBe('ended')
+  })
+
+  it('rejects finally without an active episode and console naming an inactive frame', () => {
+    const started = applyEvent(applyEvent(createInitialState(), event(0, { type: 'PROGRAM_START' })),
+      event(1, { type: 'ENTER_METHOD', frameId: 'main', callerFrameId: null, className: 'Main', methodName: 'main', locals: [] }))
+    expect(() => applyEvent(started, event(2, { type: 'FINALLY_ENTER', frameId: 'main', exceptionId: 'missing' })))
+      .toThrow('Unknown active exception')
+    expect(() => applyEvent(started, event(2, { type: 'CONSOLE_WRITE', frameId: 'gone', channel: 'stdout', text: 'wrong' })))
+      .toThrow('Console written outside active frame')
+    expect(started.console).toEqual([])
+    expect(started.exceptions).toEqual([])
+  })
 })

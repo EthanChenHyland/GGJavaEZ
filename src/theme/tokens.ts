@@ -1,4 +1,8 @@
 import design from '../../docs/visual-java-spec/DESIGN_TOKENS.json'
+import { preloadRuntimeText } from './runtimeFont'
+export { runtimeFont } from './runtimeFont'
+
+preloadRuntimeText()
 
 /** The spec JSON remains the sole color, typography, and spacing source. */
 export const colors = design.color
@@ -27,8 +31,6 @@ export const worldUnits = {
   homePosition: [5.2, 4.9, 11.6] as const,
   homeTarget: [0, 0.15, -0.2] as const,
 } as const
-
-export const runtimeFont = "/fonts/Inter.ttf"
 
 /** Shared presentation curve; semantic snapshots never contain interpolation. */
 export function easeOutCubic(progress: number): number {

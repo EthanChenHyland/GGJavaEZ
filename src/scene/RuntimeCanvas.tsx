@@ -14,6 +14,7 @@ import { colors, motionMs, renderQuality, runtimeFont, worldMaterial, worldUnits
 
 interface RuntimeCanvasProps {
   visible: boolean
+  fitShallow?: boolean
   guided: boolean
   playing: boolean
   quality: keyof typeof renderQuality
@@ -57,7 +58,7 @@ function MutationCue({ scene, event }: { scene: SceneModel; event: TraceEvent | 
   </Text>
 }
 
-export function RuntimeCanvas({ visible, guided, playing, quality, scene, event, selection, onSelect, onFocusSelected }: RuntimeCanvasProps) {
+export function RuntimeCanvas({ visible, fitShallow = false, guided, playing, quality, scene, event, selection, onSelect, onFocusSelected }: RuntimeCanvasProps) {
   const reducedMotion = useReducedMotion()
   const previousFrames = useRef(scene.frames)
   const [returning, setReturning] = useState<SceneFrameNode[]>([])
@@ -145,7 +146,7 @@ export function RuntimeCanvas({ visible, guided, playing, quality, scene, event,
           onSelect={(id) => select({ kind: 'object', id })} />)}
         {guided && <MutationCue scene={scene} event={event} />}
       </group>
-      <NavigationController visible={visible} sceneModel={scene} event={event} homeTarget={scene.bounds?.center ?? worldUnits.homeTarget} />
+      <NavigationController visible={visible} fitShallow={fitShallow} sceneModel={scene} event={event} homeTarget={scene.bounds?.center ?? worldUnits.homeTarget} />
     </Canvas>
   </div>
 }

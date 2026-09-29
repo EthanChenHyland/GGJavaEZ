@@ -2,6 +2,13 @@ package visualjava;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.io.PrintStream;
+import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
+import java.nio.charset.Charset;
+import java.nio.charset.CharsetDecoder;
+import java.nio.charset.CodingErrorAction;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.nio.charset.StandardCharsets;
@@ -18,14 +25,16 @@ import java.util.HashSet;
 /** Probe sink. It never invokes user equals, hashCode or toString. */
 public final class Recorder {
   private static final BufferedWriter OUT;
+  private static final PrintStream ORIGINAL_ERR = System.err;
   private static final IdentityHashMap<Object, String> IDS = new IdentityHashMap<>();
   private static final IdentityHashMap<Object, Boolean> SEEN = new IdentityHashMap<>();
   private static final ThreadLocal<ArrayDeque<Frame>> STACK = ThreadLocal.withInitial(ArrayDeque::new);
   private static final ThreadLocal<List<String>> PARAMETERS = ThreadLocal.withInitial(ArrayList::new);
+  private static final ThreadLocal<IdentityHashMap<Throwable, Boolean>> PROPAGATING = ThreadLocal.withInitial(IdentityHashMap::new);
   private static long seq, objectSequence, frameSequence, rawBytes;
   private static final long EVENT_LIMIT = Long.getLong("visualjava.eventLimit", 20000L);
   private static final long BYTE_LIMIT = Long.getLong("visualjava.byteLimit", 8L*1024*1024);
-  private static void limit(String reason) { System.err.println("[VisualJava] trace limit exceeded: " + reason); System.err.flush(); Runtime.getRuntime().halt(86); }
+  private static void limit(String reason) { ORIGINAL_ERR.println("[VisualJava] trace limit exceeded: " + reason); ORIGINAL_ERR.flush(); Runtime.getRuntime().halt(86); }
   private static final Set<String> PROJECT_CLASSES = new HashSet<>(List.of(System.getProperty("visualjava.classes", "").split(",")));
   private static final class Frame {
     final String id, owner, method, descriptor;
@@ -39,10 +48,34 @@ public final class Recorder {
       String path = System.getProperty("visualjava.trace");
       if (path == null || path.isEmpty()) throw new IllegalStateException("visualjava.trace missing");
       OUT = Files.newBufferedWriter(Path.of(path), StandardCharsets.UTF_8);
+      System.setOut(wrapped(System.out, "stdout"));
+      System.setErr(wrapped(System.err, "stderr"));
       Runtime.getRuntime().addShutdownHook(new Thread(() -> { try { synchronized (OUT) { OUT.flush(); OUT.close(); } } catch (IOException ignored) {} }));
     } catch (IOException e) { throw new ExceptionInInitializerError(e); }
   }
   private Recorder() {}
+  /** Keep the original byte stream intact; only decoded text is added to the probe clock. */
+  private static PrintStream wrapped(PrintStream original, String channel) {
+    Charset charset=original.charset();
+    CharsetDecoder decoder=charset.newDecoder().onMalformedInput(CodingErrorAction.REPLACE).onUnmappableCharacter(CodingErrorAction.REPLACE);
+    return new PrintStream(new OutputStream() {
+      private byte[] pending=new byte[0];
+      @Override public void write(int value) throws IOException { write(new byte[]{(byte)value},0,1); }
+      @Override public void write(byte[] bytes,int offset,int length) {
+        synchronized(OUT) {
+          byte[] combined=new byte[pending.length+length];
+          System.arraycopy(pending,0,combined,0,pending.length);System.arraycopy(bytes,offset,combined,pending.length,length);
+          ByteBuffer input=ByteBuffer.wrap(combined);CharBuffer output=CharBuffer.allocate(combined.length+2);
+          decoder.decode(input,output,false);pending=new byte[input.remaining()];input.get(pending);
+          output.flip();String text=output.toString();Frame f=current();
+          if(!text.isEmpty()) emit("console",f,f==null?-1:f.line,f==null?-1:f.site,"\"channel\":"+q(channel)+",\"text\":"+q(text));
+          original.write(bytes,offset,length);
+        }
+      }
+      @Override public void flush() { original.flush(); }
+      @Override public void close() { original.close(); }
+    },true,charset);
+  }
   private static String q(String s) {
     if (s == null) return "null";
     StringBuilder b = new StringBuilder("\"");
@@ -152,7 +185,14 @@ public final class Recorder {
       +",\"parameters\":["+String.join(",",params)+"]");
     params.clear(); stack.push(frame);
   }
-  public static void line(int line,int site) { Frame f=current(); if(f==null)return; f.line=line;f.site=site;emit("line",f,line,site,""); }
+  private static long rawCount() { synchronized(OUT) { return seq; } }
+  public static void line(int line,int site) {
+    Frame f=current(); if(f==null)return; f.line=line;f.site=site;emit("line",f,line,site,"");
+    DebugControl.checkpoint(f.id,f.owner,f.method,line,STACK.get().size(),rawCount());
+  }
+  public static void entryCheckpoint() { Frame f=current();if(f!=null && f.line>0)line(f.line,f.site); }
+  /** Update the actual instruction context without inventing a source-line execution event. */
+  public static void site(int line,int site) { Frame f=current();if(f!=null) { f.line=line;f.site=site; } }
   public static void local(int slot,String name,String descriptor,String liveRange,Object value,int site) {
     Frame f=current();if(f==null)return;f.site=site;
     emit("local",f,f.line,site,"\"slot\":"+slot+",\"name\":"+q(name)+",\"descriptor\":"+q(descriptor)
@@ -185,13 +225,29 @@ public final class Recorder {
   public static void returned(Object value,String descriptor,int site) { Frame f=current();if(f!=null)emit("return",f,f.line,site,"\"value\":"+raw(value,descriptor,true)); }
   public static void exit(int site) { Frame f=current();if(f==null)return;emit("exit",f,f.line,site,"");STACK.get().pop(); }
   public static void explicitThrow(Throwable error,int site) { if(error!=null) thrown(error,true,site); }
+  /** Custom message accessors are executable user code, not safe inspection. */
+  private static String safeMessage(Throwable error) {
+    try {
+      if(error.getClass().getMethod("getMessage").getDeclaringClass().getClassLoader()!=null)return null;
+      return error.getMessage();
+    } catch(ReflectiveOperationException | SecurityException unavailable) { return null; }
+  }
   private static void thrown(Throwable error,boolean explicit,int site) {
     Frame f=current();if(f==null)return;
-    emit("throw",f,f.line,site,"\"objectId\":"+q(id(error))+",\"message\":"+q(error.getMessage())+",\"explicit\":"+explicit,error.getClass().getName(),null);
+    if(PROPAGATING.get().put(error,Boolean.TRUE)!=null)return;
+    emit("throw",f,f.line,site,"\"objectId\":"+q(id(error))+",\"message\":"+q(safeMessage(error))+",\"explicit\":"+explicit,error.getClass().getName(),null);
+    DebugControl.exception(f.id,f.owner,f.method,f.line,STACK.get().size(),rawCount());
   }
-  public static void caught(Throwable error,int site) { Frame f=current();if(f!=null)emit("catch",f,f.line,site,"\"objectId\":"+q(id(error))); }
+  public static void caught(Throwable error,int handlerLine,int site) {
+    Frame f=current();if(f==null)return;thrown(error,false,f.site);
+    f.line=handlerLine;f.site=site;emit("catch",f,handlerLine,site,"\"objectId\":"+q(id(error)));PROPAGATING.get().remove(error);
+  }
+  public static void finallyEntered(Throwable error,int handlerLine,int site) {
+    Frame f=current();if(f==null)return;thrown(error,false,f.site);
+    f.line=handlerLine;f.site=site;emit("finally",f,handlerLine,site,"\"objectId\":"+q(id(error)));
+  }
   public static void unwind(Throwable error,int site) {
-    Frame f=current();if(f==null)return;thrown(error,false,site);
+    Frame f=current();if(f==null)return;thrown(error,false,f.site);
     emit("unwind",f,f.line,site,"\"objectId\":"+q(id(error)));STACK.get().pop();
   }
 }

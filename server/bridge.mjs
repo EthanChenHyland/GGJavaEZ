@@ -8,12 +8,14 @@ import { compileProject } from './compiler.mjs'
 import { RunManager } from './runner.mjs'
 import { runInstrumented } from './instrumentation-provider.mjs'
 import { buildInstrumentationSourceManifest } from './instrumentation-sources.mjs'
+import { DebugManager } from './debug-manager.mjs'
 
 const repository = resolve(fileURLToPath(new URL('..', import.meta.url)))
 const workspace = resolve(process.env.GGJAVA_WORKSPACE || join(repository, '.ggjavaez'))
 const port = Number(process.env.GGJAVA_PORT || 8787)
 const projects = new ProjectStore(workspace)
 const runs = new RunManager()
+const debuggerSessions = new DebugManager()
 const settingsFile = join(workspace, 'settings.json')
 let settings = { jdkHome: null }
 let executionQueue = Promise.resolve()
@@ -77,6 +79,15 @@ const server = http.createServer(async (request, response) => {
     const parts = segments(url.pathname)
     const method = request.method
     if (url.pathname === '/api/health' && method === 'GET') return json(response, 200, { jdk: await detectJdk(settings.jdkHome) })
+    if (url.pathname === '/api/debug/current' && method === 'GET') return json(response, 200, debuggerSessions.current())
+    if (parts[0] === 'api' && parts[1] === 'debug' && parts[2]) {
+      const id = parts[2]
+      if (!debuggerSessions.snapshot(id)) return json(response, 404, { error: 'Debug session not found' })
+      if (parts.length === 3 && method === 'GET') return json(response, 200, debuggerSessions.snapshot(id))
+      if (parts[3] === 'command' && method === 'POST') return json(response, 200, await debuggerSessions.command(id, (await body(request)).command))
+      if (parts[3] === 'input' && method === 'POST') return json(response, 200, await debuggerSessions.input(id, (await body(request)).text))
+      if (parts[3] === 'breakpoints' && method === 'POST') return json(response, 200, await debuggerSessions.setBreakpoints(id, (await body(request)).breakpoints))
+    }
     if (url.pathname === '/api/jdk/detect' && method === 'POST') {
       const payload = await body(request)
       const jdk = await detectJdk(payload.home ?? null)
@@ -111,11 +122,31 @@ const server = http.createServer(async (request, response) => {
         return json(response, 200, await projects.renameEntry(id, from, to))
       }
       if (action === 'entries' && method === 'DELETE') return json(response, 200, await projects.deleteEntry(id, url.searchParams.get('path')))
-      if (action === 'build' && method === 'POST') { await body(request); return json(response, 200, await serialized(async () => { await runs.stop(); return build(id) })) }
+      if (action === 'build' && method === 'POST') { await body(request); return json(response, 200, await serialized(async () => { await debuggerSessions.stop(); await runs.stop(); return build(id) })) }
+      if (action === 'debug' && method === 'POST') {
+        const { mainClass, breakpoints } = await body(request)
+        return json(response, 200, await serialized(async () => {
+          await runs.stop(); await debuggerSessions.stop()
+          const compilation = await build(id, true)
+          const sourceManifest = { sources: [], classes: [] }
+          if (!compilation.success || !compilation.mainClasses.length) return {
+            sessionId: `compile:${id}`, projectId: id, revision: 0, status: 'failed', pause: null, breakpoints: [], rawEvents: [],
+            sourceManifest, build: compilation, stdout: '', stderr: '', exitCode: null, terminalStatus: null,
+            diagnostic: compilation.success ? 'No public static main(String[]) entry point found' : 'Compilation failed. See Problems.',
+          }
+          const selected = compilation.mainClasses.includes(mainClass) ? mainClass : compilation.mainClasses[0]
+          const projectRoot = await projects.getProjectRoot(id), classesDir = join(workspace, 'build', id, 'classes')
+          const manifest = await buildInstrumentationSourceManifest(projectRoot, classesDir)
+          return debuggerSessions.start({ projectId: id, projectRoot, classesDir, mainClass: selected,
+            javaPath: compilation.jdk.javaPath, javacPath: compilation.jdk.javacPath, sourceManifest: manifest,
+            build: compilation, breakpoints: breakpoints ?? [], rawEventLimit: 20000, rawByteLimit: 8 * 1024 * 1024, timeoutMs: 30000 })
+        }))
+      }
       if (action === 'run' && method === 'POST') {
         const { mainClass } = await body(request)
         return json(response, 200, await serialized(async () => {
           await runs.stop()
+          await debuggerSessions.stop()
           const result = await build(id)
           if (!result.success) return { build: result, run: null }
           if (!result.mainClasses.length) return { build: result, run: null }
@@ -129,6 +160,7 @@ const server = http.createServer(async (request, response) => {
         const { mainClass } = await body(request)
         return json(response, 200, await serialized(async () => {
           await runs.stop()
+          await debuggerSessions.stop()
           const compilation = await build(id, true)
           const emptyManifest = { sources: [], classes: [] }
           if (!compilation.success) return { build: compilation, status: 'compile_failed', diagnostic: 'Compilation failed',
@@ -181,4 +213,4 @@ const server = http.createServer(async (request, response) => {
 })
 
 server.listen(port, '127.0.0.1', () => console.log(`GGJavaEZ bridge listening on http://127.0.0.1:${port}`))
-for (const signal of ['SIGINT', 'SIGTERM']) process.on(signal, async () => { await runs.stop(); server.close(); process.exit(0) })
+for (const signal of ['SIGINT', 'SIGTERM']) process.on(signal, async () => { await debuggerSessions.stop(); await runs.stop(); server.close(); process.exit(0) })

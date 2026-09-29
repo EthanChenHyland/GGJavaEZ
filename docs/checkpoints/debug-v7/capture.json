@@ -1,0 +1,132 @@
+{
+  "capturedAt": "2026-09-29T01:15:49.291Z",
+  "captures": [
+    {
+      "name": "breakpoint",
+      "width": 1440,
+      "height": 900,
+      "path": "docs/checkpoints/debug-v7/breakpoint-1440x900.png"
+    },
+    {
+      "name": "breakpoint",
+      "width": 1728,
+      "height": 1117,
+      "path": "docs/checkpoints/debug-v7/breakpoint-1728x1117.png"
+    },
+    {
+      "name": "breakpoint",
+      "width": 1280,
+      "height": 800,
+      "path": "docs/checkpoints/debug-v7/breakpoint-1280x800.png"
+    },
+    {
+      "name": "breakpoint",
+      "width": 760,
+      "height": 900,
+      "path": "docs/checkpoints/debug-v7/breakpoint-760x900.png"
+    },
+    {
+      "name": "nested-pause",
+      "width": 1440,
+      "height": 900,
+      "path": "docs/checkpoints/debug-v7/nested-pause-1440x900.png"
+    },
+    {
+      "name": "nested-spatial-expanded",
+      "width": 1440,
+      "height": 900,
+      "path": "docs/checkpoints/debug-v7/nested-spatial-expanded-1440x900.png"
+    },
+    {
+      "name": "null-error",
+      "width": 1440,
+      "height": 900,
+      "path": "docs/checkpoints/debug-v7/null-error-1440x900.png"
+    },
+    {
+      "name": "null-error",
+      "width": 1728,
+      "height": 1117,
+      "path": "docs/checkpoints/debug-v7/null-error-1728x1117.png"
+    },
+    {
+      "name": "null-error",
+      "width": 1280,
+      "height": 800,
+      "path": "docs/checkpoints/debug-v7/null-error-1280x800.png"
+    },
+    {
+      "name": "null-error",
+      "width": 760,
+      "height": 900,
+      "path": "docs/checkpoints/debug-v7/null-error-760x900.png"
+    },
+    {
+      "name": "null-spatial-expanded",
+      "width": 760,
+      "height": 900,
+      "path": "docs/checkpoints/debug-v7/null-spatial-expanded-760x900.png"
+    },
+    {
+      "name": "causal-history",
+      "width": 1440,
+      "height": 900,
+      "path": "docs/checkpoints/debug-v7/causal-history-1440x900.png"
+    },
+    {
+      "name": "null-classic",
+      "width": 1440,
+      "height": 900,
+      "path": "docs/checkpoints/debug-v7/null-classic-1440x900.png"
+    },
+    {
+      "name": "null-classic-expanded",
+      "width": 1440,
+      "height": 900,
+      "path": "docs/checkpoints/debug-v7/null-classic-expanded-1440x900.png"
+    },
+    {
+      "name": "null-spatial-expanded",
+      "width": 1440,
+      "height": 900,
+      "path": "docs/checkpoints/debug-v7/null-spatial-expanded-1440x900.png"
+    },
+    {
+      "name": "propagation-classic",
+      "width": 1440,
+      "height": 900,
+      "path": "docs/checkpoints/debug-v7/propagation-classic-1440x900.png"
+    },
+    {
+      "name": "propagation-classic-expanded",
+      "width": 1440,
+      "height": 900,
+      "path": "docs/checkpoints/debug-v7/propagation-classic-expanded-1440x900.png"
+    },
+    {
+      "name": "propagation-spatial-expanded",
+      "width": 1440,
+      "height": 900,
+      "path": "docs/checkpoints/debug-v7/propagation-spatial-expanded-1440x900.png"
+    },
+    {
+      "name": "catch-classic",
+      "width": 1440,
+      "height": 900,
+      "path": "docs/checkpoints/debug-v7/catch-classic-1440x900.png"
+    },
+    {
+      "name": "catch-classic-expanded",
+      "width": 1440,
+      "height": 900,
+      "path": "docs/checkpoints/debug-v7/catch-classic-expanded-1440x900.png"
+    },
+    {
+      "name": "finally-spatial",
+      "width": 1440,
+      "height": 900,
+      "path": "docs/checkpoints/debug-v7/finally-spatial-1440x900.png"
+    }
+  ],
+  "pageErrors": []
+}

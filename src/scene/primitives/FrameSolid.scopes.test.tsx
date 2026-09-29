@@ -165,6 +165,18 @@ describe('FrameSolid lexical scope geometry', () => {
   })
 
   it.each([
+    ['origin', 'THROW'], ['unwound', 'UNWOUND'], ['caught', 'CATCH'], ['finally', 'FINALLY'],
+  ] as const)('shows the canonical %s exception state while retaining the active execution marker', (exceptionState, caption) => {
+    const node = { ...frame(), exceptionState }
+    const markup = render({ node })
+    expect(rendered.bodies[0].accent).toBe(colors.exception)
+    expect(rendered.labels.find(label => label.text === `STACK FRAME · ${caption}`)?.color).toBe(colors.exception)
+    expect(markup).toContain(`color="${colors.execution}"`)
+    expect(markup).toContain(`color="${colors.exception}"`)
+    expect(rendered.slots.map(row => row.slot.id)).toEqual(node.slots.map(row => row.id))
+  })
+
+  it.each([
     ['Person', false, false], ['recursion', true, false], ['arrays', false, true],
   ] as const)('preserves %s frame typography and front-face placement without explicit scopes', (_example, readable, spacious) => {
     const node = frame()

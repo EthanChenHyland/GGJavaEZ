@@ -4,21 +4,24 @@ test('visible zoom controls reset each representation without changing runtime s
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await page.goto('/')
   await page.getByRole('slider', { name: 'Scrub execution' }).fill('18')
+  const spatialPose = () => page.evaluate(async () => {
+    const { useNavigationStore } = await import('/src/navigation/navigation.ts')
+    return useNavigationStore.getState().pose
+  })
   for (const representation of ['Classic', 'Spatial']) {
     await page.getByRole('button', { name: representation, exact: true }).click()
+    if (representation === 'Classic') await expect(page.locator('.classic-view')).toHaveAttribute('aria-hidden', 'false')
+    else await expect(page.locator('.spatial-view')).toHaveAttribute('aria-hidden', 'false')
     await page.getByRole('button', { name: 'Overview', exact: true }).click()
-    await page.waitForTimeout(200)
-    const drawing = representation === 'Classic' ? page.locator('.classic-runtime') : page.locator('.world-canvas canvas')
-    const baseline = await drawing.screenshot()
+    const current = representation === 'Classic' ? () => page.locator('.classic-runtime').getAttribute('viewBox') : spatialPose
+    const baseline = await current()
     await page.getByRole('button', { name: 'Zoom in', exact: true }).click()
-    await page.waitForTimeout(200)
-    expect((await drawing.screenshot()).equals(baseline)).toBe(false)
+    await expect.poll(current).not.toEqual(baseline)
     await expect(page.getByRole('button', { name: 'Follow execution', exact: true })).toHaveAttribute('aria-pressed', 'false')
     for (let n = 0; n < 12; n++) await page.getByRole('button', { name: 'Zoom in', exact: true }).click()
     for (let n = 0; n < 20; n++) await page.getByRole('button', { name: 'Zoom out', exact: true }).click()
     await page.getByRole('button', { name: 'Reset view', exact: true }).click()
-    await page.waitForTimeout(200)
-    expect((await drawing.screenshot()).equals(baseline)).toBe(true)
+    await expect.poll(current).toEqual(baseline)
     await expect(page.locator('.vj-timeline__count')).toContainText('18 / 21')
   }
 })

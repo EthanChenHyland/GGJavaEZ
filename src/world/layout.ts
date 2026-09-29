@@ -22,6 +22,8 @@ export function createLayout(trace: TraceDocument): LayoutState {
   let objectOrdinal = 0
   let stackDepth = 0
   const hasArrays = trace.events.some((event) => event.type === 'ALLOCATE_ARRAY')
+  // A live capture has no known final depth. Its positions depend only on identity/order.
+  const live = trace.demoId.startsWith('debug:')
   const theaterAnchors: Record<string, WorldAnchor> = {}
 
   for (const event of trace.events) {
@@ -34,7 +36,9 @@ export function createLayout(trace: TraceDocument): LayoutState {
   }
   for (const event of trace.events) {
     if (event.type === 'ENTER_METHOD' && event.returnType && event.returnType !== 'void') {
-      frameSlots[event.frameId].push({ id: `return:${event.frameId}`, name: 'return', javaType: event.returnType, role: 'return', value: { kind: 'uninitialized' } })
+      const returned: RuntimeSlot = { id: `return:${event.frameId}`, name: 'return', javaType: event.returnType, role: 'return', value: { kind: 'uninitialized' } }
+      if (live) frameSlots[event.frameId].unshift(returned)
+      else frameSlots[event.frameId].push(returned)
     }
   }
 
@@ -42,19 +46,21 @@ export function createLayout(trace: TraceDocument): LayoutState {
     if (event.type === 'ENTER_METHOD') {
       const depth = event.callerFrameId ? (frameDepths[event.callerFrameId] ?? 0) + 1 : 0
       frameDepths[event.frameId] = depth
-      const position: Vec3 = stackDepth > 1
+      const position: Vec3 = live
+        ? [-4.9 + depth * 0.9, -depth * 4.2, -3 + depth * 1.1]
+        : stackDepth > 1
         ? [-4.7 + depth * 0.9, (stackDepth - depth) * 2.2 - 0.3, -3 + depth * 1.1]
         : depth === 0
         ? [hasArrays ? -4.9 : -3.45, -0.25, 1.1]
         : [-3.35 + (depth - 1) * 0.32, 1.65 + (depth - 1) * 1.65, -0.8 - childOrdinal++ * 0.85]
       const slots = frameSlots[event.frameId] ?? []
-      const size: Vec3 = [worldUnits.frame[0], Math.max(worldUnits.frame[1], hasArrays ? 1.5 + slots.length * 0.44 : 1.12 + slots.length * 0.34), worldUnits.frame[2]]
+      const size: Vec3 = [worldUnits.frame[0], live ? 3.6 : Math.max(worldUnits.frame[1], hasArrays ? 1.5 + slots.length * 0.44 : 1.12 + slots.length * 0.34), worldUnits.frame[2]]
       anchors[event.frameId] = {
         entityId: event.frameId,
         region: 'stack',
         position,
         size,
-        ports: portsForSlots(position, size, slots, 'stack', hasArrays),
+        ports: portsForSlots(position, size, slots, 'stack', !live && hasArrays),
         bodyPort: [position[0] + size[0] / 2, position[1], position[2]],
       }
     }
@@ -97,7 +103,8 @@ export function createLayout(trace: TraceDocument): LayoutState {
     }
   }
 
-  if (stackDepth <= 1 && !hasArrays) return { anchors, homeTarget: worldUnits.homeTarget, stackDepth }
+  if (stackDepth <= 1 && !hasArrays && !live) return { anchors, homeTarget: worldUnits.homeTarget, stackDepth }
+  if (!Object.keys(anchors).length) return { anchors, homeTarget: worldUnits.homeTarget, stackDepth }
   const boundsFor = (reserved: Record<string, WorldAnchor>) => {
     const nodes = Object.values(reserved)
     const min = [0, 1, 2].map((axis) => Math.min(...nodes.map((node) => node.position[axis] - node.size[axis] / 2)))

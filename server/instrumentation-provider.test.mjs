@@ -38,6 +38,9 @@ test('Person: stable identity, constructor and successful field/local observatio
     assert.ok(types(r, 'enter').some((e) => e.methodName === '<init>' && e.receiver.objectId === objects[0].objectId));
     assert.ok(types(r, 'line').some((e) => e.className === 'Person'));
     assert.equal(r.capability.coveredClasses.length, 2);
+    assert.equal(r.capability.features.console.status, 'partial');
+    assert.ok(r.capability.features.console.observedEvents > 0);
+    assert.match(r.capability.features.console.reason, /replaced streams/);
   } finally { await f.cleanup(); }
 });
 
@@ -77,6 +80,8 @@ test('crash retains honest exceptional prefix without a success marker', async (
   try {
     const r=await runInstrumented(f.request);assert.equal(r.status,'program_crashed',r.diagnostic);assertPrefix(r);
     assert.equal(types(r,'unwind').length,2);assert.ok(types(r,'throw').some((e)=>e.explicit));
+    assert.notEqual(r.capability.features.methods.status, 'unsupported');
+    assert.match(r.capability.features.exceptions.reason, /before catch\/finally\/unwind/);
   } finally { await f.cleanup(); }
 });
 

@@ -314,6 +314,17 @@ export function applyEvent(state: RuntimeState, event: TraceEvent): RuntimeState
       break
     }
 
+    case 'CONSOLE_WRITE':
+      requireCondition(event.frameId === null || activeFrameId === event.frameId,
+        `Console written outside active frame ${event.frameId}`)
+      requireCondition(['stdout', 'stderr'].includes(event.channel) && typeof event.text === 'string', 'Invalid console write')
+      next = { ...state, console: [...state.console, {
+        eventId: event.eventId, frameId: event.frameId, source: event.source ? { ...event.source } : null,
+        kind: 'output', channel: event.channel, text: event.text,
+        value: { kind: 'stringSummary', javaType: 'String', value: event.text },
+      }] }
+      break
+
     case 'PROGRAM_START':
       requireCondition(state.status === 'ready', 'PROGRAM_START can only occur once')
       next = { ...state, status: 'running' }
@@ -629,12 +640,22 @@ export function applyEvent(state: RuntimeState, event: TraceEvent): RuntimeState
       next = { ...state, exceptions }
       break
     }
+
+    case 'FINALLY_ENTER': {
+      requireCondition(activeFrameId === event.frameId, `Finally entered outside top frame ${event.frameId}`)
+      const index = state.exceptions.map((item) => item.exceptionId === event.exceptionId && !item.caughtBy).lastIndexOf(true)
+      requireCondition(index >= 0, `Unknown active exception ${event.exceptionId}`)
+      const exceptions = [...state.exceptions]
+      exceptions[index] = { ...exceptions[index], finallyFrameIds: [...(exceptions[index].finallyFrameIds ?? []), event.frameId] }
+      next = { ...state, exceptions }
+      break
+    }
   }
 
   return {
     ...next,
     cursor: state.cursor + 1,
-    currentSource: event.source ? { ...event.source } : event.type === 'PROGRAM_ABORT' ? state.currentSource : null,
+    currentSource: event.source ? { ...event.source } : ['PROGRAM_ABORT', 'CONSOLE_WRITE'].includes(event.type) ? state.currentSource : null,
     lastEventId: event.eventId,
     // Activity describes the current array instruction, not a lingering visual effect.
     arrayActivity: ['ARRAY_READ', 'ARRAY_COMPARE', 'ARRAY_WRITE'].includes(event.type) ? next.arrayActivity : null,

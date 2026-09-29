@@ -23,7 +23,7 @@ export function usePlayback(trace: TraceDocument): PlaybackApi {
   // A different trace always begins at its ready state. Keep the user's speed choice.
   useEffect(() => {
     dispatch({ type: 'reset' })
-  }, [trace])
+  }, [trace.demoId])
 
   useEffect(() => {
     if (!state.playing || state.cursor >= eventCount) return

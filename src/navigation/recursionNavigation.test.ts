@@ -69,6 +69,14 @@ describe('reserved recursive camera composition', () => {
     expect(limitsForOverview(responsiveHomePose(undefined, 1.54)).maxDistance).toBe(32)
   })
 
+  it('fits a live shallow reserved world only when explicitly requested', () => {
+    const shallow = { ...scene, stackDepth: 1 }
+    const target = shallow.bounds!.center
+    const fitted = sceneHomePose(shallow, target, viewFor(1.54), true)
+    expect(fitted).toEqual(sceneHomePose(scene, target, viewFor(1.54)))
+    expect(fitted).not.toEqual(responsiveHomePose(target, 1.54))
+  })
+
   it('bounds repeated zoom at the reserved overview limit without clipping Home', () => {
     const home = sceneHomePose(scene, undefined, viewFor(0.8))
     const limits = limitsForOverview(home, scene.bounds!.size)
