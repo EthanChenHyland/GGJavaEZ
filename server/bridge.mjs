@@ -11,6 +11,7 @@ import { RunManager } from './runner.mjs'
 import { runInstrumented } from './instrumentation-provider.mjs'
 import { buildInstrumentationSourceManifest } from './instrumentation-sources.mjs'
 import { DebugManager } from './debug-manager.mjs'
+import { ExecutionManager } from './execution-manager.mjs'
 
 const repository = resolve(fileURLToPath(new URL('..', import.meta.url)))
 const workspace = resolve(process.env.GGJAVA_WORKSPACE || join(repository, '.ggjavaez'))
@@ -18,6 +19,15 @@ const port = Number(process.env.GGJAVA_PORT || 8787)
 const projects = new ProjectStore(workspace)
 const runs = new RunManager()
 const debuggerSessions = new DebugManager()
+const executions = new ExecutionManager({
+  build: (id, debug) => builds.build(id, { debug }),
+  resolveLaunch,
+  buildManifest: buildInstrumentationSourceManifest,
+  getProjectRoot: (id) => projects.getProjectRoot(id),
+  publicBuild,
+  runs,
+  debuggerSessions,
+})
 const settingsFile = join(workspace, 'settings.json')
 let settings = { jdkHome: null }
 const builds = new BuildService({ workspaceRoot: workspace, projects, getJdk: () => detectJdk(settings.jdkHome) })
@@ -81,6 +91,23 @@ const server = http.createServer(async (request, response) => {
     const parts = segments(url.pathname)
     const method = request.method
     if (url.pathname === '/api/health' && method === 'GET') return json(response, 200, { jdk: await detectJdk(settings.jdkHome) })
+    if (url.pathname === '/api/execution/current' && method === 'GET') return json(response, 200, executions.current())
+    if (parts[0] === 'api' && parts[1] === 'execution' && parts[2]) {
+      const id = parts[2]
+      if (!executions.snapshot(id)) return json(response, 404, { error: 'Execution session not found' })
+      if (parts[3] === 'events' && method === 'GET') {
+        response.writeHead(200, { 'content-type': 'text/event-stream; charset=utf-8', 'cache-control': 'no-cache, no-transform', connection: 'keep-alive', 'x-accel-buffering': 'no' })
+        response.write(': connected\n\n')
+        const unsubscribe = executions.subscribe(id, (session) => response.write(`event: session\ndata: ${JSON.stringify(session)}\n\n`))
+        request.on('close', unsubscribe)
+        return
+      }
+      if (parts.length === 3 && method === 'GET') return json(response, 200, executions.snapshot(id))
+      if (parts[3] === 'command' && method === 'POST') return json(response, 200, await executions.command(id, (await body(request)).command))
+      if (parts[3] === 'input' && method === 'POST') return json(response, 200, await executions.input(id, (await body(request)).text))
+      if (parts[3] === 'stop' && method === 'POST') { await body(request); return json(response, 200, await executions.stop(id)) }
+      if (parts[3] === 'breakpoints' && method === 'POST') return json(response, 200, await executions.setBreakpoints(id, (await body(request)).breakpoints))
+    }
     if (url.pathname === '/api/debug/current' && method === 'GET') return json(response, 200, debuggerSessions.current())
     if (parts[0] === 'api' && parts[1] === 'debug' && parts[2]) {
       const id = parts[2]
@@ -137,11 +164,17 @@ const server = http.createServer(async (request, response) => {
         return json(response, 200, await projects.renameEntry(id, from, to))
       }
       if (action === 'entries' && method === 'DELETE') return json(response, 200, await projects.deleteEntry(id, url.searchParams.get('path')))
-      if (action === 'build' && method === 'POST') { await body(request); return json(response, 200, await serialized(async () => { await debuggerSessions.stop(); await runs.stop(); return publicBuild(await build(id)) })) }
+      if (action === 'build' && method === 'POST') { await body(request); return json(response, 200, await serialized(async () => { await executions.stop(); await debuggerSessions.stop(); await runs.stop(); return publicBuild(await build(id)) })) }
+      if (action === 'execution' && method === 'POST') {
+        const configuration = await body(request)
+        return json(response, 200, executions.start({ projectId: id, kind: configuration.kind, configuration,
+          withoutVisualization: configuration.withoutVisualization ?? false, breakpoints: configuration.breakpoints ?? [] }))
+      }
       if (action === 'debug' && method === 'POST') {
         const configuration = await body(request)
         const { breakpoints } = configuration
         return json(response, 200, await serialized(async () => {
+          await executions.stop()
           await runs.stop(); await debuggerSessions.stop()
           const compilation = await build(id, true)
           const sourceManifest = { sources: [], classes: [] }
@@ -161,6 +194,7 @@ const server = http.createServer(async (request, response) => {
       if (action === 'run' && method === 'POST') {
         const configuration = await body(request)
         return json(response, 200, await serialized(async () => {
+          await executions.stop()
           await runs.stop()
           await debuggerSessions.stop()
           const result = await build(id)
@@ -174,6 +208,7 @@ const server = http.createServer(async (request, response) => {
       if (action === 'visualize' && method === 'POST') {
         const configuration = await body(request)
         return json(response, 200, await serialized(async () => {
+          await executions.stop()
           await runs.stop()
           await debuggerSessions.stop()
           const compilation = await build(id, true)

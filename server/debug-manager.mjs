@@ -81,36 +81,45 @@ export class DebugManager {
       if (!request?.projectId || !request.sourceManifest || !request.build?.success) throw error('Debug requires a successful build and source manifest', 400);
       const launch = launchRequest(request);
       if (this.latest && !TERMINAL.has(this.latest.dto.status)) await this.#stopRun(this.latest);
-      const prepared = await this.prepare(request);
+      let prepared;
+      try { prepared = await this.prepare(request); }
+      catch (failure) { failure.preparationFailed = true; throw failure; }
+      const controlled = request.control !== false;
       const dto = { sessionId: randomUUID(), projectId: request.projectId, revision: 0, status: 'starting', pause: null,
         breakpoints: [], rawEvents: [], sourceManifest: clone(request.sourceManifest), build: clone(request.build),
-        stdout: '', stderr: '', exitCode: null, terminalStatus: null, diagnostic: null };
+        stdout: '', stderr: '', exitCode: null, terminalStatus: null, diagnostic: null,
+        coverage: { coveredClasses: [...prepared.coveredClasses], transformInfo: clone(prepared.transformInfo) } };
       const run = { dto, prepared, request, child: null, server: null, socket: null, connected: false,
+        controlled,
         file: null, offset: 0, tail: '', rawDecoder: new StringDecoder('utf8'), outputBytes: 0,
         readQueue: Promise.resolve(), messageQueue: Promise.resolve(), commands: Promise.resolve(),
         pending: new Map(), listeners: new Set(), activeMs: 0, activeSince: performance.now(),
         finishing: false, closing: false, stopRequested: false, failureStatus: null, timer: null,
         token: randomBytes(32).toString('hex'), candidates: new Set(), projectThreads: new Set() };
       try {
-        dto.breakpoints = this.#resolveBreakpoints(run, request.breakpoints ?? []);
-        // Validate before creating any process or server.
-        this.#breakpointPayload(run, dto.breakpoints);
-        run.server = net.createServer((socket) => this.#connect(run, socket));
-        await new Promise((resolveListen, reject) => {
-          run.server.once('error', reject);
-          run.server.listen(0, '127.0.0.1', () => { run.server.off('error', reject); resolveListen(); });
-        });
-        run.server.on('error', (failure) => this.#fail(run, failure.message));
-        const port = run.server.address().port;
-        const launchIndex = prepared.args.indexOf('-cp');
-        if (launchIndex < 0) throw error('Prepared debugger launch has no classpath', 400);
-        const args = [...prepared.args.slice(0, launchIndex), `-Dvisualjava.debugPort=${port}`, `-Dvisualjava.debugToken=${run.token}`, ...prepared.args.slice(launchIndex)];
+        dto.breakpoints = controlled ? this.#resolveBreakpoints(run, request.breakpoints ?? []) : [];
+        let args = prepared.args;
+        if (controlled) {
+          // Validate before creating any process or server.
+          this.#breakpointPayload(run, dto.breakpoints);
+          run.server = net.createServer((socket) => this.#connect(run, socket));
+          await new Promise((resolveListen, reject) => {
+            run.server.once('error', reject);
+            run.server.listen(0, '127.0.0.1', () => { run.server.off('error', reject); resolveListen(); });
+          });
+          run.server.on('error', (failure) => this.#fail(run, failure.message));
+          const port = run.server.address().port;
+          const launchIndex = prepared.args.indexOf('-cp');
+          if (launchIndex < 0) throw error('Prepared debugger launch has no classpath', 400);
+          args = [...prepared.args.slice(0, launchIndex), `-Dvisualjava.debugPort=${port}`, `-Dvisualjava.debugToken=${run.token}`, ...prepared.args.slice(launchIndex)];
+        }
         run.child = this.spawnProcess(request.javaPath, args, {
           cwd: launch.workingDirectory, shell: false, windowsHide: true,
           detached: process.platform !== 'win32', stdio: ['pipe', 'pipe', 'pipe'],
         });
         run.closed = new Promise((resolveClosed) => { run.resolveClosed = resolveClosed; });
         this.sessions.set(dto.sessionId, run); this.latest = run;
+        if (!controlled) this.#transition(run, 'running');
         while (this.sessions.size > 32) this.sessions.delete(this.sessions.keys().next().value);
         for (const [stream, name] of [[run.child.stdout, 'stdout'], [run.child.stderr, 'stderr']]) {
           const decoder = new StringDecoder('utf8');
@@ -129,12 +138,13 @@ export class DebugManager {
           if (run.finishing || run.closing) return;
           const active = run.activeMs + (['starting', 'running'].includes(dto.status) ? performance.now() - run.activeSince : 0);
           if (active > prepared.timeoutMs) this.#fail(run, 'Running execution exceeded the debug time limit', 'limit_exceeded');
-          else if (!run.connected && performance.now() - run.activeSince > 5000) this.#fail(run, 'JVM did not connect to debug control');
+          else if (controlled && !run.connected && performance.now() - run.activeSince > 5000) this.#fail(run, 'JVM did not connect to debug control');
           void this.#refresh(run).catch((failure) => this.#fail(run, failure.message));
         }, 20);
         this.#publish(run);
         return clone(dto);
       } catch (failure) {
+        failure.executionStarted = Boolean(run.child);
         for (const socket of run.candidates) socket.destroy();
         run.socket?.destroy(); run.server?.close();
         if (run.child) this.#signal(run, 'SIGKILL');
@@ -289,9 +299,9 @@ export class DebugManager {
     if (code === 86 && run.dto.stderr.includes('[VisualJava] trace limit exceeded')) {
       run.failureStatus = 'limit_exceeded'; run.dto.diagnostic ??= 'Recorder capture limit exceeded';
     }
-    if (!run.stopRequested && !run.failureStatus && (!run.connected || !run.dto.rawEvents.length
+    if (!run.stopRequested && !run.failureStatus && ((run.controlled && !run.connected) || !run.dto.rawEvents.length
       || /Trace write failed|VerifyError|ClassFormatError|NoClassDefFoundError: visualjava|Debug control failed/.test(run.dto.stderr))) {
-      run.failureStatus = 'instrumentation_failed'; run.dto.diagnostic ??= 'No verified debugger execution prefix';
+      run.failureStatus = 'instrumentation_failed'; run.dto.diagnostic ??= 'No verified instrumented execution prefix';
     }
     run.dto.exitCode = code;
     run.dto.terminalStatus = run.failureStatus ?? (run.stopRequested ? 'unsupported' : code === 0 ? 'complete' : 'program_crashed');
@@ -334,6 +344,7 @@ export class DebugManager {
     if (!COMMANDS.has(command)) return Promise.reject(error('Unknown debug command', 400));
     if (command === 'stop') return this.stop(id);
     const run = this.#get(id);
+    if (!run.controlled) return Promise.reject(error('Run does not have debugger control', 400));
     const task = run.commands.then(async () => {
       if (command === 'pause' ? run.dto.status !== 'running' : run.dto.status !== 'paused') throw error(`Cannot ${command} while debugger is ${run.dto.status}`);
       await this.#send(run, command);
@@ -345,6 +356,7 @@ export class DebugManager {
 
   setBreakpoints(id, list) {
     const run = this.#get(id);
+    if (!run.controlled) return Promise.reject(error('Run does not have debugger control', 400));
     const task = run.commands.then(async () => {
       const resolved = this.#resolveBreakpoints(run, list);
       const payload = this.#breakpointPayload(run, resolved);

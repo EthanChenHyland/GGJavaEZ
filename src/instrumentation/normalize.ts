@@ -360,6 +360,12 @@ export function normalizeTrace(
             `${raw.channel} write`, 'quiet')
           observed('console')
           break
+        case 'stdin_wait':
+          break
+        case 'stdin_read':
+          emit({ type: 'CONSOLE_INPUT', frameId: frame, text: raw.text }, source, 'Input consumed', 'quiet')
+          observed('console')
+          break
       }
     } catch (error) {
       failure = `Raw event ${raw.seq}: ${(error as Error).message}`

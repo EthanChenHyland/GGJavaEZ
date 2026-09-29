@@ -2,18 +2,40 @@ import { expect, test } from '@playwright/test'
 import { mkdtemp, mkdir, writeFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { randomUUID } from 'node:crypto'
+import type { ExecutionSession } from '../src/execution/contracts'
+
+test.describe.configure({ mode: 'serial', timeout: 90_000 })
 
 async function imported(request: import('@playwright/test').APIRequestContext, name: string, files: { path: string; content: string }[]) {
-  const response = await request.post('/api/projects/import', { data: { name: `${name}-${Date.now()}`, files } })
-  expect(response.ok()).toBe(true)
+  const response = await request.post('/api/projects/import', { data: { name: `${name}-${randomUUID()}`, files } })
+  expect(response.ok(), await response.text()).toBe(true)
   return (await response.json()).id as string
 }
 async function openProject(page: import('@playwright/test').Page, id: string) {
   await page.addInitScript((projectId) => localStorage.setItem('ggjavaez:project', projectId), id)
   await page.goto('/ide')
-  await expect(page.getByRole('button', { name: 'Build' })).toBeEnabled()
+  await expect(page.getByRole('button', { name: 'Run', exact: true })).toBeEnabled()
   await expect(page.locator('.monaco-editor')).toBeVisible()
 }
+async function moreAction(page: import('@playwright/test').Page, name: string) {
+  await page.locator('.ide-more-actions > summary').click()
+  await page.locator('.ide-more-actions').getByRole('button', { name, exact: true }).click()
+}
+async function executionPhase(request: import('@playwright/test').APIRequestContext, projectId: string, phase: ExecutionSession['phase']) {
+  await expect.poll(async () => {
+    const response = await request.get('/api/execution/current')
+    const session = await response.json() as ExecutionSession | null
+    return session?.projectId === projectId ? session.phase : 'different project'
+  }, { timeout: 45_000, intervals: [100, 250, 500] }).toBe(phase)
+  return await (await request.get('/api/execution/current')).json() as ExecutionSession
+}
+async function openConsole(page: import('@playwright/test').Page) {
+  await page.getByRole('button', { name: 'CONSOLE', exact: true }).click()
+  await expect(page.locator('.ide-console-output')).toBeVisible()
+}
+const consoleText = (page: import('@playwright/test').Page, channel: 'stdout' | 'stderr') =>
+  page.locator(`.ide-console-output > .ide-console-${channel}`).allTextContents().then((lines) => lines.join(''))
 
 test('real IDE edits and saves Java files across tabs and reload', async ({ page, request }) => {
   const id = await imported(request, 'Edits', [
@@ -27,7 +49,7 @@ test('real IDE edits and saves Java files across tabs and reload', async ({ page
   await page.keyboard.press('ControlOrMeta+A')
   await page.keyboard.insertText('public class Main { public static void main(String[] args) { System.out.println("After"); } }')
   await expect(page.locator('.ide-dirty')).toBeVisible()
-  await page.getByRole('button', { name: /^Save All/ }).click()
+  await moreAction(page, 'Save All')
   await expect(page.locator('.ide-dirty')).toHaveCount(0)
   await page.locator('.ide-tree-name').filter({ hasText: 'Helper.java' }).click()
   await expect(page.locator('.ide-tab')).toHaveCount(2)
@@ -41,9 +63,10 @@ test('real IDE edits and saves Java files across tabs and reload', async ({ page
 test('javac Problems navigate to the exact file and Monaco marker', async ({ page, request }) => {
   const id = await imported(request, 'Compiler', [{ path: 'Main.java', content: 'public class Main {\n public static void main(String[] args) {\n  UnknownType x;\n }\n}\n' }])
   await openProject(page, id)
-  await page.getByRole('button', { name: 'Build' }).click()
-  await expect(page.locator('.ide-problem')).toContainText('cannot find symbol')
-  await page.locator('.ide-problem').first().click()
+  await moreAction(page, 'Build')
+  const problem = page.locator('.ide-problem').filter({ hasText: 'cannot find symbol' }).first()
+  await expect(problem).toContainText('cannot find symbol')
+  await problem.click()
   await expect(page.locator('.monaco-editor .squiggly-error')).toBeVisible()
   await expect(page.locator('.ide-editor-foot')).toContainText('Main.java')
 })
@@ -52,26 +75,47 @@ test('Run streams actual stdout, stderr and completion into the console', async 
   const id = await imported(request, 'Output', [{ path: 'Main.java', content: 'public class Main { public static void main(String[] args) { System.out.println("Hello GGJavaEZ"); System.err.println("error channel"); } }' }])
   await openProject(page, id)
   await page.getByRole('button', { name: 'Run', exact: true }).click()
-  await expect(page.locator('.ide-console-output')).toContainText('Hello GGJavaEZ')
-  await expect(page.locator('.ide-console-stderr')).toContainText('error channel')
-  await expect(page.locator('.ide-process-status')).toContainText('EXIT 0')
+  const session = await executionPhase(request, id, 'COMPLETED')
+  expect(session.rawEvents.length).toBeGreaterThan(0)
+  expect(session.stdout).toContain('Hello GGJavaEZ')
+  expect(session.stderr).toContain('error channel')
+  await expect(page.locator('.ide-execution-status')).toContainText('COMPLETED')
+  await openConsole(page)
+  await expect.poll(() => consoleText(page, 'stdout')).toContain('Hello GGJavaEZ')
+  await expect.poll(() => consoleText(page, 'stderr')).toContain('error channel')
+  await expect(page.getByRole('slider', { name: 'Scrub execution' })).toBeVisible()
 })
 
 test('runtime failure retains trace and navigates its project frame', async ({ page, request }) => {
   const id = await imported(request, 'Crash', [{ path: 'Main.java', content: 'public class Main {\n public static void main(String[] a) {\n  String value = null;\n  System.out.println(value.length());\n }\n}\n' }])
   await openProject(page, id)
   await page.getByRole('button', { name: 'Run', exact: true }).click()
-  await expect(page.locator('.ide-stack')).toContainText('NullPointerException')
-  await page.locator('.ide-stack button').filter({ hasText: 'Main.java:4' }).click()
-  await expect(page.locator('.monaco-editor')).toBeVisible()
+  const session = await executionPhase(request, id, 'FAILED')
+  expect(session.failureKind).toBe('runtime')
+  expect(session.terminalStatus).toBe('program_crashed')
+  expect(session.rawEvents.length).toBeGreaterThan(0)
+  const explorer = page.getByRole('region', { name: 'Error Explorer' })
+  await expect(explorer).toContainText('NullPointerException')
+  await explorer.locator('.debug-source').filter({ hasText: 'Main.java:4' }).click()
+  await expect(page.locator('.ide-editor-foot')).toContainText('Main.java')
+  await expect(page.locator('.monaco-editor .executing-line')).toBeVisible()
 })
 
-test('Visualize remains a full runtime workspace with its curated traces', async ({ page }) => {
-  await page.goto('/ide')
-  await page.getByRole('link', { name: /Open runtime visualizer/ }).click()
-  await expect(page).toHaveURL(/\/$/)
+test('Run opens the runtime and timeline inside the IDE workspace', async ({ page, request }) => {
+  const id = await imported(request, 'Workspace', [{ path: 'Main.java', content: 'public class Main { public static void main(String[] args) { int answer = 42; System.out.println(answer); } }' }])
+  await openProject(page, id)
+  const startRequest = page.waitForRequest((entry) => entry.method() === 'POST' && new URL(entry.url()).pathname === `/api/projects/${id}/execution`)
+  await page.getByRole('button', { name: 'Run', exact: true }).click()
+  expect((await startRequest).postDataJSON()).toMatchObject({ kind: 'run', withoutVisualization: false })
+  const session = await executionPhase(request, id, 'COMPLETED')
+  expect(session.rawEvents.length).toBeGreaterThan(0)
+  await expect(page).toHaveURL(/\/ide$/)
+  await expect(page.locator('.app-shell--embedded')).toBeVisible()
   await expect(page.getByRole('region', { name: 'Runtime world' })).toBeVisible()
-  await expect(page.getByRole('link', { name: 'IDE Workspace' })).toBeVisible()
+  await expect(page.getByRole('slider', { name: 'Scrub execution' })).toBeVisible()
+  await expect(page.locator('.ide-editor-panel')).toBeVisible()
+  await openConsole(page)
+  await expect.poll(() => consoleText(page, 'stdout')).toContain('42')
 })
 
 test('dirty drafts survive reload and close offers save, discard or cancel', async ({ page, request }) => {
@@ -116,16 +160,24 @@ test('Scanner stdin and Stop/rerun stay connected to the actual JVM', async ({ p
   const id = await imported(request, 'Scanner', [{ path: 'Main.java', content: 'import java.util.Scanner; public class Main { public static void main(String[] a) { System.out.println("Name?"); System.out.println("Hello " + new Scanner(System.in).nextLine()); } }' }])
   await openProject(page, id)
   await page.getByRole('button', { name: 'Run', exact: true }).click()
-  await expect(page.locator('.ide-console-output')).toContainText('Name?')
+  const first = await executionPhase(request, id, 'WAITING_FOR_INPUT')
+  await openConsole(page)
+  await expect.poll(() => consoleText(page, 'stdout')).toContain('Name?')
   await page.getByLabel('Console input').fill('Ada')
   await page.getByLabel('Console input').press('Enter')
-  await expect(page.locator('.ide-console-output')).toContainText('Hello Ada')
-  await expect(page.locator('.ide-process-status')).toContainText('EXIT 0')
+  const completed = await executionPhase(request, id, 'COMPLETED')
+  expect(completed.id).toBe(first.id)
+  expect(completed.rawEvents.some((event) => event.type === 'stdin_read')).toBe(true)
+  await expect.poll(() => consoleText(page, 'stdout')).toContain('Hello Ada')
   await page.getByRole('button', { name: 'Run', exact: true }).click()
+  const second = await executionPhase(request, id, 'WAITING_FOR_INPUT')
+  expect(second.id).not.toBe(first.id)
   await expect(page.getByRole('button', { name: 'Stop', exact: true })).toBeEnabled()
   await page.getByRole('button', { name: 'Stop', exact: true }).click()
+  const stopped = await executionPhase(request, id, 'STOPPED')
+  expect(stopped.id).toBe(second.id)
   await expect(page.getByLabel('Console input')).toBeDisabled()
-  await expect(page.locator('.ide-console-exit')).toBeVisible()
+  await expect(page.locator('.ide-execution-status')).toContainText('STOPPED')
 })
 
 test('draft reload does not overwrite a newer server revision', async ({ page, request }) => {
@@ -139,7 +191,7 @@ test('draft reload does not overwrite a newer server revision', async ({ page, r
   page.on('dialog', (dialog) => dialog.accept())
   await page.reload()
   await expect(page.locator('.monaco-editor')).toContainText('myDraft')
-  await page.getByRole('button', { name: /^Save All/ }).click()
+  await moreAction(page, 'Save All')
   await expect(page.locator('.ide-status-line')).toContainText('File changed on disk')
   expect((await (await request.get(`/api/projects/${id}/files?path=Main.java`)).json()).content).toContain('externalEdit')
 })
@@ -153,12 +205,16 @@ test('folder import preserves Java source paths and pane resizing is keyboard ac
     await expect(page.locator('.monaco-editor')).toBeVisible()
     await page.locator('input[type=file]').setInputFiles(root)
     await expect(page.locator('.ide-editor-foot')).toContainText('src/Main.java')
+    await page.getByRole('button', { name: 'Run', exact: true }).click()
+    await expect(page.locator('.ide-execution-status')).toContainText('COMPLETED', { timeout: 45_000 })
     const editor = page.locator('.ide-editor-panel')
+    await expect(page.locator('.app-shell--embedded')).toBeVisible()
+    await expect.poll(async () => (await editor.boundingBox())!.width).toBeLessThan(700)
     const before = (await editor.boundingBox())!.width
     await page.getByRole('separator', { name: 'Resize runtime pane' }).focus()
     await page.keyboard.press('ArrowRight')
     await expect.poll(async () => (await editor.boundingBox())!.width).toBeGreaterThan(before)
-    await page.getByRole('button', { name: 'Run', exact: true }).click()
-    await expect(page.locator('.ide-console-output')).toContainText('Imported')
+    await openConsole(page)
+    await expect.poll(() => consoleText(page, 'stdout')).toContain('Imported')
   } finally { await rm(root, { recursive: true, force: true }) }
 })

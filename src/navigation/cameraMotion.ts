@@ -80,7 +80,16 @@ export function sceneHomePose(scene: Pick<SceneModel, 'stackDepth' | 'bounds' | 
   // a caller supplies bounds. A live debugger may explicitly fit its reserved world.
   if (!scene.bounds || (!fitShallow && (scene.stackDepth ?? 0) <= 1 && scene.layoutKind !== 'array' && scene.layoutKind !== 'scoped')) return responsiveHomePose(target, view.aspect)
   const heading = fitShallow && scene.layoutKind !== 'array' && scene.layoutKind !== 'scoped' ? stackHeadingFootprint(scene) : []
-  return reservedWorldPose(scene.bounds, target, homePose(target ?? scene.bounds.center), view, heading)
+  const fitted = reservedWorldPose(scene.bounds, target, homePose(target ?? scene.bounds.center), view, heading)
+  // A single live frame and its first heap object should read as the central
+  // subject of the pane. Keep the reserved world and its XYZ anchors fixed;
+  // only tighten the overview while its 3D label-safe envelope remains in view.
+  if (fitShallow && (scene.stackDepth ?? 0) <= 1 && scene.layoutKind === 'deepStack') {
+    const scale = 0.87
+    return { ...fitted, position: [0, 1, 2].map((axis) =>
+      fitted.target[axis] + (fitted.position[axis] - fitted.target[axis]) * scale) as unknown as Vec3 }
+  }
+  return fitted
 }
 
 /** The reserved envelope fits both Spatial and expanded Theater at any yaw. */

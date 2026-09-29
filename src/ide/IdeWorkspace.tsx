@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { ArrowLeft, ChevronDown, ChevronRight, CirclePlay, Code2, Files, FolderOpen, Hammer, Maximize2, Minimize2, PanelBottom, Plus, Save, ScanEye, Search, Settings2, Square, Upload, X } from 'lucide-react'
+import { ChevronDown, ChevronRight, CirclePlay, Code2, Files, FolderOpen, Hammer, Maximize2, Minimize2, PanelBottom, Plus, Save, ScanEye, Search, Settings2, Square, Upload, X } from 'lucide-react'
 import { App, type RuntimeNavigation } from '../app/App'
 import type { RuntimeState, SourceLocation as RuntimeSourceLocation, TraceDocument } from '../contracts/runtime'
 import type { Selection } from '../contracts/interaction'
@@ -10,9 +10,8 @@ import { DebugPanel } from '../debugger/DebugPanel'
 import { ErrorExplorer } from '../debugger/ErrorExplorer'
 import type { RawRuntimeEvent, VisualizationCapabilityReport } from '../instrumentation/contracts'
 import { bridge } from './client'
-import { visualizeProject } from './visualize'
+import type { ExecutionSession, TimelineLens } from '../execution/contracts'
 import { EditableJavaEditor } from './EditableJavaEditor'
-import { TraceInspector } from './TraceInspector'
 import { ProblemsPanel } from './ProblemsPanel'
 import { LaunchDialog } from './LaunchDialog'
 import { SymbolSearch } from './SymbolSearch'
@@ -23,11 +22,11 @@ import { registerJavaIntelligence } from '../language/monaco'
 import { applyWorkspaceEdit, type WorkspaceEditHost } from '../language/workspaceEdit'
 import { mergeProblems } from './problems'
 import * as monacoApi from 'monaco-editor/editor/editor.api.js'
-import type { BuildResult, CompileDiagnostic, JdkStatus, ProjectEntry, ProjectFile, ProjectSummary, RunEvent, RunSnapshot, SourceLocation } from './contracts'
+import type { BuildResult, CompileDiagnostic, JdkStatus, ProjectEntry, ProjectFile, ProjectSummary, SourceLocation } from './contracts'
 import './ide.css'
 
 type Tab = ProjectFile & { draft: string }
-type Tool = 'console' | 'problems' | 'timeline' | 'debugger' | 'errors'
+type Tool = 'console' | 'problems' | 'debugger' | 'errors'
 type WorkspaceMode = 'code' | 'visualize' | 'debug'
 type PendingDecision = { label: string; paths: string[]; action: () => void | Promise<void> } | null
 const draftKey = (id: string, path: string) => `ggjavaez:draft:${id}:${path}`
@@ -65,7 +64,8 @@ export function IdeWorkspace() {
   const [jdkInput, setJdkInput] = useState('')
   const [showJdk, setShowJdk] = useState(false)
   const [build, setBuild] = useState<BuildResult | null>(null)
-  const [run, setRun] = useState<RunSnapshot | null>(null)
+  const [execution, setExecution] = useState<ExecutionSession | null>(null)
+  const [timelineLens, setTimelineLens] = useState<TimelineLens>('LIVE')
   const [tool, setTool] = useState<Tool>('console')
   const [workspaceMode, setWorkspaceMode] = useState<WorkspaceMode>('code')
   const [explorerOpen, setExplorerOpen] = useState(() => !window.matchMedia('(max-width: 900px)').matches && localStorage.getItem('ggjavaez:m8:explorer') !== 'closed')
@@ -87,16 +87,17 @@ export function IdeWorkspace() {
   const [languageClient] = useState(() => new LanguageClient())
   const [languageSnapshot, setLanguageSnapshot] = useState<LanguageSnapshot>(() => languageClient.getSnapshot())
   const [visualization, setVisualization] = useState<{ trace: TraceDocument; capability: VisualizationCapabilityReport; rawEvents: RawRuntimeEvent[]; status: string; stdout: string; stderr: string; diagnostic: string | null } | null>(null)
-  const [visualizeStatus, setVisualizeStatus] = useState('')
   const [runtimeExpanded, setRuntimeExpanded] = useState(false)
   const [executingSource, setExecutingSource] = useState<RuntimeSourceLocation | null>(null)
-  const [debugSession, setDebugSession] = useState<DebugSession | null>(null)
   const [breakpoints, setBreakpoints] = useState<ResolvedBreakpoint[]>([])
   const [runtime, setRuntime] = useState<RuntimeState | null>(null)
   const [runtimeSelection, setRuntimeSelection] = useState<Selection>(null)
   const [runtimeNavigation, setRuntimeNavigation] = useState<RuntimeNavigation | null>(null)
-  const debugRevision = useRef(-1)
-  const debugPauseCount = useRef(-1)
+  const executionRevision = useRef(-1)
+  const activeExecutionId = useRef<string | null>(null)
+  const shownFailure = useRef(false)
+  const normalizedSignature = useRef('')
+  const userLayoutOverride = useRef(false)
   const [projectWidth, setProjectWidth] = useState(14)
   const [initialEditorWidths] = useState(savedEditorWidths)
   const modeEditorWidths = useRef(initialEditorWidths)
@@ -132,9 +133,18 @@ export function IdeWorkspace() {
       message: item.message, raw: item.message }))
   }) : [], [languageSnapshot, projectId])
   const problems = useMemo(() => mergeProblems(diagnostics, languageProblems), [diagnostics, languageProblems])
-  const allEvents = run?.events ?? []
-  const exitEvent = run?.events.at(-1)?.kind === 'exit' ? run.events.at(-1) : undefined
-  const exception = run?.exception ?? [...allEvents].reverse().find((event) => event.exception)?.exception
+  const allEvents = execution?.runEvents ?? []
+  const exception = [...allEvents].reverse().find((event) => event.exception)?.exception
+  const debugSession: DebugSession | null = execution?.kind === 'debug' && execution.build ? {
+    sessionId: execution.id, projectId: execution.projectId, revision: execution.revision,
+    status: execution.phase === 'PAUSED' ? 'paused' : execution.phase === 'RUNNING' || execution.phase === 'WAITING_FOR_INPUT' ? 'running'
+      : execution.phase === 'STARTING' || execution.phase === 'BUILDING' ? 'starting' : execution.phase === 'STOPPED' ? 'stopped'
+        : execution.phase === 'FAILED' ? 'failed' : 'exited',
+    pause: execution.pause, breakpoints: execution.breakpoints, rawEvents: execution.rawEvents,
+    sourceManifest: execution.sourceManifest, build: execution.build, stdout: execution.stdout,
+    stderr: execution.stderr, exitCode: execution.exitCode, terminalStatus: execution.terminalStatus,
+    diagnostic: execution.diagnostic,
+  } : null
   const traceStale = !!visualization && tabs.some((tab) => visualization.trace.sourceFiles.find((file) => file.fileId === tab.path)?.content !== tab.draft)
 
   const fail = (error: unknown) => setNotice(errorText(error))
@@ -149,6 +159,7 @@ export function IdeWorkspace() {
     setFocusSourceOpen(false)
   }
   const toggleExplorer = () => {
+    userLayoutOverride.current = true
     if (runtimeExpanded) { setRuntimeExpanded(false); setFocusSourceOpen(false); setExplorerOpen(true) }
     else setExplorerOpen((value) => !value)
   }
@@ -184,7 +195,7 @@ export function IdeWorkspace() {
   useEffect(() => {
     const element = consoleRef.current
     if (element) element.scrollTop = element.scrollHeight
-  }, [run?.events.length, tool])
+  }, [execution?.stdout, execution?.stderr, execution?.runEvents.length, tool])
   useEffect(() => {
     if (!pending) return
     const previous = document.activeElement as HTMLElement | null
@@ -257,25 +268,22 @@ export function IdeWorkspace() {
 
   const switchProject = useCallback(async (nextId: string, stopExisting = true) => {
     if (stopExisting) {
-      const current = await bridge.currentRun()
-      if (current?.status === 'running') await bridge.stop(current.runId)
-      const debug = await bridge.debugCurrent()
-      if (debug && ['starting', 'running', 'paused'].includes(debug.status)) await bridge.debugCommand(debug.sessionId, 'stop')
+      const current = await bridge.executionCurrent()
+      if (current && ['BUILDING', 'STARTING', 'RUNNING', 'WAITING_FOR_INPUT', 'PAUSED'].includes(current.phase)) await bridge.executionStop(current.id)
     }
     setProjectId(nextId)
     setTabs([])
     setActive('')
     setBuild(null)
-    setRun(null)
+    setExecution(null); setTimelineLens('LIVE'); activeExecutionId.current = null
     setVisualization(null)
-    setVisualizeStatus('')
     setWorkspaceMode('code')
     setEditorWidth(modeEditorWidths.current.code)
     setBottomOpen(false); setFocusSourceOpen(false)
     setRuntimeExpanded(false)
     setExecutingSource(null)
-    setDebugSession(null); setRuntime(null); setRuntimeSelection(null); setRuntimeNavigation(null)
-    debugRevision.current = -1; debugPauseCount.current = -1
+    setRuntime(null); setRuntimeSelection(null); setRuntimeNavigation(null)
+    executionRevision.current = -1; shownFailure.current = false; normalizedSignature.current = ''; userLayoutOverride.current = false
     try {
       const stored = JSON.parse(localStorage.getItem(breakpointKey(nextId)) ?? '[]')
       setBreakpoints(Array.isArray(stored) ? stored.filter((point) => typeof point.fileId === 'string' && Number.isInteger(point.line) && point.line > 0).map((point) => ({ fileId: point.fileId, line: point.line, status: 'pending', reason: null })) : [])
@@ -316,16 +324,15 @@ export function IdeWorkspace() {
 
   useEffect(() => {
     let alive = true
-    Promise.all([bridge.projects(), bridge.health(), bridge.currentRun(), bridge.debugCurrent()]).then(async ([items, health, current, debug]) => {
+    Promise.all([bridge.projects(), bridge.health(), bridge.executionCurrent()]).then(async ([items, health, current]) => {
       if (!alive) return
       setProjects(items)
       setJdk(health.jdk)
       setJdkInput(health.jdk.home ?? '')
       const chosen = items.find((item) => item.id === localStorage.getItem('ggjavaez:project')) ?? items[0]
       if (chosen) await switchProject(chosen.id, false)
-      if (current && current.projectId === chosen?.id) setRun(current)
-      else if (current?.status === 'running') await bridge.stop(current.runId)
-      if (debug?.projectId === chosen?.id) { acceptDebug(debug); setWorkspaceMode('debug'); setEditorWidth(modeEditorWidths.current.debug); setExplorerOpen(false) }
+      if (current && current.projectId === chosen?.id) { activeExecutionId.current = current.id; acceptExecution(current) }
+      else if (current && ['BUILDING', 'STARTING', 'RUNNING', 'WAITING_FOR_INPUT', 'PAUSED'].includes(current.phase)) await bridge.executionStop(current.id)
     }).catch(fail)
     return () => { alive = false }
     // Initial hydration deliberately runs once.
@@ -333,20 +340,11 @@ export function IdeWorkspace() {
 
   useEffect(() => {
     eventSourceRef.current?.close()
-    if (!run?.runId || run.status !== 'running') return
-    const after = run.events.at(-1)?.id ?? 0
-    const source = bridge.events(run.runId, after, (event: RunEvent) => {
-      setRun((current) => {
-        if (!current || current.runId !== run.runId || current.events.some((item) => item.id === event.id)) return current
-        const next = { ...current, events: [...current.events, event] }
-        if (event.kind === 'exit') { next.status = 'exited'; next.exitCode = event.exitCode ?? null; next.exception = event.exception ?? null }
-        return next
-      })
-    })
+    if (!execution?.id) return
+    const source = bridge.executionEvents(execution.id, acceptExecution)
     eventSourceRef.current = source
     return () => source.close()
-    // Reconnect only when the run changes or exits; event IDs are buffered server-side.
-  }, [run?.runId, run?.status])
+  }, [execution?.id])
 
   useEffect(() => {
     const beforeUnload = (event: BeforeUnloadEvent) => { if (tabsRef.current.some((tab) => tab.draft !== tab.content)) { event.preventDefault(); event.returnValue = '' } }
@@ -407,114 +405,78 @@ export function IdeWorkspace() {
     const result = await bridge.build(projectId)
     setBuild(result)
     if (result.javaProject) { setJavaProject(result.javaProject); setProjectStatus(result.javaProject.buildSystem === 'plain' ? 'Plain Java' : result.javaProject.buildSystem === 'maven' ? 'Maven' : 'Gradle') }
-    setDebugSession(null)
+    setExecution(null); setVisualization(null)
     setMainClass((previous) => result.mainClasses.includes(previous) ? previous : result.mainClasses[0] ?? '')
     setTool(result.success ? 'console' : 'problems')
     setBottomOpen(!result.success)
     setNotice(result.success ? `Build succeeded in ${result.elapsedMs} ms` : `${result.diagnostics.length} compiler problem${result.diagnostics.length === 1 ? '' : 's'}`)
-  })
-  const runProject = () => action(async () => {
-    enterMode('code')
-    await saveAll()
-    setVisualization(null)
-    setDebugSession(null); setRuntime(null); setRuntimeNavigation(null)
-    setRuntimeExpanded(false)
-    setVisualizeStatus('')
-    setExecutingSource(null)
-    const result = await bridge.run(projectId, mainClass, launch)
-    setBuild(result.build)
-    if (result.build.javaProject) setJavaProject(result.build.javaProject)
-    setMainClass(result.run?.mainClass ?? result.build.mainClasses[0] ?? '')
-    setRun(result.run)
-    setTool(result.run ? 'console' : 'problems'); setBottomOpen(true)
-    if (!result.run) setNotice(result.build.success ? 'Build succeeded; no public static main(String[]) entry point found.' : 'Compilation failed. See Problems for the exact javac output.')
-  })
-  const visualizeCurrentProject = () => action(async () => {
-    setVisualization(null)
-    setRun(null)
-    setDebugSession(null); setRuntime(null); setRuntimeNavigation(null)
-    setVisualizeStatus('Checking support and saving…')
-    await saveAll()
-    setVisualizeStatus('Compiling and recording on the local JVM…')
-    const result = await visualizeProject(projectId, mainClass, launch)
-    setBuild(result.response.build)
-    if (result.response.build.javaProject) setJavaProject(result.response.build.javaProject)
-    setMainClass(result.response.build.mainClasses.includes(mainClass) ? mainClass : result.response.build.mainClasses[0] ?? '')
-    if (!result.trace || !result.capability) {
-      setTool('problems'); setBottomOpen(true)
-      setVisualizeStatus(result.response.status === 'compile_failed' ? 'Compile failed' : 'Visualization unavailable')
-      setNotice(result.response.diagnostic ?? 'See Problems for compiler details.')
-      return
-    }
-    setVisualization({ trace: result.trace, capability: result.capability, rawEvents: result.response.rawEvents,
-      status: result.response.status, stdout: result.response.stdout, stderr: result.response.stderr,
-      diagnostic: result.response.diagnostic })
-    enterMode('visualize')
-    setVisualizeStatus(result.response.status === 'complete' ? 'Ready to explore' : `Trace captured · ${result.response.status.replaceAll('_', ' ')}`)
-    setNotice(result.response.status === 'complete'
-      ? `${result.response.rawEvents.length} observed JVM events · normalized in ${Math.round(result.normalizeMs)} ms`
-      : result.response.diagnostic ?? `Execution ${result.response.status.replaceAll('_', ' ')}; inspect the available trace.`)
-    if (result.trace.events.some((event) => event.type === 'THROW_EXCEPTION')) {
-      setTool('errors'); setBottomOpen(true); setBottomHeight(35)
-      const index = result.trace.events.map((event) => event.type === 'THROW_EXCEPTION').lastIndexOf(true)
-      setRuntimeNavigation((previous) => ({ revision: (previous?.revision ?? 0) + 1, cursor: index + 1 }))
-    }
   })
   const navigateRuntime = useCallback((cursor: number, selection?: Selection) => {
     setRuntimeNavigation((previous) => ({ revision: (previous?.revision ?? 0) + 1, cursor, ...(selection === undefined ? {} : { selection }) }))
   }, [])
   const handleRuntimeChange = useCallback((next: RuntimeState, selection: Selection) => { setRuntime(next); setRuntimeSelection(selection) }, [])
   useEffect(() => { setInspectorHidden(false) }, [runtimeSelection?.id])
-  const acceptDebug = useCallback((session: DebugSession) => {
-    if (session.projectId !== projectIdRef.current || session.revision === debugRevision.current) return
-    debugRevision.current = session.revision
-    setDebugSession(session); setBuild(session.build); setBreakpoints(session.breakpoints)
-    if (!session.rawEvents.length || !session.build.success) {
-      if (!session.build.success) { setTool('problems'); setNotice(session.diagnostic ?? 'Compilation failed') }
-      return
+  const acceptExecution = useCallback((session: ExecutionSession) => {
+    if (activeExecutionId.current && activeExecutionId.current !== session.id) return
+    if (session.projectId !== projectIdRef.current || session.revision <= executionRevision.current) return
+    executionRevision.current = session.revision
+    setExecution(session)
+    if (session.build) {
+      setBuild(session.build)
+      if (session.build.javaProject) setJavaProject(session.build.javaProject)
+      setMainClass(session.mainClass ?? session.build.mainClasses[0] ?? '')
     }
-    const normalized = normalizeTrace(session.rawEvents, session.sourceManifest, {
-      status: session.terminalStatus ?? 'live', exitCode: session.exitCode, diagnostic: session.diagnostic,
-    }, `debug:${session.sessionId}`)
-    const trace = validateTrace(normalized.trace, { allowLive: session.terminalStatus === null })
-    trace.capture = { origin: 'jvm', sourceHashes: Object.fromEntries(session.sourceManifest.sources.map((file) => [file.fileId, file.sha256])), recordedAt: new Date().toISOString() }
-    setVisualization({ trace, capability: normalized.capability, rawEvents: session.rawEvents,
-      status: session.terminalStatus ?? session.status, stdout: session.stdout, stderr: session.stderr, diagnostic: session.diagnostic })
-    setVisualizeStatus(`Debug · ${session.status}`)
-    if (session.pause && session.pause.rawEventCount !== debugPauseCount.current) {
-      debugPauseCount.current = session.pause.rawEventCount
-      navigateRuntime(trace.events.length)
-      setTool(session.pause.reason === 'exception' ? 'errors' : 'debugger')
-      if (session.pause.reason === 'exception') { setBottomOpen(true); setBottomHeight(35) }
+    if (session.kind === 'debug' && session.phase !== 'BUILDING') setBreakpoints(session.breakpoints)
+    const signature = `${session.id}:${session.rawEvents.length}:${session.terminalStatus ?? 'live'}`
+    if (session.rawEvents.length && session.build?.success && signature !== normalizedSignature.current) {
+      normalizedSignature.current = signature
+      const normalized = normalizeTrace(session.rawEvents, session.sourceManifest, {
+        status: session.terminalStatus ?? 'live', exitCode: session.exitCode, diagnostic: session.diagnostic,
+        ...(session.capability ? { capability: session.capability } : {}),
+      }, `execution:${session.id}`)
+      const trace = validateTrace(normalized.trace, { allowLive: session.terminalStatus === null })
+      trace.capture = { origin: 'jvm', sourceHashes: Object.fromEntries(session.sourceManifest.sources.map((file) => [file.fileId, file.sha256])), recordedAt: session.startedAt }
+      setVisualization({ trace, capability: normalized.capability, rawEvents: session.rawEvents,
+        status: session.terminalStatus ?? session.phase, stdout: session.stdout, stderr: session.stderr, diagnostic: session.diagnostic })
+      if (!userLayoutOverride.current) {
+        const emphasis = session.kind === 'debug' ? 'debug' : 'visualize'
+        setWorkspaceMode(emphasis)
+        setEditorWidth(modeEditorWidths.current[emphasis])
+        setExplorerOpen(false)
+      }
+      if (session.phase === 'PAUSED' && session.pause?.reason === 'exception') { setTool('errors'); setBottomOpen(true); setBottomHeight(35) }
+      if (session.phase === 'FAILED' && trace.events.some((event) => event.type === 'THROW_EXCEPTION') && !shownFailure.current) {
+        shownFailure.current = true; setTool('errors'); setBottomOpen(true); setBottomHeight(35)
+      }
+    } else if (session.phase === 'FAILED' && session.failureKind === 'build') {
+      setTool('problems'); setBottomOpen(true); setNotice(session.diagnostic ?? 'Compilation failed')
+    } else if (session.support === 'RUN_ONLY' && ['RUNNING', 'WAITING_FOR_INPUT', 'COMPLETED'].includes(session.phase)) {
+      setTool('console'); setBottomOpen(true)
     }
-    if (session.terminalStatus === 'program_crashed') { setTool('errors'); setBottomOpen(true) }
-  }, [navigateRuntime])
-  useEffect(() => {
-    if (!debugSession || !['starting', 'running', 'paused'].includes(debugSession.status)) return
-    let alive = true
-    const timer = window.setInterval(() => {
-      void bridge.debugSnapshot(debugSession.sessionId).then((session) => { if (alive) acceptDebug(session) }).catch((error) => { if (alive) fail(error) })
-    }, 350)
-    return () => { alive = false; window.clearInterval(timer) }
-  }, [debugSession?.sessionId, debugSession?.status, acceptDebug])
-  const debugProject = () => action(async () => {
-    await saveAll(); setRun(null); setVisualization(null); setRuntime(null); setRuntimeNavigation(null)
-    debugRevision.current = -1; debugPauseCount.current = -1
-    setVisualizeStatus('Compiling for debugging…')
-    const session = await bridge.debug(projectId, mainClass, breakpoints, launch)
-    enterMode(session.build.success ? 'debug' : 'code')
-    acceptDebug(session); setTool(session.build.success && session.pause?.reason === 'exception' ? 'errors' : session.build.success ? 'debugger' : 'problems')
-    setBottomOpen(!session.build.success || session.pause?.reason === 'exception'); setBottomHeight(35)
+    if (session.phase === 'WAITING_FOR_INPUT') { setTool('console'); setBottomOpen(true) }
+  }, [])
+  const startExecution = (kind: 'run' | 'debug', withoutVisualization = false) => action(async () => {
+    await saveAll()
+    eventSourceRef.current?.close(); activeExecutionId.current = 'pending'; setExecution(null)
+    setVisualization(null); setRuntime(null); setRuntimeNavigation(null); setRuntimeSelection(null)
+    setTimelineLens('LIVE'); setExecutingSource(null); setNotice('')
+    executionRevision.current = -1; shownFailure.current = false; normalizedSignature.current = ''
+    if (!userLayoutOverride.current) { setWorkspaceMode('code'); setEditorWidth(modeEditorWidths.current.code) }
+    const session = await bridge.executionStart(projectId, { ...launch, kind, mainClass, breakpoints, withoutVisualization })
+    activeExecutionId.current = session.id
+    acceptExecution(session)
   })
+  const runProject = () => startExecution('run')
+  const debugProject = () => startExecution('debug')
   const debugCommand = (command: DebugCommand) => action(async () => {
-    if (debugSession) acceptDebug(await bridge.debugCommand(debugSession.sessionId, command))
+    if (execution?.kind === 'debug') acceptExecution(await bridge.executionCommand(execution.id, command))
   })
   const toggleBreakpoint = (fileId: string, line: number) => {
     const next: ResolvedBreakpoint[] = breakpoints.some((point) => point.fileId === fileId && point.line === line)
       ? breakpoints.filter((point) => point.fileId !== fileId || point.line !== line)
       : [...breakpoints, { fileId, line, status: 'pending', reason: null }]
     setBreakpoints(next); localStorage.setItem(breakpointKey(projectId), JSON.stringify(next.map(({ fileId, line }) => ({ fileId, line }))))
-    if (debugSession && ['running', 'paused', 'starting'].includes(debugSession.status)) void bridge.debugBreakpoints(debugSession.sessionId, next).then(acceptDebug).catch(fail)
+    if (execution?.kind === 'debug' && ['STARTING', 'RUNNING', 'WAITING_FOR_INPUT', 'PAUSED'].includes(execution.phase)) void bridge.executionBreakpoints(execution.id, next).then(acceptExecution).catch(fail)
   }
   const removeBreakpoint = (point: SourceBreakpoint) => toggleBreakpoint(point.fileId, point.line)
   const handleExecutingSource = useCallback((location: RuntimeSourceLocation | null) => {
@@ -524,11 +486,10 @@ export function IdeWorkspace() {
     requestedSourceRef.current = location.fileId
     void openFile(id, location.fileId).catch(fail).finally(() => { requestedSourceRef.current = '' })
   }, [openFile])
-  const stopRun = () => action(async () => { if (run) setRun(await bridge.stop(run.runId)) })
+  const stopRun = () => action(async () => { if (execution) acceptExecution(await bridge.executionStop(execution.id)) })
   const sendInput = () => action(async () => {
-    if (debugSession && ['running', 'paused'].includes(debugSession.status)) await bridge.debugInput(debugSession.sessionId, input + '\n')
-    else if (run) await bridge.input(run.runId, input + '\n')
-    else return
+    if (!execution) return
+    await bridge.executionInput(execution.id, input + '\n')
     setInput('')
   })
   const newEntry = (kind: 'file' | 'folder') => action(async () => {
@@ -580,6 +541,7 @@ export function IdeWorkspace() {
   })
   const openDiagnostic = (item: CompileDiagnostic) => action(async () => { await openFile(projectId, item.location.path, item.location) })
   const setDivider = (kind: 'project' | 'runtime' | 'bottom', clientX: number, clientY: number) => {
+    userLayoutOverride.current = true
     if (kind === 'bottom') {
       const bounds = contentRef.current?.getBoundingClientRect()
       if (bounds) setBottomHeight(Math.max(16, Math.min(55, (bounds.bottom - clientY) / bounds.height * 100)))
@@ -597,6 +559,7 @@ export function IdeWorkspace() {
       const amount = event.key === 'ArrowRight' || event.key === 'ArrowDown' ? 2 : event.key === 'ArrowLeft' || event.key === 'ArrowUp' ? -2 : 0
       if (!amount) return
       event.preventDefault()
+      userLayoutOverride.current = true
       if (kind === 'project') setProjectWidth((value) => Math.max(13, Math.min(28, value + amount)))
       else if (kind === 'runtime') setEditorWidth((value) => Math.max(24, Math.min(80, value + amount)))
       else setBottomHeight((value) => Math.max(16, Math.min(55, value - amount)))
@@ -625,15 +588,14 @@ export function IdeWorkspace() {
       // macOS Option changes event.key to a symbol; physical key codes keep
       // the documented Alt+Shift workspace shortcuts usable on this host.
       const key = /^Key[A-Z]$/.test(event.code) ? event.code.slice(3).toLowerCase() : event.key.toLowerCase()
-      if (!['e', 'b', 'f', 'v', 'd', 'r', 'i', 'x'].includes(key)) return
+      if (!['e', 'b', 'f', 'd', 'r', 'i', 'x', 'o'].includes(key)) return
       event.preventDefault()
       if (key === 'e') toggleExplorer()
       if (key === 'b') setBottomOpen((value) => !value)
       if (key === 'o') setShowSymbols(true)
       if (key === 'i') setInspectorHidden((value) => !value)
-      if (key === 'x') { if (debugSession && ['starting', 'running', 'paused'].includes(debugSession.status)) void debugCommand('stop'); else if (run?.status === 'running') void stopRun() }
+      if (key === 'x' && execution && ['BUILDING', 'STARTING', 'RUNNING', 'WAITING_FOR_INPUT', 'PAUSED'].includes(execution.phase)) void stopRun()
       if (key === 'f' && visualization) { setRuntimeExpanded((value) => !value); setFocusSourceOpen(false) }
-      if (key === 'v' && projectId && jdk?.available && !busy) void visualizeCurrentProject()
       if (key === 'd' && projectId && jdk?.available && !busy && !['starting', 'running', 'paused'].includes(debugSession?.status ?? '')) void debugProject()
       if (key === 'r' && projectId && jdk?.available && !busy) void runProject()
     }
@@ -641,41 +603,49 @@ export function IdeWorkspace() {
     return () => window.removeEventListener('keydown', shortcuts)
   })
 
-  const acceptsInput = run?.status === 'running' || !!debugSession && ['running', 'paused'].includes(debugSession.status)
-  const availableTools: Tool[] = ['console', 'problems', 'timeline', ...(debugSession || breakpoints.length ? ['debugger'] as Tool[] : []), ...(visualization || exception ? ['errors'] as Tool[] : [])]
+  const activeExecution = !!execution && ['BUILDING', 'STARTING', 'RUNNING', 'WAITING_FOR_INPUT', 'PAUSED'].includes(execution.phase)
+  const acceptsInput = !!execution && ['RUNNING', 'WAITING_FOR_INPUT', 'PAUSED'].includes(execution.phase)
+  const availableTools: Tool[] = ['console', ...(problems.length || tool === 'problems' ? ['problems'] as Tool[] : []), ...(debugSession || breakpoints.length ? ['debugger'] as Tool[] : []), ...(visualization?.trace.events.some((event) => event.type === 'THROW_EXCEPTION') || exception ? ['errors'] as Tool[] : [])]
   const targets = build?.mainClasses ?? javaProject?.runnableTargets ?? []
   return <div className={`ide-shell ide-shell--${workspaceMode} ${explorerOpen ? 'ide-shell--explorer-open' : ''} ${bottomOpen ? 'ide-shell--bottom-open' : ''} ${focusSourceOpen ? 'ide-shell--focus-source-open' : ''} ${runtimeExpanded ? 'ide-shell--runtime-expanded' : ''} ${debugSession && ['running', 'paused'].includes(debugSession.status) ? 'ide-shell--debug-active' : ''} ${tool === 'errors' || tool === 'debugger' ? 'ide-shell--debug-inspection' : ''}`} ref={shellRef} style={{ '--ide-project-width': `${projectWidth}%`, '--ide-editor-width': `${editorWidth}%`, '--ide-bottom-height': `${bottomHeight}%` } as React.CSSProperties}>
     <header className="ide-topbar">
       <div className="ide-brand"><span className="ide-mark">VJ</span><span><strong>Visual Java</strong></span></div>
       <button className="ide-chrome-toggle" onClick={toggleExplorer} aria-label={explorerOpen ? 'Hide project explorer' : 'Show project explorer'} aria-pressed={explorerOpen} title="Toggle project explorer (Alt+Shift+E)"><Files size={16}/></button>
       <div className="ide-topbar-center"><span className="ide-breadcrumb">{projects.find((item) => item.id === projectId)?.name ?? 'Loading project'} <span>/</span> {active || 'Project'}</span></div>
-      <div className="ide-mode-switch" role="group" aria-label="Workspace emphasis"><button aria-pressed={workspaceMode === 'code'} onClick={() => enterMode('code')} title="Code workspace"><Code2 size={15}/> Code</button><button aria-pressed={workspaceMode === 'visualize'} disabled={!visualization} onClick={() => enterMode('visualize')} title="Spatial workspace"><ScanEye size={15}/> Runtime</button><button aria-label="Debug workspace" aria-pressed={workspaceMode === 'debug'} disabled={!debugSession} onClick={() => enterMode('debug')} title="Debug workspace">Debug</button></div>
+
       {runtimeExpanded && <button className="ide-focus-tool-toggle" onClick={() => setBottomOpen((value) => !value)} aria-label={bottomOpen ? 'Hide tools in runtime focus' : 'Show tools in runtime focus'} title="Reveal Console / Problems / Debugger"><PanelBottom size={16}/></button>}
       <div className="ide-top-actions">
-        <button onClick={() => activeTab && action(() => saveTab(activeTab))} disabled={!activeTab || activeTab.draft === activeTab.content || busy} title="Save active file (⌘/Ctrl+S)"><Save size={15}/> Save</button>
-        <button className="ide-secondary-action" onClick={() => action(saveAll)} disabled={!dirty || busy} title="Save all open files (Ctrl/Cmd+Shift+S)"><Save size={15}/> Save All{dirty ? ' •' : ''}</button>
-        <button className="ide-secondary-action" onClick={buildProject} disabled={!projectId || busy} title="Build project"><Hammer size={15}/> Build</button>
-        <select aria-label="Main class" value={mainClass} onChange={(event) => setMainClass(event.target.value)} disabled={!targets.length}>{targets.length ? <><option value="">First runnable main</option>{targets.map((name) => <option key={name}>{name}</option>)}</> : <option value="">Main class</option>}</select>
-        <button className="ide-launch-toggle" aria-label="Configure launch" title="Configure launch target and arguments" onClick={() => setShowLaunch(true)} disabled={!projectId || busy}><Settings2 size={15}/></button>
-        <button className="ide-symbol-toggle" aria-label="Find Java symbol" title="Find Java symbol (Alt+Shift+O)" onClick={() => setShowSymbols(true)} disabled={!projectId || languageSnapshot.status !== 'ready'}><Search size={15}/></button>
-        <button className="ide-primary" onClick={runProject} disabled={!projectId || busy || !jdk?.available}><CirclePlay size={16}/> Run</button>
-        <button className="ide-visualize-action" onClick={visualizeCurrentProject} disabled={!projectId || busy || !jdk?.available} title="Record a spatial runtime trace (Alt+Shift+V)"><ScanEye size={16}/> Visualize</button>
-        <button className="ide-debug-action" onClick={debugProject} disabled={!projectId || busy || !jdk?.available || !!debugSession && ['starting', 'running', 'paused'].includes(debugSession.status)} title="Start debugger (Alt+Shift+D)"><CirclePlay size={16}/> Debug</button>
-        <button onClick={stopRun} disabled={run?.status !== 'running' || busy}><Square size={14}/> Stop</button>
+        {targets.length > 1 && <select aria-label="Main class" value={mainClass} onChange={(event) => setMainClass(event.target.value)}><option value="">First runnable main</option>{targets.map((name) => <option key={name}>{name}</option>)}</select>}
+        {!activeExecution && <><button className="ide-primary" onClick={runProject} disabled={!projectId || busy || !jdk?.available}><CirclePlay size={16}/> Run</button><button className="ide-debug-action" onClick={debugProject} disabled={!projectId || busy || !jdk?.available}><CirclePlay size={16}/> Debug</button></>}
+        {activeExecution && <button className="ide-stop-action" onClick={stopRun} disabled={busy}><Square size={14}/> Stop</button>}
+        <details className="ide-more-actions"><summary aria-label="More actions" title="More actions"><Settings2 size={16}/></summary><div>
+          <button onClick={() => activeTab && action(() => saveTab(activeTab))} disabled={!activeTab || activeTab.draft === activeTab.content || busy}><Save size={15}/> Save</button>
+          <button onClick={() => action(saveAll)} disabled={!dirty || busy}><Save size={15}/> Save All</button>
+          <button onClick={buildProject} disabled={!projectId || busy}><Hammer size={15}/> Build</button>
+          <button onClick={() => setShowLaunch(true)} disabled={!projectId || busy}>Launch settings</button>
+          <button onClick={() => setShowSymbols(true)} disabled={languageSnapshot.status !== 'ready'}><Search size={15}/> Find symbol</button>
+          <button onClick={() => startExecution('run', true)} disabled={!projectId || busy || !jdk?.available}>Run without visualization</button>
+          <button onClick={() => setShowJdk((value) => !value)}>Configure JDK</button>
+        </div></details>
       </div>
     </header>
-    <div className="ide-status-line"><span className={jdk?.available ? 'is-ready' : 'is-error'}>{jdk?.available ? `JDK ${jdk.version ?? 'ready'}` : 'JDK unavailable'}</span><button onClick={() => setShowJdk((value) => !value)}>Configure JDK</button><details className="ide-shortcuts"><summary>Shortcuts</summary><div><strong>Workspace shortcuts</strong><p>Alt + Shift + R · Run<br/>Alt + Shift + V · Visualize<br/>Alt + Shift + D · Debug<br/>Alt + Shift + X · Stop<br/>Alt + Shift + F · Runtime Focus<br/>Alt + Shift + E · Explorer<br/>Alt + Shift + I · Inspector<br/>Alt + Shift + B · Bottom tools<br/>Ctrl / Cmd + S · Save<br/>Ctrl / Cmd + Shift + S · Save All<br/>Escape · Exit Focus outside editor</p></div></details><span className="ide-project-status" title={javaProject?.diagnostic ?? projectStatus}>{projectStatus}</span><span className={`ide-language-status ${["failed", "unavailable"].includes(languageSnapshot.status) ? "is-error" : languageSnapshot.metrics.classpathMismatch === 1 ? "is-warning" : ""}`} title={languageSnapshot.message ?? "Java language service"}>Java {languageSnapshot.status}{languageSnapshot.metrics.classpathMismatch === 1 ? ' · classpath differs' : ''}</span>{["failed", "unavailable"].includes(languageSnapshot.status) && <button className="ide-language-restart" onClick={() => void languageClient.restart()} title="Restart Java language service">Retry</button>}<span className="ide-status-spacer"/>{visualizeStatus && <span className={`ide-visualize-status ${traceStale || visualization?.status !== 'complete' && visualization ? 'is-warning' : ''}`}>{traceStale ? 'Source changed · Visualize again' : visualizeStatus}</span>}<span>{notice || (busy ? 'Working…' : 'Ready')}</span></div>
+    <div className="ide-status-line">
+      {!jdk?.available && <span className="is-error">JDK unavailable</span>}
+      {(projectStatus.startsWith('Resolving') || javaProject?.status !== 'ready') && <span className="ide-project-status" title={javaProject?.diagnostic ?? projectStatus}>{projectStatus}</span>}
+      {(["failed", "unavailable"].includes(languageSnapshot.status) || languageSnapshot.metrics.classpathMismatch === 1) && <span className={languageSnapshot.metrics.classpathMismatch === 1 ? 'is-warning' : 'is-error'} title={languageSnapshot.message ?? 'Java language service'}>Java {languageSnapshot.metrics.classpathMismatch === 1 ? 'classpath differs' : languageSnapshot.status}</span>}
+      {["failed", "unavailable"].includes(languageSnapshot.status) && <button className="ide-language-restart" onClick={() => void languageClient.restart()}>Retry Java</button>}
+      {execution && <span className="ide-execution-status" aria-live="polite">{execution.phase === 'FAILED' && execution.failureKind === 'build' ? 'BUILD FAILED' : execution.phase.replaceAll('_', ' ')}{execution.support === 'RUN_ONLY' && (execution.supportReason !== 'No verified runtime events yet' || ['COMPLETED', 'FAILED'].includes(execution.phase)) && execution.phase !== 'BUILDING' ? ' · console only' : ''}</span>}
+      {traceStale && <span className="is-warning">Source changed since Run</span>}
+      {execution?.supportReason && (execution.support === 'RUN_ONLY' && execution.supportReason !== 'No verified runtime events yet' || execution.support === 'PARTIAL' && ['COMPLETED', 'FAILED', 'STOPPED'].includes(execution.phase)) && <details className="ide-support-detail"><summary>Visualization {execution.support.toLowerCase().replace('_', ' ')}</summary><p>{execution.supportReason}</p></details>}
+      <span className="ide-status-spacer"/><span>{notice}</span>
+      <details className="ide-shortcuts"><summary>Shortcuts</summary><div><p>Alt+Shift+R Run · D Debug · X Stop · F Focus · E Explorer · B Tools · I Inspector · O Symbols<br/>Ctrl/Cmd+S Save · Ctrl/Cmd+Shift+S Save All</p></div></details>
+    </div>
     {showJdk && <div className="ide-jdk"><label>JDK home <input value={jdkInput} placeholder="Auto-detect from PATH" onChange={(event) => setJdkInput(event.target.value)} /></label><button onClick={() => action(async () => setJdk(await bridge.detectJdk(jdkInput || null)))}>Use JDK</button><span>{jdk?.error}</span></div>}
-    {debugSession && workspaceMode === 'debug' && <div className="debug-toolbar" aria-label="JVM debugger controls">
-      <span className="debug-live-state">{debugSession?.status === 'paused' ? `JVM PAUSED · ${debugSession.pause?.reason.toUpperCase()} · THREAD ${debugSession.pause?.threadId}` : debugSession ? `JVM ${debugSession.status.toUpperCase()}` : 'DEBUGGER'} · {breakpoints.length} breakpoint{breakpoints.length === 1 ? '' : 's'}</span>
-      <button onClick={() => debugCommand('continue')} disabled={busy || debugSession?.status !== 'paused'}>Continue</button>
-      <button onClick={() => debugCommand('pause')} disabled={busy || debugSession?.status !== 'running'} title="Pause at the next project source boundary">Pause JVM</button>
-      <button onClick={() => debugCommand('stepOver')} disabled={busy || debugSession?.status !== 'paused'}>Step Over</button>
-      <button onClick={() => debugCommand('stepInto')} disabled={busy || debugSession?.status !== 'paused'}>Step Into</button>
-      <button onClick={() => debugCommand('stepOut')} disabled={busy || debugSession?.status !== 'paused'}>Step Out</button>
-      <button onClick={() => debugCommand('stop')} disabled={busy || !debugSession || !['running', 'paused', 'starting'].includes(debugSession.status)}>Stop Debug</button>
-      {debugSession?.pause && <button onClick={() => navigateRuntime(visualization?.trace.events.length ?? 0, { kind: 'frame', id: `jvm:frame:${debugSession.pause!.frameId}` })}>Show live pause</button>}
-      <button onClick={() => { setTool('debugger'); setBottomOpen(true); setBottomHeight(35) }}>Inspect Debugger</button>
+    {debugSession && activeExecution && <div className="debug-toolbar" aria-label="JVM debugger controls">
+      <span className="debug-live-state">{execution?.phase === 'PAUSED' ? `Paused · ${debugSession.pause?.reason ?? 'checkpoint'}` : 'Debugging'}</span>
+      {execution?.phase === 'PAUSED' ? <><button onClick={() => debugCommand('continue')} disabled={busy}>Continue</button><button onClick={() => debugCommand('stepOver')} disabled={busy}>Over</button><button onClick={() => debugCommand('stepInto')} disabled={busy}>Into</button><button onClick={() => debugCommand('stepOut')} disabled={busy}>Out</button></>
+        : <button onClick={() => debugCommand('pause')} disabled={busy || execution?.phase !== 'RUNNING'} title="Pause at next project source boundary">Pause</button>}
+      <button onClick={() => { setTool('debugger'); setBottomOpen(true); setBottomHeight(35) }}>Inspect</button>
     </div>}
     <div className="ide-main" ref={contentRef}>
       <aside className="ide-project-panel">
@@ -697,18 +667,37 @@ export function IdeWorkspace() {
           </div>
           <div className="ide-divider ide-divider--vertical" role="separator" aria-label="Resize runtime pane" tabIndex={0} {...divider('runtime')}/>
           <section className="ide-runtime-panel" aria-label="Runtime visualization area">
-            <div className="ide-panel-heading"><span>RUNTIME {visualization ? <small>· REAL JVM</small> : null}</span><div className="ide-runtime-heading-actions">{visualization && <button type="button" onClick={() => setInspectorHidden((value) => !value)} aria-label="Toggle inspector" aria-pressed={!inspectorHidden} title="Toggle inspector (Alt+Shift+I)"><ScanEye size={14}/></button>}{runtimeExpanded && <button type="button" onClick={() => setFocusSourceOpen((value) => !value)} aria-label={focusSourceOpen ? 'Hide source drawer' : 'Show source drawer'} title="Toggle source drawer"><Code2 size={14}/><span>Source</span></button>}{visualization && <button type="button" onClick={() => { setRuntimeExpanded((value) => !value); setFocusSourceOpen(false) }} aria-label={runtimeExpanded ? 'Restore IDE layout' : 'Expand runtime'} title={runtimeExpanded ? 'Restore IDE layout (Alt+Shift+F)' : 'Focus runtime (Alt+Shift+F)'}>{runtimeExpanded ? <><Minimize2 size={14}/><span>Exit Focus</span></> : <Maximize2 size={14}/>}</button>}</div></div>
-            {visualization ? <div className="ide-runtime-live"><App trace={visualization.trace} embedded onSourceChange={handleExecutingSource} onRuntimeChange={handleRuntimeChange} navigation={runtimeNavigation} suppressInspector={tool === 'errors' && bottomOpen || inspectorHidden}/></div>
-              : <div className="ide-runtime-content"><span className="ide-kicker">VISUALIZE</span><h2>{visualizeStatus || 'Explore real Java execution'}</h2><p>Save and visualize supported Java on your configured local JDK. Replay the recorded runtime in Classic, Spatial, or Theater.</p><a href="/" aria-label="Open runtime visualizer">Explore curated examples <ArrowLeft size={16} className="ide-arrow"/></a><div className="ide-runtime-mode">PERSON&nbsp; · &nbsp;RECURSION&nbsp; · &nbsp;ARRAYS&nbsp; · &nbsp;CONTROL</div></div>}
+            <div className="ide-panel-heading"><span>RUNTIME</span><div className="ide-runtime-heading-actions">
+              {runtimeSelection && visualization && <button type="button" onClick={() => setInspectorHidden((value) => !value)} aria-label="Toggle inspector" aria-pressed={!inspectorHidden} title="Toggle inspector (Alt+Shift+I)"><ScanEye size={14}/></button>}
+              {runtimeExpanded && <button type="button" onClick={() => setFocusSourceOpen((value) => !value)} aria-label={focusSourceOpen ? 'Hide source drawer' : 'Show source drawer'} title="Toggle source drawer"><Code2 size={14}/><span>Source</span></button>}
+              {visualization && <button type="button" onClick={() => { setRuntimeExpanded((value) => !value); setFocusSourceOpen(false) }} aria-label={runtimeExpanded ? 'Restore IDE layout' : 'Expand runtime'} title={runtimeExpanded ? 'Restore IDE layout (Alt+Shift+F)' : 'Focus runtime (Alt+Shift+F)'}>{runtimeExpanded ? <><Minimize2 size={14}/><span>Exit Focus</span></> : <Maximize2 size={14}/>}</button>}
+            </div></div>
+            {visualization ? <div className="ide-runtime-live"><App trace={visualization.trace} embedded onSourceChange={handleExecutingSource} onRuntimeChange={handleRuntimeChange} navigation={runtimeNavigation} suppressInspector={tool === 'errors' && bottomOpen || inspectorHidden} execution={{ phase: execution?.phase ?? 'COMPLETED', lens: timelineLens, liveCursor: visualization.trace.events.length, onLensChange: (lens) => setTimelineLens(lens) }}/></div>
+              : <div className="ide-runtime-content">{execution && <><h2>{execution.phase === 'BUILDING' ? 'Building Java…' : execution.phase === 'STARTING' ? 'Starting Java…' : execution.support === 'RUN_ONLY' ? 'Console execution' : 'Runtime loading…'}</h2>{execution.support === 'RUN_ONLY' && !['BUILDING', 'STARTING'].includes(execution.phase) && <p>{execution.supportReason ?? 'Visualization is unavailable for this execution.'}</p>}</>}</div>}
           </section>
         </div>
         <div className="ide-divider ide-divider--horizontal" role="separator" aria-label="Resize bottom panel" tabIndex={0} {...divider('bottom')}/>
-        <section className="ide-bottom-panel"><div className="ide-tool-tabs"><button className="ide-bottom-toggle" onClick={() => setBottomOpen((value) => !value)} aria-label={bottomOpen ? 'Collapse bottom panel' : 'Expand bottom panel'} title="Toggle bottom panel (Alt+Shift+B)"><PanelBottom size={15}/></button>{availableTools.map((item) => <button key={item} className={tool === item && bottomOpen ? 'is-active' : ''} onClick={() => { setBottomOpen(true); setTool(item); if (item === 'errors' || item === 'debugger') setBottomHeight(35) }}>{item === 'errors' ? 'ERROR EXPLORER' : item.toUpperCase()}{item === 'problems' && problems.length > 0 && <span className="ide-badge">{problems.length}</span>}</button>)}<span className="ide-status-spacer"/>{run && <span className={`ide-process-status ${run.status === 'exited' ? exitEvent?.signal ? 'is-stopped' : run.exitCode !== 0 ? 'is-error' : '' : ''}`}>{run.status === 'running' ? '● RUNNING' : exitEvent?.signal ? `STOPPED · ${exitEvent.signal}` : `EXIT ${run.exitCode ?? '—'}`}</span>}</div>
+        <section className="ide-bottom-panel">
+          <div className="ide-tool-tabs"><button className="ide-bottom-toggle" onClick={() => setBottomOpen((value) => !value)} aria-label={bottomOpen ? 'Collapse bottom panel' : 'Expand bottom panel'} title="Toggle bottom panel (Alt+Shift+B)"><PanelBottom size={15}/></button>
+            {availableTools.map((item) => <button key={item} className={tool === item && bottomOpen ? 'is-active' : ''} onClick={() => { setBottomOpen(true); setTool(item); if (item === 'errors' || item === 'debugger') setBottomHeight(35) }}>{item === 'errors' ? 'ERROR EXPLORER' : item.toUpperCase()}{item === 'problems' && problems.length > 0 && <span className="ide-badge">{problems.length}</span>}</button>)}
+            <span className="ide-status-spacer"/>
+          </div>
           {tool === 'debugger' ? <DebugPanel session={debugSession} runtime={runtime} breakpoints={breakpoints} onInspect={(selection) => navigateRuntime(runtime?.cursor ?? 0, selection)} onRemove={removeBreakpoint}/>
-          : tool === 'errors' ? visualization ? <ErrorExplorer key={visualization.trace.demoId} trace={visualization.trace} runtime={runtime} selection={runtimeSelection} stderr={visualization.stderr} onNavigate={navigateRuntime}/>  : <div className="debug-empty">{exception ? <><strong>{exception.type}: {exception.message}</strong><p>Run captured the actual JVM stack trace. Visualize records a new execution with inspectable runtime history.</p><button className="debug-action" disabled={busy} onClick={visualizeCurrentProject}>Record execution history</button><pre>{exception.rawStackTrace}</pre></> : <p>Visualize or debug a program to inspect its observed runtime exceptions.</p>}</div>
-          : <>
-          {tool === 'problems' ? <ProblemsPanel build={build} language={languageProblems} onOpen={openDiagnostic}/> : tool === 'timeline' ? <div className="ide-timeline"><span>{visualization ? 'RECORDED JVM TRACE' : 'TRACE TIMELINE'}</span><p>{visualization ? `${visualization.trace.events.length} normalized steps · ${visualization.capability.status} support · ${visualization.status.replaceAll('_', ' ')}` : 'Click Visualize to record an editable Java program, or open the curated examples.'}</p>{visualization?.diagnostic && <p>{visualization.diagnostic}</p>}{visualization && <details><summary>Visualization support</summary>{Object.entries(visualization.capability.features).filter(([, value]) => value.observedEvents || value.status !== 'supported').map(([name, value]) => <p key={name}>{value.status === 'supported' ? '✓' : value.status === 'partial' ? '⚠' : '✕'} {name}: {value.reason}</p>)}</details>}{import.meta.env.DEV && visualization && <TraceInspector trace={visualization.trace} rawEvents={visualization.rawEvents}/>}</div> : <div className="ide-console"><div className="ide-console-output" ref={consoleRef} aria-label="Program console">{build?.rawOutput && !build.success && <pre className="ide-console-stderr">{build.rawOutput}</pre>}{visualization && <><p className="ide-console-capture-note">RECORDED OUTPUT THROUGH STEP {runtime?.cursor ?? 0}</p>{runtime?.console.map((entry) => <pre key={entry.eventId} className={entry.channel === 'stderr' ? 'ide-console-stderr' : 'ide-console-stdout'}>{entry.text}</pre>)}<details className="ide-console-terminal"><summary>Full process output · includes output without proven timing</summary><pre className="ide-console-full-stdout">{visualization.stdout}</pre><pre className="ide-console-full-stderr">{visualization.stderr}</pre></details></>}{allEvents.map((event) => <pre key={event.id} className={`ide-console-${event.kind}`}>{event.kind === 'exit' ? event.signal ? `Process stopped (${event.signal}) · ${event.elapsedMs ?? 0} ms` : `Process finished with exit code ${event.exitCode ?? '—'} · ${event.elapsedMs ?? 0} ms` : event.kind === 'stdin' ? `› ${event.text}` : event.text}</pre>)}{exception && <div className="ide-stack"><strong>{exception.type}: {exception.message}</strong><details><summary>Raw JVM stack trace</summary><pre>{exception.rawStackTrace}</pre></details>{exception.frames.map((frame, index) => <button key={index} disabled={!frame.location} onClick={() => frame.location && action(() => openFile(projectId, frame.location!.path, frame.location!))}>{frame.raw}</button>)}</div>}{!allEvents.length && !visualization && !build?.rawOutput && <p className="ide-empty">Run a Java program to see stdout, stderr, input, and exit status.</p>}</div><form className="ide-console-input" onSubmit={(event) => { event.preventDefault(); sendInput() }}><span>›</span><input aria-label="Console input" placeholder={acceptsInput ? 'Send input to program…' : 'Start a program to send input'} value={input} disabled={!acceptsInput} onChange={(event) => setInput(event.target.value)}/><button disabled={!acceptsInput}>Send ↵</button></form></div>}
-          </>}
+          : tool === 'errors' ? visualization ? <ErrorExplorer key={visualization.trace.demoId} trace={visualization.trace} runtime={runtime} selection={runtimeSelection} stderr={execution?.stderr ?? ''} onNavigate={navigateRuntime}/> : <div className="debug-empty">{exception ? <><strong>{exception.type}: {exception.message}</strong><pre>{exception.rawStackTrace}</pre></> : <p>No recorded exception.</p>}</div>
+          : tool === 'problems' ? <ProblemsPanel build={build} language={languageProblems} onOpen={openDiagnostic}/>
+          : <div className="ide-console">
+            <div className="ide-console-output" ref={consoleRef} aria-label="Program console">
+              {build?.rawOutput && !build.success && <pre className="ide-console-stderr">{build.rawOutput}</pre>}
+              {visualization && <>{runtime?.console.map((entry) => <pre key={entry.eventId} className={entry.kind === 'input' ? 'ide-console-stdin' : entry.channel === 'stderr' ? 'ide-console-stderr' : 'ide-console-stdout'}>{entry.kind === 'input' ? `› ${entry.text}` : entry.text}</pre>)}
+                <details className="ide-console-terminal"><summary title="Process-pipe output is complete; its order relative to recorder events cannot be proven">Full process output</summary><pre className="ide-console-full-stdout">{execution?.stdout}</pre><pre className="ide-console-full-stderr">{execution?.stderr}</pre></details></>}
+              {!visualization && allEvents.map((event) => <pre key={event.id} className={`ide-console-${event.kind}`}>{event.kind === 'exit' ? event.signal ? `Process stopped (${event.signal})` : `Process finished with exit code ${event.exitCode ?? '—'}` : event.kind === 'stdin' ? `› ${event.text}` : event.text}</pre>)}
+              {!visualization && execution?.stdout && !allEvents.length && <pre className="ide-console-stdout">{execution.stdout}</pre>}
+              {!visualization && execution?.stderr && !allEvents.length && <pre className="ide-console-stderr">{execution.stderr}</pre>}
+              {exception && <div className="ide-stack"><strong>{exception.type}: {exception.message}</strong><details><summary>Raw JVM stack trace</summary><pre>{exception.rawStackTrace}</pre></details>{exception.frames.map((frame, index) => <button key={index} disabled={!frame.location} onClick={() => frame.location && action(() => openFile(projectId, frame.location!.path, frame.location!))}>{frame.raw}</button>)}</div>}
+              {!execution && !build?.rawOutput && <p className="ide-empty">Program output appears here when you run Java.</p>}
+            </div>
+            <form className="ide-console-input" onSubmit={(event) => { event.preventDefault(); sendInput() }}><span>›</span><input aria-label="Console input" placeholder={acceptsInput ? 'Send input to program…' : 'Run a program to send input'} value={input} disabled={!acceptsInput} onChange={(event) => setInput(event.target.value)}/><button disabled={!acceptsInput}>Send ↵</button></form>
+          </div>}
         </section>
       </section>
     </div>

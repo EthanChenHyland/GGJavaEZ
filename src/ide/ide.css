@@ -51,7 +51,6 @@
 .ide-shell--runtime-expanded .ide-upper,
 .ide-shell--runtime-expanded .ide-runtime-panel { flex:1; width:100%; height:auto; min-height:0; }
 .ide-shell--runtime-expanded .ide-runtime-panel:has(.ide-runtime-live) { flex:1; height:auto; min-height:0; }
-.ide-shell:has(.ide-runtime-live):not(.ide-shell--debug-active) .ide-console-input { display:none; }
 @media(max-width:760px) { .ide-shell:has(.ide-runtime-live) .ide-bottom-panel { height:85px; min-height:85px; } }
 
 /* M8 activity presets preserve mounted editor/runtime state and give the world space. */
@@ -184,3 +183,25 @@
 .ide-symbol-results button{display:flex;justify-content:space-between;gap:12px;text-align:left;border-radius:0;border-left:0;border-right:0}
 .ide-symbol-results button.is-selected{background:var(--color-panelRaised);border-color:var(--color-execution)}
 .ide-symbol-results small{overflow:hidden;text-overflow:ellipsis;color:var(--color-textMuted)}
+
+/* M10: one execution action hierarchy; secondary project commands remain available on demand. */
+.ide-shell--code:not(.ide-shell--runtime-expanded) .ide-runtime-panel,.ide-shell--code .ide-upper>.ide-divider{display:none}
+.ide-shell--code .ide-editor-panel{width:100%;flex:1}
+.ide-top-actions .ide-primary{background:var(--color-execution);border-color:var(--color-execution);color:var(--color-canvas);font-weight:700}
+.ide-top-actions .ide-primary:hover:not(:disabled){color:var(--color-canvas)}
+.ide-top-actions .ide-stop-action{border-color:var(--color-exception);color:var(--color-exception)}
+.ide-more-actions{position:relative}
+.ide-more-actions>summary{list-style:none;display:flex;align-items:center;justify-content:center;width:32px;height:30px;border:1px solid var(--color-border);border-radius:6px;color:var(--color-textSecondary);cursor:pointer}
+.ide-more-actions>summary::-webkit-details-marker{display:none}
+.ide-more-actions[open]>summary{border-color:var(--color-borderStrong);color:var(--color-text)}
+.ide-more-actions>div{position:absolute;right:0;top:36px;z-index:30;display:grid;gap:2px;width:210px;padding:6px;border:1px solid var(--color-borderStrong);border-radius:8px;background:var(--color-panelRaised);box-shadow:0 18px 45px var(--color-canvas)}
+.ide-more-actions>div button{display:flex;justify-content:flex-start;width:100%;border:0;background:transparent;font-size:12px;color:var(--color-textSecondary)}
+.ide-more-actions>div button:hover:not(:disabled){background:var(--color-panelHover)}
+.ide-execution-status{color:var(--color-execution);font-weight:650;letter-spacing:.04em}
+.ide-status-line .is-warning{color:var(--color-mutation)}
+.ide-support-detail{position:relative;max-width:250px}.ide-support-detail>summary{cursor:pointer;color:var(--color-textSecondary)}
+.ide-support-detail>p{position:absolute;z-index:25;top:18px;left:0;width:250px;padding:10px;border:1px solid var(--color-borderStrong);border-radius:6px;background:var(--color-panelRaised);line-height:1.5}
+.ide-shell--runtime-expanded .ide-top-actions{display:flex}
+.ide-shell--runtime-expanded .ide-status-line{display:flex}
+.ide-shell--runtime-expanded .debug-toolbar{display:flex}
+@media(max-width:760px){.ide-top-actions .ide-primary,.ide-top-actions .ide-debug-action,.ide-top-actions .ide-stop-action{font-size:11px;gap:5px}.ide-top-actions .ide-primary svg{display:block}.ide-more-actions>div button{font-size:12px;gap:6px}.ide-more-actions>summary{width:30px}.ide-top-actions{overflow:visible}.ide-shell--bottom-open:has(.ide-runtime-live):not(.ide-shell--debug-inspection) .ide-bottom-panel{height:150px;min-height:150px}}

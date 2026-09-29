@@ -325,6 +325,16 @@ export function applyEvent(state: RuntimeState, event: TraceEvent): RuntimeState
       }] }
       break
 
+    case 'CONSOLE_INPUT':
+      requireCondition(event.frameId === null || activeFrameId === event.frameId,
+        `Console input outside active frame ${event.frameId}`)
+      next = { ...state, console: [...state.console, {
+        eventId: event.eventId, frameId: event.frameId, source: event.source ? { ...event.source } : null,
+        kind: 'input', text: event.text,
+        value: { kind: 'stringSummary', javaType: 'String', value: event.text },
+      }] }
+      break
+
     case 'PROGRAM_START':
       requireCondition(state.status === 'ready', 'PROGRAM_START can only occur once')
       next = { ...state, status: 'running' }
@@ -655,7 +665,7 @@ export function applyEvent(state: RuntimeState, event: TraceEvent): RuntimeState
   return {
     ...next,
     cursor: state.cursor + 1,
-    currentSource: event.source ? { ...event.source } : ['PROGRAM_ABORT', 'CONSOLE_WRITE'].includes(event.type) ? state.currentSource : null,
+    currentSource: event.source ? { ...event.source } : ['PROGRAM_ABORT', 'CONSOLE_WRITE', 'CONSOLE_INPUT'].includes(event.type) ? state.currentSource : null,
     lastEventId: event.eventId,
     // Activity describes the current array instruction, not a lingering visual effect.
     arrayActivity: ['ARRAY_READ', 'ARRAY_COMPARE', 'ARRAY_WRITE'].includes(event.type) ? next.arrayActivity : null,

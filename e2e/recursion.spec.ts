@@ -82,7 +82,7 @@ test('recursive free navigation overrides Follow while playback continues and Fo
   await page.getByRole('button', { name: 'Focus selected entity', exact: true }).click()
   await expect(page.locator('.world-label')).toContainText('FOCUS ENTITY')
   await page.getByRole('button', { name: 'Zoom in', exact: true }).click()
-  await page.getByRole('button', { name: 'Reset view', exact: true }).click()
+  await page.getByRole('button', { name: 'Overview', exact: true }).click()
   await expect(page.locator('.world-label')).toContainText('HOME')
   await expect(cursor(page)).toHaveValue('19')
   await page.getByRole('button', { name: 'Follow execution', exact: true }).click()

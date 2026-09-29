@@ -43,7 +43,7 @@ async function control(page: Page) {
   await page.getByLabel('Runtime example', { exact: true }).selectOption('control')
   await expect(scrub(page)).toHaveValue('0')
   await expect(consolePane(page)).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Theater', exact: true })).toBeDisabled()
+  await expect(page.getByRole('button', { name: 'Theater', exact: true })).toHaveCount(0)
 }
 
 async function seek(page: Page, cursor: number) {

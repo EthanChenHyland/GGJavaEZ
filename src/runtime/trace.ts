@@ -107,6 +107,8 @@ function isEvent(value: unknown, schemaVersion: 1 | 2): value is TraceEvent {
     case 'CONSOLE_WRITE':
       return schemaVersion === 2 && (value.frameId === null || isText(value.frameId)) &&
         ['stdout', 'stderr'].includes(String(value.channel)) && typeof value.text === 'string'
+    case 'CONSOLE_INPUT':
+      return schemaVersion === 2 && (value.frameId === null || isText(value.frameId)) && typeof value.text === 'string'
     case 'PROGRAM_START':
     case 'PROGRAM_END':
       return true

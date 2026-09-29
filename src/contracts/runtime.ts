@@ -200,6 +200,7 @@ export type TraceEvent = TraceEventBase & (
   | { type: 'INPUT_READ'; frameId: FrameId; readerObjectId: ObjectId; method: 'nextInt'; inputIndex: number; destinationSlotId: SlotId; value: ScalarValue; text: string }
   | { type: 'OUTPUT_WRITE'; frameId: FrameId; value: ScalarValue; text: string; originSlotId?: SlotId }
   | { type: 'CONSOLE_WRITE'; frameId: FrameId | null; channel: 'stdout' | 'stderr'; text: string }
+  | { type: 'CONSOLE_INPUT'; frameId: FrameId | null; text: string }
   | { type: 'PROGRAM_START' }
   | { type: 'PROGRAM_END' }
   | { type: 'PROGRAM_ABORT'; reason: 'program_crashed' | 'instrumentation_failed' | 'limit_exceeded' | 'unsupported'; message: string }

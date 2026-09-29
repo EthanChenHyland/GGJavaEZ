@@ -2,12 +2,28 @@ import { useMemo, type CSSProperties } from 'react'
 import { Pause, Play, RotateCcw, SkipBack, SkipForward } from 'lucide-react'
 import type { TraceDocument, TraceEvent } from '../../contracts/runtime'
 import type { PlaybackApi } from '../../playback'
+import type { ExecutionPhase, TimelineLens } from '../../execution/contracts'
 import { colors, radiusPx, typography } from '../../theme/tokens'
 import './Timeline.css'
 
 export interface TimelineProps {
   trace: TraceDocument
   playback: PlaybackApi
+  execution?: {
+    phase: ExecutionPhase
+    lens: TimelineLens
+    liveCursor: number
+    onReturnToLive: () => void
+  }
+}
+
+/** A growing trace changes the live head, never a manually held history cursor. */
+export function resolveTimelinePosition(eventCount: number, historyCursor: number, execution?: Pick<NonNullable<TimelineProps['execution']>, 'lens' | 'liveCursor'>) {
+  const liveCursor = execution ? Math.min(Math.max(0, Number.isFinite(execution.liveCursor) ? Math.trunc(execution.liveCursor) : 0), eventCount) : eventCount
+  return {
+    liveCursor,
+    cursor: execution?.lens === 'LIVE' ? liveCursor : Math.min(Math.max(0, Number.isFinite(historyCursor) ? Math.trunc(historyCursor) : 0), liveCursor),
+  }
 }
 
 const SPEEDS = [0.5, 1, 2, 4] as const
@@ -36,12 +52,14 @@ function markerColor(event: TraceEvent): string {
   return colors.textMuted
 }
 
-export function Timeline({ trace, playback }: TimelineProps) {
+export function Timeline({ trace, playback, execution }: TimelineProps) {
   const { state, playPause, stepForward, stepBack, seekTo, setSpeed, reset } = playback
-  const eventCount = trace.events.length
-  const progress = eventCount > 0 ? (state.cursor / eventCount) * 100 : 0
-  const currentEvent = trace.events[state.cursor - 1]
-  const markers = useMemo(() => markerIndices(trace.events), [trace])
+  const { cursor, liveCursor } = resolveTimelinePosition(trace.events.length, state.cursor, execution)
+  const hasExecution = !!execution
+  const eventCount = hasExecution ? liveCursor : trace.events.length
+  const progress = eventCount > 0 ? (cursor / eventCount) * 100 : 0
+  const currentEvent = trace.events[cursor - 1]
+  const markers = useMemo(() => markerIndices(hasExecution ? trace.events.slice(0, eventCount) : trace.events), [trace.events, eventCount, hasExecution])
   const theme = {
     '--timeline-panel': colors.panel,
     '--timeline-panel-raised': colors.panelRaised,
@@ -58,42 +76,45 @@ export function Timeline({ trace, playback }: TimelineProps) {
   } as CSSProperties
 
   return (
-    <section className={`vj-timeline${eventCount > 60 ? ' vj-timeline--dense' : ''}`} style={theme} aria-label="Execution timeline">
+    <section className={`vj-timeline${eventCount > 60 ? ' vj-timeline--dense' : ''}${execution ? ' vj-timeline--session' : ''}`} style={theme} aria-label="Execution timeline">
       <div className="vj-timeline__transport">
         <button className="vj-timeline__play" type="button" onClick={playPause} disabled={eventCount === 0}
-          aria-label={state.playing ? 'Pause execution' : state.cursor === eventCount && eventCount > 0 ? 'Replay execution' : 'Play execution'}>
+          aria-label={execution ? state.playing ? 'Pause history replay' : 'Replay recorded history' : state.playing ? 'Pause execution' : cursor === eventCount && eventCount > 0 ? 'Replay execution' : 'Play execution'}>
           {state.playing ? <Pause size={18} fill="currentColor" /> : <Play size={18} fill="currentColor" />}
         </button>
-        <button className="vj-timeline__button" type="button" onClick={stepBack} disabled={state.cursor === 0} aria-label="Previous event">
+        <button className="vj-timeline__button" type="button" onClick={stepBack} disabled={cursor === 0} aria-label="Previous event">
           <SkipBack size={17} />
         </button>
-        <button className="vj-timeline__button" type="button" onClick={stepForward} disabled={state.cursor >= eventCount} aria-label="Next event">
+        <button className="vj-timeline__button" type="button" onClick={stepForward} disabled={cursor >= eventCount} aria-label="Next event">
           <SkipForward size={17} />
         </button>
-        <button className="vj-timeline__button" type="button" onClick={reset} disabled={state.cursor === 0 && !state.playing} aria-label="Reset execution">
+        <button className="vj-timeline__button" type="button" onClick={reset} disabled={cursor === 0 && !state.playing} aria-label={execution ? 'Rewind history' : 'Reset execution'}>
           <RotateCcw size={16} />
         </button>
       </div>
 
       <div className="vj-timeline__main">
         <div className="vj-timeline__status">
-          <span className="vj-timeline__count">{state.cursor} / {eventCount}</span>
+          {execution && <span className={`vj-timeline__lens vj-timeline__lens--${execution.lens.toLowerCase()}`} title={`${execution.phase.toLowerCase().replaceAll('_', ' ')} · ${execution.lens.toLowerCase()}`}>{execution.lens}</span>}
+          <span className="vj-timeline__count">{cursor} / {eventCount}</span>
           <span className="vj-timeline__event" aria-live="polite">{currentEvent?.label ?? 'Ready to run'}</span>
+          {execution?.lens === 'HISTORY' && <button className="vj-timeline__return" type="button" onClick={execution.onReturnToLive}>Return to Live <span>{liveCursor}</span></button>}
         </div>
         <div className="vj-timeline__rail">
-          <input className="vj-timeline__range" type="range" min={0} max={eventCount} step={1} value={state.cursor}
+          <input className="vj-timeline__range" type="range" min={0} max={eventCount} step={1} value={cursor}
             onChange={(event) => seekTo(Number(event.currentTarget.value))}
             disabled={eventCount === 0} aria-label="Scrub execution"
-            aria-valuetext={`Event ${state.cursor} of ${eventCount}: ${currentEvent?.label ?? 'Ready to run'}`}
+            aria-valuetext={`Event ${cursor} of ${eventCount}: ${currentEvent?.label ?? 'Ready to run'}`}
             style={{ background: `linear-gradient(to right, ${colors.execution} ${progress}%, ${colors.borderStrong} ${progress}%)` }} />
           <div className="vj-timeline__markers" aria-label="Events">
             {markers.map((index) => { const event = trace.events[index]; return (
               <button key={event.eventId} type="button"
-                className={`vj-timeline__marker${state.cursor === index + 1 ? ' vj-timeline__marker--current' : ''}${event.importance === 'quiet' ? ' vj-timeline__marker--quiet' : ''}${event.importance === 'major' ? ' vj-timeline__marker--major' : ''}`}
+                className={`vj-timeline__marker${cursor === index + 1 ? ' vj-timeline__marker--current' : ''}${event.importance === 'quiet' ? ' vj-timeline__marker--quiet' : ''}${event.importance === 'major' ? ' vj-timeline__marker--major' : ''}`}
                 style={{ left: `${((index + 1) / eventCount) * 100}%`, '--marker-color': markerColor(event) } as CSSProperties}
                 onClick={() => seekTo(index + 1)} aria-label={`Go to event ${index + 1}: ${event.label}`} title={event.label} />
             ) })}
           </div>
+          {execution && eventCount > 0 && <span className="vj-timeline__live-head" style={{ left: 'calc(100% - 7px)' }} aria-label={`Live head at event ${liveCursor}`} title={`Newest observed event · ${liveCursor}`} />}
         </div>
       </div>
 

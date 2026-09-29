@@ -2,6 +2,7 @@ import type { BuildResult, JdkStatus, ProjectEntry, ProjectFile, ProjectSummary,
 import type { DebugCommand, DebugSession, SourceBreakpoint } from '../debugger/contracts'
 import type { JavaProject, LaunchConfiguration } from './javaProject'
 import type { LanguageSnapshot } from '../language/protocol'
+import type { ExecutionSession, StartExecutionRequest } from '../execution/contracts'
 
 async function request<T>(url: string, method = 'GET', data?: unknown): Promise<T> {
   const response = await fetch(url, { method, headers: data === undefined ? undefined : { 'content-type': 'application/json' }, body: data === undefined ? undefined : JSON.stringify(data) })
@@ -12,6 +13,18 @@ async function request<T>(url: string, method = 'GET', data?: unknown): Promise<
 
 const project = (id: string) => `/api/projects/${encodeURIComponent(id)}`
 export const bridge = {
+  executionCurrent: () => request<ExecutionSession | null>('/api/execution/current'),
+  executionStart: (id: string, options: StartExecutionRequest) => request<ExecutionSession>(`${project(id)}/execution`, 'POST', options),
+  executionSnapshot: (id: string) => request<ExecutionSession>(`/api/execution/${encodeURIComponent(id)}`),
+  executionCommand: (id: string, command: DebugCommand) => request<ExecutionSession>(`/api/execution/${encodeURIComponent(id)}/command`, 'POST', { command }),
+  executionInput: (id: string, text: string) => request<{ ok: boolean }>(`/api/execution/${encodeURIComponent(id)}/input`, 'POST', { text }),
+  executionStop: (id: string) => request<ExecutionSession>(`/api/execution/${encodeURIComponent(id)}/stop`, 'POST', {}),
+  executionBreakpoints: (id: string, breakpoints: SourceBreakpoint[]) => request<ExecutionSession>(`/api/execution/${encodeURIComponent(id)}/breakpoints`, 'POST', { breakpoints }),
+  executionEvents: (id: string, onSnapshot: (session: ExecutionSession) => void) => {
+    const source = new EventSource(`/api/execution/${encodeURIComponent(id)}/events`)
+    source.addEventListener('session', (event) => onSnapshot(JSON.parse((event as MessageEvent).data) as ExecutionSession))
+    return source
+  },
   health: () => request<{ jdk: JdkStatus }>('/api/health'),
   detectJdk: (home: string | null) => request<JdkStatus>('/api/jdk/detect', 'POST', { home }),
   projects: () => request<ProjectSummary[]>('/api/projects'),

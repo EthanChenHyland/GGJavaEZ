@@ -3,6 +3,8 @@ package visualjava;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.InputStream;
+import java.io.FilterInputStream;
 import java.io.PrintStream;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
@@ -48,12 +50,33 @@ public final class Recorder {
       String path = System.getProperty("visualjava.trace");
       if (path == null || path.isEmpty()) throw new IllegalStateException("visualjava.trace missing");
       OUT = Files.newBufferedWriter(Path.of(path), StandardCharsets.UTF_8);
+      System.setIn(wrappedInput(System.in));
       System.setOut(wrapped(System.out, "stdout"));
       System.setErr(wrapped(System.err, "stderr"));
       Runtime.getRuntime().addShutdownHook(new Thread(() -> { try { synchronized (OUT) { OUT.flush(); OUT.close(); } } catch (IOException ignored) {} }));
     } catch (IOException e) { throw new ExceptionInInitializerError(e); }
   }
   private Recorder() {}
+  /** Marks an actual blocking read boundary and the bytes returned by that same read. */
+  private static InputStream wrappedInput(InputStream original) {
+    return new FilterInputStream(original) {
+      @Override public int read() throws IOException {
+        inputWait();
+        int value=super.read();
+        inputRead(value<0?new byte[0]:new byte[]{(byte)value});
+        return value;
+      }
+      @Override public int read(byte[] bytes,int offset,int length) throws IOException {
+        if(length==0) return 0;
+        inputWait();
+        int count=super.read(bytes,offset,length);
+        inputRead(count<0?new byte[0]:java.util.Arrays.copyOfRange(bytes,offset,offset+count));
+        return count;
+      }
+      private void inputWait() { Frame f=current(); emit("stdin_wait",f,f==null?-1:f.line,f==null?-1:f.site,""); }
+      private void inputRead(byte[] bytes) { Frame f=current(); emit("stdin_read",f,f==null?-1:f.line,f==null?-1:f.site,"\"text\":"+q(new String(bytes,StandardCharsets.UTF_8))); }
+    };
+  }
   /** Keep the original byte stream intact; only decoded text is added to the probe clock. */
   private static PrintStream wrapped(PrintStream original, String channel) {
     Charset charset=original.charset();

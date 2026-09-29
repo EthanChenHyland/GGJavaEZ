@@ -1,0 +1,220 @@
+{
+  "source": "One fresh 600-iteration local JVM run, Chrome headless 1440x900; descriptive sample, not GPU presentation percentile",
+  "projectId": "f51906f7-78bc-49a1-bf47-08a6f6ec57a8",
+  "sessionId": "2bde2bc7-627a-427e-a431-f326a0009075",
+  "phase": "COMPLETED",
+  "support": "FULL",
+  "rawEvents": 4817,
+  "stdoutBytes": 63,
+  "sessionRevisions": 121,
+  "publishedSnapshots": 28,
+  "publishedBytes": 10594831,
+  "observedEventSpanMs": 2386,
+  "observedEventsPerSecond": 2014,
+  "timelineDomUpdates": 23,
+  "consoleDomUpdates": 15,
+  "webglDrawCalls": 1098,
+  "rafFrameCount": 256,
+  "rafGapP50Ms": 16.699999999999818,
+  "rafGapP95Ms": 33.29999999999973,
+  "rafGapMaxMs": 100,
+  "pageErrors": [],
+  "snapshots": [
+    {
+      "at": 1023.7000000476837,
+      "phase": "BUILDING",
+      "rawEvents": 0,
+      "stdout": 0,
+      "bytes": 474
+    },
+    {
+      "at": 1272.0999999046326,
+      "phase": "BUILDING",
+      "rawEvents": 0,
+      "stdout": 0,
+      "bytes": 1225
+    },
+    {
+      "at": 1292.0999999046326,
+      "phase": "STARTING",
+      "rawEvents": 0,
+      "stdout": 0,
+      "bytes": 1227
+    },
+    {
+      "at": 1374,
+      "phase": "STARTING",
+      "rawEvents": 0,
+      "stdout": 0,
+      "bytes": 1846
+    },
+    {
+      "at": 1822.4000000953674,
+      "phase": "RUNNING",
+      "rawEvents": 0,
+      "stdout": 0,
+      "bytes": 1873
+    },
+    {
+      "at": 1924.7999999523163,
+      "phase": "RUNNING",
+      "rawEvents": 12,
+      "stdout": 7,
+      "bytes": 6121
+    },
+    {
+      "at": 2025.4000000953674,
+      "phase": "RUNNING",
+      "rawEvents": 212,
+      "stdout": 7,
+      "bytes": 44321
+    },
+    {
+      "at": 2127.2999999523163,
+      "phase": "RUNNING",
+      "rawEvents": 428,
+      "stdout": 7,
+      "bytes": 85723
+    },
+    {
+      "at": 2255,
+      "phase": "RUNNING",
+      "rawEvents": 644,
+      "stdout": 7,
+      "bytes": 127141
+    },
+    {
+      "at": 2334.0999999046326,
+      "phase": "RUNNING",
+      "rawEvents": 861,
+      "stdout": 16,
+      "bytes": 168777
+    },
+    {
+      "at": 2436.0999999046326,
+      "phase": "RUNNING",
+      "rawEvents": 1077,
+      "stdout": 16,
+      "bytes": 210323
+    },
+    {
+      "at": 2539.4000000953674,
+      "phase": "RUNNING",
+      "rawEvents": 1253,
+      "stdout": 16,
+      "bytes": 244306
+    },
+    {
+      "at": 2643.0999999046326,
+      "phase": "RUNNING",
+      "rawEvents": 1469,
+      "stdout": 16,
+      "bytes": 286021
+    },
+    {
+      "at": 2747.5999999046326,
+      "phase": "RUNNING",
+      "rawEvents": 1686,
+      "stdout": 25,
+      "bytes": 327938
+    },
+    {
+      "at": 2852.5999999046326,
+      "phase": "RUNNING",
+      "rawEvents": 1902,
+      "stdout": 25,
+      "bytes": 369653
+    },
+    {
+      "at": 2957.7999999523163,
+      "phase": "RUNNING",
+      "rawEvents": 2118,
+      "stdout": 25,
+      "bytes": 411369
+    },
+    {
+      "at": 3064.2000000476837,
+      "phase": "RUNNING",
+      "rawEvents": 2342,
+      "stdout": 25,
+      "bytes": 454629
+    },
+    {
+      "at": 3170.5999999046326,
+      "phase": "RUNNING",
+      "rawEvents": 2567,
+      "stdout": 34,
+      "bytes": 498091
+    },
+    {
+      "at": 3275.0999999046326,
+      "phase": "RUNNING",
+      "rawEvents": 2791,
+      "stdout": 34,
+      "bytes": 541351
+    },
+    {
+      "at": 3381.2000000476837,
+      "phase": "RUNNING",
+      "rawEvents": 3007,
+      "stdout": 34,
+      "bytes": 583066
+    },
+    {
+      "at": 3488.4000000953674,
+      "phase": "RUNNING",
+      "rawEvents": 3232,
+      "stdout": 43,
+      "bytes": 626535
+    },
+    {
+      "at": 3595.4000000953674,
+      "phase": "RUNNING",
+      "rawEvents": 3472,
+      "stdout": 43,
+      "bytes": 672878
+    },
+    {
+      "at": 3701,
+      "phase": "RUNNING",
+      "rawEvents": 3656,
+      "stdout": 43,
+      "bytes": 708422
+    },
+    {
+      "at": 3816.5999999046326,
+      "phase": "RUNNING",
+      "rawEvents": 3864,
+      "stdout": 43,
+      "bytes": 748618
+    },
+    {
+      "at": 3932.4000000953674,
+      "phase": "RUNNING",
+      "rawEvents": 4105,
+      "stdout": 52,
+      "bytes": 795204
+    },
+    {
+      "at": 4097.700000047684,
+      "phase": "RUNNING",
+      "rawEvents": 4345,
+      "stdout": 52,
+      "bytes": 841584
+    },
+    {
+      "at": 4210.299999952316,
+      "phase": "RUNNING",
+      "rawEvents": 4665,
+      "stdout": 52,
+      "bytes": 903424
+    },
+    {
+      "at": 4310.299999952316,
+      "phase": "COMPLETED",
+      "rawEvents": 4817,
+      "stdout": 63,
+      "bytes": 932691
+    }
+  ]
+}

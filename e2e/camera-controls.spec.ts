@@ -25,7 +25,7 @@ test('visible zoom controls reset each representation without changing runtime s
     await expect(page.getByRole('button', { name: 'Follow execution', exact: true })).toHaveAttribute('aria-pressed', 'false')
     for (let n = 0; n < 12; n++) await page.getByRole('button', { name: 'Zoom in', exact: true }).click()
     for (let n = 0; n < 20; n++) await page.getByRole('button', { name: 'Zoom out', exact: true }).click()
-    await page.getByRole('button', { name: 'Reset view', exact: true }).click()
+    await page.getByRole('button', { name: 'Overview', exact: true }).click()
     await expect.poll(current).toEqual(baseline)
     await expect(page.locator('.vj-timeline__count')).toContainText('18 / 21')
   }
@@ -50,5 +50,5 @@ test('Classic slots and reference arrows select the shared inspector; switching 
   await page.getByRole('button', { name: 'Zoom out', exact: true }).click()
   await page.getByRole('button', { name: 'Classic', exact: true }).click()
   await expect(page.locator('.classic-runtime')).toHaveAttribute('viewBox', view!)
-  await expect(page.getByRole('button', { name: 'Theater', exact: true })).toBeDisabled()
+  await expect(page.getByRole('button', { name: 'Theater', exact: true })).toHaveCount(0)
 })

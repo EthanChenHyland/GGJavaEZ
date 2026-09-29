@@ -73,7 +73,9 @@ describe('reserved recursive camera composition', () => {
     const shallow = { ...scene, stackDepth: 1 }
     const target = shallow.bounds!.center
     const fitted = sceneHomePose(shallow, target, viewFor(1.54), true)
-    expect(fitted).toEqual(sceneHomePose(scene, target, viewFor(1.54)))
+    const reserved = sceneHomePose(scene, target, viewFor(1.54))
+    expect(fitted.target).toEqual(reserved.target)
+    expect(distance(fitted.position, fitted.target)).toBeCloseTo(distance(reserved.position, reserved.target) * 0.87)
     expect(fitted).not.toEqual(responsiveHomePose(target, 1.54))
   })
 

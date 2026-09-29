@@ -1,8 +1,12 @@
 import { expect, test } from '@playwright/test'
+import { randomUUID } from 'node:crypto'
+import type { ExecutionSession } from '../src/execution/contracts'
+
+test.describe.configure({ mode: 'serial', timeout: 90_000 })
 
 async function project(request: import('@playwright/test').APIRequestContext, name: string, files: { path: string; content: string }[]) {
-  const response = await request.post('/api/projects/import', { data: { name: `${name}-${Date.now()}`, files } })
-  expect(response.ok()).toBe(true)
+  const response = await request.post('/api/projects/import', { data: { name: `${name}-${randomUUID()}`, files } })
+  expect(response.ok(), await response.text()).toBe(true)
   return (await response.json()).id as string
 }
 
@@ -10,6 +14,16 @@ async function open(page: import('@playwright/test').Page, id: string) {
   await page.addInitScript((projectId) => localStorage.setItem('ggjavaez:project', projectId), id)
   await page.goto('/ide')
   await expect(page.locator('.monaco-editor')).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Run', exact: true })).toBeEnabled()
+}
+
+async function executionPhase(request: import('@playwright/test').APIRequestContext, projectId: string, phase: ExecutionSession['phase']) {
+  await expect.poll(async () => {
+    const response = await request.get('/api/execution/current')
+    const session = await response.json() as ExecutionSession | null
+    return session?.projectId === projectId ? session.phase : 'different project'
+  }, { timeout: 45_000, intervals: [100, 250, 500] }).toBe(phase)
+  return await (await request.get('/api/execution/current')).json() as ExecutionSession
 }
 
 test('editable Person reaches real 3D/Classic, stable scrubbing, source and inspector', async ({ page, request }) => {
@@ -26,12 +40,15 @@ test('editable Person reaches real 3D/Classic, stable scrubbing, source and insp
   await page.keyboard.press('Backspace')
   await page.keyboard.insertText('19')
   await expect(page.locator('.ide-dirty')).toBeVisible()
-  await page.getByRole('button', { name: 'Visualize' }).click()
+  await page.getByRole('button', { name: 'Run', exact: true }).click()
+  const session = await executionPhase(request, id, 'COMPLETED')
+  expect(session.rawEvents.some((event) => event.type === 'field')).toBe(true)
   await expect(page.locator('.app-shell--embedded')).toBeVisible({ timeout: 30_000 })
-  await expect(page.locator('.ide-status-line')).toContainText('Ready to explore')
+  await expect(page.locator('.ide-execution-status')).toContainText('COMPLETED')
   const scrub = page.getByRole('slider', { name: 'Scrub execution' })
   const max = Number(await scrub.getAttribute('max'))
   expect(max).toBeGreaterThan(10)
+  await expect(scrub).toHaveValue(String(max))
   await scrub.fill(String(max))
   await expect(page.locator('.world-panel')).toBeVisible()
   await page.getByRole('button', { name: 'Classic', exact: true }).click()
@@ -41,6 +58,7 @@ test('editable Person reaches real 3D/Classic, stable scrubbing, source and insp
   expect(personId).toBeTruthy()
   await page.getByRole('combobox', { name: 'Select runtime entity' }).selectOption(personId!)
   await expect(page.getByRole('heading', { name: /Person #/ })).toBeVisible()
+  await expect(page.getByRole('complementary', { name: 'Runtime inspector' })).toContainText('19')
   await expect(page.locator('.ide-tab.is-active')).toContainText('Person.java')
   await scrub.fill('1')
   await expect(page.getByRole('combobox', { name: 'Select runtime entity' }).locator(`option[value="${personId}"]`)).toHaveCount(0)
@@ -57,8 +75,10 @@ test('editable Person reaches real 3D/Classic, stable scrubbing, source and insp
   await page.getByRole('button', { name: 'Restore IDE layout' }).click()
   await expect(page.locator('.ide-editor-panel')).toBeVisible()
   await expect(scrub).toHaveValue(String(max))
-  await page.getByRole('button', { name: 'TIMELINE', exact: true }).click()
-  await expect(page.locator('.ide-timeline')).toContainText('RECORDED JVM TRACE')
+  await expect(page.getByRole('region', { name: 'Execution timeline' })).toBeVisible()
+  await expect(page.getByRole('button', { name: /Return to Live/ })).toBeVisible()
+  await page.getByRole('button', { name: /Return to Live/ }).click()
+  await expect(page.locator('.vj-timeline__lens')).toContainText('LIVE')
   const saved = await (await request.get(`/api/projects/${id}/files?path=Main.java`)).json()
   expect(saved.content).toContain('p.setAge(19);')
 })
@@ -66,15 +86,20 @@ test('editable Person reaches real 3D/Classic, stable scrubbing, source and insp
 test('real factorial uses the shared stack visualizer', async ({ page, request }) => {
   const id = await project(request, 'RealRecursion', [{ path: 'Main.java', content: 'public class Main { static int factorial(int n) { if(n<=1)return 1; return n*factorial(n-1); } public static void main(String[] args) { System.out.println(factorial(5)); } }' }])
   await open(page, id)
-  await page.getByRole('button', { name: 'Visualize' }).click()
+  await page.getByRole('button', { name: 'Run', exact: true }).click()
+  const session = await executionPhase(request, id, 'COMPLETED')
+  expect(session.rawEvents.filter((event) => event.type === 'enter').length).toBeGreaterThan(5)
   await expect(page.locator('.app-shell--embedded')).toBeVisible({ timeout: 30_000 })
-  await expect(page.getByRole('slider', { name: 'Scrub execution' })).toHaveAttribute('max', /[1-9]/)
+  await expect(page.locator('.ide-execution-status')).toContainText('COMPLETED')
+  const scrub = page.getByRole('slider', { name: 'Scrub execution' })
+  expect(Number(await scrub.getAttribute('max'))).toBeGreaterThan(8)
   await page.getByRole('button', { name: 'Classic', exact: true }).click()
   await expect(page.locator('.classic-runtime')).toBeVisible()
   await page.getByRole('button', { name: 'Spatial', exact: true }).click()
-  const scrub = page.getByRole('slider', { name: 'Scrub execution' })
   await scrub.fill('8')
-  await page.getByRole('button', { name: 'Play execution' }).click()
+  await page.getByRole('combobox', { name: 'Playback speed' }).selectOption('0.5')
+  await page.getByRole('button', { name: 'Replay recorded history' }).click()
+  await expect(page.getByRole('button', { name: 'Pause history replay' })).toBeVisible()
   const canvas = page.getByRole('region', { name: 'Runtime world' }).locator('canvas')
   const box = (await canvas.boundingBox())!
   await page.mouse.move(box.x + box.width * 0.55, box.y + box.height * 0.55)
@@ -82,17 +107,22 @@ test('real factorial uses the shared stack visualizer', async ({ page, request }
   await page.mouse.move(box.x + box.width * 0.65, box.y + box.height * 0.6, { steps: 8 })
   await page.mouse.up()
   await expect(page.locator('.world-label')).toContainText('FREE EXPLORE')
-  await expect(page.getByRole('button', { name: 'Pause execution' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Pause history replay' })).toBeVisible()
   await expect.poll(async () => Number(await scrub.inputValue())).toBeGreaterThan(8)
+  await page.getByRole('button', { name: 'Pause history replay' }).click()
 })
 
 test('real int array enters Theater, keeps indexed writes and reverse seeks', async ({ page, request }) => {
   const id = await project(request, 'RealArrays', [{ path: 'Main.java', content: 'public class Main { public static void main(String[] args) { int[] a={3,1}; if(a[0]>a[1]) { int temp=a[0]; a[0]=a[1]; a[1]=temp; } } }' }])
   await open(page, id)
-  await page.getByRole('button', { name: 'Visualize' }).click()
+  await page.getByRole('button', { name: 'Run', exact: true }).click()
+  const session = await executionPhase(request, id, 'COMPLETED')
+  expect(session.rawEvents.filter((event) => event.type === 'array_write').length).toBeGreaterThanOrEqual(2)
   await expect(page.locator('.app-shell--embedded')).toBeVisible({ timeout: 30_000 })
+  await expect(page.locator('.ide-execution-status')).toContainText('COMPLETED')
   const scrub = page.getByRole('slider', { name: 'Scrub execution' })
   const max = Number(await scrub.getAttribute('max'))
+  expect(max).toBeGreaterThan(1)
   await scrub.fill(String(max))
   await expect(page.locator('.array-status')).toContainText('[1, 3]')
   await page.getByRole('button', { name: 'Theater', exact: true }).click()
@@ -103,29 +133,45 @@ test('real int array enters Theater, keeps indexed writes and reverse seeks', as
   await expect(page.locator('.array-status')).toContainText('[1, 3]')
 })
 
-test('real control flow shows observed branches, source and independent stdout', async ({ page, request }) => {
+test('real control flow shows observed branches, source and stdout on the shared timeline', async ({ page, request }) => {
   const id = await project(request, 'RealControl', [{ path: 'Main.java', content: 'public class Main {\n public static void main(String[] args) {\n  int sum=0;\n  for(int i=0;i<3;i++) { if(i%2==0) sum+=i; }\n  System.out.println(sum);\n }\n}\n' }])
   await open(page, id)
-  await page.getByRole('button', { name: 'Visualize' }).click()
+  await page.getByRole('button', { name: 'Run', exact: true }).click()
+  const session = await executionPhase(request, id, 'COMPLETED')
+  expect(session.stdout).toContain('2')
+  expect(session.rawEvents.some((event) => event.type === 'branch')).toBe(true)
+  expect(session.capability?.features.loops.status).toBe('partial')
   await expect(page.locator('.app-shell--embedded')).toBeVisible({ timeout: 30_000 })
+  await expect(page.locator('.ide-execution-status')).toContainText('COMPLETED')
   const scrub = page.getByRole('slider', { name: 'Scrub execution' })
-  await scrub.fill(await scrub.getAttribute('max') ?? '0')
-  await expect(page.locator('.ide-console-stdout')).toContainText('2')
+  const max = await scrub.getAttribute('max')
+  expect(Number(max)).toBeGreaterThan(1)
+  await scrub.fill(max!)
+  await page.getByRole('button', { name: 'CONSOLE', exact: true }).click()
+  const recordedStdout = () => page.locator('.ide-console-output > .ide-console-stdout').allTextContents().then((lines) => lines.join(''))
+  await expect.poll(recordedStdout).toContain('2')
   await expect(page.locator('.ide-tab.is-active')).toContainText('Main.java')
-  await page.getByRole('button', { name: 'TIMELINE', exact: true }).click()
-  await expect(page.locator('.ide-timeline')).toContainText('partial support')
-  await scrub.fill('1')
+  await scrub.fill('0')
+  await expect(page.locator('.ide-console-output > .ide-console-stdout')).toHaveCount(0)
   await expect(page.locator('.world-panel')).toBeVisible()
+  await page.getByRole('button', { name: /Return to Live/ }).click()
+  await expect.poll(recordedStdout).toContain('2')
 })
 
 test('real uncaught exception leaves an incomplete, inspectable trace and raw JVM stderr', async ({ page, request }) => {
   const id = await project(request, 'RealCrash', [{ path: 'Main.java', content: 'public class Main { public static void main(String[] args) { String value=null; System.out.println(value.length()); } }' }])
   await open(page, id)
-  await page.getByRole('button', { name: 'Visualize' }).click()
+  await page.getByRole('button', { name: 'Run', exact: true }).click()
+  const session = await executionPhase(request, id, 'FAILED')
+  expect(session.terminalStatus).toBe('program_crashed')
+  expect(session.stderr).toContain('NullPointerException')
+  expect(session.rawEvents.length).toBeGreaterThan(0)
   await expect(page.locator('.app-shell--embedded')).toBeVisible({ timeout: 30_000 })
+  await expect(page.locator('.ide-execution-status')).toContainText('FAILED')
   const scrub = page.getByRole('slider', { name: 'Scrub execution' })
-  await scrub.fill(await scrub.getAttribute('max') ?? '0')
-  await expect(page.locator('.ide-status-line')).toContainText('program crashed')
+  const max = await scrub.getAttribute('max')
+  expect(Number(max)).toBeGreaterThan(1)
+  await scrub.fill(max!)
   await expect(page.locator('.event-chip--failure')).toContainText('NullPointerException')
   const explorer = page.getByRole('region', { name: 'Error Explorer' })
   await expect(explorer).toBeVisible()
@@ -134,6 +180,8 @@ test('real uncaught exception leaves an incomplete, inspectable trace and raw JV
   await page.getByRole('button', { name: 'CONSOLE', exact: true }).click()
   await page.locator('.ide-console-terminal summary').click()
   await expect(page.locator('.ide-console-full-stderr')).toContainText('NullPointerException')
-  await page.getByRole('button', { name: 'TIMELINE', exact: true }).click()
-  await expect(page.locator('.ide-timeline')).toContainText('program crashed')
+  await scrub.fill('1')
+  await expect(page.locator('.event-chip--failure')).toHaveCount(0)
+  await scrub.fill(max!)
+  await expect(page.locator('.event-chip--failure')).toContainText('NullPointerException')
 })

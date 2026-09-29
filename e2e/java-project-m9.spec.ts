@@ -2,12 +2,12 @@ import { expect, test, type APIRequestContext, type Page } from '@playwright/tes
 import { randomUUID } from 'node:crypto'
 import { readFile, readdir } from 'node:fs/promises'
 import { join, relative, resolve } from 'node:path'
-import type { DebugSession } from '../src/debugger/contracts'
-import type { BuildResult, VisualizeResponse } from '../src/ide/contracts'
+import type { ExecutionSession } from '../src/execution/contracts'
+import type { BuildResult } from '../src/ide/contracts'
 import type { JavaProject } from '../src/ide/javaProject'
 import { normalizeTrace } from '../src/instrumentation/normalize'
 
-// Real bridge, JDT LS, build tools and JVM. Run only in the root's serialized M9 QA window.
+// Real bridge, JDT LS, build tools and JVM. Run only in the root's serialized QA window.
 test.describe.configure({ timeout: 180_000, mode: 'serial' })
 const fixtureRoot = resolve('fixtures/projects-m9')
 const imported = new Set<string>()
@@ -44,7 +44,8 @@ async function openProject(page: Page, id: string) {
   await page.addInitScript((projectId) => localStorage.setItem('ggjavaez:project', projectId), id)
   await page.goto('/ide')
   await expect(page.locator('.monaco-editor')).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Build', exact: true })).toBeEnabled()
+  await expect(page.getByRole('button', { name: 'Run', exact: true })).toBeEnabled()
+  await expect(page.locator('.ide-project-status')).toHaveCount(0)
 }
 async function projectModel(request: APIRequestContext, id: string) {
   const response = await request.get(`/api/projects/${id}/java-project`)
@@ -59,7 +60,7 @@ async function languageReady(page: Page, request: APIRequestContext, id: string)
     if (['failed', 'unavailable'].includes(snapshot.status)) throw new Error(`Java language service ${snapshot.status}: ${snapshot.message}`)
     return snapshot.status
   }, { timeout: 90_000, intervals: [1000, 2000, 3000] }).toBe('ready')
-  await expect(page.locator('.ide-language-status')).toContainText('ready')
+  await expect(page.locator('.ide-status-line .is-error, .ide-status-line .is-warning')).toHaveCount(0)
 }
 function source(files: ImportFile[], suffix: string) {
   const matches = files.filter((file) => file.path.endsWith(suffix))
@@ -103,65 +104,87 @@ async function clickWord(page: Page, lineText: string, word: string) {
   expect(point, `visible Monaco token ${word}`).not.toBeNull()
   await page.mouse.click(point!.x, point!.y)
 }
-async function waitRun(request: APIRequestContext, id: string) {
+async function waitExecution(request: APIRequestContext, id: string, phase: ExecutionSession['phase'] = 'COMPLETED') {
   await expect.poll(async () => {
-    const response = await request.get('/api/runs/current')
-    const run = await response.json() as { projectId: string; status: string } | null
-    return run?.projectId === id ? run.status : null
-  }, { timeout: 30_000 }).toBe('exited')
-  return (await (await request.get('/api/runs/current')).json()) as { exitCode: number | null; events: { kind: string; text?: string }[] }
+    const response = await request.get('/api/execution/current')
+    expect(response.ok(), await response.text()).toBe(true)
+    const session = await response.json() as ExecutionSession | null
+    return session?.projectId === id ? session.phase : null
+  }, { timeout: 45_000, intervals: [100, 250, 500] }).toBe(phase)
+  return (await (await request.get('/api/execution/current')).json()) as ExecutionSession
+}
+async function openMoreActions(page: Page) {
+  const menu = page.locator('.ide-more-actions')
+  if (await menu.getAttribute('open') === null) await page.getByLabel('More actions').click()
+  await expect(menu).toHaveAttribute('open', '')
 }
 async function buildFromUI(page: Page, id: string): Promise<BuildResult> {
   const pending = page.waitForResponse((response) => response.url().endsWith(`/api/projects/${id}/build`) && response.request().method() === 'POST')
+  await openMoreActions(page)
   await page.getByRole('button', { name: 'Build', exact: true }).click()
   const response = await pending
   expect(response.ok(), await response.text()).toBe(true)
   return response.json() as Promise<BuildResult>
 }
-async function visualizeFromUI(page: Page, id: string): Promise<VisualizeResponse> {
-  const pending = page.waitForResponse((response) => response.url().endsWith(`/api/projects/${id}/visualize`) && response.request().method() === 'POST')
-  await page.getByRole('button', { name: 'Visualize', exact: true }).click()
+async function runFromUI(page: Page, request: APIRequestContext, id: string) {
+  const pending = page.waitForResponse((response) => response.url().endsWith(`/api/projects/${id}/execution`) && response.request().method() === 'POST')
+  await page.getByRole('button', { name: 'Run', exact: true }).click()
   const response = await pending
   expect(response.ok(), await response.text()).toBe(true)
-  return response.json() as Promise<VisualizeResponse>
+  expect(response.request().postDataJSON()).toMatchObject({ kind: 'run', withoutVisualization: false })
+  const started = await response.json() as ExecutionSession
+  expect(started.projectId).toBe(id)
+  const completed = await waitExecution(request, id)
+  expect(completed.id).toBe(started.id)
+  expect(completed.build?.success, completed.build?.rawOutput).toBe(true)
+  expect(completed.exitCode).toBe(0)
+  return completed
 }
-async function paused(request: APIRequestContext, expected: Partial<NonNullable<DebugSession['pause']>>, after = -1) {
+async function debugFromUI(page: Page, id: string) {
+  const pending = page.waitForResponse((response) => response.url().endsWith(`/api/projects/${id}/execution`) && response.request().method() === 'POST')
+  await page.getByRole('button', { name: 'Debug', exact: true }).click()
+  const response = await pending
+  expect(response.ok(), await response.text()).toBe(true)
+  expect(response.request().postDataJSON()).toMatchObject({ kind: 'debug' })
+  const started = await response.json() as ExecutionSession
+  expect(started.projectId).toBe(id)
+  return started
+}
+async function paused(request: APIRequestContext, expected: Partial<NonNullable<ExecutionSession['pause']>>, after = -1) {
   await expect.poll(async () => {
-    const response = await request.get('/api/debug/current')
-    const session = await response.json() as DebugSession | null
-    if (session?.status === 'failed') throw new Error(session.diagnostic ?? session.stderr)
-    return session?.status === 'paused' && !!session.pause && session.pause.rawEventCount > after &&
-      Object.entries(expected).every(([key, value]) => session!.pause![key as keyof NonNullable<DebugSession['pause']>] === value)
+    const response = await request.get('/api/execution/current')
+    const session = await response.json() as ExecutionSession | null
+    if (session?.phase === 'FAILED') throw new Error(session.diagnostic ?? session.stderr)
+    return session?.kind === 'debug' && session.phase === 'PAUSED' && !!session.pause && session.pause.rawEventCount > after &&
+      Object.entries(expected).every(([key, value]) => session.pause![key as keyof NonNullable<ExecutionSession['pause']>] === value)
   }, { timeout: 30_000 }).toBe(true)
-  return (await (await request.get('/api/debug/current')).json()) as DebugSession
+  return (await (await request.get('/api/execution/current')).json()) as ExecutionSession
 }
 
 test.afterEach(async ({ request }) => {
-  const response = await request.get('/api/debug/current')
+  const response = await request.get('/api/execution/current')
   if (response.ok()) {
-    const session = await response.json() as DebugSession | null
-    if (session && imported.has(session.projectId) && ['starting', 'running', 'paused'].includes(session.status))
-      await request.post(`/api/debug/${session.sessionId}/command`, { data: { command: 'stop' } })
+    const session = await response.json() as ExecutionSession | null
+    if (session && imported.has(session.projectId) && ['BUILDING', 'STARTING', 'RUNNING', 'WAITING_FOR_INPUT', 'PAUSED'].includes(session.phase))
+      await request.post(`/api/execution/${session.id}/stop`, { data: {} })
   }
 })
 
-test('plain Java stays one-step build, Run, Visualize and Debug', async ({ page, request }) => {
+test('plain Java stays one-step build, visualizing Run and Debug', async ({ page, request }) => {
   const { id } = await importFixture(request, 'people-plain')
   await openProject(page, id)
   const model = await projectModel(request, id)
   expect(model.buildSystem).toBe('plain')
-  await expect(page.locator('.ide-project-status')).toContainText('Plain Java')
+  await expect(page.locator('.ide-project-status')).toHaveCount(0)
   const build = await buildFromUI(page, id)
   expect(build.success, build.rawOutput).toBe(true)
+  expect(build.javaProject?.buildSystem).toBe('plain')
   expect(build.mainClasses.length).toBeGreaterThan(0)
-  await page.getByRole('button', { name: 'Run', exact: true }).click()
-  expect((await waitRun(request, id)).exitCode).toBe(0)
-  const capture = await visualizeFromUI(page, id)
-  expect(capture.build.success, capture.build.rawOutput).toBe(true)
+  const capture = await runFromUI(page, request, id)
   expect(capture.rawEvents.length).toBeGreaterThan(0)
   await expect(page.locator('.spatial-view canvas')).toBeVisible()
-  await page.getByRole('button', { name: 'Debug', exact: true }).click()
-  await paused(request, { reason: 'entry' })
+  const debug = await debugFromUI(page, id)
+  expect((await paused(request, { reason: 'entry' })).id).toBe(debug.id)
   await expect(page.locator('.debug-paused-line')).toBeVisible()
 })
 
@@ -171,7 +194,7 @@ test('Maven people app resolves semantic Java and cross-package execution', asyn
   const model = await projectModel(request, id)
   expect(model.buildSystem).toBe('maven')
   expect(model.sourceRoots).toContain('src/main/java')
-  await expect(page.locator('.ide-project-status')).toContainText('Maven')
+  await expect(page.locator('.ide-project-status')).toHaveCount(0)
   await languageReady(page, request, id)
   const main = source(files, '/Main.java'), person = source(files, '/Person.java'), service = source(files, '/PersonService.java')
   const mainUri = `inmemory://ggjavaez/${id}/${main.path}`
@@ -215,16 +238,14 @@ test('Maven people app resolves semantic Java and cross-package execution', asyn
 
   const build = await buildFromUI(page, id)
   expect(build.success, build.rawOutput).toBe(true)
-  await page.getByRole('button', { name: 'Run', exact: true }).click()
-  const run = await waitRun(request, id)
-  expect(run.exitCode).toBe(0)
-  expect(JSON.stringify(run.events)).toMatch(/Ethan/)
-  const capture = await visualizeFromUI(page, id)
-  expect(capture.status).toBe('complete')
+  expect(build.javaProject?.buildSystem).toBe('maven')
+  const capture = await runFromUI(page, request, id)
+  expect(capture.stdout).toMatch(/Ethan/)
+  expect(capture.terminalStatus).toBe('complete')
   expect(capture.sourceManifest.classes.some((entry) => entry.className === 'com.example.model.Person' && entry.fileId === person.path)).toBe(true)
   expect(capture.rawEvents.some((event) => event.className === 'com.example.service.PersonService')).toBe(true)
   await expect(page.locator('.spatial-view canvas')).toBeVisible()
-  const replay = normalizeTrace(capture.rawEvents, capture.sourceManifest, { status: capture.status, exitCode: capture.exitCode, diagnostic: capture.diagnostic })
+  const replay = normalizeTrace(capture.rawEvents, capture.sourceManifest, { status: capture.terminalStatus!, exitCode: capture.exitCode, diagnostic: capture.diagnostic })
   const personStep = replay.trace.events.findIndex((event) => event.source?.fileId === person.path && event.source.line > 0)
   expect(personStep).toBeGreaterThanOrEqual(0)
   await page.getByRole('slider', { name: 'Scrub execution' }).fill(String(personStep + 1))
@@ -235,13 +256,14 @@ test('Maven people app resolves semantic Java and cross-package execution', asyn
   const breakpointLine = position(person.content, 'this.age', 0).line + 1
   await page.evaluate(({ id, fileId, line }) => localStorage.setItem(`ggjavaez:breakpoints:${id}`, JSON.stringify([{ fileId, line }])), { id, fileId: person.path, line: breakpointLine })
   await page.reload()
-  await page.getByRole('button', { name: 'Debug', exact: true }).click()
+  const debug = await debugFromUI(page, id)
   const entry = await paused(request, { reason: 'entry' })
+  expect(entry.id).toBe(debug.id)
   await page.getByRole('button', { name: 'Continue', exact: true }).click()
   const hit = await paused(request, { reason: 'breakpoint', className: 'com.example.model.Person', line: breakpointLine }, entry.pause!.rawEventCount)
   await expect(page.locator('.ide-tab.is-active')).toContainText('Person.java')
   await expect(page.locator('.debug-paused-line')).toBeVisible()
-  await page.getByRole('button', { name: 'Step Out', exact: true }).click()
+  await page.getByRole('button', { name: 'Out', exact: true }).click()
   await paused(request, { className: 'com.example.service.PersonService' }, hit.pause!.rawEventCount)
 })
 
@@ -252,7 +274,7 @@ test('Gradle uses its project model and wrapper for build, Run and capture', asy
   const model = await projectModel(request, id)
   expect(model.buildSystem).toBe('gradle')
   expect(model.sourceRoots).toContain('src/main/java')
-  await expect(page.locator('.ide-project-status')).toContainText('Gradle')
+  await expect(page.locator('.ide-project-status')).toHaveCount(0)
   await languageReady(page, request, id)
   const main = source(files, '/Main.java')
   const gson = await semantic<unknown>(request, id, 'textDocument/completion', main.path,
@@ -260,11 +282,10 @@ test('Gradle uses its project model and wrapper for build, Run and capture', asy
   expect(JSON.stringify(gson)).toContain('Gson')
   const build = await buildFromUI(page, id)
   expect(build.success, build.rawOutput).toBe(true)
+  expect(build.javaProject?.buildSystem).toBe('gradle')
   expect(build.mainClasses.length).toBeGreaterThan(0)
-  await page.getByRole('button', { name: 'Run', exact: true }).click()
-  expect((await waitRun(request, id)).exitCode).toBe(0)
-  const capture = await visualizeFromUI(page, id)
-  expect(capture.build.success, capture.build.rawOutput).toBe(true)
+  const capture = await runFromUI(page, request, id)
+  expect(capture.build?.success, capture.build?.rawOutput).toBe(true)
   expect(capture.rawEvents.length).toBeGreaterThan(0)
 })
 
@@ -275,19 +296,25 @@ test('multiple mains and program arguments use one selected launch target', asyn
   expect(build.success, build.rawOutput).toBe(true)
   expect(build.mainClasses.length).toBeGreaterThanOrEqual(2)
   const target = build.mainClasses.at(-1)!
-  await page.getByRole('button', { name: 'Configure launch' }).click()
+  await openMoreActions(page)
+  await page.getByRole('button', { name: 'Launch settings' }).click()
   const dialog = page.getByRole('dialog', { name: 'Launch configuration' })
   await dialog.getByLabel('Main class').selectOption(target)
   await dialog.getByLabel('Program arguments').fill('["M9_TARGET_ARG"]')
   await dialog.getByRole('button', { name: 'Save configuration' }).click()
   await expect(page.getByRole('combobox', { name: 'Main class' })).toHaveValue(target)
-  const pending = page.waitForResponse((response) => response.url().endsWith(`/api/projects/${id}/run`) && response.request().method() === 'POST')
+  const pending = page.waitForResponse((response) => response.url().endsWith(`/api/projects/${id}/execution`) && response.request().method() === 'POST')
   await page.getByRole('button', { name: 'Run', exact: true }).click()
   const response = await pending
-  expect(response.request().postDataJSON()).toMatchObject({ mainClass: target, programArgs: ['M9_TARGET_ARG'] })
-  expect((await waitRun(request, id)).exitCode).toBe(0)
-  const capture = await visualizeFromUI(page, id)
-  expect(capture.build.success, capture.build.rawOutput).toBe(true)
+  expect(response.ok(), await response.text()).toBe(true)
+  expect(response.request().postDataJSON()).toMatchObject({ kind: 'run', mainClass: target, programArgs: ['M9_TARGET_ARG'] })
+  const started = await response.json() as ExecutionSession
+  const capture = await waitExecution(request, id)
+  expect(capture.id).toBe(started.id)
+  expect(capture.exitCode).toBe(0)
+  expect(capture.build?.success, capture.build?.rawOutput).toBe(true)
+  expect(capture.stdout).toContain('M9_TARGET_ARG')
+  expect(capture.mainClass).toBe(target)
   expect(capture.rawEvents.some((event) => event.className === target)).toBe(true)
 })
 

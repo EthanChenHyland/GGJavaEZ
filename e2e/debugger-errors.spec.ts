@@ -2,12 +2,12 @@ import { expect, test, type APIRequestContext, type Page } from '@playwright/tes
 import { randomUUID } from 'node:crypto'
 import { readFile, readdir } from 'node:fs/promises'
 import { resolve } from 'node:path'
-import type { DebugPause, DebugSession, SourceBreakpoint } from '../src/debugger/contracts'
-import type { VisualizeResponse } from '../src/ide/contracts'
+import type { DebugPause, SourceBreakpoint } from '../src/debugger/contracts'
+import type { ExecutionSession } from '../src/execution/contracts'
 import { normalizeTrace } from '../src/instrumentation/normalize'
 import { seek } from '../src/runtime/seek'
 
-test.describe.configure({ timeout: 60_000 })
+test.describe.configure({ timeout: 90_000 })
 let ownedProjectId: string | null = null
 
 async function importProject(request: APIRequestContext, fixture: string, files?: { path: string; content: string }[]) {
@@ -23,46 +23,63 @@ async function importProject(request: APIRequestContext, fixture: string, files?
 
 async function openProject(page: Page, id: string, breakpoints: SourceBreakpoint[] = []) {
   await page.goto('/ide')
-  await expect(page.getByRole('button', { name: 'Build', exact: true })).toBeEnabled()
   await page.evaluate(({ id, breakpoints }) => {
     localStorage.setItem('ggjavaez:project', id)
     localStorage.setItem(`ggjavaez:breakpoints:${id}`, JSON.stringify(breakpoints))
   }, { id, breakpoints })
   await page.reload()
   await expect(page.locator('.monaco-editor')).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Run', exact: true })).toBeEnabled()
   await expect(page.getByRole('button', { name: 'Debug', exact: true })).toBeEnabled()
 }
 
-async function current(request: APIRequestContext): Promise<DebugSession | null> {
-  const response = await request.get('/api/debug/current')
+async function current(request: APIRequestContext): Promise<ExecutionSession | null> {
+  const response = await request.get('/api/execution/current')
   expect(response.ok()).toBe(true)
   return response.json()
 }
 
 async function paused(page: Page, request: APIRequestContext, expected: Partial<DebugPause>, after = -1) {
-  let session: DebugSession | null = null
+  let session: ExecutionSession | null = null
   await expect.poll(async () => {
     session = await current(request)
-    if (session?.status === 'failed') throw new Error(`Debug session failed: ${session.diagnostic}\n${session.stderr}`)
-    return session?.status === 'paused' && !!session.pause && session.pause.rawEventCount > after
+    if (session?.projectId === ownedProjectId && session.phase === 'FAILED') throw new Error(`Debug session failed: ${session.diagnostic}\n${session.stderr}`)
+    return session?.projectId === ownedProjectId && session.kind === 'debug' && session.phase === 'PAUSED' && !!session.pause && session.pause.rawEventCount > after
       && Object.entries(expected).every(([key, value]) => session!.pause![key as keyof DebugPause] === value)
   }, { timeout: 15_000, message: `Actual JVM pause ${JSON.stringify(expected)}` }).toBe(true)
-  await expect(page.locator('.debug-live-state')).toContainText(`JVM PAUSED · ${session!.pause!.reason.toUpperCase()}`)
+  await expect(page.locator('.debug-live-state')).toContainText(`Paused · ${session!.pause!.reason}`)
   await expect(page.getByRole('button', { name: 'Continue', exact: true })).toBeEnabled()
   return session!
 }
 
 async function startDebug(page: Page, request: APIRequestContext) {
+  const pending = page.waitForResponse((response) => /\/api\/projects\/[^/]+\/execution$/.test(new URL(response.url()).pathname) && response.request().method() === 'POST')
   await page.getByRole('button', { name: 'Debug', exact: true }).click()
+  const response = await pending
+  expect(response.ok(), await response.text()).toBe(true)
+  const started = await response.json() as ExecutionSession
+  expect(started.kind).toBe('debug')
+  expect(started.projectId).toBe(ownedProjectId)
   const session = await paused(page, request, { reason: 'entry' })
+  expect(session.id).toBe(started.id)
   await expect(page.locator('.app-shell--embedded')).toBeVisible()
+  await expect(page.getByRole('slider', { name: 'Scrub execution' })).toBeVisible()
   await expect(page.locator('.debug-paused-line')).toBeVisible()
   return session
 }
 
-async function command(page: Page, request: APIRequestContext, name: string, expected: Partial<DebugPause>, previous: DebugSession) {
+async function command(page: Page, request: APIRequestContext, name: string, expected: Partial<DebugPause>, previous: ExecutionSession) {
+  const returnToLive = page.getByRole('button', { name: /Return to Live/ })
+  if (await returnToLive.isVisible()) await returnToLive.click()
   await page.getByRole('button', { name, exact: true }).click()
-  return paused(page, request, expected, previous.pause!.rawEventCount)
+  const next = await paused(page, request, expected, previous.pause!.rawEventCount)
+  expect(next.id).toBe(previous.id)
+  return next
+}
+
+async function inspectDebugger(page: Page) {
+  await page.locator('.debug-toolbar').getByRole('button', { name: 'Inspect', exact: true }).click()
+  await expect(page.locator('.debug-panel')).toBeVisible()
 }
 
 async function gutter(page: Page, line: number) {
@@ -76,16 +93,28 @@ async function gutter(page: Page, line: number) {
   await page.mouse.click(margin!.x + margin!.width / 2, row!.y + row!.height / 2)
 }
 
-async function visualize(page: Page, id: string) {
-  const pending = page.waitForResponse((response) => response.url().endsWith(`/api/projects/${id}/visualize`) && response.request().method() === 'POST')
-  await page.getByRole('button', { name: 'Visualize', exact: true }).click()
+async function runWithHistory(page: Page, request: APIRequestContext, id: string) {
+  const pending = page.waitForResponse((response) => new URL(response.url()).pathname === `/api/projects/${id}/execution` && response.request().method() === 'POST')
+  await page.getByRole('button', { name: 'Run', exact: true }).click()
   const response = await pending
   expect(response.ok(), await response.text()).toBe(true)
-  const capture = await response.json() as VisualizeResponse
-  expect(capture.build.success).toBe(true)
-  if (capture.status === 'compile_failed') throw new Error('Expected executable QA source')
+  const started = await response.json() as ExecutionSession
+  expect(started.kind).toBe('run')
+  expect(started.projectId).toBe(id)
+  await expect.poll(async () => {
+    const session = await current(request)
+    return session?.projectId === id ? session.phase : 'other project'
+  }, { timeout: 45_000, message: 'Recorded JVM execution reaches a terminal phase' }).toMatch(/^(COMPLETED|FAILED)$/)
+  const capture = (await current(request))!
+  expect(capture.id).toBe(started.id)
+  expect(capture.kind).toBe('run')
+  expect(capture.build?.success).toBe(true)
+  expect(capture.support).not.toBe('RUN_ONLY')
+  expect(capture.rawEvents.length).toBeGreaterThan(0)
+  expect(capture.terminalStatus).not.toBeNull()
   const { trace } = normalizeTrace(capture.rawEvents, capture.sourceManifest, {
-    status: capture.status, exitCode: capture.exitCode, diagnostic: capture.diagnostic,
+    status: capture.terminalStatus!, exitCode: capture.exitCode, diagnostic: capture.diagnostic,
+    ...(capture.capability ? { capability: capture.capability } : {}),
   })
   await expect(page.locator('.app-shell--embedded')).toBeVisible()
   const slider = page.getByRole('slider', { name: 'Scrub execution' })
@@ -96,8 +125,8 @@ async function visualize(page: Page, id: string) {
 
 test.afterEach(async ({ request }) => {
   const session = await current(request)
-  if (session && session.projectId === ownedProjectId && ['starting', 'running', 'paused'].includes(session.status)) {
-    const response = await request.post(`/api/debug/${session.sessionId}/command`, { data: { command: 'stop' } })
+  if (session && session.projectId === ownedProjectId && ['BUILDING', 'STARTING', 'RUNNING', 'WAITING_FOR_INPUT', 'PAUSED'].includes(session.phase)) {
+    const response = await request.post(`/api/execution/${session.id}/stop`, { data: {} })
     expect(response.ok()).toBe(true)
   }
   ownedProjectId = null
@@ -120,11 +149,11 @@ test('real gutter toggles persist, remove, and distinguish a nonexecutable break
   await expect(page.locator('.monaco-editor .view-lines')).toContainText('class Person')
   await gutter(page, 3)
   await startDebug(page, request)
+  await inspectDebugger(page)
   await expect(page.locator('.debug-breakpoint-row').filter({ hasText: 'Person.java:3' })).toContainText('non executable')
   const session = await current(request)
   expect(session!.breakpoints).toContainEqual(expect.objectContaining({ fileId: 'Main.java', line: 5, status: 'verified' }))
   expect(session!.breakpoints).toContainEqual(expect.objectContaining({ fileId: 'Person.java', line: 3, status: 'non_executable' }))
-  await page.getByRole('button', { name: 'Inspect Debugger', exact: true }).click()
   await page.locator('.debug-breakpoint-row').filter({ hasText: 'Person.java:3' }).click()
   await expect(page.locator('.debug-breakpoint-row')).toHaveCount(1)
   await expect.poll(async () => (await current(request))!.breakpoints.length).toBe(1)
@@ -134,6 +163,7 @@ test('actual multifile breakpoint and Into/Over/Out synchronize source, objects,
   const id = await importProject(request, 'stepping')
   await openProject(page, id, [{ fileId: 'Main.java', line: 5 }])
   let session = await startDebug(page, request)
+  await inspectDebugger(page)
   session = await command(page, request, 'Continue', { reason: 'breakpoint', className: 'Main', line: 5 }, session)
   await expect(page.locator('.debug-panel .debug-value').filter({ hasText: 'requestedAge' })).toContainText('18')
   const picker = page.getByRole('combobox', { name: 'Select runtime entity' })
@@ -142,56 +172,55 @@ test('actual multifile breakpoint and Into/Over/Out synchronize source, objects,
   expect(personId).toBeTruthy()
   await picker.selectOption(personId!)
   await expect(page.getByRole('complementary', { name: 'Runtime inspector' })).toContainText('12')
-  await page.getByRole('button', { name: 'Show live pause', exact: true }).click()
-  session = await command(page, request, 'Step Into', { className: 'Worker', methodName: 'update', line: 3 }, session)
+  session = await command(page, request, 'Into', { className: 'Worker', methodName: 'update', line: 3 }, session)
   await expect(page.locator('.ide-tab.is-active')).toContainText('Worker.java')
   await expect(page.locator('.debug-paused-line')).toBeVisible()
   await expect(page.locator('.debug-panel')).toContainText('Worker.update()')
-  session = await command(page, request, 'Step Into', { className: 'Person', methodName: 'setAge', line: 9 }, session)
+  session = await command(page, request, 'Into', { className: 'Person', methodName: 'setAge', line: 9 }, session)
   await expect(page.locator('.ide-tab.is-active')).toContainText('Person.java')
   await expect(page.locator('.debug-panel .debug-value').filter({ hasText: 'this' })).toHaveCount(1)
   await expect(page.locator('.debug-panel .debug-value').filter({ hasText: /^age/ })).toContainText('18')
-  session = await command(page, request, 'Step Out', { className: 'Worker', methodName: 'update', line: 4 }, session)
+  session = await command(page, request, 'Out', { className: 'Worker', methodName: 'update', line: 4 }, session)
   await expect(page.locator('.ide-tab.is-active')).toContainText('Worker.java')
-  session = await command(page, request, 'Step Over', { className: 'Worker', methodName: 'update', line: 5 }, session)
+  session = await command(page, request, 'Over', { className: 'Worker', methodName: 'update', line: 5 }, session)
   await expect(page.locator('.debug-panel .debug-value').filter({ hasText: /^ages/ })).toContainText('→')
   const arrayId = await picker.locator('option').filter({ hasText: /^int\[\] #/ }).first().getAttribute('value')
   expect(arrayId).toBeTruthy()
   await picker.selectOption(arrayId!)
   await expect(page.getByRole('complementary', { name: 'Runtime inspector' })).toContainText('Indexed elements')
   await expect(page.getByRole('complementary', { name: 'Runtime inspector' }).locator('.inspector-row')).toHaveCount(2)
-  await page.getByRole('button', { name: 'Show live pause', exact: true }).click()
-  session = await command(page, request, 'Step Into', { className: 'Worker', methodName: 'read', line: 10 }, session)
+  session = await command(page, request, 'Into', { className: 'Worker', methodName: 'read', line: 10 }, session)
   await expect(page.locator('.debug-panel .debug-value').filter({ hasText: /^index/ })).toContainText('0')
-  session = await command(page, request, 'Step Out', { className: 'Worker', methodName: 'update', line: 6 }, session)
-  session = await command(page, request, 'Step Out', { className: 'Main', methodName: 'main', line: 6 }, session)
+  session = await command(page, request, 'Out', { className: 'Worker', methodName: 'update', line: 6 }, session)
+  session = await command(page, request, 'Out', { className: 'Main', methodName: 'main', line: 6 }, session)
   await expect(page.locator('.ide-tab.is-active')).toContainText('Main.java')
   await expect(page.locator('.debug-panel .debug-value').filter({ hasText: /^result/ })).toContainText('18')
   await page.getByRole('button', { name: 'Continue', exact: true }).click()
-  await expect.poll(async () => (await current(request))!.status).toBe('exited')
-  await expect(page.locator('.debug-live-state')).toContainText('JVM EXITED')
+  await expect.poll(async () => (await current(request))!.phase).toBe('COMPLETED')
+  await expect(page.locator('.ide-execution-status')).toContainText('COMPLETED')
   const final = await current(request)
   expect(final!.exitCode).toBe(0)
   expect(final!.stdout.trim()).toBe('18')
   expect(final!.rawEvents.filter((event) => event.type === 'object' && event.className === 'Person')).toHaveLength(1)
 })
 
-test('Pause JVM suspends real execution at a project boundary and Stop Debug reaps it', async ({ page, request }) => {
+test('Pause suspends real execution at a project boundary and topbar Stop reaps it', async ({ page, request }) => {
   const id = await importProject(request, 'pause', [{ path: 'Main.java', content: 'public class Main {\n public static void main(String[] args) throws Exception {\n  int i = 0;\n  while (i < 100) {\n   i++;\n   Thread.sleep(25);\n  }\n  System.out.println(i);\n }\n}\n' }])
   await openProject(page, id)
   const initial = await startDebug(page, request)
   await page.getByRole('button', { name: 'Continue', exact: true }).click()
-  await expect(page.getByRole('button', { name: 'Pause JVM', exact: true })).toBeEnabled()
-  await page.getByRole('button', { name: 'Pause JVM', exact: true }).click()
+  await expect(page.getByRole('button', { name: 'Pause', exact: true })).toBeEnabled()
+  await page.getByRole('button', { name: 'Pause', exact: true }).click()
   const session = await paused(page, request, { reason: 'pause' }, initial.pause!.rawEventCount)
   const count = session.rawEvents.length
-  const later = await request.get(`/api/debug/${session.sessionId}`)
+  const later = await request.get(`/api/execution/${session.id}`)
+  expect(later.ok()).toBe(true)
   expect((await later.json()).rawEvents).toHaveLength(count)
   await expect(page.locator('.debug-paused-line')).toBeVisible()
-  await page.getByRole('button', { name: 'Stop Debug', exact: true }).click()
-  await expect(page.locator('.debug-live-state')).toContainText('JVM STOPPED')
-  expect((await current(request))!.status).toBe('stopped')
-  await expect(page.getByRole('button', { name: 'Stop Debug', exact: true })).toBeDisabled()
+  await page.getByRole('button', { name: 'Stop', exact: true }).click()
+  await expect(page.locator('.ide-execution-status')).toContainText('STOPPED')
+  expect((await current(request))!.phase).toBe('STOPPED')
+  await expect(page.getByRole('button', { name: 'Stop', exact: true })).toHaveCount(0)
 })
 
 test('null exception pause is inspectable, causal rewind selects its assignment, and returns to failure', async ({ page, request }) => {
@@ -224,6 +253,7 @@ test('null exception pause is inspectable, causal rewind selects its assignment,
   await panel.getByRole('button', { name: 'Return to failure', exact: true }).click()
   await expect(slider).toHaveValue(String(failureCursor))
   await expect(page.locator('.debug-paused-line')).toBeVisible()
+  await page.getByRole('button', { name: /Return to Live/ }).click()
   await page.getByRole('button', { name: 'Continue', exact: true }).click()
   await expect.poll(async () => (await current(request))!.terminalStatus).toBe('program_crashed')
   await panel.getByText('Actual JVM stderr / stack trace', { exact: true }).click()
@@ -234,7 +264,7 @@ test('null exception pause is inspectable, causal rewind selects its assignment,
 test('nested propagation seeks real unwind states in Classic and Spatial', async ({ page, request }) => {
   const id = await importProject(request, 'nested')
   await openProject(page, id)
-  const { trace } = await visualize(page, id)
+  const { trace } = await runWithHistory(page, request, id)
   await page.getByRole('button', { name: 'ERROR EXPLORER', exact: true }).click()
   const panel = page.locator('.error-explorer')
   const stack = panel.locator('.error-stack details summary button')
@@ -265,8 +295,9 @@ for (const [fixture, exception] of [['bounds', 'ArrayIndexOutOfBoundsException']
   test(`real ${fixture} failure exposes its actual exception and source`, async ({ page, request }) => {
     const id = await importProject(request, fixture)
     await openProject(page, id)
-    const { capture, trace } = await visualize(page, id)
-    expect(capture.status).toBe('program_crashed')
+    const { capture, trace } = await runWithHistory(page, request, id)
+    expect(capture.phase).toBe('FAILED')
+    expect(capture.terminalStatus).toBe('program_crashed')
     await page.getByRole('button', { name: 'ERROR EXPLORER', exact: true }).click()
     const panel = page.locator('.error-explorer')
     await expect(panel.getByRole('heading', { name: exception, exact: true })).toBeVisible()
@@ -287,8 +318,9 @@ for (const fixture of ['caught', 'finally'] as const) {
   test(`real ${fixture} lifecycle reconstructs catch, continuation, and handler order`, async ({ page, request }) => {
     const id = await importProject(request, fixture)
     await openProject(page, id)
-    const { capture, trace, slider } = await visualize(page, id)
-    expect(capture.status).toBe('complete')
+    const { capture, trace, slider } = await runWithHistory(page, request, id)
+    expect(capture.phase).toBe('COMPLETED')
+    expect(capture.terminalStatus).toBe('complete')
     await page.getByRole('button', { name: 'ERROR EXPLORER', exact: true }).click()
     const panel = page.locator('.error-explorer')
     await expect(panel.locator('.debug-eyebrow')).toContainText('CAUGHT')
@@ -321,7 +353,7 @@ for (const fixture of ['caught', 'finally'] as const) {
 test('ordered stdout/stderr reconstruct only the selected prefix and retain full process output', async ({ page, request }) => {
   const id = await importProject(request, 'ordered-output', [{ path: 'Main.java', content: 'public class Main {\n public static void main(String[] args) {\n  System.out.println("first");\n  int x = 7;\n  System.err.println("middle");\n  System.out.println("last=" + x);\n }\n}\n' }])
   await openProject(page, id)
-  const { trace, slider } = await visualize(page, id)
+  const { trace, slider } = await runWithHistory(page, request, id)
   const consoleEvents = trace.events.flatMap((event, index) => event.type === 'CONSOLE_WRITE' ? [{ event, cursor: index + 1 }] : [])
   expect(consoleEvents.map(({ event }) => [event.channel, event.text])).toEqual([
     ['stdout', 'first\n'], ['stderr', 'middle\n'], ['stdout', 'last=7\n'],
@@ -339,7 +371,7 @@ test('ordered stdout/stderr reconstruct only the selected prefix and retain full
   await expect(prefixes).toHaveText(['first\n', 'middle\n', 'last=7\n'])
   await slider.fill(String(consoleEvents[0].cursor))
   await expect(prefixes).toHaveCount(1)
-  await output.getByText('Full process output · includes output without proven timing', { exact: true }).click()
+  await output.getByText('Full process output', { exact: true }).click()
   await expect(output.locator('.ide-console-terminal')).toContainText('last=7')
   await expect(output.locator('.ide-console-terminal .ide-console-full-stderr')).toContainText('middle')
   expect(seek(trace, consoleEvents[0].cursor).console.map((entry) => entry.text)).toEqual(['first\n'])

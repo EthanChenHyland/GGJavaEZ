@@ -23,7 +23,7 @@ export function createLayout(trace: TraceDocument): LayoutState {
   let stackDepth = 0
   const hasArrays = trace.events.some((event) => event.type === 'ALLOCATE_ARRAY')
   // A live capture has no known final depth. Its positions depend only on identity/order.
-  const live = trace.demoId.startsWith('debug:')
+  const live = trace.demoId.startsWith('debug:') || trace.demoId.startsWith('execution:')
   const theaterAnchors: Record<string, WorldAnchor> = {}
 
   for (const event of trace.events) {
