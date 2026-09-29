@@ -161,3 +161,26 @@
   .ide-shell--runtime-expanded .ide-mode-switch button{font-size:0;padding:0 7px}
 }
 @media(prefers-reduced-motion:no-preference){.ide-editor-panel,.ide-project-panel,.ide-bottom-panel,.ide-runtime-panel{transition:width 160ms ease,height 160ms ease}}
+
+/* M9 contextual project tools use the established shell surfaces. */
+.ide-launch{max-height:calc(100dvh - 40px);overflow:auto}
+.ide-launch>label{display:grid;gap:5px;margin:12px 0;color:var(--color-textSecondary);font-size:12px}
+.ide-launch input,.ide-launch select,.ide-launch textarea{box-sizing:border-box;width:100%;background:var(--color-panel);border:1px solid var(--color-borderStrong);border-radius:4px;color:var(--color-text);padding:8px;font:12px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace}
+.ide-launch textarea{resize:vertical;min-height:44px}
+.ide-launch>small{display:block;color:var(--color-textMuted);line-height:1.5;margin:12px 0 20px}
+.ide-launch :is(input,select,textarea):focus-visible{outline:2px solid var(--color-execution);outline-offset:2px}
+.ide-project-status{max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media(max-width:900px){.ide-project-status{max-width:100px}.ide-launch{padding:18px}.ide-top-actions .ide-launch-toggle{padding:0 6px}}
+.ide-language-status{max-width:210px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--color-textMuted)}
+.ide-language-status.is-error{color:var(--color-exception)}
+.ide-language-status.is-warning{color:var(--color-mutation)}
+.ide-language-restart{padding:2px 5px}
+@media(max-width:900px){.ide-language-status{max-width:116px}}
+.ide-symbol-search{width:min(520px,calc(100vw - 32px))}
+.ide-symbol-search>input{box-sizing:border-box;width:100%;padding:10px;background:var(--color-panel);border:1px solid var(--color-borderStrong);border-radius:4px;color:var(--color-text);font:13px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace}
+.ide-symbol-search>input:focus-visible{outline:2px solid var(--color-execution);outline-offset:2px}
+.ide-symbol-search>p{margin:8px 0;color:var(--color-textMuted);font-size:11px}
+.ide-symbol-results{display:grid;max-height:min(48dvh,400px);overflow:auto;margin-bottom:14px}
+.ide-symbol-results button{display:flex;justify-content:space-between;gap:12px;text-align:left;border-radius:0;border-left:0;border-right:0}
+.ide-symbol-results button.is-selected{background:var(--color-panelRaised);border-color:var(--color-execution)}
+.ide-symbol-results small{overflow:hidden;text-overflow:ellipsis;color:var(--color-textMuted)}

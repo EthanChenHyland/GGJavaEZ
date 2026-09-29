@@ -49,6 +49,12 @@ async function workspace(page: Page, payload = person) {
     else if (url.pathname === '/api/health') body = { jdk: payload.build.jdk }
     else if (url.pathname === '/api/runs/current' || url.pathname === '/api/debug/current') body = null
     else if (url.pathname === '/api/projects/' + projectId + '/tree') body = [...files.values()].map(({ path }) => ({ path, name: path, kind: 'file' }))
+    else if (url.pathname === '/api/projects/' + projectId + '/java-project') body = {
+      projectId, revision: 'fixture-1', buildSystem: 'plain', status: 'ready', diagnostic: null,
+      sourceRoots: ['.'], testSourceRoots: [], outputRoots: [], dependencies: [], runnableTargets: ['Main'], elapsedMs: 0,
+    }
+    else if (url.pathname.startsWith('/api/projects/' + projectId + '/language')) body = url.pathname.endsWith('/notify')
+      ? { ok: true } : { projectId, generation: 1, status: 'unavailable', message: 'Fixture has no language server', diagnostics: [], metrics: {} }
     else if (url.pathname === '/api/projects/' + projectId + '/visualize') body = payload
     else if (url.pathname === '/api/projects/' + projectId + '/files') {
       if (request.method() === 'PUT') {

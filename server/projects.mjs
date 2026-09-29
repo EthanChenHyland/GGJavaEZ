@@ -196,7 +196,7 @@ export class ProjectStore {
         const parts = relativeParts(file.path)
         const directory = path.join(stagingRoot, ...parts.slice(0, -1))
         await fs.mkdir(directory, { recursive: true })
-        await atomicCreate(path.join(stagingRoot, ...parts), file.content)
+        await atomicCreate(path.join(stagingRoot, ...parts), file.encoding === 'base64' ? Buffer.from(file.content, 'base64') : file.content)
       }
       await fs.rename(stagingRoot, projectRoot)
       await syncDirectory(this.projectsRoot)
@@ -236,6 +236,8 @@ export class ProjectStore {
     const seen = new Set()
     for (const file of files) {
       if (!file || typeof file.content !== 'string') fail(400, 'Invalid import file')
+      if (file.encoding !== undefined && file.encoding !== 'base64') fail(400, 'Invalid import encoding')
+      if (file.encoding === 'base64' && !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(file.content)) fail(400, 'Invalid binary import')
       relativeParts(file.path)
       if (seen.has(file.path)) fail(400, 'Duplicate import path')
       seen.add(file.path)
@@ -255,7 +257,7 @@ export class ProjectStore {
       const names = await fs.readdir(directory)
       const result = []
       for (const name of names) {
-        if (name === META || name.startsWith(TEMP_PREFIX)) continue
+        if (name === META || name.startsWith(TEMP_PREFIX) || ['.git', 'target', 'build', '.gradle', '.idea'].includes(name)) continue
         const absolute = path.join(directory, name)
         const stat = await statNoLink(absolute)
         const relative = prefix ? `${prefix}/${name}` : name

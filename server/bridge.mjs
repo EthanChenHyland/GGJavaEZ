@@ -1,10 +1,12 @@
 import http from 'node:http'
-import { readFile, writeFile, mkdir, lstat } from 'node:fs/promises'
+import { readFile, writeFile, mkdir } from 'node:fs/promises'
 import { resolve, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { ProjectStore } from './projects.mjs'
 import { detectJdk } from './jdk.mjs'
-import { compileProject } from './compiler.mjs'
+import { BuildService } from './build-service.mjs'
+import { JavaLanguageService } from './language-service.mjs'
+import { resolveLaunch } from './launch.mjs'
 import { RunManager } from './runner.mjs'
 import { runInstrumented } from './instrumentation-provider.mjs'
 import { buildInstrumentationSourceManifest } from './instrumentation-sources.mjs'
@@ -18,6 +20,8 @@ const runs = new RunManager()
 const debuggerSessions = new DebugManager()
 const settingsFile = join(workspace, 'settings.json')
 let settings = { jdkHome: null }
+const builds = new BuildService({ workspaceRoot: workspace, projects, getJdk: () => detectJdk(settings.jdkHome) })
+const language = new JavaLanguageService({ workspaceRoot: workspace })
 let executionQueue = Promise.resolve()
 function serialized(work) {
   const next = executionQueue.then(work, work)
@@ -60,14 +64,12 @@ async function body(request) {
 }
 
 async function build(projectId, debug = false) {
-  const projectRoot = await projects.getProjectRoot(projectId)
-  const buildDir = join(workspace, 'build', projectId, 'classes')
-  for (const directory of [workspace, join(workspace, 'build'), join(workspace, 'build', projectId), buildDir]) {
-    await mkdir(directory, { recursive: true })
-    const stat = await lstat(directory)
-    if (stat.isSymbolicLink() || !stat.isDirectory()) throw Object.assign(new Error('Invalid managed build directory'), { status: 400 })
-  }
-  return compileProject(projectRoot, buildDir, settings.jdkHome, { debug })
+  return builds.build(projectId, { debug })
+}
+
+function publicBuild(result) {
+  const { project, ...dto } = result
+  return { ...dto, ...(project ? { javaProject: builds.toDTO(project) } : {}) }
 }
 
 function segments(pathname) { return pathname.split('/').filter(Boolean) }
@@ -106,6 +108,19 @@ const server = http.createServer(async (request, response) => {
     if (parts[0] === 'api' && parts[1] === 'projects' && parts[2] && parts.length >= 4) {
       const id = parts[2]
       const action = parts[3]
+      if (action === 'java-project' && method === 'GET') return json(response, 200, builds.toDTO(await builds.resolve(id, { refresh: true })))
+      if (action === 'language') {
+        if (parts.length === 4 && method === 'GET') { await projects.getProjectRoot(id); return json(response, 200, language.status(id)) }
+        if (parts[4] === 'open' && method === 'POST') {
+          await body(request)
+          const projectRoot = await projects.getProjectRoot(id)
+          const model = await builds.resolve(id)
+          return json(response, 200, await language.open({ projectId: id, projectRoot, model, jdk: model.jdk }))
+        }
+        if (parts[4] === 'restart' && method === 'POST') { await body(request); await projects.getProjectRoot(id); return json(response, 200, await language.restart(id)) }
+        if (parts[4] === 'request' && method === 'POST') { const payload = await body(request); return json(response, 200, await language.request(id, payload.method, payload.params)) }
+        if (parts[4] === 'notify' && method === 'POST') { const payload = await body(request); await language.notify(id, payload.method, payload.params); return json(response, 200, { ok: true }) }
+      }
       if (action === 'tree' && method === 'GET') return json(response, 200, await projects.getTree(id))
       if (action === 'files' && method === 'GET') return json(response, 200, await projects.readFile(id, url.searchParams.get('path')))
       if (action === 'files' && method === 'PUT') {
@@ -122,60 +137,60 @@ const server = http.createServer(async (request, response) => {
         return json(response, 200, await projects.renameEntry(id, from, to))
       }
       if (action === 'entries' && method === 'DELETE') return json(response, 200, await projects.deleteEntry(id, url.searchParams.get('path')))
-      if (action === 'build' && method === 'POST') { await body(request); return json(response, 200, await serialized(async () => { await debuggerSessions.stop(); await runs.stop(); return build(id) })) }
+      if (action === 'build' && method === 'POST') { await body(request); return json(response, 200, await serialized(async () => { await debuggerSessions.stop(); await runs.stop(); return publicBuild(await build(id)) })) }
       if (action === 'debug' && method === 'POST') {
-        const { mainClass, breakpoints } = await body(request)
+        const configuration = await body(request)
+        const { breakpoints } = configuration
         return json(response, 200, await serialized(async () => {
           await runs.stop(); await debuggerSessions.stop()
           const compilation = await build(id, true)
           const sourceManifest = { sources: [], classes: [] }
           if (!compilation.success || !compilation.mainClasses.length) return {
             sessionId: `compile:${id}`, projectId: id, revision: 0, status: 'failed', pause: null, breakpoints: [], rawEvents: [],
-            sourceManifest, build: compilation, stdout: '', stderr: '', exitCode: null, terminalStatus: null,
+            sourceManifest, build: publicBuild(compilation), stdout: '', stderr: '', exitCode: null, terminalStatus: null,
             diagnostic: compilation.success ? 'No public static main(String[]) entry point found' : 'Compilation failed. See Problems.',
           }
-          const selected = compilation.mainClasses.includes(mainClass) ? mainClass : compilation.mainClasses[0]
-          const projectRoot = await projects.getProjectRoot(id), classesDir = join(workspace, 'build', id, 'classes')
-          const manifest = await buildInstrumentationSourceManifest(projectRoot, classesDir)
-          return debuggerSessions.start({ projectId: id, projectRoot, classesDir, mainClass: selected,
+          const launch = await resolveLaunch(compilation.project, configuration)
+          const projectRoot = await projects.getProjectRoot(id), classesDir = compilation.project.classesDir
+          const manifest = await buildInstrumentationSourceManifest(projectRoot, classesDir, compilation.project.sourcePaths)
+          return debuggerSessions.start({ projectId: id, projectRoot, classesDir, ...launch,
             javaPath: compilation.jdk.javaPath, javacPath: compilation.jdk.javacPath, sourceManifest: manifest,
-            build: compilation, breakpoints: breakpoints ?? [], rawEventLimit: 20000, rawByteLimit: 8 * 1024 * 1024, timeoutMs: 30000 })
+            build: publicBuild(compilation), breakpoints: breakpoints ?? [], rawEventLimit: 20000, rawByteLimit: 8 * 1024 * 1024, timeoutMs: 30000 })
         }))
       }
       if (action === 'run' && method === 'POST') {
-        const { mainClass } = await body(request)
+        const configuration = await body(request)
         return json(response, 200, await serialized(async () => {
           await runs.stop()
           await debuggerSessions.stop()
           const result = await build(id)
-          if (!result.success) return { build: result, run: null }
-          if (!result.mainClasses.length) return { build: result, run: null }
-          const selected = result.mainClasses.includes(mainClass) ? mainClass : result.mainClasses[0]
-          if (!result.mainClasses.includes(selected)) throw Object.assign(new Error('Select a main class found in the compiled project'), { status: 400 })
-          const run = await runs.start({ projectId: id, mainClass: selected, classesDir: join(workspace, 'build', id, 'classes'), projectRoot: await projects.getProjectRoot(id), javaPath: result.jdk.javaPath, sourcePaths: await projects.listJavaFiles(id) })
-          return { build: result, run }
+          if (!result.success || !result.mainClasses.length) return { build: publicBuild(result), run: null }
+          const projectRoot = await projects.getProjectRoot(id)
+          const launch = await resolveLaunch(result.project, configuration)
+          const run = await runs.start({ projectId: id, classesDir: result.project.classesDir, projectRoot, ...launch, javaPath: result.jdk.javaPath, sourcePaths: result.project.sourcePaths })
+          return { build: publicBuild(result), run }
         }))
       }
       if (action === 'visualize' && method === 'POST') {
-        const { mainClass } = await body(request)
+        const configuration = await body(request)
         return json(response, 200, await serialized(async () => {
           await runs.stop()
           await debuggerSessions.stop()
           const compilation = await build(id, true)
           const emptyManifest = { sources: [], classes: [] }
-          if (!compilation.success) return { build: compilation, status: 'compile_failed', diagnostic: 'Compilation failed',
+          if (!compilation.success) return { build: publicBuild(compilation), status: 'compile_failed', diagnostic: 'Compilation failed',
             sourceManifest: emptyManifest, rawEvents: [], capability: null, stdout: '', stderr: '', exitCode: null, metrics: null }
-          if (!compilation.mainClasses.length) return { build: compilation, status: 'unsupported', diagnostic: 'No public static main(String[]) entry point found',
+          if (!compilation.mainClasses.length) return { build: publicBuild(compilation), status: 'unsupported', diagnostic: 'No public static main(String[]) entry point found',
             sourceManifest: emptyManifest, rawEvents: [], capability: null, stdout: '', stderr: '', exitCode: null, metrics: null }
-          const selected = compilation.mainClasses.includes(mainClass) ? mainClass : compilation.mainClasses[0]
+          const launch = await resolveLaunch(compilation.project, configuration)
           const projectRoot = await projects.getProjectRoot(id)
-          const classesDir = join(workspace, 'build', id, 'classes')
-          const manifest = await buildInstrumentationSourceManifest(projectRoot, classesDir)
-          const capture = await runInstrumented({ projectId: id, projectRoot, classesDir, mainClass: selected,
+          const classesDir = compilation.project.classesDir
+          const manifest = await buildInstrumentationSourceManifest(projectRoot, classesDir, compilation.project.sourcePaths)
+          const capture = await runInstrumented({ projectId: id, projectRoot, classesDir, ...launch,
             javaPath: compilation.jdk.javaPath, javacPath: compilation.jdk.javacPath,
             sourcePaths: manifest.sources.map((source) => source.fileId), rawEventLimit: 20000,
             rawByteLimit: 8 * 1024 * 1024, timeoutMs: 30000 })
-          return { build: compilation, ...capture, sourceManifest: manifest }
+          return { build: publicBuild(compilation), ...capture, sourceManifest: manifest }
         }))
       }
     }
@@ -205,7 +220,7 @@ const server = http.createServer(async (request, response) => {
     }
     return json(response, 404, { error: 'Not found' })
   } catch (error) {
-    const status = error.status || (error.code === 'ENOENT' ? 404 : error.code === 'EEXIST' ? 409 : 500)
+    const status = error.status || error.statusCode || (error.code === 'ENOENT' ? 404 : error.code === 'EEXIST' ? 409 : 500)
     if (status >= 500) console.error(error)
     if (!response.headersSent) json(response, status, { error: status >= 500 ? 'Bridge operation failed' : error.message })
     else response.end()
@@ -213,4 +228,4 @@ const server = http.createServer(async (request, response) => {
 })
 
 server.listen(port, '127.0.0.1', () => console.log(`GGJavaEZ bridge listening on http://127.0.0.1:${port}`))
-for (const signal of ['SIGINT', 'SIGTERM']) process.on(signal, async () => { await debuggerSessions.stop(); await runs.stop(); server.close(); process.exit(0) })
+for (const signal of ['SIGINT', 'SIGTERM']) process.on(signal, async () => { await language.stop(); await debuggerSessions.stop(); await runs.stop(); server.close(); process.exit(0) })

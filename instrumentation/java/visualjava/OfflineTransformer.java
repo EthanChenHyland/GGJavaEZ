@@ -253,10 +253,14 @@ public final class OfflineTransformer implements Opcodes {
     return transformed;
   }
   public static void main(String[] args) {
-    if(args.length!=2) { System.err.println("usage: OfflineTransformer <classes> <output>");System.exit(2); }
+    if(args.length<2) { System.err.println("usage: OfflineTransformer <classes> <output> [dependency-path ...]");System.exit(2); }
     try {
       Path input=Path.of(args[0]),output=Path.of(args[1]);Files.createDirectories(output);
-      try(URLClassLoader loader=new URLClassLoader(new URL[]{input.toUri().toURL()},OfflineTransformer.class.getClassLoader());
+      List<URL> loaderPaths=new ArrayList<>();loaderPaths.add(input.toUri().toURL());
+      // Dependencies participate in frame computation and verification, never in
+      // the project-only Files.walk below. Keep their canonical launch order.
+      for(int i=2;i<args.length;i++)loaderPaths.add(Path.of(args[i]).toUri().toURL());
+      try(URLClassLoader loader=new URLClassLoader(loaderPaths.toArray(new URL[0]),OfflineTransformer.class.getClassLoader());
           Stream<Path> paths=Files.walk(input)) {
         for(Path path:paths.filter(Files::isRegularFile).sorted(Comparator.naturalOrder()).toList()) {
           Path relative=input.relativize(path),target=output.resolve(relative);Files.createDirectories(target.getParent());

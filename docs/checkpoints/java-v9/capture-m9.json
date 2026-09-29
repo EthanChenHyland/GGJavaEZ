@@ -1,0 +1,506 @@
+{
+  "capturedAt": "2026-09-29T19:36:57.898Z",
+  "captures": [
+    {
+      "state": "maven-code-ready",
+      "width": 1728,
+      "height": 1117,
+      "file": "docs/checkpoints/java-v9/maven-code-ready-1728x1117.png",
+      "world": {
+        "x": 1317,
+        "y": 73,
+        "width": 411,
+        "height": 1013
+      },
+      "editor": {
+        "x": 245.90625,
+        "y": 73,
+        "width": 1067.09375,
+        "height": 1013
+      }
+    },
+    {
+      "state": "maven-code-ready",
+      "width": 1440,
+      "height": 900,
+      "file": "docs/checkpoints/java-v9/maven-code-ready-1440x900.png",
+      "world": {
+        "x": 1098.359375,
+        "y": 73,
+        "width": 341.640625,
+        "height": 796
+      },
+      "editor": {
+        "x": 205.59375,
+        "y": 73,
+        "width": 888.765625,
+        "height": 796
+      }
+    },
+    {
+      "state": "maven-code-ready",
+      "width": 1280,
+      "height": 800,
+      "file": "docs/checkpoints/java-v9/maven-code-ready-1280x800.png",
+      "world": {
+        "x": 976.890625,
+        "y": 73,
+        "width": 303.109375,
+        "height": 696
+      },
+      "editor": {
+        "x": 183.1875,
+        "y": 73,
+        "width": 789.703125,
+        "height": 696
+      }
+    },
+    {
+      "state": "maven-code-ready",
+      "width": 760,
+      "height": 900,
+      "file": "docs/checkpoints/java-v9/maven-code-ready-760x900.png",
+      "world": null,
+      "editor": {
+        "x": 0,
+        "y": 73,
+        "width": 760,
+        "height": 796
+      }
+    },
+    {
+      "state": "maven-completion",
+      "width": 1440,
+      "height": 900,
+      "file": "docs/checkpoints/java-v9/maven-completion-1440x900.png",
+      "world": {
+        "x": 1098.359375,
+        "y": 73,
+        "width": 341.640625,
+        "height": 796
+      },
+      "editor": {
+        "x": 205.59375,
+        "y": 73,
+        "width": 888.765625,
+        "height": 796
+      }
+    },
+    {
+      "state": "maven-hover",
+      "width": 1440,
+      "height": 900,
+      "file": "docs/checkpoints/java-v9/maven-hover-1440x900.png",
+      "world": {
+        "x": 1098.359375,
+        "y": 73,
+        "width": 341.640625,
+        "height": 796
+      },
+      "editor": {
+        "x": 205.59375,
+        "y": 73,
+        "width": 888.765625,
+        "height": 796
+      }
+    },
+    {
+      "state": "maven-launch-dialog",
+      "width": 1728,
+      "height": 1117,
+      "file": "docs/checkpoints/java-v9/maven-launch-dialog-1728x1117.png",
+      "world": {
+        "x": 1317,
+        "y": 73,
+        "width": 411,
+        "height": 1013
+      },
+      "editor": {
+        "x": 245.90625,
+        "y": 73,
+        "width": 1067.09375,
+        "height": 1013
+      }
+    },
+    {
+      "state": "maven-launch-dialog",
+      "width": 1440,
+      "height": 900,
+      "file": "docs/checkpoints/java-v9/maven-launch-dialog-1440x900.png",
+      "world": {
+        "x": 1098.359375,
+        "y": 73,
+        "width": 341.640625,
+        "height": 796
+      },
+      "editor": {
+        "x": 205.59375,
+        "y": 73,
+        "width": 888.765625,
+        "height": 796
+      }
+    },
+    {
+      "state": "maven-launch-dialog",
+      "width": 1280,
+      "height": 800,
+      "file": "docs/checkpoints/java-v9/maven-launch-dialog-1280x800.png",
+      "world": {
+        "x": 976.890625,
+        "y": 73,
+        "width": 303.109375,
+        "height": 696
+      },
+      "editor": {
+        "x": 183.1875,
+        "y": 73,
+        "width": 789.703125,
+        "height": 696
+      }
+    },
+    {
+      "state": "maven-launch-dialog",
+      "width": 760,
+      "height": 900,
+      "file": "docs/checkpoints/java-v9/maven-launch-dialog-760x900.png",
+      "world": null,
+      "editor": {
+        "x": 0,
+        "y": 73,
+        "width": 760,
+        "height": 796
+      }
+    },
+    {
+      "state": "maven-visualize",
+      "width": 1728,
+      "height": 1117,
+      "file": "docs/checkpoints/java-v9/maven-visualize-1728x1117.png",
+      "world": {
+        "x": 522.390625,
+        "y": 73,
+        "width": 1205.609375,
+        "height": 1013
+      },
+      "editor": {
+        "x": 0,
+        "y": 73,
+        "width": 518.390625,
+        "height": 1013
+      }
+    },
+    {
+      "state": "maven-visualize",
+      "width": 1440,
+      "height": 900,
+      "file": "docs/checkpoints/java-v9/maven-visualize-1440x900.png",
+      "world": {
+        "x": 436,
+        "y": 73,
+        "width": 1004,
+        "height": 796
+      },
+      "editor": {
+        "x": 0,
+        "y": 73,
+        "width": 432,
+        "height": 796
+      }
+    },
+    {
+      "state": "maven-visualize",
+      "width": 1280,
+      "height": 800,
+      "file": "docs/checkpoints/java-v9/maven-visualize-1280x800.png",
+      "world": {
+        "x": 388,
+        "y": 73,
+        "width": 892,
+        "height": 696
+      },
+      "editor": {
+        "x": 0,
+        "y": 73,
+        "width": 384,
+        "height": 696
+      }
+    },
+    {
+      "state": "maven-visualize",
+      "width": 760,
+      "height": 900,
+      "file": "docs/checkpoints/java-v9/maven-visualize-760x900.png",
+      "world": {
+        "x": 0,
+        "y": 73,
+        "width": 760,
+        "height": 573.125
+      },
+      "editor": {
+        "x": 0,
+        "y": 646.125,
+        "width": 760,
+        "height": 222.875
+      }
+    },
+    {
+      "state": "maven-runtime-focus",
+      "width": 1728,
+      "height": 1117,
+      "file": "docs/checkpoints/java-v9/maven-runtime-focus-1728x1117.png",
+      "world": {
+        "x": 0,
+        "y": 50,
+        "width": 1728,
+        "height": 1067
+      },
+      "editor": null
+    },
+    {
+      "state": "maven-runtime-focus",
+      "width": 1440,
+      "height": 900,
+      "file": "docs/checkpoints/java-v9/maven-runtime-focus-1440x900.png",
+      "world": {
+        "x": 0,
+        "y": 50,
+        "width": 1440,
+        "height": 850
+      },
+      "editor": null
+    },
+    {
+      "state": "maven-runtime-focus",
+      "width": 1280,
+      "height": 800,
+      "file": "docs/checkpoints/java-v9/maven-runtime-focus-1280x800.png",
+      "world": {
+        "x": 0,
+        "y": 50,
+        "width": 1280,
+        "height": 750
+      },
+      "editor": null
+    },
+    {
+      "state": "maven-runtime-focus",
+      "width": 760,
+      "height": 900,
+      "file": "docs/checkpoints/java-v9/maven-runtime-focus-760x900.png",
+      "world": {
+        "x": 0,
+        "y": 50,
+        "width": 760,
+        "height": 850
+      },
+      "editor": null
+    },
+    {
+      "state": "maven-debug-entry",
+      "width": 1728,
+      "height": 1117,
+      "file": "docs/checkpoints/java-v9/maven-debug-entry-1728x1117.png",
+      "world": {
+        "x": 608.796875,
+        "y": 110.1875,
+        "width": 1119.203125,
+        "height": 975.8125
+      },
+      "editor": {
+        "x": 0,
+        "y": 110.1875,
+        "width": 604.796875,
+        "height": 975.8125
+      }
+    },
+    {
+      "state": "maven-debug-entry",
+      "width": 1440,
+      "height": 900,
+      "file": "docs/checkpoints/java-v9/maven-debug-entry-1440x900.png",
+      "world": {
+        "x": 508,
+        "y": 110.1875,
+        "width": 932,
+        "height": 758.8125
+      },
+      "editor": {
+        "x": 0,
+        "y": 110.1875,
+        "width": 504,
+        "height": 758.8125
+      }
+    },
+    {
+      "state": "maven-debug-entry",
+      "width": 1280,
+      "height": 800,
+      "file": "docs/checkpoints/java-v9/maven-debug-entry-1280x800.png",
+      "world": {
+        "x": 452,
+        "y": 110.1875,
+        "width": 828,
+        "height": 658.8125
+      },
+      "editor": {
+        "x": 0,
+        "y": 110.1875,
+        "width": 448,
+        "height": 658.8125
+      }
+    },
+    {
+      "state": "maven-debug-entry",
+      "width": 760,
+      "height": 900,
+      "file": "docs/checkpoints/java-v9/maven-debug-entry-760x900.png",
+      "world": {
+        "x": 0,
+        "y": 127,
+        "width": 760,
+        "height": 534.25
+      },
+      "editor": {
+        "x": 0,
+        "y": 661.25,
+        "width": 760,
+        "height": 207.75
+      }
+    },
+    {
+      "state": "gradle-code-status",
+      "width": 1728,
+      "height": 1117,
+      "file": "docs/checkpoints/java-v9/gradle-code-status-1728x1117.png",
+      "world": {
+        "x": 1317,
+        "y": 73,
+        "width": 411,
+        "height": 1013
+      },
+      "editor": {
+        "x": 245.90625,
+        "y": 73,
+        "width": 1067.09375,
+        "height": 1013
+      }
+    },
+    {
+      "state": "gradle-code-status",
+      "width": 1440,
+      "height": 900,
+      "file": "docs/checkpoints/java-v9/gradle-code-status-1440x900.png",
+      "world": {
+        "x": 1098.359375,
+        "y": 73,
+        "width": 341.640625,
+        "height": 796
+      },
+      "editor": {
+        "x": 205.59375,
+        "y": 73,
+        "width": 888.765625,
+        "height": 796
+      }
+    },
+    {
+      "state": "gradle-code-status",
+      "width": 1280,
+      "height": 800,
+      "file": "docs/checkpoints/java-v9/gradle-code-status-1280x800.png",
+      "world": {
+        "x": 976.890625,
+        "y": 73,
+        "width": 303.109375,
+        "height": 696
+      },
+      "editor": {
+        "x": 183.1875,
+        "y": 73,
+        "width": 789.703125,
+        "height": 696
+      }
+    },
+    {
+      "state": "gradle-code-status",
+      "width": 760,
+      "height": 900,
+      "file": "docs/checkpoints/java-v9/gradle-code-status-760x900.png",
+      "world": null,
+      "editor": {
+        "x": 0,
+        "y": 73,
+        "width": 760,
+        "height": 796
+      }
+    },
+    {
+      "state": "maven-build-problems",
+      "width": 1728,
+      "height": 1117,
+      "file": "docs/checkpoints/java-v9/maven-build-problems-1728x1117.png",
+      "world": {
+        "x": 1317,
+        "y": 73,
+        "width": 411,
+        "height": 737.25
+      },
+      "editor": {
+        "x": 245.90625,
+        "y": 73,
+        "width": 1067.09375,
+        "height": 737.25
+      }
+    },
+    {
+      "state": "maven-build-problems",
+      "width": 1440,
+      "height": 900,
+      "file": "docs/checkpoints/java-v9/maven-build-problems-1440x900.png",
+      "world": {
+        "x": 1098.359375,
+        "y": 73,
+        "width": 341.640625,
+        "height": 583.171875
+      },
+      "editor": {
+        "x": 205.59375,
+        "y": 73,
+        "width": 888.765625,
+        "height": 583.171875
+      }
+    },
+    {
+      "state": "maven-build-problems",
+      "width": 1280,
+      "height": 800,
+      "file": "docs/checkpoints/java-v9/maven-build-problems-1280x800.png",
+      "world": {
+        "x": 976.890625,
+        "y": 73,
+        "width": 303.109375,
+        "height": 512.171875
+      },
+      "editor": {
+        "x": 183.1875,
+        "y": 73,
+        "width": 789.703125,
+        "height": 512.171875
+      }
+    },
+    {
+      "state": "maven-build-problems",
+      "width": 760,
+      "height": 900,
+      "file": "docs/checkpoints/java-v9/maven-build-problems-760x900.png",
+      "world": null,
+      "editor": {
+        "x": 0,
+        "y": 73,
+        "width": 760,
+        "height": 613
+      }
+    }
+  ],
+  "errors": []
+}

@@ -1,0 +1,46 @@
+{
+  "capturedAt": "2026-09-29T19:35:06.458Z",
+  "environment": "local Chromium + owned Vite/Node bridge, OpenJDK 26.0.2.1",
+  "measurements": {
+    "mavenModelFirstMs": 2760.8,
+    "mavenModelCachedMs": 66.7,
+    "gradleModelFirstMs": 1896.5,
+    "modelStatus": {
+      "maven": "ready",
+      "gradle": "ready"
+    },
+    "mavenBuildMs": 1013.6,
+    "mavenBuildSuccess": true,
+    "mavenLanguageOpenToReadyMs": 2357.8,
+    "firstCompletionMs": 1903.7,
+    "repeatCompletionMs": 9.7,
+    "definitionMs": 31.2,
+    "mavenClasspathMismatch": 0,
+    "spatialFramesIdle": {
+      "count": 144,
+      "medianMs": 16.7,
+      "p95Ms": 16.7,
+      "maxMs": 33.4,
+      "drawCommands": 182
+    },
+    "gradleBuildMs": 2209.3,
+    "gradleBuildSuccess": true,
+    "spatialFramesDuringGradleBuild": {
+      "count": 144,
+      "medianMs": 16.7,
+      "p95Ms": 16.8,
+      "maxMs": 16.8,
+      "drawCommands": 4916
+    },
+    "spatialFramesDuringLanguageSwitch": {
+      "count": 144,
+      "medianMs": 16.7,
+      "p95Ms": 16.7,
+      "maxMs": 16.8,
+      "drawCommands": 4749
+    },
+    "mavenToGradleLanguageSwitchMs": 2869.9,
+    "gradleClasspathMismatch": 1,
+    "spatialCanvasRemainedVisible": true
+  }
+}

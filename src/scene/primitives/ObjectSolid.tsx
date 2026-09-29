@@ -51,7 +51,7 @@ export function ObjectSolid({ node, selected, related, onSelect, detailLevel = '
         <meshBasicMaterial color={worldMaterial.heapFace} />
       </mesh>
       <RuntimeLabel text="HEAP OBJECT" position={[-width / 2 + 0.22, height / 2 - 0.24, textZ]} size={0.17} color={colors.heap} maxWidth={1.7} />
-      <RuntimeLabel text={node.className} position={[-width / 2 + 0.22, height / 2 - 0.58, textZ]} size={0.37} maxWidth={width - 1.13} />
+      <RuntimeLabel text={node.className.split('.').at(-1) ?? node.className} position={[-width / 2 + 0.22, height / 2 - 0.58, textZ]} size={0.37} maxWidth={width - 1.13} />
       <RuntimeLabel text={`#${node.displayId}`} position={[width / 2 - 0.22, height / 2 - 0.58, textZ]} size={0.3} color={colors.textSecondary} align="right" maxWidth={0.8} />
       <mesh position={[0, height / 2 - 0.8, textZ]}>
         <boxGeometry args={[width - 0.36, 0.012, 0.012]} />

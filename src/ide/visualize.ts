@@ -4,6 +4,7 @@ import { normalizeTrace } from '../instrumentation/normalize'
 import { validateTrace } from '../runtime/trace'
 import { bridge } from './client'
 import type { VisualizeResponse } from './contracts'
+import type { LaunchConfiguration } from './javaProject'
 
 export interface PreparedVisualization {
   response: VisualizeResponse
@@ -13,8 +14,8 @@ export interface PreparedVisualization {
 }
 
 /** The UI receives a semantic trace; recorder-specific facts stay at this boundary. */
-export async function visualizeProject(projectId: string, mainClass: string): Promise<PreparedVisualization> {
-  const response = await bridge.visualize(projectId, mainClass)
+export async function visualizeProject(projectId: string, mainClass: string, launch?: LaunchConfiguration): Promise<PreparedVisualization> {
+  const response = await bridge.visualize(projectId, mainClass, launch)
   if (!response.build.success || response.status === 'compile_failed') {
     return { response, trace: null, capability: response.capability, normalizeMs: 0 }
   }

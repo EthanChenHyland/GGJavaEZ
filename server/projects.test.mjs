@@ -17,6 +17,17 @@ afterEach(async () => {
 })
 
 describe('ProjectStore', () => {
+  it('preserves wrapper binaries and build metadata on folder import', async () => {
+    const { store } = await makeStore()
+    const bytes = Buffer.from([0x50, 0x4b, 0x03, 0x04, 0xff, 0, 0x80])
+    const project = await store.importProject('Gradle', [
+      { path: 'build.gradle.kts', content: 'plugins { java }' },
+      { path: 'gradle/wrapper/gradle-wrapper.jar', content: bytes.toString('base64'), encoding: 'base64' },
+    ])
+    expect(await fs.readFile(path.join(await store.getProjectRoot(project.id), 'gradle/wrapper/gradle-wrapper.jar'))).toEqual(bytes)
+    expect((await store.readFile(project.id, 'build.gradle.kts')).content).toContain('plugins')
+    await expect(store.importProject('Bad bytes', [{ path: 'wrapper.jar', content: 'not base64!', encoding: 'base64' }])).rejects.toMatchObject({ status: 400 })
+  })
   it('creates one persistent starter and keeps metadata out of the tree', async () => {
     const { store } = await makeStore()
     const first = await store.ensureStarter()

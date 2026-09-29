@@ -5,6 +5,7 @@ import net from 'node:net';
 import { performance } from 'node:perf_hooks';
 import { StringDecoder } from 'node:string_decoder';
 import { prepareInstrumented } from './instrumentation-provider.mjs';
+import { launchRequest } from './launch.mjs';
 
 const OUTPUT_LIMIT = 8 * 1024 * 1024;
 const CONTROL_LIMIT = 65536;
@@ -77,8 +78,9 @@ export class DebugManager {
 
   start(request) {
     return this.#serialize(async () => {
-      if (this.latest && !TERMINAL.has(this.latest.dto.status)) await this.#stopRun(this.latest);
       if (!request?.projectId || !request.sourceManifest || !request.build?.success) throw error('Debug requires a successful build and source manifest', 400);
+      const launch = launchRequest(request);
+      if (this.latest && !TERMINAL.has(this.latest.dto.status)) await this.#stopRun(this.latest);
       const prepared = await this.prepare(request);
       const dto = { sessionId: randomUUID(), projectId: request.projectId, revision: 0, status: 'starting', pause: null,
         breakpoints: [], rawEvents: [], sourceManifest: clone(request.sourceManifest), build: clone(request.build),
@@ -100,8 +102,11 @@ export class DebugManager {
         });
         run.server.on('error', (failure) => this.#fail(run, failure.message));
         const port = run.server.address().port;
-        run.child = this.spawnProcess(request.javaPath, [`-Dvisualjava.debugPort=${port}`, `-Dvisualjava.debugToken=${run.token}`, ...prepared.args], {
-          cwd: request.projectRoot || request.classesDir, shell: false, windowsHide: true,
+        const launchIndex = prepared.args.indexOf('-cp');
+        if (launchIndex < 0) throw error('Prepared debugger launch has no classpath', 400);
+        const args = [...prepared.args.slice(0, launchIndex), `-Dvisualjava.debugPort=${port}`, `-Dvisualjava.debugToken=${run.token}`, ...prepared.args.slice(launchIndex)];
+        run.child = this.spawnProcess(request.javaPath, args, {
+          cwd: launch.workingDirectory, shell: false, windowsHide: true,
           detached: process.platform !== 'win32', stdio: ['pipe', 'pipe', 'pipe'],
         });
         run.closed = new Promise((resolveClosed) => { run.resolveClosed = resolveClosed; });

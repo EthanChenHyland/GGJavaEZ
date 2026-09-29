@@ -1,10 +1,11 @@
 import { spawn } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { mkdtemp, mkdir, readFile, readdir, rm, stat } from 'node:fs/promises';
+import { lstat, mkdtemp, mkdir, readFile, readdir, rm, stat } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { dirname, join, resolve, sep } from 'node:path';
+import { delimiter, dirname, join, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { performance } from 'node:perf_hooks';
+import { javaLaunchArgs, launchRequest } from './launch.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const javaSources = ['Recorder', 'OfflineTransformer', 'DebugControl'].map((name) => join(root, `instrumentation/java/visualjava/${name}.java`));
@@ -27,11 +28,11 @@ function emptyResult() {
 function killGroup(child) {
   try { if (process.platform !== 'win32' && child.pid) process.kill(-child.pid, 'SIGKILL'); else child.kill('SIGKILL'); } catch { /* exited */ }
 }
-function run(command, args, { cwd, timeoutMs, monitor, outputLimit = OUTPUT_LIMIT }) {
+function run(command, args, { cwd, timeoutMs, monitor, outputLimit = OUTPUT_LIMIT, spawnProcess = spawn }) {
   return new Promise((resolveRun) => {
     const started = performance.now();
     let child, stdout = '', stderr = '', stopped = null, settled = false;
-    try { child = spawn(command, args, { cwd, shell: false, windowsHide: true, detached: process.platform !== 'win32' }); }
+    try { child = spawnProcess(command, args, { cwd, shell: false, windowsHide: true, detached: process.platform !== 'win32' }); }
     catch (error) { resolveRun({ code: null, error: error.message, stdout, stderr, stopped: 'spawn', duration: performance.now() - started }); return; }
     const terminate = (reason) => { if (!stopped) { stopped = reason; killGroup(child); } };
     const timer = setTimeout(() => terminate('timeout'), timeoutMs);
@@ -60,6 +61,8 @@ async function checkJars() {
   }
 }
 async function collectClasses(directory) {
+  const info = await lstat(directory);
+  if (info.isSymbolicLink() || !info.isDirectory()) throw new Error('Compiled project directory must be a directory without symbolic links');
   const names = [];
   async function visit(path) {
     for (const entry of await readdir(path, { withFileTypes: true })) {
@@ -128,17 +131,19 @@ function capability(events, coveredClasses, transformInfo, terminalStatus, diagn
 
 /** Finite offline ASM run. The caller supplies the configured JDK's java/javac executables. */
 export class AsmInstrumentationProvider {
-  async run(request) { return runInstrumented(request); }
+  constructor(options = {}) { this.options = options; }
+  async run(request) { return runInstrumented(request, this.options); }
 }
 
 /** Prepare one isolated verified capture. The caller owns execution and must call cleanup. */
-export async function prepareInstrumented(request) {
+export async function prepareInstrumented(request, { spawnProcess = spawn } = {}) {
   const rawEventLimit = Math.min(EVENT_LIMIT, Math.max(1, Number(request.rawEventLimit) || EVENT_LIMIT));
   const rawByteLimit = Math.min(BYTE_LIMIT, Math.max(1, Number(request.rawByteLimit) || BYTE_LIMIT));
   const timeoutMs = Math.min(DEADLINE, Math.max(1, Number(request.timeoutMs) || DEADLINE));
   let temp;
   try {
     if (!request.javaPath || !request.javacPath || !request.classesDir || !request.mainClass) throw new Error('Configured JDK, compiled classes and main class are required');
+    const launch = launchRequest(request);
     await checkJars();
     const classesDir = resolve(request.classesDir);
     const coveredClasses = await collectClasses(classesDir);
@@ -147,10 +152,12 @@ export async function prepareInstrumented(request) {
     const helper = join(temp, 'helper'), transformed = join(temp, 'transformed'), trace = join(temp, 'raw.ndjson');
     await mkdir(helper); await mkdir(transformed);
     const transformStart = performance.now();
-    const compiled = await run(request.javacPath, ['-encoding', 'UTF-8', '-cp', jars.join(sep === '\\' ? ';' : ':'), '-d', helper, ...javaSources], { timeoutMs });
+    const compiled = await run(request.javacPath, ['-encoding', 'UTF-8', '-cp', jars.join(delimiter), '-d', helper, ...javaSources], { timeoutMs, spawnProcess });
     if (compiled.code !== 0 || compiled.stopped) throw new Error(`Instrumentation helper compilation failed: ${compiled.stderr || compiled.stopped}`);
-    const classpath = [helper, ...jars].join(sep === '\\' ? ';' : ':');
-    const stage = await run(request.javaPath, ['-cp', classpath, 'visualjava.OfflineTransformer', classesDir, transformed], { timeoutMs });
+    const classpath = [helper, ...jars].join(delimiter);
+    const dependencies = launch.classpath.slice(1);
+    // Extra entries are loader inputs only. OfflineTransformer walks classesDir alone.
+    const stage = await run(request.javaPath, ['-cp', classpath, 'visualjava.OfflineTransformer', classesDir, transformed, ...dependencies], { timeoutMs, spawnProcess });
     if (stage.code !== 0 || stage.stopped) throw new Error(`Offline transform failed: ${stage.stderr || stage.stopped}`);
     let transformInfo; try { transformInfo = JSON.parse(stage.stdout.trim()); } catch { throw new Error(`Invalid transform report: ${stage.stdout}`); }
     if (transformInfo.classes !== coveredClasses.length) throw new Error('Transform did not cover every compiled project class');
@@ -160,11 +167,11 @@ export async function prepareInstrumented(request) {
       if (!coveredClasses.includes(className) || !Array.isArray(lines) || lines.some((line, index) =>
         !Number.isSafeInteger(line) || line < 1 || index > 0 && line <= lines[index - 1])) throw new Error('Invalid executable line report');
     }
-    const jvmClasspath = [transformed, helper].join(sep === '\\' ? ';' : ':');
-    const args = ['-Xverify:all', `-Dvisualjava.trace=${trace}`, `-Dvisualjava.classes=${coveredClasses.join(',')}`,
-      `-Dvisualjava.eventLimit=${rawEventLimit}`, `-Dvisualjava.byteLimit=${rawByteLimit}`, '-cp', jvmClasspath, request.mainClass];
+    const executionClasspath = [transformed, helper, ...dependencies];
+    const args = javaLaunchArgs({ ...launch, classpath: executionClasspath }, ['-Xverify:all', `-Dvisualjava.trace=${trace}`, `-Dvisualjava.classes=${coveredClasses.join(',')}`,
+      `-Dvisualjava.eventLimit=${rawEventLimit}`, `-Dvisualjava.byteLimit=${rawByteLimit}`]);
     let cleaned = false;
-    return { temp, helper, transformed, trace, args, coveredClasses, transformInfo, executableLines,
+    return { temp, helper, transformed, trace, args, workingDirectory: launch.workingDirectory, classpath: executionClasspath, coveredClasses, transformInfo, executableLines,
       rawEventLimit, rawByteLimit, timeoutMs, transformMs: Math.round(performance.now() - transformStart),
       cleanup: async () => { if (!cleaned) { cleaned = true; await rm(temp, { recursive: true, force: true }); } } };
   } catch (error) {
@@ -173,19 +180,19 @@ export async function prepareInstrumented(request) {
   }
 }
 
-export async function runInstrumented(request) {
+export async function runInstrumented(request, { spawnProcess = spawn } = {}) {
   const result = emptyResult();
   const rawEventLimit = Math.min(EVENT_LIMIT, Math.max(1, Number(request.rawEventLimit) || EVENT_LIMIT));
   const rawByteLimit = Math.min(BYTE_LIMIT, Math.max(1, Number(request.rawByteLimit) || BYTE_LIMIT));
   const timeoutMs = Math.min(DEADLINE, Math.max(1, Number(request.timeoutMs) || DEADLINE));
   let prepared;
   try {
-    prepared = await prepareInstrumented(request);
+    prepared = await prepareInstrumented(request, { spawnProcess });
     const { trace, coveredClasses, transformInfo } = prepared;
     result.metrics.transformMs = prepared.transformMs;
     const executionStart = performance.now(); let firstTraceMs = null;
     const execution = await run(request.javaPath, prepared.args, {
-      cwd: request.projectRoot || request.classesDir, timeoutMs,
+      cwd: prepared.workingDirectory, timeoutMs, spawnProcess,
       monitor: async () => { const info = await stat(trace).catch(() => null); if (info?.size > 0 && firstTraceMs === null) firstTraceMs = performance.now() - executionStart; return info && info.size > rawByteLimit ? 'raw_byte_limit' : null; },
     });
     result.metrics.jvmStartupMs = Math.round(firstTraceMs ?? execution.duration); // Approximate spawn-to-first-record latency.

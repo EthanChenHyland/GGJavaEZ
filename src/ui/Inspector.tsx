@@ -68,7 +68,7 @@ export function Inspector({ selection, runtime, scene, onClose, onReturn, onFocu
     </header>
     {!available ? <div className="inspector-body"><p className="inspector-empty">This entity is outside the live runtime at this step. Its identity is retained; seek to an event where it exists to inspect it.</p></div> : <div className="inspector-body">
       {object && <>
-        {object.array ? <><div className="inspector-key"><span>TYPE · LENGTH</span><strong>{object.className} · {object.array.length}</strong></div><section className="inspector-group"><h3>Indexed elements</h3><SlotRows slots={object.array.elements} objects={runtime.objects} /></section></> : <section className="inspector-group"><h3>Fields</h3><SlotRows slots={Object.values(object.fields)} objects={runtime.objects} /></section>}
+        {object.array ? <><div className="inspector-key"><span>TYPE · LENGTH</span><strong>{object.className} · {object.array.length}</strong></div><section className="inspector-group"><h3>Indexed elements</h3><SlotRows slots={object.array.elements} objects={runtime.objects} /></section></> : <><div className="inspector-key"><span>JAVA CLASS</span><strong>{object.className}</strong></div><section className="inspector-group"><h3>Fields</h3><SlotRows slots={Object.values(object.fields)} objects={runtime.objects} /></section></>}
         <section className="inspector-group"><h3>Inbound references</h3>
         <div className="reference-list">{scene.references.filter((ref) => ref.targetObjectId === object.id).map((ref) => (
           <button key={ref.id} onClick={() => onTrace(ref.id)}>

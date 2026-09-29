@@ -1,6 +1,6 @@
 import { spawn } from 'node:child_process';
 import { mkdir, readFile, readdir, realpath, rm } from 'node:fs/promises';
-import { isAbsolute, relative, resolve, sep, win32 } from 'node:path';
+import { delimiter, isAbsolute, relative, resolve, sep, win32 } from 'node:path';
 import { performance } from 'node:perf_hooks';
 import { detectJdk } from './jdk.mjs';
 
@@ -9,7 +9,8 @@ const diagnosticHeader = /^(.*\.java):(\d+):(?:(\d+):)?\s*(error|warning|note):\
 function projectPath(path, projectRoot) {
   const absolute = resolve(projectRoot, path);
   const rel = relative(resolve(projectRoot), absolute);
-  if (!rel || rel === '..' || rel.startsWith(`..${sep}`) || isAbsolute(rel) || win32.isAbsolute(path) && process.platform !== 'win32') return '';
+  if (!rel || rel === '..' || rel.startsWith(`..${sep}`) || isAbsolute(rel) ||
+      win32.isAbsolute(path) && !isAbsolute(path) && process.platform !== 'win32') return '';
   return rel.split(sep).join('/');
 }
 
@@ -118,15 +119,16 @@ function hasMainMethod(bytes) {
   return false;
 }
 
-async function mainClasses(buildDir) {
+export async function scanCompiledMainClasses(buildDir) {
   const classes = [];
   async function visit(directory) {
     for (const entry of await readdir(directory, { withFileTypes: true })) {
       const path = resolve(directory, entry.name);
+      if (entry.isSymbolicLink()) throw new Error('Compiled output contains a symbolic link');
       if (entry.isDirectory()) await visit(path);
       else if (entry.isFile() && entry.name.endsWith('.class')) {
         const bytes = await readFile(path);
-        if (bytes.readUInt32BE(0) === 0xcafebabe && hasMainMethod(bytes)) {
+        if (bytes.length >= 10 && bytes.readUInt32BE(0) === 0xcafebabe && hasMainMethod(bytes)) {
           classes.push(relative(buildDir, path).slice(0, -6).split(sep).join('.'));
         }
       }
@@ -137,23 +139,28 @@ async function mainClasses(buildDir) {
 }
 
 /** Compile every project Java source into a freshly recreated classes directory. */
-export async function compileProject(projectRoot, buildDir, jdkHome, { debug = false } = {}) {
+export async function compileProject(projectRoot, buildDir, jdkHome, { debug = false, sourcePaths, classpath = [], jdk: suppliedJdk } = {}) {
   const start = performance.now();
   const root = await realpath(projectRoot);
   const target = resolve(buildDir);
   if (root === target || root.startsWith(`${target}${sep}`)) throw new Error('Build directory must not contain the project');
   await rm(target, { recursive: true, force: true });
   await mkdir(target, { recursive: true });
-  const jdk = await detectJdk(jdkHome);
+  const jdk = suppliedJdk ?? await detectJdk(jdkHome);
   const result = (success, rawOutput, diagnostics = [], classes = []) => ({ success, diagnostics, rawOutput,
     elapsedMs: Math.round(performance.now() - start), jdk, mainClasses: classes });
   if (!jdk.available) return result(false, jdk.error);
-  const files = await javaFiles(root, target);
+  const files = sourcePaths === undefined ? await javaFiles(root, target) : await Promise.all(sourcePaths.map(async (file) => {
+    if (typeof file !== 'string' || !file.endsWith('.java') || !projectPath(file, root)) throw new Error('Invalid compile source path');
+    const actual = await realpath(resolve(root, file));
+    if (actual !== resolve(root, file) || !projectPath(actual, root)) throw new Error('Compile source resolves outside project or through a symbolic link');
+    return file;
+  }));
   if (!files.length) return result(false, 'No Java source files found.');
-  const { code, output } = await runJavac(jdk.javacPath, ['-encoding', 'UTF-8', ...(debug ? ['-g:lines,vars,source'] : []), '-d', target, ...files.map((file) => `.${sep}${file}`)], root);
+  const { code, output } = await runJavac(jdk.javacPath, ['-encoding', 'UTF-8', ...(debug ? ['-g:lines,vars,source'] : []), ...(classpath.length ? ['-cp', classpath.join(delimiter)] : []), '-d', target, ...files.map((file) => `.${sep}${file}`)], root);
   if (code !== 0) {
     await rm(target, { recursive: true, force: true });
     await mkdir(target, { recursive: true });
   }
-  return result(code === 0, output, parseJavacDiagnostics(output, root), code === 0 ? await mainClasses(target) : []);
+  return result(code === 0, output, parseJavacDiagnostics(output, root), code === 0 ? await scanCompiledMainClasses(target) : []);
 }

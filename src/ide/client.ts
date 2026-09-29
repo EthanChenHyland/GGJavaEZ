@@ -1,5 +1,7 @@
 import type { BuildResult, JdkStatus, ProjectEntry, ProjectFile, ProjectSummary, RunEvent, RunResponse, RunSnapshot, VisualizeResponse } from './contracts'
 import type { DebugCommand, DebugSession, SourceBreakpoint } from '../debugger/contracts'
+import type { JavaProject, LaunchConfiguration } from './javaProject'
+import type { LanguageSnapshot } from '../language/protocol'
 
 async function request<T>(url: string, method = 'GET', data?: unknown): Promise<T> {
   const response = await fetch(url, { method, headers: data === undefined ? undefined : { 'content-type': 'application/json' }, body: data === undefined ? undefined : JSON.stringify(data) })
@@ -14,7 +16,13 @@ export const bridge = {
   detectJdk: (home: string | null) => request<JdkStatus>('/api/jdk/detect', 'POST', { home }),
   projects: () => request<ProjectSummary[]>('/api/projects'),
   createProject: (name: string) => request<ProjectSummary>('/api/projects', 'POST', { name }),
-  importProject: (name: string, files: { path: string; content: string }[]) => request<ProjectSummary>('/api/projects/import', 'POST', { name, files }),
+  importProject: (name: string, files: { path: string; content: string; encoding?: 'base64' }[]) => request<ProjectSummary>('/api/projects/import', 'POST', { name, files }),
+  javaProject: (id: string) => request<JavaProject>(`${project(id)}/java-project`),
+  languageStatus: (id: string) => request<LanguageSnapshot>(`${project(id)}/language`),
+  languageOpen: (id: string) => request<LanguageSnapshot>(`${project(id)}/language/open`, 'POST', {}),
+  languageRestart: (id: string) => request<LanguageSnapshot>(`${project(id)}/language/restart`, 'POST', {}),
+  languageRequest: <T>(id: string, method: string, params: unknown) => request<T>(`${project(id)}/language/request`, 'POST', { method, params }),
+  languageNotify: (id: string, method: string, params: unknown) => request<{ ok: true }>(`${project(id)}/language/notify`, 'POST', { method, params }),
   tree: (id: string) => request<ProjectEntry[]>(`${project(id)}/tree`),
   file: (id: string, path: string) => request<ProjectFile>(`${project(id)}/files?path=${encodeURIComponent(path)}`),
   save: (id: string, path: string, content: string, revision: string) => request<ProjectFile>(`${project(id)}/files`, 'PUT', { path, content, revision }),
@@ -23,9 +31,9 @@ export const bridge = {
   rename: (id: string, from: string, to: string) => request<{ path: string }>(`${project(id)}/rename`, 'POST', { from, to }),
   delete: (id: string, path: string) => request<{ ok: boolean }>(`${project(id)}/entries?path=${encodeURIComponent(path)}`, 'DELETE'),
   build: (id: string) => request<BuildResult>(`${project(id)}/build`, 'POST', {}),
-  run: (id: string, mainClass: string) => request<RunResponse>(`${project(id)}/run`, 'POST', { mainClass }),
-  visualize: (id: string, mainClass: string) => request<VisualizeResponse>(`${project(id)}/visualize`, 'POST', { mainClass }),
-  debug: (id: string, mainClass: string, breakpoints: SourceBreakpoint[]) => request<DebugSession>(`${project(id)}/debug`, 'POST', { mainClass, breakpoints }),
+  run: (id: string, mainClass: string, launch?: LaunchConfiguration) => request<RunResponse>(`${project(id)}/run`, 'POST', { ...launch, mainClass }),
+  visualize: (id: string, mainClass: string, launch?: LaunchConfiguration) => request<VisualizeResponse>(`${project(id)}/visualize`, 'POST', { ...launch, mainClass }),
+  debug: (id: string, mainClass: string, breakpoints: SourceBreakpoint[], launch?: LaunchConfiguration) => request<DebugSession>(`${project(id)}/debug`, 'POST', { ...launch, mainClass, breakpoints }),
   debugCurrent: () => request<DebugSession | null>('/api/debug/current'),
   debugSnapshot: (id: string) => request<DebugSession>(`/api/debug/${encodeURIComponent(id)}`),
   debugCommand: (id: string, command: DebugCommand) => request<DebugSession>(`/api/debug/${encodeURIComponent(id)}/command`, 'POST', { command }),

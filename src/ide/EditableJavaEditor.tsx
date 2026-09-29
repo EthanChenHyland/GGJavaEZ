@@ -5,6 +5,8 @@ import * as monacoApi from 'monaco-editor/editor/editor.api.js'
 import type { CompileDiagnostic, SourceLocation } from './contracts'
 import type { ResolvedBreakpoint } from '../debugger/contracts'
 import { typography } from '../theme/tokens'
+import { documentUri } from '../language/protocol'
+import { isApplyingWorkspaceEdit } from '../language/workspaceEdit'
 import '../ui/monacoSetup'
 
 export function EditableJavaEditor({ projectId, path, value, onChange, diagnostics, navigate, onSave, executingLine = null, pausedLine = null, breakpoints = [], onToggleBreakpoint }: {
@@ -101,11 +103,11 @@ export function EditableJavaEditor({ projectId, path, value, onChange, diagnosti
     showMarkers(instance, monacoApi, diagnostics)
   }, [diagnostics, path])
   return <Editor
-    path={`inmemory://ggjavaez/${projectId}/${path}`}
-    language="java"
+    path={documentUri(projectId, path)}
+    language={path.endsWith('.java') ? 'java' : 'plaintext'}
     theme="visual-java"
     value={value}
-    onChange={(next) => onChange(next ?? '')}
+    onChange={(next) => { if (!isApplyingWorkspaceEdit()) onChange(next ?? '') }}
     onMount={onMount}
     saveViewState
     keepCurrentModel

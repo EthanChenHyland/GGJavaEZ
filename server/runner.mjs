@@ -2,6 +2,7 @@ import { spawn } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
 import { isAbsolute, relative, sep } from 'node:path'
 import { parseRuntimeException } from './exceptions.mjs'
+import { javaLaunchArgs, launchRequest } from './launch.mjs'
 
 const DEFAULT_MAX_EVENTS = 4096
 const STOP_GRACE_MS = 1200
@@ -60,7 +61,7 @@ export class RunManager {
 
   /**
    * Start a compiled Java main class. All paths are supplied by the trusted bridge.
-   * @param {{projectId:string, mainClass:string, javaPath:string, classesDir:string, projectRoot:string, sourcePaths?:string[]}} options
+   * @param {{projectId:string, mainClass:string, javaPath:string, classesDir:string, projectRoot:string, sourcePaths?:string[], classpath?:string[], programArgs?:string[], jvmArgs?:string[], workingDirectory?:string}} options
    */
   start(options) {
     return this.#serialize(async () => {
@@ -68,11 +69,12 @@ export class RunManager {
       if ([projectId, mainClass, javaPath, classesDir, projectRoot].some((value) => typeof value !== 'string' || !value)) {
         throw new TypeError('projectId, mainClass, javaPath, classesDir, and projectRoot are required')
       }
+      const launch = launchRequest(options)
       if (this.latest?.status === 'running') await this.#stopRun(this.latest)
 
       // Executable and arguments are passed separately. Java never runs through a shell.
-      const child = this.spawnProcess(javaPath, ['-cp', classesDir, mainClass], {
-        cwd: projectRoot,
+      const child = this.spawnProcess(javaPath, javaLaunchArgs(launch), {
+        cwd: launch.workingDirectory,
         stdio: ['pipe', 'pipe', 'pipe'],
         shell: false,
         detached: process.platform !== 'win32',

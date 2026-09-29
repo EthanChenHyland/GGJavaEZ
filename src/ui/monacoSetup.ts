@@ -3,8 +3,15 @@ import * as monaco from 'monaco-editor/editor/editor.api.js'
 import 'monaco-editor/languages/definitions/java/register.js'
 import EditorWorker from 'monaco-editor/editor/editor.worker.js?worker'
 import { colors } from '../theme/tokens'
+import 'monaco-editor/editor/contrib/suggest/browser/suggestController.js'
+import 'monaco-editor/editor/contrib/hover/browser/hoverContribution.js'
+import 'monaco-editor/editor/contrib/parameterHints/browser/parameterHints.js'
+import 'monaco-editor/editor/contrib/gotoSymbol/browser/goToCommands.js'
+import 'monaco-editor/editor/contrib/gotoSymbol/browser/link/goToDefinitionAtPosition.js'
+import 'monaco-editor/editor/contrib/rename/browser/rename.js'
+import 'monaco-editor/editor/contrib/codeAction/browser/codeActionContributions.js'
 
-// Java uses Monaco's basic tokenizer and core editor worker, with no language server.
+// Java tokenization runs locally; project language providers attach to Monaco separately.
 // Configure the React loader before any Editor mounts so it never requests CDN assets.
 self.MonacoEnvironment = { getWorker: () => new EditorWorker() }
 loader.config({ monaco })

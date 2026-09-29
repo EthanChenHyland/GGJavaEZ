@@ -4,6 +4,7 @@ import type { Group } from 'three'
 import type { RuntimeValue } from '../../contracts/runtime'
 import type { SceneSlot } from '../../contracts/world'
 import { colors, motionMs } from '../../theme/tokens'
+import { displayJavaType } from '../../runtime/displayType'
 import { RuntimeLabel } from './RuntimeLabel'
 import { easeOutCubic, useReducedMotion } from './presentationMotion'
 
@@ -43,7 +44,8 @@ export function RuntimeSlot({ slot, width, y, z, compact = false, accent, backgr
   const invalidate = useThree((state) => state.invalidate)
   const height = compact ? 0.31 : 0.44
   const left = -width / 2 + 0.18
-  const typeX = compact ? -0.13 : -0.42
+  const typeLabel = displayJavaType(slot.javaType)
+  const typeX = compact && typeLabel.length <= 8 ? -0.13 : -0.42
   const valueX = fitText ? width / 2 - 1.44 : compact ? width / 2 - 1.04 : width / 2 - 1.4
   const textZ = z + 0.014
   const value = slot.displayValue ?? formatRuntimeValue(slot.value)
@@ -92,7 +94,7 @@ export function RuntimeSlot({ slot, width, y, z, compact = false, accent, backgr
         </mesh>
       )}
       <RuntimeLabel text={slot.role === 'operand' ? 'call result' : slot.name} position={[left, 0, textZ]} size={(readable ? 0.29 : compact ? 0.22 : 0.24) * textScale} color={colors.textSecondary} maxWidth={compact ? 1.65 : 0.9} />
-      <RuntimeLabel text={slot.javaType} position={[typeX, 0, textZ]} size={(readable ? 0.24 : compact ? 0.18 : 0.2) * textScale} color={colors.textSecondary} maxWidth={compact ? 1.1 : 0.75} />
+      <RuntimeLabel text={typeLabel} position={[typeX, 0, textZ]} size={(readable ? 0.24 : compact ? 0.18 : 0.2) * textScale} color={colors.textSecondary} maxWidth={compact ? 1.1 : 0.75} />
       <group ref={valueRef} position={[0, 0, 0]}>
         <RuntimeLabel text={value} position={[valueX, 0, textZ]} size={valueSize} color={valueColor} maxWidth={compact ? 1.1 : 1.2} />
       </group>

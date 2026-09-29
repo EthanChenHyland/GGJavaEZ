@@ -1,0 +1,23 @@
+import groovy.json.JsonOutput
+
+gradle.projectsEvaluated {
+    def root = gradle.rootProject
+    root.tasks.register('visualJavaExportModel') {
+        doLast {
+            if (!root.subprojects.empty) throw new GradleException('Visual Java M9 supports single-project Gradle builds only')
+            def sets = root.extensions.findByName('sourceSets')
+            if (sets == null || sets.findByName('main') == null) throw new GradleException('The Gradle Java plugin and main source set are required')
+            def main = sets.getByName('main')
+            def test = sets.findByName('test')
+            def model = [
+                sourceRoots: main.java.srcDirs.collect { it.absolutePath },
+                testSourceRoots: test == null ? [] : test.java.srcDirs.collect { it.absolutePath },
+                outputRoots: main.output.files.collect { it.absolutePath },
+                compileClasspath: main.compileClasspath.files.collect { it.absolutePath },
+                runtimeClasspath: main.runtimeClasspath.files.collect { it.absolutePath }
+            ]
+            def destination = root.providers.gradleProperty('visualJavaModelFile').get()
+            new File(destination).text = JsonOutput.toJson(model)
+        }
+    }
+}

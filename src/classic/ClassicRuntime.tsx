@@ -3,6 +3,7 @@ import type { Selection } from '../contracts/interaction'
 import type { TraceEvent } from '../contracts/runtime'
 import type { SceneModel } from '../contracts/world'
 import { useNavigationStore } from '../navigation/navigation'
+import { displayJavaType } from '../runtime/displayType'
 import { colors, line, motionMs, typography, worldMaterial } from '../theme/tokens'
 import { buildClassicScene, emphasizedSlot, relatedReference, selectedBounds, type DiagramEntity, type DiagramRect } from './classicScene'
 import { classicHomeView, constrainClassicView, focusClassicView, zoomClassicView } from './viewport'
@@ -159,7 +160,7 @@ export function ClassicRuntime({ visible = true, playing = false, scene, event, 
           <rect x={rowX + 1} y={rowY} width={rowWidth - 2} height={row.rect.height} fill={highlighted ? colors.mutation : slotSelected || reading ? colors.execution : linked ? accent : body} fillOpacity={highlighted || slotSelected || reading ? 0.13 : linked ? 0.05 : 1} />
           {highlighted && <rect x={rowX + 1} y={rowY + 5} width={3} height={row.rect.height - 10} fill={colors.mutation} />}
           <text x={rowX + 20} y={rowY + row.rect.height / 2 + 6} fontSize={rowTextSize} fill={row.slot.role === 'operand' ? colors.textSecondary : colors.text}>{row.slot.role === 'operand' ? 'call result (operand)' : row.slot.name}</text>
-          <text x={typeX} y={rowY + row.rect.height / 2 + 6} fontSize={compact ? 12 : 16} fill={colors.textSecondary}>{row.slot.javaType}</text>
+          <text x={typeX} y={rowY + row.rect.height / 2 + 6} fontSize={compact ? 12 : 16} fill={colors.textSecondary}>{displayJavaType(row.slot.javaType)}</text>
           <text x={valueX} y={rowY + row.rect.height / 2 + 6} fontFamily={typography.code} fontSize={rowTextSize} fill={highlighted ? colors.mutation : row.slot.role === 'return' && !nullValue ? colors.success : nullValue ? colors.null : row.slot.value.kind === 'reference' ? accent : colors.text}>{row.value}</text>
           <line x1={rowX + 16} y1={rowY + row.rect.height} x2={rowX + rowWidth - 16} y2={rowY + row.rect.height} stroke={colors.borderStrong} strokeOpacity={0.5} />
         </g>
