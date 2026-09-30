@@ -210,6 +210,7 @@ export function inspectorFocusPose(
   viewport: InspectorViewport,
   selectedPosition: Vec3 = pivot,
   minimumDistance = 8.5,
+  selectedPadding: Vec3 = [1, 2, 0.6],
 ): CameraPose {
   const width = Math.max(1, viewport.width)
   const height = Math.max(1, viewport.height)
@@ -238,7 +239,8 @@ export function inspectorFocusPose(
       size: [anchor.size[0] + 0.6, anchor.size[1] + 0.8, anchor.size[2]] as Vec3,
     })),
     // Labels and mutation callouts project beyond the body, especially above it.
-    { position: [selectedPosition[0], selectedPosition[1] + 0.4, selectedPosition[2]] as Vec3, size: [extent[0] + 1, extent[1] + 2, extent[2] + 0.6] as Vec3 },
+    { position: [selectedPosition[0], selectedPosition[1] + 0.4, selectedPosition[2]] as Vec3,
+      size: [extent[0] + selectedPadding[0], extent[1] + selectedPadding[1], extent[2] + selectedPadding[2]] as Vec3 },
   ]
   for (const body of bodies) {
     for (const x of [-1, 1]) for (const y of [-1, 1]) for (const z of [-1, 1]) {

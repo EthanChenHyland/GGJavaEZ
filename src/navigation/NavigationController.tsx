@@ -209,13 +209,9 @@ export function NavigationController({ sceneModel, event, activeEntityId, homeTa
       const anchor = selectionPoint(intent.selection, world)
       if (!anchor) return
       store.rememberPrevious(currentPose(), store.previousMode ?? 'HOME')
-      const pose = currentPose()
-      const cameraRight = new Vector3(0, 1, 0).cross(
-        new Vector3(...pose.position).sub(new Vector3(...pose.target)),
-      ).normalize()
       const face = frontFacePoint(anchor)
       const center = reservedWorld ? face : midpoint(overviewPose().target, face)
-      const pivot: Vec3 = [center[0] - cameraRight.x, center[1] - cameraRight.y, center[2] - cameraRight.z]
+      const pivot = center
       const context = arrayInspectionContext(intent.selection, sceneModel)
       if (sceneModel.layoutKind === 'scoped' && intent.selection.kind === 'slot') {
         const owner = sceneModel.frames.find((frame) => frame.slots.some((slot) => slot.id === intent.selection.id))
@@ -223,7 +219,7 @@ export function NavigationController({ sceneModel, event, activeEntityId, homeTa
       }
       startMove(inspectorFocusPose(pivot, anchor.size, currentPose(), context, viewFraming(), {
         width: size.width, height: size.height,
-      }, face, 5.8), motionMs.deliberate)
+      }, face, 5.8, [0.5, 0.8, 0.3]), motionMs.deliberate)
     } else if (intent.kind === 'tracePath') {
       const edge = world.references.find((reference) => reference.id === intent.referenceId)
       if (!edge) return

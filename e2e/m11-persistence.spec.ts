@@ -55,6 +55,7 @@ test('real Person execution leaves navigable historical calls and final state; R
   await picker.selectOption(personId!)
   const inspector = page.getByRole('complementary', { name: 'Runtime inspector' })
   await expect(inspector).toContainText('18')
+  await page.screenshot({ path: `${captureRoot}/person-before-focus-1440x900.png`, animations: 'disabled' })
   await inspector.getByRole('button', { name: 'Focus', exact: true }).click()
   await page.waitForTimeout(650)
   await page.screenshot({ path: `${captureRoot}/person-focus-1440x900.png`, animations: 'disabled' })

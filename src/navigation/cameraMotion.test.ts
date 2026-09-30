@@ -5,7 +5,7 @@ import type { TraceEvent } from '../contracts/runtime'
 import type { SceneReferenceEdge, Vec3, WorldAnchor } from '../contracts/world'
 import { motionMs } from '../theme/tokens'
 import { stackHeadingFootprint } from '../world/runtimeHeadings'
-import { contextPose, guidedCameraAction, inspectorFocusPose, responsiveHomePose, sampleCameraMove, sceneHomePose, traceWaypoints } from './cameraMotion'
+import { contextPose, frontFacePoint, guidedCameraAction, inspectorFocusPose, responsiveHomePose, sampleCameraMove, sceneHomePose, traceWaypoints } from './cameraMotion'
 import type { CameraMove } from './cameraMotion'
 import { defaultHomePose, midpoint } from './navigation'
 
@@ -149,6 +149,34 @@ describe('inspector shelf safe rectangle', () => {
       [destination.position[0], destination.position[1] + destination.size[1] / 2 + 1.2, destination.position[2]],
     ])
     expect(new Vector3(...pose.position).distanceTo(new Vector3(...pose.target))).toBeGreaterThanOrEqual(8.5)
+  })
+
+  it('brings the selected front face closer while keeping its solid clear of the inspector', () => {
+    const face = frontFacePoint(destination)
+    const retainedFrameCorners: Vec3[] = [-1, 1].flatMap((x): Vec3[] => [-1, 1].flatMap((y): Vec3[] => [-1, 1].map((z) => [
+      -4 + x * 2.5, 4 + y, z * 0.7,
+    ])))
+    const home = sceneHomePose({ stackDepth: 3, bounds: {
+      center: [0, 1.5, 0], size: [14, 8, 5], points: [...corners, ...retainedFrameCorners],
+    } }, [0, 0, 0], shelfView, true)
+    const pose = inspectorFocusPose(face, destination.size, home, [], shelfView,
+      viewport, face, 5.8, [0.5, 0.8, 0.3])
+    const frontZ = destination.position[2] + destination.size[2] / 2
+    const faceCorners: Vec3[] = [-1, 1].flatMap((x): Vec3[] => [-1, 1].map((y) => [
+      destination.position[0] + x * destination.size[0] / 2,
+      destination.position[1] + y * destination.size[1] / 2,
+      frontZ,
+    ]))
+    expectAboveShelf(pose, corners.slice(8))
+    const projectedWidth = (cameraPose: CameraPose) => {
+      const camera = new PerspectiveCamera(41, shelfView.aspect, 0.1, 200)
+      camera.position.set(...cameraPose.position)
+      camera.lookAt(...cameraPose.target)
+      camera.updateMatrixWorld()
+      const xs = faceCorners.map((point) => new Vector3(...point).project(camera).x)
+      return Math.max(...xs) - Math.min(...xs)
+    }
+    expect(projectedWidth(pose)).toBeGreaterThan(projectedWidth(home) * 1.5)
   })
 
   it('reserves the shelf throughout reference travel and in the resting composition', () => {
