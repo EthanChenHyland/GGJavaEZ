@@ -26,6 +26,7 @@ export interface DiagramEntity {
   kind: 'frame' | 'object'
   label: string
   active: boolean
+  invocationStatus?: SceneFrameNode['invocationStatus']
   exceptionState?: SceneFrameNode['exceptionState']
   rect: DiagramRect
   slots: DiagramSlot[]
@@ -39,6 +40,7 @@ export interface DiagramReference {
   sourceSlotId: string
   targetObjectId: string
   label: string
+  historical?: boolean
   from: readonly [number, number]
   to: readonly [number, number]
   path: string
@@ -109,10 +111,9 @@ export function buildClassicScene(scene: SceneModel, event: TraceEvent | null = 
   const arrayLayout = scene.layoutKind === 'array' || scene.objects.some((object) => object.array)
   const entities: DiagramEntity[] = [
     ...scene.frames.map((frame): DiagramEntity => {
-      const sibling = scene.layoutKind === 'deepStack' && stackDepth <= 1 && frame.depth > 0
-        ? scene.frames.filter((candidate) => candidate.depth === frame.depth).findIndex((candidate) => candidate.id === frame.id) : -1
-      const rect = sibling >= 0
-        ? { x: 72 + (sibling % 2) * 265, y: 340 - frame.depth * 212 - Math.floor(sibling / 2) * 225, width: 240, height: 200 }
+      const sibling = scene.frames.filter((candidate) => candidate.depth === frame.depth).findIndex((candidate) => candidate.id === frame.id)
+      const rect = sibling > 0 && !scoped
+        ? { ...classicFrameRect(frame.depth, stackDepth, frame.slots.length), x: 72 + sibling * (stackDepth > 1 ? 450 : 380) }
         : scoped
         ? scopedRect(frame.depth)
         : arrayLayout && !deepStack
@@ -124,7 +125,7 @@ export function buildClassicScene(scene: SceneModel, event: TraceEvent | null = 
       const rowHeight = scoped ? worldUnits.scope.rowGap * scopedScale : deepStack ? 18 : 40
       const reservedSlots = arrayLayout ? Object.keys(frame.anchor.ports) : []
       return {
-        id: frame.id, kind: 'frame', label: frame.label, active: frame.active, exceptionState: frame.exceptionState, rect,
+        id: frame.id, kind: 'frame', label: frame.label, active: frame.active, invocationStatus: frame.invocationStatus, exceptionState: frame.exceptionState, rect,
         ...(scoped ? { headingHeight, scopes: (frame.scopes ?? []).filter((scope) => scope.parentId !== null).map((scope) => {
           const inset = 12 * scope.depth
           return { id: scope.id, label: scope.label, depth: scope.depth, slotIds: scope.slotIds,
@@ -187,7 +188,7 @@ export function buildClassicScene(scene: SceneModel, event: TraceEvent | null = 
     const to = [target.rect.x, target.rect.y + 76 - sourceDepth * 28] as const
     const bend = (to[0] - from[0]) * 0.5
     return [{
-      id: edge.id, sourceEntityId: sourceId, sourceSlotId: slot.slot.id,
+      id: edge.id, sourceEntityId: sourceId, sourceSlotId: slot.slot.id, historical: edge.historical,
       targetObjectId: edge.targetObjectId, label: slot.slot.name, from, to,
       path: `M ${from[0]} ${from[1]} C ${from[0] + bend} ${from[1]}, ${to[0] - bend} ${to[1]}, ${to[0]} ${to[1]}`,
     }]
@@ -199,10 +200,10 @@ export function buildClassicScene(scene: SceneModel, event: TraceEvent | null = 
   let returnTransfer: DiagramReturn | null = null
   const currentReturn = flow?.eventId === scene.activeEventId ||
     (event?.type === 'EXIT_METHOD' && event.eventId === scene.activeEventId && event.frameId === flow?.frameId)
-  if (flow && destination && destinationRow && flow.toDepth !== null && (!scoped || currentReturn)) {
+  const origin = flow && entities.find(node => node.id === flow.frameId)
+  if (flow && origin && destination && destinationRow && flow.toDepth !== null && (!scoped || currentReturn)) {
     // The origin remains in its reserved invocation band after EXIT_METHOD. No ghost frame is invented.
-    const origin = classicFrameRect(flow.fromDepth, stackDepth)
-    const originBand = scoped ? scopedRect(flow.fromDepth) : origin
+    const originBand = origin.slots.find(row => row.slot.role === 'return')?.rect ?? origin.rect
     const from = [originBand.x + originBand.width, originBand.y + originBand.height / 2] as const
     const to = [destinationRow.rect.x + destinationRow.rect.width, destinationRow.rect.y + destinationRow.rect.height / 2] as const
     returnTransfer = {

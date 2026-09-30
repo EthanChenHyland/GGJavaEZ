@@ -30,10 +30,10 @@ export function LaunchDialog({ value, targets, onSave, onClose }: { value: Launc
     }
   }}>
     <h2 id="launch-title">Launch configuration</h2>
-    <p>Used by Run, Visualize and Debug. Dependencies come from the project build.</p>
+    <p>Used by Run and Debug. Dependencies come from the project build.</p>
     <label>Main class<select value={mainClass} onChange={(event) => setMain(event.target.value)}><option value="">First runnable main</option>{targets.map((target) => <option key={target}>{target}</option>)}</select></label>
     <label>Working directory<input value={workingDirectory} onChange={(event) => setDirectory(event.target.value)} placeholder="."/></label>
-    <label>Program arguments<textarea value={program} onChange={(event) => setProgram(event.target.value)} placeholder={'["Ethan", "18"]'}/></label>
+    <label>Program arguments<textarea value={program} onChange={(event) => setProgram(event.target.value)} placeholder={'["first", "second"]'}/></label>
     <label>JVM arguments<textarea value={jvm} onChange={(event) => setJvm(event.target.value)} placeholder={'["-Xmx256m"]'}/></label>
     <small>Arguments are JSON arrays; each string is one argument. Paths are relative to this project.</small>
     {error && <p role="alert">{error}</p>}

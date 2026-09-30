@@ -1,0 +1,27 @@
+
+> visual-java@0.1.0 test
+> vitest run --maxWorkers=1 --fileParallelism=false
+
+
+ RUN  v5.0.2 /Users/ethius/VSCode/GGJavaEZ
+
+(node:76976) [THREE_CJS_DEPRECATED] DeprecationWarning: `require("three")` is deprecated and will be removed.
+Replace `const THREE = require("three")` with `import * as THREE from "three"`.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:76978) [THREE_CJS_DEPRECATED] DeprecationWarning: `require("three")` is deprecated and will be removed.
+Replace `const THREE = require("three")` with `import * as THREE from "three"`.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:76986) [THREE_CJS_DEPRECATED] DeprecationWarning: `require("three")` is deprecated and will be removed.
+Replace `const THREE = require("three")` with `import * as THREE from "three"`.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:76990) [THREE_CJS_DEPRECATED] DeprecationWarning: `require("three")` is deprecated and will be removed.
+Replace `const THREE = require("three")` with `import * as THREE from "three"`.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+
+ Test Files  62 passed (62)
+      Tests  591 passed (591)
+   Start at  15:12:37
+   Duration  47.61s (tests 97%, import 2%, transform 1%)
+
+    Isolate  62 workers spawned · ~43ms startup each (spawn + environment, per file)
+             at least ~2.64s faster with isolate: false — reuses workers across files instead of one per file

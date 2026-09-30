@@ -72,6 +72,22 @@ describe('bounded runtime navigation', () => {
     }
   })
 
+  it('routes a large retained world without enumerating a corner graph', () => {
+    const boxes = Array.from({ length: 1000 }, (_, index) => new Box3(new Vector3(index % 20 * 3 - 1, Math.floor(index / 20) * 3 - 1, -1), new Vector3(index % 20 * 3 + 1, Math.floor(index / 20) * 3 + 1, 1)))
+    const from: CameraPose = { position: [-4, 20, -4], target: [0, 20, 0] }
+    const to: CameraPose = { position: [64, 20, 4], target: [60, 20, 0] }
+    const limits = { minDistance: 1, maxDistance: 500, pan: [500, 500, 500] as const }
+    const route = collisionSafeRoute(from, to, boxes, [30, 20, 0], limits)
+    expect(route.at(-1)).toEqual(to)
+    expect(route.length).toBeLessThanOrEqual(3)
+    let prior = new Vector3(...from.position)
+    for (const pose of route) {
+      const next = new Vector3(...pose.position)
+      for (const obstacle of boxes) expect(cameraSegmentHit(prior, next, obstacle)).toBeNull()
+      prior = next
+    }
+  })
+
   it('keeps finite wheel/pan extremes outside runtime solids across repeated exploration', () => {
     const boxes = cameraCollisionBoxes(Object.values(createLayout(personTrace).anchors), 0.1, 41 * Math.PI / 180, 1.5)
     let pose = responsiveHomePose(undefined, 1.5)

@@ -7,6 +7,7 @@ import type { ResolvedBreakpoint } from '../debugger/contracts'
 import { typography } from '../theme/tokens'
 import { documentUri } from '../language/protocol'
 import { isApplyingWorkspaceEdit } from '../language/workspaceEdit'
+import { ideShortcuts } from './shortcuts'
 import '../ui/monacoSetup'
 
 export function EditableJavaEditor({ projectId, path, value, onChange, diagnostics, navigate, onSave, executingLine = null, pausedLine = null, breakpoints = [], onToggleBreakpoint }: {
@@ -82,7 +83,18 @@ export function EditableJavaEditor({ projectId, path, value, onChange, diagnosti
       const line = pausedRef.current ?? executionRef.current
       if (line && line > 0) instance.revealLineInCenterIfOutsideViewport(line)
     })
-    instance.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => saveRef.current())
+    instance.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode[ideShortcuts.save.code], () => saveRef.current())
+    instance.addAction({
+      id: 'visual-java.toggle-breakpoint',
+      label: 'Toggle Breakpoint',
+      keybindings: [monaco.KeyCode[ideShortcuts.breakpoint.code]],
+      contextMenuGroupId: 'navigation',
+      contextMenuOrder: 1.5,
+      run: (current) => {
+        const line = current.getPosition()?.lineNumber
+        if (line) toggleRef.current?.(line)
+      },
+    })
     showLocation(instance, navigationRef.current)
     showMarkers(instance, monaco, diagnosticsRef.current)
   }

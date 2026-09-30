@@ -190,4 +190,19 @@ describe('FrameSolid lexical scope geometry', () => {
       expect(row.textScale).toBe(spacious ? 1.25 : 1)
     }
   })
+  it('keeps completed bodies and row plates neutral while preserving selection/exception accents', () => {
+    const completed: SceneFrameNode = { ...frame(), scopes: [], active: false, historical: true, invocationStatus: 'completed' }
+    render({ node: completed })
+    expect(rendered.bodies[0].bodyColor).toBe(worldMaterial.historyBody)
+    expect(rendered.bodies[0].accent).toBe(colors.textMuted)
+    expect(rendered.slots[0].background).toBe(worldMaterial.historySlot)
+    resetCaptures()
+    render({ node: completed, selected: true })
+    expect(rendered.bodies[0].bodyColor).toBe(worldMaterial.historyBody)
+    expect(rendered.bodies[0].accent).toBe(colors.stack)
+    resetCaptures()
+    render({ node: { ...completed, invocationStatus: 'unwound' } })
+    expect(rendered.bodies[0].accent).toBe(colors.exception)
+  })
+
 })

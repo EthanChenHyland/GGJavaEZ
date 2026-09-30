@@ -53,6 +53,8 @@ export function collisionAnchorsForScene(scene: SceneModel): WorldAnchor[] {
 }
 
 export interface NavigationStore extends NavigationState {
+  /** A presentation filter retained while orbiting the inspected entity. */
+  isolatedSelection: Selection
   followEnabled: boolean
   selection: Selection
   traceReferenceId: ReferenceId | null
@@ -83,23 +85,24 @@ export const useNavigationStore = create<NavigationStore>((set) => ({
   detailLevel: 'meso',
   followEnabled: false,
   selection: null,
+  isolatedSelection: null,
   traceReferenceId: null,
   previousMode: null,
   intent: null,
   intentRevision: 0,
   setRepresentation: (presentation) => set((state) => ({
-    mode: presentation === 'theater' ? 'THEATER' : 'FREE_EXPLORE',
+    mode: presentation === 'theater' ? 'THEATER' : 'FREE_EXPLORE', isolatedSelection: null,
     followEnabled: false, traceReferenceId: null,
     previousPose: null, previousMode: null,
     intent: { kind: 'representation', presentation }, intentRevision: state.intentRevision + 1,
   })),
   home: () => set((state) => ({
-    mode: 'HOME', followEnabled: false, traceReferenceId: null,
+    mode: 'HOME', followEnabled: false, traceReferenceId: null, isolatedSelection: null,
     previousPose: null, previousMode: null,
     intent: { kind: 'home' }, intentRevision: state.intentRevision + 1,
   })),
   resetView: () => set((state) => ({
-    mode: 'HOME', followEnabled: false, traceReferenceId: null,
+    mode: 'HOME', followEnabled: false, traceReferenceId: null, isolatedSelection: null,
     previousPose: null, previousMode: null,
     intent: { kind: 'resetView' }, intentRevision: state.intentRevision + 1,
   })),
@@ -112,7 +115,7 @@ export const useNavigationStore = create<NavigationStore>((set) => ({
     intent: { kind: 'zoom', direction: 'out' }, intentRevision: state.intentRevision + 1,
   })),
   followExecution: () => set((state) => ({
-    mode: 'GUIDED_FOLLOW', followEnabled: true, traceReferenceId: null,
+    mode: 'GUIDED_FOLLOW', followEnabled: true, traceReferenceId: null, isolatedSelection: null,
     intent: { kind: 'followExecution' }, intentRevision: state.intentRevision + 1,
   })),
   freeExplore: (pose) => set((state) => ({
@@ -122,12 +125,12 @@ export const useNavigationStore = create<NavigationStore>((set) => ({
   })),
   focus: (selection) => useNavigationStore.getState().focusEntity(selection),
   focusEntity: (selection) => set((state) => ({
-    mode: 'FOCUS_ENTITY', followEnabled: false, selection, traceReferenceId: null,
+    mode: 'FOCUS_ENTITY', followEnabled: false, selection, isolatedSelection: selection, traceReferenceId: null,
     previousPose: state.pose, previousMode: state.mode,
     intent: { kind: 'focus', selection }, intentRevision: state.intentRevision + 1,
   })),
   tracePath: (referenceId) => set((state) => ({
-    mode: 'TRACE_PATH', followEnabled: false, traceReferenceId: referenceId,
+    mode: 'TRACE_PATH', followEnabled: false, traceReferenceId: referenceId, isolatedSelection: null,
     previousPose: state.pose, previousMode: state.mode,
     intent: { kind: 'tracePath', referenceId }, intentRevision: state.intentRevision + 1,
   })),
@@ -135,6 +138,7 @@ export const useNavigationStore = create<NavigationStore>((set) => ({
     mode: state.previousMode ?? 'HOME',
     followEnabled: state.previousMode === 'GUIDED_FOLLOW',
     traceReferenceId: null,
+    isolatedSelection: null,
     intent: { kind: 'returnToPrevious' }, intentRevision: state.intentRevision + 1,
   })),
   setPose: (pose) => set({ pose }),

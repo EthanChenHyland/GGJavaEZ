@@ -169,7 +169,15 @@ export function normalizeTrace(
     }
     if (raw.kind === 'ref') { reference(owner, type, raw.objectId, source); return }
     const value = rawScalar(raw)
-    if (!value) { mark(owner.kind === 'frame' ? 'locals' : 'fields', 'partial', 'Unrepresentable scalar value'); return }
+    if (!value) {
+      mark(owner.kind === 'frame' ? 'locals' : 'fields', 'partial', 'Unrepresentable scalar value')
+      const unavailable: ScalarValue = { kind: 'uninitialized' }
+      emit(owner.kind === 'frame'
+        ? { type: 'ASSIGN_LOCAL', frameId: owner.frameId, slotId: owner.slotId, value: unavailable }
+        : { type: 'SET_FIELD', objectId: owner.objectId, slotId: owner.slotId, value: unavailable },
+      source, `${slot.name}: value unavailable`)
+      return
+    }
     if (current.kind === 'reference' && value.kind === 'null') {
       emit({ type: 'CLEAR_REFERENCE', sourceSlot: owner }, source, 'Reference cleared')
       observed('references')

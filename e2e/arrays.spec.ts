@@ -10,7 +10,7 @@ const initial = events.findIndex((event) => event.type === 'CREATE_REFERENCE') +
 const cursor = (page: import('@playwright/test').Page) => page.getByRole('slider', { name:'Scrub execution' })
 const rows = (page: import('@playwright/test').Page) => page.locator('.inspector-row strong')
 async function arrays(page: import('@playwright/test').Page) {
-  await page.goto('/')
+  await page.goto('/examples')
   await page.getByLabel('Runtime example').selectOption('arrays')
   await expect(cursor(page)).toHaveValue('0')
 }

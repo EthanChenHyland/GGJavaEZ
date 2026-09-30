@@ -249,6 +249,32 @@ describe('normalizeTrace', () => {
     expect(result.trace.events.some(event => event.label.includes('value unavailable'))).toBe(true)
   })
 
+  it('accepts observed strings in erased Object and CharSequence slots', () => {
+    const raw = events(
+      { type: 'enter', callerFrameId: null, receiver: null, parameters: [] },
+      { type: 'local', slot: 1, liveRange: 'a', name: 'a', descriptor: 'Ljava/lang/Object;', value: { kind: 'string', value: 'hello' } },
+      { type: 'local', slot: 2, liveRange: 'b', name: 'b', descriptor: 'Ljava/lang/CharSequence;', value: { kind: 'string', value: 'world' } },
+      { type: 'exit' },
+    )
+    const result = normalizeTrace(raw, manifest, complete)
+    expect(validateTrace(result.trace)).toEqual(result.trace)
+    expect(result.trace.events.at(-1)?.type).toBe('PROGRAM_END')
+    expect(replay(result.trace).frames['jvm:frame:1'].locals['jvm:frame:1:local:1:a'].value).toMatchObject({ kind: 'stringSummary', value: 'hello' })
+  })
+
+  it('replaces a prior scalar when an observed long update cannot be represented exactly', () => {
+    const raw = events(
+      { type: 'enter', callerFrameId: null, receiver: null, parameters: [] },
+      { type: 'local', slot: 1, liveRange: 'n', name: 'n', descriptor: 'J', value: { kind: 'long', value: 1 } },
+      { type: 'local', slot: 1, liveRange: 'n', name: 'n', descriptor: 'J', value: { kind: 'long', value: Number.MAX_SAFE_INTEGER + 1 } },
+      { type: 'exit' },
+    )
+    const result = normalizeTrace(raw, manifest, complete)
+    expect(validateTrace(result.trace)).toEqual(result.trace)
+    expect(replay(result.trace).frames['jvm:frame:1'].locals['jvm:frame:1:local:1:n'].value).toEqual({ kind: 'uninitialized' })
+    expect(result.capability.features.locals.status).toBe('partial')
+  })
+
   it('maps object observations through their caller frame rather than the allocated class source', () => {
     const files: InstrumentationSourceManifest = {
       sources: [

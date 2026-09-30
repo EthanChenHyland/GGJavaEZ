@@ -21,6 +21,14 @@ describe('large real trace timeline', () => {
     expect(new Set(selected).size).toBe(selected.length)
     expect(selected).toEqual([...selected].sort((a, b) => a - b))
   })
+  it('leaves room between neighboring dots at narrow widths without moving event coordinates', () => {
+    const selected = markerIndices(events(20000), 40)
+    const requiredGap = Math.ceil(19999 / 39)
+    expect(selected[0]).toBe(0)
+    expect(selected.at(-1)).toBe(19999)
+    for (let i = 1; i < selected.length; i++) expect(selected[i] - selected[i - 1]).toBeGreaterThanOrEqual(requiredGap)
+    expect(markerIndices(events(2), 1)).toEqual([0, 1])
+  })
 })
 
 const recorded: TraceDocument = { schemaVersion: 2, demoId: 'debug:one-session', sourceFiles: [], events: events(6) }

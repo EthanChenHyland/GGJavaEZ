@@ -36,7 +36,7 @@ const theme = {
 
 /** An SVG representation of the shared scene, with a presentation-only viewport. */
 export function ClassicRuntime({ visible = true, playing = false, scene, event, transition, guided, selection, onSelect, onFocusSelected }: ClassicRuntimeProps) {
-  const diagram = useMemo(() => buildClassicScene(scene, event), [scene, event])
+  const diagram = useMemo(() => buildClassicScene(visible ? scene : { ...scene, frames: [], objects: [], references: [], returnFlow: undefined, arrayActivity: null, arrayMutations: [] }, visible ? event : null), [visible, scene, event])
   const diagramRef = useRef(diagram)
   diagramRef.current = diagram
   const visibleRef = useRef(visible)
@@ -122,8 +122,9 @@ export function ClassicRuntime({ visible = true, playing = false, scene, event, 
   function entity(entity: DiagramEntity) {
     const selected = selection?.kind === entity.kind && selection.id === entity.id
     const linked = diagram.references.some((edge) => relatedReference(edge, selection, diagram) && (edge.sourceEntityId === entity.id || edge.targetObjectId === entity.id))
-    const accent = entity.exceptionState ? colors.exception : entity.kind === 'frame' ? colors.stack : colors.heap
-    const body = entity.kind === 'frame' ? worldMaterial.stackFace : worldMaterial.heapFace
+    const accent = entity.exceptionState || entity.invocationStatus === 'failed' || entity.invocationStatus === 'unwound' ? colors.exception
+      : entity.invocationStatus === 'completed' ? colors.textMuted : entity.kind === 'frame' ? colors.stack : colors.heap
+    const body = entity.kind === 'frame' ? entity.invocationStatus && entity.invocationStatus !== 'active' ? worldMaterial.historyFace : worldMaterial.stackFace : worldMaterial.heapFace
     const { x, y, width, height } = entity.rect
     const current = (guided || diagram.deepStack || diagram.scoped) && entity.active
     const compact = diagram.deepStack && !diagram.scoped && entity.kind === 'frame'
@@ -132,14 +133,14 @@ export function ClassicRuntime({ visible = true, playing = false, scene, event, 
     const rowTextSize = compact ? 15 : scopedFrame ? 17 : 20
     const arrayComplete = !!entity.array?.ascending && event?.type === 'PROGRAM_END'
     const title = entity.array?.name ? `${entity.array.name} · ${entity.label}` : entity.label
-    return <g key={entity.id} data-runtime-id={entity.id} data-runtime-kind={entity.kind} data-exception-state={entity.exceptionState}>
+    return <g key={entity.id} data-runtime-id={entity.id} data-runtime-kind={entity.kind} data-invocation-status={entity.invocationStatus} data-exception-state={entity.exceptionState}>
       <rect x={x} y={y} width={width} height={height} rx={4} fill={body} stroke={selected ? colors.execution : accent} strokeWidth={selected ? 3 : 1.5} />
       <g className="classic-target classic-heading" {...interactions({ kind: entity.kind, id: entity.id })} aria-label={`${entity.kind === 'frame' ? 'Stack frame' : 'Heap object'} ${title}`}>
         <rect x={x} y={y} width={width} height={headingHeight} rx={4} fill={body} />
         <rect x={x} y={y} width={4} height={headingHeight} fill={current ? colors.execution : accent} />
         <text x={x + 20} y={y + (compact ? 18 : scopedFrame ? Math.min(22, headingHeight - 20) : 32)} fontSize={compact || scopedFrame ? 18 : 24} fontWeight={600} fill={colors.text}>{title}</text>
         {!compact && headingHeight >= 48 && <text x={x + 20} y={y + headingHeight - (scopedFrame ? 10 : 12)} fontSize={12} letterSpacing={1} fill={accent}>{entity.array ? `INDEX / VALUE · LENGTH ${entity.array.length}` : entity.kind === 'frame' ? 'LOCALS / PARAMETERS' : 'FIELDS'}</text>}
-        {(current || entity.exceptionState) && <text x={x + width - 16} y={y + (compact ? 18 : scopedFrame ? Math.min(22, headingHeight - 20) : 52)} textAnchor="end" fontSize={12} fill={entity.exceptionState ? colors.exception : colors.execution}>{entity.exceptionState?.toUpperCase() ?? 'EXECUTING'}</text>}
+        {(current || entity.exceptionState || entity.invocationStatus && entity.invocationStatus !== 'active') && <text x={x + width - 16} y={y + (compact ? 18 : scopedFrame ? Math.min(22, headingHeight - 20) : 52)} textAnchor="end" fontSize={12} fill={entity.exceptionState ? colors.exception : current ? colors.execution : accent}>{entity.exceptionState?.toUpperCase() ?? (current ? 'EXECUTING' : entity.invocationStatus?.toUpperCase())}</text>}
       </g>
       <line x1={x} y1={y + headingHeight} x2={x + width} y2={y + headingHeight} stroke={accent} strokeOpacity={0.35} />
       {entity.scopes?.map((scope) => <g key={scope.id} className="classic-scope" data-scope-id={scope.id} data-scope-depth={scope.depth}
@@ -242,9 +243,9 @@ export function ClassicRuntime({ visible = true, playing = false, scene, event, 
       return <g key={edge.id} className="classic-target classic-reference" data-reference-id={edge.id} {...interactions({ kind: 'reference', id: edge.id })}
         aria-label={`${source?.label} ${edge.label} points to ${target?.label}`}>
         <path d={edge.path} fill="none" stroke={colors.execution} strokeWidth={16} strokeOpacity={0} className="classic-reference-hit" />
-        <path d={edge.path} fill="none" stroke={colors.execution} strokeWidth={related ? line.referenceMaxPx : line.referenceDefaultPx} opacity={selection && !related ? 0.5 : 0.9} markerEnd={`url(#${arrowId})`} vectorEffect="non-scaling-stroke" />
-        <circle cx={edge.from[0]} cy={edge.from[1]} r={3.5} fill={colors.execution} />
-        <text x={middleX} y={middleY - 13} textAnchor="middle" fontSize={16} fill={colors.execution} paintOrder="stroke" stroke={colors.canvas} strokeWidth={6} strokeLinejoin="round">{edge.label}</text>
+        <path d={edge.path} fill="none" stroke={colors.execution} strokeWidth={related ? line.referenceMaxPx : line.referenceDefaultPx} opacity={edge.historical && !related ? 0.32 : selection && !related ? 0.5 : 0.9} markerEnd={`url(#${arrowId})`} vectorEffect="non-scaling-stroke" />
+        <circle cx={edge.from[0]} cy={edge.from[1]} r={3.5} fill={colors.execution} opacity={edge.historical && !related ? 0.45 : 1} />
+        <text x={middleX} y={middleY - 13} textAnchor="middle" fontSize={16} fill={edge.historical && !related ? colors.textMuted : colors.execution} paintOrder="stroke" stroke={colors.canvas} strokeWidth={6} strokeLinejoin="round">{edge.label}</text>
       </g>
     })}
     {visible && guided && transition && <ClassicSemanticMotion key={transition.id} transition={transition} diagram={diagram} reduced={motionReduced} />}

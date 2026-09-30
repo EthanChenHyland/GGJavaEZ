@@ -1,4 +1,4 @@
-import { Billboard, Text } from '@react-three/drei'
+import { Text } from '@react-three/drei'
 import { useContext, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import type { Mesh } from 'three'
@@ -32,17 +32,18 @@ export function RuntimeLabel({
   useFrame(() => {
     const mesh = meshRef.current
     if (!mesh) return
-    if (!policy?.current.enabled) { mesh.visible = true; mesh.scale.setScalar(1); return }
+    const bounds = mesh.textRenderInfo?.visibleBounds
+    const width = bounds ? bounds[2] - bounds[0] : maxWidth ?? 1
+    const fit = maxWidth ? Math.min(1, maxWidth / Math.max(0.001, width)) : 1
+    if (!policy?.current.enabled) { mesh.visible = true; mesh.scale.setScalar(fit); return }
     const { density, pixelsPerUnit, priority } = policy.current
     mesh.visible = role === 'identity' || density === 'full'
     if (role === 'identity') {
-      const bounds = mesh.textRenderInfo?.visibleBounds
-      const width = bounds ? bounds[2] - bounds[0] : maxWidth ?? 1
       mesh.scale.setScalar(identityLabelScale(size, pixelsPerUnit, width, maxWidth ?? width, priority))
-    }
+    } else mesh.scale.setScalar(fit)
   })
   return (
-    <Billboard follow position={[...position]} renderOrder={3}>
+    <group position={[...position]} renderOrder={3}>
       <Text
         ref={meshRef}
         font={runtimeFont}
@@ -57,8 +58,8 @@ export function RuntimeLabel({
         renderOrder={3}
       >
         {text}
-        <meshBasicMaterial color={color} toneMapped={false} depthTest={false} depthWrite={false} />
+        <meshBasicMaterial color={color} toneMapped={false} depthTest depthWrite={false} />
       </Text>
-    </Billboard>
+    </group>
   )
 }

@@ -69,7 +69,7 @@ function assertCompatible(slot: RuntimeSlot, value: RuntimeValue): void {
   const matches = value.kind === 'uninitialized' ||
     (value.kind === 'null' && !['int', 'boolean', 'double', 'long', 'float', 'short', 'byte', 'char'].includes(slot.javaType)) ||
     (value.kind === 'primitive' && value.javaType === slot.javaType) ||
-    (value.kind === 'stringSummary' && slot.javaType === 'String') ||
+    (value.kind === 'stringSummary' && ['String', 'java.lang.String', 'java.lang.Object', 'Object', 'java.lang.CharSequence', 'CharSequence', 'java.io.Serializable', 'java.lang.Comparable', 'java.lang.constant.Constable', 'java.lang.constant.ConstantDesc'].includes(slot.javaType)) ||
     (value.kind === 'reference' && value.javaType === slot.javaType)
   requireCondition(matches, `Value type mismatch for ${slot.id}`)
   if (value.kind === 'primitive') {

@@ -3,10 +3,11 @@ import type { Selection } from '../contracts/interaction'
 import type { RuntimeSlot, RuntimeState, RuntimeValue, SlotOwner } from '../contracts/runtime'
 import type { SceneModel } from '../contracts/world'
 import type { FlowEndpoint, SemanticTransition } from '../motion/semanticTransition'
+import { displayJavaType } from '../runtime/displayType'
 
 export function formatValue(value: RuntimeValue, objects?: RuntimeState['objects']): string {
   switch (value.kind) {
-    case 'uninitialized': return 'uninitialized'
+    case 'uninitialized': return 'not observed'
     case 'null': return 'null'
     case 'primitive': return String(value.value)
     case 'stringSummary': return `"${value.value}"`
@@ -18,7 +19,7 @@ export function formatValue(value: RuntimeValue, objects?: RuntimeState['objects
 }
 
 function SlotRows({ slots, objects }: { slots: RuntimeSlot[]; objects: RuntimeState['objects'] }) {
-  if (!slots.length) return <p className="inspector-empty">No values yet.</p>
+  if (!slots.length) return <p className="inspector-empty">No recorded values.</p>
   return <div className="inspector-rows">{slots.map((slot) => (
     <div className="inspector-row" key={slot.id}>
       <span title={slot.role}>{slot.role === 'operand' ? 'call result' : slot.name}</span><span className="inspector-type">{slot.javaType}</span><strong>{formatValue(slot.value, objects)}</strong>
@@ -69,7 +70,7 @@ export function Inspector({ selection, runtime, scene, flow, onClose, onReturn, 
   const elementIndex = arrayOwner?.array?.elements.findIndex((cell) => cell.id === slot?.id)
   const writes = runtime.arrayMutations.filter((item) => item.objectId === (object?.id ?? arrayOwner?.id) && (elementIndex === undefined || item.index === elementIndex))
   const available = Boolean(object || frame || edge || inspectedSlot)
-  const heading = object ? `${object.className} #${object.displayId}`
+  const heading = object ? `${displayJavaType(object.className)} #${object.displayId}`
     : frame ? `${frame.className}.${frame.invocationLabel ?? `${frame.methodName}()`}`
       : edge ? 'Reference path'
         : inspectedSlot ? arrayOwner ? `${arrayOwner.className} #${arrayOwner.displayId} ${inspectedSlot.name}` : inspectedSlot.name : 'Outside this moment'
@@ -77,21 +78,21 @@ export function Inspector({ selection, runtime, scene, flow, onClose, onReturn, 
   const side = selection.kind === 'object' || selection.kind === 'reference' ? ' inspector--left' : ''
   return <aside className={`inspector${side}`} aria-label="Runtime inspector">
     <header className="inspector-header">
-      <div><span className="eyebrow">INSPECTOR</span><h2>{frame ? <>{frame.className}.<wbr />{frame.invocationLabel ?? `${frame.methodName}()`}</> : heading}</h2></div>
+      <div><span className="eyebrow">INSPECTOR</span><h2 title={frame ? `${frame.className}.${frame.invocationLabel ?? `${frame.methodName}()`}` : object?.className}>{frame ? <>{displayJavaType(frame.className)}.<wbr />{frame.invocationLabel ?? `${frame.methodName}()`}</> : heading}</h2></div>
       <button className="icon-button" onClick={onClose} aria-label="Close inspector"><X size={16} /></button>
     </header>
     {!available ? <div className="inspector-body"><p className="inspector-empty">This entity is outside the live runtime at this step. Its identity is retained; seek to an event where it exists to inspect it.</p></div> : <div className="inspector-body">
       {object && <>
-        {object.array ? <><div className="inspector-key"><span>TYPE · LENGTH</span><strong>{object.className} · {object.array.length}</strong></div><section className="inspector-group"><h3>Indexed elements</h3><SlotRows slots={object.array.elements} objects={runtime.objects} /></section></> : <><div className="inspector-key"><span>JAVA CLASS</span><strong>{object.className}</strong></div><section className="inspector-group"><h3>Fields</h3><SlotRows slots={Object.values(object.fields)} objects={runtime.objects} /></section></>}
+        {object.array ? <><div className="inspector-key"><span>TYPE · LENGTH</span><strong>{object.className} · {object.array.length}</strong></div><section className="inspector-group"><h3>Indexed elements</h3><SlotRows slots={object.array.elements} objects={runtime.objects} /></section></> : <><div className="inspector-key"><span>JAVA CLASS</span><strong>{object.className}</strong></div><section className="inspector-group"><h3>Fields · last observed</h3><SlotRows slots={Object.values(object.fields)} objects={runtime.objects} /></section></>}
         <section className="inspector-group"><h3>Inbound references</h3>
         <div className="reference-list">{scene.references.filter((ref) => ref.targetObjectId === object.id).map((ref) => (
           <button key={ref.id} onClick={() => onTrace(ref.id)}>
-            <span>{sourceName(ref.source)}</span><span>Trace path ↗</span>
+            <span>{sourceName(ref.source)}{ref.historical ? ' · last recorded binding' : ''}</span><span>Trace path ↗</span>
           </button>
         ))}</div></section>
       </>}
-      {frame && <><div className="inspector-key"><span>CALL DEPTH · {frame.status.toUpperCase()}</span><strong>{frame.depth}</strong></div><section className="inspector-group"><h3>Locals & operands</h3><SlotRows slots={Object.values(frame.locals)} objects={runtime.objects} /></section>{frame.returnValue && <div className="inspector-key"><span>RETURN VALUE</span><strong>{formatValue(frame.returnValue)}</strong></div>}</>}
-      {edge && <><div className="inspector-key"><span>SOURCE</span><strong>{sourceName(edge.source)}</strong></div><div className="inspector-key"><span>TARGET</span><strong>{runtime.objects[edge.targetObjectId]?.className} #{runtime.objects[edge.targetObjectId]?.displayId}</strong></div><button className="inspector-action" onClick={() => onTrace(edge.id)}>Follow this path</button></>}
+      {frame && <><div className="inspector-key"><span>CALL DEPTH · {frame.status.toUpperCase()}</span><strong>{frame.depth}</strong><span title={frame.className}>{frame.className}</span></div><section className="inspector-group"><h3>Locals & operands</h3><SlotRows slots={Object.values(frame.locals)} objects={runtime.objects} /></section>{frame.returnValue && <div className="inspector-key"><span>RETURN VALUE</span><strong>{formatValue(frame.returnValue)}</strong></div>}</>}
+      {edge && <><div className="inspector-key"><span>{edge.historical ? 'LAST RECORDED BINDING' : 'SOURCE'}</span><strong>{sourceName(edge.source)}</strong></div><div className="inspector-key"><span>TARGET</span><strong>{runtime.objects[edge.targetObjectId]?.className} #{runtime.objects[edge.targetObjectId]?.displayId}</strong></div><button className="inspector-action" onClick={() => onTrace(edge.id)}>Follow this path</button></>}
       {inspectedSlot && <>{arrayOwner?.array && <div className="inspector-key"><span>ARRAY · LENGTH · INDEX</span><strong>#{arrayOwner.displayId} · {arrayOwner.array.length} · {elementIndex}</strong></div>}<div className="inspector-key"><span>TYPE</span><strong>{inspectedSlot.javaType}</strong></div><div className="inspector-key"><span>VALUE</span><strong>{formatValue(inspectedSlot.value, runtime.objects)}</strong></div></>}
       {lifetime && <div className="inspector-key"><span>SCOPE · {lifetimeLive ? 'LIVE' : 'CLOSED'}</span><strong>{scope?.label ?? lifetime.scopeId}</strong><span>{lifetime.source ? `Declared L${lifetime.source.line}` : 'Declaration'} · {lifetimeLive ? 'current value' : 'last value'}</span></div>}
       {flow && <section className="inspector-group" aria-label="Selected value transfer"><h3>Value transfer</h3>

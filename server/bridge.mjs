@@ -41,7 +41,6 @@ function serialized(work) {
 
 await mkdir(workspace, { recursive: true })
 try { settings = { ...settings, ...JSON.parse(await readFile(settingsFile, 'utf8')) } } catch { /* defaults */ }
-await projects.ensureStarter()
 
 function json(response, status, data) {
   response.writeHead(status, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store', 'x-content-type-options': 'nosniff' })
@@ -246,7 +245,7 @@ const server = http.createServer(async (request, response) => {
       if (parts.length === 3 && method === 'GET') return json(response, 200, runs.snapshot(runId))
     }
     if (process.env.GGJAVA_SERVE_DIST === '1' && method === 'GET' && !url.pathname.startsWith('/api/')) {
-      const filename = url.pathname === '/' || url.pathname === '/ide' ? 'index.html' : decodeURIComponent(url.pathname.slice(1))
+      const filename = ['/', '/ide', '/examples'].includes(url.pathname) ? 'index.html' : decodeURIComponent(url.pathname.slice(1))
       if (filename.includes('..') || filename.startsWith('/')) throw Object.assign(new Error('Invalid asset'), { status: 400 })
       const types = { html: 'text/html', js: 'text/javascript', css: 'text/css', svg: 'image/svg+xml', png: 'image/png', woff2: 'font/woff2', ttf: 'font/ttf' }
       const data = await readFile(join(repository, 'dist', filename))

@@ -14,20 +14,25 @@ export interface ObjectSolidProps {
   selected: boolean
   related: boolean
   onSelect: (id: ObjectId) => void
+  onSelectSlot?: (id: string) => void
+  selectedSlotId?: string
   detailLevel?: DetailLevel
   activeSlotId?: string
   reducedMotion?: boolean
+  inspection?: boolean
+  animateEntry?: boolean
 }
 
-export function ObjectSolid({ node, selected, related, onSelect, activeSlotId, reducedMotion }: ObjectSolidProps) {
+export function ObjectSolid({ node, selected, related, onSelect, onSelectSlot, selectedSlotId, activeSlotId, reducedMotion, inspection = false, animateEntry = true }: ObjectSolidProps) {
   const motionReduced = useReducedMotion(reducedMotion)
   const entranceRef = useRef<Group>(null)
+  const entryAllowed = useRef(animateEntry)
   useLayoutEffect(() => {
-    if (!entranceRef.current || motionReduced) return
+    if (!entranceRef.current || motionReduced || !entryAllowed.current) return
     entranceRef.current.scale.set(1, 1, 0.88)
     // Entry state is set only on mount; later semantic updates keep the settled volume.
   }, [])
-  useMountSettle(motionMs.quick, motionReduced, (progress) => {
+  useMountSettle(motionMs.quick, motionReduced || !entryAllowed.current, (progress) => {
     if (!entranceRef.current) return
     entranceRef.current.scale.z = 0.88 + 0.12 * progress
   })
@@ -60,7 +65,7 @@ export function ObjectSolid({ node, selected, related, onSelect, activeSlotId, r
         <meshBasicMaterial color={colors.borderStrong} />
       </mesh>
       {rows.map((field, index) => (
-        <RuntimeSlot key={field.id} slot={field} width={width} y={height / 2 - 1.07 - index * 0.52} z={textZ} accent={colors.heap} background={worldMaterial.heapSlot} active={field.id === activeSlotId} reducedMotion={motionReduced} />
+        <RuntimeSlot key={field.id} slot={field} width={width} y={height / 2 - 1.07 - index * 0.52} z={textZ} accent={colors.heap} background={worldMaterial.heapSlot} active={field.id === activeSlotId} selected={field.id === selectedSlotId} onSelect={onSelectSlot ? () => onSelectSlot(field.id) : undefined} reducedMotion={motionReduced} textScale={inspection ? 1.55 : 1} fitText />
       ))}
       </group>
     </group>

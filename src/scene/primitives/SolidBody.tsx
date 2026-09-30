@@ -9,11 +9,12 @@ interface SolidBodyProps {
   selected: boolean
   related: boolean
   active?: boolean
+  historical?: boolean
 }
 
 /** Shared neutral volume: semantic color stays on the boundary. */
-export function SolidBody({ size, accent, bodyColor, selected, related, active = false }: SolidBodyProps) {
-  const edgeOpacity = selected ? 1 : active ? 0.96 : related ? 0.89 : 0.76
+export function SolidBody({ size, accent, bodyColor, selected, related, active = false, historical = false }: SolidBodyProps) {
+  const edgeOpacity = selected ? 1 : active ? 0.96 : related ? 0.89 : historical ? 0.36 : 0.76
 
   return <group>
     <RoundedBox args={[...size]} radius={0.075} smoothness={3} castShadow receiveShadow>
@@ -22,7 +23,7 @@ export function SolidBody({ size, accent, bodyColor, selected, related, active =
         roughness={0.34}
         metalness={0.2}
         emissive={colors.panelRaised}
-        emissiveIntensity={0.25}
+        emissiveIntensity={historical && !selected ? 0.1 : 0.25}
       />
       <Edges scale={1.007} threshold={15} color={accent} transparent opacity={edgeOpacity} />
     </RoundedBox>

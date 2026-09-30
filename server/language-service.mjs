@@ -3,8 +3,9 @@ import { randomUUID } from 'node:crypto'
 import { cp, mkdir, readdir, readFile, realpath, rm } from 'node:fs/promises'
 import { arch, platform } from 'node:os'
 import { join, resolve, relative, sep } from 'node:path'
-import { pathToFileURL } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import { LspTransport, languageError } from './language/transport.mjs'
+import { pruneLanguageCaches } from './language/cache.mjs'
 import { ProjectUris, sanitizeHostPaths } from './language/uris.mjs'
 
 const REQUESTS = new Set([
@@ -36,7 +37,7 @@ function within(root, path) {
   const rel = relative(root, path)
   return rel !== '..' && !rel.startsWith(`..${sep}`) && !rel.startsWith('/')
 }
-function plainSourceRoot(root) { return root === '.' ? '.' : root }
+function plainSourceRoot(root) { return root === '.' ? '' : root }
 export function configurationValue(settings, section) {
   if (!section) return { java: settings }
   if (section === 'java') return settings
@@ -49,17 +50,25 @@ function classpathEntries(value) {
     try { return item.startsWith('file:') ? new URL(item).pathname : resolve(item) } catch { return item }
   }) : null
 }
-function classpathMismatch(model, observed, projectRoot) {
+function classpathMismatch(model, observed, projectRoot, dataRoot) {
   const actual = classpathEntries(observed)
   if (!actual) return null
   const outputs = new Set([model.classesDir, ...(model.outputRoots ?? [])].filter(Boolean).map(item => resolve(item)))
+  // JDT reports its private invisible-project bin as a runtime classpath entry.
+  // Compare dependencies without treating that editor output as an extra jar.
+  if (model.buildSystem === 'plain' && dataRoot && observed?.projectRoot) {
+    try {
+      const root = fileURLToPath(observed.projectRoot)
+      if (within(dataRoot, root)) outputs.add(join(root, 'bin'))
+    } catch { /* No trusted private output location in this response. */ }
+  }
   const expected = (model.runtimeClasspath ?? []).filter(item => typeof item === 'string').map(item => resolve(item)).filter(item => !outputs.has(item))
   const received = actual.map(item => resolve(item)).filter(item =>
     !outputs.has(item) && (expected.includes(item) || !within(projectRoot, item)))
   return expected.length === received.length && expected.every((item, index) => item === received[index]) ? false : true
 }
 
-export function javaSettings(model, jdk, projectRoot, cacheRoot) {
+export function javaSettings(model, jdk) {
   const major = jdkMajor(jdk)
   const sourcePaths = (model.sourceRoots ?? []).map(plainSourceRoot)
   const libraries = (model.compileClasspath ?? []).filter(path =>
@@ -72,7 +81,10 @@ export function javaSettings(model, jdk, projectRoot, cacheRoot) {
     project: {
       sourcePaths,
       referencedLibraries: libraries,
-      outputPath: cacheRoot,
+      // Empty selects the invisible project's private bin under JDT's -data.
+      // A nonempty path is relative to the source workspace; absolute caches
+      // are rejected by InvisibleProjectImporter before it sets the classpath.
+      outputPath: '',
     },
     import: {
       maven: { enabled: model.buildSystem === 'maven', offline: true },
@@ -243,8 +255,8 @@ export class JavaLanguageService {
       projectId, root, uris, model, revision: model?.revision, jdk, documents,
       generation: ++this.generation, status: 'starting', message: 'Starting Java language service…',
       diagnostics: new Map(), notifications: [], ready: defer(), initialized: false,
-      classpathMismatch: null, opaque: new Map(), serviceReady: false, projectsImported: false,
-      startedAt: Date.now(), commandEdits: null, closing: false,
+      classpathMismatch: null, opaque: new Map(), serviceReady: false, projectsInitialized: false,
+      startedAt: Date.now(), commandEdits: null, closing: false, failed: false,
     }
   }
   #require(projectId) {
@@ -336,11 +348,14 @@ export class JavaLanguageService {
       const launch = launchConfig(installation, jdk)
       const configRoot = join(this.workspaceRoot, 'language', 'config', String(session.generation))
       const dataRoot = join(this.workspaceRoot, 'language', 'data', session.projectId, `jdtls-${marker?.version ?? 'override'}-${session.revision ?? 'unknown'}`)
+      session.dataRoot = dataRoot
       await mkdir(join(configRoot, '..'), { recursive: true })
       await rm(configRoot, { recursive: true, force: true })
-      await cp(launch.config, configRoot, { recursive: true })
       await mkdir(dataRoot, { recursive: true })
-      await mkdir(join(this.workspaceRoot, 'language', 'output', session.projectId), { recursive: true })
+      // The prior JDT process is disposed by the serialized lifecycle. Bound
+      // only generated indexes/configs before allocating another launch copy.
+      await pruneLanguageCaches(join(this.workspaceRoot, 'language'), { dataRoot, configRoot })
+      await cp(launch.config, configRoot, { recursive: true })
       const jars = (await readdir(join(installation, 'plugins'))).filter(name => /^org\.eclipse\.equinox\.launcher_.*\.jar$/.test(name))
       if (jars.length !== 1) throw languageError('JDT LS launcher archive is missing or ambiguous', 503)
       const args = launch.args
@@ -365,14 +380,18 @@ export class JavaLanguageService {
       transport.on('notification', (method, params) => this.#notification(session, method, params))
       transport.on('closed', error => { if (!session.closing) this.#fail(session, error) })
       transport.onRequest = (method, params) => this.#serverRequest(session, method, params)
-      const settings = javaSettings(session.model, jdk, session.root,
-        join(this.workspaceRoot, 'language', 'output', session.projectId))
+      const settings = javaSettings(session.model, jdk)
       session.settings = settings
       const rootUri = pathToFileURL(session.root).href
+      // Plain-folder import is triggered by a source URI during initialize,
+      // otherwise it only happens lazily on didOpen, after startup has finished.
+      const triggerFiles = (session.model?.sourcePaths ?? [])
+        .filter(path => typeof path === 'string' && path.endsWith('.java'))
+        .map(path => session.uris.fromRelative(path))
       await transport.request('initialize', {
         processId: process.pid, clientInfo: { name: 'Visual Java', version: '0.1.0' },
         rootUri, workspaceFolders: [{ name: session.projectId, uri: rootUri }],
-        initializationOptions: { bundles: [], workspaceFolders: [rootUri], settings: { java: settings } },
+        initializationOptions: { bundles: [], workspaceFolders: [rootUri], triggerFiles, settings: { java: settings } },
         capabilities: {
           workspace: { workspaceFolders: true, configuration: true, applyEdit: true,
             workspaceEdit: { documentChanges: true, resourceOperations: [] },
@@ -389,7 +408,7 @@ export class JavaLanguageService {
         },
         trace: 'off',
       }, { timeoutMs: INITIALIZE_DEADLINE })
-      if (session.closing || this.current !== session) return
+      if (session.closing || session.failed || this.current !== session) return
       transport.notify('initialized', {})
       session.initialized = true
       // Restart reconstructs unsaved drafts as open documents in the new process.
@@ -408,7 +427,7 @@ export class JavaLanguageService {
   }
 
   #notification(session, method, params) {
-    if (this.current !== session || session.closing) return
+    if (this.current !== session || session.closing || session.failed) return
     if (method === 'textDocument/publishDiagnostics') {
       const uri = session.uris.toBrowser(params?.uri)
       if (!uri) return
@@ -419,18 +438,20 @@ export class JavaLanguageService {
       else session.diagnostics.delete(uri)
     } else if (method === 'language/status') {
       if (params?.type === 'Starting') session.status = 'indexing'
+      // InitHandler sends Started only after initializeProjects succeeds.
+      // ProjectsImported is for explicit later imports, not normal startup.
+      if (params?.type === 'Started') session.projectsInitialized = true
       if (params?.type === 'ServiceReady') session.serviceReady = true
-      this.#refreshReady(session)
-    } else if (method === 'language/eventNotification') {
-      if (params?.eventType === 'ProjectsImported' || params?.eventType === 200) {
-        session.projectsImported = true
-        this.#refreshReady(session)
+      if (params?.type === 'Error') {
+        this.#fail(session, languageError(params.message || 'JDT LS project initialization failed', 502))
+        return
       }
+      this.#refreshReady(session)
     }
   }
 
   #refreshReady(session) {
-    if (!session.initialized || session.closing || !session.serviceReady || !session.projectsImported) return
+    if (!session.initialized || session.closing || session.failed || !session.serviceReady || !session.projectsInitialized) return
     if (session.status === 'ready') return
     session.status = 'ready'
     session.message = jdkMajor(session.jdk) >= 26 ? 'Java 26 semantic coverage is provisional with JDT LS 1.61.0.' : null
@@ -448,7 +469,7 @@ export class JavaLanguageService {
         command: 'java.project.getClasspaths', arguments: [uri, JSON.stringify({ scope: 'runtime' })],
       }, { timeoutMs: 8000 })
       if (session.closing || this.current !== session) return
-      const mismatch = classpathMismatch(session.model, result, session.root)
+      const mismatch = classpathMismatch(session.model, result, session.root, session.dataRoot)
       session.classpathMismatch = mismatch
       if (mismatch) session.message = 'JDT LS and build classpaths differ; build model remains authoritative.'
     } catch { /* Query is advisory and is unsupported by some JDT project imports. */ }
@@ -470,7 +491,8 @@ export class JavaLanguageService {
     throw languageError(`Unsupported JDT LS client request: ${method}`, 400, -32601)
   }
   #fail(session, error) {
-    if (session.closing || this.current !== session) return
+    if (session.closing || session.failed || this.current !== session) return
+    session.failed = true
     session.status = error?.status === 503 ? 'unavailable' : 'failed'
     session.message = safeMessage(error)
     session.ready.reject(error)

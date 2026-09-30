@@ -6,6 +6,17 @@ import './ProjectExplorer.css'
 export type TreeAction = 'class' | 'file' | 'folder' | 'rename' | 'delete' | 'reveal' | 'refresh'
 interface VisibleEntry { entry: ProjectEntry; depth: number; parent: string | null }
 
+export function menuTargetIndex(key: string, current: number, count: number): number | null {
+  if (!count) return null
+  if (key === 'Home') return 0
+  if (key === 'End') return count - 1
+  if (current < 0 && key === 'ArrowDown') return 0
+  if (current < 0 && key === 'ArrowUp') return count - 1
+  if (key === 'ArrowDown') return (current + 1 + count) % count
+  if (key === 'ArrowUp') return (current - 1 + count) % count
+  return null
+}
+
 function visibleEntries(tree: ProjectEntry[], collapsed: ReadonlySet<string>, depth = 1, parent: string | null = null): VisibleEntry[] {
   return tree.flatMap((entry) => [{ entry, depth, parent }, ...(entry.kind === 'directory' && !collapsed.has(entry.path) ? visibleEntries(entry.children ?? [], collapsed, depth + 1, entry.path) : [])])
 }
@@ -27,7 +38,7 @@ export function ProjectExplorer({ tree, active, collapsed, onToggle, onOpen, onA
   }, [menu])
   const focusPath = (path: string) => { setFocused(path); requestAnimationFrame(() => rowRefs.current.get(path)?.focus()) }
   const menuAt = (entry: ProjectEntry | null, x: number, y: number) => {
-    setMenu({ entry, x: Math.min(x, window.innerWidth - 194), y: Math.min(y, window.innerHeight - 258) })
+    setMenu({ entry, x: Math.max(0, Math.min(x, window.innerWidth - 194)), y: Math.max(0, Math.min(y, window.innerHeight - 258)) })
     requestAnimationFrame(() => menuRef.current?.querySelector<HTMLButtonElement>('button')?.focus())
   }
   const action = (kind: TreeAction, entry: ProjectEntry | null) => { setMenu(null); onAction(kind, entry) }
@@ -65,7 +76,12 @@ export function ProjectExplorer({ tree, active, collapsed, onToggle, onOpen, onA
       <button className="ide-entry-more" aria-label={`Actions for ${row.entry.path}`} title="File actions" onClick={(event) => { const rect = event.currentTarget.getBoundingClientRect(); menuAt(row.entry, rect.left, rect.bottom) }}>···</button>
     </div>)}
     {!tree.length && <p className="ide-empty">Create a Java class or open a project.</p>}
-    {menu && <div ref={menuRef} className="ide-tree-menu" role="menu" aria-label={menu.entry ? `Actions for ${menu.entry.path}` : 'Project actions'} style={{ left: menu.x, top: menu.y }} onKeyDown={(event) => { if (event.key === 'Escape') { event.preventDefault(); setMenu(null); if (menu.entry) focusPath(menu.entry.path) } }}>
+    {menu && <div ref={menuRef} className="ide-tree-menu" role="menu" aria-label={menu.entry ? `Actions for ${menu.entry.path}` : 'Project actions'} style={{ left: menu.x, top: menu.y }} onKeyDown={(event) => {
+      if (event.key === 'Escape') { event.preventDefault(); setMenu(null); if (menu.entry) focusPath(menu.entry.path); return }
+      const items = Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="menuitem"]'))
+      const target = menuTargetIndex(event.key, items.indexOf(document.activeElement as HTMLButtonElement), items.length)
+      if (target !== null) { event.preventDefault(); items[target].focus() }
+    }}>
       {(['class', 'file', 'folder', ...(menu.entry ? ['rename', 'delete', 'reveal'] : []), 'refresh'] as TreeAction[]).map((kind) => <button type="button" role="menuitem" key={kind} onClick={() => action(kind, menu.entry)}>{kind === 'class' ? 'New Java Class' : kind === 'file' ? 'New File' : kind === 'folder' ? 'New Folder' : kind === 'rename' ? 'Rename' : kind === 'delete' ? 'Delete' : kind === 'reveal' ? 'Reveal in editor' : 'Refresh'}</button>)}
     </div>}
   </div>

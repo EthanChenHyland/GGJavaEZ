@@ -12,24 +12,34 @@ export function currentPlatform(): Platform {
   return detectPlatform(typeof navigator === 'undefined' ? '' : navigator.userAgent)
 }
 
+function modifiers(shortcut: Shortcut, platform: Platform) {
+  return {
+    ctrl: Boolean(shortcut.ctrl || (shortcut.primary && platform !== 'mac')),
+    meta: Boolean(shortcut.meta || (shortcut.primary && platform === 'mac')),
+    alt: Boolean(shortcut.alt),
+    shift: Boolean(shortcut.shift),
+  }
+}
+
 /** Exact modifier matching prevents native/browser chords from being stolen. Physical codes survive macOS Option glyph substitution. */
 export function matchesShortcut(event: KeyEventLike, shortcut: Shortcut, platform: Platform): boolean {
-  const primary = shortcut.primary ?? false
-  const ctrl = shortcut.ctrl ?? (primary && platform !== 'mac')
-  const meta = shortcut.meta ?? (primary && platform === 'mac')
-  return event.code === shortcut.code && event.ctrlKey === ctrl && event.metaKey === meta &&
-    event.altKey === (shortcut.alt ?? false) && event.shiftKey === (shortcut.shift ?? false)
+  const required = modifiers(shortcut, platform)
+  return event.code === shortcut.code && event.ctrlKey === required.ctrl && event.metaKey === required.meta &&
+    event.altKey === required.alt && event.shiftKey === required.shift
 }
 
 export function formatShortcut(shortcut: Shortcut, platform: Platform): string {
   const key = shortcut.code.startsWith('Key') ? shortcut.code.slice(3) : shortcut.code.startsWith('Digit') ? shortcut.code.slice(5) : shortcut.code
-  if (platform === 'mac') return `${shortcut.primary || shortcut.meta ? '⌘' : ''}${shortcut.ctrl ? '⌃' : ''}${shortcut.alt ? '⌥' : ''}${shortcut.shift ? '⇧' : ''}${key}`
-  return `${shortcut.primary || shortcut.ctrl ? 'Ctrl+' : ''}${shortcut.alt ? 'Alt+' : ''}${shortcut.shift ? 'Shift+' : ''}${shortcut.meta ? 'Meta+' : ''}${key}`
+  const required = modifiers(shortcut, platform)
+  if (platform === 'mac') return `${required.meta ? '⌘' : ''}${required.ctrl ? '⌃' : ''}${required.alt ? '⌥' : ''}${required.shift ? '⇧' : ''}${key}`
+  return `${required.ctrl ? 'Ctrl+' : ''}${required.alt ? 'Alt+' : ''}${required.shift ? 'Shift+' : ''}${required.meta ? 'Meta+' : ''}${key}`
 }
 
 export const ideShortcuts = {
   save: { code: 'KeyS', primary: true },
-  saveAll: { code: 'KeyS', primary: true, alt: true },
+  saveAll: { code: 'KeyS', primary: true, shift: true },
+  breakpoint: { code: 'F9' },
+  commandPalette: { code: 'F1' },
   run: { code: 'KeyR', alt: true, shift: true },
   debug: { code: 'KeyD', alt: true, shift: true },
   stop: { code: 'KeyX', alt: true, shift: true },

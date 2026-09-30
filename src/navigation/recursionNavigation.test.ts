@@ -118,11 +118,11 @@ describe('reserved recursive camera composition', () => {
 })
 
 describe('semantic descent and return attention', () => {
-  it('targets the entered invocation and the caller after reduction removes a callee', () => {
+  it('targets the entered invocation and its exact caller while completed calls remain', () => {
     const entered: TraceEvent = { ...base, type: 'ENTER_METHOD', frameId: frames[5].id, callerFrameId: frames[4].id, className: 'Main', methodName: 'factorial', locals: [] }
     expect(eventFocusAnchor(entered, scene)).toEqual(frames[5].anchor)
     const exited: TraceEvent = { ...base, type: 'EXIT_METHOD', frameId: frames[5].id }
-    expect(eventFocusAnchor(exited, { ...scene, frames: frames.slice(0, 5) })).toEqual(frames[4].anchor)
+    expect(eventFocusAnchor(exited, scene)).toEqual(frames[4].anchor)
     expect(eventFocusAnchor(exited, { ...scene, frames: [] })).toBeNull()
   })
 

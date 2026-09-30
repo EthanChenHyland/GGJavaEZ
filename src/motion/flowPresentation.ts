@@ -23,7 +23,7 @@ export function endpointPosition(endpoint: FlowEndpoint | undefined, layout: Lay
 }
 
 export function transitionIsFlow(transition: SemanticTransition): boolean {
-  return Boolean(transition.from && transition.to && transition.kind !== 'frame-enter' && transition.kind !== 'frame-exit' && transition.kind !== 'exception')
+  return Boolean(transition.evidence !== 'local' && transition.from && transition.to && transition.kind !== 'frame-enter' && transition.kind !== 'frame-exit' && transition.kind !== 'exception')
 }
 
 /** Travel in a shared rear channel, entering only at semantic ports. This keeps

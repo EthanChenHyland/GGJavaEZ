@@ -1,5 +1,5 @@
 {
-  "version": "2.6",
+  "version": "2.7",
   "color": {
     "canvas": "#06080D",
     "canvasRaised": "#090D14",
@@ -37,7 +37,10 @@
     "heapBody": "#342B52",
     "heapFace": "#211A38",
     "heapSlot": "#2C2447",
-    "floor": "#0A111B"
+    "floor": "#0A111B",
+    "historyBody": "#38414B",
+    "historyFace": "#26303A",
+    "historySlot": "#303A44"
   },
   "typography": {
     "ui": "Inter, Geist, ui-sans-serif, system-ui, sans-serif",

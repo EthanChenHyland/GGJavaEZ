@@ -5,6 +5,7 @@ import type { RuntimeValue } from '../../contracts/runtime'
 import type { SceneSlot } from '../../contracts/world'
 import { colors, motionMs } from '../../theme/tokens'
 import { displayJavaType } from '../../runtime/displayType'
+import { fitFaceTextHeight, summarizeFaceValue } from './faceText'
 import { RuntimeLabel } from './RuntimeLabel'
 import { easeOutCubic, useReducedMotion } from './presentationMotion'
 
@@ -49,8 +50,10 @@ export function RuntimeSlot({ slot, width, y, z, compact = false, accent, backgr
   const valueX = fitText ? width / 2 - 1.44 : compact ? width / 2 - 1.04 : width / 2 - 1.4
   const textZ = z + 0.014
   const value = slot.displayValue ?? formatRuntimeValue(slot.value)
-  const preferredValueSize = (readable ? 0.29 : compact ? 0.22 : 0.24) * textScale
-  const valueSize = fitText ? Math.min(preferredValueSize, 1.22 / Math.max(1, value.length * 0.6)) : preferredValueSize
+  const preferredValueSize = fitFaceTextHeight((readable ? 0.29 : compact ? 0.22 : 0.24) * textScale, height)
+  // A marked summary stays legible; full observed data remains in Inspector.
+  const valueText = fitText && slot.value.kind === 'stringSummary' ? summarizeFaceValue(value, Math.max(4, Math.floor(1.2 / (preferredValueSize * 0.6)))) : value
+  const valueSize = fitText ? Math.min(preferredValueSize, 1.22 / Math.max(1, Array.from(valueText).length * 0.6)) : preferredValueSize
   const valueColor = active ? colors.mutation : slot.value.kind === 'null' || slot.value.kind === 'uninitialized'
     ? colors.null
     : slot.role === 'return' ? colors.success : slot.value.kind === 'reference' ? accent : colors.text
@@ -93,10 +96,10 @@ export function RuntimeSlot({ slot, width, y, z, compact = false, accent, backgr
           <meshBasicMaterial color={selected ? colors.execution : colors.mutation} />
         </mesh>
       )}
-      <RuntimeLabel text={slot.role === 'operand' ? 'call result' : slot.name} position={[left, 0, textZ]} size={(readable ? 0.29 : compact ? 0.22 : 0.24) * textScale} color={colors.textSecondary} maxWidth={compact ? 1.65 : 0.9} />
-      <RuntimeLabel text={typeLabel} position={[typeX, 0, textZ]} size={(readable ? 0.24 : compact ? 0.18 : 0.2) * textScale} color={colors.textSecondary} maxWidth={compact ? 1.1 : 0.75} />
+      <RuntimeLabel text={slot.role === 'operand' ? 'call result' : slot.name} position={[left, 0, textZ]} size={preferredValueSize} color={colors.textSecondary} maxWidth={compact ? 1.65 : 0.9} />
+      <RuntimeLabel text={typeLabel} position={[typeX, 0, textZ]} size={fitFaceTextHeight((readable ? 0.24 : compact ? 0.18 : 0.2) * textScale, height)} color={colors.textSecondary} maxWidth={compact ? 1.1 : 0.75} />
       <group ref={valueRef} position={[0, 0, 0]}>
-        <RuntimeLabel text={value} position={[valueX, 0, textZ]} size={valueSize} color={valueColor} maxWidth={compact ? 1.1 : 1.2} />
+        <RuntimeLabel text={valueText} position={[valueX, 0, textZ]} size={valueSize} color={valueColor} maxWidth={compact ? 1.1 : 1.2} />
       </group>
     </group>
   )

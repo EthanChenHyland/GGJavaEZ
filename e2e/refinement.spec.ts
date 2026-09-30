@@ -15,7 +15,7 @@ async function expectSelectedPerson(page: Page) {
 }
 
 test('4× playback naturally completes, stays final, and explicitly replays deterministically', async ({ page }) => {
-  await page.goto('/')
+  await page.goto('/examples')
   await page.getByLabel('Playback speed').selectOption('4')
   await expectCursor(page, 0)
   await page.getByRole('button', { name: 'Play execution', exact: true }).click()
@@ -45,7 +45,7 @@ test('4× playback naturally completes, stays final, and explicitly replays dete
 })
 
 test('first and last seeks pause playback and reconstruct the same final Person state', async ({ page }) => {
-  await page.goto('/')
+  await page.goto('/examples')
   const scrub = page.getByRole('slider', { name: 'Scrub execution' })
   await page.getByRole('button', { name: 'Play execution', exact: true }).click()
   await scrub.fill(String(finalCursor))
@@ -72,7 +72,7 @@ test('first and last seeks pause playback and reconstruct the same final Person 
 })
 
 test('Classic → Spatial preserves cursor, mutation, source, and selected Person identity', async ({ page }) => {
-  await page.goto('/')
+  await page.goto('/examples')
   await page.getByRole('slider', { name: 'Scrub execution' }).fill('18')
   await page.getByLabel('Select runtime entity').selectOption('object:person:17')
   await page.getByRole('button', { name: 'Runtime focus mode', exact: true }).click()
@@ -93,7 +93,7 @@ test('Classic → Spatial preserves cursor, mutation, source, and selected Perso
 })
 
 test('Guided execution toggles independently of representation and retains shared state', async ({ page }) => {
-  await page.goto('/')
+  await page.goto('/examples')
   await page.getByRole('slider', { name: 'Scrub execution' }).fill('18')
   await page.getByLabel('Select runtime entity').selectOption('object:person:17')
   const guided = page.getByRole('button', { name: 'Guided execution', exact: true })

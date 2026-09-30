@@ -46,13 +46,10 @@ function correlatedSource(before: RuntimeState, destinationName: string, value: 
 export function deriveSemanticTransition(before: RuntimeState, event: TraceEvent, after: RuntimeState): SemanticTransition | null {
   const base = { id: event.eventId, seq: event.seq, label: event.label, source: event.source, importance: event.importance } as const
   switch (event.type) {
-    case 'DECLARE_LOCAL': {
-      const callerId = event.slot.role === 'parameter' ? before.frames[event.frameId]?.callerFrameId : null
-      // The caller invocation is observed, but a specific expression/slot is
-      // unknown unless instrumentation supplies it. Show transfer from its frame.
+    case 'DECLARE_LOCAL':
+      // A parameter's caller is known, but the value's origin is not.
       return { ...base, kind: event.slot.role === 'parameter' ? 'parameter' : 'assignment', value: event.slot.value,
-        from: callerId ? frame(callerId) : undefined, to: slot(event.slot.id), evidence: 'local' }
-    }
+        to: slot(event.slot.id), evidence: 'local' }
     case 'ASSIGN_LOCAL': {
       const target = after.frames[event.frameId]?.locals[event.slotId]
       if (!target) return null
@@ -85,9 +82,9 @@ export function deriveSemanticTransition(before: RuntimeState, event: TraceEvent
     case 'CONSOLE_INPUT': return { ...base, kind: 'input', value: { kind: 'stringSummary', javaType: 'String', value: event.text },
       from: io('stdin'), to: event.frameId ? frame(event.frameId) : undefined, evidence: 'observed' }
     case 'OUTPUT_WRITE': return { ...base, kind: 'output', value: event.value,
-      from: event.originSlotId ? slot(event.originSlotId) : frame(event.frameId), to: io('stdout'), evidence: event.originSlotId ? 'observed' : 'local' }
+      ...(event.originSlotId ? { from: slot(event.originSlotId) } : {}), to: io('stdout'), evidence: event.originSlotId ? 'observed' : 'local' }
     case 'CONSOLE_WRITE': return { ...base, kind: 'output', value: { kind: 'stringSummary', javaType: 'String', value: event.text },
-      from: event.frameId ? frame(event.frameId) : undefined, to: io(event.channel), evidence: 'observed' }
+      to: io(event.channel), evidence: 'local' }
     case 'EVALUATE_CONDITION': return { ...base, kind: event.kind === 'loop' ? 'loop' : 'branch', to: frame(event.frameId), evidence: 'observed' }
     case 'LOOP_ITERATION': return { ...base, kind: 'loop', to: frame(event.frameId), evidence: 'observed' }
     case 'BRANCH_EVALUATE': return { ...base, kind: 'branch', to: frame(event.frameId), evidence: 'observed' }

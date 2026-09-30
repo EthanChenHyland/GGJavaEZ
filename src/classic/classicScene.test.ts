@@ -31,7 +31,8 @@ describe('Classic scene projection', () => {
       expect(edge.targetObjectId).toBe(runtimeEdge.targetObjectId)
       expect(edge.path.startsWith(`M ${edge.from[0]} ${edge.from[1]}`)).toBe(true)
     }
-    expect(diagram.references.map((edge) => edge.label)).toEqual(['p', 'this'])
+    expect(diagram.references.map((edge) => edge.label)).toEqual(['p', 'this', 'this'])
+    expect(diagram.references.filter((edge) => edge.historical)).toHaveLength(1)
     expect(diagram.references[0].to).not.toEqual(diagram.references[1].to)
   })
 
@@ -92,7 +93,7 @@ describe('Classic scene projection', () => {
       selection: null, onSelect: () => {}, onFocusSelected: () => {},
     }))
     expect(hidden).toContain('aria-hidden="true"')
-    expect(hidden).toContain('tabindex="-1"')
+    expect(hidden).not.toContain('data-runtime-id=')
     expect(hidden).not.toContain('tabindex="0"')
   })
 })

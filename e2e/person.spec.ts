@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test'
 
 test('the Person state can be inspected and reconstructed in either direction', async ({ page }) => {
-  await page.goto('/')
+  await page.goto('/examples')
   await page.getByRole('button', { name: 'Go to event 18: age: 0 → 18' }).click()
   await page.getByRole('button', { name: 'Home' }).first().click()
   await expect(page.getByText('Mutation · age: 0 → 18')).toBeVisible()
@@ -24,7 +24,7 @@ test('the Person state can be inspected and reconstructed in either direction', 
 })
 
 test('camera input takes control while playback continues', async ({ page }) => {
-  await page.goto('/')
+  await page.goto('/examples')
   await page.getByRole('button', { name: 'Go to event 9: Allocate Person #17' }).click()
   await page.getByRole('button', { name: 'Play execution' }).click()
   await expect(page.getByRole('button', { name: 'Pause execution' })).toBeVisible()
@@ -40,7 +40,7 @@ test('camera input takes control while playback continues', async ({ page }) => 
 })
 
 test('reference picking, pan, and dolly work in the same world', async ({ page }) => {
-  await page.goto('/')
+  await page.goto('/examples')
   await page.getByRole('button', { name: 'Go to event 18: age: 0 → 18' }).click()
   await page.getByRole('button', { name: 'Home' }).first().click()
   await page.waitForTimeout(700)
@@ -71,7 +71,7 @@ test('reference picking, pan, and dolly work in the same world', async ({ page }
 
 
 test('keyboard inspection, source focus, Follow toggle, and low effects preserve state', async ({ page }) => {
-  await page.goto('/')
+  await page.goto('/examples')
   await page.getByRole('button', { name: 'Go to event 18: age: 0 → 18' }).click()
   await page.getByLabel('Select runtime entity').selectOption('object:person:17')
   await expect(page.getByRole('heading', { name: 'Person #17' })).toBeVisible()
@@ -88,7 +88,7 @@ test('keyboard inspection, source focus, Follow toggle, and low effects preserve
 
 test('reduced motion and arbitrary scrubbing retain exact source and object state', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' })
-  await page.goto('/')
+  await page.goto('/examples')
   for (const [cursor, age] of [[18, '18'], [10, '0'], [17, '0'], [18, '18']]) {
     await page.getByRole('slider', { name: 'Scrub execution' }).fill(String(cursor))
     await page.getByLabel('Select runtime entity').selectOption('object:person:17')
@@ -108,7 +108,7 @@ test('the runtime and source load using local assets only', async ({ page }) => 
     remote.push(url.origin)
     return route.abort()
   })
-  await page.goto('/')
+  await page.goto('/examples')
   await page.getByRole('button', { name: /^Go to event 18:/ }).click()
   await expect(page.locator('.monaco-editor .executing-line')).toBeVisible()
   await page.getByLabel('Select runtime entity').selectOption('object:person:17')

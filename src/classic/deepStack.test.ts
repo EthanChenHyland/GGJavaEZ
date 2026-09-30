@@ -67,9 +67,10 @@ describe('Classic deep call stack', () => {
   })
 
   it('projects returns into the actual caller operand with a stable origin after the callee exits', () => {
-    const before = buildClassicScene(returning()), after = buildClassicScene(returning(frames.slice(0, 3)))
+    const before = buildClassicScene(returning()), after = buildClassicScene(returning(frames.slice(0, 4).map(node => node.id === returnFlow.frameId ? { ...node, active: false, historical: true, invocationStatus: 'completed' } : node)))
     expect(after.returnTransfer).toEqual(before.returnTransfer)
-    expect(after.entities.some((node) => node.id === returnFlow.frameId)).toBe(false)
+    expect(after.entities.find(node => node.id === returnFlow.frameId)?.invocationStatus).toBe('completed')
+    expect(buildClassicScene(returning(frames.slice(0, 3))).returnTransfer).toBeNull()
     const transfer = after.returnTransfer!
     const operand = after.entities.flatMap((node) => node.slots).find((row) => row.slot.id === returnFlow.destination!.slotId)!
     expect(transfer.to).toEqual([operand.rect.x + operand.rect.width, operand.rect.y + operand.rect.height / 2])

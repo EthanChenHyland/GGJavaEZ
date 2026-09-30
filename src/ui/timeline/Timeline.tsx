@@ -1,4 +1,4 @@
-import { useMemo, type CSSProperties } from 'react'
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { Pause, Play, RotateCcw, SkipBack, SkipForward } from 'lucide-react'
 import type { TraceDocument, TraceEvent } from '../../contracts/runtime'
 import type { PlaybackApi } from '../../playback'
@@ -31,6 +31,7 @@ const MAX_MARKERS = 240
 
 /** Keep large real traces seekable without mounting one button per JVM probe. */
 export function markerIndices(events: readonly TraceEvent[], limit = MAX_MARKERS): number[] {
+  limit = Math.max(2, Math.trunc(limit))
   if (events.length <= limit) return events.map((_, index) => index)
   const important = events.flatMap((event, index) => event.importance === 'major' ? [index] : [])
   const selected = new Set<number>()
@@ -40,7 +41,15 @@ export function markerIndices(events: readonly TraceEvent[], limit = MAX_MARKERS
   }
   addSpread(important, Math.min(Math.floor(limit / 2), important.length))
   addSpread(events.map((_, index) => index), limit - selected.size)
-  return [...selected].sort((a, b) => a - b)
+  // Markers name actual events; keep their exact positions and omit crowded
+  // neighbors rather than shifting dots away from their time coordinates.
+  const gap = Math.ceil((events.length - 1) / (limit - 1))
+  const spaced = [0]
+  for (const index of [...selected].sort((a, b) => a - b)) {
+    if (index - spaced.at(-1)! >= gap && events.length - 1 - index >= gap) spaced.push(index)
+  }
+  spaced.push(events.length - 1)
+  return spaced
 }
 
 function markerColor(event: TraceEvent): string {
@@ -53,13 +62,22 @@ function markerColor(event: TraceEvent): string {
 }
 
 export function Timeline({ trace, playback, execution }: TimelineProps) {
+  const rail = useRef<HTMLDivElement>(null)
+  const [markerLimit, setMarkerLimit] = useState(120)
+  useEffect(() => {
+    const element = rail.current
+    if (!element) return
+    const observer = new ResizeObserver(([entry]) => setMarkerLimit(Math.max(2, Math.min(MAX_MARKERS, Math.floor(entry.contentRect.width / 10)))))
+    observer.observe(element)
+    return () => observer.disconnect()
+  }, [])
   const { state, playPause, stepForward, stepBack, seekTo, setSpeed, reset } = playback
   const { cursor, liveCursor } = resolveTimelinePosition(trace.events.length, state.cursor, execution)
   const hasExecution = !!execution
   const eventCount = hasExecution ? liveCursor : trace.events.length
   const progress = eventCount > 0 ? (cursor / eventCount) * 100 : 0
   const currentEvent = trace.events[cursor - 1]
-  const markers = useMemo(() => markerIndices(hasExecution ? trace.events.slice(0, eventCount) : trace.events), [trace.events, eventCount, hasExecution])
+  const markers = useMemo(() => markerIndices(hasExecution ? trace.events.slice(0, eventCount) : trace.events, markerLimit), [trace.events, eventCount, hasExecution, markerLimit])
   const theme = {
     '--timeline-panel': colors.panel,
     '--timeline-panel-raised': colors.panelRaised,
@@ -100,7 +118,7 @@ export function Timeline({ trace, playback, execution }: TimelineProps) {
           <span className="vj-timeline__event" aria-live="polite">{currentEvent?.label ?? 'Ready to run'}</span>
           {execution?.lens === 'HISTORY' && <button className="vj-timeline__return" type="button" onClick={execution.onReturnToLive}>Return to Live <span>{liveCursor}</span></button>}
         </div>
-        <div className="vj-timeline__rail">
+        <div className="vj-timeline__rail" ref={rail}>
           <input className="vj-timeline__range" type="range" min={0} max={eventCount} step={1} value={cursor}
             onChange={(event) => seekTo(Number(event.currentTarget.value))}
             disabled={eventCount === 0} aria-label="Scrub execution"

@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test'
 
 const cursor = (page: import('@playwright/test').Page) => page.getByRole('slider', { name: 'Scrub execution' })
 async function recursion(page: import('@playwright/test').Page) {
-  await page.goto('/')
+  await page.goto('/examples')
   await page.getByLabel('Runtime example').selectOption('recursion')
   await expect(page.locator('.vj-timeline__count')).toContainText('0 / 36')
 }
@@ -24,10 +24,11 @@ test('six invocations, operands, and return values stay synchronized across repr
   await page.getByRole('button', { name: 'Classic', exact: true }).click()
   await expect(page.locator('.classic-runtime [data-runtime-kind="frame"]')).toHaveCount(6)
   await page.getByRole('button', { name: 'Next event' }).click()
-  await expect(page.locator('.call-status')).toContainText('Returns1')
+  await expect(page.locator('.call-status')).toContainText('1 returns1')
   await expect(page.locator('.classic-runtime')).toContainText('factorial(1) returns 1')
   await page.getByRole('button', { name: 'Next event' }).click()
-  await expect(page.locator('.classic-runtime [data-runtime-kind="frame"]')).toHaveCount(5)
+  await expect(page.locator('.classic-runtime [data-runtime-kind="frame"]')).toHaveCount(6)
+  await expect(page.locator('.classic-runtime [data-runtime-id="frame:factorial:1"]')).toHaveAttribute('data-invocation-status', 'completed')
   await cursor(page).fill('19')
   await expect(page.locator('.classic-runtime [data-runtime-kind="frame"]')).toHaveCount(6)
   await expect(page.locator('.return-history')).toHaveCount(0)
@@ -50,7 +51,7 @@ test('recursion stops naturally, retains final result, and replays without loopi
   await expect(page.getByRole('button', { name: 'Replay execution', exact: true })).toBeVisible({ timeout: 10000 })
   await expect(cursor(page)).toHaveValue('36')
   await expect(page.locator('.final-result')).toHaveText('result = 120')
-  await expect(page.locator('.return-history')).toHaveText('Returns12624120')
+  await expect(page.locator('.return-history')).toHaveText('5 returns12624120')
   await expect(page.getByRole('button', { name: 'Next event', exact: true })).toBeDisabled()
   await page.waitForTimeout(600)
   await expect(cursor(page)).toHaveValue('36')

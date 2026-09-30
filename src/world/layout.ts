@@ -21,11 +21,29 @@ export function createLayout(trace: TraceDocument): LayoutState {
   let childOrdinal = 0
   const liveOrdinalByDepth: Record<number, number> = {}
   let objectOrdinal = 0
+  let heapX = 1.55
+  let heapZ = 0.2
+  let heapRowDepth = 0
+  let heapBackEdge: number | null = null
   let stackDepth = 0
   const hasArrays = trace.events.some((event) => event.type === 'ALLOCATE_ARRAY')
-  // A live capture has no known final depth. Its positions depend only on identity/order.
-  const live = trace.demoId.startsWith('debug:') || trace.demoId.startsWith('execution:')
+  // A JVM capture has no known final depth. Its positions depend only on identity/order.
+  const live = trace.capture?.origin === 'jvm'
   const theaterAnchors: Record<string, WorldAnchor> = {}
+  const reserveHeapPosition = (width: number, depth: number): Vec3 => {
+    if (!live) {
+      const center = heapBackEdge === null ? -0.65 : heapBackEdge - 0.8 - depth / 2
+      heapBackEdge = center - depth / 2
+      return [3.45 + (objectOrdinal % 2) * 0.5, -0.05, center]
+    }
+    // Append-only shelves: allocation order reserves position, never current values.
+    if (heapX > 1.55 && heapX + width > 25.55) { heapZ -= heapRowDepth + 1.2; heapX = 1.55; heapRowDepth = 0 }
+    const position: Vec3 = [heapX + width / 2, -0.05, heapZ - depth / 2]
+    heapX += width + 1.2
+    heapRowDepth = Math.max(heapRowDepth, depth)
+    return position
+  }
+
 
   for (const event of trace.events) {
     if (event.type === 'ENTER_METHOD') {
@@ -49,10 +67,10 @@ export function createLayout(trace: TraceDocument): LayoutState {
       frameDepths[event.frameId] = depth
       const sibling = liveOrdinalByDepth[depth] ?? 0
       liveOrdinalByDepth[depth] = sibling + 1
-      const column = sibling % 2
-      const row = Math.floor(sibling / 2)
+      const column = sibling % 4
+      const row = Math.floor(sibling / 4)
       const position: Vec3 = live
-        ? [-4.9 + depth * 0.9 + (depth > 0 ? (column === 0 ? -3.2 : 3.2) : 0), -depth * 4.2 - row * 4.4, -3 + depth * 1.1 - row * 0.65]
+        ? [-4.9 - column * 6.4, -depth * 4.2, -3 - row * 2.6]
         : stackDepth > 1
         ? [-4.7 + depth * 0.9, (stackDepth - depth) * 2.2 - 0.3, -3 + depth * 1.1]
         : depth === 0
@@ -71,7 +89,9 @@ export function createLayout(trace: TraceDocument): LayoutState {
     }
 
     if (event.type === 'ALLOCATE_ARRAY') {
-      const position: Vec3 = [3.45, -0.05, -0.65 - objectOrdinal++ * 3]
+      const arrayWidth = Math.max(worldUnits.arrayTheater.cell[0], (event.elements.length - 1) * worldUnits.arrayTheater.step + worldUnits.arrayTheater.cell[0])
+      const position = reserveHeapPosition(arrayWidth, Math.max(worldUnits.arraySpatial.boundaryDepth, worldUnits.arrayTheater.boundaryDepth))
+      objectOrdinal++
       const reserveArray = (expanded: boolean, target: Record<string, WorldAnchor>) => {
         const dimensions = expanded ? worldUnits.arrayTheater : worldUnits.arraySpatial
         const cellSize: Vec3 = dimensions.cell
@@ -94,9 +114,12 @@ export function createLayout(trace: TraceDocument): LayoutState {
     }
 
     if (event.type === 'ALLOCATE_OBJECT') {
-      const position: Vec3 = [3.45 + (objectOrdinal % 2) * 0.5, -0.05, -0.65 - objectOrdinal * 1.55]
+      // ObjectSolid places rows from the top face at 0.52-unit intervals.
+      // Reserve enough height for the final row and its lower padding.
+      const height = Math.max(worldUnits.object[1], 1.5 + Math.max(0, event.fields.length - 1) * 0.52)
+      const size: Vec3 = [worldUnits.object[0], height, worldUnits.object[2]]
+      const position = reserveHeapPosition(size[0], size[2])
       objectOrdinal++
-      const size = worldUnits.object
       anchors[event.objectId] = {
         entityId: event.objectId,
         region: 'heap',

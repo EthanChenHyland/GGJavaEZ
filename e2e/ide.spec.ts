@@ -203,14 +203,20 @@ test('folder import preserves Java source paths and pane resizing is keyboard ac
     await mkdir(join(root, 'src'))
     await writeFile(join(root, 'src', 'Main.java'), 'public class Main { public static void main(String[] a) { System.out.println("Imported"); } }')
     await page.goto('/ide')
-    await expect(page.locator('.monaco-editor')).toBeVisible()
+    await expect(page.getByRole('heading', { name:'Open Project', exact:true })).toBeVisible()
     await page.locator('input[type=file]').setInputFiles(root)
     await expect(page.locator('.ide-editor-foot')).toContainText('src/Main.java')
     await page.getByRole('button', { name: 'Run', exact: true }).click()
     await expect(page.locator('.ide-execution-status')).toContainText('COMPLETED', { timeout: 45_000 })
     const editor = page.locator('.ide-editor-panel')
     await expect(page.locator('.app-shell--embedded')).toBeVisible()
-    await expect.poll(async () => (await editor.boundingBox())!.width).toBeLessThan(700)
+    await expect(page.locator('.ide-shell')).toHaveClass(/ide-shell--visualize/)
+    await expect.poll(() => page.locator('.ide-shell').evaluate(el => el.style.getPropertyValue('--ide-editor-width'))).toBe('30%')
+    await expect.poll(async () => {
+      const width = (await editor.boundingBox())!.width
+      const available = (await page.locator('.ide-upper').boundingBox())!.width
+      return Math.abs(width - available * 0.30)
+    }).toBeLessThan(2)
     const before = (await editor.boundingBox())!.width
     await page.getByRole('separator', { name: 'Resize runtime pane' }).focus()
     await page.keyboard.press('ArrowRight')

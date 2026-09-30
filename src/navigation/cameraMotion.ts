@@ -57,6 +57,8 @@ export interface ViewFraming {
 }
 
 export interface InspectorViewport {
+  topInset?: number
+  bottomInset?: number
   width: number
   height: number
 }
@@ -137,9 +139,7 @@ export function representationTransition(
     pose: memory.spatialPose ?? sceneHomePose(scene, target, view) }
 }
 
-/** Resolve semantic attention after reduction: an exited frame is no longer a
- * valid focus target, and a return transfers attention to its direct caller.
- */
+/** Resolve semantic attention after reduction; a return favors its live caller. */
 export function eventFocusAnchor(event: TraceEvent, scene: SceneModel, activeEntityId?: string | null): WorldAnchor | null {
   const anchorFor = (id: string | null | undefined) => scene.frames.find((node) => node.id === id)?.anchor
     ?? scene.objects.find((node) => node.id === id)?.anchor ?? null
@@ -149,9 +149,9 @@ export function eventFocusAnchor(event: TraceEvent, scene: SceneModel, activeEnt
     return array?.array?.cells.find((cell) => cell.index === event.index)?.anchor ?? array?.anchor ?? null
   }
   if (event.type === 'EXIT_METHOD') {
-    return anchorFor(activeEntityId) ?? scene.frames.reduce<typeof scene.frames[number] | null>(
-      (deepest, frame) => !deepest || frame.depth > deepest.depth ? frame : deepest, null,
-    )?.anchor ?? null
+    const exited = scene.frames.find(node => node.id === event.frameId)
+    return anchorFor(exited?.callerFrameId) ?? anchorFor(activeEntityId)
+      ?? scene.frames.find(node => node.active)?.anchor ?? null
   }
   if (event.type === 'RETURN_VALUE') return anchorFor(event.destination?.frameId) ?? anchorFor(event.frameId)
   if (activeEntityId && anchorFor(activeEntityId)) return anchorFor(activeEntityId)
@@ -166,7 +166,9 @@ export function eventFocusAnchor(event: TraceEvent, scene: SceneModel, activeEnt
  */
 export function invocationContextPose(anchor: WorldAnchor, scene: SceneModel, viewingPose: CameraPose, view: ViewFraming): CameraPose {
   const frame = scene.frames.find((node) => node.id === anchor.entityId)
-  const neighbors = frame ? scene.frames.filter((node) => Math.abs(node.depth - frame.depth) <= 1).map((node) => node.anchor) : [anchor]
+  const caller = frame && scene.frames.find(node => node.id === frame.callerFrameId)
+  const child = frame && scene.frames.filter(node => node.callerFrameId === frame.id).at(-1)
+  const neighbors = frame ? [frame, ...(caller ? [caller] : []), ...(child ? [child] : [])].map(node => node.anchor) : [anchor]
   const padded = neighbors.map((node) => ({ ...node,
     position: [node.position[0], node.position[1] + 0.3, node.position[2]] as Vec3,
     size: [node.size[0] + 0.8, node.size[1] + 1.2, node.size[2] + 0.4] as Vec3,
@@ -197,6 +199,11 @@ export function arrayInspectionContext(selection: NonNullable<Selection>, scene:
   return context
 }
 
+/** A slight side/top reveal keeps real depth while making the +Z face legible. */
+export function frontFaceViewingPose(face: Vec3): CameraPose {
+  return { target: face, position: [face[0] + 1.8, face[1] + 1, face[2] + 10] }
+}
+
 /** Fit focus and nearby runtime bodies above the bottom inspector shelf.
  * Shifting the optical target down places the semantic focus higher on screen,
  * while preserving the runtime's stable world anchors.
@@ -217,8 +224,8 @@ export function inspectorFocusPose(
   const left = 20
   const right = 20
   // Reserve runtime controls above and timeline/quality controls below.
-  const top = Math.min(64, height * 0.2)
-  const bottom = Math.min(190, height * 0.3)
+  const top = Math.min(viewport.topInset ?? 64, height * 0.2)
+  const bottom = Math.min(viewport.bottomInset ?? 190, height * 0.3)
   const xMin = -1 + 2 * left / width
   const xMax = 1 - 2 * right / width
   const yMin = -1 + 2 * bottom / height

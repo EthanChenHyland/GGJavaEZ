@@ -10,6 +10,10 @@ import 'monaco-editor/editor/contrib/gotoSymbol/browser/goToCommands.js'
 import 'monaco-editor/editor/contrib/gotoSymbol/browser/link/goToDefinitionAtPosition.js'
 import 'monaco-editor/editor/contrib/rename/browser/rename.js'
 import 'monaco-editor/editor/contrib/codeAction/browser/codeActionContributions.js'
+import 'monaco-editor/editor/contrib/contextmenu/browser/contextmenu.js'
+import 'monaco-editor/editor/standalone/browser/quickAccess/standaloneGotoLineQuickAccess.js'
+import 'monaco-editor/editor/standalone/browser/quickAccess/standaloneCommandsQuickAccess.js'
+import 'monaco-editor/editor/standalone/browser/quickAccess/standaloneHelpQuickAccess.js'
 
 // Java tokenization runs locally; project language providers attach to Monaco separately.
 // Configure the React loader before any Editor mounts so it never requests CDN assets.

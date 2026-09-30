@@ -7,11 +7,11 @@ export function buildSceneModel(runtime: RuntimeState, layout: LayoutState, deta
   const displayValue = (value: { kind: string; objectId?: string }) => value.kind === 'reference' && value.objectId
     ? `→ #${runtime.objects[value.objectId]?.displayId ?? '?'}` : undefined
   const exception = runtime.exceptions.at(-1)
-  const terminal = runtime.status === 'ended' || runtime.status === 'aborted'
-  const displayedFrameIds = terminal ? Object.keys(runtime.frames) : exception && !exception.caughtBy
-    ? [...new Set([...exception.frameIds, ...runtime.activeFrameIds])]
-    : runtime.activeFrameIds
-  const frames: SceneFrameNode[] = displayedFrameIds.flatMap((id) => {
+  const interrupted = runtime.status === 'aborted' ? runtime.abortReason?.startsWith('program_crashed:') ? 'failed' : 'stopped' : null
+  // RuntimeState retains invocation records. Their solids remain at the same
+  // anchors as each invocation completes, rather than arriving as a new map
+  // only when main exits.
+  const frames: SceneFrameNode[] = Object.keys(runtime.frames).flatMap((id) => {
     const frame = runtime.frames[id]
     const anchor = stage.anchors[id]
     if (!frame || !anchor) return []
@@ -19,11 +19,11 @@ export function buildSceneModel(runtime: RuntimeState, layout: LayoutState, deta
       kind: 'frame' as const,
       id,
       callerFrameId: frame.callerFrameId,
-      label: `${frame.invocationLabel ?? `${frame.methodName}()`}${terminal ? frame.status === 'unwound' ? ' · unwound' : frame.status === 'returned' ? ' · completed' : ' · last recorded' : frame.status === 'unwound' ? ' · unwound' : ''}`,
+      label: `${frame.invocationLabel ?? `${frame.methodName}()`}${frame.status === 'unwound' ? ' · unwound' : frame.status === 'returned' ? ' · completed' : interrupted ? interrupted === 'failed' ? ' · failed' : ' · last recorded' : ''}`,
       depth: frame.depth,
-      active: id === runtime.activeFrameIds.at(-1),
-      historical: frame.status !== 'active',
-      invocationStatus: frame.status === 'returned' ? 'completed' : frame.status === 'unwound' ? 'unwound' : 'active',
+      active: runtime.status === 'running' && id === runtime.activeFrameIds.at(-1),
+      historical: frame.status !== 'active' || runtime.status !== 'running',
+      invocationStatus: frame.status === 'returned' ? 'completed' : frame.status === 'unwound' ? 'unwound' : interrupted ?? 'active',
       exceptionState: exception?.unwoundFrameIds.includes(id) ? 'unwound'
         : exception?.caughtBy === id ? 'caught'
           : exception?.finallyFrameIds?.includes(id) && !exception.caughtBy ? 'finally'
@@ -66,8 +66,9 @@ export function buildSceneModel(runtime: RuntimeState, layout: LayoutState, deta
       references.push({ id: referenceIdForSlot(slotId), source, targetObjectId, from, to, fromFace, toFace, historical })
     }
   }
-  for (const edge of getReferences(runtime)) addReference(edge.source, edge.source.slotId, edge.targetObjectId)
-  if (terminal) for (const frame of Object.values(runtime.frames)) {
+  for (const edge of getReferences(runtime)) addReference(edge.source, edge.source.slotId, edge.targetObjectId,
+    runtime.status === 'aborted' && edge.source.kind === 'frame')
+  for (const frame of Object.values(runtime.frames)) {
     if (frame.status === 'active') continue
     for (const slot of Object.values(frame.locals)) if (slot.value.kind === 'reference') {
       addReference({ kind: 'frame', frameId: frame.id, slotId: slot.id }, slot.id, slot.value.objectId, true)

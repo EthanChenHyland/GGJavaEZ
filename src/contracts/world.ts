@@ -58,7 +58,7 @@ export interface SceneFrameNode {
   /** Exception history shown after the JVM has unwound this frame. */
   historical?: boolean
   /** A retained invocation record, never an active JVM stack frame. */
-  invocationStatus?: 'active' | 'completed' | 'unwound'
+  invocationStatus?: 'active' | 'completed' | 'unwound' | 'failed' | 'stopped'
   exceptionState?: 'origin' | 'unwound' | 'caught' | 'finally'
   anchor: WorldAnchor
   slots: SceneSlot[]

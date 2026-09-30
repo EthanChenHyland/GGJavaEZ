@@ -14,6 +14,7 @@ beforeEach(() => {
     mode: 'HOME', pose: defaultHomePose, previousPose: null, previousMode: null,
     detailLevel: 'meso', followEnabled: false, selection: null, traceReferenceId: null,
     intent: null, intentRevision: 0,
+    isolatedSelection: null,
   })
 })
 
@@ -53,9 +54,13 @@ describe('navigation presentation state', () => {
     navigationActions.focus({ kind: 'object', id: 'obj-person-17' })
     expect(useNavigationStore.getState().previousPose).toEqual(defaultHomePose)
     expect(useNavigationStore.getState().mode).toBe('FOCUS_ENTITY')
+    expect(useNavigationStore.getState().isolatedSelection?.id).toBe('obj-person-17')
+    navigationActions.freeExplore()
+    expect(useNavigationStore.getState().isolatedSelection?.id).toBe('obj-person-17')
     navigationActions.returnToPrevious()
     expect(useNavigationStore.getState().mode).toBe('HOME')
     expect(useNavigationStore.getState().intent).toEqual({ kind: 'returnToPrevious' })
+    expect(useNavigationStore.getState().isolatedSelection).toBeNull()
   })
 
   it('resolves object, slot and reference positions from stable world data', () => {

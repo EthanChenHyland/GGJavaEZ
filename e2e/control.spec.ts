@@ -39,7 +39,7 @@ const scalar = (value: ScalarValue) => value.kind === 'primitive' ? String(value
   : value.kind === 'stringSummary' ? `"${value.value}"` : value.kind
 
 async function control(page: Page) {
-  await page.goto('/')
+  await page.goto('/examples')
   await page.getByLabel('Runtime example', { exact: true }).selectOption('control')
   await expect(scrub(page)).toHaveValue('0')
   await expect(consolePane(page)).toBeVisible()
@@ -140,7 +140,7 @@ test('nested corrected survives return evaluation, leaves on method exit, and re
     await expect(scrub(page)).toHaveValue(String(exited.cursor))
     await expect(slot(page, declaration.event.slot.id)).toHaveCount(0)
     await expect(scope(page, block.scopeId)).toHaveCount(0)
-    await expect(page.locator(`.classic-runtime [data-runtime-id="${declaration.event.frameId}"]`)).toHaveCount(0)
+    await expect(page.locator(`.classic-runtime [data-runtime-id="${declaration.event.frameId}"]`)).toHaveAttribute('data-invocation-status', 'completed')
     await expect(inspector(page)).toContainText('SCOPE · CLOSED')
     await expect(inspector(page).getByRole('heading', { name: 'corrected', exact: true })).toBeVisible()
     await expect(inspector(page).locator('.inspector-key').filter({ hasText: /^VALUE/ }).locator('strong')).toHaveText(scalar(returned.event.value))

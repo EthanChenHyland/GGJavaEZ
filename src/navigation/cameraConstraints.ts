@@ -129,6 +129,27 @@ export function collisionSafeRoute(from: CameraPose, to: CameraPose, boxes: read
   const end = escape(new Vector3(...to.position), boxes)
   const visible = (a: Vector3, b: Vector3) => boxes.every((box) => cameraSegmentHit(a, b, box) === null)
   if (visible(start, end)) return [{ ...to, position: tuple(end) }]
+  // Large recorded worlds must not build the quadratic corner visibility graph.
+  // Six exterior detours give a bounded O(n) route search with swept safety.
+  if (boxes.length > 64) {
+    const envelope = new Box3()
+    for (const box of boxes) envelope.union(box)
+    let best: Vector3[] | null = null
+    let bestLength = Infinity
+    for (const axis of ['z', 'y', 'x'] as const) {
+      for (const value of [envelope.max[axis] + 1, envelope.min[axis] - 1]) {
+        const a = start.clone(); a[axis] = value
+        const b = end.clone(); b[axis] = value
+        if (!visible(start, a) || !visible(a, b) || !visible(b, end)) continue
+        const length = start.distanceTo(a) + a.distanceTo(b) + b.distanceTo(end)
+        if (length < bestLength) { best = [a, b, end]; bestLength = length }
+      }
+    }
+    if (!best) return [constrainCameraPose(to, from, boxes, center, limits)]
+    const offset = start.clone().sub(new Vector3(...from.target))
+    return best.map((point, index) => index === 2 ? { ...to, position: tuple(end) }
+      : { position: tuple(point), target: tuple(point.clone().sub(offset)) })
+  }
   const nodes = [start, end]
   for (const box of boxes) {
     for (const x of [box.min.x - epsilon * 4, box.max.x + epsilon * 4])

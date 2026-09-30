@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { loadArrayTrace, loadControlTrace, loadPersonTrace, loadRecursionTrace, seek } from '../runtime'
 import { createLayout } from '../world/layout'
 import { buildSceneModel } from '../world/sceneModel'
-import { endpointPosition, relevantFlowHistory, semanticFlowPoints } from './flowPresentation'
+import type { TraceEvent } from '../contracts/runtime'
+import { endpointPosition, relevantFlowHistory, semanticFlowPoints, transitionIsFlow } from './flowPresentation'
 import { deriveSemanticTransition, transitionsForTrace } from './semanticTransition'
 
 describe('semantic transition pipeline', () => {
@@ -16,6 +17,7 @@ describe('semantic transition pipeline', () => {
     expect(flow).toMatchObject({ kind: 'field-write', evidence: 'correlated', value: { value: 18 } })
     expect(flow.from?.id).toContain('setAge:1:age')
     expect(flow.to?.id).toContain('person:17:age')
+    expect(transitionIsFlow(flow)).toBe(true)
     expect(prior).not.toEqual(after.objects['object:person:17'].fields)
     expect(before.objects['object:person:17'].fields).toEqual(prior)
   })
@@ -34,7 +36,7 @@ describe('semantic transition pipeline', () => {
   it('routes observed input, output, and recursive returns without inventing missing origins', () => {
     const control = transitionsForTrace(loadControlTrace())
     expect(control.some((item) => item.kind === 'input' && item.from?.id === 'stdin' && item.to?.kind === 'slot' && item.evidence === 'observed')).toBe(true)
-    expect(control.some((item) => item.kind === 'output' && item.to?.id === 'stdout')).toBe(true)
+    expect(control.some((item) => item.kind === 'output' && item.from?.kind === 'slot' && item.to?.id === 'stdout' && item.evidence === 'observed')).toBe(true)
     const recursion = transitionsForTrace(loadRecursionTrace())
     expect(recursion.filter((item) => item.kind === 'return' && item.to?.kind === 'slot')).toHaveLength(5)
   })
@@ -52,7 +54,7 @@ describe('semantic transition pipeline', () => {
     }
   })
 
-  it('uses the observed caller for parameter arrival without inventing a caller slot', () => {
+  it('emphasizes a parameter value locally without a caller-frame origin', () => {
     const trace = loadPersonTrace()
     const entry = trace.events.findIndex((event) => event.type === 'ENTER_METHOD' && event.methodName === 'setAge')
     expect(entry).toBeGreaterThan(-1)
@@ -63,7 +65,46 @@ describe('semantic transition pipeline', () => {
       type: 'DECLARE_LOCAL' as const, frameId: called.frameId,
       slot: { id: 'age-probe', name: 'age', javaType: 'int', role: 'parameter' as const,
         value: { kind: 'primitive' as const, javaType: 'int' as const, value: 18 } } }
-    expect(deriveSemanticTransition(before, event, before)).toMatchObject({ kind: 'parameter',
-      from: { kind: 'frame', id: called.callerFrameId }, to: { kind: 'slot', id: 'age-probe' }, evidence: 'local' })
+    const transition = deriveSemanticTransition(before, event, before)!
+    expect(transition).toMatchObject({ kind: 'parameter', label: 'age = 18', value: { value: 18 },
+      to: { kind: 'slot', id: 'age-probe' }, evidence: 'local' })
+    expect(transition).not.toHaveProperty('from')
+    expect(transitionIsFlow(transition)).toBe(false)
+  })
+
+  it('keeps unobserved output origins local while retaining an observed source slot', () => {
+    const trace = loadControlTrace()
+    const output = trace.events.find((event) => event.type === 'OUTPUT_WRITE')
+    if (!output || output.type !== 'OUTPUT_WRITE') throw new Error('Expected an output event')
+    const before = seek(trace, output.seq)
+    const after = seek(trace, output.seq + 1)
+    const observed = deriveSemanticTransition(before, output, after)!
+    expect(observed).toMatchObject({ kind: 'output', evidence: 'observed',
+      from: { kind: 'slot', id: output.originSlotId }, to: { kind: 'io', id: 'stdout' } })
+    expect(transitionIsFlow(observed)).toBe(true)
+
+    const local = deriveSemanticTransition(before, { ...output, originSlotId: undefined }, after)!
+    expect(local).toMatchObject({ kind: 'output', evidence: 'local', value: output.value,
+      to: { kind: 'io', id: 'stdout' } })
+    expect(local).not.toHaveProperty('from')
+    expect(transitionIsFlow(local)).toBe(false)
+
+    const consoleWrite: TraceEvent = { eventId: 'console-probe', seq: output.seq,
+      source: output.source, label: 'stdout write', importance: 'normal',
+      type: 'CONSOLE_WRITE', frameId: output.frameId, channel: 'stdout', text: '18\n' }
+    const recorded = deriveSemanticTransition(before, consoleWrite, after)!
+    expect(recorded).toMatchObject({ kind: 'output', label: 'stdout write', evidence: 'local',
+      value: { value: '18\n' }, to: { kind: 'io', id: 'stdout' } })
+    expect(recorded).not.toHaveProperty('from')
+    expect(transitionIsFlow(recorded)).toBe(false)
+    expect(relevantFlowHistory([recorded], null, output.seq + 1)).toEqual([])
+  })
+
+  it('rejects a local-evidence path even if a caller endpoint is supplied', () => {
+    const local = { id: 'legacy', seq: 0, kind: 'parameter' as const, label: 'parameter observed',
+      source: null, importance: 'normal' as const, evidence: 'local' as const,
+      from: { kind: 'frame' as const, id: 'caller' }, to: { kind: 'slot' as const, id: 'parameter' } }
+    expect(transitionIsFlow(local)).toBe(false)
+    expect(relevantFlowHistory([local], 'parameter', 1)).toEqual([])
   })
 })

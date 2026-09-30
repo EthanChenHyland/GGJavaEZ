@@ -1,0 +1,143 @@
+{
+  "id": "221c65dd-31e4-40b5-a0bc-61c806d0ea4f",
+  "projectId": "5a3bb5a8-9595-4dda-ab57-6131b2f667ce",
+  "phase": "COMPLETED",
+  "support": "FULL",
+  "supportReason": null,
+  "terminalStatus": "complete",
+  "diagnostic": null,
+  "exitCode": 0,
+  "stdout": "BALANCE 118\n{\"owner\":\"Mira\",\"opening\":100,\"deposit\":25,\"withdrawal\":7,\"closing\":118}\n",
+  "stderr": "",
+  "rawEvents": 112,
+  "invocations": 16,
+  "objects": 3,
+  "rawEventKinds": [
+    "enter",
+    "line",
+    "local",
+    "stdin_wait",
+    "stdin_read",
+    "branch",
+    "object",
+    "exit",
+    "field",
+    "return",
+    "console"
+  ],
+  "capability": {
+    "status": "partial",
+    "coveredClasses": [
+      "audit.bank.Account",
+      "audit.bank.LedgerService",
+      "audit.bank.Main",
+      "audit.bank.Receipt"
+    ],
+    "diagnostics": [],
+    "features": {
+      "methods": {
+        "status": "supported",
+        "reason": "Observed project method entry/exit",
+        "observedEvents": 32
+      },
+      "locals": {
+        "status": "supported",
+        "reason": "Debug local stores and parameters available",
+        "observedEvents": 7
+      },
+      "objects": {
+        "status": "supported",
+        "reason": "Observed project constructors",
+        "observedEvents": 3
+      },
+      "fields": {
+        "status": "supported",
+        "reason": "Observed instance field writes",
+        "observedEvents": 9
+      },
+      "references": {
+        "status": "supported",
+        "reason": "Observed reference identities",
+        "observedEvents": 3
+      },
+      "intArrays": {
+        "status": "partial",
+        "reason": "No int[] allocations observed in this execution prefix",
+        "observedEvents": 0
+      },
+      "arrayReads": {
+        "status": "partial",
+        "reason": "No array reads observed in this execution prefix",
+        "observedEvents": 0
+      },
+      "arrayWrites": {
+        "status": "partial",
+        "reason": "No array writes observed in this execution prefix",
+        "observedEvents": 0
+      },
+      "sourceMapping": {
+        "status": "partial",
+        "reason": "Recorder lines require source-manifest resolution",
+        "observedEvents": 42
+      },
+      "branches": {
+        "status": "supported",
+        "reason": "Observed conditional outcomes",
+        "observedEvents": 5
+      },
+      "loops": {
+        "status": "partial",
+        "reason": "Branch probes do not establish source-level loop labels",
+        "observedEvents": 5
+      },
+      "scopes": {
+        "status": "partial",
+        "reason": "Lexical scopes are not completely reconstructed",
+        "observedEvents": 0
+      },
+      "returns": {
+        "status": "supported",
+        "reason": "Observed return operands and exits",
+        "observedEvents": 26
+      },
+      "exceptions": {
+        "status": "partial",
+        "reason": "Library/native exception internals are outside project capture",
+        "observedEvents": 0
+      },
+      "console": {
+        "status": "partial",
+        "reason": "Wrapped writes have recorder order; process pipes do not",
+        "observedEvents": 2
+      }
+    }
+  },
+  "javaProject": {
+    "projectId": "5a3bb5a8-9595-4dda-ab57-6131b2f667ce",
+    "revision": "71bf5dd9aabf8ceafcd2eafe7b4f604ca0957e5a60fd41be4c3466549ed00a99",
+    "buildSystem": "maven",
+    "status": "ready",
+    "diagnostic": null,
+    "sourceRoots": [
+      "src/main/java"
+    ],
+    "testSourceRoots": [
+      "src/test/java"
+    ],
+    "outputRoots": [
+      "target/classes"
+    ],
+    "dependencies": [
+      {
+        "name": "gson-2.13.2.jar"
+      },
+      {
+        "name": "error_prone_annotations-2.41.0.jar"
+      }
+    ],
+    "runnableTargets": [
+      "audit.bank.Main"
+    ],
+    "elapsedMs": 2672
+  }
+}

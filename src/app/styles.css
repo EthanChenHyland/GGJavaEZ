@@ -111,7 +111,7 @@ button:focus-visible { outline: 2px solid var(--color-execution); outline-offset
 @media(max-width:760px) { .representation-bar { left:12px; right:12px; } .representation-bar .toolbar-button { font-size:11px; padding:0 6px; } .world-controls { top:52px; } }
 .classic-view[aria-hidden="true"] { visibility:hidden; pointer-events:none; }
 
-@media(min-width:600px) and (max-width:760px) { .inspector, .inspector--left { left:12px; right:12px; grid-template-columns:160px minmax(0,1fr) 115px; } .world-panel--inspecting .world-access { bottom:184px; } .inspector-body { gap:12px; padding:12px; } }
+@media(min-width:600px) and (max-width:760px) { .inspector, .inspector--left { left:12px; right:12px; grid-template-columns:160px minmax(0,1fr) 115px; } .world-panel--inspecting .world-access { bottom:184px; } .inspector-body { gap:12px; padding:12px; } .inspector-header { gap:6px; padding:12px; } .inspector h2 { font-size:14px; line-height:1.35; } }
 .example-picker { display:flex; align-items:center; gap:8px; color:var(--color-textMuted); font-size:11px; }
 .example-picker select { padding:7px 9px; background:var(--color-panel); color:var(--color-textSecondary); border:1px solid var(--color-borderStrong); border-radius:6px; font:inherit; max-width:205px; }
 .call-status { position:absolute; top:56px; left:20px; right:100px; z-index:var(--layer-overlay); display:flex; flex-wrap:wrap; align-items:center; gap:12px; color:var(--color-textSecondary); font-size:12px; pointer-events:none; }
@@ -169,6 +169,8 @@ button:focus-visible { outline: 2px solid var(--color-execution); outline-offset
 .app-shell--embedded .spatial-view, .app-shell--embedded .classic-view { bottom:72px; }
 .app-shell--embedded .world-access { bottom:84px; }
 .app-shell--embedded .world-panel--inspecting .world-access { top:52px; bottom:auto;left:12px;right:auto; }
+.app-shell--embedded .world-panel--inspecting .call-status { top:96px; }
+.app-shell--embedded .world-panel--inspecting .array-status .final-result { max-width:100%; font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .app-shell--embedded .inspector,.app-shell--embedded .inspector--left { height:112px;max-height:112px; }
 .app-shell--embedded .world-hint { display:none; }
 .app-shell--embedded .event-chip { bottom:128px;max-width:calc(100% - 32px);white-space:normal;text-align:center; }
@@ -180,4 +182,17 @@ button:focus-visible { outline: 2px solid var(--color-execution); outline-offset
   .app-shell--embedded .spatial-view, .app-shell--embedded .classic-view { bottom:96px; }
   .app-shell--embedded .world-access { bottom:108px; }
   .app-shell--embedded .inspector, .app-shell--embedded .inspector--left { bottom:108px; }
+}
+
+.world-detail-summary {
+  position: absolute;
+  top: 4.5rem;
+  left: 1rem;
+  z-index: 2;
+  max-width: calc(100% - 5rem);
+  padding: 0.35rem 0.55rem;
+  background: var(--color-panel);
+  color: var(--color-textSecondary);
+  font-size: 11px;
+  pointer-events: none;
 }

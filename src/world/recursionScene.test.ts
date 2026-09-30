@@ -35,7 +35,7 @@ describe('shared recursion scene and anchors', () => {
     const destination = returning.returnFlow!.destination!
     const caller = returning.frames.find((frame) => frame.id === destination.frameId)!
     expect(returning.returnFlow?.to).toEqual(caller.slots.find((slot) => slot.id === destination.slotId)!.port)
-    expect(sceneAt(21).frames.some((frame) => frame.id === pending.id)).toBe(false)
+    expect(sceneAt(21).frames.find((frame) => frame.id === pending.id)?.invocationStatus).toBe('completed')
     expect(sceneAt(19).frames.find((frame) => frame.id === pending.id)?.anchor).toEqual(pending.anchor)
     expect(sceneAt(36).frames).toHaveLength(6)
     expect(sceneAt(36).frames.every((frame) => frame.invocationStatus === 'completed' && !frame.active)).toBe(true)

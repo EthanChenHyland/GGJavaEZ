@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test'
 
 test('visible zoom controls reset each representation without changing runtime state', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' })
-  await page.goto('/')
+  await page.goto('/examples')
   await page.getByRole('slider', { name: 'Scrub execution' }).fill('18')
   const spatialPose = () => page.evaluate(async () => {
     // Read the controller's actual Vite module instance. After HMR, a bare
@@ -32,7 +32,7 @@ test('visible zoom controls reset each representation without changing runtime s
 })
 
 test('Classic slots and reference arrows select the shared inspector; switching preserves viewport', async ({ page }) => {
-  await page.goto('/')
+  await page.goto('/examples')
   await page.getByRole('slider', { name: 'Scrub execution' }).fill('18')
   await page.getByRole('button', { name: 'Classic', exact: true }).click()
   await page.getByRole('button', { name: 'Overview', exact: true }).click()

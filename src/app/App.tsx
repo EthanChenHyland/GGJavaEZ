@@ -57,7 +57,7 @@ export function App({ trace: suppliedTrace, embedded = false, onSourceChange, on
   const [example, setExample] = useState<ExampleId>('person')
   const trace = suppliedTrace ?? examples[example]
   // The bridge keeps demoId fixed for every prefix of one session. Growing traces update in place.
-  return <ExecutionWorkspace key={embedded ? 'embedded-runtime' : trace.demoId} trace={trace} example={example} onChooseExample={setExample} embedded={embedded} onSourceChange={onSourceChange} onRuntimeChange={onRuntimeChange} navigation={navigation} suppressInspector={suppressInspector} execution={execution}/>
+  return <ExecutionWorkspace key={trace.demoId} trace={trace} example={example} onChooseExample={setExample} embedded={embedded} onSourceChange={onSourceChange} onRuntimeChange={onRuntimeChange} navigation={navigation} suppressInspector={suppressInspector} execution={execution}/>
 }
 
 function ExecutionWorkspace({ trace, example, onChooseExample, embedded, onSourceChange, onRuntimeChange, navigation, suppressInspector, execution }: {
@@ -153,6 +153,7 @@ function ExecutionWorkspace({ trace, example, onChooseExample, embedded, onSourc
   const detailLevel = useNavigationStore((state) => state.detailLevel)
   const mode = useNavigationStore((state) => state.mode)
   const followEnabled = useNavigationStore((state) => state.followEnabled)
+  const isolatedSelection = useNavigationStore((state) => state.isolatedSelection)
   const [quality, setQuality] = useState<keyof typeof renderQuality>(() => {
     const saved = localStorage.getItem('ggjavaez:animation-quality')
     return saved === 'low' ? 'low' : saved === 'medium' ? 'balanced' : 'high'
@@ -205,7 +206,6 @@ function ExecutionWorkspace({ trace, example, onChooseExample, embedded, onSourc
   const array = Object.values(runtime.objects).find((object) => object.array)
   const latestException = runtime.exceptions.at(-1)
   const arrayName = array?.className ?? 'int[]'
-  const curatedArray = trace.schemaVersion === 1 && trace.demoId === 'arrays'
   const activity = runtime.arrayActivity
   const scalar = (value: { kind: string; value?: number | boolean | string }) => value.kind === 'primitive' ? String(value.value) : '—'
   const selectionLive = !!selection && (scene.frames.some((node) => node.id === selection.id || node.slots.some((slot) => slot.id === selection.id)) || scene.objects.some((node) => node.id === selection.id || node.fields.some((slot) => slot.id === selection.id) || node.array?.cells.some((slot) => slot.id === selection.id)) || scene.references.some((edge) => edge.id === selection.id))
@@ -218,7 +218,7 @@ function ExecutionWorkspace({ trace, example, onChooseExample, embedded, onSourc
     : selection?.kind === 'object' ? scene.references.find((edge) => edge.targetObjectId === selection.id)
       : selection?.kind === 'frame' ? scene.references.find((edge) => edge.source.kind === 'frame' && edge.source.frameId === selection.id)
         : selection?.kind === 'slot' ? scene.references.find((edge) => edge.source.slotId === selection.id || edge.targetObjectId === selectedObject?.id)
-          : scene.references.find((edge) => edge.source.slotId.endsWith(':p')) ?? scene.references[0]
+          : scene.references[0]
   const traceSelection = (referenceId = selectedReference?.id) => {
     if (referenceId) {
       selectEntity({ kind: 'reference', id: referenceId })
@@ -266,7 +266,7 @@ function ExecutionWorkspace({ trace, example, onChooseExample, embedded, onSourc
         onPointerDown={(event) => event.currentTarget.setPointerCapture(event.pointerId)}
         onPointerMove={(event) => { if (event.currentTarget.hasPointerCapture(event.pointerId)) { const bounds = workbenchRef.current!.getBoundingClientRect(); setSourceWidth(Math.max(24, Math.min(46, (event.clientX - bounds.left) / bounds.width * 100))) } }} /> }
       <section className={`world-panel ${selection && !suppressInspector ? 'world-panel--inspecting' : ''} ${hasScopes ? 'world-panel--scoped' : ''}`} aria-label="Runtime world">
-        <div className={`spatial-view ${view === 'classic' ? 'is-hidden' : ''}`} aria-hidden={view === 'classic'}><RuntimeCanvas visible={view !== 'classic'} fitShallow={trace.demoId.startsWith('debug:') || trace.demoId.startsWith('execution:')} guided={guided} playing={playing} quality={quality} scene={scene} layout={layout} event={event} transition={activeMotion} flowHistory={flowHistory} selection={selection} selectedFlowId={selectedFlowId} onSelectFlow={selectFlow} inspectorVisible={selectionLive && !suppressInspector} onSelect={selectEntity} onFocusSelected={navigationActions.focus} /></div>
+        <div className={`spatial-view ${view === 'classic' ? 'is-hidden' : ''}`} aria-hidden={view === 'classic'}><RuntimeCanvas visible={view !== 'classic'} fitShallow={trace.capture?.origin === 'jvm'} guided={guided} playing={playing} quality={quality} scene={scene} layout={layout} event={event} transition={activeMotion} flowHistory={flowHistory} selection={selection} selectedFlowId={selectedFlowId} onSelectFlow={selectFlow} inspectorVisible={selectionLive && !suppressInspector} onSelect={selectEntity} onFocusSelected={navigationActions.focus} /></div>
         <ClassicRuntime visible={view === 'classic'} playing={playing} scene={scene} event={event} transition={activeMotion} guided={guided} selection={selection} onSelect={selectEntity} onFocusSelected={navigationActions.focus} />
         <div className="representation-bar">
           <div role="group" aria-label="Visualization mode" className="view-selector">{visualizationModes.filter((item) => item.available || item.id === 'theater' && !!layout.theater).map((item) => <button key={item.id} className={`toolbar-button ${view === item.id ? 'is-active' : ''}`} aria-pressed={view === item.id} title={item.id === 'theater' ? 'Expand the same array to examine comparisons and writes' : `${item.label} representation`} onClick={() => chooseView(item.id)}>{item.label}</button>)}</div>
@@ -285,15 +285,15 @@ function ExecutionWorkspace({ trace, example, onChooseExample, embedded, onSourc
             <button className="toolbar-button" onClick={navigationActions.zoomOut} title="Zoom out" aria-label="Zoom out"><ZoomOut size={16}/></button>
           </div>
         </div>
-        <span className="world-label world-label--compact" aria-live="polite">{mode.replaceAll('_', ' ')}</span>
-        {scene.stackDepth !== undefined && scene.stackDepth > 1 && <section className="call-status" aria-label="Call and return state">
+        <span className="world-label world-label--compact" aria-live="polite">{isolatedSelection ? 'ISOLATED · ' : ''}{mode.replaceAll('_', ' ')}</span>
+        {!isolatedSelection && scene.stackDepth !== undefined && scene.stackDepth > 1 && <section className="call-status" aria-label="Call and return state">
           <span className="eyebrow">{runtime.status === 'ended' ? 'COMPLETE' : `${runtime.activeFrameIds.length} LIVE FRAMES`}</span>
-          {runtime.returns.length > 0 && <div className="return-history"><span>Returns</span>{runtime.returns.map((item) => <span key={item.eventId} title={item.expression}>{item.value.kind === 'primitive' ? String(item.value.value) : ''}</span>)}</div>}
-          {runtime.status === 'ended' && <strong className="final-result">{finalSlot?.name ?? 'Return'} = {finalTransfer?.value.kind === 'primitive' ? String(finalTransfer.value.value) : ''}</strong>}
+          {runtime.returns.length > 0 && <div className="return-history"><span>{runtime.returns.length} returns</span>{runtime.returns.slice(-8).map((item) => <span key={item.eventId} title={item.expression}>{item.value.kind === 'primitive' ? String(item.value.value) : ''}</span>)}</div>}
+          {runtime.status === 'ended' && finalTransfer && <strong className="final-result">{finalSlot?.name ?? `Last return · ${runtime.frames[finalTransfer.frameId]?.methodName ?? 'method'}()`} = {finalTransfer.value.kind === 'primitive' ? String(finalTransfer.value.value) : ''}</strong>}
           {guided && scene.returnFlow && runtime.status !== 'ended' && <span className="return-explanation">{scene.returnFlow.expression ?? `${scene.returnFlow.fromLabel} returns`}: {scene.returnFlow.value.kind === 'primitive' ? String(scene.returnFlow.value.value) : ''} → {scene.returnFlow.toLabel}</span>}
         </section>}
         {array?.array && <section className="call-status array-status" aria-label="Array execution state">
-          <span className="eyebrow">{runtime.status === 'ended' ? curatedArray ? 'SORT COMPLETE' : 'EXECUTION COMPLETE' : curatedArray ? 'BUBBLE SORT' : 'ARRAY EXECUTION'} · {runtime.arrayMutations.length} INDEXED WRITES</span>
+          <span className="eyebrow">{runtime.status === 'ended' ? 'EXECUTION COMPLETE' : 'ARRAY EXECUTION'} · {runtime.arrayMutations.length} INDEXED WRITES</span>
           {runtime.status === 'ended' ? <strong className="final-result">[{array.array.elements.map((cell) => scalar(cell.value)).join(', ')}]</strong>
             : activity?.kind === 'compare' ? <strong>{scalar(activity.values[0])} &gt; {scalar(activity.values[1])} · {activity.result ? 'true → swap' : 'false → keep'}</strong>
             : activity?.kind === 'write' ? <strong>[{activity.index}]: {scalar(activity.before)} → {scalar(activity.after)}</strong>
@@ -304,13 +304,14 @@ function ExecutionWorkspace({ trace, example, onChooseExample, embedded, onSourc
         {runtime.status === 'aborted' && <div className="event-chip event-chip--failure" title={latestException?.message ?? runtime.abortReason ?? undefined}><strong>{latestException ? latestException.className.split('.').at(-1) : 'Recording stopped'}</strong> · {latestException?.message ?? runtime.abortReason}</div>}
         {guided && event?.type === 'SET_FIELD' && <div className="event-chip"><strong>Mutation</strong> · {event.label}</div>}
         <div className="world-access">
+          {isolatedSelection && (suppressInspector || !selection) && <button className="toolbar-button" onClick={navigationActions.returnToPrevious}>Return to world</button>}
           {trace.events.length > 0 && <select aria-label="Flow history" value={flowDisplay} onChange={(event) => setFlowDisplay(event.target.value as 'relevant' | 'current' | 'all')}><option value="relevant">Relevant flow</option><option value="current">Current flow</option><option value="all">All flow</option></select>}
           <select aria-label="Rendering quality" title="Animation quality" value={quality} onChange={(event) => { const next = event.target.value as keyof typeof renderQuality; setQuality(next); localStorage.setItem('ggjavaez:animation-quality', next === 'balanced' ? 'medium' : next) }}><option value="high">High motion</option><option value="balanced">Medium motion</option><option value="low">Low motion</option></select>
           {mode === 'FREE_EXPLORE' && <button className="toolbar-button" onClick={() => { setGuided(true); navigationActions.followExecution() }}>Return to execution</button>}
           <select aria-label="Select runtime entity" value={selection && selection.kind !== 'reference' ? selection.id : ''} onChange={(event) => { const id = event.target.value; selectEntity(id ? { kind: scene.objects.some((node) => node.id === id) ? 'object' : scene.frames.some((node) => node.id === id) ? 'frame' : 'slot', id } : null) }}>
             <option value="">Inspect an entity…</option>
             {selection && !selectionLive && selectedLifetime && <option value={selection.id}>{selectedLifetime.slot.name} · scope closed</option>}
-            {scene.frames.map((node) => <option key={node.id} value={node.id}>{node.label}</option>)}
+            {scene.frames.map((node, index) => <option key={node.id} value={node.id}>{node.label} · invocation {index + 1}</option>)}
             {scene.objects.map((node) => <option key={node.id} value={node.id}>{node.label}</option>)}
             {scene.frames.flatMap((node) => node.slots.filter((slot) => slot.role !== 'return').map((slot) => <option key={slot.id} value={slot.id}>{node.label} · {slot.name}</option>))}
             {scene.objects.flatMap((node) => node.array?.cells.map((cell) => <option key={cell.id} value={cell.id}>{node.label} · {cell.name}</option>) ?? [])}

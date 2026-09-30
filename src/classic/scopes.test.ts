@@ -151,7 +151,7 @@ describe('Classic lexical scope projection', () => {
     const transfer = buildClassicScene(returning).returnTransfer!
     expect(transfer.value).toBe('7')
     const exit: TraceEvent = { type: 'EXIT_METHOD', eventId: 'exit', seq: 31, source: null, label: '', importance: 'normal', frameId: 'call-frame' }
-    const departed = { ...returning, frames: [entry()], activeEventId: exit.eventId }
+    const departed = { ...returning, frames: returning.frames.map(node => node.id === flow.frameId ? { ...node, active: false, historical: true, invocationStatus: 'completed' as const } : node), activeEventId: exit.eventId }
     expect(buildClassicScene(departed, exit).returnTransfer).toEqual(transfer)
     expect(buildClassicScene({ ...returning, activeEventId: 'next-call' }).returnTransfer).toBeNull()
     expect(render({ ...returning, activeEventId: 'next-call' })).not.toContain('data-return-event=')
