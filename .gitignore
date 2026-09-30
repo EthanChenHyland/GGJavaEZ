@@ -11,3 +11,21 @@ test-results/
 .env.*
 !.env.example
 .ggjavaez/
+
+# Java/compiler outputs from directly running the checked-in QA projects.
+*.class
+fixtures/**/target/
+fixtures/**/build/
+fixtures/**/out/
+.gradle/
+
+# Temporary browser reports and newly generated bulk checkpoint media.
+# Existing reviewed checkpoint evidence remains tracked intentionally.
+playwright-report/
+blob-report/
+docs/checkpoints/**/*.png
+docs/checkpoints/**/*.jpg
+docs/checkpoints/**/*.jpeg
+docs/checkpoints/**/*.gif
+docs/checkpoints/**/*.mp4
+docs/checkpoints/**/*.webm
