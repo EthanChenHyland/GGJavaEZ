@@ -42,7 +42,8 @@ describe('persistent scope world', () => {
       expect(detailDistanceForScene(distance(home.position,home.target),home,{ bounds:layout.bounds,stackDepth:layout.stackDepth,layoutKind:layout.layoutKind })).toBeLessThan(20)
     }
     const final = buildSceneModel(seek(trace,trace.events.length),layout,'meso')
-    expect(final.frames).toHaveLength(0)
+    expect(final.frames).toHaveLength(4)
+    expect(final.frames.every((frame) => frame.invocationStatus === 'completed')).toBe(true)
     expect(final.objects.map((node) => node.className)).toEqual(['Scanner'])
   })
 })

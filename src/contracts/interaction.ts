@@ -35,5 +35,5 @@ export interface NavigationState {
 export interface PlaybackState {
   cursor: number
   playing: boolean
-  speed: 0.5 | 1 | 2 | 4
+  speed: 0.25 | 0.5 | 1 | 2 | 4
 }

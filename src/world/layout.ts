@@ -19,6 +19,7 @@ export function createLayout(trace: TraceDocument): LayoutState {
   const frameSlots: Record<string, RuntimeSlot[]> = {}
   const frameDepths: Record<string, number> = {}
   let childOrdinal = 0
+  const liveOrdinalByDepth: Record<number, number> = {}
   let objectOrdinal = 0
   let stackDepth = 0
   const hasArrays = trace.events.some((event) => event.type === 'ALLOCATE_ARRAY')
@@ -46,8 +47,12 @@ export function createLayout(trace: TraceDocument): LayoutState {
     if (event.type === 'ENTER_METHOD') {
       const depth = event.callerFrameId ? (frameDepths[event.callerFrameId] ?? 0) + 1 : 0
       frameDepths[event.frameId] = depth
+      const sibling = liveOrdinalByDepth[depth] ?? 0
+      liveOrdinalByDepth[depth] = sibling + 1
+      const column = sibling % 2
+      const row = Math.floor(sibling / 2)
       const position: Vec3 = live
-        ? [-4.9 + depth * 0.9, -depth * 4.2, -3 + depth * 1.1]
+        ? [-4.9 + depth * 0.9 + (depth > 0 ? (column === 0 ? -3.2 : 3.2) : 0), -depth * 4.2 - row * 4.4, -3 + depth * 1.1 - row * 0.65]
         : stackDepth > 1
         ? [-4.7 + depth * 0.9, (stackDepth - depth) * 2.2 - 0.3, -3 + depth * 1.1]
         : depth === 0

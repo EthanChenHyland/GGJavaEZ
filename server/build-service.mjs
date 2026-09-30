@@ -66,7 +66,10 @@ export class BuildService {
       const info = await stat(path);
       return [posix(relative(projectRoot, path)), info.size, info.mtimeMs];
     }))]);
-    if (this.models.get(projectId)?.fingerprint === fingerprint) return this.models.get(projectId);
+    // A build is an explicit refresh boundary. This matters after a transient
+    // filesystem/tool failure: a cached failed model must not poison later Run
+    // or Build attempts for an otherwise valid project.
+    if (!refresh && this.models.get(projectId)?.fingerprint === fingerprint) return this.models.get(projectId);
     const maven = await exists(join(projectRoot, 'pom.xml'));
     const gradle = await Promise.all(['build.gradle', 'build.gradle.kts', 'settings.gradle', 'settings.gradle.kts', 'gradlew', 'gradlew.bat']
       .map((name) => exists(join(projectRoot, name))));

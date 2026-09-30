@@ -2,6 +2,7 @@ import { X, Crosshair, CornerUpLeft } from 'lucide-react'
 import type { Selection } from '../contracts/interaction'
 import type { RuntimeSlot, RuntimeState, RuntimeValue, SlotOwner } from '../contracts/runtime'
 import type { SceneModel } from '../contracts/world'
+import type { FlowEndpoint, SemanticTransition } from '../motion/semanticTransition'
 
 export function formatValue(value: RuntimeValue, objects?: RuntimeState['objects']): string {
   switch (value.kind) {
@@ -29,17 +30,30 @@ interface InspectorProps {
   selection: Selection
   runtime: RuntimeState
   scene: SceneModel
+  flow?: SemanticTransition
   onClose: () => void
   onReturn: () => void
   onFocus: () => void
   onTrace: (referenceId: string) => void
 }
 
-export function Inspector({ selection, runtime, scene, onClose, onReturn, onFocus, onTrace }: InspectorProps) {
+export function Inspector({ selection, runtime, scene, flow, onClose, onReturn, onFocus, onTrace }: InspectorProps) {
   if (!selection) return null
   const sourceName = (source: SlotOwner) => source.kind === 'frame'
     ? runtime.frames[source.frameId]?.locals[source.slotId]?.name ?? source.slotId
     : runtime.objects[source.objectId]?.fields[source.slotId]?.name ?? source.slotId
+  const endpointName = (endpoint?: FlowEndpoint) => {
+    if (!endpoint) return 'Origin not recorded'
+    if (endpoint.kind === 'io') return endpoint.id.toUpperCase()
+    const owner = scene.frames.find((node) => node.id === endpoint.id || node.slots.some((slot) => slot.id === endpoint.id))
+      ?? scene.objects.find((node) => node.id === endpoint.id || node.fields.some((slot) => slot.id === endpoint.id) || node.array?.cells.some((slot) => slot.id === endpoint.id))
+    if (endpoint.kind === 'slot') {
+      const slot = owner && 'slots' in owner ? owner.slots.find((item) => item.id === endpoint.id)
+        : owner && 'fields' in owner ? [...owner.fields, ...(owner.array?.cells ?? [])].find((item) => item.id === endpoint.id) : undefined
+      return slot ? `${owner?.label} · ${slot.name}` : endpoint.id
+    }
+    return owner?.label ?? endpoint.id
+  }
 
   const object = selection.kind === 'object' ? runtime.objects[selection.id] : undefined
   const frame = selection.kind === 'frame' ? runtime.frames[selection.id] : undefined
@@ -80,10 +94,17 @@ export function Inspector({ selection, runtime, scene, onClose, onReturn, onFocu
       {edge && <><div className="inspector-key"><span>SOURCE</span><strong>{sourceName(edge.source)}</strong></div><div className="inspector-key"><span>TARGET</span><strong>{runtime.objects[edge.targetObjectId]?.className} #{runtime.objects[edge.targetObjectId]?.displayId}</strong></div><button className="inspector-action" onClick={() => onTrace(edge.id)}>Follow this path</button></>}
       {inspectedSlot && <>{arrayOwner?.array && <div className="inspector-key"><span>ARRAY · LENGTH · INDEX</span><strong>#{arrayOwner.displayId} · {arrayOwner.array.length} · {elementIndex}</strong></div>}<div className="inspector-key"><span>TYPE</span><strong>{inspectedSlot.javaType}</strong></div><div className="inspector-key"><span>VALUE</span><strong>{formatValue(inspectedSlot.value, runtime.objects)}</strong></div></>}
       {lifetime && <div className="inspector-key"><span>SCOPE · {lifetimeLive ? 'LIVE' : 'CLOSED'}</span><strong>{scope?.label ?? lifetime.scopeId}</strong><span>{lifetime.source ? `Declared L${lifetime.source.line}` : 'Declaration'} · {lifetimeLive ? 'current value' : 'last value'}</span></div>}
+      {flow && <section className="inspector-group" aria-label="Selected value transfer"><h3>Value transfer</h3>
+        <div className="inspector-key"><span>KIND · EVIDENCE</span><strong>{flow.kind.replaceAll('-', ' ')} · {flow.evidence}</strong></div>
+        {flow.value && <div className="inspector-key"><span>VALUE</span><strong>{formatValue(flow.value, runtime.objects)}</strong></div>}
+        <div className="inspector-key"><span>FROM</span><strong>{endpointName(flow.from)}</strong></div>
+        <div className="inspector-key"><span>TO</span><strong>{endpointName(flow.to)}</strong></div>
+        <div className="inspector-key"><span>SOURCE · SEQUENCE</span><strong>{flow.source ? `${flow.source.fileId}:${flow.source.line}` : 'source unavailable'} · {flow.seq}</strong></div>
+      </section>}
       {(object?.array || arrayOwner) && <div className="inspector-key"><span>INDEXED WRITES</span><strong>{writes.length}</strong></div>}
     </div>}
     <footer className="inspector-footer">
-      <button onClick={onFocus} disabled={!available || frame?.status === 'returned' || (!!lifetime && !lifetimeLive)}><Crosshair size={15} /> Focus</button>
+      <button onClick={onFocus} disabled={!available || (!!lifetime && !lifetimeLive)}><Crosshair size={15} /> Focus</button>
       <button onClick={onReturn}><CornerUpLeft size={15} /> Return to world</button>
     </footer>
   </aside>

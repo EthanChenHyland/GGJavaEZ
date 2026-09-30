@@ -39,7 +39,7 @@ export const bridge = {
   tree: (id: string) => request<ProjectEntry[]>(`${project(id)}/tree`),
   file: (id: string, path: string) => request<ProjectFile>(`${project(id)}/files?path=${encodeURIComponent(path)}`),
   save: (id: string, path: string, content: string, revision: string) => request<ProjectFile>(`${project(id)}/files`, 'PUT', { path, content, revision }),
-  createFile: (id: string, path: string) => request<ProjectFile>(`${project(id)}/files`, 'POST', { path, content: '' }),
+  createFile: (id: string, path: string, content = '') => request<ProjectFile>(`${project(id)}/files`, 'POST', { path, content }),
   createFolder: (id: string, path: string) => request<{ path: string }>(`${project(id)}/folders`, 'POST', { path }),
   rename: (id: string, from: string, to: string) => request<{ path: string }>(`${project(id)}/rename`, 'POST', { from, to }),
   delete: (id: string, path: string) => request<{ ok: boolean }>(`${project(id)}/entries?path=${encodeURIComponent(path)}`, 'DELETE'),

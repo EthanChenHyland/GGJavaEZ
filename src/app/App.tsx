@@ -17,6 +17,8 @@ import { usePlayback } from '../playback'
 import { loadPersonTrace, loadRecursionTrace, loadArrayTrace, loadControlTrace, seek } from '../runtime'
 import { createLayout } from '../world/layout'
 import { buildSceneModel } from '../world/sceneModel'
+import { deriveSemanticTransition, transitionsForTrace, type SemanticTransition } from '../motion/semanticTransition'
+import { transitionIsFlow } from '../motion/flowPresentation'
 
 const examples = { person: loadPersonTrace(), recursion: loadRecursionTrace(), arrays: loadArrayTrace(), control: loadControlTrace() }
 type ExampleId = keyof typeof examples
@@ -55,7 +57,7 @@ export function App({ trace: suppliedTrace, embedded = false, onSourceChange, on
   const [example, setExample] = useState<ExampleId>('person')
   const trace = suppliedTrace ?? examples[example]
   // The bridge keeps demoId fixed for every prefix of one session. Growing traces update in place.
-  return <ExecutionWorkspace key={trace.demoId} trace={trace} example={example} onChooseExample={setExample} embedded={embedded} onSourceChange={onSourceChange} onRuntimeChange={onRuntimeChange} navigation={navigation} suppressInspector={suppressInspector} execution={execution}/>
+  return <ExecutionWorkspace key={embedded ? 'embedded-runtime' : trace.demoId} trace={trace} example={example} onChooseExample={setExample} embedded={embedded} onSourceChange={onSourceChange} onRuntimeChange={onRuntimeChange} navigation={navigation} suppressInspector={suppressInspector} execution={execution}/>
 }
 
 function ExecutionWorkspace({ trace, example, onChooseExample, embedded, onSourceChange, onRuntimeChange, navigation, suppressInspector, execution }: {
@@ -69,18 +71,24 @@ function ExecutionWorkspace({ trace, example, onChooseExample, embedded, onSourc
   const hasConsole = trace.events.some((event) => event.type === 'INPUT_READ' || event.type === 'OUTPUT_WRITE')
   const hasScopes = trace.events.some((event) => event.type === 'ENTER_SCOPE')
   const layout = useMemo(() => createLayout(trace), [trace])
-  const [view, setView] = useState<VisualizationMode>('spatial')
+  const [view, setView] = useState<VisualizationMode>(() => localStorage.getItem('ggjavaez:runtime-view') === 'classic' ? 'classic' : 'spatial')
   const [presentation, setPresentation] = useState<'spatial' | 'theater'>('spatial')
+  const [flowDisplay, setFlowDisplay] = useState<'relevant' | 'current' | 'all'>('relevant')
+  const [activeMotion, setActiveMotion] = useState<SemanticTransition | null>(null)
+  const motionIntent = useRef<'step' | 'scrub' | null>(null)
   const chooseView = (next: VisualizationMode) => {
+    setActiveMotion(null)
     if (next !== 'classic' && next !== presentation) { setPresentation(next); navigationActions.setRepresentation(next) }
     setView(next)
+    localStorage.setItem('ggjavaez:runtime-view', next)
   }
   const [guided, setGuided] = useState(true)
   const playback = usePlayback(trace)
   const { cursor, liveCursor } = resolveTimelinePosition(trace.events.length, playback.state.cursor, execution)
   const playing = execution?.lens === 'LIVE' ? execution.phase === 'RUNNING' : playback.state.playing
   const lastReportedHistoryCursor = useRef<number | null>(null)
-  const seekHistory = (next: number) => {
+  const seekHistory = (next: number, intent: 'step' | 'scrub' = 'scrub') => {
+    motionIntent.current = intent
     const target = Math.min(Math.max(0, Math.round(next)), liveCursor)
     playback.seekTo(target)
     if (execution) {
@@ -108,12 +116,36 @@ function ExecutionWorkspace({ trace, example, onChooseExample, embedded, onSourc
     ...playback,
     state: { ...playback.state, cursor, playing: execution.lens === 'HISTORY' && playback.state.playing },
     playPause: replayHistory,
-    stepForward: () => seekHistory(cursor + 1),
+    stepForward: () => seekHistory(cursor + 1, 'step'),
     stepBack: () => seekHistory(cursor - 1),
     seekTo: seekHistory,
     reset: () => seekHistory(0),
-  } : playback
+  } : { ...playback,
+    stepForward: () => { motionIntent.current = 'step'; playback.stepForward() },
+    stepBack: () => { motionIntent.current = 'scrub'; playback.stepBack() },
+    seekTo: (next: number) => { motionIntent.current = 'scrub'; playback.seekTo(next) },
+  }
   const runtime = useMemo(() => seek(trace, cursor), [trace, cursor])
+  const transitions = useMemo(() => transitionsForTrace(trace), [trace])
+  const previousMotionCursor = useRef({ demoId: trace.demoId, cursor, playing })
+  useEffect(() => {
+    const previous = previousMotionCursor.current
+    previousMotionCursor.current = { demoId: trace.demoId, cursor, playing }
+    const intent = motionIntent.current
+    motionIntent.current = null
+    if (previous.demoId !== trace.demoId || cursor !== previous.cursor + 1 || (!playing && !previous.playing && intent !== 'step')) {
+      setActiveMotion(null)
+      return
+    }
+    const current = trace.events[cursor - 1]
+    if (!current || current.importance === 'quiet') { setActiveMotion(null); return }
+    setActiveMotion(deriveSemanticTransition(seek(trace, cursor - 1), current, runtime))
+  }, [trace, cursor, playing, runtime])
+  useEffect(() => {
+    if (!activeMotion) return
+    const timer = window.setTimeout(() => setActiveMotion(null), 650)
+    return () => window.clearTimeout(timer)
+  }, [activeMotion])
   useEffect(() => { onSourceChange?.(runtime.currentSource) }, [runtime.currentSource, onSourceChange])
   const event = trace.events[cursor - 1] ?? null
   const finalTransfer = runtime.returns.at(-1)
@@ -121,11 +153,15 @@ function ExecutionWorkspace({ trace, example, onChooseExample, embedded, onSourc
   const detailLevel = useNavigationStore((state) => state.detailLevel)
   const mode = useNavigationStore((state) => state.mode)
   const followEnabled = useNavigationStore((state) => state.followEnabled)
-  const [quality, setQuality] = useState<keyof typeof renderQuality>('balanced')
+  const [quality, setQuality] = useState<keyof typeof renderQuality>(() => {
+    const saved = localStorage.getItem('ggjavaez:animation-quality')
+    return saved === 'low' ? 'low' : saved === 'medium' ? 'balanced' : 'high'
+  })
   const [runtimeFocus, setRuntimeFocus] = useState(() => !embedded && window.matchMedia('(max-width: 760px)').matches)
   const [sourceWidth, setSourceWidth] = useState(34)
   const workbenchRef = useRef<HTMLDivElement>(null)
   const [selection, setSelection] = useState<Selection>(null)
+  const [selectedFlowId, setSelectedFlowId] = useState<string | null>(null)
   const lastNavigation = useRef(-1)
   useEffect(() => {
     if (!navigation || navigation.revision === lastNavigation.current) return
@@ -135,13 +171,33 @@ function ExecutionWorkspace({ trace, example, onChooseExample, embedded, onSourc
   }, [navigation, playback])
   useEffect(() => { onRuntimeChange?.(runtime, selection) }, [runtime, selection, onRuntimeChange])
   const scene = useMemo(() => buildSceneModel(runtime, layout, detailLevel, presentation), [runtime, layout, detailLevel, presentation])
+  const flowHistory = useMemo(() => {
+    if (flowDisplay === 'current') return []
+    if (runtime.status === 'running' && !selection && flowDisplay === 'relevant') return []
+    const ids = new Set<string>(selection ? [selection.id] : [])
+    if (selection?.kind === 'object') scene.objects.find((item) => item.id === selection.id)?.fields.forEach((item) => ids.add(item.id))
+    if (selection?.kind === 'frame') scene.frames.find((item) => item.id === selection.id)?.slots.forEach((item) => ids.add(item.id))
+    const candidates = transitions.filter((item) => item.seq < cursor && transitionIsFlow(item))
+    const relevant = ids.size ? candidates.filter((item) => ids.has(item.from?.id ?? '') || ids.has(item.to?.id ?? '')) : candidates
+    return relevant.slice(flowDisplay === 'all' ? -24 : -6)
+  }, [transitions, trace, cursor, selection, flowDisplay, runtime.status, scene])
   const selectEntity = (next: Selection) => {
+    setActiveMotion(null)
+    setSelectedFlowId(null)
     setSelection(next)
     if (!next || !onSourceChange) return
     for (let index = cursor - 1; index >= 0; index--) {
       const item = trace.events[index]
       if (item.source && eventDescribesSelection(item, next)) { onSourceChange(item.source); break }
     }
+  }
+  const selectFlow = (id: string) => {
+    const flow = transitions.find((item) => item.id === id)
+    if (!flow) return
+    const endpoint = flow.to?.kind !== 'io' ? flow.to : flow.from?.kind !== 'io' ? flow.from : undefined
+    if (endpoint) selectEntity({ kind: endpoint.kind, id: endpoint.id })
+    setSelectedFlowId(id)
+    if (flow.source) onSourceChange?.(flow.source)
   }
 
   useEffect(() => { navigationActions.resetView(); navigationActions.followExecution() }, [])
@@ -187,7 +243,7 @@ function ExecutionWorkspace({ trace, example, onChooseExample, embedded, onSourc
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [timelinePlayback, embedded])
 
-  return <div className={`app-shell ${embedded ? 'app-shell--embedded' : ''} ${!embedded && hasConsole && runtimeFocus ? 'app-shell--console' : ''}`}>
+  return <div className={`app-shell ${embedded ? 'app-shell--embedded' : ''} ${trace.events.length === 0 ? 'app-shell--idle' : ''} ${!embedded && hasConsole && runtimeFocus ? 'app-shell--console' : ''}`}>
     {!embedded && <header className="topbar">
       <div className="brand">
         <span className="brand-mark"><Box size={22} strokeWidth={1.5} /></span>
@@ -210,8 +266,8 @@ function ExecutionWorkspace({ trace, example, onChooseExample, embedded, onSourc
         onPointerDown={(event) => event.currentTarget.setPointerCapture(event.pointerId)}
         onPointerMove={(event) => { if (event.currentTarget.hasPointerCapture(event.pointerId)) { const bounds = workbenchRef.current!.getBoundingClientRect(); setSourceWidth(Math.max(24, Math.min(46, (event.clientX - bounds.left) / bounds.width * 100))) } }} /> }
       <section className={`world-panel ${selection && !suppressInspector ? 'world-panel--inspecting' : ''} ${hasScopes ? 'world-panel--scoped' : ''}`} aria-label="Runtime world">
-        <div className={`spatial-view ${view === 'classic' ? 'is-hidden' : ''}`} aria-hidden={view === 'classic'}><RuntimeCanvas visible={view !== 'classic'} fitShallow={trace.demoId.startsWith('debug:') || trace.demoId.startsWith('execution:')} guided={guided} playing={playing} quality={quality} scene={scene} event={event} selection={selection} onSelect={selectEntity} onFocusSelected={navigationActions.focus} /></div>
-        <ClassicRuntime visible={view === 'classic'} playing={playing} scene={scene} event={event} guided={guided} selection={selection} onSelect={selectEntity} onFocusSelected={navigationActions.focus} />
+        <div className={`spatial-view ${view === 'classic' ? 'is-hidden' : ''}`} aria-hidden={view === 'classic'}><RuntimeCanvas visible={view !== 'classic'} fitShallow={trace.demoId.startsWith('debug:') || trace.demoId.startsWith('execution:')} guided={guided} playing={playing} quality={quality} scene={scene} layout={layout} event={event} transition={activeMotion} flowHistory={flowHistory} selection={selection} selectedFlowId={selectedFlowId} onSelectFlow={selectFlow} inspectorVisible={selectionLive && !suppressInspector} onSelect={selectEntity} onFocusSelected={navigationActions.focus} /></div>
+        <ClassicRuntime visible={view === 'classic'} playing={playing} scene={scene} event={event} transition={activeMotion} guided={guided} selection={selection} onSelect={selectEntity} onFocusSelected={navigationActions.focus} />
         <div className="representation-bar">
           <div role="group" aria-label="Visualization mode" className="view-selector">{visualizationModes.filter((item) => item.available || item.id === 'theater' && !!layout.theater).map((item) => <button key={item.id} className={`toolbar-button ${view === item.id ? 'is-active' : ''}`} aria-pressed={view === item.id} title={item.id === 'theater' ? 'Expand the same array to examine comparisons and writes' : `${item.label} representation`} onClick={() => chooseView(item.id)}>{item.label}</button>)}</div>
           <button className={`toolbar-button guided-toggle ${guided ? 'is-active' : ''}`} title="Toggle explanatory motion and cues" aria-label="Guided execution" aria-pressed={guided} onClick={() => { setGuided((value) => !value); if (guided) navigationActions.freeExplore() }}>Guided <span className="guided-toggle__state">{guided ? 'On' : 'Off'}</span></button>
@@ -248,7 +304,8 @@ function ExecutionWorkspace({ trace, example, onChooseExample, embedded, onSourc
         {runtime.status === 'aborted' && <div className="event-chip event-chip--failure" title={latestException?.message ?? runtime.abortReason ?? undefined}><strong>{latestException ? latestException.className.split('.').at(-1) : 'Recording stopped'}</strong> · {latestException?.message ?? runtime.abortReason}</div>}
         {guided && event?.type === 'SET_FIELD' && <div className="event-chip"><strong>Mutation</strong> · {event.label}</div>}
         <div className="world-access">
-          <select disabled={view === 'classic'} aria-label="Rendering quality" value={quality} onChange={(event) => setQuality(event.target.value as keyof typeof renderQuality)}><option value="high">High</option><option value="balanced">Balanced</option><option value="low">Low effects</option></select>
+          {trace.events.length > 0 && <select aria-label="Flow history" value={flowDisplay} onChange={(event) => setFlowDisplay(event.target.value as 'relevant' | 'current' | 'all')}><option value="relevant">Relevant flow</option><option value="current">Current flow</option><option value="all">All flow</option></select>}
+          <select aria-label="Rendering quality" title="Animation quality" value={quality} onChange={(event) => { const next = event.target.value as keyof typeof renderQuality; setQuality(next); localStorage.setItem('ggjavaez:animation-quality', next === 'balanced' ? 'medium' : next) }}><option value="high">High motion</option><option value="balanced">Medium motion</option><option value="low">Low motion</option></select>
           {mode === 'FREE_EXPLORE' && <button className="toolbar-button" onClick={() => { setGuided(true); navigationActions.followExecution() }}>Return to execution</button>}
           <select aria-label="Select runtime entity" value={selection && selection.kind !== 'reference' ? selection.id : ''} onChange={(event) => { const id = event.target.value; selectEntity(id ? { kind: scene.objects.some((node) => node.id === id) ? 'object' : scene.frames.some((node) => node.id === id) ? 'frame' : 'slot', id } : null) }}>
             <option value="">Inspect an entity…</option>
@@ -260,7 +317,7 @@ function ExecutionWorkspace({ trace, example, onChooseExample, embedded, onSourc
           </select>
         </div>
         <div className="world-hint"><kbd>Drag</kbd> {view === 'classic' ? 'pan' : 'orbit'} · {view !== 'classic' && <><kbd>Right drag</kbd> pan · </>}<kbd>Scroll</kbd> {view === 'classic' ? 'zoom' : 'dolly'} · <kbd>Home</kbd> reset</div>
-        {!suppressInspector && <Inspector selection={selection} runtime={runtime} scene={scene} onClose={() => setSelection(null)} onReturn={() => { navigationActions.returnToPrevious(); setSelection(null) }} onFocus={focusSelection} onTrace={traceSelection} />}
+        {!suppressInspector && <Inspector selection={selection} flow={transitions.find((item) => item.id === selectedFlowId && item.seq < cursor)} runtime={runtime} scene={scene} onClose={() => { setSelection(null); setSelectedFlowId(null) }} onReturn={() => { navigationActions.returnToPrevious(); setSelection(null); setSelectedFlowId(null) }} onFocus={focusSelection} onTrace={traceSelection} />}
         {embedded && <div className="world-timeline"><Timeline trace={trace} playback={timelinePlayback} execution={execution ? { phase: execution.phase, lens: execution.lens, liveCursor, onReturnToLive: returnToLive } : undefined} /></div>}
       </section>
     </div>

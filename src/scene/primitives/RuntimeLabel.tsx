@@ -1,4 +1,4 @@
-import { Text } from '@react-three/drei'
+import { Billboard, Text } from '@react-three/drei'
 import { useContext, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import type { Mesh } from 'three'
@@ -42,22 +42,23 @@ export function RuntimeLabel({
     }
   })
   return (
-    <Text
-      ref={meshRef}
-      font={runtimeFont}
-      characters={runtimeCharacters}
-      position={[...position]}
-      color={color}
-      fontSize={size}
-      anchorX={align}
-      anchorY="middle"
-      maxWidth={maxWidth}
-      whiteSpace="nowrap"
-      overflowWrap="normal"
-      renderOrder={2}
-    >
-      {text}
-      <meshBasicMaterial color={color} toneMapped={false} depthTest />
-    </Text>
+    <Billboard follow position={[...position]} renderOrder={3}>
+      <Text
+        ref={meshRef}
+        font={runtimeFont}
+        characters={runtimeCharacters}
+        color={color}
+        fontSize={size}
+        anchorX={align}
+        anchorY="middle"
+        maxWidth={maxWidth}
+        whiteSpace="nowrap"
+        overflowWrap="normal"
+        renderOrder={3}
+      >
+        {text}
+        <meshBasicMaterial color={color} toneMapped={false} depthTest={false} depthWrite={false} />
+      </Text>
+    </Billboard>
   )
 }

@@ -46,7 +46,8 @@ export function sampleCameraMove(move: CameraMove): { pose: CameraPose; done: bo
 
 export function guidedCameraAction(event: TraceEvent | null | undefined, followEnabled: boolean): 'home' | 'event' | null {
   if (!followEnabled || !event) return null
-  if (event.type === 'PROGRAM_END' || event.type === 'ALLOCATE_ARRAY') return 'home'
+  if (event.type === 'PROGRAM_END') return 'home'
+  if (event.type === 'ALLOCATE_ARRAY') return 'home'
   return event.importance === 'major' ? 'event' : null
 }
 
@@ -58,6 +59,11 @@ export interface ViewFraming {
 export interface InspectorViewport {
   width: number
   height: number
+}
+
+/** Put focus on the information face, with a small gap so labels are not clipped by the cuboid. */
+export function frontFacePoint(anchor: Pick<WorldAnchor, 'position' | 'size'>, gap = 0.1): Vec3 {
+  return [anchor.position[0], anchor.position[1], anchor.position[2] + anchor.size[2] / 2 + gap]
 }
 
 /** Viewport changes scale a fixed composition, never the current runtime bounds. */
@@ -85,7 +91,9 @@ export function sceneHomePose(scene: Pick<SceneModel, 'stackDepth' | 'bounds' | 
   // subject of the pane. Keep the reserved world and its XYZ anchors fixed;
   // only tighten the overview while its 3D label-safe envelope remains in view.
   if (fitShallow && (scene.stackDepth ?? 0) <= 1 && scene.layoutKind === 'deepStack') {
-    const scale = 0.87
+    // A single live frame may read closer; historical sibling invocations need
+    // room above the timeline and controls once the retained world grows.
+    const scale = scene.bounds.size[1] < 6 ? 0.87 : 1.18
     return { ...fitted, position: [0, 1, 2].map((axis) =>
       fitted.target[axis] + (fitted.position[axis] - fitted.target[axis]) * scale) as unknown as Vec3 }
   }
@@ -201,6 +209,7 @@ export function inspectorFocusPose(
   view: ViewFraming,
   viewport: InspectorViewport,
   selectedPosition: Vec3 = pivot,
+  minimumDistance = 8.5,
 ): CameraPose {
   const width = Math.max(1, viewport.width)
   const height = Math.max(1, viewport.height)
@@ -222,7 +231,7 @@ export function inspectorFocusPose(
   const upAxis = direction.clone().cross(rightAxis).normalize()
   const tanY = Math.tan(view.verticalFov / 2)
   const tanX = tanY * view.aspect
-  let range = 8.5
+  let range = Math.max(4.8, minimumDistance)
   const bodies = [
     ...context.map((anchor) => ({
       position: [anchor.position[0], anchor.position[1] + 0.4, anchor.position[2]] as Vec3,

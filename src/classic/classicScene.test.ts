@@ -45,14 +45,14 @@ describe('Classic scene projection', () => {
         else positions.set(entity.id, position)
         expect(entity.rect.y + entity.rect.height).toBeLessThanOrEqual(560)
       }
-      const main = diagram.entities.find((entity) => entity.label === 'main()')
-      for (const callee of diagram.entities.filter((entity) => entity.kind === 'frame' && entity.label !== 'main()')) {
+      const main = diagram.entities.find((entity) => entity.id === 'frame:main:1')
+      for (const callee of diagram.entities.filter((entity) => entity.kind === 'frame' && entity.id !== 'frame:main:1')) {
         expect(callee.rect.y + callee.rect.height).toBeLessThan(main!.rect.y)
       }
     }
     expect(buildClassicScene(sceneAt(0)).entities).toEqual([])
-    expect(buildClassicScene(sceneAt(21)).entities.map((entity) => entity.label)).toEqual(['Person #17'])
-    expect(buildClassicScene(sceneAt(21)).references).toEqual([])
+    expect(buildClassicScene(sceneAt(21)).entities.map((entity) => entity.label)).toContain('Person #17')
+    expect(buildClassicScene(sceneAt(21)).entities.some((entity) => entity.label.includes('completed'))).toBe(true)
   })
 
   it('mutates the existing slot in place and selects related links without duplicating state', () => {

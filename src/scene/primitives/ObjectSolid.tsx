@@ -19,7 +19,7 @@ export interface ObjectSolidProps {
   reducedMotion?: boolean
 }
 
-export function ObjectSolid({ node, selected, related, onSelect, detailLevel = 'meso', activeSlotId, reducedMotion }: ObjectSolidProps) {
+export function ObjectSolid({ node, selected, related, onSelect, activeSlotId, reducedMotion }: ObjectSolidProps) {
   const motionReduced = useReducedMotion(reducedMotion)
   const entranceRef = useRef<Group>(null)
   useLayoutEffect(() => {
@@ -35,7 +35,9 @@ export function ObjectSolid({ node, selected, related, onSelect, detailLevel = '
   const [width, height, depth] = size
   const front = depth / 2 + 0.012
   const textZ = front + 0.018
-  const rows = detailLevel === 'macro' ? [] : node.fields
+  // Keep fields present at macro distance; semantic zoom may compact them but
+  // must never make the runtime solid appear to contain no state.
+  const rows = node.fields
 
   const select = (event: ThreeEvent<MouseEvent>) => {
     event.stopPropagation()

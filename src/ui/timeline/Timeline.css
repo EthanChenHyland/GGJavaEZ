@@ -167,27 +167,6 @@
   pointer-events: none;
 }
 
-.vj-timeline__live-head {
-  position: absolute;
-  z-index: 2;
-  top: -1px;
-  width: 2px;
-  height: 20px;
-  background: var(--timeline-active);
-  opacity: .8;
-  pointer-events: none;
-}
-
-.vj-timeline__live-head::after {
-  position: absolute;
-  top: -2px;
-  right: -3px;
-  width: 8px;
-  height: 3px;
-  background: var(--timeline-active);
-  content: '';
-}
-
 .vj-timeline__marker {
   position: absolute;
   top: 50%;
@@ -210,6 +189,19 @@
 .vj-timeline__marker--current {
   width: 11px;
   height: 11px;
+  border: 2px solid var(--timeline-panel);
+  background: var(--timeline-active);
+  box-shadow: 0 0 0 1px var(--timeline-active);
+}
+
+/* The range thumb already marks the live cursor. A second dot obscures it. */
+.vj-timeline__marker--at-live {
+  opacity: 0;
+}
+
+.vj-timeline__marker--live-head {
+  width: 9px;
+  height: 9px;
   border: 2px solid var(--timeline-panel);
   background: var(--timeline-active);
   box-shadow: 0 0 0 1px var(--timeline-active);

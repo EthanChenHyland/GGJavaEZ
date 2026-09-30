@@ -140,7 +140,8 @@ test('compile failure stays in source and Problems without launching a world', a
   expect(failed.failureKind).toBe('build')
   expect(failed.rawEvents).toHaveLength(0)
   await expect(page.getByRole('button', { name: /PROBLEMS/ })).toBeVisible()
-  await expect(page.locator('.spatial-view canvas')).toHaveCount(0)
+  await expect(page.locator('.spatial-view canvas')).toBeVisible()
+  await expect(page.getByLabel('Runtime ready')).toBeVisible()
 })
 
 test('Stop owns the current JVM and a subsequent Run has a fresh session', async ({ page, request }) => {

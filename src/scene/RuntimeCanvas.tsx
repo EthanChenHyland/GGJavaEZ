@@ -3,15 +3,19 @@ import { Canvas } from '@react-three/fiber'
 import { Line, Text } from '@react-three/drei'
 import type { Selection } from '../contracts/interaction'
 import type { TraceEvent } from '../contracts/runtime'
-import type { SceneFrameNode, SceneModel } from '../contracts/world'
+import type { LayoutState, SceneFrameNode, SceneModel } from '../contracts/world'
+import type { SemanticTransition } from '../motion/semanticTransition'
+import { endpointPosition, ioPosition } from '../motion/flowPresentation'
 import { NavigationController, navigationActions } from '../navigation'
 import { ArraySolid } from './primitives/ArraySolid'
 import { ReturningFrame } from './primitives/ReturningFrame'
 import { ReturnFlow } from './primitives/ReturnFlow'
 import { useReducedMotion } from './primitives/presentationMotion'
 import { FrameSolid, ObjectSolid, ReferenceCurve } from './primitives'
+import { HistoricalFlow, IoEndpoint, SemanticFlowMotion } from './primitives/SemanticFlow'
 import { colors, motionMs, renderQuality, runtimeFont, worldMaterial, worldUnits } from '../theme/tokens'
 import { stackHeadingPosition } from '../world/runtimeHeadings'
+import { callEdgesForScene, connectorBackPlane } from '../world/callStructure'
 
 interface RuntimeCanvasProps {
   visible: boolean
@@ -20,9 +24,15 @@ interface RuntimeCanvasProps {
   playing: boolean
   quality: keyof typeof renderQuality
   scene: SceneModel
+  layout: LayoutState
   event: TraceEvent | null
+  transition?: SemanticTransition | null
+  flowHistory?: readonly SemanticTransition[]
   selection: Selection
   onSelect: (selection: NonNullable<Selection>) => void
+  selectedFlowId?: string | null
+  onSelectFlow?: (id: string) => void
+  inspectorVisible?: boolean
   onFocusSelected: (selection: NonNullable<Selection>) => void
 }
 
@@ -59,8 +69,10 @@ function MutationCue({ scene, event }: { scene: SceneModel; event: TraceEvent | 
   </Text>
 }
 
-export function RuntimeCanvas({ visible, fitShallow = false, guided, playing, quality, scene, event, selection, onSelect, onFocusSelected }: RuntimeCanvasProps) {
+export function RuntimeCanvas({ visible, fitShallow = false, guided, playing, quality, scene, layout, event, transition, flowHistory = [], selection, selectedFlowId, onSelectFlow, inspectorVisible = false, onSelect, onFocusSelected }: RuntimeCanvasProps) {
   const reducedMotion = useReducedMotion()
+  const [motionCancelled, setMotionCancelled] = useState(false)
+  useEffect(() => { setMotionCancelled(false) }, [transition?.id])
   const previousFrames = useRef(scene.frames)
   const [returning, setReturning] = useState<SceneFrameNode[]>([])
   useEffect(() => {
@@ -87,16 +99,19 @@ export function RuntimeCanvas({ visible, fitShallow = false, guided, playing, qu
   const origins = Object.assign({}, ...scene.frames.map((node) => node.anchor.ports))
   const deepStack = (scene.stackDepth ?? 0) > 1
   const floorY = scene.bounds ? scene.bounds.center[1] - scene.bounds.size[1] / 2 - 0.22 : -1.58
-  const callSpine = scene.frames.length > 1 ? scene.frames.map((frame) => [
-    frame.anchor.position[0] - frame.anchor.size[0] / 2 - 0.12,
-    frame.anchor.position[1] + frame.anchor.size[1] / 2 + 0.04,
-    frame.anchor.position[2] - frame.anchor.size[2] / 2,
-  ] as [number, number, number]) : []
+  const motionTo = transition ? endpointPosition(transition.to, layout, scene) : null
+  const motionFrom = transition ? endpointPosition(transition.from, layout, scene) : null
+  const ioKinds = new Set(flowHistory.flatMap((item) => [item.from, item.to]).filter((point) => point?.kind === 'io').map((point) => point!.id))
+  if (transition?.from?.kind === 'io') ioKinds.add(transition.from.id)
+  if (transition?.to?.kind === 'io') ioKinds.add(transition.to.id)
+  const connectorBackZ = connectorBackPlane(scene)
+  const callEdges = callEdgesForScene(scene, connectorBackZ)
   return <div className="world-canvas" aria-label="Three-dimensional Java runtime world"
     onPointerDownCapture={(event) => {
       pointerStart.current = [event.clientX, event.clientY]; dragged.current = false
       // Take ownership immediately, including while WebGL primitives are loading.
       if (visible) navigationActions.freeExplore()
+      setMotionCancelled(true)
     }}
     onPointerMoveCapture={(event) => {
       if (pointerStart.current && Math.hypot(event.clientX - pointerStart.current[0], event.clientY - pointerStart.current[1]) > 5) dragged.current = true
@@ -123,7 +138,7 @@ export function RuntimeCanvas({ visible, fitShallow = false, guided, playing, qu
       <group>
         {scene.frames.length > 0 && !scopedWorld && <Text font={runtimeFont} position={[...stackHeadingPosition(scene)]} fontSize={0.31} color={colors.stack} anchorX="left" anchorY="middle" letterSpacing={0.08}>STACK</Text>}
         {scene.objects.length > 0 && !arrayWorld && <Text font={runtimeFont} position={[2.1, 2.18, -0.65]} fontSize={0.31} color={colors.heap} anchorX="left" anchorY="middle" letterSpacing={0.08}>HEAP</Text>}
-        {callSpine.length > 1 && <Line points={callSpine} color={colors.stack} lineWidth={1.4} transparent opacity={0.54} />}
+        {callEdges.map((edge) => <Line key={edge.id} points={edge.points} color={colors.stack} lineWidth={1.4} transparent opacity={0.46} />)}
         {scene.returnFlow && scene.frames.length > 0 && (!scopedWorld || event?.type === 'RETURN_VALUE' || event?.type === 'EXIT_METHOD') && <ReturnFlow flow={scene.returnFlow} guided={guided} playing={playing} />}
         {scene.references.map((edge) => <ReferenceCurve key={edge.id} edge={edge}
           label={[...scene.frames.flatMap((node) => node.slots), ...scene.objects.flatMap((node) => node.fields)].find((slot) => slot.id === edge.source.slotId)?.name ?? ''}
@@ -131,6 +146,13 @@ export function RuntimeCanvas({ visible, fitShallow = false, guided, playing, qu
           related={selection?.kind === 'object' && edge.targetObjectId === selection.id}
           labelSize={arrayWorld ? 0.28 : undefined}
           onSelect={(id) => select({ kind: 'reference', id })} />)}
+        {flowHistory.map((item) => {
+          const from = endpointPosition(item.from, layout, scene)
+          const to = endpointPosition(item.to, layout, scene)
+          return from && to ? <HistoricalFlow key={item.id} transition={item} from={from} to={to} behindZ={connectorBackZ} selected={selectedFlowId === item.id} onSelect={onSelectFlow} /> : null
+        })}
+        {[...ioKinds].filter((id): id is 'stdin' | 'stdout' | 'stderr' => id === 'stdin' || id === 'stdout' || id === 'stderr').map((id) => <IoEndpoint key={id} id={id} position={ioPosition(id, scene)} />)}
+        {guided && !motionCancelled && transition && motionTo && <SemanticFlowMotion key={transition.id} transition={transition} from={motionFrom} to={motionTo} behindZ={connectorBackZ} quality={quality} />}
         {returning.map((node) => <ReturningFrame key={node.id} node={node} />)}
         {scene.frames.map((node) => <FrameSolid key={node.id} node={node}
           readable={deepStack || arrayWorld || scopedWorld} spacious={arrayWorld || scopedWorld}
@@ -147,7 +169,7 @@ export function RuntimeCanvas({ visible, fitShallow = false, guided, playing, qu
           onSelect={(id) => select({ kind: 'object', id })} />)}
         {guided && <MutationCue scene={scene} event={event} />}
       </group>
-      <NavigationController visible={visible} fitShallow={fitShallow} sceneModel={scene} event={event} homeTarget={scene.bounds?.center ?? worldUnits.homeTarget} />
+      <NavigationController visible={visible} fitShallow={fitShallow} inspectorVisible={inspectorVisible} sceneModel={scene} event={event} homeTarget={scene.bounds?.center ?? worldUnits.homeTarget} />
     </Canvas>
   </div>
 }

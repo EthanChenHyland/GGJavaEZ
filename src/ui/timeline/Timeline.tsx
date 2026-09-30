@@ -26,7 +26,7 @@ export function resolveTimelinePosition(eventCount: number, historyCursor: numbe
   }
 }
 
-const SPEEDS = [0.5, 1, 2, 4] as const
+const SPEEDS = [0.25, 0.5, 1, 2, 4] as const
 const MAX_MARKERS = 240
 
 /** Keep large real traces seekable without mounting one button per JVM probe. */
@@ -109,12 +109,11 @@ export function Timeline({ trace, playback, execution }: TimelineProps) {
           <div className="vj-timeline__markers" aria-label="Events">
             {markers.map((index) => { const event = trace.events[index]; return (
               <button key={event.eventId} type="button"
-                className={`vj-timeline__marker${cursor === index + 1 ? ' vj-timeline__marker--current' : ''}${event.importance === 'quiet' ? ' vj-timeline__marker--quiet' : ''}${event.importance === 'major' ? ' vj-timeline__marker--major' : ''}`}
+                className={`vj-timeline__marker${cursor === index + 1 ? ' vj-timeline__marker--current' : ''}${event.importance === 'quiet' ? ' vj-timeline__marker--quiet' : ''}${event.importance === 'major' ? ' vj-timeline__marker--major' : ''}${execution && index + 1 === liveCursor ? cursor === liveCursor ? ' vj-timeline__marker--at-live' : ' vj-timeline__marker--live-head' : ''}`}
                 style={{ left: `${((index + 1) / eventCount) * 100}%`, '--marker-color': markerColor(event) } as CSSProperties}
-                onClick={() => seekTo(index + 1)} aria-label={`Go to event ${index + 1}: ${event.label}`} title={event.label} />
+                onClick={() => seekTo(index + 1)} aria-label={execution && index + 1 === liveCursor ? `Live head at event ${liveCursor}: ${event.label}` : `Go to event ${index + 1}: ${event.label}`} title={event.label} />
             ) })}
           </div>
-          {execution && eventCount > 0 && <span className="vj-timeline__live-head" style={{ left: 'calc(100% - 7px)' }} aria-label={`Live head at event ${liveCursor}`} title={`Newest observed event · ${liveCursor}`} />}
         </div>
       </div>
 

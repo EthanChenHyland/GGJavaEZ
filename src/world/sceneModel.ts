@@ -7,7 +7,8 @@ export function buildSceneModel(runtime: RuntimeState, layout: LayoutState, deta
   const displayValue = (value: { kind: string; objectId?: string }) => value.kind === 'reference' && value.objectId
     ? `→ #${runtime.objects[value.objectId]?.displayId ?? '?'}` : undefined
   const exception = runtime.exceptions.at(-1)
-  const displayedFrameIds = exception && !exception.caughtBy
+  const terminal = runtime.status === 'ended' || runtime.status === 'aborted'
+  const displayedFrameIds = terminal ? Object.keys(runtime.frames) : exception && !exception.caughtBy
     ? [...new Set([...exception.frameIds, ...runtime.activeFrameIds])]
     : runtime.activeFrameIds
   const frames: SceneFrameNode[] = displayedFrameIds.flatMap((id) => {
@@ -17,10 +18,12 @@ export function buildSceneModel(runtime: RuntimeState, layout: LayoutState, deta
     return [{
       kind: 'frame' as const,
       id,
-      label: frame.status === 'unwound' ? `${frame.methodName}() · unwound` : frame.invocationLabel ?? `${frame.methodName}()`,
+      callerFrameId: frame.callerFrameId,
+      label: `${frame.invocationLabel ?? `${frame.methodName}()`}${terminal ? frame.status === 'unwound' ? ' · unwound' : frame.status === 'returned' ? ' · completed' : ' · last recorded' : frame.status === 'unwound' ? ' · unwound' : ''}`,
       depth: frame.depth,
       active: id === runtime.activeFrameIds.at(-1),
-      historical: frame.status === 'unwound',
+      historical: frame.status !== 'active',
+      invocationStatus: frame.status === 'returned' ? 'completed' : frame.status === 'unwound' ? 'unwound' : 'active',
       exceptionState: exception?.unwoundFrameIds.includes(id) ? 'unwound'
         : exception?.caughtBy === id ? 'caught'
           : exception?.finallyFrameIds?.includes(id) && !exception.caughtBy ? 'finally'
@@ -51,15 +54,25 @@ export function buildSceneModel(runtime: RuntimeState, layout: LayoutState, deta
   })
 
   const references: SceneReferenceEdge[] = []
-  const addReference = (source: SlotOwner, slotId: string, targetObjectId: string) => {
+  const addReference = (source: SlotOwner, slotId: string, targetObjectId: string, historical = false) => {
     const sourceId = source.kind === 'frame' ? source.frameId : source.objectId
-    const from = stage.anchors[sourceId]?.ports[slotId]
-    const to = stage.anchors[targetObjectId]?.bodyPort
-    if (from && to && runtime.objects[targetObjectId]) {
-      references.push({ id: referenceIdForSlot(slotId), source, targetObjectId, from, to })
+    const sourceAnchor = stage.anchors[sourceId]
+    const targetAnchor = stage.anchors[targetObjectId]
+    const from = sourceAnchor?.ports[slotId]
+    const to = targetAnchor?.bodyPort
+    if (from && to && sourceAnchor && targetAnchor && runtime.objects[targetObjectId]) {
+      const fromFace: SceneReferenceEdge['fromFace'] = [from[0], from[1], sourceAnchor.position[2] + sourceAnchor.size[2] / 2 + 0.055]
+      const toFace: SceneReferenceEdge['toFace'] = [to[0], to[1], targetAnchor.position[2] + targetAnchor.size[2] / 2 + 0.055]
+      references.push({ id: referenceIdForSlot(slotId), source, targetObjectId, from, to, fromFace, toFace, historical })
     }
   }
   for (const edge of getReferences(runtime)) addReference(edge.source, edge.source.slotId, edge.targetObjectId)
+  if (terminal) for (const frame of Object.values(runtime.frames)) {
+    if (frame.status === 'active') continue
+    for (const slot of Object.values(frame.locals)) if (slot.value.kind === 'reference') {
+      addReference({ kind: 'frame', frameId: frame.id, slotId: slot.id }, slot.id, slot.value.objectId, true)
+    }
+  }
 
   const returned = runtime.returns?.at(-1)
   const fromFrame = returned && runtime.frames[returned.frameId]

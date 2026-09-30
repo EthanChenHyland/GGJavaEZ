@@ -7,7 +7,7 @@ import type { CameraPose } from '../contracts/interaction'
 import type { TraceEvent } from '../contracts/runtime'
 import type { SceneModel, Vec3 } from '../contracts/world'
 import { motionMs } from '../theme/tokens'
-import { arrayInspectionContext, contextPose, eventFocusAnchor, guidedCameraAction, inspectorFocusPose, invocationContextPose, representationTransition, sampleCameraMove, sceneHomePose, traceWaypoints } from './cameraMotion'
+import { arrayInspectionContext, contextPose, eventFocusAnchor, frontFacePoint, guidedCameraAction, inspectorFocusPose, invocationContextPose, representationTransition, sampleCameraMove, sceneHomePose, traceWaypoints } from './cameraMotion'
 import type { CameraMove, CameraWaypoint, RepresentationMemory } from './cameraMotion'
 import { cameraCollisionBoxes, collisionSafeRoute, constrainCameraPose, limitsForOverview, zoomPose } from './cameraConstraints'
 import {
@@ -17,9 +17,10 @@ import {
 export interface NavigationControllerProps {
   sceneModel: SceneModel
   fitShallow?: boolean
+  inspectorVisible?: boolean
   /** Hidden renderers consume commands without changing the shared navigation pose. */
   visible?: boolean
-  /** Major events reframe Guided Follow; PROGRAM_END settles at Home while follow is enabled. */
+  /** Major events reframe Guided Follow; PROGRAM_END fits the retained world while follow is enabled. */
   event?: TraceEvent | null
   /** Optional explicit target for a major event when it is not directly named by the event. */
   activeEntityId?: string | null
@@ -49,7 +50,7 @@ function usePrefersReducedMotion(): boolean {
 }
 
 /** Must be mounted inside Canvas. Camera changes are centralized and user input always interrupts them. */
-export function NavigationController({ sceneModel, event, activeEntityId, homeTarget, fitShallow = false, reducedMotion, visible = true }: NavigationControllerProps) {
+export function NavigationController({ sceneModel, event, activeEntityId, homeTarget, fitShallow = false, inspectorVisible = false, reducedMotion, visible = true }: NavigationControllerProps) {
   const { camera, size, invalidate } = useThree()
   const controlsRef = useRef<Controls>(null)
   const initiallyPlacedRef = useRef(false)
@@ -70,7 +71,18 @@ export function NavigationController({ sceneModel, event, activeEntityId, homeTa
     verticalFov: camera instanceof PerspectiveCamera ? camera.getEffectiveFOV() * Math.PI / 180 : Math.PI / 4,
     aspect: size.width / Math.max(size.height, 1),
   }
-  const canonicalOverview = sceneHomePose(sceneModel, homeTarget, framing, fitShallow)
+  const fittedOverview = sceneHomePose(sceneModel, homeTarget, framing, fitShallow)
+  // The embedded inspector occupies the lower world shelf. Translate the
+  // overview together with its orbit target, keeping the recorded XYZ anchors
+  // fixed while placing the whole scene above the shelf.
+  const shelfBias = inspectorVisible && fitShallow ? Math.min(1.5, Math.max(0.4, size.height * 0.0024)) : 0
+  const shelfScale = inspectorVisible && fitShallow ? 1.08 : 1
+  const canonicalOverview: CameraPose = shelfBias ? {
+    position: [0, 1, 2].map((axis) => fittedOverview.target[axis]
+      + (fittedOverview.position[axis] - fittedOverview.target[axis]) * shelfScale
+      - (axis === 1 ? shelfBias : 0)) as unknown as Vec3,
+    target: [fittedOverview.target[0], fittedOverview.target[1] - shelfBias, fittedOverview.target[2]],
+  } : fittedOverview
   const limits = limitsForOverview(canonicalOverview, reservedWorld ? sceneModel.bounds?.size : undefined)
   const world = useMemo(() => navigationWorldForScene(sceneModel, homeTarget), [sceneModel, homeTarget])
 
@@ -158,7 +170,7 @@ export function NavigationController({ sceneModel, event, activeEntityId, homeTa
   useEffect(() => {
     if (!visible) return
     if (useNavigationStore.getState().mode === 'HOME') startMove(overviewPose(), motionMs.standard)
-  }, [size.width, size.height, visible, homeTarget, sceneModel.bounds, sceneModel.stackDepth, sceneModel.layoutKind, fitShallow])
+  }, [size.width, size.height, visible, homeTarget, sceneModel.bounds, sceneModel.stackDepth, sceneModel.layoutKind, fitShallow, inspectorVisible])
 
   useEffect(() => {
     if (!visible) return
@@ -201,7 +213,8 @@ export function NavigationController({ sceneModel, event, activeEntityId, homeTa
       const cameraRight = new Vector3(0, 1, 0).cross(
         new Vector3(...pose.position).sub(new Vector3(...pose.target)),
       ).normalize()
-      const center = reservedWorld ? anchor.position : midpoint(overviewPose().target, anchor.position)
+      const face = frontFacePoint(anchor)
+      const center = reservedWorld ? face : midpoint(overviewPose().target, face)
       const pivot: Vec3 = [center[0] - cameraRight.x, center[1] - cameraRight.y, center[2] - cameraRight.z]
       const context = arrayInspectionContext(intent.selection, sceneModel)
       if (sceneModel.layoutKind === 'scoped' && intent.selection.kind === 'slot') {
@@ -210,7 +223,7 @@ export function NavigationController({ sceneModel, event, activeEntityId, homeTa
       }
       startMove(inspectorFocusPose(pivot, anchor.size, currentPose(), context, viewFraming(), {
         width: size.width, height: size.height,
-      }, anchor.position), motionMs.deliberate)
+      }, face, 5.8), motionMs.deliberate)
     } else if (intent.kind === 'tracePath') {
       const edge = world.references.find((reference) => reference.id === intent.referenceId)
       if (!edge) return

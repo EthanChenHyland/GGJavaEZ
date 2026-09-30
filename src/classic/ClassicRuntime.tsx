@@ -8,6 +8,8 @@ import { colors, line, motionMs, typography, worldMaterial } from '../theme/toke
 import { buildClassicScene, emphasizedSlot, relatedReference, selectedBounds, type DiagramEntity, type DiagramRect } from './classicScene'
 import { classicHomeView, constrainClassicView, focusClassicView, zoomClassicView } from './viewport'
 import { useReducedMotion } from '../scene/primitives/presentationMotion'
+import type { SemanticTransition } from '../motion/semanticTransition'
+import { ClassicSemanticMotion } from './ClassicSemanticMotion'
 import './ClassicRuntime.css'
 
 export interface ClassicRuntimeProps {
@@ -15,6 +17,7 @@ export interface ClassicRuntimeProps {
   playing?: boolean
   scene: SceneModel
   event: TraceEvent | null
+  transition?: SemanticTransition | null
   guided: boolean
   selection: Selection
   onSelect: (selection: NonNullable<Selection>) => void
@@ -32,7 +35,7 @@ const theme = {
 } as CSSProperties
 
 /** An SVG representation of the shared scene, with a presentation-only viewport. */
-export function ClassicRuntime({ visible = true, playing = false, scene, event, guided, selection, onSelect, onFocusSelected }: ClassicRuntimeProps) {
+export function ClassicRuntime({ visible = true, playing = false, scene, event, transition, guided, selection, onSelect, onFocusSelected }: ClassicRuntimeProps) {
   const diagram = useMemo(() => buildClassicScene(scene, event), [scene, event])
   const diagramRef = useRef(diagram)
   diagramRef.current = diagram
@@ -244,6 +247,7 @@ export function ClassicRuntime({ visible = true, playing = false, scene, event, 
         <text x={middleX} y={middleY - 13} textAnchor="middle" fontSize={16} fill={colors.execution} paintOrder="stroke" stroke={colors.canvas} strokeWidth={6} strokeLinejoin="round">{edge.label}</text>
       </g>
     })}
+    {visible && guided && transition && <ClassicSemanticMotion key={transition.id} transition={transition} diagram={diagram} reduced={motionReduced} />}
     {guided && diagram.arrayActivity && (() => {
       const array = diagram.entities.find((node) => node.id === diagram.arrayActivity!.objectId)!
       return <g data-array-activity={diagram.arrayActivity.eventId} role="img" aria-label={diagram.arrayActivity.label}>

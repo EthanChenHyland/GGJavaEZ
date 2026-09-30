@@ -75,7 +75,8 @@ describe('reserved recursive camera composition', () => {
     const fitted = sceneHomePose(shallow, target, viewFor(1.54), true)
     const reserved = sceneHomePose(scene, target, viewFor(1.54))
     expect(fitted.target).toEqual(reserved.target)
-    expect(distance(fitted.position, fitted.target)).toBeCloseTo(distance(reserved.position, reserved.target) * 0.87)
+    // Retained sibling invocations need a little more room beneath the runtime controls.
+    expect(distance(fitted.position, fitted.target)).toBeCloseTo(distance(reserved.position, reserved.target) * 1.18)
     expect(fitted).not.toEqual(responsiveHomePose(target, 1.54))
   })
 

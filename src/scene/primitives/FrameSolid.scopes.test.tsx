@@ -150,11 +150,11 @@ describe('FrameSolid lexical scope geometry', () => {
     expect(rendered.labels.filter((label) => label.text.endsWith(' block')).every((label) => label.color === colors.stack)).toBe(true)
   })
 
-  it('retains scope volumes at macro detail while hiding scope headings and variable rows', () => {
+  it('retains scope volumes at macro detail while keeping runtime rows readable', () => {
     render({ detailLevel: 'macro' })
     expect(rendered.bodies).toHaveLength(3)
-    expect(rendered.slots).toHaveLength(0)
-    expect(rendered.labels.map((label) => label.text)).toEqual(['STACK FRAME', 'main()'])
+    expect(rendered.slots).toHaveLength(3)
+    expect(rendered.labels.map((label) => label.text)).toEqual(['STACK FRAME', 'main()', 'total', 'int', '42', 'i', 'int', '42', 'raw', 'int', '42'])
   })
 
   it('retains scope truth and raised row depths with reduced motion', () => {

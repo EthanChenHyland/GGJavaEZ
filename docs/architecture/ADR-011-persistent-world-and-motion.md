@@ -1,0 +1,9 @@
+# ADR-011 — Retained execution world and semantic motion
+
+The JVM process, the recorded trace, and the presentation have different lifetimes. A terminal trace retains its final heap, console, source mappings, and invocation records. A returned frame is shown as **COMPLETED** history, never as a live stack frame. An unwound frame is shown as **UNWOUND**. Historical references are the last recorded bindings of those invocations, with quieter lines; they are not asserted as live GC roots.
+
+The reducer remains the sole runtime authority. `deriveSemanticTransition(before, event, after)` produces a presentation fact from an observed event and adjacent snapshots. A transition identifies stable semantic endpoints, a value, and its evidence. `observed` means the event explicitly names the origin and destination. `correlated` means a unique matching active slot was found but the recorder did not capture the operand origin. `local` means only the destination/value is known; its token begins beside the destination. Correlated paths must be labeled as such and may not be presented as certain provenance. Unknown origins do not acquire invented arrows.
+
+Motion consumes these facts, never feeds reducer state. Direct seeking snaps. Step/replay may animate the one adjacent event. Live traces may sample presentation while retaining every event. Any cursor jump, view change, user selection, or camera input cancels the current motion and leaves geometry at the committed snapshot. Reduced motion replaces travel with a short destination emphasis. Stable slot and object anchors never interpolate to a different layout position.
+
+The flow-history layer uses the same transition facts. It defaults to current or selected relationships and caps mounted paths; the timeline retains the complete trace. A new build does not clear the previous recording. A new trace replaces it only after an actual recorded execution begins.

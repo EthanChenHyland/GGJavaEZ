@@ -51,11 +51,14 @@ export interface SceneScopeNode {
 export interface SceneFrameNode {
   kind: 'frame'
   id: FrameId
+  callerFrameId?: FrameId | null
   label: string
   depth: number
   active: boolean
   /** Exception history shown after the JVM has unwound this frame. */
   historical?: boolean
+  /** A retained invocation record, never an active JVM stack frame. */
+  invocationStatus?: 'active' | 'completed' | 'unwound'
   exceptionState?: 'origin' | 'unwound' | 'caught' | 'finally'
   anchor: WorldAnchor
   slots: SceneSlot[]
@@ -81,6 +84,11 @@ export interface SceneReferenceEdge {
   targetObjectId: ObjectId
   from: Vec3
   to: Vec3
+  /** Slightly proud of the solid so the visible curve visibly attaches to its face. */
+  fromFace?: Vec3
+  toFace?: Vec3
+  /** Reference last recorded in a completed invocation; no longer a live JVM root. */
+  historical?: boolean
 }
 
 export interface SceneModel {

@@ -109,7 +109,11 @@ export function buildClassicScene(scene: SceneModel, event: TraceEvent | null = 
   const arrayLayout = scene.layoutKind === 'array' || scene.objects.some((object) => object.array)
   const entities: DiagramEntity[] = [
     ...scene.frames.map((frame): DiagramEntity => {
-      const rect = scoped
+      const sibling = scene.layoutKind === 'deepStack' && stackDepth <= 1 && frame.depth > 0
+        ? scene.frames.filter((candidate) => candidate.depth === frame.depth).findIndex((candidate) => candidate.id === frame.id) : -1
+      const rect = sibling >= 0
+        ? { x: 72 + (sibling % 2) * 265, y: 340 - frame.depth * 212 - Math.floor(sibling / 2) * 225, width: 240, height: 200 }
+        : scoped
         ? scopedRect(frame.depth)
         : arrayLayout && !deepStack
         ? { x: 72, y: 260 - frame.depth * 212, width: 356, height: 240 }

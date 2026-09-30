@@ -145,7 +145,7 @@ test('real gutter toggles persist, remove, and distinguish a nonexecutable break
   await page.reload()
   await expect(page.locator('.monaco-editor')).toBeVisible()
   await expect(page.locator('.debug-breakpoint')).toHaveCount(1)
-  await page.getByRole('button', { name: 'J Person.java', exact: true }).click()
+  await page.getByRole('treeitem', { name: 'J Person.java', exact: true }).click()
   await expect(page.locator('.monaco-editor .view-lines')).toContainText('class Person')
   await gutter(page, 3)
   await startDebug(page, request)
