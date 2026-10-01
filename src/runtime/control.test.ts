@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import type { RuntimeState, TraceDocument, TraceEvent } from '../contracts/runtime'
-import controlSource from '../demos/control/Main.java?raw'
-import { applyEvent, createInitialState, getReferences, loadArrayTrace, loadControlTrace, loadPersonTrace, loadRecursionTrace, seek, validateTrace } from './index'
+import controlSource from '../examples/demos/control/Main.java?raw'
+import { applyEvent, createInitialState, getReferences, seek, validateTrace } from './index'
+import { loadArrayTrace, loadControlTrace, loadPersonTrace, loadRecursionTrace } from '../examples/traces'
 
 const main = 'frame:control-main:1'
 const scanner = 'object:scanner:31'

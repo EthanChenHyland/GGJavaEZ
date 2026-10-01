@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { RuntimeState, TraceDocument, TraceEvent, TraceEventBase } from '../contracts/runtime'
 import { applyEvent, createInitialState } from './state'
-import { loadArrayTrace, loadControlTrace, loadPersonTrace, loadRecursionTrace } from './trace'
+import { loadArrayTrace, loadControlTrace, loadPersonTrace, loadRecursionTrace } from '../examples/traces'
 import { seek } from './seek'
 
 // Count work without retaining every intermediate RuntimeState in a mock log.

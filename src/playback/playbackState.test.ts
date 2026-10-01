@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { DEFAULT_PLAYBACK_STATE, transitionPlayback } from './playbackState'
 import type { PlaybackState } from '../contracts/interaction'
-import { loadPersonTrace, seek } from '../runtime'
+import { seek } from '../runtime'
+import { loadPersonTrace } from '../examples/traces'
 
 describe('playback cursor transitions', () => {
   it('steps through 0..N and stops on the final event', () => {

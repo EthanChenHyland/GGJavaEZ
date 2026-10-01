@@ -1,0 +1,187 @@
+{
+ "person": {
+  "dir": "src/examples/demos/person",
+  "facts": [
+   {
+    "id": "exit",
+    "kind": "exit",
+    "status": "current",
+    "code": 0
+   },
+   {
+    "id": "world",
+    "kind": "validWorld",
+    "status": "current"
+   },
+   {
+    "id": "object",
+    "kind": "objects",
+    "status": "current",
+    "className": "Person",
+    "min": 1,
+    "max": 1
+   },
+   {
+    "id": "mutation",
+    "kind": "field",
+    "status": "current",
+    "className": "Person",
+    "field": "age",
+    "includes": [
+     18
+    ]
+   },
+   {
+    "id": "setter",
+    "kind": "caller",
+    "status": "current",
+    "callee": "Person.setAge",
+    "caller": "Main.main"
+   }
+  ]
+ },
+ "recursion": {
+  "dir": "src/examples/demos/recursion",
+  "facts": [
+   {
+    "id": "exit",
+    "kind": "exit",
+    "status": "current",
+    "code": 0,
+    "stdout": [
+     "120"
+    ]
+   },
+   {
+    "id": "world",
+    "kind": "validWorld",
+    "status": "current"
+   },
+   {
+    "id": "depth",
+    "kind": "maxDepth",
+    "status": "current",
+    "min": 5
+   },
+   {
+    "id": "returns",
+    "kind": "returns",
+    "status": "current",
+    "method": "Main.factorial",
+    "values": [
+     1,
+     2,
+     6,
+     24,
+     120
+    ]
+   },
+   {
+    "id": "returnLands",
+    "kind": "returnDestination",
+    "status": "target:P4",
+    "requirement": "R6.4",
+    "min": 5
+   }
+  ]
+ },
+ "arrays": {
+  "dir": "src/examples/demos/arrays",
+  "facts": [
+   {
+    "id": "exit",
+    "kind": "exit",
+    "status": "current",
+    "code": 0
+   },
+   {
+    "id": "world",
+    "kind": "validWorld",
+    "status": "current"
+   },
+   {
+    "id": "sorted",
+    "kind": "array",
+    "status": "current",
+    "className": "int[]",
+    "elements": [
+     1,
+     3,
+     5,
+     6,
+     8
+    ]
+   },
+   {
+    "id": "writes",
+    "kind": "eventCount",
+    "status": "current",
+    "type": "ARRAY_WRITE",
+    "min": 1
+   },
+   {
+    "id": "noCuratedEvents",
+    "kind": "noEvent",
+    "status": "current",
+    "types": [
+     "ARRAY_COMPARE",
+     "LOOP_ITERATION",
+     "ENTER_SCOPE"
+    ]
+   }
+  ]
+ },
+ "control": {
+  "dir": "src/examples/demos/control",
+  "stdin": "-7\n42\n130\n",
+  "facts": [
+   {
+    "id": "exit",
+    "kind": "exit",
+    "status": "current",
+    "code": 0,
+    "stdout": [
+     "0",
+     "42",
+     "100",
+     "142"
+    ]
+   },
+   {
+    "id": "world",
+    "kind": "validWorld",
+    "status": "current"
+   },
+   {
+    "id": "clamped",
+    "kind": "returns",
+    "status": "current",
+    "method": "Main.clamp",
+    "values": [
+     0,
+     42,
+     100
+    ]
+   },
+   {
+    "id": "noCuratedEvents",
+    "kind": "noEvent",
+    "status": "current",
+    "types": [
+     "INPUT_READ",
+     "OUTPUT_WRITE",
+     "ENTER_SCOPE",
+     "EVALUATE_CONDITION",
+     "LOOP_ITERATION"
+    ]
+   },
+   {
+    "id": "inputLands",
+    "kind": "inputDestination",
+    "status": "target:P4",
+    "requirement": "R6.3/R14.2",
+    "min": 3
+   }
+  ]
+ }
+}

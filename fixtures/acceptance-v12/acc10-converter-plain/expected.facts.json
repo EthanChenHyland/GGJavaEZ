@@ -1,0 +1,81 @@
+{
+ "id": "ACC-10",
+ "title": "Unit converter REPL: Scanner stdin, stdout, stderr",
+ "question": "Does Spatial understand this because its runtime model is generic?",
+ "fresh": true,
+ "freshness": "Written for acceptance-v12; shares no names, structure or source with Person/factorial/bubble-sort/control demos or v11.5 audit fixtures.",
+ "stdin": "km 10\nmi 3\nlb 4\nkg 2\nquit\n",
+ "renames": {
+  "Converter": "Translator7",
+  "convert": "apply7",
+  "factorFor": "rate7",
+  "conversions": "done7",
+  "converter": "translator8"
+ },
+ "facts": [
+  {
+   "id": "exit",
+   "kind": "exit",
+   "status": "current",
+   "code": 0,
+   "stdout": [
+    "RESULT 6.21",
+    "RESULT 4.827",
+    "RESULT 4.41",
+    "CONVERSIONS 3"
+   ],
+   "stderr": [
+    "UNKNOWN lb"
+   ]
+  },
+  {
+   "id": "world",
+   "kind": "validWorld",
+   "status": "current"
+  },
+  {
+   "id": "input",
+   "kind": "eventCount",
+   "status": "current",
+   "type": "CONSOLE_INPUT",
+   "min": 1
+  },
+  {
+   "id": "output",
+   "kind": "eventCount",
+   "status": "current",
+   "type": "CONSOLE_WRITE",
+   "min": 5
+  },
+  {
+   "id": "conversions",
+   "kind": "field",
+   "status": "current",
+   "className": "Converter",
+   "field": "conversions",
+   "includes": [
+    3
+   ]
+  },
+  {
+   "id": "inputLands",
+   "kind": "inputDestination",
+   "status": "target:P4",
+   "requirement": "R6.3/R7.1/R14.2",
+   "min": 3,
+   "note": "stdin -> Scanner.nextDouble -> local amount"
+  },
+  {
+   "id": "idleNotKilled",
+   "kind": "exit",
+   "status": "target:P1",
+   "requirement": "R1.4",
+   "code": 0,
+   "stdout": [
+    "CONVERSIONS"
+   ],
+   "note": "Idle >= 60 s at the prompt; characterized in tests/characterization/sessionBudgets (X4). Run with stdinDelayMs=60000.",
+   "stdinDelayMs": 60000
+  }
+ ]
+}

@@ -1,6 +1,6 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { chromium } from '@playwright/test'
-const trace = JSON.parse(await readFile('src/demos/control/trace.json', 'utf8'))
+const trace = JSON.parse(await readFile('src/examples/demos/control/trace.json', 'utf8'))
 const events = trace.events
 const firstInput = events.findIndex((event) => event.type === 'INPUT_READ')
 const branch = events.findIndex((event) => event.type === 'DECLARE_LOCAL' && event.slot.name === 'corrected')

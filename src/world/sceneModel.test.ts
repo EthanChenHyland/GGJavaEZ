@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { loadPersonTrace, seek } from '../runtime'
-import { createLayout } from './layout'
+import { seek } from '../runtime'
+import { loadPersonTrace } from '../examples/traces'
+import { layoutForTrace as createLayout } from '../app/layoutForTrace'
 import { buildSceneModel } from './sceneModel'
 
 describe('Person scene model', () => {

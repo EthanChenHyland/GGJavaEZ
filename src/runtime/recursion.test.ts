@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import type { RuntimeState, TraceDocument, TraceEvent } from '../contracts/runtime'
-import recursionSource from '../demos/recursion/Main.java?raw'
-import { applyEvent, createInitialState, getReferences, loadPersonTrace, loadRecursionTrace, seek, validateTrace } from './index'
+import recursionSource from '../examples/demos/recursion/Main.java?raw'
+import { applyEvent, createInitialState, getReferences, seek, validateTrace } from './index'
+import { loadPersonTrace, loadRecursionTrace } from '../examples/traces'
 
 const mainId = 'frame:recursion-main:1'
 const resultId = 'slot:recursion-main:1:result'

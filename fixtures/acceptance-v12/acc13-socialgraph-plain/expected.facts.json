@@ -1,0 +1,75 @@
+{
+ "id": "ACC-13",
+ "title": "Social graph: 3,000 members, 12,000 follow references, BFS",
+ "question": "Does Spatial understand this because its runtime model is generic?",
+ "fresh": true,
+ "freshness": "Written for acceptance-v12; shares no names, structure or source with Person/factorial/bubble-sort/control demos or v11.5 audit fixtures.",
+ "renames": {
+  "Member": "Peer7",
+  "Follow": "Link7",
+  "Network": "Mesh7",
+  "generate": "build7",
+  "follow": "attach7",
+  "degreesFrom": "bfs7",
+  "memberNumber": "num7",
+  "firstFollow": "head7",
+  "nextFollow": "after7",
+  "memberCount": "pop7",
+  "followCount": "links7",
+  "byNumber": "table7"
+ },
+ "facts": [
+  {
+   "id": "killedAtIdentityBudget",
+   "kind": "exit",
+   "status": "current",
+   "code": 86,
+   "note": "CHARACTERIZATION of audit X2: Recorder halts the JVM at 256 identities (tests/characterization/recorderBudgets)"
+  },
+  {
+   "id": "abortedPrefix",
+   "kind": "eventCount",
+   "status": "current",
+   "type": "PROGRAM_ABORT",
+   "min": 1,
+   "max": 1
+  },
+  {
+   "id": "prefixObjects",
+   "kind": "objects",
+   "status": "current",
+   "className": "Member",
+   "min": 200,
+   "max": 256
+  },
+  {
+   "id": "completes",
+   "kind": "exit",
+   "status": "target:P1",
+   "requirement": "R1.1-1.2",
+   "code": 0,
+   "stdout": [
+    "MEMBERS 3000",
+    "FOLLOWS 12000",
+    "REACHABLE 2929",
+    "FARTHEST 10"
+   ]
+  },
+  {
+   "id": "allMembers",
+   "kind": "objects",
+   "status": "target:P1",
+   "requirement": "R1/R12",
+   "className": "Member",
+   "min": 3000
+  },
+  {
+   "id": "allFollows",
+   "kind": "objects",
+   "status": "target:P1",
+   "requirement": "R1/R12",
+   "className": "Follow",
+   "min": 12000
+  }
+ ]
+}

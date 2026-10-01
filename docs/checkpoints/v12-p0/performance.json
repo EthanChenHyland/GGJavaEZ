@@ -1,0 +1,230 @@
+{
+ "pipeline": {
+  "phase": "v12-p0",
+  "recordedAt": "2026-10-01T03:52:31.940Z",
+  "commitBase": "4f07444",
+  "environment": {
+   "node": "v24.21.0",
+   "platform": "linux/x64",
+   "cpus": 8,
+   "cpuModel": "Intel(R) Xeon(R) Platinum 8488C",
+   "memGiB": 30.8,
+   "note": "Sandbox Linux container, not the design §10 reference machine. Compare trends, not absolute budgets."
+  },
+  "synthetic": {
+   "5000": {
+    "rawEvents": 5021,
+    "generator": {
+     "invocations": 382,
+     "objects": 110,
+     "maxDepth": 12
+    },
+    "normalizedEvents": 6264,
+    "invocations": 382,
+    "objects": 110,
+    "normalizeMs": 129.6,
+    "validateMs": 113.1,
+    "seekColdEndMs": 59,
+    "seekJumpMs": {
+     "p50": 3.13,
+     "p95": 4.21,
+     "max": 4.31
+    },
+    "seekAdjacentMs": {
+     "p50": 1.97,
+     "p95": 2.21
+    },
+    "layoutMs": 10.7,
+    "sceneBuildMs": 3.9,
+    "detailBudgetMs": 0.5,
+    "transitionsMs": 52,
+    "perEventNormalizeValidateUs": 38.7,
+    "heapUsedMiBAfter": 32.5
+   },
+   "10000": {
+    "rawEvents": 10025,
+    "generator": {
+     "invocations": 727,
+     "objects": 194,
+     "maxDepth": 12
+    },
+    "normalizedEvents": 12387,
+    "invocations": 727,
+    "objects": 194,
+    "normalizeMs": 413.5,
+    "validateMs": 387.6,
+    "seekColdEndMs": 281,
+    "seekJumpMs": {
+     "p50": 7.48,
+     "p95": 16.18,
+     "max": 16.3
+    },
+    "seekAdjacentMs": {
+     "p50": 3.74,
+     "p95": 4.35
+    },
+    "layoutMs": 13.6,
+    "sceneBuildMs": 5,
+    "detailBudgetMs": 0.4,
+    "transitionsMs": 297.8,
+    "perEventNormalizeValidateUs": 64.7,
+    "heapUsedMiBAfter": 71.1
+   },
+   "20000": {
+    "rawEvents": 20007,
+    "generator": {
+     "invocations": 1409,
+     "objects": 370,
+     "maxDepth": 12
+    },
+    "normalizedEvents": 24591,
+    "invocations": 1409,
+    "objects": 370,
+    "normalizeMs": 2001.2,
+    "validateMs": 1998,
+    "seekColdEndMs": 1759.8,
+    "seekJumpMs": {
+     "p50": 26.44,
+     "p95": 72.16,
+     "max": 73.63
+    },
+    "seekAdjacentMs": {
+     "p50": 7.49,
+     "p95": 8.01
+    },
+    "layoutMs": 18.4,
+    "sceneBuildMs": 11.2,
+    "detailBudgetMs": 0.4,
+    "transitionsMs": 1792.2,
+    "perEventNormalizeValidateUs": 162.6,
+    "heapUsedMiBAfter": 120.4
+   },
+   "50000": {
+    "rawEvents": 50025,
+    "generator": {
+     "invocations": 3436,
+     "objects": 852,
+     "maxDepth": 12
+    },
+    "normalizedEvents": 61172,
+    "invocations": 3436,
+    "objects": 852,
+    "normalizeMs": 14406.8,
+    "validateMs": 14417.2,
+    "seekColdEndMs": 13739.4,
+    "seekJumpMs": {
+     "p50": 146.31,
+     "p95": 472.67,
+     "max": 487.49
+    },
+    "seekAdjacentMs": {
+     "p50": 26.05,
+     "p95": 33.84
+    },
+    "layoutMs": 55.7,
+    "sceneBuildMs": 31.4,
+    "detailBudgetMs": 2.4,
+    "transitionsMs": 13727.1,
+    "perEventNormalizeValidateUs": 471.2,
+    "heapUsedMiBAfter": 204.4
+   },
+   "100000": {
+    "rawEvents": 100017,
+    "generator": {
+     "invocations": 6814,
+     "objects": 1693,
+     "maxDepth": 12
+    },
+    "normalizedEvents": 122139,
+    "invocations": 6814,
+    "objects": 1693,
+    "normalizeMs": 66674.6,
+    "validateMs": 67080.3,
+    "seekColdEndMs": 65654.3,
+    "seekJumpMs": {
+     "p50": 590.69,
+     "p95": 2086.97,
+     "max": 2099.62
+    },
+    "seekAdjacentMs": {
+     "p50": 67.57,
+     "p95": 78.06
+    },
+    "layoutMs": 102.8,
+    "sceneBuildMs": 78.5,
+    "detailBudgetMs": 4.8,
+    "transitionsMs": 64848.9,
+    "perEventNormalizeValidateUs": 1095.1,
+    "heapUsedMiBAfter": 296.2
+   },
+   ">100000": "larger sizes skipped: stage cap exceeded"
+  },
+  "projection": {
+   "fittedExponent": 2.2,
+   "projected1MSemanticEventsNormalizeValidateMs": 11812457,
+   "note": "1M events were not run: cost grows super-linearly (exponent > 1) under the current reducer/normalizer."
+  },
+  "liveIngest": [
+   {
+    "rawEvents": 5021,
+    "publishEveryRawEvents": 1000,
+    "publishes": 5,
+    "totalClientIngestMs": 566.7,
+    "firstPublishMs": 35.2,
+    "lastPublishMs": 212.1,
+    "lastToFirstRatio": 6,
+    "totalSseBytes": 2920066,
+    "lastPublishBytes": 975791
+   },
+   {
+    "rawEvents": 20007,
+    "publishEveryRawEvents": 1000,
+    "publishes": 20,
+    "totalClientIngestMs": 27471.3,
+    "firstPublishMs": 28.5,
+    "lastPublishMs": 4074.6,
+    "lastToFirstRatio": 142.9,
+    "totalSseBytes": 40747436,
+    "lastPublishBytes": 3881076
+   }
+  ],
+  "realJvm": {
+   "acc08-maze-plain": {
+    "exitCode": 0,
+    "terminalStatus": "complete",
+    "rawEvents": 2100,
+    "normalizedEvents": 2727,
+    "invocations": 126,
+    "buildMs": 456,
+    "executionMs": 1276,
+    "normalizeMs": 30,
+    "worldMs": 16,
+    "sessionSnapshotBytes": 466653
+   },
+   "acc14-simulator-plain": {
+    "exitCode": 86,
+    "terminalStatus": "limit_exceeded",
+    "rawEvents": 20000,
+    "normalizedEvents": 24765,
+    "invocations": 1195,
+    "buildMs": 521,
+    "executionMs": 1821,
+    "normalizeMs": 2665,
+    "worldMs": 1370,
+    "sessionSnapshotBytes": 4150003
+   },
+   "acc07-orders-maven": {
+    "exitCode": 0,
+    "terminalStatus": "complete",
+    "rawEvents": 155,
+    "normalizedEvents": 239,
+    "invocations": 22,
+    "buildMs": 6464,
+    "executionMs": 1216,
+    "normalizeMs": 3,
+    "worldMs": 1,
+    "sessionSnapshotBytes": 48772
+   }
+  }
+ }
+}

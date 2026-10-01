@@ -9,7 +9,10 @@
     "build": "tsc -b && vite build",
     "typecheck": "tsc -b --pretty false",
     "test": "vitest run --maxWorkers=1 --fileParallelism=false",
+    "test:acceptance": "VJ_SUITE=acceptance vitest run tests/acceptance --maxWorkers=1 --fileParallelism=false",
+    "perf:baseline": "VJ_SUITE=perf vitest run tests/perf --maxWorkers=1 --fileParallelism=false",
     "test:e2e": "playwright test",
+    "perf:browser": "playwright test --config playwright.perf.config.ts",
     "capture:visual": "node scripts/capture-visual.mjs",
     "lint": "eslint src"
   },

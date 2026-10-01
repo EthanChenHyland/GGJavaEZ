@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { RuntimeSlot, ScalarValue, TraceDocument, TraceEvent, TraceEventBase } from '../contracts/runtime'
 import { arrayElementSlotId } from '../contracts/runtime'
-import { loadArrayTrace, loadPersonTrace, loadRecursionTrace } from '../runtime/trace'
+import { loadArrayTrace, loadPersonTrace, loadRecursionTrace } from '../examples/traces'
 import { seek } from '../runtime/seek'
 import { causeHistory, causeLimitations } from './causality'
 import type { CauseTarget } from './causality'

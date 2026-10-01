@@ -1,0 +1,104 @@
+{
+ "id": "ACC-12",
+ "title": "Library catalogue: four packages, static singleton, linked objects (Gradle)",
+ "question": "Does Spatial understand this because its runtime model is generic?",
+ "fresh": true,
+ "freshness": "Written for acceptance-v12; shares no names, structure or source with Person/factorial/bubble-sort/control demos or v11.5 audit fixtures.",
+ "renames": {
+  "Catalogue": "Archive7",
+  "ShelfRepository": "Rack7",
+  "Author": "Penman7",
+  "Book": "Tome7",
+  "TitleSearch": "Finder7",
+  "register": "enrol7",
+  "store": "keep7",
+  "head": "top7",
+  "storedCount": "kept7",
+  "firstContaining": "locate7",
+  "titlesWritten": "works7",
+  "publishedYear": "year7",
+  "nextOnShelf": "next7",
+  "heading": "caption7",
+  "registrations": "enrols7",
+  "INSTANCE": "SOLE7",
+  "repository": "rack8",
+  "displayName": "penName7",
+  "writer": "author8"
+ },
+ "facts": [
+  {
+   "id": "exit",
+   "kind": "exit",
+   "status": "current",
+   "code": 0,
+   "stdout": [
+    "FOUND 2004",
+    "COUNT 3",
+    "REGISTRATIONS 3"
+   ]
+  },
+  {
+   "id": "world",
+   "kind": "validWorld",
+   "status": "current"
+  },
+  {
+   "id": "books",
+   "kind": "objects",
+   "status": "current",
+   "className": "catalogue.model.Book",
+   "min": 3,
+   "max": 3
+  },
+  {
+   "id": "authors",
+   "kind": "objects",
+   "status": "current",
+   "className": "catalogue.model.Author",
+   "min": 2,
+   "max": 2
+  },
+  {
+   "id": "written",
+   "kind": "field",
+   "status": "current",
+   "className": "catalogue.model.Author",
+   "field": "titlesWritten",
+   "includes": [
+    2,
+    1
+   ]
+  },
+  {
+   "id": "staticInit",
+   "kind": "caller",
+   "status": "current",
+   "callee": "catalogue.app.Catalogue.<init>",
+   "caller": "catalogue.app.Catalogue.<clinit>"
+  },
+  {
+   "id": "packages",
+   "kind": "sourceFiles",
+   "status": "current",
+   "min": 6
+  },
+  {
+   "id": "singleton",
+   "kind": "statics",
+   "status": "target:P3",
+   "requirement": "R5.2",
+   "className": "catalogue.app.Catalogue",
+   "fields": [
+    "INSTANCE",
+    "registrations"
+   ]
+  },
+  {
+   "id": "foundBook",
+   "kind": "referenceReturn",
+   "status": "target:P3",
+   "requirement": "R5.3",
+   "method": "catalogue.search.TitleSearch.firstContaining"
+  }
+ ]
+}

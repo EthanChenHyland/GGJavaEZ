@@ -1,0 +1,71 @@
+{
+ "id": "ACC-11",
+ "title": "CSV report with a Maven dependency (commons-csv)",
+ "question": "Does Spatial understand this because its runtime model is generic?",
+ "fresh": true,
+ "freshness": "Written for acceptance-v12; shares no names, structure or source with Person/factorial/bubble-sort/control demos or v11.5 audit fixtures.",
+ "renames": {
+  "RegionTotals": "Ledger7",
+  "Bucket": "Bin7",
+  "accumulate": "add7",
+  "bucketFor": "binFor7",
+  "addAmount": "put7",
+  "rowsSeen": "rows7",
+  "entries": "items7",
+  "totals": "ledger8"
+ },
+ "facts": [
+  {
+   "id": "exit",
+   "kind": "exit",
+   "status": "current",
+   "code": 0,
+   "stdout": [
+    "NORTH 150",
+    "SOUTH 100",
+    "OTHER 55",
+    "ROWS 5"
+   ]
+  },
+  {
+   "id": "world",
+   "kind": "validWorld",
+   "status": "current"
+  },
+  {
+   "id": "dependency",
+   "kind": "dependency",
+   "status": "current",
+   "name": "commons-csv"
+  },
+  {
+   "id": "buckets",
+   "kind": "field",
+   "status": "current",
+   "className": "report.Bucket",
+   "field": "amount",
+   "includes": [
+    150,
+    100,
+    55
+   ]
+  },
+  {
+   "id": "projectOnly",
+   "kind": "invoked",
+   "status": "current",
+   "methods": [
+    "report.RegionTotals.accumulate",
+    "report.Bucket.addAmount"
+   ]
+  },
+  {
+   "id": "libraryBoundaries",
+   "kind": "eventCount",
+   "status": "target:P4",
+   "requirement": "R7.1-7.2",
+   "type": "CALL",
+   "min": 10
+  }
+ ]
+}

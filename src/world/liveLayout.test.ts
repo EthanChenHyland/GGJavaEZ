@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import type { RuntimeSlot, TraceDocument, TraceEvent } from '../contracts/runtime'
-import { loadArrayTrace, loadPersonTrace, loadRecursionTrace } from '../runtime'
+import { loadArrayTrace, loadPersonTrace, loadRecursionTrace } from '../examples/traces'
 import { worldUnits } from '../theme/tokens'
-import { createLayout } from './layout'
+import { layoutForTrace as createLayout } from '../app/layoutForTrace'
 
 const capture = { origin: 'jvm' as const, sourceHashes: {}, recordedAt: '2026-09-29T00:00:00Z' }
 

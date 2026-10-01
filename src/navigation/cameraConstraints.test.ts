@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { Box3, Vector3 } from 'three'
 import type { CameraPose } from '../contracts/interaction'
-import rawTrace from '../demos/person/person.trace.json'
+import rawTrace from '../examples/demos/person/person.trace.json'
 import type { TraceDocument } from '../contracts/runtime'
 const personTrace = rawTrace as TraceDocument
-import { createLayout } from '../world/layout'
+import { layoutForTrace as createLayout } from '../app/layoutForTrace'
 import { responsiveHomePose } from './cameraMotion'
 import { cameraBounds, cameraCollisionBoxes, cameraSegmentHit, collisionSafeRoute, constrainCameraPose, zoomPose } from './cameraConstraints'
 

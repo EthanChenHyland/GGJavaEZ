@@ -274,6 +274,9 @@ export function applyEvent(state: RuntimeState, event: TraceEvent): RuntimeState
       break
     }
 
+    /* eslint-disable visual-java/no-fixture-literals -- KNOWN EXEMPTION (Phase 0, audit D13):
+       INPUT_READ is a curated-only schema-v2 event whose Scanner/nextInt validation belongs to the
+       examples module. Extraction needs the Phase 2 reducer-extension mechanism (tasks 2.1). */
     case 'INPUT_READ': {
       requireCondition(activeFrameId === event.frameId, `Input read outside active frame ${event.frameId}`)
       const reader = state.objects[event.readerObjectId]
@@ -298,6 +301,7 @@ export function applyEvent(state: RuntimeState, event: TraceEvent): RuntimeState
       break
     }
 
+    /* eslint-enable visual-java/no-fixture-literals */
     case 'OUTPUT_WRITE': {
       requireCondition(activeFrameId === event.frameId, `Output written outside active frame ${event.frameId}`)
       const text = scalarText(event.value)

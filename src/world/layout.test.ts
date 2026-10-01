@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { TraceDocument } from '../contracts/runtime'
-import { createLayout } from './layout'
+import { layoutForTrace as createLayout } from '../app/layoutForTrace'
 
 describe('createLayout', () => {
   it('reserves stable anchors independent of playback cursor', () => {

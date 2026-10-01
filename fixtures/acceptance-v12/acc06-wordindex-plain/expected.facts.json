@@ -1,0 +1,91 @@
+{
+ "id": "ACC-6",
+ "title": "Word-frequency index: HashMap, TreeSet, HashSet, merge/getOrDefault",
+ "question": "Does Spatial understand this because its runtime model is generic?",
+ "fresh": true,
+ "freshness": "Written for acceptance-v12; shares no names, structure or source with Person/factorial/bubble-sort/control demos or v11.5 audit fixtures.",
+ "renames": {
+  "WordIndex": "Lexicon7",
+  "ingest": "absorb7",
+  "frequencyOf": "freq7",
+  "distinctWords": "unique7",
+  "lengthClasses": "lens7",
+  "firstAlphabetical": "lead7",
+  "counts": "tally7",
+  "sortedWords": "ordered7",
+  "wordLengths": "sizes7",
+  "tokensSeen": "seen7"
+ },
+ "facts": [
+  {
+   "id": "exit",
+   "kind": "exit",
+   "status": "current",
+   "code": 0,
+   "stdout": [
+    "THE 3",
+    "MISSING 0",
+    "DISTINCT 7",
+    "LENGTHS 3",
+    "FIRST and"
+   ]
+  },
+  {
+   "id": "world",
+   "kind": "validWorld",
+   "status": "current"
+  },
+  {
+   "id": "tokens",
+   "kind": "field",
+   "status": "current",
+   "className": "WordIndex",
+   "field": "tokensSeen",
+   "includes": [
+    10
+   ]
+  },
+  {
+   "id": "lookups",
+   "kind": "returns",
+   "status": "current",
+   "method": "WordIndex.frequencyOf",
+   "values": [
+    3,
+    0
+   ]
+  },
+  {
+   "id": "map",
+   "kind": "libraryValue",
+   "status": "target:P6",
+   "requirement": "R7.3",
+   "className": "java.util.HashMap",
+   "size": 7
+  },
+  {
+   "id": "sorted",
+   "kind": "libraryValue",
+   "status": "target:P6",
+   "requirement": "R7.3",
+   "className": "java.util.TreeSet",
+   "size": 7
+  },
+  {
+   "id": "lengths",
+   "kind": "libraryValue",
+   "status": "target:P6",
+   "requirement": "R7.3",
+   "className": "java.util.HashSet",
+   "size": 3
+  },
+  {
+   "id": "libraryBoundaries",
+   "kind": "eventCount",
+   "status": "target:P4",
+   "requirement": "R7.1",
+   "type": "CALL",
+   "min": 10
+  }
+ ]
+}

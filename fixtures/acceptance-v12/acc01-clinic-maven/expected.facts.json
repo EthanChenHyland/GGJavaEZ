@@ -1,0 +1,164 @@
+{
+ "id": "ACC-1",
+ "title": "Clinic appointment scheduler (Maven, multi-class business app)",
+ "question": "Does Spatial understand this because its runtime model is generic?",
+ "fresh": true,
+ "freshness": "Written for acceptance-v12; shares no names, structure or source with Person/factorial/bubble-sort/control demos or v11.5 audit fixtures.",
+ "renames": {
+  "Clinic": "Ward7",
+  "Scheduler": "Planner7",
+  "Doctor": "Medic7",
+  "Patient": "Client7",
+  "Slot": "Booking7",
+  "Invoice": "Bill7",
+  "bookVisit": "reserve7",
+  "billFor": "charge7",
+  "visitFee": "price7",
+  "reschedule": "move7",
+  "acceptVisit": "admit7",
+  "recordVisit": "tally7",
+  "operateDay": "runShift7",
+  "hourOfDay": "hour7",
+  "totalVisits": "count7",
+  "cents": "amount7",
+  "issued": "made7",
+  "fullName": "label7",
+  "visitCount": "visits7",
+  "firstBill": "bill8",
+  "total": "sum7"
+ },
+ "facts": [
+  {
+   "id": "exit",
+   "kind": "exit",
+   "status": "current",
+   "code": 0,
+   "stdout": [
+    "VISITS 2",
+    "REVENUE 22500",
+    "ISSUED 2"
+   ]
+  },
+  {
+   "id": "world",
+   "kind": "validWorld",
+   "status": "current"
+  },
+  {
+   "id": "retained",
+   "kind": "retainedInPlace",
+   "status": "current",
+   "requirement": "R8.1-8.4"
+  },
+  {
+   "id": "doctors",
+   "kind": "objects",
+   "status": "current",
+   "className": "clinic.Doctor",
+   "min": 2,
+   "max": 2
+  },
+  {
+   "id": "patients",
+   "kind": "objects",
+   "status": "current",
+   "className": "clinic.Patient",
+   "min": 2,
+   "max": 2
+  },
+  {
+   "id": "slots",
+   "kind": "objects",
+   "status": "current",
+   "className": "clinic.Slot",
+   "min": 2,
+   "max": 2
+  },
+  {
+   "id": "invoices",
+   "kind": "objects",
+   "status": "current",
+   "className": "clinic.Invoice",
+   "min": 2,
+   "max": 2
+  },
+  {
+   "id": "calls",
+   "kind": "invoked",
+   "status": "current",
+   "methods": [
+    "clinic.Scheduler.bookVisit",
+    "clinic.Scheduler.reschedule",
+    "clinic.Scheduler.billFor",
+    "clinic.Doctor.visitFee"
+   ]
+  },
+  {
+   "id": "billCaller",
+   "kind": "caller",
+   "status": "current",
+   "callee": "clinic.Scheduler.billFor",
+   "caller": "clinic.Clinic.operateDay"
+  },
+  {
+   "id": "rescheduled",
+   "kind": "field",
+   "status": "current",
+   "className": "clinic.Slot",
+   "field": "hourOfDay",
+   "includes": [
+    9,
+    14
+   ]
+  },
+  {
+   "id": "visits",
+   "kind": "field",
+   "status": "current",
+   "className": "clinic.Patient",
+   "field": "visitCount",
+   "includes": [
+    1
+   ]
+  },
+  {
+   "id": "revenueLocal",
+   "kind": "local",
+   "status": "current",
+   "method": "clinic.Clinic.operateDay",
+   "name": "total",
+   "value": 22500
+  },
+  {
+   "id": "invoiceReturn",
+   "kind": "referenceReturn",
+   "status": "target:P3",
+   "requirement": "R5.3",
+   "method": "clinic.Scheduler.billFor"
+  },
+  {
+   "id": "issuedStatic",
+   "kind": "statics",
+   "status": "target:P3",
+   "requirement": "R5.2",
+   "className": "clinic.Invoice",
+   "fields": [
+    "issued"
+   ]
+  },
+  {
+   "id": "returnLands",
+   "kind": "returnDestination",
+   "status": "target:P4",
+   "requirement": "R6.4",
+   "min": 1
+  },
+  {
+   "id": "argumentOrigins",
+   "kind": "parameterOrigin",
+   "status": "target:P4",
+   "requirement": "R6.5",
+   "min": 5
+  }
+ ]
+}

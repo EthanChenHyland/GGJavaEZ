@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { loadRecursionTrace, seek } from '../runtime'
-import { createLayout } from './layout'
+import { seek } from '../runtime'
+import { loadRecursionTrace } from '../examples/traces'
+import { layoutForTrace as createLayout } from '../app/layoutForTrace'
 import { buildSceneModel } from './sceneModel'
 
 const trace = loadRecursionTrace()

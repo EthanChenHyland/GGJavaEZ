@@ -4,10 +4,10 @@ const demo = process.env.REVIEW_DEMO ?? 'person'
 const recursion = demo === 'recursion'
 const arrays = demo === 'arrays'
 const control = demo === 'control'
-const controlTrace = control ? JSON.parse(await readFile('src/demos/control/trace.json','utf8')) : null
+const controlTrace = control ? JSON.parse(await readFile('src/examples/demos/control/trace.json','utf8')) : null
 const inputCursor = controlTrace ? controlTrace.events.findIndex((event) => event.type === 'INPUT_READ') + 1 : 0
 const branchCursor = controlTrace ? controlTrace.events.findIndex((event) => event.type === 'DECLARE_LOCAL' && event.slot.name === 'corrected') + 1 : 0
-const arrayTrace = arrays ? JSON.parse(await readFile('src/demos/arrays/trace.json','utf8')) : null
+const arrayTrace = arrays ? JSON.parse(await readFile('src/examples/demos/arrays/trace.json','utf8')) : null
 const eventCount = controlTrace?.events.length ?? arrayTrace?.events.length ?? (recursion ? 36 : 21)
 const allocationCursor = arrayTrace ? arrayTrace.events.findIndex((event) => event.type === 'ALLOCATE_ARRAY') + 1 : 0
 const comparisonCursor = arrayTrace ? arrayTrace.events.findIndex((event) => event.type === 'ARRAY_COMPARE') + 1 : 0

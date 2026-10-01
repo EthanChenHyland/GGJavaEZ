@@ -8,7 +8,7 @@ import { buildInstrumentationSourceManifest } from './instrumentation-sources.mj
 import { normalizeTrace } from '../src/instrumentation/normalize.ts';
 import { validateTrace } from '../src/runtime/trace.ts';
 import { seek } from '../src/runtime/seek.ts';
-import { createLayout } from '../src/world/layout.ts';
+import { layoutForTrace as createLayout } from '../src/app/layoutForTrace.ts';
 import { buildSceneModel } from '../src/world/sceneModel.ts';
 
 async function recorded(files) {

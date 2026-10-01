@@ -1,4 +1,4 @@
-export { loadPersonTrace, loadRecursionTrace, loadArrayTrace, loadControlTrace, validateTrace } from './trace'
+export { validateTrace } from './trace'
 export { createInitialState, applyEvent } from './state'
 export { seek } from './seek'
 export { getReferences } from './selectors'

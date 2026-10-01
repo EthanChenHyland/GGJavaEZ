@@ -1,0 +1,130 @@
+{
+ "id": "ACC-3",
+ "title": "Payment gateway: interface with three implementations and a default method (Gradle)",
+ "question": "Does Spatial understand this because its runtime model is generic?",
+ "fresh": true,
+ "freshness": "Written for acceptance-v12; shares no names, structure or source with Person/factorial/bubble-sort/control demos or v11.5 audit fixtures.",
+ "renames": {
+  "Gateway": "Router7",
+  "PaymentMethod": "Tender7",
+  "CardPayment": "Plastic7",
+  "WalletPayment": "Purse7",
+  "BankTransfer": "Wire7",
+  "charge": "collect7",
+  "surchargeCents": "fee7",
+  "choose": "pick7",
+  "settle": "clear7",
+  "routedCount": "routes7",
+  "balanceCents": "funds7",
+  "authorisations": "auths7",
+  "batchedTransfers": "wires7",
+  "settled": "paid7"
+ },
+ "facts": [
+  {
+   "id": "exit",
+   "kind": "exit",
+   "status": "current",
+   "code": 0,
+   "stdout": [
+    "SETTLED 7477",
+    "ROUTES 5"
+   ]
+  },
+  {
+   "id": "world",
+   "kind": "validWorld",
+   "status": "current"
+  },
+  {
+   "id": "retained",
+   "kind": "retainedInPlace",
+   "status": "current",
+   "requirement": "R8.1-8.4"
+  },
+  {
+   "id": "implementations",
+   "kind": "invoked",
+   "status": "current",
+   "methods": [
+    "payments.CardPayment.charge",
+    "payments.WalletPayment.charge",
+    "payments.BankTransfer.charge",
+    "payments.PaymentMethod.surchargeCents"
+   ]
+  },
+  {
+   "id": "dispatchedFrom",
+   "kind": "caller",
+   "status": "current",
+   "callee": "payments.CardPayment.charge",
+   "caller": "payments.Gateway.settle"
+  },
+  {
+   "id": "defaultMethod",
+   "kind": "caller",
+   "status": "current",
+   "callee": "payments.PaymentMethod.surchargeCents",
+   "caller": "payments.CardPayment.charge"
+  },
+  {
+   "id": "card",
+   "kind": "objects",
+   "status": "current",
+   "className": "payments.CardPayment",
+   "min": 1,
+   "max": 1
+  },
+  {
+   "id": "wallet",
+   "kind": "objects",
+   "status": "current",
+   "className": "payments.WalletPayment",
+   "min": 1,
+   "max": 1
+  },
+  {
+   "id": "transfer",
+   "kind": "objects",
+   "status": "current",
+   "className": "payments.BankTransfer",
+   "min": 1,
+   "max": 1
+  },
+  {
+   "id": "walletBalance",
+   "kind": "field",
+   "status": "current",
+   "className": "payments.WalletPayment",
+   "field": "balanceCents",
+   "includes": [
+    1750
+   ]
+  },
+  {
+   "id": "cardAuths",
+   "kind": "field",
+   "status": "current",
+   "className": "payments.CardPayment",
+   "field": "authorisations",
+   "includes": [
+    2
+   ]
+  },
+  {
+   "id": "interfaceCallSites",
+   "kind": "eventCount",
+   "status": "target:P4",
+   "requirement": "R6.1-6.2",
+   "type": "CALL",
+   "min": 5
+  },
+  {
+   "id": "returnLands",
+   "kind": "returnDestination",
+   "status": "target:P4",
+   "requirement": "R6.4",
+   "min": 5
+  }
+ ]
+}

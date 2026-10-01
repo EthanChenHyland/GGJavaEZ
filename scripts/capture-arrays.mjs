@@ -1,6 +1,6 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { chromium } from '@playwright/test'
-const fixture = JSON.parse(await readFile('src/demos/arrays/trace.json', 'utf8'))
+const fixture = JSON.parse(await readFile('src/examples/demos/arrays/trace.json', 'utf8'))
 const events = fixture.events
 const writes = events.flatMap((event, index) => event.type === 'ARRAY_WRITE' ? [index + 1] : [])
 const allocation = events.find((event) => event.type === 'ALLOCATE_ARRAY')

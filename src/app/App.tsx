@@ -9,19 +9,22 @@ import { renderQuality } from '../theme/tokens'
 import { RuntimeCanvas } from '../scene/RuntimeCanvas'
 import { SourcePane } from '../ui/SourcePane'
 import { ConsolePane } from '../ui/ConsolePane'
-import { ControlFlowStatus } from '../ui/ControlFlowStatus'
+import { ControlFlowStatus } from '../examples/ControlFlowStatus'
+import { curatedCompareCaption } from '../examples/captions'
 import { Inspector } from '../ui/Inspector'
 import { Timeline, resolveTimelinePosition } from '../ui/timeline/Timeline'
 import { navigationActions, useNavigationStore } from '../navigation'
 import { usePlayback } from '../playback'
-import { loadPersonTrace, loadRecursionTrace, loadArrayTrace, loadControlTrace, seek } from '../runtime'
-import { createLayout } from '../world/layout'
+import { seek } from '../runtime'
+import { curatedExampleOptions, curatedExampleTraces, type CuratedExampleId } from '../examples/catalog'
+import { layoutForTrace } from './layoutForTrace'
+import { initialAnimationQuality } from './animationQuality'
 import { buildSceneModel } from '../world/sceneModel'
 import { deriveSemanticTransition, transitionsForTrace, type SemanticTransition } from '../motion/semanticTransition'
 import { transitionIsFlow } from '../motion/flowPresentation'
 
-const examples = { person: loadPersonTrace(), recursion: loadRecursionTrace(), arrays: loadArrayTrace(), control: loadControlTrace() }
-type ExampleId = keyof typeof examples
+const examples = curatedExampleTraces
+type ExampleId = CuratedExampleId
 
 function eventDescribesSelection(event: TraceEvent, selection: NonNullable<Selection>): boolean {
   const id = selection.kind === 'reference' ? selection.id.replace(/^ref:/, '') : selection.id
@@ -70,7 +73,7 @@ function ExecutionWorkspace({ trace, example, onChooseExample, embedded, onSourc
 }) {
   const hasConsole = trace.events.some((event) => event.type === 'INPUT_READ' || event.type === 'OUTPUT_WRITE')
   const hasScopes = trace.events.some((event) => event.type === 'ENTER_SCOPE')
-  const layout = useMemo(() => createLayout(trace), [trace])
+  const layout = useMemo(() => layoutForTrace(trace), [trace])
   const [view, setView] = useState<VisualizationMode>(() => localStorage.getItem('ggjavaez:runtime-view') === 'classic' ? 'classic' : 'spatial')
   const [presentation, setPresentation] = useState<'spatial' | 'theater'>('spatial')
   const [flowDisplay, setFlowDisplay] = useState<'relevant' | 'current' | 'all'>('relevant')
@@ -154,10 +157,7 @@ function ExecutionWorkspace({ trace, example, onChooseExample, embedded, onSourc
   const mode = useNavigationStore((state) => state.mode)
   const followEnabled = useNavigationStore((state) => state.followEnabled)
   const isolatedSelection = useNavigationStore((state) => state.isolatedSelection)
-  const [quality, setQuality] = useState<keyof typeof renderQuality>(() => {
-    const saved = localStorage.getItem('ggjavaez:animation-quality')
-    return saved === 'low' ? 'low' : saved === 'medium' ? 'balanced' : 'high'
-  })
+  const [quality, setQuality] = useState<keyof typeof renderQuality>(() => initialAnimationQuality(localStorage.getItem('ggjavaez:animation-quality')))
   const [runtimeFocus, setRuntimeFocus] = useState(() => !embedded && window.matchMedia('(max-width: 760px)').matches)
   const [sourceWidth, setSourceWidth] = useState(34)
   const workbenchRef = useRef<HTMLDivElement>(null)
@@ -252,7 +252,7 @@ function ExecutionWorkspace({ trace, example, onChooseExample, embedded, onSourc
       <div className="top-actions">
         <button className="toolbar-button is-subtle" onClick={navigationActions.home} title="Frame the runtime world" aria-label="Home"><Home size={15}/><span className="button-text">Home</span></button>
         <a className="toolbar-button is-subtle" href="/ide" aria-label="Open IDE workspace">IDE Workspace</a>
-        <label className="example-picker">Example <select aria-label="Runtime example" value={example} onChange={(event) => onChooseExample(event.target.value as ExampleId)}><option value="person">Person</option><option value="recursion">Recursion · factorial(5)</option><option value="arrays">Arrays · bubble sort</option><option value="control">Control flow · scores</option></select></label>
+        <label className="example-picker">Example <select aria-label="Runtime example" value={example} onChange={(event) => onChooseExample(event.target.value as ExampleId)}>{curatedExampleOptions.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}</select></label>
         <button className="toolbar-button is-subtle" aria-label="Runtime focus mode" aria-pressed={runtimeFocus} onClick={() => setRuntimeFocus((value) => !value)}>{runtimeFocus ? <Minimize2 size={15} /> : <Maximize2 size={15} />}<span className="button-text">{runtimeFocus ? 'Restore source' : 'Runtime view'}</span></button>
       </div>
     </header>}
@@ -295,7 +295,7 @@ function ExecutionWorkspace({ trace, example, onChooseExample, embedded, onSourc
         {array?.array && <section className="call-status array-status" aria-label="Array execution state">
           <span className="eyebrow">{runtime.status === 'ended' ? 'EXECUTION COMPLETE' : 'ARRAY EXECUTION'} · {runtime.arrayMutations.length} INDEXED WRITES</span>
           {runtime.status === 'ended' ? <strong className="final-result">[{array.array.elements.map((cell) => scalar(cell.value)).join(', ')}]</strong>
-            : activity?.kind === 'compare' ? <strong>{scalar(activity.values[0])} &gt; {scalar(activity.values[1])} · {activity.result ? 'true → swap' : 'false → keep'}</strong>
+            : activity?.kind === 'compare' ? <strong>{curatedCompareCaption(activity, scalar)}</strong>
             : activity?.kind === 'write' ? <strong>[{activity.index}]: {scalar(activity.before)} → {scalar(activity.after)}</strong>
             : activity?.kind === 'read' ? <strong>Read [{activity.index}] = {scalar(activity.value)}</strong> : <strong>{arrayName} · {array.array.length} elements</strong>}
           {activity && runtime.status !== 'ended' && <span className="return-explanation">{activity.kind === 'compare' ? `Compare indices ${activity.indices.join(' and ')}` : activity.kind === 'write' ? `Value from ${activity.from?.kind === 'element' ? `[${activity.from.index}]` : activity.from?.kind === 'slot' ? 'local slot' : 'observed JVM store'} · cells stay at their indices` : activity.destinationSlotId ? 'Value assigned to a local slot' : 'Observed indexed read'}</span>}

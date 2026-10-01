@@ -1,0 +1,159 @@
+{
+ "id": "ACC-2",
+ "title": "Shape hierarchy: abstract class, overriding, super chains, enum, record",
+ "question": "Does Spatial understand this because its runtime model is generic?",
+ "fresh": true,
+ "freshness": "Written for acceptance-v12; shares no names, structure or source with Person/factorial/bubble-sort/control demos or v11.5 audit fixtures.",
+ "renames": {
+  "Shape": "Form7",
+  "Polygon": "Poly7",
+  "Rectangle": "Box7",
+  "Square": "Cube7",
+  "Dimensions": "Extent7",
+  "Unit": "Scale7",
+  "CENTIMETRE": "SMALL7",
+  "INCH": "LARGE7",
+  "area": "size7",
+  "describe": "explain7",
+  "measure": "gauge7",
+  "factor": "ratio7",
+  "edge": "side7",
+  "extent": "span7",
+  "sideCount": "sides7",
+  "width": "w7",
+  "height": "h7",
+  "describeCalls": "calls7",
+  "banner": "flag7",
+  "tile": "slab7"
+ },
+ "facts": [
+  {
+   "id": "exit",
+   "kind": "exit",
+   "status": "current",
+   "code": 0,
+   "stdout": [
+    "AREAS 12 9",
+    "LABEL shape/polygon4/rectangle/square",
+    "FACTOR 3"
+   ]
+  },
+  {
+   "id": "world",
+   "kind": "validWorld",
+   "status": "current"
+  },
+  {
+   "id": "retained",
+   "kind": "retainedInPlace",
+   "status": "current",
+   "requirement": "R8.1-8.4"
+  },
+  {
+   "id": "overrides",
+   "kind": "invoked",
+   "status": "current",
+   "methods": [
+    "Square.area",
+    "Rectangle.area",
+    "Square.describe",
+    "Rectangle.describe",
+    "Polygon.describe",
+    "Shape.describe",
+    "Dimensions.width"
+   ]
+  },
+  {
+   "id": "superDescribe1",
+   "kind": "caller",
+   "status": "current",
+   "callee": "Rectangle.describe",
+   "caller": "Square.describe"
+  },
+  {
+   "id": "superDescribe2",
+   "kind": "caller",
+   "status": "current",
+   "callee": "Polygon.describe",
+   "caller": "Rectangle.describe"
+  },
+  {
+   "id": "superDescribe3",
+   "kind": "caller",
+   "status": "current",
+   "callee": "Shape.describe",
+   "caller": "Polygon.describe"
+  },
+  {
+   "id": "concrete",
+   "kind": "objects",
+   "status": "current",
+   "className": "Square",
+   "min": 1,
+   "max": 1
+  },
+  {
+   "id": "records",
+   "kind": "objects",
+   "status": "current",
+   "className": "Dimensions",
+   "min": 2,
+   "max": 2
+  },
+  {
+   "id": "enumConstants",
+   "kind": "objects",
+   "status": "current",
+   "className": "Unit",
+   "min": 2,
+   "max": 2
+  },
+  {
+   "id": "recordComponent",
+   "kind": "field",
+   "status": "current",
+   "className": "Dimensions",
+   "field": "width",
+   "includes": [
+    6,
+    3
+   ]
+  },
+  {
+   "id": "ctorNestPolygon",
+   "kind": "caller",
+   "status": "target:P3",
+   "requirement": "R5.5",
+   "callee": "Polygon.<init>",
+   "caller": "Rectangle.<init>",
+   "note": "Today recorded as a sibling under Main.main (tests/characterization/constructorNesting)"
+  },
+  {
+   "id": "ctorNestShape",
+   "kind": "caller",
+   "status": "target:P3",
+   "requirement": "R5.5",
+   "callee": "Shape.<init>",
+   "caller": "Polygon.<init>"
+  },
+  {
+   "id": "enumStatics",
+   "kind": "statics",
+   "status": "target:P3",
+   "requirement": "R5.2",
+   "className": "Unit",
+   "fields": [
+    "CENTIMETRE",
+    "INCH"
+   ]
+  },
+  {
+   "id": "dispatchFacts",
+   "kind": "eventCount",
+   "status": "target:P4",
+   "requirement": "R6.1-6.2",
+   "type": "CALL",
+   "min": 2
+  }
+ ]
+}

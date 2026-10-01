@@ -1,0 +1,85 @@
+{
+ "id": "ACC-9",
+ "title": "Config loader: custom checked exception caught several frames up, finally, retry",
+ "question": "Does Spatial understand this because its runtime model is generic?",
+ "fresh": true,
+ "freshness": "Written for acceptance-v12; shares no names, structure or source with Person/factorial/bubble-sort/control demos or v11.5 audit fixtures.",
+ "renames": {
+  "ConfigLoader": "Reader7",
+  "Parser": "Splitter7",
+  "Validator": "Checker7",
+  "Rule": "Guard7",
+  "ConfigException": "BadInput7",
+  "loadLenient": "soft7",
+  "check": "verify7",
+  "apply": "enforce7",
+  "evaluations": "evals7",
+  "validator": "checker8",
+  "parser": "splitter8",
+  "loader": "reader8"
+ },
+ "facts": [
+  {
+   "id": "exit",
+   "kind": "exit",
+   "status": "current",
+   "code": 0,
+   "stdout": [
+    "RECOVERED non-positive timeout",
+    "RETRY 2",
+    "CLOSED true"
+   ]
+  },
+  {
+   "id": "world",
+   "kind": "validWorld",
+   "status": "current"
+  },
+  {
+   "id": "retained",
+   "kind": "retainedInPlace",
+   "status": "current",
+   "requirement": "R8.1-8.4"
+  },
+  {
+   "id": "caughtUp",
+   "kind": "exception",
+   "status": "current",
+   "className": "ConfigException",
+   "caughtIn": "Main.main",
+   "unwound": 4,
+   "unwoundMethods": [
+    "Rule.apply",
+    "Validator.check",
+    "Parser.parse",
+    "ConfigLoader.load"
+   ]
+  },
+  {
+   "id": "oneCatch",
+   "kind": "eventCount",
+   "status": "current",
+   "type": "CATCH_EXCEPTION",
+   "min": 1,
+   "max": 1
+  },
+  {
+   "id": "exceptionObject",
+   "kind": "objects",
+   "status": "current",
+   "className": "ConfigException",
+   "min": 1,
+   "max": 1
+  },
+  {
+   "id": "evaluations",
+   "kind": "field",
+   "status": "current",
+   "className": "Rule",
+   "field": "evaluations",
+   "includes": [
+    5
+   ]
+  }
+ ]
+}

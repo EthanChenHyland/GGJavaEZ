@@ -158,6 +158,7 @@ export function RuntimeCanvas({ visible, fitShallow = false, guided, playing, qu
       <group>
         <ArchiveSolids nodes={archive} onSelect={select} />
         {scene.frames.length > 0 && !scopedWorld && !isolatedSelection && <Text font={runtimeFont} position={[...stackHeadingPosition(scene)]} fontSize={0.31} color={colors.stack} anchorX="left" anchorY="middle" letterSpacing={0.08}>STACK</Text>}
+        {/* eslint-disable-next-line visual-java/no-fixture-literals -- KNOWN DEBT (audit D6): HEAP heading at the curated heap coordinate; derived from bounds in Phase 5 (task 5.3). */}
         {scene.objects.length > 0 && !arrayWorld && !isolatedSelection && <Text font={runtimeFont} position={[2.1, 2.18, -0.65]} fontSize={0.31} color={colors.heap} anchorX="left" anchorY="middle" letterSpacing={0.08}>HEAP</Text>}
         {callEdges.map((edge) => <Line key={edge.id} points={edge.points} color={colors.stack} lineWidth={1.4} transparent opacity={0.46} />)}
         {scene.returnFlow && scene.frames.length > 0 && (!scopedWorld || event?.type === 'RETURN_VALUE' || event?.type === 'EXIT_METHOD') && <ReturnFlow flow={scene.returnFlow} guided={guided} playing={playing} />}

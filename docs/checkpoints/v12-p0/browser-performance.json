@@ -1,0 +1,61 @@
+{
+ "recordedAt": "2026-10-01T04:00:34.120Z",
+ "browser": "chromium 153.0.8010.12",
+ "viewport": "1440x900",
+ "note": "Headless sandbox with software WebGL; not the design §10 reference machine.",
+ "runClickToFirstWorldMs": 4274,
+ "runClickToTerminalPhaseMs": 4393,
+ "runClickToFullWorldMs": 64415,
+ "session": {
+  "phase": "FAILED",
+  "terminalStatus": "limit_exceeded",
+  "rawEvents": 20000
+ },
+ "retainedReloadToInteractiveMs": 9752,
+ "normalizedEvents": 24765,
+ "scrubJumpUiCommitPlusTwoFramesMs": {
+  "p50": 13765,
+  "p95": 18667,
+  "max": 18667,
+  "samples": [
+   18667,
+   13765,
+   12813,
+   12996,
+   13344,
+   13772,
+   12245,
+   13957
+  ]
+ },
+ "scrubAdjacentUiCommitPlusTwoFramesMs": {
+  "p50": 11755,
+  "p95": 15686,
+  "samples": [
+   15686,
+   11755,
+   10217,
+   10889,
+   14324,
+   10601,
+   13958,
+   11279,
+   9823,
+   12644
+  ]
+ },
+ "idleFrameMs": {
+  "frames": 4,
+  "p50": 483.2,
+  "p95": 2216.7,
+  "p99": 2216.7,
+  "fps": 1.5
+ },
+ "orbitFrameMs": {
+  "frames": 5,
+  "p50": 507.6,
+  "p95": 2333.2,
+  "p99": 2333.2,
+  "fps": 1.4
+ }
+}

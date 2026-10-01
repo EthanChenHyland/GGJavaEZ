@@ -1,0 +1,90 @@
+{
+ "id": "ACC-5",
+ "title": "Playlist manager: ArrayList, removeIf/sort lambdas, iteration",
+ "question": "Does Spatial understand this because its runtime model is generic?",
+ "fresh": true,
+ "freshness": "Written for acceptance-v12; shares no names, structure or source with Person/factorial/bubble-sort/control demos or v11.5 audit fixtures.",
+ "renames": {
+  "Playlist": "Mixtape7",
+  "Track": "Song7",
+  "enqueue": "push7",
+  "dropLongerThan": "trim7",
+  "orderByLength": "arrange7",
+  "playAll": "spin7",
+  "play": "hear7",
+  "seconds": "secs7",
+  "playCount": "plays7",
+  "trackCount": "count7",
+  "queue": "list7",
+  "mix": "tape7"
+ },
+ "facts": [
+  {
+   "id": "exit",
+   "kind": "exit",
+   "status": "current",
+   "code": 0,
+   "stdout": [
+    "TRACKS 3",
+    "LISTENED 559"
+   ]
+  },
+  {
+   "id": "world",
+   "kind": "validWorld",
+   "status": "current"
+  },
+  {
+   "id": "tracks",
+   "kind": "objects",
+   "status": "current",
+   "className": "Track",
+   "min": 4,
+   "max": 4
+  },
+  {
+   "id": "lambdaBodies",
+   "kind": "invoked",
+   "status": "current",
+   "pattern": true,
+   "methods": [
+    "^Playlist\\.lambda\\$dropLongerThan\\$",
+    "^Playlist\\.lambda\\$orderByLength\\$"
+   ]
+  },
+  {
+   "id": "playedFromLoop",
+   "kind": "caller",
+   "status": "current",
+   "callee": "Track.play",
+   "caller": "Playlist.playAll"
+  },
+  {
+   "id": "plays",
+   "kind": "field",
+   "status": "current",
+   "className": "Track",
+   "field": "playCount",
+   "includes": [
+    1,
+    0
+   ]
+  },
+  {
+   "id": "listValue",
+   "kind": "libraryValue",
+   "status": "target:P6",
+   "requirement": "R7.3",
+   "className": "java.util.ArrayList",
+   "size": 3
+  },
+  {
+   "id": "libraryBoundaries",
+   "kind": "eventCount",
+   "status": "target:P4",
+   "requirement": "R7.1",
+   "type": "CALL",
+   "min": 4
+  }
+ ]
+}

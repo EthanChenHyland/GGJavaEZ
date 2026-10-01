@@ -1,0 +1,130 @@
+{
+ "id": "ACC-7",
+ "title": "Order pipeline: nested calls across six classes and six packages (Maven)",
+ "question": "Does Spatial understand this because its runtime model is generic?",
+ "fresh": true,
+ "freshness": "Written for acceptance-v12; shares no names, structure or source with Person/factorial/bubble-sort/control demos or v11.5 audit fixtures.",
+ "renames": {
+  "OrderController": "Front7",
+  "OrderService": "Desk7",
+  "PriceEngine": "Quoter7",
+  "Stock": "Shelf7",
+  "OrderRepository": "Vault7",
+  "AuditLog": "Ledger7",
+  "assemble": "wire7",
+  "submit": "send7",
+  "place": "book7",
+  "quote": "price7",
+  "reserve": "hold7",
+  "save": "persist7",
+  "record": "note7",
+  "entryCount": "notes7",
+  "auditedEntries": "audits7",
+  "unitsOnHand": "onHand7",
+  "storedRows": "rows7",
+  "entries": "lines7",
+  "placedOrders": "orders7"
+ },
+ "facts": [
+  {
+   "id": "exit",
+   "kind": "exit",
+   "status": "current",
+   "code": 0,
+   "stdout": [
+    "TOTALS 5600 2800",
+    "AUDITED 2"
+   ]
+  },
+  {
+   "id": "world",
+   "kind": "validWorld",
+   "status": "current"
+  },
+  {
+   "id": "retained",
+   "kind": "retainedInPlace",
+   "status": "current",
+   "requirement": "R8.1-8.4"
+  },
+  {
+   "id": "depth",
+   "kind": "maxDepth",
+   "status": "current",
+   "min": 6
+  },
+  {
+   "id": "c1",
+   "kind": "caller",
+   "status": "current",
+   "callee": "orders.service.OrderService.place",
+   "caller": "orders.api.OrderController.submit"
+  },
+  {
+   "id": "c2",
+   "kind": "caller",
+   "status": "current",
+   "callee": "orders.pricing.PriceEngine.quote",
+   "caller": "orders.service.OrderService.place"
+  },
+  {
+   "id": "c3",
+   "kind": "caller",
+   "status": "current",
+   "callee": "orders.inventory.Stock.reserve",
+   "caller": "orders.pricing.PriceEngine.quote"
+  },
+  {
+   "id": "c4",
+   "kind": "caller",
+   "status": "current",
+   "callee": "orders.persistence.OrderRepository.save",
+   "caller": "orders.inventory.Stock.reserve"
+  },
+  {
+   "id": "c5",
+   "kind": "caller",
+   "status": "current",
+   "callee": "orders.audit.AuditLog.record",
+   "caller": "orders.persistence.OrderRepository.save"
+  },
+  {
+   "id": "packages",
+   "kind": "sourceFiles",
+   "status": "current",
+   "min": 7
+  },
+  {
+   "id": "stock",
+   "kind": "field",
+   "status": "current",
+   "className": "orders.inventory.Stock",
+   "field": "unitsOnHand",
+   "includes": [
+    2
+   ]
+  },
+  {
+   "id": "returnLands",
+   "kind": "returnDestination",
+   "status": "target:P4",
+   "requirement": "R6.4",
+   "min": 4
+  },
+  {
+   "id": "argumentOrigins",
+   "kind": "parameterOrigin",
+   "status": "target:P4",
+   "requirement": "R6.5",
+   "min": 6
+  },
+  {
+   "id": "callSites",
+   "kind": "eventCount",
+   "status": "target:P4",
+   "requirement": "R6.1",
+   "type": "CALL",
+   "min": 10
+  }
+ ]
+}

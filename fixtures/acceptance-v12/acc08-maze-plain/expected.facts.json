@@ -1,0 +1,69 @@
+{
+ "id": "ACC-8",
+ "title": "Maze solver: branching backtracking recursion on char[][] (not factorial)",
+ "question": "Does Spatial understand this because its runtime model is generic?",
+ "fresh": true,
+ "freshness": "Written for acceptance-v12; shares no names, structure or source with Person/factorial/bubble-sort/control demos or v11.5 audit fixtures.",
+ "renames": {
+  "MazeSolver": "Walker7",
+  "explore": "probe7",
+  "deepest": "maxd7",
+  "backtracks": "undo7",
+  "cells": "tiles7",
+  "solver": "walker8",
+  "here": "spot7"
+ },
+ "facts": [
+  {
+   "id": "exit",
+   "kind": "exit",
+   "status": "current",
+   "code": 0,
+   "stdout": [
+    "SOLVED true",
+    "DEEPEST 41",
+    "BACKTRACKS 16"
+   ]
+  },
+  {
+   "id": "world",
+   "kind": "validWorld",
+   "status": "current"
+  },
+  {
+   "id": "retained",
+   "kind": "retainedInPlace",
+   "status": "current",
+   "requirement": "R8.1-8.4"
+  },
+  {
+   "id": "deep",
+   "kind": "maxDepth",
+   "status": "current",
+   "min": 40
+  },
+  {
+   "id": "calls",
+   "kind": "invocations",
+   "status": "current",
+   "min": 100
+  },
+  {
+   "id": "backtrackCount",
+   "kind": "field",
+   "status": "current",
+   "className": "MazeSolver",
+   "field": "backtracks",
+   "includes": [
+    16
+   ]
+  },
+  {
+   "id": "grid",
+   "kind": "array",
+   "status": "target:P3",
+   "requirement": "R5.1",
+   "className": "char[][]"
+  }
+ ]
+}

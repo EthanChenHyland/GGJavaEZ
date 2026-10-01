@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { TraceDocument, TraceEvent } from '../contracts/runtime'
-import { applyEvent, createInitialState, getReferences, loadPersonTrace, seek, validateTrace } from './index'
+import { applyEvent, createInitialState, getReferences, seek, validateTrace } from './index'
+import { loadPersonTrace } from '../examples/traces'
 
 const personId = 'object:person:17'
 const mainId = 'frame:main:1'

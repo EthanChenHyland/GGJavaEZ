@@ -2,7 +2,7 @@ import { expect, test, type Page } from '@playwright/test'
 import { readFileSync } from 'node:fs'
 import type { ScalarValue, TraceDocument, TraceEvent } from '../src/contracts/runtime'
 
-const trace: TraceDocument = JSON.parse(readFileSync('src/demos/control/trace.json', 'utf8'))
+const trace: TraceDocument = JSON.parse(readFileSync('src/examples/demos/control/trace.json', 'utf8'))
 type Checkpoint<T extends TraceEvent = TraceEvent> = { event: T; cursor: number }
 
 // Cursors count applied events. IDs, method invocations and lexical scopes come

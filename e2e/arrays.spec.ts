@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test'
 import { readFileSync } from 'node:fs'
 
-const trace = JSON.parse(readFileSync('src/demos/arrays/trace.json', 'utf8'))
+const trace = JSON.parse(readFileSync('src/examples/demos/arrays/trace.json', 'utf8'))
 const events: Array<{ type: string; objectId?: string; frameId?: string; slot?: { id: string; name: string } }> = trace.events
 const objectId = events.find((event) => event.type === 'ALLOCATE_ARRAY')!.objectId!
 const writes = events.flatMap((event, index) => event.type === 'ARRAY_WRITE' ? [index + 1] : [])

@@ -211,3 +211,15 @@ Additional probes (small, non-headline): a two-thread counter (P1 no-kill, P8 la
 ## Explicitly not in these phases
 
 See design §12. In particular, do not start any of the following during P0–P7: a Java agent or dynamic classes, file-I/O visuals, GC/reachability, lexical scopes or loops as entities, synchronization semantics, debugger Watch/evaluate/conditional breakpoints, multi-module builds, Classic large-world, or a binary trace format.
+
+---
+
+## Phase 0 status (implemented; see docs/checkpoints/v12-p0/PHASE0.md)
+
+Corrections found while implementing Phase 0, checked against the code:
+
+- **0.1:** The curated layout branch was not cleanly separable inside `createLayout`. It is now `src/examples/curatedLayout.ts`, selected by `src/app/layoutForTrace.ts`. `src/app/` is the composition layer and is exempt from the import boundary, so it is *not* a generic module as design §9 implied.
+- **0.1:** The `INPUT_READ` Scanner validation could not be moved without the Phase 2 reducer-extension mechanism. It remains in `state.ts` as an explicit lint exemption.
+- **0.2:** The spec's fixture-word list (`Person`, `Scanner`, …) would also flag legitimate generic code that handles JDK types (for example a future `java.util.Scanner` library boundary in P4). The rule therefore checks literals only, and will need an allowlist once P4/P6 add JDK-aware summaries.
+- **0.7:** The design §10 budgets assume a GPU reference machine. The sandbox baseline uses software WebGL, so only the pipeline (Node) numbers are comparable across environments.
+- **ACC-13/14:** As specified, these cannot pass any `current` "large world" fact today, because the Recorder halts the JVM. Their current facts characterize the halt; the large-world facts are `target:P1`.

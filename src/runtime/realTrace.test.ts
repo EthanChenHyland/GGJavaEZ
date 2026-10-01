@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { TraceDocument, TraceEvent } from '../contracts/runtime'
-import { applyEvent, createInitialState, loadArrayTrace, seek, validateTrace } from './index'
+import { applyEvent, createInitialState, seek, validateTrace } from './index'
+import { loadArrayTrace } from '../examples/traces'
 
 const source = { fileId: 'src/Main.java', line: 1 }
 type EventPayload = TraceEvent extends infer E ? E extends TraceEvent ? Omit<E, 'eventId' | 'seq' | 'source' | 'label' | 'importance'> : never : never

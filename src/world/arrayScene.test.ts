@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { loadArrayTrace, seek } from '../runtime'
-import { createLayout } from './layout'
+import { seek } from '../runtime'
+import { loadArrayTrace } from '../examples/traces'
+import { layoutForTrace as createLayout } from '../app/layoutForTrace'
 import { buildSceneModel } from './sceneModel'
 
 const trace = loadArrayTrace()

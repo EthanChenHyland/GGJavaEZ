@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import type { RuntimeState, TraceDocument, TraceEvent } from '../contracts/runtime'
 import { arrayElementSlotId } from '../contracts/runtime'
-import arraySource from '../demos/arrays/Main.java?raw'
-import { applyEvent, createInitialState, getReferences, loadArrayTrace, seek, validateTrace } from './index'
+import arraySource from '../examples/demos/arrays/Main.java?raw'
+import { applyEvent, createInitialState, getReferences, seek, validateTrace } from './index'
+import { loadArrayTrace } from '../examples/traces'
 
 const mainId = 'frame:arrays-main:1'
 const objectId = 'object:array:23'

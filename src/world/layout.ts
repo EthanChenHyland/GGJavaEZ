@@ -1,9 +1,8 @@
 import { arrayElementSlotId, type TraceDocument, type RuntimeSlot } from '../contracts/runtime'
 import type { LayoutState, Vec3, WorldAnchor } from '../contracts/world'
-import { createScopedLayout } from './scopedLayout'
 import { worldUnits } from '../theme/tokens'
 
-function portsForSlots(position: Vec3, size: Vec3, slots: RuntimeSlot[], region: 'stack' | 'heap', spacious = false): Record<string, Vec3> {
+export function portsForSlots(position: Vec3, size: Vec3, slots: RuntimeSlot[], region: 'stack' | 'heap', spacious = false): Record<string, Vec3> {
   const top = position[1] + size[1] / 2 - (region === 'stack' ? spacious ? 1.15 : 0.95 : 1.07)
   const gap = region === 'stack' ? spacious ? 0.44 : 0.32 : 0.52
   return Object.fromEntries(slots.map((slot, index) => [
@@ -12,30 +11,23 @@ function portsForSlots(position: Vec3, size: Vec3, slots: RuntimeSlot[], region:
   ]))
 }
 
-/** Reserve all known anchors once. Visibility may change with time; coordinates never do. */
+/** Generic (JVM-capture) layout. Reserve all known anchors once; coordinates never change.
+ * Curated example layouts live in src/examples/curatedLayout.ts and are selected only by
+ * the composition seam src/app/layoutForTrace.ts. Remaining generic debt (hasArrays flag,
+ * fixed live frame height) is tracked as audit D2/D4 and replaced in Phase 5. */
 export function createLayout(trace: TraceDocument): LayoutState {
-  if (trace.events.some((event) => event.type === 'ENTER_SCOPE')) return createScopedLayout(trace)
   const anchors: Record<string, WorldAnchor> = {}
   const frameSlots: Record<string, RuntimeSlot[]> = {}
   const frameDepths: Record<string, number> = {}
-  let childOrdinal = 0
   const liveOrdinalByDepth: Record<number, number> = {}
-  let objectOrdinal = 0
   let heapX = 1.55
   let heapZ = 0.2
   let heapRowDepth = 0
-  let heapBackEdge: number | null = null
   let stackDepth = 0
   const hasArrays = trace.events.some((event) => event.type === 'ALLOCATE_ARRAY')
   // A JVM capture has no known final depth. Its positions depend only on identity/order.
-  const live = trace.capture?.origin === 'jvm'
   const theaterAnchors: Record<string, WorldAnchor> = {}
   const reserveHeapPosition = (width: number, depth: number): Vec3 => {
-    if (!live) {
-      const center = heapBackEdge === null ? -0.65 : heapBackEdge - 0.8 - depth / 2
-      heapBackEdge = center - depth / 2
-      return [3.45 + (objectOrdinal % 2) * 0.5, -0.05, center]
-    }
     // Append-only shelves: allocation order reserves position, never current values.
     if (heapX > 1.55 && heapX + width > 25.55) { heapZ -= heapRowDepth + 1.2; heapX = 1.55; heapRowDepth = 0 }
     const position: Vec3 = [heapX + width / 2, -0.05, heapZ - depth / 2]
@@ -56,8 +48,7 @@ export function createLayout(trace: TraceDocument): LayoutState {
   for (const event of trace.events) {
     if (event.type === 'ENTER_METHOD' && event.returnType && event.returnType !== 'void') {
       const returned: RuntimeSlot = { id: `return:${event.frameId}`, name: 'return', javaType: event.returnType, role: 'return', value: { kind: 'uninitialized' } }
-      if (live) frameSlots[event.frameId].unshift(returned)
-      else frameSlots[event.frameId].push(returned)
+      frameSlots[event.frameId].unshift(returned)
     }
   }
 
@@ -69,21 +60,15 @@ export function createLayout(trace: TraceDocument): LayoutState {
       liveOrdinalByDepth[depth] = sibling + 1
       const column = sibling % 4
       const row = Math.floor(sibling / 4)
-      const position: Vec3 = live
-        ? [-4.9 - column * 6.4, -depth * 4.2, -3 - row * 2.6]
-        : stackDepth > 1
-        ? [-4.7 + depth * 0.9, (stackDepth - depth) * 2.2 - 0.3, -3 + depth * 1.1]
-        : depth === 0
-        ? [hasArrays ? -4.9 : -3.45, -0.25, 1.1]
-        : [-3.35 + (depth - 1) * 0.32, 1.65 + (depth - 1) * 1.65, -0.8 - childOrdinal++ * 0.85]
+      const position: Vec3 = [-4.9 - column * 6.4, -depth * 4.2, -3 - row * 2.6]
       const slots = frameSlots[event.frameId] ?? []
-      const size: Vec3 = [worldUnits.frame[0], live ? 3.6 : Math.max(worldUnits.frame[1], hasArrays ? 1.5 + slots.length * 0.44 : 1.12 + slots.length * 0.34), worldUnits.frame[2]]
+      const size: Vec3 = [worldUnits.frame[0], 3.6, worldUnits.frame[2]]
       anchors[event.frameId] = {
         entityId: event.frameId,
         region: 'stack',
         position,
         size,
-        ports: portsForSlots(position, size, slots, 'stack', !live && hasArrays),
+        ports: portsForSlots(position, size, slots, 'stack', false),
         bodyPort: [position[0] + size[0] / 2, position[1], position[2]],
       }
     }
@@ -91,7 +76,6 @@ export function createLayout(trace: TraceDocument): LayoutState {
     if (event.type === 'ALLOCATE_ARRAY') {
       const arrayWidth = Math.max(worldUnits.arrayTheater.cell[0], (event.elements.length - 1) * worldUnits.arrayTheater.step + worldUnits.arrayTheater.cell[0])
       const position = reserveHeapPosition(arrayWidth, Math.max(worldUnits.arraySpatial.boundaryDepth, worldUnits.arrayTheater.boundaryDepth))
-      objectOrdinal++
       const reserveArray = (expanded: boolean, target: Record<string, WorldAnchor>) => {
         const dimensions = expanded ? worldUnits.arrayTheater : worldUnits.arraySpatial
         const cellSize: Vec3 = dimensions.cell
@@ -119,7 +103,6 @@ export function createLayout(trace: TraceDocument): LayoutState {
       const height = Math.max(worldUnits.object[1], 1.5 + Math.max(0, event.fields.length - 1) * 0.52)
       const size: Vec3 = [worldUnits.object[0], height, worldUnits.object[2]]
       const position = reserveHeapPosition(size[0], size[2])
-      objectOrdinal++
       anchors[event.objectId] = {
         entityId: event.objectId,
         region: 'heap',
@@ -131,7 +114,6 @@ export function createLayout(trace: TraceDocument): LayoutState {
     }
   }
 
-  if (stackDepth <= 1 && !hasArrays && !live) return { anchors, homeTarget: worldUnits.homeTarget, stackDepth }
   if (!Object.keys(anchors).length) return { anchors, homeTarget: worldUnits.homeTarget, stackDepth }
   const boundsFor = (reserved: Record<string, WorldAnchor>) => {
     const nodes = Object.values(reserved)

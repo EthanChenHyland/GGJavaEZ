@@ -1,0 +1,80 @@
+{
+ "id": "ACC-14",
+ "title": "Discrete-event simulator: hundreds of thousands of events, thousands of invocations",
+ "question": "Does Spatial understand this because its runtime model is generic?",
+ "fresh": true,
+ "freshness": "Written for acceptance-v12; shares no names, structure or source with Person/factorial/bubble-sort/control demos or v11.5 audit fixtures.",
+ "renames": {
+  "Simulation": "World7",
+  "EventHeap": "Agenda7",
+  "Counter": "Desk7",
+  "seedArrivals": "seed7",
+  "runUntilIdle": "drain7",
+  "handle": "process7",
+  "serve": "work7",
+  "push": "add7",
+  "pop": "take7",
+  "peekTime": "t7",
+  "peekCustomer": "c7",
+  "peekStage": "s7",
+  "earlier": "before7",
+  "exchange": "trade7",
+  "nextRandom": "rnd7",
+  "counters": "desks7",
+  "maxQueueDepth": "peak7",
+  "busyTime": "busy7",
+  "served": "done7",
+  "randomState": "seed8"
+ },
+ "facts": [
+  {
+   "id": "killedAtEventBudget",
+   "kind": "exit",
+   "status": "current",
+   "code": 86,
+   "note": "CHARACTERIZATION of audit X1: Recorder halts the JVM at 20,000 raw events"
+  },
+  {
+   "id": "abortedPrefix",
+   "kind": "eventCount",
+   "status": "current",
+   "type": "PROGRAM_ABORT",
+   "min": 1,
+   "max": 1
+  },
+  {
+   "id": "prefixSize",
+   "kind": "eventCount",
+   "status": "current",
+   "type": "*",
+   "min": 20000
+  },
+  {
+   "id": "completes",
+   "kind": "exit",
+   "status": "target:P1",
+   "requirement": "R1.1-1.2",
+   "code": 0,
+   "stdout": [
+    "PROCESSED 2400",
+    "MAX_QUEUE 400",
+    "CLOCK 5163"
+   ]
+  },
+  {
+   "id": "largeHistory",
+   "kind": "eventCount",
+   "status": "target:P1",
+   "requirement": "R12/R20",
+   "type": "*",
+   "min": 200000
+  },
+  {
+   "id": "manyInvocations",
+   "kind": "invocations",
+   "status": "target:P1",
+   "requirement": "R12/R20",
+   "min": 5000
+  }
+ ]
+}
