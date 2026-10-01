@@ -7,7 +7,7 @@ import { normalizeTrace } from '../src/instrumentation/normalize'
 
 test.describe.configure({ mode: 'serial', timeout: 180_000 })
 test.use({ video: { mode:'on', size:{ width:1440, height:900 } }, actionTimeout:15000 })
-const output = 'docs/checkpoints/product-audit-v11_5'
+const output = process.env.VJ_QA_OUTPUT_ROOT ? `${process.env.VJ_QA_OUTPUT_ROOT}/product-audit-v11_5` : 'docs/checkpoints/product-audit-v11_5'
 
 async function capture(page: Page, name: string) {
   await mkdir(output, { recursive: true })

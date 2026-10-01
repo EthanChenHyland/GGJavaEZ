@@ -1,3 +1,5 @@
+import type { RecordingStatus } from '../instrumentation/contracts'
+
 /** Trace and runtime truth. No positions, camera state, or animation state belong here. */
 export type EventId = string
 export type FrameId = string
@@ -159,7 +161,7 @@ export interface RuntimeBranchFact {
 export interface RuntimeState {
   /** Number of events already applied: 0 is ready, N is after the last event. */
   cursor: number
-  status: 'ready' | 'running' | 'ended' | 'aborted'
+  status: 'ready' | 'running' | 'ended' | 'aborted' | 'partial'
   currentSource: SourceLocation | null
   lastEventId: EventId | null
   activeFrameIds: FrameId[]
@@ -176,6 +178,7 @@ export interface RuntimeState {
   exceptions: RuntimeExceptionFact[]
   branch: RuntimeBranchFact | null
   abortReason: string | null
+  recordingStop?: RecordingStatus
 }
 
 export type SlotOwner =
@@ -203,6 +206,7 @@ export type TraceEvent = TraceEventBase & (
   | { type: 'CONSOLE_INPUT'; frameId: FrameId | null; text: string }
   | { type: 'PROGRAM_START' }
   | { type: 'PROGRAM_END' }
+  | { type: 'CAPTURE_STOP'; recording: RecordingStatus }
   | { type: 'PROGRAM_ABORT'; reason: 'program_crashed' | 'instrumentation_failed' | 'limit_exceeded' | 'unsupported'; message: string }
   | { type: 'LINE_EXECUTE'; frameId: FrameId }
   | { type: 'ENTER_METHOD'; frameId: FrameId; callerFrameId: FrameId | null; className: string; methodName: string; locals: RuntimeSlot[]; invocationLabel?: string; returnType?: string }

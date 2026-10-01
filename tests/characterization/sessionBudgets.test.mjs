@@ -8,15 +8,11 @@ import { buildInstrumentationSourceManifest } from '../../server/instrumentation
 import { normalizeTrace } from '../../src/instrumentation/normalize.ts';
 
 /**
- * CHARACTERIZATION — audit X3/X4: server-side capture policy terminates the user's JVM.
- *   X4: the capture-duration clock keeps running while the program waits for stdin.
- *   X3: a second application thread emitting probe events causes SIGKILL.
- * These run the production DebugManager in Run mode (control: false). Only the duration is
- * shortened from 30 s via the existing timeoutMs request field, which production also uses,
- * so the tests stay fast; the policy is unchanged. "DESIRED" tests are test.fails
- * (Phase 1, task 1.2 / R1.3–1.4 / INV-2).
+ * Phase 0 evidence: X3 killed on second-thread observation, X4 counted stdin waits as
+ * running time. Phase 1 promotes the required behavior: the same JVM continues and
+ * only recording becomes partial. Constructor characterization stays deferred.
  */
-async function session(source, { timeoutMs = 30000 } = {}) {
+async function session(source, { timeoutMs = 30000, control = false, rawEventLimit = 20000, breakpoints = [] } = {}) {
   const projectRoot = await mkdtemp(join(tmpdir(), 'vj-session-budget-'));
   const classesDir = join(projectRoot, '.classes');
   await mkdir(projectRoot, { recursive: true });
@@ -26,8 +22,8 @@ async function session(source, { timeoutMs = 30000 } = {}) {
   const sourceManifest = await buildInstrumentationSourceManifest(projectRoot, classesDir);
   const manager = new DebugManager();
   const { sessionId } = await manager.start({ projectId: 'budget', projectRoot, classesDir, mainClass: 'Main',
-    javaPath: build.jdk.javaPath, javacPath: build.jdk.javacPath, build, sourceManifest, control: false,
-    rawEventLimit: 20000, rawByteLimit: 8 * 1024 * 1024, timeoutMs, breakpoints: [] });
+    javaPath: build.jdk.javaPath, javacPath: build.jdk.javacPath, build, sourceManifest, control,
+    rawEventLimit, rawByteLimit: 8 * 1024 * 1024, timeoutMs, breakpoints });
   const ended = async (limit = 60000) => {
     const end = Date.now() + limit;
     for (;;) {
@@ -37,7 +33,7 @@ async function session(source, { timeoutMs = 30000 } = {}) {
       await new Promise((resolve) => setTimeout(resolve, 25));
     }
   };
-  const cleanup = async () => { await manager.stop(); await rm(projectRoot, { recursive: true, force: true }); };
+  const cleanup = async () => { await manager.dispose(); await rm(projectRoot, { recursive: true, force: true }); };
   return { manager, sessionId, ended, cleanup };
 }
 
@@ -61,59 +57,105 @@ const twoThreads = `public class Main {
   }
 }`;
 
-describe('capture duration while waiting for stdin (X4)', () => {
-  test('CURRENT (bug X4, fixed in Phase 1): an idle stdin wait exhausts the capture time budget and the JVM is killed', async () => {
-    const s = await session(waitsForInput, { timeoutMs: 4000 });
-    try {
-      const result = await s.ended();
-      expect(result.rawEvents.at(-1)?.type).toBe('stdin_wait');
-      expect(result).toMatchObject({ status: 'failed', terminalStatus: 'limit_exceeded' });
-      expect(result.stdout).toContain('WAITING');
-      expect(result.stdout).not.toContain('GOT');
-    } finally { await s.cleanup(); }
-  }, 90000);
+async function until(s, predicate, limit = 10000) {
+  const end = Date.now() + limit;
+  for (;;) {
+    const snapshot = s.manager.snapshot(s.sessionId);
+    if (predicate(snapshot)) return snapshot;
+    if (['failed', 'stopped', 'exited'].includes(snapshot.status)) throw new Error(`Unexpected terminal session: ${JSON.stringify(snapshot)}`);
+    if (Date.now() > end) throw new Error('Session condition timed out');
+    await new Promise((resolve) => setTimeout(resolve, 25));
+  }
+}
 
-  test.fails('DESIRED (Phase 1, R1.4): time spent waiting for stdin does not count; late input completes the program', async () => {
+describe('stdin duration regression (X4)', () => {
+  test('Phase 1: late stdin after the previous watchdog threshold completes the same program', async () => {
     const s = await session(waitsForInput, { timeoutMs: 4000 });
     try {
+      await until(s, (result) => result.waitingForInput);
       await new Promise((resolve) => setTimeout(resolve, 5500));
+      const waiting = s.manager.snapshot(s.sessionId);
+      expect(waiting.status).toBe('running'); expect(waiting.rawEvents.at(-1).type).toBe('stdin_wait');
       await s.manager.input(s.sessionId, 'A\n');
       const result = await s.ended();
-      expect(result.status).toBe('exited');
-      expect(result.stdout).toContain('GOT 65');
+      expect(result).toMatchObject({ status: 'exited', terminalStatus: 'complete', exitCode: 0 });
+      expect(result.stdout).toBe('WAITING\nGOT 65\n');
     } finally { await s.cleanup(); }
   }, 90000);
 });
 
-describe('second application thread (X3)', () => {
-  test('CURRENT (bug X3, fixed in Phase 1): a second project thread makes the server kill the JVM', async () => {
+describe('second application thread regression (X3)', () => {
+  test('Phase 1: program completes with a valid first-thread prefix and truthful stopped observer', async () => {
     const s = await session(twoThreads);
     try {
       const result = await s.ended();
-      expect(result.status).toBe('failed');
-      expect(result.terminalStatus).toBe('unsupported');
-      expect(result.diagnostic).toContain('Multiple project threads');
-      expect(result.stdout).not.toContain('DONE');
-    } finally { await s.cleanup(); }
-  }, 90000);
-
-  test('CURRENT (bug X3, fixed in Phase 1): the client normalizer rejects any second-thread prefix, so even a JVM that escaped the kill race gets no world', async () => {
-    const s = await session(twoThreads);
-    try {
-      const result = await s.ended();
-      expect(new Set(result.rawEvents.filter((event) => event.type !== 'console').map((event) => event.threadId)).size).toBe(2);
-      const normalized = normalizeTrace(result.rawEvents, result.sourceManifest, { status: 'complete', exitCode: 0, diagnostic: null });
-      expect(normalized.capability.diagnostics.join(' ')).toContain('Multiple project threads are unsupported');
-      expect(normalized.trace.events.at(-1)).toMatchObject({ type: 'PROGRAM_ABORT', reason: 'instrumentation_failed' });
-    } finally { await s.cleanup(); }
-  }, 90000);
-
-  test.fails('DESIRED (Phase 1, R1.3): the program completes and thread coverage is only marked partial', async () => {
-    const s = await session(twoThreads);
-    try {
-      const result = await s.ended();
-      expect(result.status).toBe('exited');
-      expect(result.stdout).toContain('DONE 1');
+      expect(result).toMatchObject({ status: 'exited', terminalStatus: 'complete', exitCode: 0, stdout: 'DONE 1\n',
+        recording: { state: 'STOPPED_UNSUPPORTED', budget: null, executionContinued: true } });
+      expect(result.recording.reason).toMatch(/thread/i);
+      expect(new Set(result.rawEvents.filter((event) => event.type !== 'capture_saturated' && (event.type !== 'console' || event.frameId !== null)).map((event) => event.threadId)).size).toBe(1);
+      result.rawEvents.forEach((event, index) => expect(event.seq).toBe(index));
+      const normalized = normalizeTrace(result.rawEvents, result.sourceManifest,
+        { status: 'complete', exitCode: 0, diagnostic: null, recording: result.recording });
+      expect(normalized.trace.events.at(-1)).toMatchObject({ type: 'CAPTURE_STOP', recording: { state: 'STOPPED_UNSUPPORTED' } });
+      expect(normalized.trace.events.some((event) => event.type === 'PROGRAM_END' || event.type === 'PROGRAM_ABORT')).toBe(false);
     } finally { await s.cleanup(); }
   }, 90000);
 });
+
+const saturatesThenReads = `public class Main {
+  public static void main(String[] args) throws Exception {
+    int sum = 0;
+    for (int i = 0; i < 100; i++) sum += i;
+    System.out.println("WAITING");
+    int value = System.in.read();
+    System.out.println("DONE " + value + " " + sum);
+  }
+}`;
+
+test('Phase 1: stdin sidecar remains operational after saturation and idle watchdog threshold', async () => {
+  const s = await session(saturatesThenReads, { timeoutMs: 2000, rawEventLimit: 6 });
+  try {
+    const waiting = await until(s, (r) => r.waitingForInput && r.recording.state === 'STOPPED_LIMIT');
+    const count = waiting.rawEvents.length;
+    await new Promise((resolve) => setTimeout(resolve, 3000));
+    expect(s.manager.snapshot(s.sessionId).status).toBe('running');
+    await s.manager.input(s.sessionId, 'A\n');
+    const result = await s.ended();
+    expect(result).toMatchObject({ status: 'exited', terminalStatus: 'complete', exitCode: 0, stdout: 'WAITING\nDONE 65 4950\n' });
+    expect(result.rawEvents).toHaveLength(count); expect(result.rawEvents.at(-1).type).toBe('capture_saturated');
+    expect(result.waitingForInput).toBe(false);
+  } finally { await s.cleanup(); }
+}, 90000);
+
+test('Phase 1: long breakpoint pause after saturation excludes paused time; Continue and stdin finish normally', async () => {
+  const s = await session(saturatesThenReads, { timeoutMs: 2000, rawEventLimit: 6, control: true, breakpoints: [{ fileId: 'Main.java', line: 6 }] });
+  try {
+    await until(s, (r) => r.status === 'paused' && r.pause.reason === 'entry');
+    await s.manager.command(s.sessionId, 'continue');
+    const pause = await until(s, (r) => r.status === 'paused' && r.pause.line === 6);
+    expect(pause.recording.state).toBe('STOPPED_LIMIT'); expect(pause.pause.rawEventCount).toBe(pause.rawEvents.length);
+    await new Promise((resolve) => setTimeout(resolve, 3000));
+    expect(s.manager.snapshot(s.sessionId).status).toBe('paused');
+    await s.manager.command(s.sessionId, 'continue'); await until(s, (r) => r.waitingForInput);
+    await s.manager.input(s.sessionId, 'B\n');
+    expect(await s.ended()).toMatchObject({ status: 'exited', terminalStatus: 'complete', exitCode: 0, stdout: 'WAITING\nDONE 66 4950\n' });
+  } finally { await s.cleanup(); }
+}, 90000);
+
+test('Phase 1: explicit Stop after saturation/input wait reaps target and reRun starts cleanly', async () => {
+  const s = await session(saturatesThenReads, { rawEventLimit: 6 });
+  try {
+    await until(s, (r) => r.waitingForInput && r.recording.state === 'STOPPED_LIMIT');
+    expect(await s.manager.stop(s.sessionId)).toMatchObject({ status: 'stopped' });
+    const previous = s.manager.snapshot(s.sessionId);
+    // Reuse the same successfully compiled project and source manifest; start prepares a new isolated recorder.
+    const running = s.manager.sessions.get(s.sessionId);
+    const next = await s.manager.start(running.request);
+    expect(next.sessionId).not.toBe(s.sessionId); expect(next.stdout).toBe(''); expect(next.recording.state).toBe('FULL');
+    await until({ manager: s.manager, sessionId: next.sessionId }, (r) => r.waitingForInput);
+    await s.manager.input(next.sessionId, 'C\n');
+    const final = await until({ manager: s.manager, sessionId: next.sessionId }, (r) => r.status === 'exited');
+    expect(final).toMatchObject({ terminalStatus: 'complete', exitCode: 0, stdout: 'WAITING\nDONE 67 4950\n' });
+    expect(s.manager.snapshot(s.sessionId)).toEqual(previous);
+  } finally { await s.cleanup(); }
+}, 90000);

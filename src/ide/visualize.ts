@@ -24,6 +24,7 @@ export async function visualizeProject(projectId: string, mainClass: string, lau
     status: response.status,
     exitCode: response.exitCode,
     diagnostic: response.diagnostic,
+    recording: response.recording,
     ...(response.capability ? { capability: response.capability } : {}),
   }, `real:${projectId}:${response.build.elapsedMs}:${response.rawEvents.length}`)
   const trace = validateTrace(normalized.trace)

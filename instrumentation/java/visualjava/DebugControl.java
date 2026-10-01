@@ -14,6 +14,7 @@ import java.util.Set;
 /** Cooperative control only: never reads Recorder state or application stdin. */
 public final class DebugControl {
   private static final Object MONITOR = new Object();
+  private static final int COMMAND_LIMIT = 65536;
   private static final Set<String> BREAKPOINTS = new HashSet<>();
   private static BufferedWriter output;
   private static boolean initialized, enabled, configured, paused;
@@ -62,16 +63,27 @@ public final class DebugControl {
       Thread reader = new Thread(() -> readCommands(socket), "VisualJava debug commands");
       reader.setDaemon(true); reader.start();
     } catch (Exception error) {
-      failure = "Debug control connection failed: " + error.getMessage();
-      throw new IllegalStateException(failure, error);
+      failure = "Debug control connection failed";
+      enabled = false;
+    }
+  }
+
+  /** Bound input before allocation, rather than after BufferedReader.readLine(). */
+  private static String readCommand(BufferedReader input) throws java.io.IOException {
+    StringBuilder line = new StringBuilder();
+    for (;;) {
+      int value = input.read();
+      if (value < 0) return line.length() == 0 ? null : line.toString();
+      if (value == '\n') return line.toString();
+      if (line.length() >= COMMAND_LIMIT) throw new java.io.IOException("Oversized debug command");
+      line.append((char)value);
     }
   }
 
   private static void readCommands(Socket socket) {
     try (socket; BufferedReader input = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8))) {
       String line;
-      while ((line = input.readLine()) != null) {
-        if (line.length() > 65536) throw new java.io.IOException("Oversized debug command");
+      while ((line = readCommand(input)) != null) {
         String[] parts = line.split("\t", -1);
         String command = parts[0], requestId = parts.length > 1 ? parts[1] : "";
         synchronized (MONITOR) {
@@ -98,17 +110,17 @@ public final class DebugControl {
       throw new java.io.IOException("Debug control disconnected");
     } catch (Exception error) {
       synchronized (MONITOR) {
-        failure = error.getMessage(); paused = false; MONITOR.notifyAll();
+        failure = "Debug control disconnected or command rejected"; enabled = false; paused = false; MONITOR.notifyAll();
       }
     }
   }
 
-  /** Called after entry/line state is canonical and its record has been flushed. */
+  /** Called without the Recorder lock; rawCount freezes when observation stops. */
   public static void checkpoint(String frameId, String owner, String method, int line, int depth, long rawCount) {
     checkpoint(frameId, owner, method, line, depth, rawCount, false);
   }
 
-  /** Called once per exception episode, after throw capture and before unwind. */
+  /** Exception control checkpoint; observation may already have stopped. */
   public static void exception(String frameId, String owner, String method, int line, int depth, long rawCount) {
     checkpoint(frameId, owner, method, line, depth, rawCount, true);
   }
@@ -119,7 +131,7 @@ public final class DebugControl {
       if (!enabled) return;
       try {
         while ((!configured || paused) && failure == null) MONITOR.wait();
-        if (failure != null) throw new IllegalStateException("Debug control failed: " + failure);
+        if (failure != null) return;
         long thread = Thread.currentThread().threadId();
         String reason = exception ? "exception" : mode.equals("entry") ? "entry"
           : mode.equals("pause") ? "pause" : BREAKPOINTS.contains(owner + ":" + line) ? "breakpoint"
@@ -132,11 +144,11 @@ public final class DebugControl {
           + ",\"className\":" + quote(owner) + ",\"methodName\":" + quote(method)
           + ",\"line\":" + line + ",\"rawEventCount\":" + rawCount + "}");
         while (paused && failure == null) MONITOR.wait();
-        if (failure != null) throw new IllegalStateException("Debug control failed: " + failure);
+        if (failure != null) return;
       } catch (InterruptedException error) {
-        Thread.currentThread().interrupt(); throw new IllegalStateException("Debug checkpoint interrupted", error);
+        Thread.currentThread().interrupt(); paused = false; MONITOR.notifyAll();
       } catch (java.io.IOException error) {
-        throw new IllegalStateException("Debug checkpoint transport failed", error);
+        failure = "Debug checkpoint transport failed"; enabled = false; paused = false; MONITOR.notifyAll();
       }
     }
   }

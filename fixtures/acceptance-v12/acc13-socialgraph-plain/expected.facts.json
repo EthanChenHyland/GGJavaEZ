@@ -20,17 +20,19 @@
  },
  "facts": [
   {
-   "id": "killedAtIdentityBudget",
-   "kind": "exit",
+   "id": "partialRecording",
+   "kind": "recording",
    "status": "current",
-   "code": 86,
-   "note": "CHARACTERIZATION of audit X2: Recorder halts the JVM at 256 identities (tests/characterization/recorderBudgets)"
+   "requirement": "R1.1-1.2",
+   "state": "STOPPED_LIMIT",
+   "budget": "objects",
+   "note": "P0 exit86 evidence retained in checkpoint; P1 preserves actual completion and a bounded prefix."
   },
   {
-   "id": "abortedPrefix",
+   "id": "observedPrefix",
    "kind": "eventCount",
    "status": "current",
-   "type": "PROGRAM_ABORT",
+   "type": "CAPTURE_STOP",
    "min": 1,
    "max": 1
   },
@@ -45,7 +47,7 @@
   {
    "id": "completes",
    "kind": "exit",
-   "status": "target:P1",
+   "status": "current",
    "requirement": "R1.1-1.2",
    "code": 0,
    "stdout": [
@@ -58,7 +60,7 @@
   {
    "id": "allMembers",
    "kind": "objects",
-   "status": "target:P1",
+   "status": "target:P5",
    "requirement": "R1/R12",
    "className": "Member",
    "min": 3000
@@ -66,7 +68,7 @@
   {
    "id": "allFollows",
    "kind": "objects",
-   "status": "target:P1",
+   "status": "target:P5",
    "requirement": "R1/R12",
    "className": "Follow",
    "min": 12000

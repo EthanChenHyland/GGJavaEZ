@@ -1,5 +1,5 @@
 import type { RuntimeSlot, RuntimeValue, ScalarValue, SlotOwner, TraceDocument, TraceEvent } from '../contracts/runtime'
-import { applyEvent, createInitialState } from './state'
+import { applyEvent, createInitialState, isRecordingStop } from './state'
 
 type RecordValue = Record<string, unknown>
 
@@ -106,6 +106,8 @@ function isEvent(value: unknown, schemaVersion: 1 | 2): value is TraceEvent {
       return true
     case 'PROGRAM_ABORT':
       return schemaVersion === 2 && ['program_crashed', 'instrumentation_failed', 'limit_exceeded', 'unsupported'].includes(String(value.reason)) && typeof value.message === 'string'
+    case 'CAPTURE_STOP':
+      return schemaVersion === 2 && isRecordingStop(value.recording)
     case 'LINE_EXECUTE':
       return isText(value.frameId) && isSource(value.source)
     case 'EXIT_METHOD':
@@ -215,7 +217,7 @@ export function validateTrace(input: unknown, options: { allowLive?: boolean } =
     }
   }
 
-  if (state.status !== 'ended' && !(input.schemaVersion === 2 && (state.status === 'aborted' ||
-      options.allowLive && state.status === 'running'))) throw new Error('Trace must end with PROGRAM_END or v2 PROGRAM_ABORT')
+  if (state.status !== 'ended' && !(input.schemaVersion === 2 && (state.status === 'aborted' || state.status === 'partial' ||
+      options.allowLive && state.status === 'running'))) throw new Error('Trace must end with PROGRAM_END, v2 PROGRAM_ABORT or CAPTURE_STOP')
   return input as unknown as TraceDocument
 }

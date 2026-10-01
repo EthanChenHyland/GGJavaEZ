@@ -1,0 +1,357 @@
+{
+  "recordedAt": "2026-10-01T05:40:53.833Z",
+  "results": {
+    "acc01-clinic-maven": {
+      "built": false,
+      "timings": {
+        "buildMs": 921
+      }
+    },
+    "acc02-shapes-plain": {
+      "built": true,
+      "stdout": "AREAS 12 9\nLABEL shape/polygon4/rectangle/square\nFACTOR 3\n",
+      "stderr": "",
+      "exitCode": 0,
+      "terminalStatus": "complete",
+      "recording": {
+        "state": "FULL",
+        "reason": null,
+        "budget": null,
+        "lastRecordedSeq": 146,
+        "executionContinued": true
+      },
+      "rawEvents": 147,
+      "semanticEvents": 230,
+      "visualStatus": "ended",
+      "timings": {
+        "buildMs": 220,
+        "executionMs": 580,
+        "normalizeMs": 3,
+        "worldMs": 1
+      }
+    },
+    "acc03-payments-gradle": {
+      "built": false,
+      "timings": {
+        "buildMs": 2297
+      }
+    },
+    "acc04-seating-plain": {
+      "built": true,
+      "stdout": "REVENUE 60.75\nLARGEST 9007199254740993\nROWS 111\n",
+      "stderr": "",
+      "exitCode": 0,
+      "terminalStatus": "complete",
+      "recording": {
+        "state": "FULL",
+        "reason": null,
+        "budget": null,
+        "lastRecordedSeq": 320,
+        "executionContinued": true
+      },
+      "rawEvents": 321,
+      "semanticEvents": 400,
+      "visualStatus": "ended",
+      "timings": {
+        "buildMs": 192,
+        "executionMs": 571,
+        "normalizeMs": 3,
+        "worldMs": 1
+      }
+    },
+    "acc05-playlist-plain": {
+      "built": true,
+      "stdout": "TRACKS 3\nLISTENED 559\n",
+      "stderr": "",
+      "exitCode": 0,
+      "terminalStatus": "complete",
+      "recording": {
+        "state": "FULL",
+        "reason": null,
+        "budget": null,
+        "lastRecordedSeq": 147,
+        "executionContinued": true
+      },
+      "rawEvents": 148,
+      "semanticEvents": 224,
+      "visualStatus": "ended",
+      "timings": {
+        "buildMs": 207,
+        "executionMs": 576,
+        "normalizeMs": 2,
+        "worldMs": 0
+      }
+    },
+    "acc06-wordindex-plain": {
+      "built": true,
+      "stdout": "THE 3\nMISSING 0\nDISTINCT 7\nLENGTHS 3\nFIRST and\n",
+      "stderr": "",
+      "exitCode": 0,
+      "terminalStatus": "complete",
+      "recording": {
+        "state": "FULL",
+        "reason": null,
+        "budget": null,
+        "lastRecordedSeq": 143,
+        "executionContinued": true
+      },
+      "rawEvents": 144,
+      "semanticEvents": 165,
+      "visualStatus": "ended",
+      "timings": {
+        "buildMs": 215,
+        "executionMs": 573,
+        "normalizeMs": 1,
+        "worldMs": 0
+      }
+    },
+    "acc07-orders-maven": {
+      "built": false,
+      "timings": {
+        "buildMs": 750
+      }
+    },
+    "acc08-maze-plain": {
+      "built": true,
+      "stdout": "SOLVED true\nDEEPEST 41\nBACKTRACKS 16\n",
+      "stderr": "",
+      "exitCode": 0,
+      "terminalStatus": "complete",
+      "recording": {
+        "state": "FULL",
+        "reason": null,
+        "budget": null,
+        "lastRecordedSeq": 2099,
+        "executionContinued": true
+      },
+      "rawEvents": 2100,
+      "semanticEvents": 2727,
+      "visualStatus": "ended",
+      "timings": {
+        "buildMs": 195,
+        "executionMs": 594,
+        "normalizeMs": 12,
+        "worldMs": 5
+      }
+    },
+    "acc09-config-plain": {
+      "built": true,
+      "stdout": "RECOVERED non-positive timeout\nRETRY 2\nCLOSED true\n",
+      "stderr": "",
+      "exitCode": 0,
+      "terminalStatus": "complete",
+      "recording": {
+        "state": "FULL",
+        "reason": null,
+        "budget": null,
+        "lastRecordedSeq": 168,
+        "executionContinued": true
+      },
+      "rawEvents": 169,
+      "semanticEvents": 239,
+      "visualStatus": "ended",
+      "timings": {
+        "buildMs": 204,
+        "executionMs": 586,
+        "normalizeMs": 1,
+        "worldMs": 0
+      }
+    },
+    "acc10-converter-plain": {
+      "built": true,
+      "stdout": "RESULT 6.21\nRESULT 4.827\nRESULT 4.41\nCONVERSIONS 3\n",
+      "stderr": "UNKNOWN lb\n",
+      "exitCode": 0,
+      "terminalStatus": "complete",
+      "recording": {
+        "state": "FULL",
+        "reason": null,
+        "budget": null,
+        "lastRecordedSeq": 159,
+        "executionContinued": true
+      },
+      "rawEvents": 160,
+      "semanticEvents": 193,
+      "visualStatus": "ended",
+      "timings": {
+        "buildMs": 197,
+        "executionMs": 933,
+        "normalizeMs": 1,
+        "worldMs": 0
+      }
+    },
+    "acc10-converter-plain:{\"stdinDelayMs\":60000}": {
+      "built": true,
+      "stdout": "RESULT 6.21\nRESULT 4.827\nRESULT 4.41\nCONVERSIONS 3\n",
+      "stderr": "UNKNOWN lb\n",
+      "exitCode": 0,
+      "terminalStatus": "complete",
+      "recording": {
+        "state": "FULL",
+        "reason": null,
+        "budget": null,
+        "lastRecordedSeq": 159,
+        "executionContinued": true
+      },
+      "rawEvents": 160,
+      "semanticEvents": 193,
+      "visualStatus": "ended",
+      "timings": {
+        "buildMs": 200,
+        "executionMs": 60639,
+        "normalizeMs": 1,
+        "worldMs": 0
+      }
+    },
+    "acc11-csv-maven": {
+      "built": false,
+      "timings": {
+        "buildMs": 739
+      }
+    },
+    "acc12-catalogue-gradle": {
+      "built": false,
+      "timings": {
+        "buildMs": 1949
+      }
+    },
+    "acc13-socialgraph-plain": {
+      "built": true,
+      "stdout": "MEMBERS 3000\nFOLLOWS 12000\nREACHABLE 2929\nFARTHEST 10\n",
+      "stderr": "",
+      "exitCode": 0,
+      "terminalStatus": "complete",
+      "recording": {
+        "state": "STOPPED_LIMIT",
+        "reason": "Recording budget exceeded: objects",
+        "budget": "objects",
+        "lastRecordedSeq": 3074,
+        "executionContinued": true
+      },
+      "rawEvents": 3076,
+      "semanticEvents": 3849,
+      "visualStatus": "partial",
+      "timings": {
+        "buildMs": 204,
+        "executionMs": 627,
+        "normalizeMs": 38,
+        "worldMs": 14
+      }
+    },
+    "acc14-simulator-plain": {
+      "built": true,
+      "stdout": "PROCESSED 2400\nMAX_QUEUE 400\nCLOCK 5163\n",
+      "stderr": "",
+      "exitCode": 0,
+      "terminalStatus": "complete",
+      "recording": {
+        "state": "STOPPED_LIMIT",
+        "reason": "Recording budget exceeded: events",
+        "budget": "events",
+        "lastRecordedSeq": 19999,
+        "executionContinued": true
+      },
+      "rawEvents": 20001,
+      "semanticEvents": 24765,
+      "visualStatus": "partial",
+      "timings": {
+        "buildMs": 204,
+        "executionMs": 721,
+        "normalizeMs": 1009,
+        "worldMs": 726
+      }
+    },
+    "curated:person": {
+      "built": true,
+      "stdout": "",
+      "stderr": "",
+      "exitCode": 0,
+      "terminalStatus": "complete",
+      "recording": {
+        "state": "FULL",
+        "reason": null,
+        "budget": null,
+        "lastRecordedSeq": 20,
+        "executionContinued": true
+      },
+      "rawEvents": 21,
+      "semanticEvents": 31,
+      "visualStatus": "ended",
+      "timings": {
+        "buildMs": 188,
+        "executionMs": 581,
+        "normalizeMs": 0,
+        "worldMs": 0
+      }
+    },
+    "curated:recursion": {
+      "built": true,
+      "stdout": "120\n",
+      "stderr": "",
+      "exitCode": 0,
+      "terminalStatus": "complete",
+      "recording": {
+        "state": "FULL",
+        "reason": null,
+        "budget": null,
+        "lastRecordedSeq": 36,
+        "executionContinued": true
+      },
+      "rawEvents": 37,
+      "semanticEvents": 45,
+      "visualStatus": "ended",
+      "timings": {
+        "buildMs": 186,
+        "executionMs": 572,
+        "normalizeMs": 0,
+        "worldMs": 0
+      }
+    },
+    "curated:arrays": {
+      "built": true,
+      "stdout": "",
+      "stderr": "",
+      "exitCode": 0,
+      "terminalStatus": "complete",
+      "recording": {
+        "state": "FULL",
+        "reason": null,
+        "budget": null,
+        "lastRecordedSeq": 178,
+        "executionContinued": true
+      },
+      "rawEvents": 179,
+      "semanticEvents": 180,
+      "visualStatus": "ended",
+      "timings": {
+        "buildMs": 180,
+        "executionMs": 571,
+        "normalizeMs": 1,
+        "worldMs": 0
+      }
+    },
+    "curated:control": {
+      "built": true,
+      "stdout": "0\n42\n100\n142\n",
+      "stderr": "",
+      "exitCode": 0,
+      "terminalStatus": "complete",
+      "recording": {
+        "state": "FULL",
+        "reason": null,
+        "budget": null,
+        "lastRecordedSeq": 84,
+        "executionContinued": true
+      },
+      "rawEvents": 85,
+      "semanticEvents": 87,
+      "visualStatus": "ended",
+      "timings": {
+        "buildMs": 191,
+        "executionMs": 944,
+        "normalizeMs": 1,
+        "worldMs": 0
+      }
+    }
+  }
+}

@@ -1,0 +1,97 @@
+{
+  "recordedAt": "2026-10-01T06:02:12.525Z",
+  "results": {
+    "acc10-converter-plain": {
+      "built": true,
+      "stdout": "RESULT 6.21\nRESULT 4.827\nRESULT 4.41\nCONVERSIONS 3\n",
+      "stderr": "UNKNOWN lb\n",
+      "exitCode": 0,
+      "terminalStatus": "complete",
+      "recording": {
+        "state": "FULL",
+        "reason": null,
+        "budget": null,
+        "lastRecordedSeq": 159,
+        "executionContinued": true
+      },
+      "rawEvents": 160,
+      "semanticEvents": 193,
+      "visualStatus": "ended",
+      "timings": {
+        "buildMs": 194,
+        "executionMs": 948,
+        "normalizeMs": 4,
+        "worldMs": 1
+      }
+    },
+    "acc10-converter-plain:{\"stdinDelayMs\":60000}": {
+      "built": true,
+      "stdout": "RESULT 6.21\nRESULT 4.827\nRESULT 4.41\nCONVERSIONS 3\n",
+      "stderr": "UNKNOWN lb\n",
+      "exitCode": 0,
+      "terminalStatus": "complete",
+      "recording": {
+        "state": "FULL",
+        "reason": null,
+        "budget": null,
+        "lastRecordedSeq": 159,
+        "executionContinued": true
+      },
+      "rawEvents": 160,
+      "semanticEvents": 193,
+      "visualStatus": "ended",
+      "timings": {
+        "buildMs": 193,
+        "executionMs": 60630,
+        "normalizeMs": 1,
+        "worldMs": 0
+      }
+    },
+    "acc13-socialgraph-plain": {
+      "built": true,
+      "stdout": "MEMBERS 3000\nFOLLOWS 12000\nREACHABLE 2929\nFARTHEST 10\n",
+      "stderr": "",
+      "exitCode": 0,
+      "terminalStatus": "complete",
+      "recording": {
+        "state": "STOPPED_LIMIT",
+        "reason": "Recording budget exceeded: objects",
+        "budget": "objects",
+        "lastRecordedSeq": 3074,
+        "executionContinued": true
+      },
+      "rawEvents": 3076,
+      "semanticEvents": 3849,
+      "visualStatus": "partial",
+      "timings": {
+        "buildMs": 195,
+        "executionMs": 615,
+        "normalizeMs": 38,
+        "worldMs": 13
+      }
+    },
+    "acc14-simulator-plain": {
+      "built": true,
+      "stdout": "PROCESSED 2400\nMAX_QUEUE 400\nCLOCK 5163\n",
+      "stderr": "",
+      "exitCode": 0,
+      "terminalStatus": "complete",
+      "recording": {
+        "state": "STOPPED_LIMIT",
+        "reason": "Recording budget exceeded: events",
+        "budget": "events",
+        "lastRecordedSeq": 19999,
+        "executionContinued": true
+      },
+      "rawEvents": 20001,
+      "semanticEvents": 24765,
+      "visualStatus": "partial",
+      "timings": {
+        "buildMs": 202,
+        "executionMs": 708,
+        "normalizeMs": 1037,
+        "worldMs": 558
+      }
+    }
+  }
+}

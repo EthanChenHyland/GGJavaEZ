@@ -1,13 +1,14 @@
 import { spawn } from 'node:child_process';
 import { randomUUID, randomBytes, timingSafeEqual } from 'node:crypto';
-import { open } from 'node:fs/promises';
 import net from 'node:net';
 import { performance } from 'node:perf_hooks';
 import { StringDecoder } from 'node:string_decoder';
-import { prepareInstrumented } from './instrumentation-provider.mjs';
+import { prepareInstrumented, CaptureReader, fullRecording } from './instrumentation-provider.mjs';
 import { launchRequest } from './launch.mjs';
+import { OutputArchive } from './output-archive.mjs';
 
-const OUTPUT_LIMIT = 8 * 1024 * 1024;
+const OUTPUT_LIMIT = 32 * 1024 * 1024;
+const HARD_DEADLINE = 10 * 60 * 1000;
 const CONTROL_LIMIT = 65536;
 const COMMANDS = new Set(['continue', 'pause', 'stepInto', 'stepOver', 'stepOut', 'stop']);
 const TERMINAL = new Set(['exited', 'stopped', 'failed']);
@@ -40,7 +41,7 @@ export class DebugManager {
 
   #transition(run, status) {
     const now = performance.now();
-    if (run.dto.status === 'running' || run.dto.status === 'starting') run.activeMs += now - run.activeSince;
+    if (['running', 'starting'].includes(run.dto.status) && run.activeClockEnabled && !run.dto.waitingForInput) run.activeMs += now - run.activeSince;
     run.activeSince = now;
     run.dto.status = status;
   }
@@ -87,16 +88,18 @@ export class DebugManager {
       const controlled = request.control !== false;
       const dto = { sessionId: randomUUID(), projectId: request.projectId, revision: 0, status: 'starting', pause: null,
         breakpoints: [], rawEvents: [], sourceManifest: clone(request.sourceManifest), build: clone(request.build),
-        stdout: '', stderr: '', exitCode: null, terminalStatus: null, diagnostic: null,
+        stdout: '', stderr: '', recording: fullRecording(), waitingForInput: false, outputTruncated: false, exitCode: null, terminalStatus: null, diagnostic: null,
         coverage: { coveredClasses: [...prepared.coveredClasses], transformInfo: clone(prepared.transformInfo) } };
       const run = { dto, prepared, request, child: null, server: null, socket: null, connected: false,
         controlled,
-        file: null, offset: 0, tail: '', rawDecoder: new StringDecoder('utf8'), outputBytes: 0,
-        readQueue: Promise.resolve(), messageQueue: Promise.resolve(), commands: Promise.resolve(),
+        reader: new CaptureReader(prepared), archive: new OutputArchive(), outputBytes: 0, refreshPromise: null, polling: false,
+        messageQueue: Promise.resolve(), commands: Promise.resolve(), activeClockEnabled: true,
         pending: new Map(), listeners: new Set(), activeMs: 0, activeSince: performance.now(),
-        finishing: false, closing: false, stopRequested: false, failureStatus: null, timer: null,
-        token: randomBytes(32).toString('hex'), candidates: new Set(), projectThreads: new Set() };
+        finishing: false, closing: false, stopRequested: false, failureStatus: null, timer: null, hardTimer: null,
+        token: randomBytes(32).toString('hex'), candidates: new Set(), queuedMessages: 0, processStartedAt: 0 };
       try {
+        dto.outputArchiveAvailable = !run.archive.error;
+        dto.outputArchiveError = run.archive.error;
         dto.breakpoints = controlled ? this.#resolveBreakpoints(run, request.breakpoints ?? []) : [];
         let args = prepared.args;
         if (controlled) {
@@ -117,13 +120,20 @@ export class DebugManager {
           cwd: launch.workingDirectory, shell: false, windowsHide: true,
           detached: process.platform !== 'win32', stdio: ['pipe', 'pipe', 'pipe'],
         });
+        run.processStartedAt = performance.now(); run.activeSince = run.processStartedAt;
         run.closed = new Promise((resolveClosed) => { run.resolveClosed = resolveClosed; });
         this.sessions.set(dto.sessionId, run); this.latest = run;
         if (!controlled) this.#transition(run, 'running');
-        while (this.sessions.size > 32) this.sessions.delete(this.sessions.keys().next().value);
+        while (this.sessions.size > 32) {
+          const oldest = this.sessions.keys().next().value;
+          this.sessions.get(oldest).archive.dispose(); this.sessions.delete(oldest);
+        }
         for (const [stream, name] of [[run.child.stdout, 'stdout'], [run.child.stderr, 'stderr']]) {
           const decoder = new StringDecoder('utf8');
-          stream.on('data', (bytes) => this.#output(run, name, decoder.write(bytes)));
+          stream.on('data', (bytes) => {
+            run.archive.append(name, bytes);
+            this.#output(run, name, decoder.write(bytes));
+          });
           stream.on('end', () => this.#output(run, name, decoder.end()));
         }
         run.child.stdin.on('error', () => {});
@@ -134,21 +144,28 @@ export class DebugManager {
           run.closing = true;
           run.messageQueue.finally(() => this.#finish(run, code)).catch(() => {});
         });
+        run.hardTimer = setTimeout(() => this.#fail(run,
+          'Hard process safety deadline exceeded (applies while running, waiting or paused)', 'limit_exceeded'), prepared.hardTimeoutMs ?? HARD_DEADLINE);
         run.timer = setInterval(() => {
-          if (run.finishing || run.closing) return;
-          const active = run.activeMs + (['starting', 'running'].includes(dto.status) ? performance.now() - run.activeSince : 0);
-          if (active > prepared.timeoutMs) this.#fail(run, 'Running execution exceeded the debug time limit', 'limit_exceeded');
-          else if (controlled && !run.connected && performance.now() - run.activeSince > 5000) this.#fail(run, 'JVM did not connect to debug control');
-          void this.#refresh(run).catch((failure) => this.#fail(run, failure.message));
+          if (run.finishing || run.closing || run.polling) return;
+          run.polling = true;
+          void this.#refresh(run).then(() => {
+            if (run.finishing || run.closing) return;
+            const now = performance.now();
+            const active = run.activeMs + (['starting', 'running'].includes(dto.status) && run.activeClockEnabled && !dto.waitingForInput ? now - run.activeSince : 0);
+            if (active > prepared.timeoutMs) this.#fail(run, 'Active execution exceeded the debug time limit', 'limit_exceeded');
+            else if (controlled && !run.connected && now - run.processStartedAt > 5000) this.#fail(run, 'JVM did not connect to debug control');
+          }).catch((failure) => this.#stopObservation(run, failure.message)).finally(() => { run.polling = false; });
         }, 20);
         this.#publish(run);
         return clone(dto);
       } catch (failure) {
         failure.executionStarted = Boolean(run.child);
+        clearInterval(run.timer); clearTimeout(run.hardTimer);
         for (const socket of run.candidates) socket.destroy();
         run.socket?.destroy(); run.server?.close();
         if (run.child) this.#signal(run, 'SIGKILL');
-        await prepared.cleanup();
+        run.archive.dispose(); await run.reader.close(); await prepared.cleanup();
         throw failure;
       }
     });
@@ -158,10 +175,14 @@ export class DebugManager {
     if (!text || run.finishing) return;
     const bytes = Buffer.from(text);
     const remaining = Math.max(0, OUTPUT_LIMIT - run.outputBytes);
-    run.outputBytes += bytes.length;
-    if (remaining > 0) run.dto[name] += bytes.length <= remaining ? text : bytes.subarray(0, remaining).toString('utf8');
-    this.#publish(run);
-    if (run.outputBytes > OUTPUT_LIMIT) this.#fail(run, 'Program output exceeded 8 MiB', 'limit_exceeded');
+    const retained = bytes.subarray(0, remaining);
+    run.outputBytes += retained.length;
+    const wasTruncated = run.dto.outputTruncated;
+    const archiveChanged = run.dto.outputArchiveError !== run.archive.error;
+    run.dto.outputArchiveAvailable = !run.archive.error; run.dto.outputArchiveError = run.archive.error;
+    if (retained.length) run.dto[name] += retained.toString('utf8');
+    run.dto.outputTruncated ||= bytes.length > remaining;
+    if (retained.length || wasTruncated !== run.dto.outputTruncated || archiveChanged) this.#publish(run);
   }
 
   #connect(run, socket) {
@@ -190,10 +211,12 @@ export class DebugManager {
           if (!valid) { socket.destroy(); return; }
           clearTimeout(authenticationTimer); run.candidates.delete(socket); run.socket = socket;
         }
+        if (run.queuedMessages >= 32) { this.#fail(run, 'Debug control queue exceeded size limit'); socket.destroy(); return; }
+        run.queuedMessages++;
         run.messageQueue = run.messageQueue.then(async () => {
           if (run.finishing) return;
           await this.#message(run, message);
-        }).catch((failure) => this.#fail(run, failure.message));
+        }).catch((failure) => this.#fail(run, failure.message)).finally(() => { run.queuedMessages--; });
       }
     });
     socket.on('error', (failure) => { if (run.socket === socket && !run.closing && !run.finishing && !run.stopRequested) this.#fail(run, failure.message); });
@@ -234,48 +257,43 @@ export class DebugManager {
       || !Number.isSafeInteger(message.line) || message.line < 1
       || !Number.isSafeInteger(message.rawEventCount) || message.rawEventCount < 0) throw new Error('Invalid debugger pause');
     await this.#refresh(run);
-    if (run.dto.rawEvents.length !== message.rawEventCount) throw new Error('Pause watermark does not match flushed Recorder prefix');
+    if (run.dto.rawEvents.length !== message.rawEventCount) {
+      if (run.dto.recording.state === 'FULL') this.#stopObservation(run, 'Pause watermark does not match flushed Recorder prefix');
+      // Keep the actual control watermark; an older/malformed observer prefix may be shorter.
+      // Pausing still excludes intentional stopped time and does not invent visual facts.
+    }
     const { reason, threadId, frameId, className, methodName, line, rawEventCount } = message;
     run.dto.pause = { reason, threadId, frameId, className, methodName, line, rawEventCount };
     this.#transition(run, 'paused');
     this.#publish(run);
   }
 
+  #stopObservation(run, diagnostic) {
+    run.reader.stop(diagnostic);
+    run.dto.recording = clone(run.reader.recording);
+    this.#publish(run);
+  }
+
   #refresh(run, final = false) {
-    const work = run.readQueue.then(async () => {
-      if (!run.file) {
-        try { run.file = await open(run.prepared.trace, 'r'); }
-        catch (failure) { if (failure.code === 'ENOENT') return; throw failure; }
+    if (run.refreshPromise) return run.refreshPromise.then(() => final ? this.#refresh(run, true) : undefined);
+    run.refreshPromise = (async () => {
+      const beforeCount = run.dto.rawEvents.length;
+      const beforeStatus = JSON.stringify(run.dto.recording);
+      await run.reader.refresh(final);
+      const activeClockEnabled = run.reader.inputStatusKnown || run.reader.recording.state === 'FULL';
+      if (run.dto.waitingForInput !== run.reader.waitingForInput || run.activeClockEnabled !== activeClockEnabled) {
+        // Settle the running interval before changing the input-wait exemption.
+        const now = performance.now();
+        if (['starting', 'running'].includes(run.dto.status) && run.activeClockEnabled && !run.dto.waitingForInput) run.activeMs += now - run.activeSince;
+        run.activeSince = now;
+        run.dto.waitingForInput = run.reader.waitingForInput; run.activeClockEnabled = activeClockEnabled;
+        this.#publish(run);
       }
-      const before = run.dto.rawEvents.length;
-      const buffer = Buffer.alloc(65536);
-      for (;;) {
-        const { bytesRead } = await run.file.read(buffer, 0, buffer.length, run.offset);
-        if (!bytesRead) break;
-        run.offset += bytesRead;
-        if (run.offset > run.prepared.rawByteLimit) throw error('Raw trace exceeded byte limit');
-        run.tail += run.rawDecoder.write(buffer.subarray(0, bytesRead));
-        let end;
-        while ((end = run.tail.indexOf('\n')) >= 0) {
-          const line = run.tail.slice(0, end); run.tail = run.tail.slice(end + 1);
-          if (run.dto.rawEvents.length >= run.prepared.rawEventLimit) throw error('Raw trace exceeded event limit');
-          let record; try { record = JSON.parse(line); } catch { throw error('Malformed raw Recorder event'); }
-          if (!record || record.v !== 1 || record.seq !== run.dto.rawEvents.length || typeof record.threadId !== 'string'
-            || typeof record.type !== 'string' || ['frameId', 'className', 'methodName', 'descriptor', 'line', 'site'].some((key) => !Object.hasOwn(record, key))) {
-            throw error('Raw Recorder sequence or common fields are invalid');
-          }
-          run.dto.rawEvents.push(record);
-          if (record.type !== 'console' || record.frameId !== null) {
-            run.projectThreads.add(record.threadId);
-            if (run.projectThreads.size > 1) this.#fail(run, 'Multiple project threads are unsupported for visualization', 'unsupported');
-          }
-        }
-      }
-      if (final && (run.tail || run.rawDecoder.end())) throw error('Raw trace ended with incomplete record');
-      if (before !== run.dto.rawEvents.length) this.#publish(run);
-    });
-    run.readQueue = work.catch(() => {});
-    return work;
+      run.dto.rawEvents = run.reader.events;
+      run.dto.recording = clone(run.reader.recording);
+      if (beforeCount !== run.dto.rawEvents.length || beforeStatus !== JSON.stringify(run.dto.recording)) this.#publish(run);
+    })().finally(() => { run.refreshPromise = null; });
+    return run.refreshPromise;
   }
 
   #signal(run, signal) {
@@ -293,27 +311,26 @@ export class DebugManager {
 
   async #finish(run, code) {
     if (run.finishing) return;
-    run.finishing = true; clearInterval(run.timer); clearTimeout(run.disconnectTimer);
+    run.finishing = true; run.archive.close(); clearInterval(run.timer); clearTimeout(run.hardTimer); clearTimeout(run.disconnectTimer);
     try { await this.#refresh(run, true); }
-    catch (failure) { run.failureStatus ??= /exceeded/.test(failure.message) ? 'limit_exceeded' : 'instrumentation_failed'; run.dto.diagnostic ??= failure.message; }
-    if (code === 86 && run.dto.stderr.includes('[VisualJava] trace limit exceeded')) {
-      run.failureStatus = 'limit_exceeded'; run.dto.diagnostic ??= 'Recorder capture limit exceeded';
-    }
-    if (!run.stopRequested && !run.failureStatus && ((run.controlled && !run.connected) || !run.dto.rawEvents.length
-      || /Trace write failed|VerifyError|ClassFormatError|NoClassDefFoundError: visualjava|Debug control failed/.test(run.dto.stderr))) {
-      run.failureStatus = 'instrumentation_failed'; run.dto.diagnostic ??= 'No verified instrumented execution prefix';
+    catch (failure) { this.#stopObservation(run, failure.message); }
+    if (!run.stopRequested && !run.failureStatus && (!run.dto.rawEvents.length
+      || /Trace write failed/.test(run.dto.stderr))) this.#stopObservation(run, 'No verified instrumented execution prefix');
+    if (!run.stopRequested && code !== 0 && /VerifyError|ClassFormatError|NoClassDefFoundError: visualjava/.test(run.dto.stderr)) {
+      run.failureStatus = 'instrumentation_failed'; run.dto.diagnostic ??= 'Instrumented JVM launch failed verification or could not load its observer';
+      this.#stopObservation(run, run.dto.diagnostic);
     }
     run.dto.exitCode = code;
     run.dto.terminalStatus = run.failureStatus ?? (run.stopRequested ? 'unsupported' : code === 0 ? 'complete' : 'program_crashed');
     if (run.stopRequested) run.dto.diagnostic ??= 'Debug execution stopped by user';
     else if (run.dto.terminalStatus === 'program_crashed') run.dto.diagnostic ??= `JVM exited with code ${code}`;
     this.#transition(run, run.stopRequested ? 'stopped' : run.failureStatus ? 'failed' : 'exited');
-    run.dto.pause = null;
+    run.dto.pause = null; run.dto.waitingForInput = false;
     for (const pending of run.pending.values()) { clearTimeout(pending.timer); pending.reject(error('Debug session ended')); }
     run.pending.clear();
     for (const socket of run.candidates) socket.destroy();
     run.socket?.destroy(); run.server?.close();
-    try { await run.file?.close(); await run.prepared.cleanup(); }
+    try { await run.reader.close(); await run.prepared.cleanup(); }
     catch (failure) { run.dto.diagnostic ??= `Debugger cleanup failed: ${failure.message}`; }
     this.#publish(run); run.resolveClosed();
   }
@@ -391,6 +408,11 @@ export class DebugManager {
     const run = id ? this.#get(id) : this.latest;
     return run ? this.#stopRun(run) : null;
   }); }
+  output(id, channel) { return this.#get(id).archive.stream(channel); }
+  async dispose() {
+    await this.stop();
+    for (const run of this.sessions.values()) run.archive.dispose();
+  }
   current() { return this.latest ? clone(this.latest.dto) : null; }
   snapshot(id) { const run = this.sessions.get(id); return run ? clone(run.dto) : null; }
   subscribe(id, listener) {

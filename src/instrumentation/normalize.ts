@@ -1,8 +1,8 @@
 /** Pure Raw NDJSON v1 -> semantic trace v2 boundary. No source-level facts are inferred. */
 import type { RuntimeSlot, RuntimeValue, ScalarValue, SlotOwner, SourceLocation, TraceDocument, TraceEvent, TraceEventBase } from '../contracts/runtime'
-import { applyEvent, createInitialState } from '../runtime/state'
+import { applyEvent, createInitialState, isRecordingStop } from '../runtime/state'
 import type {
-  CapabilityStatus, RawRuntimeEvent, RawValue, VisualizationCapabilityReport,
+  CapabilityStatus, RecordingStatus, RawRuntimeEvent, RawValue, VisualizationCapabilityReport,
   VisualizationFeature, VisualizationTerminalStatus,
 } from './contracts'
 
@@ -18,6 +18,7 @@ export interface NormalizationTerminal {
   status: VisualizationTerminalStatus | 'live'
   exitCode: number | null
   diagnostic: string | null
+  recording?: RecordingStatus
   capability?: VisualizationCapabilityReport
 }
 
@@ -203,14 +204,30 @@ export function normalizeTrace(
   }
   let expectedSeq = 0
   let thread: string | null = null
+  let lastRecordedSeq: number | null = null
+  let recordingStop: RecordingStatus | undefined
   for (const raw of rawEvents) {
     try {
       if (raw.v !== 1 || raw.seq !== expectedSeq) throw new Error(`Raw sequence gap or version mismatch at ${expectedSeq}`)
+      if (raw.type === 'capture_saturated') {
+        if (!isRecordingStop(raw.recording) || raw.recording.lastRecordedSeq !== lastRecordedSeq)
+          throw new Error('Invalid capture stop or last recorded sequence')
+        if (raw.seq !== rawEvents.length - 1) throw new Error('Raw events followed capture stop')
+        recordingStop = { ...raw.recording }
+        break
+      }
       expectedSeq++
       currentThreadId = raw.threadId
-      if (raw.type !== 'console') {
+      // Frameless JVM shutdown output may have another thread; a project-frame
+      // console write is still an observation of that application thread.
+      if (raw.type !== 'console' || raw.frameId !== null) {
         if (thread === null) thread = raw.threadId
-        if (raw.threadId !== thread) throw new Error('Multiple project threads are unsupported')
+        if (raw.threadId !== thread) {
+          recordingStop = { state: 'STOPPED_UNSUPPORTED',
+            reason: 'Multiple application threads detected; recording stopped before the second thread',
+            budget: null, lastRecordedSeq, executionContinued: true }
+          break
+        }
       }
       const frame = raw.frameId === null ? null : frameId(raw.frameId)
       const contextClass = raw.type === 'throw' || raw.type === 'object'
@@ -374,7 +391,10 @@ export function normalizeTrace(
           emit({ type: 'CONSOLE_INPUT', frameId: frame, text: raw.text }, source, 'Input consumed', 'quiet')
           observed('console')
           break
+        default:
+          throw new Error(`Unknown raw event type ${(raw as RawRuntimeEvent).type}`)
       }
+      lastRecordedSeq = raw.seq
     } catch (error) {
       failure = `Raw event ${raw.seq}: ${(error as Error).message}`
       diagnostics.push(failure)
@@ -382,20 +402,31 @@ export function normalizeTrace(
     }
   }
   currentThreadId = undefined
+  if (!failure && !recordingStop && terminal.recording && terminal.recording.state !== 'FULL') {
+    if (!isRecordingStop(terminal.recording) || terminal.recording.lastRecordedSeq !== lastRecordedSeq) {
+      failure = 'Invalid terminal recording stop or last recorded sequence'
+      diagnostics.push(failure)
+    } else recordingStop = { ...terminal.recording }
+  }
   let terminalStatus = terminal.status
-  if (failure || (terminalStatus === 'complete' &&
+  if (failure || (!recordingStop && terminalStatus === 'complete' &&
       (state.activeFrameIds.length !== 0 || expectedSeq === 0 || terminal.exitCode !== 0))) {
     terminalStatus = 'instrumentation_failed'
     if (!failure) diagnostics.push('Complete envelope lacked a valid observed method trace or zero exit code')
   }
-  if (terminalStatus === 'complete') {
+  if (!failure && recordingStop) {
+    emit({ type: 'CAPTURE_STOP', recording: recordingStop }, null,
+      `Last recorded event · ${recordingStop.reason}`, 'major')
+    diagnostics.push(recordingStop.reason!)
+    mark('methods', 'partial', `Recording stopped: ${recordingStop.reason}`)
+  } else if (terminalStatus === 'complete') {
     try { emit({ type: 'PROGRAM_END' }, null, 'Program completed', 'major') }
     catch (error) {
       terminalStatus = 'instrumentation_failed'
       diagnostics.push(`Cannot complete trace: ${(error as Error).message}`)
     }
   }
-  if (terminalStatus !== 'complete' && terminalStatus !== 'live') {
+  if ((!recordingStop || failure) && terminalStatus !== 'complete' && terminalStatus !== 'live') {
     const message = failure ?? terminal.diagnostic ?? `Visualization ${terminalStatus}`
     emit({ type: 'PROGRAM_ABORT', reason: terminalStatus, message }, null, 'Visualization stopped', 'major')
     mark('methods', 'partial', `Trace ended with ${terminalStatus}`)
@@ -407,7 +438,7 @@ export function normalizeTrace(
     }
   }
   const required = [...usedFeatures].filter((name) => name !== 'loops' && name !== 'scopes' && name !== 'console')
-  const aggregate = terminalStatus === 'instrumentation_failed' || terminalStatus === 'unsupported' ? 'unsupported'
+  const aggregate = !failure && recordingStop ? 'partial' : terminalStatus === 'instrumentation_failed' || terminalStatus === 'unsupported' ? 'unsupported'
     : terminalStatus !== 'complete' ? 'partial' :
     required.reduce<CapabilityStatus>((status, name) => rank[features[name].status] < rank[status]
       ? features[name].status : status, 'supported')

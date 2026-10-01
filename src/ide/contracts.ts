@@ -1,5 +1,5 @@
 /** Milestone 5 bridge DTOs. The browser never receives host filesystem paths. */
-import type { InstrumentedRunMetrics, RawRuntimeEvent, VisualizationCapabilityReport, VisualizationTerminalStatus } from '../instrumentation/contracts'
+import type { InstrumentedRunMetrics, RecordingStatus, RawRuntimeEvent, VisualizationCapabilityReport, VisualizationTerminalStatus } from '../instrumentation/contracts'
 import type { InstrumentationSourceManifest } from '../instrumentation/normalize'
 import type { JavaProject } from './javaProject'
 export interface SourceLocation { path: string; line: number; column: number | null }
@@ -16,6 +16,8 @@ export interface RunEvent { id: number; kind: 'stdout' | 'stderr' | 'stdin' | 'e
 export interface RunSnapshot { runId: string; projectId: string; mainClass: string; status: 'running' | 'exited'; startedAt: string; events: RunEvent[]; exitCode: number | null; exception: RuntimeException | null }
 export interface RunResponse { build: BuildResult; run: RunSnapshot | null }
 export interface VisualizeResponse {
+  recording?: RecordingStatus
+  outputTruncated?: boolean
   build: BuildResult
   status: VisualizationTerminalStatus | 'compile_failed'
   diagnostic: string | null

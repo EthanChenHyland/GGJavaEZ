@@ -1,0 +1,45 @@
+{
+  "scope": "Phase 1 final partial world, focus and overview",
+  "mediaRetention": "Generated screenshots remain local under the existing bulk-media ignore rule.",
+  "referencesCompared": [
+    "06_true3d_person_runtime.png",
+    "11_true3d_scene_language.png"
+  ],
+  "screenshots": [
+    {
+      "path": "screenshots/partial-1280x800.png",
+      "width": 1280,
+      "height": 800,
+      "sha256": "4a5c7a99f2d07170afea3f6386234d3c563155aa149df905e39e7fd2e697d97b",
+      "reviewed": true
+    },
+    {
+      "path": "screenshots/partial-1440x900.png",
+      "width": 1440,
+      "height": 900,
+      "sha256": "42b29566bffb2a0fa4a366a39f3c3a22f01103a0caf3ff3d2a5d3e75015ee3b5",
+      "reviewed": true
+    },
+    {
+      "path": "screenshots/partial-1728x1117.png",
+      "width": 1728,
+      "height": 1117,
+      "sha256": "f6ebdf31480bfc755c8514b90348c667d717a9a1b80d0306e58beb2abea0b8cc",
+      "reviewed": true
+    },
+    {
+      "path": "screenshots/partial-760x900.png",
+      "width": 760,
+      "height": 900,
+      "sha256": "4ca8b100c41dd3ee220032abac31cd059c90735751a8ef1653dfc09fbf3b2fc0",
+      "reviewed": true
+    },
+    {
+      "path": "screenshots/partial-overview-1440x900.png",
+      "width": 1440,
+      "height": 900,
+      "sha256": "d51c3933160e551dbc51d056056bfba1b234aacf06472a0499996070ee9162fb",
+      "reviewed": true
+    }
+  ]
+}

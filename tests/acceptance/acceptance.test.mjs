@@ -1,4 +1,4 @@
-import { mkdtemp, readdir, readFile, rm } from 'node:fs/promises';
+import { mkdir, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, describe, expect, test } from 'vitest';
@@ -19,7 +19,21 @@ const projects = (await readdir(corpusRoot)).sort();
 const specs = Object.fromEntries(await Promise.all(projects.map(async (name) => [name, JSON.parse(await readFile(join(corpusRoot, name, 'expected.facts.json'), 'utf8'))])));
 const curated = JSON.parse(await readFile('tests/acceptance/curated.facts.json', 'utf8'));
 const scratch = await mkdtemp(join(tmpdir(), 'vj-variants-'));
-afterAll(() => rm(scratch, { recursive: true, force: true }));
+afterAll(async () => {
+  await rm(scratch, { recursive: true, force: true });
+  if (process.env.VJ_ACCEPTANCE_REPORT) {
+    const results = {};
+    for (const [key, promise] of cache) {
+      const result = await promise;
+      results[key] = { built: result.built, stdout: result.snapshot?.stdout, stderr: result.snapshot?.stderr,
+        exitCode: result.snapshot?.exitCode, terminalStatus: result.snapshot?.terminalStatus,
+        recording: result.snapshot?.recording, rawEvents: result.snapshot?.rawEvents.length,
+        semanticEvents: result.trace?.events.length, visualStatus: result.final?.status, timings: result.timings };
+    }
+    await mkdir('docs/checkpoints/v12-p1', { recursive: true });
+    await writeFile(process.env.VJ_ACCEPTANCE_REPORT, JSON.stringify({ recordedAt: new Date().toISOString(), results }, null, 2) + '\n');
+  }
+});
 const cache = new Map();
 const once = (key, work) => { if (!cache.has(key)) cache.set(key, work()); return cache.get(key); };
 const TIMEOUT = 240000;

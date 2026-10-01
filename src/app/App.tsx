@@ -287,7 +287,7 @@ function ExecutionWorkspace({ trace, example, onChooseExample, embedded, onSourc
         </div>
         <span className="world-label world-label--compact" aria-live="polite">{isolatedSelection ? 'ISOLATED · ' : ''}{mode.replaceAll('_', ' ')}</span>
         {!isolatedSelection && scene.stackDepth !== undefined && scene.stackDepth > 1 && <section className="call-status" aria-label="Call and return state">
-          <span className="eyebrow">{runtime.status === 'ended' ? 'COMPLETE' : `${runtime.activeFrameIds.length} LIVE FRAMES`}</span>
+          <span className="eyebrow">{runtime.status === 'ended' ? 'COMPLETE' : `${runtime.activeFrameIds.length} ${runtime.status === 'partial' ? 'LAST OBSERVED FRAMES' : 'LIVE FRAMES'}`}</span>
           {runtime.returns.length > 0 && <div className="return-history"><span>{runtime.returns.length} returns</span>{runtime.returns.slice(-8).map((item) => <span key={item.eventId} title={item.expression}>{item.value.kind === 'primitive' ? String(item.value.value) : ''}</span>)}</div>}
           {runtime.status === 'ended' && finalTransfer && <strong className="final-result">{finalSlot?.name ?? `Last return · ${runtime.frames[finalTransfer.frameId]?.methodName ?? 'method'}()`} = {finalTransfer.value.kind === 'primitive' ? String(finalTransfer.value.value) : ''}</strong>}
           {guided && scene.returnFlow && runtime.status !== 'ended' && <span className="return-explanation">{scene.returnFlow.expression ?? `${scene.returnFlow.fromLabel} returns`}: {scene.returnFlow.value.kind === 'primitive' ? String(scene.returnFlow.value.value) : ''} → {scene.returnFlow.toLabel}</span>}
@@ -302,6 +302,7 @@ function ExecutionWorkspace({ trace, example, onChooseExample, embedded, onSourc
         </section>}
         {hasScopes && <ControlFlowStatus runtime={runtime} event={event} guided={guided} />}
         {runtime.status === 'aborted' && <div className="event-chip event-chip--failure" title={latestException?.message ?? runtime.abortReason ?? undefined}><strong>{latestException ? latestException.className.split('.').at(-1) : 'Recording stopped'}</strong> · {latestException?.message ?? runtime.abortReason}</div>}
+        {runtime.status === 'partial' && <div className="event-chip" role="status" title="The world shows the last observed state. Java execution and its exit are reported separately."><strong>Visualization partial</strong> · {runtime.recordingStop?.reason} · Last recorded state</div>}
         {guided && event?.type === 'SET_FIELD' && <div className="event-chip"><strong>Mutation</strong> · {event.label}</div>}
         <div className="world-access">
           {isolatedSelection && (suppressInspector || !selection) && <button className="toolbar-button" onClick={navigationActions.returnToPrevious}>Return to world</button>}

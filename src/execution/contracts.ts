@@ -1,5 +1,5 @@
 import type { BuildResult, RunEvent, SourceLocation } from '../ide/contracts'
-import type { RawRuntimeEvent, VisualizationCapabilityReport, VisualizationTerminalStatus } from '../instrumentation/contracts'
+import type { RecordingStatus, RawRuntimeEvent, VisualizationCapabilityReport, VisualizationTerminalStatus } from '../instrumentation/contracts'
 import type { InstrumentationSourceManifest } from '../instrumentation/normalize'
 import type { DebugPause, ResolvedBreakpoint, SourceBreakpoint } from '../debugger/contracts'
 
@@ -22,6 +22,11 @@ export interface ExecutionSession {
   rawEvents: RawRuntimeEvent[]
   sourceManifest: InstrumentationSourceManifest
   capability: VisualizationCapabilityReport | null
+  /** Omitted by retained sessions predating observer saturation. */
+  recording?: RecordingStatus
+  outputTruncated?: boolean
+  outputArchiveAvailable?: boolean
+  outputArchiveError?: string | null
   /** Recorder console writes share rawEvents' sequence. These are process-pipe facts with unknown cross-channel order. */
   stdout: string
   stderr: string
@@ -33,7 +38,7 @@ export interface ExecutionSession {
   exitCode: number | null
   diagnostic: string | null
   failureKind: 'build' | 'launch' | 'runtime' | 'capture' | null
-  /** A complete prefix is retained through stop/failure; only COMPLETED has a success end marker. */
+  /** A complete prefix is retained through stop/failure; partial recording never invents a program end marker. */
   startedAt: string
 }
 

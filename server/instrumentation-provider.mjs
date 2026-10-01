@@ -1,9 +1,10 @@
 import { spawn } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { lstat, mkdtemp, mkdir, readFile, readdir, rm, stat } from 'node:fs/promises';
+import { lstat, mkdtemp, mkdir, readFile, readdir, rm, open } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { delimiter, dirname, join, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { StringDecoder } from 'node:string_decoder';
 import { performance } from 'node:perf_hooks';
 import { javaLaunchArgs, launchRequest } from './launch.mjs';
 
@@ -18,41 +19,176 @@ const hashes = {
 };
 const featureNames = ['methods', 'locals', 'objects', 'fields', 'references', 'intArrays', 'arrayReads', 'arrayWrites', 'sourceMapping', 'branches', 'loops', 'scopes', 'returns', 'exceptions', 'console'];
 const EVENT_LIMIT = 20000, BYTE_LIMIT = 8 * 1024 * 1024, DEADLINE = 30000;
-const OUTPUT_LIMIT = 8 * 1024 * 1024;
+// Legacy finite-provider DTO retention only. Unified Run/Debug archives full process bytes separately.
+const OUTPUT_LIMIT = 32 * 1024 * 1024;
+const HARD_DEADLINE = 10 * 60 * 1000;
+const STATUS_LIMIT = 1024;
 
 function emptyResult() {
-  return { status: 'instrumentation_failed', exitCode: null, diagnostic: null, rawEvents: [], stdout: '', stderr: '',
+  return { status: 'instrumentation_failed', exitCode: null, diagnostic: null, rawEvents: [], stdout: '', stderr: '', recording: fullRecording(), outputTruncated: false,
     capability: { status: 'unsupported', features: Object.fromEntries(featureNames.map((name) => [name, { status: 'unsupported', reason: 'No verified execution', observedEvents: 0 }])), coveredClasses: [], diagnostics: [] },
     metrics: { transformMs: 0, jvmStartupMs: 0, executionMs: 0, rawBytes: 0, rawEvents: 0 } };
 }
 function killGroup(child) {
   try { if (process.platform !== 'win32' && child.pid) process.kill(-child.pid, 'SIGKILL'); else child.kill('SIGKILL'); } catch { /* exited */ }
 }
-function run(command, args, { cwd, timeoutMs, monitor, outputLimit = OUTPUT_LIMIT, spawnProcess = spawn }) {
+function run(command, args, { cwd, timeoutMs, hardTimeoutMs = timeoutMs, monitor, outputLimit = OUTPUT_LIMIT, spawnProcess = spawn }) {
   return new Promise((resolveRun) => {
     const started = performance.now();
-    let child, stdout = '', stderr = '', stopped = null, settled = false;
+    let child, stdout = '', stderr = '', stopped = null, settled = false, polling = false;
+    let outputBytes = 0, outputTruncated = false, activeMs = 0, lastTick = started;
     try { child = spawnProcess(command, args, { cwd, shell: false, windowsHide: true, detached: process.platform !== 'win32' }); }
     catch (error) { resolveRun({ code: null, error: error.message, stdout, stderr, stopped: 'spawn', duration: performance.now() - started }); return; }
     const terminate = (reason) => { if (!stopped) { stopped = reason; killGroup(child); } };
-    const timer = setTimeout(() => terminate('timeout'), timeoutMs);
-    const interval = monitor ? setInterval(async () => {
-      if (settled) return;
-      try { const reason = await monitor(); if (reason) terminate(reason); } catch (error) { terminate(`monitor: ${error.message}`); }
-    }, 10) : null;
+    const hardTimer = setTimeout(() => terminate('hard_timeout'), hardTimeoutMs);
+    const interval = setInterval(async () => {
+      if (settled || polling) return;
+      polling = true;
+      let state;
+      try { state = await monitor?.(); }
+      catch { state = { activeClockEnabled: false }; /* Unknown input state leaves the independent hard safety timer authoritative. */ }
+      const now = performance.now();
+      if (state?.activeClockEnabled !== false && !state?.waitingForInput && !state?.paused) activeMs += now - lastTick;
+      lastTick = now;
+      if (!settled && activeMs > timeoutMs) terminate('timeout');
+      polling = false;
+    }, 10);
     for (const [stream, name] of [[child.stdout, 'stdout'], [child.stderr, 'stderr']]) {
-      stream.setEncoding('utf8');
-      stream.on('data', (chunk) => {
-        if (name === 'stdout') stdout += chunk; else stderr += chunk;
-        if (stdout.length + stderr.length > outputLimit) terminate('output_limit');
-      });
+      const decoder = new StringDecoder('utf8');
+      const retain = (text) => {
+        const bytes = Buffer.from(text), remaining = Math.max(0, outputLimit - outputBytes);
+        const kept = bytes.subarray(0, remaining);
+        outputBytes += kept.length;
+        if (name === 'stdout') stdout += kept.toString('utf8'); else stderr += kept.toString('utf8');
+        outputTruncated ||= bytes.length > remaining;
+      };
+      stream.on('data', (chunk) => retain(decoder.write(chunk)));
+      stream.on('end', () => retain(decoder.end()));
     }
     child.on('error', (error) => { if (!stopped) stopped = `spawn: ${error.message}`; });
+    child.on('exit', () => { if (process.platform !== 'win32') killGroup(child); });
     child.on('close', (code) => {
-      settled = true; clearTimeout(timer); if (interval) clearInterval(interval);
-      resolveRun({ code, stdout: stdout.slice(0, outputLimit), stderr: stderr.slice(0, outputLimit), stopped, duration: performance.now() - started });
+      settled = true; clearTimeout(hardTimer); clearInterval(interval);
+      resolveRun({ code, stdout, stderr, outputTruncated, stopped, duration: performance.now() - started });
     });
   });
+}
+
+export const fullRecording = () => ({ state: 'FULL', reason: null, budget: null, lastRecordedSeq: null, executionContinued: true });
+function checkedRecording(value) {
+  if (!value || !['FULL', 'STOPPED_LIMIT', 'STOPPED_UNSUPPORTED', 'STOPPED_ERROR'].includes(value.state)
+    || !(value.reason === null || typeof value.reason === 'string' && value.reason.length <= 512)
+    || ![null, 'objects', 'events', 'bytes', 'live frames'].includes(value.budget)
+    || !(value.lastRecordedSeq === null || Number.isSafeInteger(value.lastRecordedSeq) && value.lastRecordedSeq >= 0)
+    || typeof value.executionContinued !== 'boolean'
+    || value.state !== 'FULL' && (typeof value.reason !== 'string' || !value.reason.trim())
+    || value.state === 'STOPPED_LIMIT' && value.budget === null
+    || value.state !== 'STOPPED_LIMIT' && value.budget !== null) throw new Error('Invalid recording status');
+  const { state, reason, budget, lastRecordedSeq, executionContinued } = value;
+  return { state, reason, budget, lastRecordedSeq, executionContinued };
+}
+
+/** Bounded v1 prefix reader shared by live debug and the legacy finite provider.
+ * A stopped observer never consumes more trace data; the fixed-size sidecar still reports stdin.
+ * Concurrent polls coalesce into one read, rather than building a semantic or promise queue.
+ */
+export class CaptureReader {
+  constructor({ trace, rawByteLimit = BYTE_LIMIT, rawEventLimit = EVENT_LIMIT }) {
+    Object.assign(this, { trace, rawByteLimit, rawEventLimit });
+    this.events = []; this.recording = fullRecording(); this.waitingForInput = false; this.inputStatusKnown = false;
+    this.offset = 0; this.semanticBytes = 0; this.tail = Buffer.alloc(0);
+    this.file = null; this.stopped = false; this.inflight = null; this.firstThread = null;
+  }
+  stop(reason, state = 'STOPPED_ERROR', budget = null) {
+    if (this.recording.state !== 'FULL') return;
+    this.recording = { state, reason, budget, lastRecordedSeq: this.events.at(-1)?.seq ?? null, executionContinued: true };
+    this.stopped = true; this.tail = Buffer.alloc(0);
+  }
+  async readStatus(final = false) {
+    let file;
+    try {
+      file = await open(`${this.trace}.status.json`, 'r');
+      const buffer = Buffer.alloc(STATUS_LIMIT + 1);
+      const { bytesRead } = await file.read(buffer, 0, buffer.length, 0);
+      if (bytesRead > STATUS_LIMIT) throw new Error('Recorder status exceeded 1 KiB');
+      const status = JSON.parse(buffer.subarray(0, bytesRead).toString('utf8'));
+      if (status.v !== 1 || typeof status.waitingForInput !== 'boolean') throw new Error('Invalid Recorder sidecar');
+      const recording = checkedRecording(status.recording);
+      if (this.recording.state !== 'FULL' && (recording.state !== this.recording.state
+        || recording.budget !== this.recording.budget || recording.lastRecordedSeq !== this.recording.lastRecordedSeq)) {
+        // Failed atomic replacement can leave a valid but obsolete FULL snapshot.
+        // It cannot establish current stdin state after the observer has stopped.
+        this.waitingForInput = false; this.inputStatusKnown = false;
+        return;
+      }
+      this.waitingForInput = status.waitingForInput; this.inputStatusKnown = true;
+      // A sidecar may be ahead of a concurrently read trace. Preserve all flushed facts first.
+      if (this.recording.state === 'FULL' && recording.state !== 'FULL'
+        && recording.lastRecordedSeq === this.recording.lastRecordedSeq) {
+        this.recording = recording; this.stopped = true; this.tail = Buffer.alloc(0);
+      } else if (final && this.recording.state === 'FULL' && recording.state !== 'FULL') {
+        this.stop('Recorder status watermark does not match the retained prefix');
+      }
+    } catch (failure) {
+      this.inputStatusKnown = false;
+      if (failure.code !== 'ENOENT') this.stop(`Recorder status unavailable: ${failure.message}`);
+      // Legacy FULL traces still have actual stdin controls. After stop, stale input state is unknown.
+      if (this.recording.state !== 'FULL') this.waitingForInput = false;
+    } finally { await file?.close(); }
+  }
+  refresh(final = false) {
+    if (this.inflight) return this.inflight.then(() => final ? this.refresh(true) : undefined);
+    this.inflight = this.read(final).finally(() => { this.inflight = null; });
+    return this.inflight;
+  }
+  async read(final) {
+    try {
+      if (!this.stopped) {
+        if (!this.file) this.file = await open(this.trace, 'r');
+        const buffer = Buffer.alloc(65536);
+        while (!this.stopped) {
+          // One reserved control record beyond the semantic byte limit; never read an unbounded file.
+          const room = this.rawByteLimit + STATUS_LIMIT - this.offset;
+          if (room <= 0) { this.stop('Raw trace exceeded byte limit', 'STOPPED_LIMIT', 'bytes'); break; }
+          const { bytesRead } = await this.file.read(buffer, 0, Math.min(buffer.length, room), this.offset);
+          if (!bytesRead) break;
+          this.offset += bytesRead;
+          this.tail = Buffer.concat([this.tail, buffer.subarray(0, bytesRead)]);
+          let end;
+          while (!this.stopped && (end = this.tail.indexOf(10)) >= 0) {
+            const line = this.tail.subarray(0, end), lineBytes = end + 1;
+            this.tail = this.tail.subarray(lineBytes);
+            let record;
+            try { record = JSON.parse(line.toString('utf8')); } catch { throw new Error('Malformed raw Recorder event'); }
+            if (!record || record.v !== 1 || record.seq !== this.events.length || typeof record.threadId !== 'string'
+              || typeof record.type !== 'string' || ['frameId', 'className', 'methodName', 'descriptor', 'line', 'site'].some((key) => !Object.hasOwn(record, key))) {
+              throw new Error('Raw Recorder sequence or common fields are invalid');
+            }
+            if (record.type === 'capture_saturated') {
+              if (lineBytes > STATUS_LIMIT) throw new Error('Saturation control exceeded 1 KiB');
+              const recording = checkedRecording(record.recording);
+              if (recording.state === 'FULL' || recording.lastRecordedSeq !== this.recording.lastRecordedSeq) throw new Error('Invalid saturation watermark');
+              this.events.push(record); this.recording = recording; this.stopped = true; this.tail = Buffer.alloc(0); break;
+            }
+            if (this.events.length >= this.rawEventLimit) { this.stop('Raw trace exceeded event limit', 'STOPPED_LIMIT', 'events'); break; }
+            if (this.semanticBytes + lineBytes > this.rawByteLimit) { this.stop('Raw trace exceeded byte limit', 'STOPPED_LIMIT', 'bytes'); break; }
+            if (record.type === 'enter' && (!record.frameId || !Array.isArray(record.parameters))) throw new Error('Invalid raw enter');
+            if (record.type !== 'console' || record.frameId !== null) {
+              this.firstThread ??= record.threadId;
+              if (record.threadId !== this.firstThread) { this.stop('Multiple project threads are unsupported for visualization', 'STOPPED_UNSUPPORTED'); break; }
+            }
+            this.semanticBytes += lineBytes; this.events.push(record);
+            this.recording.lastRecordedSeq = record.seq;
+            if (record.type === 'stdin_wait') this.waitingForInput = true;
+            if (record.type === 'stdin_read') this.waitingForInput = false;
+          }
+        }
+        if (final && this.tail.length && !this.stopped) this.stop('Raw trace ended with incomplete record');
+      }
+    } catch (failure) { if (failure.code !== 'ENOENT') this.stop(failure.message); }
+    await this.readStatus(final);
+  }
+  async close() { await this.inflight; await this.file?.close(); this.file = null; }
 }
 async function checkJars() {
   for (const jar of jars) {
@@ -75,30 +211,7 @@ async function collectClasses(directory) {
   await visit(directory);
   return names.sort();
 }
-function parseRecords(text, byteLimit, eventLimit) {
-  const events = []; let diagnostic = null;
-  const bytes = Buffer.byteLength(text);
-  if (bytes > byteLimit) diagnostic = `Raw trace exceeded ${byteLimit} bytes`;
-  const lines = text.split('\n');
-  let consumedBytes = 0;
-  for (let i = 0; i < lines.length; i++) {
-    if (i === lines.length - 1 && lines[i] === '') break;
-    if (events.length >= eventLimit) { diagnostic ??= `Raw trace exceeded ${eventLimit} events`; break; }
-    consumedBytes += Buffer.byteLength(lines[i]) + 1;
-    if (consumedBytes > byteLimit) break;
-    try {
-      const event = JSON.parse(lines[i]);
-      if (!event || event.v !== 1 || event.seq !== events.length || typeof event.threadId !== 'string' || typeof event.type !== 'string'
-        || !Object.hasOwn(event, 'frameId') || !Object.hasOwn(event, 'className') || !Object.hasOwn(event, 'methodName')
-        || !Object.hasOwn(event, 'descriptor') || !Object.hasOwn(event, 'line') || !Object.hasOwn(event, 'site')) throw new Error('invalid common fields or sequence');
-      if (event.type === 'enter' && (!event.frameId || !Array.isArray(event.parameters))) throw new Error('invalid enter');
-      events.push(event);
-    } catch (error) { diagnostic = `Malformed raw event at line ${i + 1}: ${error.message}`; break; }
-  }
-  if (!diagnostic && text && !text.endsWith('\n')) diagnostic = 'Raw trace ended with incomplete record';
-  return { events, diagnostic, bytes };
-}
-function capability(events, coveredClasses, transformInfo, terminalStatus, diagnostic) {
+function capability(events, coveredClasses, transformInfo, terminalStatus, diagnostic, recording) {
   const counts = Object.create(null); for (const event of events) counts[event.type] = (counts[event.type] ?? 0) + 1;
   const tally = (...types) => types.reduce((sum, type) => sum + (counts[type] ?? 0), 0);
   const set = (status, reason, observedEvents = 0) => ({ status, reason, observedEvents });
@@ -119,10 +232,13 @@ function capability(events, coveredClasses, transformInfo, terminalStatus, diagn
     exceptions: set('partial', 'First propagation origin instruction captured before catch/finally/unwind; library/native internal origins are outside project capture', tally('throw', 'catch', 'finally', 'unwind')),
     console: set('partial', 'Wrapped stdout/stderr shares the probe sequence; replaced streams, direct file descriptor and native output have unknown ordering', tally('console')),
   };
-  const threads = new Set(events.filter((event) => event.type !== 'console' || event.frameId !== null).map((event) => event.threadId));
+  const threads = new Set(events.filter((event) => event.type !== 'capture_saturated'
+    && (event.type !== 'console' || event.frameId !== null)).map((event) => event.threadId));
   const diagnostics = [];
   if (threads.size > 1) { diagnostics.push('Multiple project threads observed; initial normalizer supports one'); features.methods = set('unsupported', diagnostics.at(-1), features.methods.observedEvents); }
   if (diagnostic) diagnostics.push(diagnostic);
+  if (recording?.state !== 'FULL' && recording?.reason)
+    features.methods = set('partial', `Recording stopped: ${recording.reason}`, features.methods.observedEvents);
   if (terminalStatus !== 'complete') diagnostics.push(`Execution status: ${terminalStatus}`);
   const status = terminalStatus === 'instrumentation_failed' || threads.size > 1 ? 'unsupported' :
     terminalStatus === 'complete' && !transformInfo.localsWithoutDebug && tally('line') ? 'partial' : 'partial';
@@ -140,6 +256,8 @@ export async function prepareInstrumented(request, { spawnProcess = spawn } = {}
   const rawEventLimit = Math.min(EVENT_LIMIT, Math.max(1, Number(request.rawEventLimit) || EVENT_LIMIT));
   const rawByteLimit = Math.min(BYTE_LIMIT, Math.max(1, Number(request.rawByteLimit) || BYTE_LIMIT));
   const timeoutMs = Math.min(DEADLINE, Math.max(1, Number(request.timeoutMs) || DEADLINE));
+  const preparationTimeoutMs = Math.min(120000, Math.max(1, Number(request.preparationTimeoutMs) || DEADLINE));
+  const hardTimeoutMs = Math.min(HARD_DEADLINE, Math.max(1, Number(request.hardTimeoutMs) || HARD_DEADLINE));
   let temp;
   try {
     if (!request.javaPath || !request.javacPath || !request.classesDir || !request.mainClass) throw new Error('Configured JDK, compiled classes and main class are required');
@@ -152,12 +270,12 @@ export async function prepareInstrumented(request, { spawnProcess = spawn } = {}
     const helper = join(temp, 'helper'), transformed = join(temp, 'transformed'), trace = join(temp, 'raw.ndjson');
     await mkdir(helper); await mkdir(transformed);
     const transformStart = performance.now();
-    const compiled = await run(request.javacPath, ['-encoding', 'UTF-8', '-cp', jars.join(delimiter), '-d', helper, ...javaSources], { timeoutMs, spawnProcess });
+    const compiled = await run(request.javacPath, ['-encoding', 'UTF-8', '-cp', jars.join(delimiter), '-d', helper, ...javaSources], { timeoutMs: preparationTimeoutMs, spawnProcess });
     if (compiled.code !== 0 || compiled.stopped) throw new Error(`Instrumentation helper compilation failed: ${compiled.stderr || compiled.stopped}`);
     const classpath = [helper, ...jars].join(delimiter);
     const dependencies = launch.classpath.slice(1);
     // Extra entries are loader inputs only. OfflineTransformer walks classesDir alone.
-    const stage = await run(request.javaPath, ['-cp', classpath, 'visualjava.OfflineTransformer', classesDir, transformed, ...dependencies], { timeoutMs, spawnProcess });
+    const stage = await run(request.javaPath, ['-cp', classpath, 'visualjava.OfflineTransformer', classesDir, transformed, ...dependencies], { timeoutMs: preparationTimeoutMs, spawnProcess });
     if (stage.code !== 0 || stage.stopped) throw new Error(`Offline transform failed: ${stage.stderr || stage.stopped}`);
     let transformInfo; try { transformInfo = JSON.parse(stage.stdout.trim()); } catch { throw new Error(`Invalid transform report: ${stage.stdout}`); }
     if (transformInfo.classes !== coveredClasses.length) throw new Error('Transform did not cover every compiled project class');
@@ -172,7 +290,7 @@ export async function prepareInstrumented(request, { spawnProcess = spawn } = {}
       `-Dvisualjava.eventLimit=${rawEventLimit}`, `-Dvisualjava.byteLimit=${rawByteLimit}`]);
     let cleaned = false;
     return { temp, helper, transformed, trace, args, workingDirectory: launch.workingDirectory, classpath: executionClasspath, coveredClasses, transformInfo, executableLines,
-      rawEventLimit, rawByteLimit, timeoutMs, transformMs: Math.round(performance.now() - transformStart),
+      rawEventLimit, rawByteLimit, timeoutMs, hardTimeoutMs, preparationTimeoutMs, transformMs: Math.round(performance.now() - transformStart),
       cleanup: async () => { if (!cleaned) { cleaned = true; await rm(temp, { recursive: true, force: true }); } } };
   } catch (error) {
     if (temp) await rm(temp, { recursive: true, force: true });
@@ -180,45 +298,47 @@ export async function prepareInstrumented(request, { spawnProcess = spawn } = {}
   }
 }
 
-export async function runInstrumented(request, { spawnProcess = spawn } = {}) {
+export async function runInstrumented(request, { spawnProcess = spawn, prepare = prepareInstrumented } = {}) {
   const result = emptyResult();
-  const rawEventLimit = Math.min(EVENT_LIMIT, Math.max(1, Number(request.rawEventLimit) || EVENT_LIMIT));
-  const rawByteLimit = Math.min(BYTE_LIMIT, Math.max(1, Number(request.rawByteLimit) || BYTE_LIMIT));
-  const timeoutMs = Math.min(DEADLINE, Math.max(1, Number(request.timeoutMs) || DEADLINE));
-  let prepared;
+  let prepared, reader;
   try {
-    prepared = await prepareInstrumented(request, { spawnProcess });
+    prepared = await prepare(request, { spawnProcess });
     const { trace, coveredClasses, transformInfo } = prepared;
+    reader = new CaptureReader(prepared);
     result.metrics.transformMs = prepared.transformMs;
     const executionStart = performance.now(); let firstTraceMs = null;
     const execution = await run(request.javaPath, prepared.args, {
-      cwd: prepared.workingDirectory, timeoutMs, spawnProcess,
-      monitor: async () => { const info = await stat(trace).catch(() => null); if (info?.size > 0 && firstTraceMs === null) firstTraceMs = performance.now() - executionStart; return info && info.size > rawByteLimit ? 'raw_byte_limit' : null; },
+      cwd: prepared.workingDirectory, timeoutMs: prepared.timeoutMs, hardTimeoutMs: prepared.hardTimeoutMs ?? HARD_DEADLINE, spawnProcess,
+      monitor: async () => {
+        try { await reader.refresh(); } catch (failure) { reader.stop(`Recorder observation failed: ${failure.message}`); }
+        if (reader.events.length && firstTraceMs === null) firstTraceMs = performance.now() - executionStart;
+        return { waitingForInput: reader.waitingForInput, activeClockEnabled: reader.inputStatusKnown || reader.recording.state === 'FULL' };
+      },
     });
-    result.metrics.jvmStartupMs = Math.round(firstTraceMs ?? execution.duration); // Approximate spawn-to-first-record latency.
+    await reader.refresh(true);
+    result.metrics.jvmStartupMs = Math.round(firstTraceMs ?? execution.duration);
     result.metrics.executionMs = Math.max(0, Math.round(execution.duration) - result.metrics.jvmStartupMs);
     result.exitCode = execution.code; result.stdout = execution.stdout; result.stderr = execution.stderr;
-    const raw = await readFile(trace, 'utf8').catch(() => '');
-    const parsed = parseRecords(raw, rawByteLimit, rawEventLimit);
-    result.rawEvents = parsed.events; result.metrics.rawBytes = parsed.bytes; result.metrics.rawEvents = parsed.events.length;
-    const likelyProbeFailure = /Trace write failed|visualjava\.Recorder|VerifyError|ClassFormatError|NoClassDefFoundError: visualjava/.test(execution.stderr);
-    if (execution.stopped === 'timeout' || execution.stopped === 'raw_byte_limit' || execution.stopped === 'output_limit'
-      || execution.code === 86 && execution.stderr.includes('[VisualJava] trace limit exceeded')
-      || parsed.bytes > rawByteLimit || parsed.diagnostic?.includes('exceeded')) {
-      result.status = 'limit_exceeded';result.diagnostic = execution.stopped || parsed.diagnostic || 'Raw event limit exceeded';
-    } else if (parsed.diagnostic || likelyProbeFailure || !parsed.events.length) {
-      result.status = 'instrumentation_failed';result.diagnostic = parsed.diagnostic || execution.stderr || 'Recorder produced no verified events';
-    } else if (execution.stopped) {
-      result.status = 'instrumentation_failed';result.diagnostic = execution.stopped;
-    } else if (execution.code === 0) {
-      result.status = 'complete';
+    result.outputTruncated = execution.outputTruncated;
+    result.rawEvents = reader.events; result.recording = reader.recording;
+    result.metrics.rawBytes = reader.offset; result.metrics.rawEvents = reader.events.length;
+    if (execution.stopped === 'timeout' || execution.stopped === 'hard_timeout') {
+      result.status = 'limit_exceeded'; result.diagnostic = execution.stopped === 'hard_timeout'
+        ? 'Hard process safety deadline exceeded (applies in all states)' : 'Active execution deadline exceeded';
+    } else if (execution.stopped || execution.code !== 0 && /VerifyError|ClassFormatError|NoClassDefFoundError: visualjava/.test(execution.stderr)) {
+      result.status = 'instrumentation_failed'; result.diagnostic = execution.stopped ?? 'Instrumented JVM launch failed verification or could not load its observer';
+      reader.stop(result.diagnostic); result.recording = reader.recording;
     } else {
-      result.status = 'program_crashed';result.diagnostic = `JVM exited with code ${execution.code}`;
+      if (!reader.events.length && reader.recording.state === 'FULL') reader.stop('Recorder produced no verified events');
+      if (/Trace write failed/.test(execution.stderr)) reader.stop('Recorder write failed');
+      result.recording = reader.recording;
+      result.status = execution.code === 0 ? 'complete' : 'program_crashed';
+      result.diagnostic = execution.code === 0 ? null : `JVM exited with code ${execution.code}`;
     }
-    result.capability = capability(result.rawEvents, coveredClasses, transformInfo, result.status, result.diagnostic);
+    result.capability = capability(result.rawEvents, coveredClasses, transformInfo, result.status, result.recording.reason ?? result.diagnostic, result.recording);
   } catch (error) {
-    result.status = 'instrumentation_failed';result.diagnostic = error.message;
+    result.status = 'instrumentation_failed'; result.diagnostic = error.message;
     result.capability.diagnostics.push(error.message);
-  } finally { if (prepared) await prepared.cleanup(); }
+  } finally { await reader?.close(); if (prepared) await prepared.cleanup(); }
   return result;
 }

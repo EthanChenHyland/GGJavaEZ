@@ -1,4 +1,4 @@
-import { cp, mkdir, mkdtemp, readFile, rm } from 'node:fs/promises';
+import { cp, mkdir, mkdtemp, readFile, realpath, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { performance } from 'node:perf_hooks';
@@ -20,7 +20,9 @@ import { buildSceneModel } from '../../src/world/sceneModel.ts';
  * normalizeTrace → validateTrace → seek/layout/scene. It changes no limits and no transport.
  */
 export async function runAcceptanceProject(projectDir, { stdin = null, stdinDelayMs = 300, mainClass = null } = {}) {
-  const workspaceRoot = await mkdtemp(join(tmpdir(), 'vj-acceptance-'));
+  // macOS aliases /var to /private/var; build tools emit canonical absolute paths.
+  // Match that spelling in this isolated harness without relaxing project boundaries.
+  const workspaceRoot = await realpath(await mkdtemp(join(tmpdir(), 'vj-acceptance-')));
   const projectRoot = join(workspaceRoot, 'project');
   await cp(projectDir, projectRoot, { recursive: true, filter: (path) => !/[\\/](target|build|out|\.gradle)([\\/]|$)/.test(path.slice(projectDir.length)) && !path.endsWith('expected.facts.json') });
   await mkdir(join(workspaceRoot, 'build'), { recursive: true });
@@ -56,7 +58,7 @@ export async function runAcceptanceProject(projectDir, { stdin = null, stdinDela
     timings.executionMs = Math.round(performance.now() - started);
     const terminal = snapshot.status === 'exited' && snapshot.exitCode === 0 ? 'complete' : snapshot.terminalStatus ?? 'program_crashed';
     started = performance.now();
-    const normalized = normalizeTrace(snapshot.rawEvents, snapshot.sourceManifest, { status: terminal, exitCode: snapshot.exitCode, diagnostic: snapshot.diagnostic }, `acceptance:${sessionId}`);
+    const normalized = normalizeTrace(snapshot.rawEvents, snapshot.sourceManifest, { status: terminal, exitCode: snapshot.exitCode, diagnostic: snapshot.diagnostic, recording: snapshot.recording }, `acceptance:${sessionId}`);
     const trace = validateTrace(normalized.trace);
     trace.capture = { origin: 'jvm', sourceHashes: {}, recordedAt: '1970-01-01T00:00:00.000Z' };
     timings.normalizeMs = Math.round(performance.now() - started);
@@ -67,7 +69,7 @@ export async function runAcceptanceProject(projectDir, { stdin = null, stdinDela
     timings.worldMs = Math.round(performance.now() - started);
     return { built: true, dependencies: compilation.project.dependencies ?? [], buildSystem: compilation.project.buildSystem, snapshot, trace, capability: normalized.capability, final, layout, scene, timings, mainClass: chosen };
   } finally {
-    await debuggerSessions.stop().catch(() => {});
+    await debuggerSessions.dispose().catch(() => {});
     await rm(workspaceRoot, { recursive: true, force: true });
   }
 }

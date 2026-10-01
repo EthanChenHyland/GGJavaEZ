@@ -1,3 +1,12 @@
+/** Recording is an observer state, independent of the Java process exit. */
+export interface RecordingStatus {
+  state: 'FULL' | 'STOPPED_LIMIT' | 'STOPPED_UNSUPPORTED' | 'STOPPED_ERROR'
+  reason: string | null
+  budget: 'objects' | 'events' | 'bytes' | 'live frames' | null
+  lastRecordedSeq: number | null
+  executionContinued: boolean
+}
+
 /** Recorder/normalizer boundary. See docs/architecture/M6_TRACE_CONTRACT.md. */
 export type RawValue =
   | { kind: 'int' | 'long' | 'float' | 'double' | 'byte' | 'short'; value: number }
@@ -39,6 +48,7 @@ export type RawRuntimeEvent = RawSourceContext & (
   | { type: 'throw'; frameId: string; objectId: string; className: string; message: string | null; explicit: boolean }
   | { type: 'unwind' | 'catch' | 'finally'; frameId: string; objectId: string }
   | { type: 'console'; channel: 'stdout' | 'stderr'; text: string }
+  | { type: 'capture_saturated'; recording: RecordingStatus }
   | { type: 'stdin_wait' }
   | { type: 'stdin_read'; text: string }
 )
@@ -84,6 +94,8 @@ export interface InstrumentedRunMetrics {
 }
 
 export interface InstrumentedRunResult {
+  recording?: RecordingStatus
+  outputTruncated?: boolean
   status: VisualizationTerminalStatus
   exitCode: number | null
   diagnostic: string | null

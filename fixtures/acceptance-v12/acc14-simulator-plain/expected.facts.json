@@ -28,17 +28,19 @@
  },
  "facts": [
   {
-   "id": "killedAtEventBudget",
-   "kind": "exit",
+   "id": "partialRecording",
+   "kind": "recording",
    "status": "current",
-   "code": 86,
-   "note": "CHARACTERIZATION of audit X1: Recorder halts the JVM at 20,000 raw events"
+   "requirement": "R1.1-1.2",
+   "state": "STOPPED_LIMIT",
+   "budget": "events",
+   "note": "P0 exit86 evidence retained in checkpoint; P1 preserves actual completion and a bounded prefix."
   },
   {
-   "id": "abortedPrefix",
+   "id": "observedPrefix",
    "kind": "eventCount",
    "status": "current",
-   "type": "PROGRAM_ABORT",
+   "type": "CAPTURE_STOP",
    "min": 1,
    "max": 1
   },
@@ -52,7 +54,7 @@
   {
    "id": "completes",
    "kind": "exit",
-   "status": "target:P1",
+   "status": "current",
    "requirement": "R1.1-1.2",
    "code": 0,
    "stdout": [
@@ -64,7 +66,7 @@
   {
    "id": "largeHistory",
    "kind": "eventCount",
-   "status": "target:P1",
+   "status": "target:P2",
    "requirement": "R12/R20",
    "type": "*",
    "min": 200000
@@ -72,7 +74,7 @@
   {
    "id": "manyInvocations",
    "kind": "invocations",
-   "status": "target:P1",
+   "status": "target:P2",
    "requirement": "R12/R20",
    "min": 5000
   }

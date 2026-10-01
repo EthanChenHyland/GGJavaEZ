@@ -132,7 +132,7 @@ it('Debug uses the resolved cwd and places authenticated internal properties aft
     expect(args[cpIndex - 2]).toMatch(/^-Dvisualjava.debugPort=\d+$/)
     expect(args[cpIndex - 1]).toMatch(/^-Dvisualjava.debugToken=[a-f0-9]{64}$/)
     expect(args.slice(cpIndex + 2)).toEqual([request.mainClass, ...request.programArgs])
-  } finally { await manager.stop() }
+  } finally { await manager.dispose() }
   const blockedPrepare = vi.fn()
   await expect(new DebugManager({ prepare: blockedPrepare }).start({ ...request, build: { success: true },
     sourceManifest: { sources: [], classes: [] }, jvmArgs: ['-Dvisualjava.debugPort=123'] })).rejects.toThrow(/reserved/)

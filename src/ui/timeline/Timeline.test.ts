@@ -5,6 +5,9 @@ import type { TraceDocument, TraceEvent } from '../../contracts/runtime'
 import type { PlaybackApi } from '../../playback'
 import { DEFAULT_PLAYBACK_STATE, transitionPlayback } from '../../playback/playbackState'
 import { markerIndices, resolveTimelinePosition, Timeline } from './Timeline'
+import { normalizeTrace, type InstrumentationSourceManifest } from '../../instrumentation/normalize'
+import type { RawRuntimeEvent, RecordingStatus } from '../../instrumentation/contracts'
+import { seek, validateTrace } from '../../runtime'
 
 const events = (count: number): TraceEvent[] => Array.from({ length: count }, (_, seq) => ({
   type: 'PROGRAM_START', eventId: `event:${seq}`, seq, source: null, label: `Event ${seq}`,
@@ -35,6 +38,64 @@ const recorded: TraceDocument = { schemaVersion: 2, demoId: 'debug:one-session',
 const playback = (cursor: number, playing = false): PlaybackApi => ({
   state: { cursor, playing, speed: 1 },
   playPause: () => {}, stepForward: () => {}, stepBack: () => {}, seekTo: () => {}, setSpeed: () => {}, reset: () => {},
+})
+
+describe('last recorded event terminal', () => {
+  const manifest: InstrumentationSourceManifest = {
+    sources: [{ fileId: 'Main.java', name: 'Main.java', content: 'class Main {}', sha256: 'hash' }],
+    classes: [{ className: 'Main', sourceFile: 'Main.java', fileId: 'Main.java', sourceSha256: 'hash', status: 'resolved', candidates: ['Main.java'] }],
+  }
+  const raw: RawRuntimeEvent[] = [
+    { v: 1, seq: 0, threadId: '1', type: 'enter', frameId: '1', className: 'Main', methodName: 'main',
+      descriptor: '()V', line: 1, site: 0, callerFrameId: null, receiver: null, parameters: [] },
+    { v: 1, seq: 1, threadId: '1', type: 'local', frameId: '1', className: 'Main', methodName: 'main',
+      descriptor: 'I', line: 1, site: 1, slot: 1, name: 'value', liveRange: 'value', value: { kind: 'int', value: 7 } },
+  ]
+  const recording: RecordingStatus = { state: 'STOPPED_LIMIT', reason: 'Event budget reached', budget: 'events',
+    lastRecordedSeq: 1, executionContinued: true }
+  const trace = validateTrace(normalizeTrace(raw, manifest, {
+    status: 'live', exitCode: null, diagnostic: null, recording,
+  }).trace)
+
+  it.each(['RUNNING', 'COMPLETED', 'FAILED'] as const)('shows a closed visual prefix independently of actual Java phase %s', (phase) => {
+    const final = seek(trace, trace.events.length)
+    expect(final).toMatchObject({ status: 'partial', activeFrameIds: ['jvm:frame:1'], recordingStop: recording })
+    expect(Object.values(final.frames['jvm:frame:1'].locals)[0].value).toMatchObject({ value: 7 })
+    const html = renderToStaticMarkup(createElement(Timeline, { trace, playback: playback(trace.events.length),
+      execution: { phase, lens: 'LIVE', liveCursor: trace.events.length, onReturnToLive: () => {} },
+    }))
+    expect(html).toContain('class="vj-timeline__event" aria-live="polite">Last recorded event · Event budget reached')
+    expect(html).toContain('LAST RECORDED')
+    expect(html).toContain(`Last recorded event at event ${trace.events.length}`)
+    expect(html).toContain('Replay recorded history')
+    expect(html).not.toContain('Live head at event')
+    expect(html).not.toContain('Program completed')
+    expect(html).not.toContain('Program failed')
+  })
+
+  it('can scrub backward through a partial state and return to its last observed endpoint', () => {
+    const final = seek(trace, trace.events.length)
+    const previous = seek(trace, trace.events.length - 1)
+    expect(previous.status).toBe('running')
+    expect(previous.frames).toEqual(final.frames)
+    expect(seek(trace, trace.events.length)).toEqual(final)
+    const html = renderToStaticMarkup(createElement(Timeline, { trace, playback: playback(2),
+      execution: { phase: 'COMPLETED', lens: 'HISTORY', liveCursor: trace.events.length, onReturnToLive: () => {} },
+    }))
+    expect(html).toContain('Return to last recorded event')
+    expect(html).toContain('HISTORY')
+    expect(html).not.toContain('Return to Live')
+    expect(html).toContain('value="2"')
+  })
+
+  it('keeps the Java completion label for an actually complete observed trace', () => {
+    const trace = validateTrace(normalizeTrace([...raw, { ...raw[0], type: 'exit', seq: 2, frameId: '1' }], manifest,
+      { status: 'complete', exitCode: 0, diagnostic: null }).trace)
+    expect(seek(trace, trace.events.length).status).toBe('ended')
+    const html = renderToStaticMarkup(createElement(Timeline, { trace, playback: playback(trace.events.length) }))
+    expect(html).toContain('Program completed')
+    expect(html).not.toContain('Last recorded event')
+  })
 })
 
 describe('live and historical execution rail', () => {

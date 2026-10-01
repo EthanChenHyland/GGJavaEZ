@@ -24,7 +24,7 @@ function capabilityFromObserved(snapshot) {
   return {
     // The recorder cannot claim complete Java coverage: library/native internals and
     // replacement streams remain outside its trace even for a fully transformed project.
-    status: 'partial', coveredClasses: [...coveredClasses], diagnostics: snapshot.diagnostic ? [snapshot.diagnostic] : [],
+    status: 'partial', coveredClasses: [...coveredClasses], diagnostics: [snapshot.diagnostic, snapshot.recording?.reason].filter(Boolean),
     features: {
       methods: observed('project method entry/exit', 'enter', 'exit'),
       locals: feature(localsWithoutDebug ? 'partial' : 'supported', localsWithoutDebug
@@ -55,7 +55,7 @@ function supportFromObserved(snapshot) {
     && snapshot.rawEvents.some((event) => event.type === 'line');
   // A live prefix cannot prove that the remaining JVM execution is covered.
   return snapshot.status === 'exited' && snapshot.terminalStatus === 'complete'
-    && completeClasses && hasCoreTrace && !snapshot.coverage?.transformInfo?.localsWithoutDebug ? 'FULL' : 'PARTIAL';
+    && (!snapshot.recording || snapshot.recording.state === 'FULL') && completeClasses && hasCoreTrace && !snapshot.coverage?.transformInfo?.localsWithoutDebug ? 'FULL' : 'PARTIAL';
 }
 
 /** One bridge-owned session projects either the recorder or the plain-run escape path. */
@@ -113,7 +113,7 @@ export class ExecutionManager {
       terminalStatus: null, exitCode: null, diagnostic: null, failureKind: null, startedAt: new Date().toISOString() };
     const record = { dto, backend: null, backendId: null, stopped: false, listeners: new Set(), unsubscribe: null,
       publishTimer: null, lastPublishedAt: 0, task: null, observedCount: -1, observedCapability: null,
-      observedSupport: 'RUN_ONLY', observedDiagnostic: null, observedTerminal: null };
+      observedSupport: 'RUN_ONLY', observedDiagnostic: null, observedTerminal: null, observedRecording: null };
     this.sessions.set(dto.id, record); this.latest = record;
     while (this.sessions.size > 32) this.sessions.delete(this.sessions.keys().next().value);
     const work = this.startQueue.then(() => this.#launch(record, configuration, withoutVisualization, breakpoints));
@@ -201,30 +201,40 @@ export class ExecutionManager {
       && session.terminalStatus === 'instrumentation_failed';
     const failed = !captureOnlyFailure && (session.status === 'failed'
       || session.terminalStatus && !['complete', 'unsupported'].includes(session.terminalStatus));
-    const waitingForInput = session.rawEvents.at(-1)?.type === 'stdin_wait';
+    const waitingForInput = session.waitingForInput ?? session.rawEvents.at(-1)?.type === 'stdin_wait';
+    const recordingKey = JSON.stringify(session.recording ?? null);
     const phase = record.stopped || session.status === 'stopped' ? 'STOPPED'
       : terminal ? failed ? 'FAILED' : 'COMPLETED'
         : session.status === 'paused' ? 'PAUSED' : session.status === 'starting' ? 'STARTING'
           : waitingForInput ? 'WAITING_FOR_INPUT' : 'RUNNING';
     if (record.observedCount !== session.rawEvents.length || record.observedDiagnostic !== session.diagnostic
-      || record.observedTerminal !== session.terminalStatus) {
+      || record.observedTerminal !== session.terminalStatus || record.observedRecording !== recordingKey) {
       record.observedCount = session.rawEvents.length;
       record.observedDiagnostic = session.diagnostic;
       record.observedTerminal = session.terminalStatus;
+      record.observedRecording = recordingKey;
       record.observedSupport = supportFromObserved(session);
       record.observedCapability = session.rawEvents.length ? capabilityFromObserved(session) : null;
     }
     const support = record.observedSupport;
-    this.#update(record, { phase, support, supportReason: captureOnlyFailure ? session.diagnostic ?? 'Runtime capture unavailable; program completed'
+    const recordingStopped = session.recording && session.recording.state !== 'FULL';
+    this.#update(record, { phase, support, supportReason: recordingStopped ? `${session.recording.reason}. Visualization ends at raw event ${session.recording.lastRecordedSeq ?? 'none'}; ${terminal ? `Java ${session.exitCode === 0 ? 'completed' : 'ended'} separately with exit code ${session.exitCode ?? 'unknown'}` : 'Java execution continues independently'}.` : captureOnlyFailure ? session.diagnostic ?? 'Runtime capture unavailable; program completed'
       : support === 'RUN_ONLY' ? session.rawEvents.length ? null : 'No verified runtime events yet'
         : support === 'PARTIAL' ? 'Some runtime facts are outside verified project coverage' : null,
     rawEvents: session.rawEvents, sourceManifest: session.sourceManifest, capability: record.observedCapability,
+    recording: session.recording, outputTruncated: session.outputTruncated,
+    outputArchiveAvailable: session.outputArchiveAvailable, outputArchiveError: session.outputArchiveError,
     stdout: session.stdout, stderr: session.stderr, pause: session.pause, breakpoints: session.breakpoints,
     terminalStatus: session.terminalStatus, exitCode: session.exitCode, diagnostic: session.diagnostic,
     failureKind: failed ? session.terminalStatus === 'program_crashed' ? 'runtime' : 'capture' : null },
     terminal || session.status === 'paused' || record.dto.phase === 'PAUSED');
   }
 
+  output(id, channel) {
+    const record = this.#get(id);
+    if (record.backend !== 'recorder') throw fault('This execution has no archived recorder-process output', 409);
+    return this.debuggerSessions.output(record.backendId, channel);
+  }
   current() { return this.latest ? clone(this.latest.dto) : null; }
   snapshot(id) { const record = this.sessions.get(id); return record ? clone(record.dto) : null; }
   subscribe(id, listener) {

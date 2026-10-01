@@ -1,5 +1,7 @@
 import { expect, type Page, type APIRequestContext } from '@playwright/test'
 import { mkdir, writeFile } from 'node:fs/promises'
+const outputRoot = process.env.VJ_QA_OUTPUT_ROOT ? `${process.env.VJ_QA_OUTPUT_ROOT}/product-audit-v11_5` : 'docs/checkpoints/product-audit-v11_5'
+
 export async function inspectRetainedWorld(page: Page, request: APIRequestContext) {
   const current = await (await request.get('/api/execution/current')).json()
   expect(current.phase).toBe('COMPLETED')
@@ -11,10 +13,10 @@ export async function inspectRetainedWorld(page: Page, request: APIRequestContex
   const loadMs = Date.now() - started
   console.log('retained-load-ms', loadMs)
   await page.getByRole('button', { name: 'Overview', exact: true }).click()
-  await mkdir('docs/checkpoints/product-audit-v11_5', { recursive: true })
+  await mkdir(outputRoot, { recursive: true })
   for (const [width, height] of [[1728,1117], [1440,900], [1280,800], [760,900]]) {
     await page.setViewportSize({ width, height }); await page.waitForTimeout(700)
-    await page.screenshot({ path: `docs/checkpoints/product-audit-v11_5/graph-polished-${width}x${height}.png` })
+    await page.screenshot({ path: `${outputRoot}/graph-polished-${width}x${height}.png` })
   }
   await page.setViewportSize({ width:1440, height:900 })
   const scrub = page.getByRole('slider', { name:'Scrub execution' })
@@ -27,7 +29,7 @@ export async function inspectRetainedWorld(page: Page, request: APIRequestContex
     await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))))
     timings.push({ cursor, uiCommitAndTwoFramesMs:Date.now() - start })
   }
-  await writeFile('docs/checkpoints/product-audit-v11_5/large-world-measurements.json', JSON.stringify({ sessionId:current.id, loadMs, normalizedEvents:max, rawEvents:current.rawEvents.length, timings, metric:'UI commit plus two browser animation frames; not GPU presentation or percentile statistics' }, null, 2))
+  await writeFile(`${outputRoot}/large-world-measurements.json`, JSON.stringify({ sessionId:current.id, loadMs, normalizedEvents:max, rawEvents:current.rawEvents.length, timings, metric:'UI commit plus two browser animation frames; not GPU presentation or percentile statistics' }, null, 2))
   const selected = await picker.locator('option').filter({ hasText: /^Node #/ }).first().getAttribute('value')
   expect(selected).toBeTruthy()
   await picker.selectOption(selected!)
@@ -36,7 +38,7 @@ export async function inspectRetainedWorld(page: Page, request: APIRequestContex
   await expect(page.locator('.world-label').filter({ hasText:'ISOLATED' })).toBeVisible()
   for (const [width, height] of [[1440,900], [760,900]]) {
     await page.setViewportSize({ width,height }); await page.waitForTimeout(700)
-    await page.screenshot({ path:`docs/checkpoints/product-audit-v11_5/graph-focus-${width}x${height}.png` })
+    await page.screenshot({ path:`${outputRoot}/graph-focus-${width}x${height}.png` })
   }
   await page.getByRole('button', { name:'Return to world', exact:true }).click()
   await expect(page.locator('.world-label').filter({ hasText:'ISOLATED' })).toHaveCount(0)
@@ -47,7 +49,7 @@ export async function inspectRetainedWorld(page: Page, request: APIRequestContex
   await page.getByRole('complementary', { name:'Runtime inspector' }).getByRole('button', { name:'Focus', exact:true }).click()
   for (const [width,height] of [[1728,1117],[1440,900],[1280,800],[760,900]]) {
     await page.setViewportSize({ width,height }); await page.waitForTimeout(700)
-    await page.screenshot({ path:`docs/checkpoints/product-audit-v11_5/graph-deep-focus-${width}x${height}.png` })
+    await page.screenshot({ path:`${outputRoot}/graph-deep-focus-${width}x${height}.png` })
   }
   await expect(picker).toHaveValue(recursive!)
   await expect(page.locator('.inspector')).toContainText('RETURNED')

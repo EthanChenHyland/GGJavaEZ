@@ -68,7 +68,7 @@
   {
    "id": "idleNotKilled",
    "kind": "exit",
-   "status": "target:P1",
+   "status": "current",
    "requirement": "R1.4",
    "code": 0,
    "stdout": [

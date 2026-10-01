@@ -33,6 +33,13 @@ export const evaluators = {
     return { ok: s.exitCode === f.code && !missingOut.length && !missingErr.length,
       detail: `exit ${s.exitCode} (${s.status}/${s.terminalStatus}); missing stdout ${JSON.stringify(missingOut)} stderr ${JSON.stringify(missingErr)}` };
   },
+  recording: (run, f) => {
+    const recording = run.snapshot.recording;
+    const end = run.trace.events.at(-1);
+    return { ok: recording?.state === f.state && recording?.budget === f.budget && recording?.executionContinued === true
+      && Number.isSafeInteger(recording.lastRecordedSeq) && end?.type === 'CAPTURE_STOP' && run.final.status === 'partial',
+      detail: `recording ${JSON.stringify(recording)}, visual end ${end?.type}/${run.final.status}` };
+  },
   validWorld: (run) => {
     const frames = run.scene.frames.length, total = Object.keys(run.final.frames).length;
     return { ok: frames === total && frames > 0 && run.trace.events.length > 1, detail: `${frames}/${total} invocations in scene, ${run.trace.events.length} events` };

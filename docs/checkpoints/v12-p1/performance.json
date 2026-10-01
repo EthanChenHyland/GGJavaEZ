@@ -1,0 +1,84 @@
+{
+  "source": "acceptance-after-telemetry.json",
+  "recordedAt": "2026-10-01T06:02:12.525Z",
+  "samplesPerCase": 1,
+  "measurement": "Existing acceptance harness stage timings; execution includes observer preparation. Normalize includes validation; world includes seek, layout and scene model. No GPU or percentile claim.",
+  "cases": {
+    "acc10-converter-plain": {
+      "timings": {
+        "buildMs": 194,
+        "executionMs": 948,
+        "normalizeMs": 4,
+        "worldMs": 1
+      },
+      "rawEvents": 160,
+      "semanticEvents": 193,
+      "visualStatus": "ended",
+      "recording": {
+        "state": "FULL",
+        "reason": null,
+        "budget": null,
+        "lastRecordedSeq": 159,
+        "executionContinued": true
+      },
+      "exitCode": 0
+    },
+    "acc10-converter-plain:{\"stdinDelayMs\":60000}": {
+      "timings": {
+        "buildMs": 193,
+        "executionMs": 60630,
+        "normalizeMs": 1,
+        "worldMs": 0
+      },
+      "rawEvents": 160,
+      "semanticEvents": 193,
+      "visualStatus": "ended",
+      "recording": {
+        "state": "FULL",
+        "reason": null,
+        "budget": null,
+        "lastRecordedSeq": 159,
+        "executionContinued": true
+      },
+      "exitCode": 0
+    },
+    "acc13-socialgraph-plain": {
+      "timings": {
+        "buildMs": 195,
+        "executionMs": 615,
+        "normalizeMs": 38,
+        "worldMs": 13
+      },
+      "rawEvents": 3076,
+      "semanticEvents": 3849,
+      "visualStatus": "partial",
+      "recording": {
+        "state": "STOPPED_LIMIT",
+        "reason": "Recording budget exceeded: objects",
+        "budget": "objects",
+        "lastRecordedSeq": 3074,
+        "executionContinued": true
+      },
+      "exitCode": 0
+    },
+    "acc14-simulator-plain": {
+      "timings": {
+        "buildMs": 202,
+        "executionMs": 708,
+        "normalizeMs": 1037,
+        "worldMs": 558
+      },
+      "rawEvents": 20001,
+      "semanticEvents": 24765,
+      "visualStatus": "partial",
+      "recording": {
+        "state": "STOPPED_LIMIT",
+        "reason": "Recording budget exceeded: events",
+        "budget": "events",
+        "lastRecordedSeq": 19999,
+        "executionContinued": true
+      },
+      "exitCode": 0
+    }
+  }
+}

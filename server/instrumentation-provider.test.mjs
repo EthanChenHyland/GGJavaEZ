@@ -1,10 +1,12 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { mkdtemp, mkdir, writeFile, rm } from 'node:fs/promises';
+import { mkdtemp, mkdir, writeFile, rm, stat } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { test } from 'vitest';
-import { runInstrumented } from './instrumentation-provider.mjs';
+import { test, expect, vi } from 'vitest';
+import { EventEmitter } from 'node:events';
+import { PassThrough } from 'node:stream';
+import { runInstrumented, CaptureReader, prepareInstrumented } from './instrumentation-provider.mjs';
 
 const javaPath = process.env.JAVA_PATH || 'java';
 const javacPath = process.env.JAVAC_PATH || 'javac';
@@ -85,10 +87,12 @@ test('crash retains honest exceptional prefix without a success marker', async (
   } finally { await f.cleanup(); }
 });
 
-test('event cap and transform failure fail closed', async () => {
+test('event cap preserves actual completion; preparation failure remains explicit', async () => {
   const f=await fixture({ 'Main.java': `public class Main { public static void main(String[] args) { for(int i=0;i<100;i++) {} } }` });
   try {
-    const capped=await runInstrumented({ ...f.request, rawEventLimit: 5 }); assert.equal(capped.status,'limit_exceeded');assertPrefix(capped);assert.ok(capped.rawEvents.length<=5);
+    const capped=await runInstrumented({ ...f.request, rawEventLimit: 5 }); assert.equal(capped.status,'complete'); assert.equal(capped.exitCode,0); assert.equal(capped.recording.state,'STOPPED_LIMIT');
+    assert.equal(capped.recording.budget,'events'); assertPrefix(capped); assert.equal(capped.rawEvents.length,6);
+    assert.equal(capped.rawEvents.at(-1).type,'capture_saturated');
     const failed=await runInstrumented({ ...f.request, classesDir: join(f.request.projectRoot,'missing') });
     assert.equal(failed.status,'instrumentation_failed');assert.ok(failed.diagnostic);
   } finally { await f.cleanup(); }
@@ -110,5 +114,179 @@ test('bubble sort preserves array writes and loop increment locals', async () =>
     assert.ok(types(r,'local').filter((e)=>e.name==='i').length>2);
     assert.ok(types(r,'local').filter((e)=>e.name==='j').length>2);
     assert.ok(types(r,'branch').length>10);
+  } finally { await f.cleanup(); }
+});
+
+
+const mockRaw = (seq, type = 'line', extra = {}) => ({ v: 1, seq, type, threadId: '1', frameId: 'f1', className: 'Main',
+  methodName: 'main', descriptor: '()V', line: 1, site: 0, ...extra });
+const mockRecording = (lastRecordedSeq = 0, extra = {}) => ({ state: 'STOPPED_LIMIT', reason: 'Recorder event limit reached', budget: 'events', lastRecordedSeq, executionContinued: true, ...extra });
+const lines = (records) => records.map((r) => JSON.stringify(r)).join('\n') + '\n';
+async function mockReader(records, options = {}) {
+  const temp = await mkdtemp(join(tmpdir(), 'vj-mock-reader-')), trace = join(temp, 'raw.ndjson');
+  await writeFile(trace, lines(records));
+  const reader = new CaptureReader({ trace, rawEventLimit: 2, rawByteLimit: 4096, ...options });
+  return { trace, reader, cleanup: async () => { await reader.close(); await rm(temp, { recursive: true, force: true }); } };
+}
+
+test('mocked Phase 1: reserved saturation fits outside exact event and byte budgets; later semantic records are ignored', async () => {
+  const first = mockRaw(0), recording = mockRecording();
+  const f = await mockReader([first, mockRaw(1, 'capture_saturated', { recording }), mockRaw(2)],
+    { rawEventLimit: 1, rawByteLimit: Buffer.byteLength(lines([first])) });
+  try {
+    await f.reader.refresh(true);
+    expect(f.reader.events).toHaveLength(2); expect(f.reader.recording).toEqual(recording); expect(f.reader.stopped).toBe(true);
+    expect(f.reader.offset).toBeLessThanOrEqual(f.reader.rawByteLimit + 1024);
+  } finally { await f.cleanup(); }
+});
+
+test.each(['events', 'bytes'])('mocked Phase 1: older or malicious %s overflow retains valid prefix and bounds reads', async (budget) => {
+  const first = mockRaw(0);
+  const f = await mockReader([first, ...Array.from({ length: 10000 }, (_, i) => mockRaw(i + 1))],
+    { rawEventLimit: budget === 'events' ? 1 : 20000, rawByteLimit: budget === 'bytes' ? Buffer.byteLength(lines([first])) : 4096 });
+  try {
+    await f.reader.refresh(true);
+    expect(f.reader.events).toEqual([first]); expect(f.reader.recording).toMatchObject({ state: 'STOPPED_LIMIT', budget, lastRecordedSeq: 0 });
+    expect(f.reader.offset).toBeLessThanOrEqual(f.reader.rawByteLimit + 1024);
+    const offset = f.reader.offset; await f.reader.refresh(); expect(f.reader.offset).toBe(offset); expect(f.reader.tail.length).toBe(0);
+  } finally { await f.cleanup(); }
+});
+
+test('mocked Phase 1: old mixed-thread trace stops before second application thread; frameless output is allowed', async () => {
+  const first = mockRaw(0), console = mockRaw(1, 'console', { threadId: '9', frameId: null, text: 'x', channel: 'stdout' });
+  const f = await mockReader([first, console, mockRaw(2, 'line', { threadId: '2' }), mockRaw(3)], { rawEventLimit: 10 });
+  try {
+    await f.reader.refresh(true); expect(f.reader.events).toEqual([first, console]);
+    expect(f.reader.recording).toMatchObject({ state: 'STOPPED_UNSUPPORTED', budget: null, lastRecordedSeq: 1 });
+  } finally { await f.cleanup(); }
+});
+
+test.each(['malformed', 'incomplete', 'sequence'])('mocked Phase 1: %s trace stops only observation and retains prefix', async (kind) => {
+  const f = await mockReader([mockRaw(0)]);
+  try {
+    await writeFile(f.trace, lines([mockRaw(0)]) + (kind === 'malformed' ? '{bad}\n' : kind === 'incomplete' ? '{' : lines([mockRaw(7)])));
+    await f.reader.refresh(true); expect(f.reader.events).toHaveLength(1);
+    expect(f.reader.recording).toMatchObject({ state: 'STOPPED_ERROR', lastRecordedSeq: 0, executionContinued: true });
+  } finally { await f.cleanup(); }
+});
+
+test('mocked Phase 1: bounded sidecar reports stdin after semantic recording stopped', async () => {
+  const recording = mockRecording(); const f = await mockReader([mockRaw(0), mockRaw(1, 'capture_saturated', { recording })]);
+  try {
+    await f.reader.refresh(); const offset = f.reader.offset;
+    for (const waitingForInput of [true, false]) {
+      await writeFile(f.trace + '.status.json', JSON.stringify({ v: 1, recording, waitingForInput }));
+      await f.reader.refresh(); expect(f.reader.waitingForInput).toBe(waitingForInput); expect(f.reader.events).toHaveLength(2); expect(f.reader.offset).toBe(offset);
+    }
+  } finally { await f.cleanup(); }
+});
+
+test.each([
+  { reason: '' }, { budget: null }, { state: 'STOPPED_UNSUPPORTED', budget: 'events' }, { lastRecordedSeq: 10 },
+])('mocked Phase 1: invalid stopped sidecar %j becomes observer error', async (extra) => {
+  const f = await mockReader([mockRaw(0)]);
+  try {
+    await writeFile(f.trace + '.status.json', JSON.stringify({ v: 1, recording: mockRecording(0, extra), waitingForInput: false }));
+    await f.reader.refresh(true); expect(f.reader.recording.state).toBe('STOPPED_ERROR'); expect(f.reader.recording.lastRecordedSeq).toBe(0);
+  } finally { await f.cleanup(); }
+});
+
+test('mocked Phase 1: oversized sidecar and huge unterminated line cannot create an unbounded buffer', async () => {
+  const f = await mockReader([mockRaw(0)], { rawByteLimit: 1024 });
+  try {
+    await writeFile(f.trace, lines([mockRaw(0)]) + 'x'.repeat(100000));
+    await f.reader.refresh(); expect(f.reader.offset).toBeLessThanOrEqual(2048); expect(f.reader.tail.length).toBe(0);
+    await writeFile(f.trace + '.status.json', 'x'.repeat(100000));
+    await f.reader.refresh(true); expect(f.reader.recording.state).toBe('STOPPED_LIMIT');
+  } finally { await f.cleanup(); }
+});
+
+test('mocked Phase 1: legacy finite provider drains oversized observation, output and second thread without killing', async () => {
+  const f = await mockReader([mockRaw(0), mockRaw(1, 'line', { threadId: '2' }), mockRaw(2)]);
+  let child; let executions = 0;
+  try {
+    const result = await runInstrumented({ javaPath: 'mock-java' }, {
+      prepare: async () => ({ trace: f.trace, args: [], coveredClasses: ['Main'], transformInfo: {}, rawEventLimit: 10,
+        rawByteLimit: 4096, timeoutMs: 2000, transformMs: 0, workingDirectory: '/tmp', cleanup: async () => {} }),
+      spawnProcess: () => {
+        executions++; child = new EventEmitter(); child.stdout = new PassThrough(); child.stderr = new PassThrough(); child.kill = vi.fn();
+        setTimeout(() => {
+          child.stdout.write(Buffer.alloc(10 * 1024 * 1024, 120)); child.stdout.write('DONE\n');
+          child.stdout.end(); child.stderr.end(); child.emit('close', 0);
+        }, 40);
+        return child;
+      },
+    });
+    expect(result.status).toBe('complete'); expect(result.exitCode).toBe(0); expect(result.stdout).toHaveLength(10 * 1024 * 1024 + 5);
+    expect(result.stdout.endsWith('DONE\n')).toBe(true); expect(result.outputTruncated).toBe(false);
+    expect(result.recording.state).toBe('STOPPED_UNSUPPORTED'); expect(result.rawEvents).toHaveLength(1);
+    expect(child.kill).not.toHaveBeenCalled(); expect(executions).toBe(1);
+  } finally { await f.cleanup(); }
+});
+
+test('mocked Phase 1: preparation deadline is independent of short active runtime deadline', async () => {
+  const temp = await mkdtemp(join(tmpdir(), 'vj-mock-preparation-')); const classesDir = join(temp, 'classes'); await mkdir(classesDir);
+  await writeFile(join(classesDir, 'Main.class'), 'mock');
+  let calls = 0, prepared;
+  try {
+    prepared = await prepareInstrumented({ javaPath: 'mock-java', javacPath: 'mock-javac', projectRoot: temp, classesDir, mainClass: 'Main', timeoutMs: 25 }, {
+      spawnProcess: () => {
+        const child = new EventEmitter(); child.stdout = new PassThrough(); child.stderr = new PassThrough(); child.kill = vi.fn();
+        const transform = ++calls === 2;
+        setTimeout(() => {
+          if (transform) child.stdout.write(JSON.stringify({ classes: 1, executableLines: { Main: [1] } }));
+          child.stdout.end(); child.stderr.end(); child.emit('close', 0);
+        }, 60);
+        return child;
+      },
+    });
+    expect(calls).toBe(2); expect(prepared.timeoutMs).toBe(25); expect(prepared.preparationTimeoutMs).toBe(30000); expect(prepared.hardTimeoutMs).toBe(600000);
+    expect((await stat(prepared.temp)).isDirectory()).toBe(true);
+  } finally { await prepared?.cleanup(); await rm(temp, { recursive: true, force: true }); }
+});
+
+
+test('mocked Phase 1: rejected legacy monitor stops observation without unhandled rejection or child termination', async () => {
+  const f = await mockReader([mockRaw(0)]);
+  const refresh = vi.spyOn(CaptureReader.prototype, 'refresh').mockRejectedValueOnce(new Error('mock read failure'));
+  let child;
+  try {
+    const result = await runInstrumented({ javaPath: 'mock-java' }, {
+      prepare: async () => ({ trace: f.trace, args: [], coveredClasses: ['Main'], transformInfo: {}, rawEventLimit: 10, rawByteLimit: 4096,
+        timeoutMs: 1000, transformMs: 0, cleanup: async () => {} }),
+      spawnProcess: () => {
+        child = new EventEmitter(); child.stdout = new PassThrough(); child.stderr = new PassThrough(); child.kill = vi.fn();
+        setTimeout(() => { child.stdout.end('DONE\n'); child.stderr.end(); child.emit('close', 0); }, 40); return child;
+      },
+    });
+    expect(result).toMatchObject({ status: 'complete', exitCode: 0, stdout: 'DONE\n', recording: { state: 'STOPPED_ERROR' } });
+    expect(child.kill).not.toHaveBeenCalled();
+  } finally { refresh.mockRestore(); await f.cleanup(); }
+});
+
+
+test('mocked Phase 1: FULL legacy stdin controls remain usable without a sidecar', async () => {
+  const f = await mockReader([mockRaw(0, 'stdin_wait')]);
+  try {
+    await f.reader.refresh(); expect(f.reader.recording.state).toBe('FULL');
+    expect(f.reader.inputStatusKnown).toBe(false); expect(f.reader.waitingForInput).toBe(true);
+  } finally { await f.cleanup(); }
+});
+
+test.each(['missing', 'corrupt'])('mocked Phase 1: legacy %s sidecar after stop disables active watchdog without inventing an input wait', async (kind) => {
+  const recording = mockRecording(); const f = await mockReader([mockRaw(0), mockRaw(1, 'capture_saturated', { recording })]);
+  let child;
+  try {
+    if (kind === 'corrupt') await writeFile(f.trace + '.status.json', '{bad json');
+    const result = await runInstrumented({ javaPath: 'mock-java' }, {
+      prepare: async () => ({ trace: f.trace, args: [], coveredClasses: ['Main'], transformInfo: {}, rawEventLimit: 1, rawByteLimit: 4096,
+        timeoutMs: 50, hardTimeoutMs: 1000, transformMs: 0, cleanup: async () => {} }),
+      spawnProcess: () => {
+        child = new EventEmitter(); child.stdout = new PassThrough(); child.stderr = new PassThrough(); child.kill = vi.fn();
+        setTimeout(() => { child.stdout.end('DONE\n'); child.stderr.end(); child.emit('close', 0); }, 150); return child;
+      },
+    });
+    expect(result).toMatchObject({ status: 'complete', exitCode: 0, stdout: 'DONE\n', recording: { state: 'STOPPED_LIMIT' } });
+    expect(child.kill).not.toHaveBeenCalled();
   } finally { await f.cleanup(); }
 });

@@ -1,0 +1,51 @@
+{
+  "recordedAt": "2026-10-01T05:43:33.929Z",
+  "results": {
+    "acc01-clinic-maven": {
+      "built": true,
+      "stdout": "VISITS 2\nREVENUE 22500\nISSUED 2\n",
+      "stderr": "",
+      "exitCode": 0,
+      "terminalStatus": "complete",
+      "recording": {
+        "state": "FULL",
+        "reason": null,
+        "budget": null,
+        "lastRecordedSeq": 205,
+        "executionContinued": true
+      },
+      "rawEvents": 206,
+      "semanticEvents": 304,
+      "visualStatus": "ended",
+      "timings": {
+        "buildMs": 3688,
+        "executionMs": 581,
+        "normalizeMs": 3,
+        "worldMs": 2
+      }
+    },
+    "acc03-payments-gradle": {
+      "built": true,
+      "stdout": "SETTLED 7477\nROUTES 5\n",
+      "stderr": "",
+      "exitCode": 0,
+      "terminalStatus": "complete",
+      "recording": {
+        "state": "FULL",
+        "reason": null,
+        "budget": null,
+        "lastRecordedSeq": 185,
+        "executionContinued": true
+      },
+      "rawEvents": 186,
+      "semanticEvents": 259,
+      "visualStatus": "ended",
+      "timings": {
+        "buildMs": 3686,
+        "executionMs": 576,
+        "normalizeMs": 2,
+        "worldMs": 1
+      }
+    }
+  }
+}

@@ -5,7 +5,7 @@ import type { ExecutionSession } from '../src/execution/contracts'
 
 test.describe.configure({ mode: 'serial', timeout: 90_000 })
 
-const captureRoot = 'docs/checkpoints/m11'
+const captureRoot = process.env.VJ_QA_OUTPUT_ROOT ? `${process.env.VJ_QA_OUTPUT_ROOT}/m11` : 'docs/checkpoints/m11'
 
 async function project(request: APIRequestContext, name: string, files: { path: string; content: string }[]) {
   const response = await request.post('/api/projects/import', { data: { name: `M11 ${name} ${randomUUID()}`, files } })

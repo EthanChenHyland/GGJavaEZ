@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { applyEvent, createInitialState } from '../runtime/state'
 import { validateTrace } from '../runtime/trace'
-import type { RawRuntimeEvent } from './contracts'
+import type { RecordingStatus, RawRuntimeEvent } from './contracts'
 import { normalizeTrace, type InstrumentationSourceManifest } from './normalize'
 
 const source = 'package demo;\nclass Main {\n static void main(String[] args) {}\n}\nclass Person { int age; }\n'
@@ -25,6 +25,127 @@ function events(...items: Array<Record<string, unknown>>): RawRuntimeEvent[] {
 function replay(trace: ReturnType<typeof normalizeTrace>['trace']) {
   return trace.events.reduce(applyEvent, createInitialState())
 }
+
+const partialPrefix = () => events(
+  { type: 'enter', callerFrameId: null, receiver: null, parameters: [] },
+  { type: 'object', objectId: '17', className: 'demo.Person', fields: [
+    { owner: 'demo.Person', name: 'age', descriptor: 'I', value: { kind: 'int', value: 18 } },
+  ] },
+  { type: 'local', slot: 1, liveRange: 'p', name: 'p', descriptor: 'Ldemo/Person;',
+    value: { kind: 'ref', objectId: '17', className: 'demo.Person' } },
+  { type: 'enter', frameId: '2', callerFrameId: '1', methodName: 'work', descriptor: '(I)V',
+    receiver: null, parameters: [{ slot: 1, name: 'count', descriptor: 'I', liveRange: 'count', value: { kind: 'int', value: 7 } }] },
+  { type: 'console', frameId: '2', channel: 'stdout', text: 'observed prefix\n' },
+)
+const stopAt = (raw: RawRuntimeEvent[], budget: RecordingStatus['budget'] = 'events'): RecordingStatus => ({
+  state: 'STOPPED_LIMIT', reason: `Recording capacity reached: ${budget}`, budget,
+  lastRecordedSeq: raw.at(-1)?.seq ?? null, executionContinued: true,
+})
+
+describe('closed partial recording prefix', () => {
+  it.each(['objects', 'events', 'bytes', 'live frames'] as const)('retains actual state at the %s budget, before and after Java exits', (budget) => {
+    const raw = partialPrefix()
+    const recording = stopAt(raw, budget)
+    const saturated = [...raw, { ...raw[0], seq: raw.length, type: 'capture_saturated',
+      threadId: 'control', recording }] as RawRuntimeEvent[]
+    const live = normalizeTrace(raw, manifest, { status: 'live', exitCode: null, diagnostic: null })
+    const result = normalizeTrace(saturated, manifest, { status: 'live', exitCode: null, diagnostic: null, recording })
+    expect(validateTrace(result.trace)).toEqual(result.trace) // Closed even while Java is live.
+    expect(result.trace.events.slice(0, -1)).toEqual(live.trace.events)
+    expect(result.trace.events.at(-1)).toMatchObject({ type: 'CAPTURE_STOP', recording, label: expect.stringContaining('Last recorded event') })
+    expect(result.trace.events.some(e => ['PROGRAM_END', 'PROGRAM_ABORT', 'EXIT_METHOD', 'UNWIND_EXCEPTION'].includes(e.type))).toBe(false)
+    const state = replay(result.trace)
+    const before = replay(live.trace)
+    expect(state).toMatchObject({ status: 'partial', abortReason: null, recordingStop: recording,
+      activeFrameIds: ['jvm:frame:1', 'jvm:frame:2'], currentSource: before.currentSource })
+    expect(state.frames).toEqual(before.frames)
+    expect(state.objects).toEqual(before.objects)
+    expect(state.console.map(entry => entry.text)).toEqual(['observed prefix\n'])
+    expect(result.capability.status).toBe('partial')
+    expect(normalizeTrace(saturated, manifest, { ...complete, recording })).toEqual(result)
+    // A later real Java crash belongs to the session, not to an unobserved visual unwind.
+    expect(normalizeTrace(saturated, manifest, { status: 'program_crashed', exitCode: 1, diagnostic: 'later failure', recording })).toEqual(result)
+  })
+
+  it('closes a prefix from sidecar metadata without waiting for process termination', () => {
+    const raw = partialPrefix()
+    const recording = stopAt(raw)
+    const result = normalizeTrace(raw, manifest, { status: 'live', exitCode: null, diagnostic: null, recording })
+    expect(validateTrace(result.trace)).toEqual(result.trace)
+    expect(replay(result.trace)).toMatchObject({ status: 'partial', recordingStop: recording })
+    expect(replay(normalizeTrace(raw, manifest, { ...complete, recording }).trace)).toEqual(replay(result.trace))
+  })
+
+  it('keeps observer errors and unsupported coverage partial when the observed prefix is valid', () => {
+    const raw = partialPrefix()
+    for (const state of ['STOPPED_UNSUPPORTED', 'STOPPED_ERROR'] as const) {
+      const recording = { ...stopAt(raw), state, reason: 'Observer stopped', budget: null }
+      const result = normalizeTrace(raw, manifest, { status: 'instrumentation_failed', exitCode: 0, diagnostic: 'Observer stopped', recording })
+      expect(validateTrace(result.trace)).toEqual(result.trace)
+      expect(result.capability.status).toBe('partial')
+      expect(replay(result.trace)).toMatchObject({ status: 'partial', abortReason: null, recordingStop: recording })
+    }
+  })
+
+  it('allows a valid control record before any semantic raw event was written', () => {
+    const raw = events({ type: 'capture_saturated', frameId: null, className: null, line: null,
+      recording: stopAt([], 'bytes') })
+    const result = normalizeTrace(raw, manifest, complete)
+    expect(result.trace.events.map(e => e.type)).toEqual(['PROGRAM_START', 'CAPTURE_STOP'])
+    expect(replay(validateTrace(result.trace))).toMatchObject({ status: 'partial', activeFrameIds: [], currentSource: null,
+      recordingStop: { lastRecordedSeq: null } })
+  })
+
+  it.each(['enter', 'console'] as const)('stops old mixed-thread captures before a foreign %s, retaining the first thread only', (type) => {
+    const prefix = partialPrefix()
+    const mixed = [...prefix, ...events(
+      type === 'enter' ? { type, frameId: 'foreign', callerFrameId: null, receiver: null, parameters: [], threadId: '2' }
+        : { type, frameId: 'foreign', channel: 'stdout', text: 'not in visual prefix', threadId: '2' },
+      { type: 'exit', frameId: '2' }, { type: 'exit' },
+    ).map((raw, i) => ({ ...raw, seq: prefix.length + i }))]
+    const result = normalizeTrace(mixed, manifest, complete)
+    const live = normalizeTrace(prefix, manifest, { status: 'live', exitCode: null, diagnostic: null })
+    expect(validateTrace(result.trace)).toEqual(result.trace)
+    expect(result.trace.events.slice(0, -1)).toEqual(live.trace.events)
+    expect(result.trace.events.at(-1)).toMatchObject({ type: 'CAPTURE_STOP', recording: {
+      state: 'STOPPED_UNSUPPORTED', budget: null, lastRecordedSeq: prefix.length - 1, executionContinued: true,
+    } })
+    expect(result.capability.status).toBe('partial')
+    expect(replay(result.trace).activeFrameIds).toEqual(['jvm:frame:1', 'jvm:frame:2'])
+    expect(result.trace.events.some(e => e.threadId === '2')).toBe(false)
+    expect(replay(result.trace).console).toHaveLength(1)
+  })
+
+  it('does not mask corruption before saturation', () => {
+    const raw = partialPrefix()
+    raw[2].seq = 10
+    const recording = stopAt(raw)
+    const result = normalizeTrace(raw, manifest, { ...complete, recording })
+    expect(validateTrace(result.trace)).toEqual(result.trace)
+    expect(result.trace.events.at(-1)).toMatchObject({ type: 'PROGRAM_ABORT', reason: 'instrumentation_failed' })
+    expect(result.capability.status).toBe('unsupported')
+  })
+
+  it.each(['wrong watermark', 'missing budget', 'later event', 'unknown event'] as const)('rejects corrupted control protocol: %s', (problem) => {
+    const raw = partialPrefix()
+    const recording = stopAt(raw)
+    if (problem === 'wrong watermark') recording.lastRecordedSeq = raw.length + 9
+    if (problem === 'missing budget') recording.budget = null
+    const saturated = [...raw, { ...raw[0], seq: raw.length, type: problem === 'unknown event' ? 'unknown' : 'capture_saturated', recording }] as RawRuntimeEvent[]
+    if (problem === 'later event') saturated.push({ ...raw[0], seq: saturated.length })
+    const result = normalizeTrace(saturated, manifest, complete)
+    expect(validateTrace(result.trace)).toEqual(result.trace)
+    expect(result.trace.events.at(-1)).toMatchObject({ type: 'PROGRAM_ABORT', reason: 'instrumentation_failed' })
+    expect(result.trace.events.some(e => e.type === 'CAPTURE_STOP')).toBe(false)
+  })
+
+  it('rejects a sidecar watermark that does not describe the supplied prefix', () => {
+    const raw = partialPrefix()
+    const result = normalizeTrace(raw, manifest, { ...complete, recording: { ...stopAt(raw), lastRecordedSeq: 100 } })
+    expect(result.trace.events.at(-1)).toMatchObject({ type: 'PROGRAM_ABORT', reason: 'instrumentation_failed' })
+    expect(result.capability.diagnostics.join(' ')).toContain('last recorded sequence')
+  })
+})
 
 describe('normalizeTrace', () => {
   it('normalizes Person identity, constructor this, fields, and source path without invented scopes', () => {

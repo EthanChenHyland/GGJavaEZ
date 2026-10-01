@@ -216,5 +216,35 @@ test('recorder Run mode uses one fake child, streams its trace and output, and n
       await new Promise((resolve) => setTimeout(resolve, 10));
     expect(manager.current()).toMatchObject({ status: 'exited', terminalStatus: 'complete', exitCode: 0 });
     expect(spawnProcess).toHaveBeenCalledOnce();
-  } finally { await rm(directory, { recursive: true, force: true }); }
+  } finally { await manager.dispose(); await rm(directory, { recursive: true, force: true }); }
+});
+
+test.each(['objects', 'events', 'bytes', 'live frames', null])('stopped recording (%s) preserves real completion, console, prefix and one execution', async (budget) => {
+  const h = harness();
+  h.manager.start({ projectId: 'p1' });
+  await until(h.manager, (session) => session.phase === 'RUNNING');
+  const prefix = [observed, { ...observed, seq: 1, type: 'line' }];
+  const recording = { state: budget ? 'STOPPED_LIMIT' : 'STOPPED_UNSUPPORTED',
+    reason: budget ? `Recording limit reached: ${budget}` : 'Multiple application threads detected',
+    budget, lastRecordedSeq: 1, executionContinued: true };
+  h.emitDebug({ rawEvents: prefix, recording, waitingForInput: true });
+  expect(h.manager.current()).toMatchObject({ phase: 'WAITING_FOR_INPUT', support: 'PARTIAL', recording });
+  await h.manager.input(h.manager.current().id, 'late input\n');
+  expect(h.debug.input).toHaveBeenCalledOnce();
+  h.emitDebug({ status: 'exited', terminalStatus: 'complete', exitCode: 0, stdout: 'DONE\n', stderr: 'real stderr\n', waitingForInput: false });
+  expect(h.manager.current()).toMatchObject({ phase: 'COMPLETED', support: 'PARTIAL', exitCode: 0,
+    terminalStatus: 'complete', failureKind: null, stdout: 'DONE\n', stderr: 'real stderr\n', recording, rawEvents: prefix });
+  expect(h.manager.current().supportReason).toContain(recording.reason);
+  expect(h.debug.start).toHaveBeenCalledOnce();
+  expect(h.runs.start).not.toHaveBeenCalled();
+});
+
+test('a real nonzero exit after recording stops remains a runtime failure', async () => {
+  const h = harness();
+  h.manager.start({ projectId: 'p1' });
+  await until(h.manager, (session) => session.phase === 'RUNNING');
+  h.emitDebug({ rawEvents: [observed], recording: { state: 'STOPPED_LIMIT', reason: 'Recording limit reached: events',
+    budget: 'events', lastRecordedSeq: 0, executionContinued: true }, status: 'exited', terminalStatus: 'program_crashed', exitCode: 7 });
+  expect(h.manager.current()).toMatchObject({ phase: 'FAILED', exitCode: 7, failureKind: 'runtime', support: 'PARTIAL' });
+  expect(h.runs.start).not.toHaveBeenCalled();
 });

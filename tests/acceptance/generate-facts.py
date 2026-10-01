@@ -121,7 +121,7 @@ P["acc10-converter-plain"] = dict(id="ACC-10", title="Unit converter REPL: Scann
  F("world","validWorld",C), F("input","eventCount",C,type="CONSOLE_INPUT",min=1), F("output","eventCount",C,type="CONSOLE_WRITE",min=5),
  F("conversions","field",C,className="Converter",field="conversions",includes=[3]),
  F("inputLands","inputDestination","target:P4","R6.3/R7.1/R14.2",min=3,note="stdin -> Scanner.nextDouble -> local amount"),
- F("idleNotKilled","exit","target:P1","R1.4",code=0,stdout=["CONVERSIONS"],note="Idle >= 60 s at the prompt; characterized in tests/characterization/sessionBudgets (X4). Run with stdinDelayMs=60000.",stdinDelayMs=60000)])
+ F("idleNotKilled","exit",C,"R1.4",code=0,stdout=["CONVERSIONS"],note="Idle >= 60 s at the prompt; characterized in tests/characterization/sessionBudgets (X4). Run with stdinDelayMs=60000.",stdinDelayMs=60000)])
 P["acc11-csv-maven"] = dict(id="ACC-11", title="CSV report with a Maven dependency (commons-csv)", renames={
  "RegionTotals":"Ledger7","Bucket":"Bin7","accumulate":"add7","bucketFor":"binFor7","addAmount":"put7","rowsSeen":"rows7","entries":"items7","totals":"ledger8"}, facts=[
  F("exit","exit",C,code=0,stdout=["NORTH 150","SOUTH 100","OTHER 55","ROWS 5"]),
@@ -144,19 +144,19 @@ P["acc12-catalogue-gradle"] = dict(id="ACC-12", title="Library catalogue: four p
 P["acc13-socialgraph-plain"] = dict(id="ACC-13", title="Social graph: 3,000 members, 12,000 follow references, BFS", renames={
  "Member":"Peer7","Follow":"Link7","Network":"Mesh7","generate":"build7","follow":"attach7","degreesFrom":"bfs7","memberNumber":"num7",
  "firstFollow":"head7","nextFollow":"after7","memberCount":"pop7","followCount":"links7","byNumber":"table7"}, facts=[
- F("killedAtIdentityBudget","exit",C,code=86,note="CHARACTERIZATION of audit X2: Recorder halts the JVM at 256 identities (tests/characterization/recorderBudgets)"),
- F("abortedPrefix","eventCount",C,type="PROGRAM_ABORT",min=1,max=1), F("prefixObjects","objects",C,className="Member",min=200,max=256),
- F("completes","exit","target:P1","R1.1-1.2",code=0,stdout=["MEMBERS 3000","FOLLOWS 12000","REACHABLE 2929","FARTHEST 10"]),
- F("allMembers","objects","target:P1","R1/R12",className="Member",min=3000),
- F("allFollows","objects","target:P1","R1/R12",className="Follow",min=12000)])
+ F("partialRecording","recording",C,"R1.1-1.2",state="STOPPED_LIMIT",budget="objects",note="P0 exit86 evidence retained in checkpoint; P1 preserves actual completion and a bounded prefix."),
+ F("observedPrefix","eventCount",C,type="CAPTURE_STOP",min=1,max=1), F("prefixObjects","objects",C,className="Member",min=200,max=256),
+ F("completes","exit",C,"R1.1-1.2",code=0,stdout=["MEMBERS 3000","FOLLOWS 12000","REACHABLE 2929","FARTHEST 10"]),
+ F("allMembers","objects","target:P5","R1/R12",className="Member",min=3000),
+ F("allFollows","objects","target:P5","R1/R12",className="Follow",min=12000)])
 P["acc14-simulator-plain"] = dict(id="ACC-14", title="Discrete-event simulator: hundreds of thousands of events, thousands of invocations", renames={
  "Simulation":"World7","EventHeap":"Agenda7","Counter":"Desk7","seedArrivals":"seed7","runUntilIdle":"drain7","handle":"process7","serve":"work7",
  "push":"add7","pop":"take7","peekTime":"t7","peekCustomer":"c7","peekStage":"s7","earlier":"before7","exchange":"trade7","nextRandom":"rnd7",
  "counters":"desks7","maxQueueDepth":"peak7","busyTime":"busy7","served":"done7","randomState":"seed8"}, facts=[
- F("killedAtEventBudget","exit",C,code=86,note="CHARACTERIZATION of audit X1: Recorder halts the JVM at 20,000 raw events"),
- F("abortedPrefix","eventCount",C,type="PROGRAM_ABORT",min=1,max=1), F("prefixSize","eventCount",C,type="*",min=20000),
- F("completes","exit","target:P1","R1.1-1.2",code=0,stdout=["PROCESSED 2400","MAX_QUEUE 400","CLOCK 5163"]),
- F("largeHistory","eventCount","target:P1","R12/R20",type="*",min=200000), F("manyInvocations","invocations","target:P1","R12/R20",min=5000)])
+ F("partialRecording","recording",C,"R1.1-1.2",state="STOPPED_LIMIT",budget="events",note="P0 exit86 evidence retained in checkpoint; P1 preserves actual completion and a bounded prefix."),
+ F("observedPrefix","eventCount",C,type="CAPTURE_STOP",min=1,max=1), F("prefixSize","eventCount",C,type="*",min=20000),
+ F("completes","exit",C,"R1.1-1.2",code=0,stdout=["PROCESSED 2400","MAX_QUEUE 400","CLOCK 5163"]),
+ F("largeHistory","eventCount","target:P2","R12/R20",type="*",min=200000), F("manyInvocations","invocations","target:P2","R12/R20",min=5000)])
 for name, spec in P.items():
     doc = {"id": spec["id"], "title": spec["title"], "question": Q, "fresh": True,
            "freshness": "Written for acceptance-v12; shares no names, structure or source with Person/factorial/bubble-sort/control demos or v11.5 audit fixtures.",

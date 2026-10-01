@@ -1,5 +1,5 @@
 import type { BuildResult } from '../ide/contracts'
-import type { RawRuntimeEvent, VisualizationTerminalStatus } from '../instrumentation/contracts'
+import type { RecordingStatus, RawRuntimeEvent, VisualizationTerminalStatus } from '../instrumentation/contracts'
 import type { InstrumentationSourceManifest } from '../instrumentation/normalize'
 
 /** Control metadata only. All variables/objects are reconstructed from rawEvents. */
@@ -33,4 +33,9 @@ export interface DebugSession {
   exitCode: number | null
   terminalStatus: VisualizationTerminalStatus | null
   diagnostic: string | null
+  recording?: RecordingStatus
+  waitingForInput?: boolean
+  outputTruncated?: boolean
+  outputArchiveAvailable?: boolean
+  outputArchiveError?: string | null
 }

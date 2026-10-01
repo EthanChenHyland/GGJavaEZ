@@ -7,7 +7,7 @@ export function buildSceneModel(runtime: RuntimeState, layout: LayoutState, deta
   const displayValue = (value: { kind: string; objectId?: string }) => value.kind === 'reference' && value.objectId
     ? `→ #${runtime.objects[value.objectId]?.displayId ?? '?'}` : undefined
   const exception = runtime.exceptions.at(-1)
-  const interrupted = runtime.status === 'aborted' ? runtime.abortReason?.startsWith('program_crashed:') ? 'failed' : 'stopped' : null
+  const interrupted = runtime.status === 'partial' ? 'stopped' : runtime.status === 'aborted' ? runtime.abortReason?.startsWith('program_crashed:') ? 'failed' : 'stopped' : null
   // RuntimeState retains invocation records. Their solids remain at the same
   // anchors as each invocation completes, rather than arriving as a new map
   // only when main exits.
@@ -67,7 +67,7 @@ export function buildSceneModel(runtime: RuntimeState, layout: LayoutState, deta
     }
   }
   for (const edge of getReferences(runtime)) addReference(edge.source, edge.source.slotId, edge.targetObjectId,
-    runtime.status === 'aborted' && edge.source.kind === 'frame')
+    (runtime.status === 'aborted' || runtime.status === 'partial') && edge.source.kind === 'frame')
   for (const frame of Object.values(runtime.frames)) {
     if (frame.status === 'active') continue
     for (const slot of Object.values(frame.locals)) if (slot.value.kind === 'reference') {

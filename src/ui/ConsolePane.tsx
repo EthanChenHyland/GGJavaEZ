@@ -22,7 +22,7 @@ const theme = {
 } as CSSProperties
 
 const statusLabel: Record<RuntimeState['status'], string> = {
-  ready: 'Ready', running: 'In progress', ended: 'Ended', aborted: 'Stopped',
+  ready: 'Ready', running: 'In progress', ended: 'Ended', aborted: 'Stopped', partial: 'Visualization partial',
 }
 
 export function ConsolePane({ entries, activeEventId, status, compact = false }: ConsolePaneProps) {

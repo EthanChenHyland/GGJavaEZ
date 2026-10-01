@@ -2,6 +2,9 @@ import { describe, expect, it } from 'vitest'
 import type { TraceDocument, TraceEvent } from '../contracts/runtime'
 import { applyEvent, createInitialState, seek, validateTrace } from './index'
 import { loadArrayTrace } from '../examples/traces'
+import type { RecordingStatus } from '../instrumentation/contracts'
+import { createLayout } from '../world/layout'
+import { buildSceneModel } from '../world/sceneModel'
 
 const source = { fileId: 'src/Main.java', line: 1 }
 type EventPayload = TraceEvent extends infer E ? E extends TraceEvent ? Omit<E, 'eventId' | 'seq' | 'source' | 'label' | 'importance'> : never : never
@@ -10,6 +13,106 @@ const event = (seq: number, value: EventPayload): TraceEvent => ({
 } as TraceEvent)
 const document = (events: TraceEvent[]): TraceDocument => ({
   schemaVersion: 2, demoId: 'real-test', sourceFiles: [{ fileId: source.fileId, name: 'Main.java', content: 'class Main {}' }], events,
+})
+
+const recording: RecordingStatus = { state: 'STOPPED_LIMIT', reason: 'Event recording budget reached',
+  budget: 'events', lastRecordedSeq: 6, executionContinued: true }
+function partialTrace() {
+  return document([
+    event(0, { type: 'PROGRAM_START' }),
+    event(1, { type: 'ENTER_METHOD', frameId: 'main', callerFrameId: null, className: 'Main', methodName: 'main', locals: [] }),
+    event(2, { type: 'ALLOCATE_OBJECT', objectId: 'object', displayId: 1, className: 'Record', fields: [
+      { id: 'field', name: 'count', javaType: 'int', value: { kind: 'primitive', javaType: 'int', value: 18 } },
+    ] }),
+    event(3, { type: 'DECLARE_LOCAL', frameId: 'main', slot: { id: 'ref', name: 'record', javaType: 'Record', value: { kind: 'uninitialized' } } }),
+    event(4, { type: 'CREATE_REFERENCE', sourceSlot: { kind: 'frame', frameId: 'main', slotId: 'ref' }, targetObjectId: 'object', javaType: 'Record' }),
+    event(5, { type: 'ENTER_METHOD', frameId: 'call', callerFrameId: 'main', className: 'Main', methodName: 'work', locals: [
+      { id: 'count', name: 'count', javaType: 'int', value: { kind: 'primitive', javaType: 'int', value: 7 } },
+    ], returnType: 'int' }),
+    event(6, { type: 'CONSOLE_WRITE', frameId: 'call', channel: 'stdout', text: 'prefix\n' }),
+    { ...event(7, { type: 'CAPTURE_STOP', recording }), source: null },
+  ])
+}
+
+describe('partial recording state and replay', () => {
+  it('preserves frames, locals, heap, references, source and console without an exit or unwind', () => {
+    const trace = validateTrace(partialTrace())
+    const before = seek(trace, trace.events.length - 1)
+    const final = seek(trace, trace.events.length)
+    expect(final).toEqual({ ...before, cursor: trace.events.length, lastEventId: trace.events.at(-1)!.eventId,
+      status: 'partial', recordingStop: recording })
+    expect(final.activeFrameIds).toEqual(['main', 'call'])
+    expect(final.frames.call).toMatchObject({ status: 'active', locals: { count: { value: { value: 7 } } } })
+    expect(final.frames.main.locals.ref.value).toEqual({ kind: 'reference', javaType: 'Record', objectId: 'object' })
+    expect(final.objects.object.fields.field.value).toMatchObject({ value: 18 })
+    expect(final.currentSource).toEqual(source)
+    expect(final.abortReason).toBeNull()
+    expect(final.returns).toEqual([])
+  })
+
+  it('reconstructs the same actual partial state across every backward cursor and shuffled seek path', () => {
+    const trace = validateTrace(partialTrace())
+    const states = [createInitialState()]
+    for (const e of trace.events) states.push(applyEvent(states.at(-1)!, e))
+    for (let i = trace.events.length; i >= 0; i--) expect(seek(trace, i)).toEqual(states[i])
+    for (const i of [8, 0, 5, 8, 2, 7, 1, 8, 4, 3, 6, 8]) expect(seek(trace, i)).toEqual(states[i])
+    expect(states[7].status).toBe('running')
+    expect(states[7].recordingStop).toBeUndefined()
+    const changed = seek(trace, 8)
+    changed.recordingStop!.reason = 'consumer mutation'
+    changed.frames.call.locals.count.value = { kind: 'primitive', javaType: 'int', value: -1 }
+    expect(seek(trace, 8)).toEqual(states[8])
+  })
+
+  it('allows recording to stop between an observed return value and its unobserved exit', () => {
+    const trace = partialTrace()
+    trace.events.splice(7, 1,
+      event(7, { type: 'RETURN_VALUE', frameId: 'call', destination: null, value: { kind: 'primitive', javaType: 'int', value: 42 } }),
+      { ...event(8, { type: 'CAPTURE_STOP', recording: { ...recording, lastRecordedSeq: 7 } }), source: null })
+    const final = seek(validateTrace(trace), trace.events.length)
+    expect(final).toMatchObject({ status: 'partial', activeFrameIds: ['main', 'call'],
+      frames: { call: { status: 'active', returnValue: { value: 42 } } }, returns: [{ value: { value: 42 } }] })
+    expect(final.frames.call.exitedAt).toBeUndefined()
+  })
+
+  it.each(['PROGRAM_END', 'CAPTURE_STOP', 'EXIT_METHOD', 'CONSOLE_WRITE'] as const)('rejects any semantic continuation after a closed prefix: %s', (type) => {
+    const trace = partialTrace()
+    const payload: EventPayload = type === 'CAPTURE_STOP' ? { type, recording }
+      : type === 'EXIT_METHOD' ? { type, frameId: 'call' }
+        : type === 'CONSOLE_WRITE' ? { type, frameId: null, channel: 'stdout', text: 'real console is separate' } : { type }
+    trace.events.push(event(8, payload))
+    expect(() => validateTrace(trace, { allowLive: true })).toThrow('after CAPTURE_STOP')
+  })
+
+  it.each([
+    { state: 'FULL' }, { budget: null }, { lastRecordedSeq: -1 }, { lastRecordedSeq: 0.5 },
+    { reason: null }, { executionContinued: undefined }, { state: 'STOPPED_UNSUPPORTED', budget: 'events' },
+  ])('rejects malformed recording metadata %j', (patch) => {
+    const trace = partialTrace()
+    Object.assign((trace.events.at(-1) as Extract<TraceEvent, { type: 'CAPTURE_STOP' }>).recording = { ...recording }, patch)
+    expect(() => validateTrace(trace)).toThrow('Malformed event')
+  })
+
+  it('keeps CAPTURE_STOP additive to v2 and rejects it in v1', () => {
+    expect(() => validateTrace({ ...partialTrace(), schemaVersion: 1 })).toThrow('Malformed event')
+    const stopped = { ...partialTrace(), events: partialTrace().events.slice(0, 1) }
+    stopped.events.push({ ...event(1, { type: 'CAPTURE_STOP', recording: { ...recording, lastRecordedSeq: null } }), source: null })
+    expect(seek(validateTrace(stopped), 2).status).toBe('partial')
+  })
+
+  it('marks last observed frames and references neutral without changing geometry or data', () => {
+    const trace = validateTrace(partialTrace())
+    const layout = createLayout(trace)
+    const before = buildSceneModel(seek(trace, 7), layout, 'meso')
+    const stopped = buildSceneModel(seek(trace, 8), layout, 'meso')
+    expect(stopped.frames.map(f => f.invocationStatus)).toEqual(['stopped', 'stopped'])
+    expect(stopped.frames.every(f => f.historical && !f.active && f.label.endsWith(' · last recorded'))).toBe(true)
+    expect(stopped.frames.map(f => f.anchor)).toEqual(before.frames.map(f => f.anchor))
+    expect(stopped.frames.map(f => f.slots)).toEqual(before.frames.map(f => f.slots))
+    expect(stopped.objects).toEqual(before.objects)
+    expect(stopped.references).toEqual(before.references.map(r => ({ ...r, historical: true })))
+    expect(stopped.frames.every(f => !f.exceptionState)).toBe(true)
+  })
 })
 
 describe('real trace schema v2', () => {

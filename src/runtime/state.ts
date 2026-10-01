@@ -11,6 +11,19 @@ import type {
   TraceEvent,
 } from '../contracts/runtime'
 import { arrayElementSlotId } from '../contracts/runtime'
+import type { RecordingStatus } from '../instrumentation/contracts'
+
+/** A stopped observer never asserts a Java exit or a later runtime state. */
+export function isRecordingStop(value: unknown): value is RecordingStatus {
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) return false
+  const recording = value as Record<string, unknown>
+  return typeof recording.state === 'string' && ['STOPPED_LIMIT', 'STOPPED_UNSUPPORTED', 'STOPPED_ERROR'].includes(recording.state) &&
+    typeof recording.reason === 'string' && recording.reason.trim().length > 0 &&
+    (recording.budget === null || typeof recording.budget === 'string' && ['objects', 'events', 'bytes', 'live frames'].includes(recording.budget)) &&
+    (recording.state === 'STOPPED_LIMIT' ? recording.budget !== null : recording.budget === null) &&
+    (recording.lastRecordedSeq === null || Number.isSafeInteger(recording.lastRecordedSeq) && (recording.lastRecordedSeq as number) >= 0) &&
+    typeof recording.executionContinued === 'boolean'
+}
 
 export function createInitialState(): RuntimeState {
   return {
@@ -171,6 +184,7 @@ export function applyEvent(state: RuntimeState, event: TraceEvent): RuntimeState
   requireCondition(event.seq === state.cursor, `Expected event seq ${state.cursor}, received ${event.seq}`)
   requireCondition(state.status !== 'ended' && state.status !== 'aborted', state.status === 'ended'
     ? 'Cannot apply an event after PROGRAM_END' : 'Cannot apply an event after PROGRAM_ABORT')
+  requireCondition(state.status !== 'partial', 'Cannot apply an event after CAPTURE_STOP')
   requireCondition(
     state.status !== 'ready' || event.type === 'PROGRAM_START',
     'First event must be PROGRAM_START',
@@ -179,7 +193,8 @@ export function applyEvent(state: RuntimeState, event: TraceEvent): RuntimeState
   let next: RuntimeState = state
   const activeFrameId = state.activeFrameIds.at(-1)
   if (activeFrameId && state.frames[activeFrameId].returnValue !== undefined) {
-    requireCondition(event.type === 'EXIT_METHOD' || event.type === 'RETURN_VALUE',
+    requireCondition(event.type === 'EXIT_METHOD' || event.type === 'RETURN_VALUE' ||
+      event.type === 'CAPTURE_STOP' || event.type === 'PROGRAM_ABORT',
       `Frame ${activeFrameId} must exit after returning a value`)
   }
 
@@ -352,6 +367,12 @@ export function applyEvent(state: RuntimeState, event: TraceEvent): RuntimeState
     case 'PROGRAM_ABORT':
       requireCondition(state.status === 'running', 'Only a running program can abort')
       next = { ...state, status: 'aborted', abortReason: `${event.reason}: ${event.message}` }
+      break
+
+    case 'CAPTURE_STOP':
+      requireCondition(state.status === 'running', 'Only a running recording can stop')
+      requireCondition(isRecordingStop(event.recording), 'Invalid recording stop')
+      next = { ...state, status: 'partial', recordingStop: { ...event.recording } }
       break
 
     case 'LINE_EXECUTE':
@@ -669,7 +690,7 @@ export function applyEvent(state: RuntimeState, event: TraceEvent): RuntimeState
   return {
     ...next,
     cursor: state.cursor + 1,
-    currentSource: event.source ? { ...event.source } : ['PROGRAM_ABORT', 'CONSOLE_WRITE', 'CONSOLE_INPUT'].includes(event.type) ? state.currentSource : null,
+    currentSource: event.source ? { ...event.source } : ['PROGRAM_ABORT', 'CAPTURE_STOP', 'CONSOLE_WRITE', 'CONSOLE_INPUT'].includes(event.type) ? state.currentSource : null,
     lastEventId: event.eventId,
     // Activity describes the current array instruction, not a lingering visual effect.
     arrayActivity: ['ARRAY_READ', 'ARRAY_COMPARE', 'ARRAY_WRITE'].includes(event.type) ? next.arrayActivity : null,

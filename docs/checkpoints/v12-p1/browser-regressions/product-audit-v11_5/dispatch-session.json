@@ -1,0 +1,145 @@
+{
+  "id": "e4cc4ef2-e878-499c-9e49-4aae45ca4cb0",
+  "projectId": "ccac6f9e-9c20-42b0-9dec-9cd692a06377",
+  "phase": "COMPLETED",
+  "support": "PARTIAL",
+  "supportReason": "Some runtime facts are outside verified project coverage",
+  "terminalStatus": "complete",
+  "diagnostic": null,
+  "exitCode": 0,
+  "stdout": "TOTAL 28\n[{\"kind\":\"parcel\",\"charge\":11},{\"kind\":\"express\",\"charge\":17}]\n",
+  "stderr": "",
+  "rawEvents": 123,
+  "invocations": 18,
+  "objects": 3,
+  "rawEventKinds": [
+    "enter",
+    "line",
+    "local",
+    "object",
+    "field",
+    "exit",
+    "branch",
+    "return",
+    "local_end",
+    "console"
+  ],
+  "capability": {
+    "status": "partial",
+    "coveredClasses": [
+      "audit.dispatch.Main",
+      "audit.dispatch.model.AbstractDelivery",
+      "audit.dispatch.model.Delivery",
+      "audit.dispatch.model.ExpressDelivery",
+      "audit.dispatch.model.ParcelDelivery",
+      "audit.dispatch.service.DispatchService"
+    ],
+    "diagnostics": [],
+    "features": {
+      "methods": {
+        "status": "supported",
+        "reason": "Observed project method entry/exit",
+        "observedEvents": 36
+      },
+      "locals": {
+        "status": "partial",
+        "reason": "2 stores lacked debug local metadata",
+        "observedEvents": 12
+      },
+      "objects": {
+        "status": "supported",
+        "reason": "Observed project constructors",
+        "observedEvents": 3
+      },
+      "fields": {
+        "status": "supported",
+        "reason": "Observed instance field writes",
+        "observedEvents": 4
+      },
+      "references": {
+        "status": "supported",
+        "reason": "Observed reference identities",
+        "observedEvents": 3
+      },
+      "intArrays": {
+        "status": "partial",
+        "reason": "No int[] allocations observed in this execution prefix",
+        "observedEvents": 0
+      },
+      "arrayReads": {
+        "status": "partial",
+        "reason": "No array reads observed in this execution prefix",
+        "observedEvents": 0
+      },
+      "arrayWrites": {
+        "status": "partial",
+        "reason": "No array writes observed in this execution prefix",
+        "observedEvents": 0
+      },
+      "sourceMapping": {
+        "status": "partial",
+        "reason": "Recorder lines require source-manifest resolution",
+        "observedEvents": 42
+      },
+      "branches": {
+        "status": "supported",
+        "reason": "Observed conditional outcomes",
+        "observedEvents": 6
+      },
+      "loops": {
+        "status": "partial",
+        "reason": "Branch probes do not establish source-level loop labels",
+        "observedEvents": 6
+      },
+      "scopes": {
+        "status": "partial",
+        "reason": "Lexical scopes are not completely reconstructed",
+        "observedEvents": 6
+      },
+      "returns": {
+        "status": "supported",
+        "reason": "Observed return operands and exits",
+        "observedEvents": 30
+      },
+      "exceptions": {
+        "status": "partial",
+        "reason": "Library/native exception internals are outside project capture",
+        "observedEvents": 0
+      },
+      "console": {
+        "status": "partial",
+        "reason": "Wrapped writes have recorder order; process pipes do not",
+        "observedEvents": 2
+      }
+    }
+  },
+  "javaProject": {
+    "projectId": "ccac6f9e-9c20-42b0-9dec-9cd692a06377",
+    "revision": "e5ddfea4eb5b398ccab7def9ea78edf6f62c6a7e2609551999a8a2bfa618ad19",
+    "buildSystem": "gradle",
+    "status": "ready",
+    "diagnostic": null,
+    "sourceRoots": [
+      "src/main/java"
+    ],
+    "testSourceRoots": [
+      "src/test/java"
+    ],
+    "outputRoots": [
+      "build/classes/java/main",
+      "build/resources/main"
+    ],
+    "dependencies": [
+      {
+        "name": "gson-2.13.2.jar"
+      },
+      {
+        "name": "error_prone_annotations-2.41.0.jar"
+      }
+    ],
+    "runnableTargets": [
+      "audit.dispatch.Main"
+    ],
+    "elapsedMs": 2232
+  }
+}

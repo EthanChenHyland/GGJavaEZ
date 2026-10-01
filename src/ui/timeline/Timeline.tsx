@@ -77,6 +77,9 @@ export function Timeline({ trace, playback, execution }: TimelineProps) {
   const eventCount = hasExecution ? liveCursor : trace.events.length
   const progress = eventCount > 0 ? (cursor / eventCount) * 100 : 0
   const currentEvent = trace.events[cursor - 1]
+  const recordingStopped = trace.events[eventCount - 1]?.type === 'CAPTURE_STOP'
+  const currentLabel = currentEvent?.type === 'CAPTURE_STOP'
+    ? `Last recorded event · ${currentEvent.recording.reason}` : currentEvent?.label ?? 'Ready to run'
   const markers = useMemo(() => markerIndices(hasExecution ? trace.events.slice(0, eventCount) : trace.events, markerLimit), [trace.events, eventCount, hasExecution, markerLimit])
   const theme = {
     '--timeline-panel': colors.panel,
@@ -113,23 +116,23 @@ export function Timeline({ trace, playback, execution }: TimelineProps) {
 
       <div className="vj-timeline__main">
         <div className="vj-timeline__status">
-          {execution && <span className={`vj-timeline__lens vj-timeline__lens--${execution.lens.toLowerCase()}`} title={`${execution.phase.toLowerCase().replaceAll('_', ' ')} · ${execution.lens.toLowerCase()}`}>{execution.lens}</span>}
+          {execution && <span className={`vj-timeline__lens vj-timeline__lens--${execution.lens.toLowerCase()}`} title={`${execution.phase.toLowerCase().replaceAll('_', ' ')} · ${recordingStopped ? 'recording stopped' : execution.lens.toLowerCase()}`}>{recordingStopped && execution.lens === 'LIVE' ? 'LAST RECORDED' : execution.lens}</span>}
           <span className="vj-timeline__count">{cursor} / {eventCount}</span>
-          <span className="vj-timeline__event" aria-live="polite">{currentEvent?.label ?? 'Ready to run'}</span>
-          {execution?.lens === 'HISTORY' && <button className="vj-timeline__return" type="button" onClick={execution.onReturnToLive}>Return to Live <span>{liveCursor}</span></button>}
+          <span className="vj-timeline__event" aria-live="polite">{currentLabel}</span>
+          {execution?.lens === 'HISTORY' && <button className="vj-timeline__return" type="button" onClick={execution.onReturnToLive}>{recordingStopped ? 'Return to last recorded event' : 'Return to Live'} <span>{liveCursor}</span></button>}
         </div>
         <div className="vj-timeline__rail" ref={rail}>
           <input className="vj-timeline__range" type="range" min={0} max={eventCount} step={1} value={cursor}
             onChange={(event) => seekTo(Number(event.currentTarget.value))}
             disabled={eventCount === 0} aria-label="Scrub execution"
-            aria-valuetext={`Event ${cursor} of ${eventCount}: ${currentEvent?.label ?? 'Ready to run'}`}
+            aria-valuetext={`Event ${cursor} of ${eventCount}: ${currentLabel}`}
             style={{ background: `linear-gradient(to right, ${colors.execution} ${progress}%, ${colors.borderStrong} ${progress}%)` }} />
           <div className="vj-timeline__markers" aria-label="Events">
             {markers.map((index) => { const event = trace.events[index]; return (
               <button key={event.eventId} type="button"
                 className={`vj-timeline__marker${cursor === index + 1 ? ' vj-timeline__marker--current' : ''}${event.importance === 'quiet' ? ' vj-timeline__marker--quiet' : ''}${event.importance === 'major' ? ' vj-timeline__marker--major' : ''}${execution && index + 1 === liveCursor ? cursor === liveCursor ? ' vj-timeline__marker--at-live' : ' vj-timeline__marker--live-head' : ''}`}
                 style={{ left: `${((index + 1) / eventCount) * 100}%`, '--marker-color': markerColor(event) } as CSSProperties}
-                onClick={() => seekTo(index + 1)} aria-label={execution && index + 1 === liveCursor ? `Live head at event ${liveCursor}: ${event.label}` : `Go to event ${index + 1}: ${event.label}`} title={event.label} />
+                onClick={() => seekTo(index + 1)} aria-label={execution && index + 1 === liveCursor ? `${recordingStopped ? 'Last recorded event' : 'Live head'} at event ${liveCursor}: ${event.label}` : `Go to event ${index + 1}: ${event.label}`} title={event.label} />
             ) })}
           </div>
         </div>

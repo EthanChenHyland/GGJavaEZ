@@ -81,13 +81,17 @@ test('real control flow records branch bytecodes and locals without inventing so
   expect(Object.values(seek(trace, trace.events.length).frames).some((frame) => Object.values(frame.locals).some((slot) => slot.name === 'sum' && slot.value.value === 2))).toBe(true);
 });
 
-test('multiple project threads are surfaced as unsupported instead of a false complete world', async () => {
+test('multiple project threads stop observation while Java succeeds without a false complete world', async () => {
   const { capture, result, trace } = await recorded({ 'Main.java': 'public class Main { static void work() { int x=1; } public static void main(String[] args) throws Exception { Thread t=new Thread(() -> work()); t.start(); t.join(); } }' });
   expect(capture.status).toBe('complete');
-  expect(capture.capability.status).toBe('unsupported');
-  expect(result.capability.status).toBe('unsupported');
-  expect(trace.events.at(-1)).toMatchObject({ type: 'PROGRAM_ABORT', reason: 'instrumentation_failed' });
-  expect(seek(trace, trace.events.length).status).toBe('aborted');
+  expect(capture.exitCode).toBe(0);
+  expect(capture.stderr).toBe('');
+  expect(capture.recording).toMatchObject({ state: 'STOPPED_UNSUPPORTED', budget: null, executionContinued: true });
+  expect(capture.capability.status).toBe('partial');
+  expect(result.capability.status).toBe('partial');
+  expect(trace.events.at(-1)).toMatchObject({ type: 'CAPTURE_STOP', recording: { state: 'STOPPED_UNSUPPORTED' } });
+  expect(trace.events.some((event) => event.type === 'PROGRAM_END' || event.type === 'PROGRAM_ABORT')).toBe(false);
+  expect(seek(trace, trace.events.length).status).toBe('partial');
 });
 
 test('implicit JVM failure retains an inspectable historical frame after actual unwind', async () => {

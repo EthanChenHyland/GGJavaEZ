@@ -105,6 +105,14 @@ const server = http.createServer(async (request, response) => {
       if (parts[3] === 'command' && method === 'POST') return json(response, 200, await executions.command(id, (await body(request)).command))
       if (parts[3] === 'input' && method === 'POST') return json(response, 200, await executions.input(id, (await body(request)).text))
       if (parts[3] === 'stop' && method === 'POST') { await body(request); return json(response, 200, await executions.stop(id)) }
+      if (parts[3] === 'output' && method === 'GET' && parts.length === 5) {
+        const stream = executions.output(id, parts[4])
+        response.writeHead(200, { 'content-type': 'text/plain; charset=utf-8', 'content-disposition': `attachment; filename="${parts[4]}.txt"`, 'cache-control': 'no-store', 'x-content-type-options': 'nosniff' })
+        stream.on('error', () => response.destroy())
+        response.on('close', () => stream.destroy())
+        stream.pipe(response)
+        return
+      }
       if (parts[3] === 'breakpoints' && method === 'POST') return json(response, 200, await executions.setBreakpoints(id, (await body(request)).breakpoints))
     }
     if (url.pathname === '/api/debug/current' && method === 'GET') return json(response, 200, debuggerSessions.current())
@@ -262,4 +270,4 @@ const server = http.createServer(async (request, response) => {
 })
 
 server.listen(port, '127.0.0.1', () => console.log(`GGJavaEZ bridge listening on http://127.0.0.1:${port}`))
-for (const signal of ['SIGINT', 'SIGTERM']) process.on(signal, async () => { await language.stop(); await debuggerSessions.stop(); await runs.stop(); server.close(); process.exit(0) })
+for (const signal of ['SIGINT', 'SIGTERM']) process.on(signal, async () => { await language.stop(); await debuggerSessions.dispose(); await runs.stop(); server.close(); process.exit(0) })
