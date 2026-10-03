@@ -1,0 +1,480 @@
+{
+  "recordedAt": "2026-10-03T04:23:36.552Z",
+  "results": {
+    "acc01-clinic-maven": {
+      "built": true,
+      "stdout": "VISITS 2\nREVENUE 22500\nISSUED 2\n",
+      "stderr": "",
+      "exitCode": 0,
+      "terminalStatus": "complete",
+      "recording": {
+        "state": "FULL",
+        "reason": null,
+        "budget": null,
+        "lastRecordedSeq": 343,
+        "executionContinued": true
+      },
+      "rawEvents": 344,
+      "semanticEvents": 562,
+      "visualStatus": "ended",
+      "timings": {
+        "buildMs": 3628,
+        "executionMs": 693,
+        "normalizeMs": 13,
+        "deltaBytes": 105969,
+        "rawBatchesHead": 344,
+        "worldMs": 2
+      }
+    },
+    "acc02-shapes-plain": {
+      "built": true,
+      "stdout": "AREAS 12 9\nLABEL shape/polygon4/rectangle/square\nFACTOR 3\n",
+      "stderr": "",
+      "exitCode": 0,
+      "terminalStatus": "complete",
+      "recording": {
+        "state": "FULL",
+        "reason": null,
+        "budget": null,
+        "lastRecordedSeq": 264,
+        "executionContinued": true
+      },
+      "rawEvents": 265,
+      "semanticEvents": 446,
+      "visualStatus": "ended",
+      "timings": {
+        "buildMs": 227,
+        "executionMs": 659,
+        "normalizeMs": 6,
+        "deltaBytes": 75893,
+        "rawBatchesHead": 265,
+        "worldMs": 1
+      }
+    },
+    "acc03-payments-gradle": {
+      "built": true,
+      "stdout": "SETTLED 7477\nROUTES 5\n",
+      "stderr": "",
+      "exitCode": 0,
+      "terminalStatus": "complete",
+      "recording": {
+        "state": "FULL",
+        "reason": null,
+        "budget": null,
+        "lastRecordedSeq": 297,
+        "executionContinued": true
+      },
+      "rawEvents": 298,
+      "semanticEvents": 483,
+      "visualStatus": "ended",
+      "timings": {
+        "buildMs": 3976,
+        "executionMs": 673,
+        "normalizeMs": 7,
+        "deltaBytes": 93775,
+        "rawBatchesHead": 298,
+        "worldMs": 1
+      }
+    },
+    "acc04-seating-plain": {
+      "built": true,
+      "stdout": "REVENUE 60.75\nLARGEST 9007199254740993\nROWS 111\n",
+      "stderr": "",
+      "exitCode": 0,
+      "terminalStatus": "complete",
+      "recording": {
+        "state": "FULL",
+        "reason": null,
+        "budget": null,
+        "lastRecordedSeq": 434,
+        "executionContinued": true
+      },
+      "rawEvents": 435,
+      "semanticEvents": 662,
+      "visualStatus": "ended",
+      "timings": {
+        "buildMs": 205,
+        "executionMs": 673,
+        "normalizeMs": 8,
+        "deltaBytes": 121171,
+        "rawBatchesHead": 435,
+        "worldMs": 1
+      }
+    },
+    "acc05-playlist-plain": {
+      "built": true,
+      "stdout": "TRACKS 3\nLISTENED 559\n",
+      "stderr": "",
+      "exitCode": 0,
+      "terminalStatus": "complete",
+      "recording": {
+        "state": "FULL",
+        "reason": null,
+        "budget": null,
+        "lastRecordedSeq": 270,
+        "executionContinued": true
+      },
+      "rawEvents": 271,
+      "semanticEvents": 432,
+      "visualStatus": "ended",
+      "timings": {
+        "buildMs": 222,
+        "executionMs": 724,
+        "normalizeMs": 6,
+        "deltaBytes": 79404,
+        "rawBatchesHead": 271,
+        "worldMs": 1
+      }
+    },
+    "acc06-wordindex-plain": {
+      "built": true,
+      "stdout": "THE 3\nMISSING 0\nDISTINCT 7\nLENGTHS 3\nFIRST and\n",
+      "stderr": "",
+      "exitCode": 0,
+      "terminalStatus": "complete",
+      "recording": {
+        "state": "FULL",
+        "reason": null,
+        "budget": null,
+        "lastRecordedSeq": 393,
+        "executionContinued": true
+      },
+      "rawEvents": 394,
+      "semanticEvents": 468,
+      "visualStatus": "ended",
+      "timings": {
+        "buildMs": 222,
+        "executionMs": 679,
+        "normalizeMs": 6,
+        "deltaBytes": 127725,
+        "rawBatchesHead": 394,
+        "worldMs": 0
+      }
+    },
+    "acc07-orders-maven": {
+      "built": true,
+      "stdout": "TOTALS 5600 2800\nAUDITED 2\n",
+      "stderr": "",
+      "exitCode": 0,
+      "terminalStatus": "complete",
+      "recording": {
+        "state": "FULL",
+        "reason": null,
+        "budget": null,
+        "lastRecordedSeq": 263,
+        "executionContinued": true
+      },
+      "rawEvents": 264,
+      "semanticEvents": 444,
+      "visualStatus": "ended",
+      "timings": {
+        "buildMs": 3373,
+        "executionMs": 680,
+        "normalizeMs": 6,
+        "deltaBytes": 88191,
+        "rawBatchesHead": 264,
+        "worldMs": 1
+      }
+    },
+    "acc08-maze-plain": {
+      "built": true,
+      "stdout": "SOLVED true\nDEEPEST 41\nBACKTRACKS 16\n",
+      "stderr": "",
+      "exitCode": 0,
+      "terminalStatus": "complete",
+      "recording": {
+        "state": "FULL",
+        "reason": null,
+        "budget": null,
+        "lastRecordedSeq": 2863,
+        "executionContinued": true
+      },
+      "rawEvents": 2864,
+      "semanticEvents": 4051,
+      "visualStatus": "ended",
+      "timings": {
+        "buildMs": 200,
+        "executionMs": 744,
+        "normalizeMs": 58,
+        "deltaBytes": 828647,
+        "rawBatchesHead": 2864,
+        "worldMs": 5
+      }
+    },
+    "acc09-config-plain": {
+      "built": true,
+      "stdout": "RECOVERED non-positive timeout\nRETRY 2\nCLOSED true\n",
+      "stderr": "",
+      "exitCode": 0,
+      "terminalStatus": "complete",
+      "recording": {
+        "state": "FULL",
+        "reason": null,
+        "budget": null,
+        "lastRecordedSeq": 286,
+        "executionContinued": true
+      },
+      "rawEvents": 287,
+      "semanticEvents": 440,
+      "visualStatus": "ended",
+      "timings": {
+        "buildMs": 210,
+        "executionMs": 691,
+        "normalizeMs": 6,
+        "deltaBytes": 84781,
+        "rawBatchesHead": 287,
+        "worldMs": 1
+      }
+    },
+    "acc10-converter-plain": {
+      "built": true,
+      "stdout": "RESULT 6.21\nRESULT 4.827\nRESULT 4.41\nCONVERSIONS 3\n",
+      "stderr": "UNKNOWN lb\n",
+      "exitCode": 0,
+      "terminalStatus": "complete",
+      "recording": {
+        "state": "FULL",
+        "reason": null,
+        "budget": null,
+        "lastRecordedSeq": 263,
+        "executionContinued": true
+      },
+      "rawEvents": 264,
+      "semanticEvents": 354,
+      "visualStatus": "ended",
+      "timings": {
+        "buildMs": 206,
+        "executionMs": 1011,
+        "normalizeMs": 6,
+        "deltaBytes": 77836,
+        "rawBatchesHead": 264,
+        "worldMs": 0
+      }
+    },
+    "acc10-converter-plain:{\"stdinDelayMs\":60000}": {
+      "built": true,
+      "stdout": "RESULT 6.21\nRESULT 4.827\nRESULT 4.41\nCONVERSIONS 3\n",
+      "stderr": "UNKNOWN lb\n",
+      "exitCode": 0,
+      "terminalStatus": "complete",
+      "recording": {
+        "state": "FULL",
+        "reason": null,
+        "budget": null,
+        "lastRecordedSeq": 263,
+        "executionContinued": true
+      },
+      "rawEvents": 264,
+      "semanticEvents": 354,
+      "visualStatus": "ended",
+      "timings": {
+        "buildMs": 210,
+        "executionMs": 60705,
+        "normalizeMs": 7,
+        "deltaBytes": 77623,
+        "rawBatchesHead": 264,
+        "worldMs": 0
+      }
+    },
+    "acc11-csv-maven": {
+      "built": true,
+      "stdout": "NORTH 150\nSOUTH 100\nOTHER 55\nROWS 5\n",
+      "stderr": "",
+      "exitCode": 0,
+      "terminalStatus": "complete",
+      "recording": {
+        "state": "FULL",
+        "reason": null,
+        "budget": null,
+        "lastRecordedSeq": 358,
+        "executionContinued": true
+      },
+      "rawEvents": 359,
+      "semanticEvents": 510,
+      "visualStatus": "ended",
+      "timings": {
+        "buildMs": 3306,
+        "executionMs": 671,
+        "normalizeMs": 7,
+        "deltaBytes": 116906,
+        "rawBatchesHead": 359,
+        "worldMs": 1
+      }
+    },
+    "acc12-catalogue-gradle": {
+      "built": true,
+      "stdout": "FOUND 2004\nCOUNT 3\nREGISTRATIONS 3\n",
+      "stderr": "",
+      "exitCode": 0,
+      "terminalStatus": "complete",
+      "recording": {
+        "state": "FULL",
+        "reason": null,
+        "budget": null,
+        "lastRecordedSeq": 271,
+        "executionContinued": true
+      },
+      "rawEvents": 272,
+      "semanticEvents": 434,
+      "visualStatus": "ended",
+      "timings": {
+        "buildMs": 3583,
+        "executionMs": 648,
+        "normalizeMs": 6,
+        "deltaBytes": 89264,
+        "rawBatchesHead": 272,
+        "worldMs": 1
+      }
+    },
+    "acc13-socialgraph-plain": {
+      "built": true,
+      "stdout": "MEMBERS 3000\nFOLLOWS 12000\nREACHABLE 2929\nFARTHEST 10\n",
+      "stderr": "",
+      "exitCode": 0,
+      "terminalStatus": "complete",
+      "recording": {
+        "state": "STOPPED_LIMIT",
+        "reason": "Recording budget exceeded: objects",
+        "budget": "objects",
+        "lastRecordedSeq": 5381,
+        "executionContinued": true
+      },
+      "rawEvents": 5383,
+      "semanticEvents": 7696,
+      "visualStatus": "partial",
+      "timings": {
+        "buildMs": 198,
+        "executionMs": 803,
+        "normalizeMs": 107,
+        "deltaBytes": 1501648,
+        "rawBatchesHead": 5383,
+        "worldMs": 13
+      }
+    },
+    "acc14-simulator-plain": {
+      "built": true,
+      "stdout": "PROCESSED 2400\nMAX_QUEUE 400\nCLOCK 5163\n",
+      "stderr": "",
+      "exitCode": 0,
+      "terminalStatus": "complete",
+      "recording": {
+        "state": "STOPPED_LIMIT",
+        "reason": "Recording budget exceeded: events",
+        "budget": "events",
+        "lastRecordedSeq": 19999,
+        "executionContinued": true
+      },
+      "rawEvents": 20001,
+      "semanticEvents": 31060,
+      "visualStatus": "partial",
+      "timings": {
+        "buildMs": 208,
+        "executionMs": 1216,
+        "normalizeMs": 429,
+        "deltaBytes": 5759000,
+        "rawBatchesHead": 20001,
+        "worldMs": 459
+      }
+    },
+    "curated:person": {
+      "built": true,
+      "stdout": "",
+      "stderr": "",
+      "exitCode": 0,
+      "terminalStatus": "complete",
+      "recording": {
+        "state": "FULL",
+        "reason": null,
+        "budget": null,
+        "lastRecordedSeq": 29,
+        "executionContinued": true
+      },
+      "rawEvents": 30,
+      "semanticEvents": 52,
+      "visualStatus": "ended",
+      "timings": {
+        "buildMs": 183,
+        "executionMs": 624,
+        "normalizeMs": 1,
+        "deltaBytes": 8448,
+        "rawBatchesHead": 30,
+        "worldMs": 0
+      }
+    },
+    "curated:recursion": {
+      "built": true,
+      "stdout": "120\n",
+      "stderr": "",
+      "exitCode": 0,
+      "terminalStatus": "complete",
+      "recording": {
+        "state": "FULL",
+        "reason": null,
+        "budget": null,
+        "lastRecordedSeq": 48,
+        "executionContinued": true
+      },
+      "rawEvents": 49,
+      "semanticEvents": 76,
+      "visualStatus": "ended",
+      "timings": {
+        "buildMs": 179,
+        "executionMs": 622,
+        "normalizeMs": 1,
+        "deltaBytes": 13218,
+        "rawBatchesHead": 49,
+        "worldMs": 0
+      }
+    },
+    "curated:arrays": {
+      "built": true,
+      "stdout": "",
+      "stderr": "",
+      "exitCode": 0,
+      "terminalStatus": "complete",
+      "recording": {
+        "state": "FULL",
+        "reason": null,
+        "budget": null,
+        "lastRecordedSeq": 178,
+        "executionContinued": true
+      },
+      "rawEvents": 179,
+      "semanticEvents": 263,
+      "visualStatus": "ended",
+      "timings": {
+        "buildMs": 183,
+        "executionMs": 621,
+        "normalizeMs": 2,
+        "deltaBytes": 44647,
+        "rawBatchesHead": 179,
+        "worldMs": 0
+      }
+    },
+    "curated:control": {
+      "built": true,
+      "stdout": "0\n42\n100\n142\n",
+      "stderr": "",
+      "exitCode": 0,
+      "terminalStatus": "complete",
+      "recording": {
+        "state": "FULL",
+        "reason": null,
+        "budget": null,
+        "lastRecordedSeq": 106,
+        "executionContinued": true
+      },
+      "rawEvents": 107,
+      "semanticEvents": 143,
+      "visualStatus": "ended",
+      "timings": {
+        "buildMs": 199,
+        "executionMs": 983,
+        "normalizeMs": 3,
+        "deltaBytes": 28310,
+        "rawBatchesHead": 107,
+        "worldMs": 0
+      }
+    }
+  }
+}

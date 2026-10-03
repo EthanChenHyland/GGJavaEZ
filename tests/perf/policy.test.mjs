@@ -31,5 +31,5 @@ test('bounded batching and checkpoint policy comparison', async()=>{
   checkpoints.push({maxCheckpoints,indexMs,indexedMiB,scrubMs:{p50:pct(jumps,.5),p95:pct(jumps,.95),max:Math.max(...jumps)},stats:history.stats});
   history.dispose();
  }
- await writeFile('docs/checkpoints/v12-p2/policy.json',JSON.stringify({rawEvents:input.rawEvents.length,semanticEvents:events.length,explicitGc:typeof globalThis.gc==='function',batches,checkpoints},null,2)+'\n');
+ await writeFile(`${process.env.VJ_PERF_OUTPUT_ROOT ?? 'docs/checkpoints/v12-p2'}/policy.json`,JSON.stringify({rawEvents:input.rawEvents.length,semanticEvents:events.length,explicitGc:typeof globalThis.gc==='function',batches,checkpoints},null,2)+'\n');
 },60000);

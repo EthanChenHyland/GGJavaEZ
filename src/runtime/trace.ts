@@ -1,4 +1,5 @@
 import type { RuntimeSlot, RuntimeValue, ScalarValue, SlotOwner, TraceDocument, TraceEvent } from '../contracts/runtime'
+import { isExecutionFact } from './executionFactValidation'
 import { isRecordingStop } from './state'
 import type { RuntimeState } from '../contracts/runtime'
 import { historyForTrace } from './history'
@@ -93,7 +94,7 @@ function isEvent(value: unknown, schemaVersion: 1 | 2): value is TraceEvent {
       return isText(value.frameId) && isText(value.loopId) && isIndex(value.iteration) &&
         ['running', 'ended'].includes(String(value.status))
     case 'INPUT_READ':
-      return isText(value.frameId) && isText(value.readerObjectId) && value.method === 'nextInt' &&
+      return isText(value.frameId) && isText(value.readerObjectId) && isText(value.method) &&
         isIndex(value.inputIndex) && isText(value.destinationSlotId) && isInt(value.value) && isText(value.text)
     case 'OUTPUT_WRITE':
       return isText(value.frameId) && isScalar(value.value) && value.value.kind !== 'uninitialized' &&
@@ -103,6 +104,8 @@ function isEvent(value: unknown, schemaVersion: 1 | 2): value is TraceEvent {
         ['stdout', 'stderr'].includes(String(value.channel)) && typeof value.text === 'string'
     case 'CONSOLE_INPUT':
       return schemaVersion === 2 && (value.frameId === null || isText(value.frameId)) && typeof value.text === 'string'
+    case 'EXECUTION_FACT':
+      return schemaVersion === 2 && isRecord(value.fact) && isExecutionFact(value.fact)
     case 'PROGRAM_START':
     case 'PROGRAM_END':
       return true
@@ -121,7 +124,7 @@ function isEvent(value: unknown, schemaVersion: 1 | 2): value is TraceEvent {
         (value.invocationLabel === undefined || isText(value.invocationLabel)) &&
         (value.returnType === undefined || isText(value.returnType))
     case 'RETURN_VALUE':
-      return isText(value.frameId) && isScalar(value.value) && value.value.kind !== 'uninitialized' &&
+      return isText(value.frameId) && (schemaVersion === 2 ? isValue(value.value) : isScalar(value.value)) && (value.value as RuntimeValue).kind !== 'uninitialized' &&
         (value.destination === null || (isRecord(value.destination) &&
           isText(value.destination.frameId) && isText(value.destination.slotId))) &&
         (value.expression === undefined || isText(value.expression))

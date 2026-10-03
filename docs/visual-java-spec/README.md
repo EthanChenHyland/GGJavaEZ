@@ -76,3 +76,7 @@ These are constraints on the world, not a ban on creativity. `CREATIVE_FREEDOM.m
 The newest references in `references/06` through `references/11` are the primary implementation targets for runtime geometry. The intended result is genuine Three.js/R3F space built from coherent extruded rectangular solids with real depth, occlusion, lighting, camera travel, and stable XYZ positions.
 
 The runtime data itself is the architecture. Avoid literal sci-fi cities or decorative game environments.
+
+## Future Spatial 2.0 direction
+
+The root [best.png](../../best.png) is the future visual north star. [The Phase 3 design note](../checkpoints/v12-p3/BEST_REFERENCE.md) states what to emulate and what must remain grounded in execution. Phase 3 supplies semantic provenance; it does not authorize a shell or Spatial rewrite.

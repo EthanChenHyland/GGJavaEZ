@@ -17,8 +17,18 @@ export type RawValue =
   | { kind: 'ref'; objectId: string; className: string }
   | { kind: 'unsupported'; javaType: string }
 
+export type RawOrigin =
+  | { kind: 'unknown' }
+  | { kind: 'local'; slot: number; liveRange?: string }
+  | { kind: 'constant'; value: RawValue }
+  | { kind: 'call_result' | 'field_read' | 'array_read' | 'new'; site: number }
+  | { kind: 'computed'; site: number; opcode: number; inputs: RawOrigin[] }
+
 export interface RawSourceContext {
   v: 1
+  provenanceVersion?: 1
+  origin?: RawOrigin
+  callId?: string
   seq: number
   threadId: string
   type: string
@@ -34,6 +44,11 @@ export interface RawParameter { slot: number; name: string; descriptor: string; 
 export interface RawField { owner: string; name: string; descriptor: string; value: RawValue }
 
 export type RawRuntimeEvent = RawSourceContext & (
+  | { type: 'call'; callId: string; invokeKind: 'static' | 'virtual' | 'interface' | 'special' | 'dynamic'; owner: string; name: string; callDescriptor: string; receiver: RawValue | null; arguments: RawValue[]; argumentOrigins: RawOrigin[]; receiverOrigin: RawOrigin }
+  | { type: 'call_return'; callId: string; value: RawValue; inputText?: string }
+  | { type: 'receiver_ready'; frameId: string; receiver: RawValue }
+  | { type: 'field_read'; frameId: string; objectId: string; owner: string; name: string; descriptor: string; value: RawValue }
+  | { type: 'constructed'; objectId: string; className: string; newSite?: number }
   | { type: 'object'; objectId: string; className: string; fields: RawField[] }
   | { type: 'array'; objectId: string; elementType: 'int'; elements: number[] }
   | { type: 'enter'; frameId: string; callerFrameId: string | null; receiver: RawValue | null; parameters: RawParameter[] }

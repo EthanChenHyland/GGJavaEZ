@@ -12,6 +12,7 @@ import type {
   SlotOwner,
   TraceEvent,
 } from '../contracts/runtime'
+import { applyExecutionFact } from './executionGraph'
 import { arrayElementSlotId } from '../contracts/runtime'
 import type { RecordingStatus } from '../instrumentation/contracts'
 
@@ -237,7 +238,7 @@ export function applyEventWithStorage(state: RuntimeState, event: TraceEvent, st
   let next: RuntimeState = state
   const activeFrameId = state.activeFrameIds.at(-1)
   if (activeFrameId && state.frames[activeFrameId].returnValue !== undefined) {
-    requireCondition(event.type === 'EXIT_METHOD' || event.type === 'RETURN_VALUE' ||
+    requireCondition(event.type === 'EXIT_METHOD' || event.type === 'RETURN_VALUE' || event.type === 'EXECUTION_FACT' ||
       event.type === 'CAPTURE_STOP' || event.type === 'PROGRAM_ABORT',
       `Frame ${activeFrameId} must exit after returning a value`)
   }
@@ -333,18 +334,14 @@ export function applyEventWithStorage(state: RuntimeState, event: TraceEvent, st
       break
     }
 
-    /* eslint-disable visual-java/no-fixture-literals -- KNOWN EXEMPTION (Phase 0, audit D13):
-       INPUT_READ is a curated-only schema-v2 event whose Scanner/nextInt validation belongs to the
-       examples module. Extraction needs the Phase 2 reducer-extension mechanism (tasks 2.1). */
     case 'INPUT_READ': {
       requireCondition(activeFrameId === event.frameId, `Input read outside active frame ${event.frameId}`)
       const reader = state.objects[event.readerObjectId]
-      requireCondition(reader && ['Scanner', 'java.util.Scanner'].includes(reader.className) && !reader.array,
-        'Input reader must be an existing Scanner object')
+      requireCondition(reader && !reader.array,
+        'Input reader must be an existing object')
       requireCondition(Object.values(state.frames[event.frameId].locals).some((slot) =>
-        slot.value.kind === 'reference' && slot.value.objectId === reader.id &&
-        ['Scanner', 'java.util.Scanner'].includes(slot.javaType)), 'Input reader requires a live Scanner reference')
-      requireCondition(event.method === 'nextInt', 'Input method must be nextInt')
+        slot.value.kind === 'reference' && slot.value.objectId === reader.id), 'Input reader requires a live reference')
+      requireCondition(typeof event.method === 'string' && event.method.length > 0, 'Input method must be identified')
       requireCondition(Number.isInteger(event.inputIndex) &&
         event.inputIndex === storage.inputCount(state),
         'Input index must match the zero-based consumed input count')
@@ -360,7 +357,6 @@ export function applyEventWithStorage(state: RuntimeState, event: TraceEvent, st
       break
     }
 
-    /* eslint-enable visual-java/no-fixture-literals */
     case 'OUTPUT_WRITE': {
       requireCondition(activeFrameId === event.frameId, `Output written outside active frame ${event.frameId}`)
       const text = scalarText(event.value)
@@ -398,6 +394,10 @@ export function applyEventWithStorage(state: RuntimeState, event: TraceEvent, st
       }) }
       break
 
+    case 'EXECUTION_FACT':
+      next = { ...state, executionGraph: applyExecutionFact(state.executionGraph, event.fact, event.eventId, storage) }
+      break
+
     case 'PROGRAM_START':
       requireCondition(state.status === 'ready', 'PROGRAM_START can only occur once')
       next = { ...state, status: 'running' }
@@ -410,13 +410,15 @@ export function applyEventWithStorage(state: RuntimeState, event: TraceEvent, st
 
     case 'PROGRAM_ABORT':
       requireCondition(state.status === 'running', 'Only a running program can abort')
-      next = { ...state, status: 'aborted', abortReason: `${event.reason}: ${event.message}` }
+      next = { ...state, status: 'aborted', abortReason: `${event.reason}: ${event.message}`,
+        ...(state.executionGraph ? { executionGraph: { ...state.executionGraph, observationEndedAt: event.eventId } } : {}) }
       break
 
     case 'CAPTURE_STOP':
       requireCondition(state.status === 'running', 'Only a running recording can stop')
       requireCondition(isRecordingStop(event.recording), 'Invalid recording stop')
-      next = { ...state, status: 'partial', recordingStop: { ...event.recording } }
+      next = { ...state, status: 'partial', recordingStop: { ...event.recording },
+        ...(state.executionGraph ? { executionGraph: { ...state.executionGraph, observationEndedAt: event.eventId } } : {}) }
       break
 
     case 'LINE_EXECUTE':
@@ -448,7 +450,7 @@ export function applyEventWithStorage(state: RuntimeState, event: TraceEvent, st
     case 'EXIT_METHOD': {
       requireCondition(activeFrameId === event.frameId, `Method return is not top of stack: ${event.frameId}`)
       const frame = state.frames[event.frameId]
-      requireCondition(!frame.returnType || frame.returnType === 'void' || frame.returnValue !== undefined,
+      requireCondition(!frame.returnType || frame.returnType === 'void' || frame.returnValue !== undefined || state.executionGraph?.invocations[frame.id]?.returnValueId !== undefined,
         `Non-void frame ${event.frameId} must return a value before exit`)
       requireCondition(storage.loops(state, frame.id).length === 0 ||
         frame.returnValue !== undefined, 'Running loop must terminate before method exit')

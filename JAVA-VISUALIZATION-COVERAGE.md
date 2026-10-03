@@ -1,4 +1,26 @@
-# Java visualization coverage — Milestone 11.5
+# Java visualization coverage
+
+## Current semantic foundation — v12 Phase 3
+
+The user-scoped Phase 3 adds a renderer-independent ExecutionGraph to the existing pure reducer and incremental history. It does not broaden every Java value/library type or redesign Spatial. The historical Milestone 11.5 matrix below records the earlier audit; this section supersedes its call/return, inheritance, dispatch and provenance limitations.
+
+| Area | Current observed semantics and boundary |
+| --- | --- |
+| Constructors | True entry before `super`/`this`, distinct invocation tokens, actual nested call chain, null receiver until successful initialization, then stable `this` identity. Verifier-safe reconciliation preserves observed pre-super exceptional unwinds. |
+| Call sites and dispatch | Original bytecode site, declared owner/name/full descriptor, actual receiver and operands, matched entered project implementation. Static/special, overload, interface/default and recursive calls retain distinct identities. Library callbacks expose an observed ancestor separately when their direct caller is unobserved. |
+| Values and bindings | Distinct immutable observed/literal/computed/unknown value versions; exact slot/live-range identity for direct loads. Actual argument/parameter and receiver/this bindings. Bytecode merges, temporal operand ambiguity and unsupported recipes stay unknown. |
+| Returns | Supported primitive, project reference and null returns have actual destinations when bytecode proves a local, field, array cell, argument or computation. Reference returns reuse the actual object; null creates no object. Unsupported results remain unavailable, while actual completion is retained. |
+| Reads and writes | Project instance-field reads/writes, observed local stores/aliases and existing `int[]` reads/writes carry producer evidence. Initial reflected fields are observations, with no invented writer. Static/reflective/library mutations and broad array types remain outside this model. |
+| Input/output | Wrapped stdin bytes are distinct from successfully consumed Scanner values and their actual lexemes. Consumption is linked only after a successful operation. stdout/stderr graph nodes retain actual operation/site and emitted text; formatting operands are not invented. Console remains canonical and complete after observer limits. Other input-library parsers have no token-consumption adapter yet. |
+| Exceptions and partial traces | Observed throw object/site, failed call, invocation unwind and catch edges are indexed. A stopped prefix marks open invocations as observation-ended, with no fabricated return/final write. Library internals, cause/suppressed details and unobserved origins remain incomplete. |
+| Motion | Generic motion consumes proven graph edges. Equal names, equal values and nearby source lines no longer establish generic value flow. Unsupported source geometry stays destination-only. |
+| History/performance | Graph facts use existing persistent maps/vectors, append-only deltas and bounded checkpoints. No whole-prefix graph rebuild on append. Phase 3 measurements, regression gates and limitations are recorded in [the checkpoint](docs/checkpoints/v12-p3/VALIDATION.md) and [performance report](docs/checkpoints/v12-p3/PERFORMANCE.md). |
+
+Evidence: [graph contract](src/contracts/executionGraph.ts), [semantic graph reducer and queries](src/runtime/executionGraph.ts), [normalizer](src/instrumentation/provenance.ts), [real-JVM fixtures and graph assertions](tests/provenance/real-jvm.test.mjs), [constructor verifier tests](server/phase3-constructor.test.mjs), [ADR-013](docs/architecture/ADR-013-truthful-invocations-and-provenance.md).
+
+The root [best.png](best.png) remains tracked intentionally and is documented as the future Spatial north star in [BEST_REFERENCE.md](docs/checkpoints/v12-p3/BEST_REFERENCE.md). Every future arrow must be explainable by execution evidence. Broader arrays/statics/library state, concurrency and Spatial 2.0 remain separate work.
+
+## Historical Milestone 11.5 audit
 
 **Current execution integrity: v12 Phase 1.** Recorder capacity and Java process completion are separate. The observer stops at the existing budgets while the same JVM continues with actual console/input and exit status. A stopped world represents only its last recorded state. See [Phase 1 contract](docs/checkpoints/v12-p1/CONTRACT.md) and [validation](docs/checkpoints/v12-p1/VALIDATION.md). Older milestone evidence below remains historical.
 

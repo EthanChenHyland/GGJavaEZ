@@ -1,0 +1,147 @@
+{
+  "id": "9bb0a33e-fb61-4935-80e9-0e2b96630f6d",
+  "projectId": "1ff30923-dbf0-48fc-bf68-4334c70565eb",
+  "phase": "COMPLETED",
+  "support": "PARTIAL",
+  "supportReason": "Recording budget exceeded: events. Visualization ends at raw event 19999; Java completed separately with exit code 0.",
+  "terminalStatus": "complete",
+  "diagnostic": null,
+  "exitCode": 0,
+  "stdout": "GRAPH nodes=128 map=128 list=128\nRECURSIVE_SUM 120\nCHECKSUM 69089\nCAUGHT 1\n",
+  "stderr": "",
+  "rawEvents": 20001,
+  "invocations": 1649,
+  "objects": 136,
+  "rawEventKinds": [
+    "enter",
+    "line",
+    "call",
+    "object",
+    "call_return",
+    "receiver_ready",
+    "exit",
+    "constructed",
+    "local",
+    "branch",
+    "field",
+    "local_end",
+    "return",
+    "field_read",
+    "throw",
+    "unwind",
+    "catch",
+    "capture_saturated"
+  ],
+  "capability": {
+    "status": "partial",
+    "coveredClasses": [
+      "Graph",
+      "GraphBuilder",
+      "GraphMetrics",
+      "Main",
+      "Node",
+      "StageFive",
+      "StageFour",
+      "StageOne",
+      "StageThree",
+      "StageTwo"
+    ],
+    "diagnostics": [
+      "Recording budget exceeded: events"
+    ],
+    "features": {
+      "methods": {
+        "status": "supported",
+        "reason": "Observed project method entry/exit",
+        "observedEvents": 3289
+      },
+      "locals": {
+        "status": "supported",
+        "reason": "Debug local stores and parameters available",
+        "observedEvents": 1290
+      },
+      "objects": {
+        "status": "supported",
+        "reason": "Observed project constructors",
+        "observedEvents": 136
+      },
+      "fields": {
+        "status": "supported",
+        "reason": "Observed instance field writes",
+        "observedEvents": 392
+      },
+      "references": {
+        "status": "supported",
+        "reason": "Observed reference identities",
+        "observedEvents": 136
+      },
+      "intArrays": {
+        "status": "partial",
+        "reason": "No int[] allocations observed in this execution prefix",
+        "observedEvents": 0
+      },
+      "arrayReads": {
+        "status": "partial",
+        "reason": "No array reads observed in this execution prefix",
+        "observedEvents": 0
+      },
+      "arrayWrites": {
+        "status": "partial",
+        "reason": "No array writes observed in this execution prefix",
+        "observedEvents": 0
+      },
+      "sourceMapping": {
+        "status": "partial",
+        "reason": "Recorder lines require source-manifest resolution",
+        "observedEvents": 4157
+      },
+      "branches": {
+        "status": "supported",
+        "reason": "Observed conditional outcomes",
+        "observedEvents": 872
+      },
+      "loops": {
+        "status": "partial",
+        "reason": "Branch probes do not establish source-level loop labels",
+        "observedEvents": 872
+      },
+      "scopes": {
+        "status": "partial",
+        "reason": "Lexical scopes are not completely reconstructed",
+        "observedEvents": 428
+      },
+      "returns": {
+        "status": "supported",
+        "reason": "Observed return operands and exits",
+        "observedEvents": 3144
+      },
+      "exceptions": {
+        "status": "partial",
+        "reason": "Library/native exception internals are outside project capture",
+        "observedEvents": 6
+      },
+      "console": {
+        "status": "partial",
+        "reason": "Wrapped writes have recorder order; process pipes do not",
+        "observedEvents": 0
+      }
+    }
+  },
+  "javaProject": {
+    "projectId": "1ff30923-dbf0-48fc-bf68-4334c70565eb",
+    "revision": "1ea0346eaa315333040314aa4015083da562d3fa7ba6477df70aea7de71c84ae",
+    "buildSystem": "plain",
+    "status": "ready",
+    "diagnostic": null,
+    "sourceRoots": [
+      "."
+    ],
+    "testSourceRoots": [],
+    "outputRoots": [],
+    "dependencies": [],
+    "runnableTargets": [
+      "Main"
+    ],
+    "elapsedMs": 66
+  }
+}

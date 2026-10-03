@@ -273,7 +273,14 @@ test('nested propagation seeks real unwind states in Classic and Spatial', async
   expect(trace.events.filter((event) => event.type === 'UNWIND_EXCEPTION')).toHaveLength(3)
   await panel.getByRole('button', { name: 'Return to failure', exact: true }).click()
   const slider = page.getByRole('slider', { name: 'Scrub execution' })
-  const crash = String(trace.events.findIndex((event) => event.type === 'THROW_EXCEPTION') + 1)
+  const throwIndex = trace.events.findIndex((event) => event.type === 'THROW_EXCEPTION')
+  const throwEvent = trace.events[throwIndex]
+  expect(throwEvent.type).toBe('THROW_EXCEPTION')
+  if (throwEvent.type !== 'THROW_EXCEPTION') throw new Error('Missing actual throw')
+  expect(trace.events[throwIndex + 1]).toMatchObject({ type: 'EXECUTION_FACT', fact: {
+    kind: 'throw', exceptionId: throwEvent.exceptionId, invocationId: throwEvent.frameId,
+  } })
+  const crash = String(throwIndex + 2)
   await expect(slider).toHaveValue(crash)
   await page.getByRole('button', { name: 'Classic', exact: true }).click()
   await expect(page.locator('.classic-runtime')).toContainText('b()')
@@ -326,6 +333,13 @@ for (const fixture of ['caught', 'finally'] as const) {
     await expect(panel.locator('.debug-eyebrow')).toContainText('CAUGHT')
     await expect(panel.locator('.exception-path button').filter({ hasText: /^Catch/ })).toHaveCount(1)
     const catchIndex = trace.events.findIndex((event) => event.type === 'CATCH_EXCEPTION')
+    const catchEvent = trace.events[catchIndex]
+    expect(catchEvent.type).toBe('CATCH_EXCEPTION')
+    if (catchEvent.type !== 'CATCH_EXCEPTION') throw new Error('Missing actual catch')
+    expect(trace.events[catchIndex + 1]).toMatchObject({ type: 'EXECUTION_FACT', fact: {
+      kind: 'catch', exceptionId: catchEvent.exceptionId, invocationId: catchEvent.frameId,
+    } })
+    const catchCursor = String(catchIndex + 2)
     if (fixture === 'finally') {
       const handlerIndex = trace.events.findIndex((event) => event.type === 'FINALLY_ENTER')
       const unwindIndex = trace.events.findIndex((event) => event.type === 'UNWIND_EXCEPTION')
@@ -335,13 +349,13 @@ for (const fixture of ['caught', 'finally'] as const) {
       await expect(panel.locator('.exception-path button').filter({ hasText: /^Finally/ })).toHaveCount(1)
     }
     await panel.locator('.exception-path button').filter({ hasText: /^Catch/ }).click()
-    await expect(slider).toHaveValue(String(catchIndex + 1))
+    await expect(slider).toHaveValue(catchCursor)
     await expect(panel.locator('.error-stack')).toContainText('caught here')
     await page.getByRole('button', { name: 'Classic', exact: true }).click()
     await expect(page.locator('.classic-runtime')).toContainText('main()')
     await expect(page.locator('.classic-runtime [data-exception-state="caught"]')).toHaveCount(1)
     await page.getByRole('button', { name: 'Spatial', exact: true }).click()
-    await expect(slider).toHaveValue(String(catchIndex + 1))
+    await expect(slider).toHaveValue(catchCursor)
     await slider.fill(String(trace.events.length))
     await page.getByRole('button', { name: 'CONSOLE', exact: true }).click()
     await expect(page.locator('.ide-console-output')).toContainText('continued')

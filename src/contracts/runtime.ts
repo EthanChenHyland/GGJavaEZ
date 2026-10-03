@@ -1,3 +1,4 @@
+import type { ExecutionFact, ExecutionGraph } from './executionGraph'
 import type { RecordingStatus } from '../instrumentation/contracts'
 
 /** Trace and runtime truth. No positions, camera state, or animation state belong here. */
@@ -41,14 +42,14 @@ export interface RuntimeFrame {
   exitedAt?: EventId
   invocationLabel?: string
   returnType?: string
-  returnValue?: ScalarValue
+  returnValue?: RuntimeValue
 }
 
 export interface ReturnTransfer {
   eventId: EventId
   frameId: FrameId
   destination: { frameId: FrameId; slotId: SlotId } | null
-  value: ScalarValue
+  value: RuntimeValue
   expression?: string
 }
 
@@ -179,6 +180,7 @@ export interface RuntimeState {
   branch: RuntimeBranchFact | null
   abortReason: string | null
   recordingStop?: RecordingStatus
+  executionGraph?: ExecutionGraph
 }
 
 export type SlotOwner =
@@ -200,10 +202,11 @@ export type TraceEvent = TraceEventBase & (
   | { type: 'EXIT_SCOPE'; frameId: FrameId; scopeId: ScopeId }
   | ({ type: 'EVALUATE_CONDITION' } & Omit<RuntimeCondition, 'eventId'>)
   | ({ type: 'LOOP_ITERATION' } & Omit<RuntimeLoop, 'eventId'>)
-  | { type: 'INPUT_READ'; frameId: FrameId; readerObjectId: ObjectId; method: 'nextInt'; inputIndex: number; destinationSlotId: SlotId; value: ScalarValue; text: string }
+  | { type: 'INPUT_READ'; frameId: FrameId; readerObjectId: ObjectId; method: string; inputIndex: number; destinationSlotId: SlotId; value: ScalarValue; text: string }
   | { type: 'OUTPUT_WRITE'; frameId: FrameId; value: ScalarValue; text: string; originSlotId?: SlotId }
   | { type: 'CONSOLE_WRITE'; frameId: FrameId | null; channel: 'stdout' | 'stderr'; text: string }
   | { type: 'CONSOLE_INPUT'; frameId: FrameId | null; text: string }
+  | { type: 'EXECUTION_FACT'; fact: ExecutionFact }
   | { type: 'PROGRAM_START' }
   | { type: 'PROGRAM_END' }
   | { type: 'CAPTURE_STOP'; recording: RecordingStatus }
@@ -211,7 +214,7 @@ export type TraceEvent = TraceEventBase & (
   | { type: 'LINE_EXECUTE'; frameId: FrameId }
   | { type: 'ENTER_METHOD'; frameId: FrameId; callerFrameId: FrameId | null; className: string; methodName: string; locals: RuntimeSlot[]; invocationLabel?: string; returnType?: string }
   | { type: 'EXIT_METHOD'; frameId: FrameId }
-  | { type: 'RETURN_VALUE'; frameId: FrameId; value: ScalarValue; destination: ReturnTransfer['destination']; expression?: string }
+  | { type: 'RETURN_VALUE'; frameId: FrameId; value: RuntimeValue; destination: ReturnTransfer['destination']; expression?: string }
   | { type: 'DECLARE_LOCAL'; frameId: FrameId; slot: RuntimeSlot }
   | { type: 'REMOVE_LOCAL'; frameId: FrameId; slotId: SlotId }
   | { type: 'ALLOCATE_ARRAY'; objectId: ObjectId; displayId: number; elementType: 'int'; elements: ScalarValue[] }

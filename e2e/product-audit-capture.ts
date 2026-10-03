@@ -9,7 +9,10 @@ export async function inspectRetainedWorld(page: Page, request: APIRequestContex
   await page.addInitScript(id => localStorage.setItem('ggjavaez:project', id), current.projectId)
   await page.goto('/ide')
   const picker = page.getByRole('combobox', { name: 'Select runtime entity' })
-  await expect(picker).toContainText('main() · completed', { timeout: 60000 })
+  const partial = current.recording && current.recording.state !== 'FULL'
+  expect(current.exitCode).toBe(0)
+  await expect(picker).toContainText(partial ? 'main() · last recorded' : 'main() · completed', { timeout: 60000 })
+  if (partial) await expect(page.locator('.vj-timeline__event')).toContainText('Last recorded event')
   const loadMs = Date.now() - started
   console.log('retained-load-ms', loadMs)
   await page.getByRole('button', { name: 'Overview', exact: true }).click()
@@ -29,7 +32,7 @@ export async function inspectRetainedWorld(page: Page, request: APIRequestContex
     await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))))
     timings.push({ cursor, uiCommitAndTwoFramesMs:Date.now() - start })
   }
-  await writeFile(`${outputRoot}/large-world-measurements.json`, JSON.stringify({ sessionId:current.id, loadMs, normalizedEvents:max, rawEvents:current.rawEvents.length, timings, metric:'UI commit plus two browser animation frames; not GPU presentation or percentile statistics' }, null, 2))
+  await writeFile(`${outputRoot}/large-world-measurements.json`, JSON.stringify({ sessionId:current.id, loadMs, normalizedEvents:max, rawEvents:current.rawEvents.length, recording:current.recording, timings, metric:'UI commit plus two browser animation frames; not GPU presentation or percentile statistics' }, null, 2))
   const selected = await picker.locator('option').filter({ hasText: /^Node #/ }).first().getAttribute('value')
   expect(selected).toBeTruthy()
   await picker.selectOption(selected!)
@@ -43,7 +46,12 @@ export async function inspectRetainedWorld(page: Page, request: APIRequestContex
   await page.getByRole('button', { name:'Return to world', exact:true }).click()
   await expect(page.locator('.world-label').filter({ hasText:'ISOLATED' })).toHaveCount(0)
   // Promote an archived deep invocation without changing runtime identity.
-  const recursive = await picker.locator('option').filter({ hasText:/^recursiveSum\(\).* · invocation \d+$/ }).last().getAttribute('value')
+  const recursiveOptions = picker.locator('option').filter({ hasText: /^recursiveSum\(\).* · completed · invocation \d+$/ })
+  // A stopped prefix may never reach the later recursive call. Promote an
+  // actual completed invocation; never require unobserved execution geometry.
+  const archived = await recursiveOptions.count() ? recursiveOptions.last()
+    : picker.locator('option').filter({ hasText: / · completed · invocation \d+$/ }).last()
+  const recursive = await archived.getAttribute('value')
   expect(recursive).toBeTruthy()
   await picker.selectOption(recursive!)
   await page.getByRole('complementary', { name:'Runtime inspector' }).getByRole('button', { name:'Focus', exact:true }).click()

@@ -22,7 +22,7 @@ export function renamer(renames) {
   if (!keys.length) return (text) => text;
   const alternatives = keys.join('|');
   // Default-package JVM descriptors (LShape; / [LShape;) carry the class name after an L.
-  const descriptor = new RegExp(`(?<!${IDENT})L(${alternatives});`, 'g');
+  const descriptor = new RegExp(`L(${alternatives});`, 'g');
   const plain = new RegExp(`(?<!${IDENT})(${alternatives})(?!${IDENT})`, 'g');
   return (text) => text.replace(descriptor, (_whole, key) => `L${renames[key]};`).replace(plain, (key) => renames[key]);
 }
@@ -79,7 +79,7 @@ export async function makeVariant(projectDir, kind, outDir, renames) {
  */
 export function worldSignature(run, { stripLines = false } = {}) {
   const events = run.trace.events.map(({ eventId: _e, seq: _s, threadId: _t, source, label, ...rest }) => ({
-    ...rest, source: source ? { fileId: source.fileId, ...(stripLines ? {} : { line: source.line }) } : null,
+    ...rest, ...(rest.type === 'EXECUTION_FACT' && stripLines ? { fact: { ...rest.fact, context: { ...rest.fact.context, source: rest.fact.context.source ? { fileId: rest.fact.context.source.fileId } : null } } } : {}), source: source ? { fileId: source.fileId, ...(stripLines ? {} : { line: source.line }) } : null,
     label: stripLines && /^Line \d+$/.test(label) ? 'Line' : label,
   }));
   const frames = run.scene.frames.map((frame) => ({ id: frame.id, label: frame.label, status: frame.invocationStatus, slots: frame.slots.map((slot) => [slot.id, slot.name, slot.javaType, slot.value]) }));

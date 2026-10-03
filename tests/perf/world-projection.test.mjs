@@ -22,6 +22,6 @@ test('large array projection preserves the batch geometry oracle',async()=>{
  const [layout,incrementalLayoutMs]=timed(()=>{const builder=createLayoutBuilder();builder.append(events);return builder.state});
  const [scene,sceneMs]=timed(()=>buildSceneModel(history.state,layout,'meso'));
  expect(layout).toEqual(batch);
- await writeFile('docs/checkpoints/v12-p2/projection.json',JSON.stringify({semanticEvents:events.length,indexMs,batchLayoutMs,incrementalLayoutMs,sceneMs,frames:scene.frames.length,objects:scene.objects.length,anchors:Object.keys(layout.anchors).length},null,2)+'\n');
+ await writeFile(`${process.env.VJ_PERF_OUTPUT_ROOT ?? 'docs/checkpoints/v12-p2'}/projection.json`,JSON.stringify({semanticEvents:events.length,indexMs,batchLayoutMs,incrementalLayoutMs,sceneMs,frames:scene.frames.length,objects:scene.objects.length,anchors:Object.keys(layout.anchors).length},null,2)+'\n');
  history.dispose();
 },60000);

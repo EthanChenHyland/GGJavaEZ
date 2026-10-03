@@ -132,7 +132,7 @@
   {
    "id": "invoiceReturn",
    "kind": "referenceReturn",
-   "status": "target:P3",
+   "status": "current",
    "requirement": "R5.3",
    "method": "clinic.Scheduler.billFor"
   },
@@ -149,14 +149,14 @@
   {
    "id": "returnLands",
    "kind": "returnDestination",
-   "status": "target:P4",
+   "status": "current",
    "requirement": "R6.4",
    "min": 1
   },
   {
    "id": "argumentOrigins",
    "kind": "parameterOrigin",
-   "status": "target:P4",
+   "status": "current",
    "requirement": "R6.5",
    "min": 5
   }

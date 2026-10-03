@@ -79,7 +79,7 @@
    {
     "id": "returnLands",
     "kind": "returnDestination",
-    "status": "target:P4",
+    "status": "current",
     "requirement": "R6.4",
     "min": 5
    }
@@ -178,7 +178,7 @@
    {
     "id": "inputLands",
     "kind": "inputDestination",
-    "status": "target:P4",
+    "status": "current",
     "requirement": "R6.3/R14.2",
     "min": 3
    }

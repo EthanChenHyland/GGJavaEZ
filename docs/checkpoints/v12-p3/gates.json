@@ -1,0 +1,109 @@
+{
+  "recordedAt": "2026-10-03T04:42:16.066758+00:00",
+  "scope": "User-scoped Phase 3 \u2014 Truthful Execution Graph + Value Provenance",
+  "branch": "kiro-runtime-audit",
+  "base": "d2dbedd",
+  "status": "passed",
+  "workloadsSerialized": true,
+  "environment": {
+    "node": "v24.20.0",
+    "cpu": "Apple M4 Pro",
+    "memoryGiB": 24
+  },
+  "unitIntegration": {
+    "command": "VJ_PHASE3_JVM=1 npm test",
+    "filesPassed": 84,
+    "testsPassed": 918,
+    "failed": 0,
+    "skipped": 0,
+    "durationSeconds": 130.32,
+    "includes": "Phase 1 transparency, Phase 2 incremental/equivalence/history, Phase 3 real-JVM and graph tests"
+  },
+  "acceptance": {
+    "command": "npm run test:acceptance (explicit provisioned Maven/Gradle paths and Phase 3 report destination)",
+    "passed": 177,
+    "expectedFailures": 18,
+    "total": 195,
+    "unexpectedFailures": 0,
+    "durationSeconds": 160.85,
+    "report": "acceptance-results.json"
+  },
+  "phase2PerformanceRegression": {
+    "passed": 4,
+    "failed": 0,
+    "durationSeconds": 25.24,
+    "reports": "phase2-regression/"
+  },
+  "pairedRichPerformance": {
+    "passed": 1,
+    "failed": 0,
+    "durationSeconds": 5.18,
+    "report": "performance.json",
+    "explicitGc": true
+  },
+  "realJvmPerformance": {
+    "passed": 1,
+    "failed": 0,
+    "durationSeconds": 2.78,
+    "report": "real-jvm-performance.json",
+    "explicitGc": true
+  },
+  "typecheck": {
+    "command": "npm run typecheck",
+    "exitCode": 0
+  },
+  "lint": {
+    "command": "npm run lint",
+    "exitCode": 0
+  },
+  "build": {
+    "command": "npm run build",
+    "exitCode": 0,
+    "warnings": [
+      "Existing large bundled chunks",
+      "Troika also imported statically through Drei; prewarm import does not split that module"
+    ]
+  },
+  "browser": {
+    "command": "VJ_QA_OUTPUT_ROOT=docs/checkpoints/v12-p3 npm run test:e2e",
+    "passed": 90,
+    "failed": 0,
+    "skipped": 0,
+    "durationDisplay": "7.9m",
+    "workers": 1,
+    "retries": 0,
+    "convergence": "Final complete run after migrating three exception cursor assertions to their exact paired throw/catch graph fact. Earlier full run had 87 passes and these three stale assertions; final run includes every test."
+  },
+  "jdk": {
+    "actualRuntimeTested": "OpenJDK 26.0.2.1",
+    "classFileReleasesCompiledAndVerifiedOnActualRuntime": [
+      17,
+      21,
+      25
+    ],
+    "actualRuntimeVersionsUnavailableAndNotTested": [
+      17,
+      21,
+      25
+    ]
+  },
+  "visualQa": {
+    "manifest": "screenshots.json",
+    "captures": 89,
+    "manuallyReviewed": 13,
+    "originalSizeReview": true,
+    "fullSpatialRewrite": false
+  },
+  "preservedInvariants": [
+    "One application JVM per Run",
+    "Observer limits do not kill Java",
+    "Complete canonical process Console after observer stops",
+    "Incremental deltas/normalization/validation",
+    "Structurally shared append-only history with bounded roots",
+    "LIVE/HISTORY and head lookup",
+    "Stable runtime identity and XYZ anchors",
+    "Retained completed world",
+    "User camera override and Focus persistence"
+  ],
+  "knownLimits": "See VALIDATION.md remaining boundaries and PERFORMANCE.md. Actual JDK 17/21/25 runtimes, broader Java coverage, enriched million-event/GPU capacity and Spatial 2.0 are not claimed."
+}

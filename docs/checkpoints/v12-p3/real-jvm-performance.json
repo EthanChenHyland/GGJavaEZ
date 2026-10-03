@@ -1,0 +1,72 @@
+{
+  "explicitGc": true,
+  "note": "One actual application JVM per fixture run; all workloads serial. End-to-end includes javac, helper preparation and Java. normalizationMs times accepted raw batches plus terminal graph/history normalization only. Retained heap samples include trace/history/graph and returned metadata, not isolated graph bytes; without explicit GC they include transient allocation. Scrub samples measure synchronous seeks, no browser/GPU. Production caps unchanged.",
+  "samples": [
+    {
+      "fixture": "flows",
+      "jdk": "26.0.2.1",
+      "actualExitCode": 0,
+      "stdout": "42\n42\n12\n42\n43\n10\n28\n",
+      "recording": "FULL",
+      "endToEndMs": 916.2167919999999,
+      "normalizationMs": 8.614417000000003,
+      "semanticEvents": 334,
+      "rawEvents": 206,
+      "history": {
+        "length": 334,
+        "checkpointCount": 2,
+        "checkpointInterval": 256,
+        "maxCheckpoints": 256,
+        "cachedMaterializationCount": 0,
+        "cachedMaterializationCursor": null,
+        "retainedStateRoots": 3,
+        "replayedEvents": 0
+      },
+      "retainedMiB": 3.05523681640625,
+      "graph": {
+        "invocations": 20,
+        "calls": 27,
+        "values": 80,
+        "edges": 235
+      },
+      "scrubMs": {
+        "p50": 0.5685419999999795,
+        "p95": 2.6264169999999467,
+        "max": 2.8467500000001564
+      }
+    },
+    {
+      "fixture": "call-tree",
+      "jdk": "26.0.2.1",
+      "actualExitCode": 0,
+      "stdout": "CALLS 7200 CHECK 5764800\n",
+      "recording": "STOPPED_LIMIT",
+      "endToEndMs": 1555.5713750000002,
+      "normalizationMs": 540.9716270000015,
+      "semanticEvents": 33335,
+      "rawEvents": 20001,
+      "history": {
+        "length": 33335,
+        "checkpointCount": 131,
+        "checkpointInterval": 256,
+        "maxCheckpoints": 256,
+        "cachedMaterializationCount": 0,
+        "cachedMaterializationCursor": null,
+        "retainedStateRoots": 132,
+        "replayedEvents": 0
+      },
+      "retainedMiB": 178.16146850585938,
+      "graph": {
+        "invocations": 2857,
+        "calls": 2856,
+        "values": 10476,
+        "edges": 31420
+      },
+      "scrubMs": {
+        "p50": 1.4282920000000559,
+        "p95": 2.899167000000034,
+        "max": 9.382207999999991
+      }
+    }
+  ]
+}

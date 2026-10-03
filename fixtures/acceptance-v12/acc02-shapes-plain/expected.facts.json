@@ -122,16 +122,16 @@
   {
    "id": "ctorNestPolygon",
    "kind": "caller",
-   "status": "target:P3",
+   "status": "current",
    "requirement": "R5.5",
    "callee": "Polygon.<init>",
    "caller": "Rectangle.<init>",
-   "note": "Today recorded as a sibling under Main.main (tests/characterization/constructorNesting)"
+   "note": "Phase 3 true-start constructor entry; regression in tests/characterization/constructorNesting"
   },
   {
    "id": "ctorNestShape",
    "kind": "caller",
-   "status": "target:P3",
+   "status": "current",
    "requirement": "R5.5",
    "callee": "Shape.<init>",
    "caller": "Polygon.<init>"
@@ -150,7 +150,7 @@
   {
    "id": "dispatchFacts",
    "kind": "eventCount",
-   "status": "target:P4",
+   "status": "current",
    "requirement": "R6.1-6.2",
    "type": "CALL",
    "min": 2

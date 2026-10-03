@@ -33,7 +33,7 @@ export function buildSceneModel(runtime: RuntimeState, layout: LayoutState, deta
       slots: [
         ...Object.values(frame.locals).map((slot) => ({ ...slot, displayValue: displayValue(slot.value), scopeDepth: slot.scopeId ? layout.scopes?.[slot.scopeId]?.depth : undefined, port: anchor.ports[slot.id] ?? anchor.bodyPort })),
         ...(frame.returnType && frame.returnType !== 'void' ? [{ id: `return:${id}`, name: 'return', javaType: frame.returnType, role: 'return' as const,
-          value: frame.returnValue ?? { kind: 'uninitialized' as const }, displayValue: frame.returnValue ? undefined : 'pending', port: anchor.ports[`return:${id}`] ?? anchor.bodyPort }] : []),
+          value: frame.returnValue ?? { kind: 'uninitialized' as const }, displayValue: frame.returnValue ? undefined : runtime.executionGraph?.invocations[id]?.returnValueId ? 'unavailable' : 'pending', port: anchor.ports[`return:${id}`] ?? anchor.bodyPort }] : []),
       ],
     }]
   })

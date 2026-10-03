@@ -35,14 +35,16 @@ public final class Recorder {
   private static Path statusPath;
   private static final IdentityHashMap<Object, String> IDS = new IdentityHashMap<>();
   private static final IdentityHashMap<Object, Boolean> SEEN = new IdentityHashMap<>();
+  private static final java.util.Map<String,String> DISPATCH = new java.util.HashMap<>();
   private static final ThreadLocal<ControlContext> CONTROL = ThreadLocal.withInitial(ControlContext::new);
   private static final long EVENT_LIMIT = Long.getLong("visualjava.eventLimit", 20000L);
   private static final long BYTE_LIMIT = Long.getLong("visualjava.byteLimit", 8L * 1024 * 1024);
   private static final int OBJECT_LIMIT = 256, FRAME_LIMIT = 128;
+  private static final Set<String> SCANNER_CONSUMERS = Set.of("next","nextLine","nextInt","nextLong","nextShort","nextByte","nextFloat","nextDouble","nextBoolean","nextBigInteger","nextBigDecimal");
   private static final boolean DEBUG = System.getProperty("visualjava.debugPort") != null;
   private static final Set<String> PROJECT_CLASSES = new HashSet<>(List.of(System.getProperty("visualjava.classes", "").split(",")));
   private static volatile boolean stopped;
-  private static long seq, objectSequence, frameSequence, rawBytes, firstThread, inputReads;
+  private static long seq, objectSequence, frameSequence, callSequence, rawBytes, firstThread, inputReads;
   private static ControlContext recordingContext;
   private static String recordingState = "FULL", reason, budget;
   private static Long lastRecordedSeq;
@@ -57,14 +59,20 @@ public final class Recorder {
   }
   private static final class Frame {
     final String id, owner, method, descriptor;
+    long token;
     int line, site;
+    String failedCallId;
+    boolean receiverInitialized;
     Frame(String id, String owner, String method, String descriptor, int line, int site) {
-      this.id=id; this.owner=owner; this.method=method; this.descriptor=descriptor; this.line=line; this.site=site;
+      this.id=id; this.owner=owner; this.method=method; this.descriptor=descriptor; this.line=line; this.site=site; this.receiverInitialized=!method.equals("<init>");
     }
   }
   private static final class ControlContext {
     final ArrayDeque<Frame> frames = new ArrayDeque<>();
     final List<String> parameters = new ArrayList<>();
+    final ArrayDeque<PendingCall> calls = new ArrayDeque<>();
+    String origin;
+    long tokenSequence;
     final IdentityHashMap<Throwable, Boolean> propagating = new IdentityHashMap<>();
     int depth;
     long parameterBytes;
@@ -90,7 +98,7 @@ public final class Recorder {
       Runtime.getRuntime().addShutdownHook(new Thread(() -> {
         synchronized (LOCK) {
           try { if (out != null) out.close(); } catch (IOException ignored) {}
-          IDS.clear(); SEEN.clear(); pending.clear();
+          IDS.clear(); SEEN.clear(); DISPATCH.clear(); pending.clear();
           if (recordingContext != null) clearPayload(recordingContext);
         }
       }, "VisualJava recorder cleanup"));
@@ -117,7 +125,7 @@ public final class Recorder {
     }
   }
   private static void clearPayload(ControlContext c) {
-    c.parameters.clear(); c.parameterBytes=0; c.propagating.clear();
+    c.parameters.clear(); c.parameterBytes=0; c.propagating.clear(); c.calls.clear(); c.origin=null;
     if (!DEBUG) c.frames.clear();
   }
   /** Called under LOCK, once. Control record is reserved outside both semantic budgets. */
@@ -126,7 +134,7 @@ public final class Recorder {
     stopped=true; recordingState=state; reason=why; budget=triggeringBudget;
     lastRecordedSeq=seq == 0 ? null : seq-1;
     pending.clear(); pendingBytes=0; serializedBytes=0;
-    IDS.clear(); SEEN.clear();
+    IDS.clear(); SEEN.clear(); DISPATCH.clear();
     if (recordingContext != null) clearPayload(recordingContext);
     // Null context keeps this bounded even for extremely long project identifiers.
     String record="{" + context("capture_saturated", null, -1, -1, null, null, seq)
@@ -232,7 +240,7 @@ public final class Recorder {
     String created="o" + (++objectSequence); IDS.put(object, created); return created;
   }
   private static String context(String type, Frame frame, int line, int site, String classOverride, String descriptorOverride, long sequence) {
-    return "\"v\":1,\"seq\":" + sequence + ",\"threadId\":" + quote(Long.toString(Thread.currentThread().threadId()))
+    return "\"v\":1,\"provenanceVersion\":1,\"seq\":" + sequence + ",\"threadId\":" + quote(Long.toString(Thread.currentThread().threadId()))
       + ",\"type\":" + quote(type) + ",\"frameId\":" + quote(frame == null ? null : frame.id)
       + ",\"className\":" + quote(classOverride == null ? frame == null ? null : frame.owner : classOverride) + ",\"methodName\":" + quote(frame == null ? null : frame.method)
       + ",\"descriptor\":" + quote(descriptorOverride == null ? frame == null ? null : frame.descriptor : descriptorOverride) + ",\"line\":" + (line > 0 ? line : "null")
@@ -268,7 +276,7 @@ public final class Recorder {
           capture(() -> {
             Frame f=current(); room(Math.max(0,readCount));
             String text=readCount <= 0 ? "" : new String(bytes,offset,readCount,StandardCharsets.UTF_8);
-            emit("stdin_read",f,f==null?-1:f.line,f==null?-1:f.site,"\"text\":"+q(text));
+            emit("stdin_read",f,f==null?-1:f.line,f==null?-1:f.site,"\"text\":"+q(text)+callContext());
           });
           inputBoundary(false);
         }
@@ -276,7 +284,7 @@ public final class Recorder {
       private void inputFinished(int value) {
         capture(() -> {
           Frame f=current(); String text=value<0 ? "" : new String(new byte[]{(byte)value},StandardCharsets.UTF_8);
-          emit("stdin_read",f,f==null?-1:f.line,f==null?-1:f.site,"\"text\":"+q(text));
+          emit("stdin_read",f,f==null?-1:f.line,f==null?-1:f.site,"\"text\":"+q(text)+callContext());
         });
         inputBoundary(false);
       }
@@ -308,7 +316,7 @@ public final class Recorder {
           ByteBuffer input=ByteBuffer.wrap(combined);CharBuffer output=CharBuffer.allocate(combined.length+2);
           decoder.decode(input,output,false);undecoded=new byte[input.remaining()];input.get(undecoded);
           output.flip();String text=output.toString();Frame f=current();
-          if(!text.isEmpty()) emit("console",f,f==null?-1:f.line,f==null?-1:f.site,"\"channel\":"+q(channel)+",\"text\":"+q(text));
+          if(!text.isEmpty()) emit("console",f,f==null?-1:f.line,f==null?-1:f.site,"\"channel\":"+q(channel)+",\"text\":"+q(text)+callContext());
         });
         if (stopped) undecoded=EMPTY_BYTES;
         original.write(bytes,offset,length);
@@ -377,6 +385,140 @@ public final class Recorder {
     if(register) observeValue(value);
     return "{\"kind\":\"ref\",\"objectId\":"+q(id(value))+",\"className\":"+q(value.getClass().getName())+"}";
   }
+  private static final class PendingCall {
+    final long token;final Frame frame;final int site,line;final String name,descriptor,targetOwner;
+    PendingCall(long token,Frame frame,String name,String descriptor,String targetOwner,int site) {
+      this.site=site;this.line=frame.line;this.token=token;this.frame=frame;this.name=name;this.descriptor=descriptor;this.targetOwner=targetOwner;
+    }
+  }
+  private static String callContext() {
+    Frame frame=current();PendingCall call=CONTROL.get().calls.peek();
+    String id=call!=null && call.frame==frame?"c"+call.token:frame==null?null:frame.failedCallId;
+    return id==null?"":",\"callId\":"+q(id);
+  }
+  public static void origin(String recipe) { if(!stopped)CONTROL.get().origin=recipe; }
+  private static String takeOrigin() {
+    ControlContext c=CONTROL.get();String origin=c.origin;c.origin=null;
+    return origin==null?"":",\"origin\":"+origin;
+  }
+  /** Probe token is not a Java receiver; legal even before constructor initialization. */
+  public static long enterToken(String owner,String method,String descriptor,Object receiver,int line,int site) {
+    enter(owner,method,descriptor,receiver,line,site);
+    ControlContext c=CONTROL.get();long token=++c.tokenSequence;
+    Frame frame=c.frames.peek();if(frame!=null&&c.depth<=c.frames.size())frame.token=token;
+    return token;
+  }
+  public static void activate(long token) { reconcile(null,token); }
+  /** Reconcile only at actual caller bytecode/handlers; never invent a normal return. */
+  public static void reconcile(Throwable error,long token) {
+    if(stopped&&!DEBUG)return;
+    ControlContext c=CONTROL.get();
+    // Bounded debug overflow has no retained token; its depth bookkeeping remains unchanged.
+    if(c.depth>c.frames.size())return;
+    while(!c.frames.isEmpty()&&c.frames.peek().token!=token) {
+      if(error!=null)unwind(error,c.frames.peek().site);
+      else {
+        // No throwable is observable here: observation ends instead of fabricating unwind.
+        if(!stopped)capture(() -> stop("STOPPED_ERROR","Unobserved frame exit without exception evidence",null));
+        leaveControl();
+      }
+    }
+    Frame frame=c.frames.peek();
+    // A real handler proves pending calls in this frame failed (there is no successful result).
+    if(error!=null) {
+      if(frame!=null && !c.calls.isEmpty() && c.calls.peek().frame==frame)frame.failedCallId="c"+c.calls.peek().token;
+      while(!c.calls.isEmpty()&&c.calls.peek().frame==frame)c.calls.pop();
+    }
+  }
+  /** Volatile fast path; does not alter recorder or debugger state. */
+  public static boolean isRecording() { return !stopped; }
+  public static long calling(int opcode,String owner,String name,String descriptor,Object receiver,Object[] arguments,String origins,String receiverOrigin,int site,String declaredTarget) {
+    if(stopped)return 0;
+    final long[] token={0};
+    capture(() -> {
+      Frame frame=current();if(frame==null)return;frame.failedCallId=null;
+      long id=++callSequence;StringBuilder values=new StringBuilder("[");
+      // Descriptor parsing is private and never calls into the program.
+      List<String> descriptors=argumentDescriptors(descriptor);
+      for(int i=0;i<arguments.length;i++){if(i>0)values.append(',');values.append(raw(arguments[i],descriptors.get(i),true));}
+      values.append(']');
+      String kind=switch(opcode){case 184->"static";case 185->"interface";case 183->"special";case 186->"dynamic";default->"virtual";};
+      emit("call",frame,frame.line,site,"\"callId\":"+q("c"+id)+",\"invokeKind\":"+q(kind)+",\"owner\":"+q(owner)+",\"name\":"+q(name)
+        +",\"callDescriptor\":"+q(descriptor)+",\"receiver\":"+(receiver==null?"null":raw(receiver,"L"+owner.replace('.','/')+";",true))
+        +",\"arguments\":"+values+",\"argumentOrigins\":"+origins+",\"receiverOrigin\":"+receiverOrigin);
+      String targetOwner=resolvedTarget(opcode,owner,name,descriptor,receiver,declaredTarget);
+      CONTROL.get().calls.push(new PendingCall(id,frame,name,descriptor,targetOwner,site));token[0]=id;
+    });
+    return token[0];
+  }
+  /** Resolve metadata only, without invoking user methods or loading classes by user loaders. */
+  private static String resolvedTarget(int opcode,String owner,String name,String signature,Object receiver,String declaredTarget) {
+    if(opcode==183||opcode==184)return PROJECT_CLASSES.contains(declaredTarget)?declaredTarget:null;
+    if(receiver==null||!PROJECT_CLASSES.contains(receiver.getClass().getName()))return null;
+    String key=receiver.getClass().getName()+"#"+name+signature;
+    if(DISPATCH.containsKey(key))return DISPATCH.get(key);
+    String target=resolveVirtualTarget(name,signature,receiver);
+    if(DISPATCH.size()<1024)DISPATCH.put(key,target);
+    return target;
+  }
+  private static String resolveVirtualTarget(String name,String signature,Object receiver) {
+    try {
+      for(Class<?> type=receiver.getClass();type!=null;type=type.getSuperclass()) {
+        for(java.lang.reflect.Method method:type.getDeclaredMethods())
+          if(method.getName().equals(name)&&methodDescriptor(method).equals(signature)&&!Modifier.isStatic(method.getModifiers()))
+            return PROJECT_CLASSES.contains(type.getName())?type.getName():null;
+      }
+      // Public inherited interface default methods are actual dispatch targets too.
+      for(java.lang.reflect.Method method:receiver.getClass().getMethods())
+        if(method.getName().equals(name)&&methodDescriptor(method).equals(signature)&&!Modifier.isStatic(method.getModifiers()))
+          return PROJECT_CLASSES.contains(method.getDeclaringClass().getName())?method.getDeclaringClass().getName():null;
+    } catch(LinkageError | SecurityException unsupported) { /* unknown rather than callback guessing */ }
+    return null;
+  }
+  private static String methodDescriptor(java.lang.reflect.Method method) {
+    StringBuilder result=new StringBuilder("(");for(Class<?> parameter:method.getParameterTypes())result.append(descriptor(parameter));
+    return result.append(')').append(descriptor(method.getReturnType())).toString();
+  }
+  private static List<String> argumentDescriptors(String descriptor) {
+    List<String> result=new ArrayList<>();int i=1;
+    while(descriptor.charAt(i)!=')') {int start=i;while(descriptor.charAt(i)=='[')i++;if(descriptor.charAt(i)=='L')i=descriptor.indexOf(';',i)+1;else i++;result.add(descriptor.substring(start,i));}
+    return result;
+  }
+  public static void callReturned(long token,Object value,String descriptor,Object receiver,int newSite) {
+    if(stopped||token==0)return;
+    capture(() -> {
+      ControlContext c=CONTROL.get();PendingCall pending=c.calls.peek();
+      if(pending==null||pending.token!=token)return;
+      Frame frame=pending.frame;
+      String input="";
+      // Scanner is final. Its successful match is consumption evidence even with read-ahead.
+      // No text typed/read alone is treated as a consumed token; failed next* has no return probe.
+      if(receiver instanceof java.util.Scanner scanner &&
+          SCANNER_CONSUMERS.contains(pending.name)) {
+        try { input=",\"inputText\":"+q(scanner.match().group()); }
+        catch(IllegalStateException unavailable) { /* no successful match, no consumption claim */ }
+      }
+      emit("call_return",frame,pending.line,pending.site,"\"callId\":"+q("c"+token)+",\"value\":"+(descriptor.equals("V")?"{\"kind\":\"null\"}":raw(value,descriptor,true))+input);
+      if(newSite>=0 && value!=null && PROJECT_CLASSES.contains(value.getClass().getName()))
+        emit("constructed",frame,pending.line,pending.site,"\"objectId\":"+q(id(value))+",\"className\":"+q(value.getClass().getName())+",\"newSite\":"+newSite);
+      c.calls.pop();
+    });
+  }
+  public static void receiverReady(Object receiver) {
+    if(stopped)return;
+    capture(() -> {Frame frame=current();if(frame!=null){frame.receiverInitialized=true;emit("receiver_ready",frame,frame.line,frame.site,"\"receiver\":"+raw(receiver,"Ljava/lang/Object;",true));}});
+  }
+  /** An unresolved declaration cannot produce a truthful storage identity. Java already succeeded. */
+  public static void unsupportedField() {
+    if(!stopped)capture(() -> stop("STOPPED_UNSUPPORTED","Field declaration metadata unavailable",null));
+  }
+  public static void fieldRead(Object receiver,Object value,String owner,String name,String descriptor,int site) {
+    if(stopped)return;
+    capture(() -> {
+      observeValue(receiver);Frame frame=current();if(frame==null)return;
+      emit("field_read",frame,frame.line,site,"\"objectId\":"+q(id(receiver))+",\"owner\":"+q(owner)+",\"name\":"+q(name)+",\"value\":"+raw(value,descriptor,true)+takeOrigin(),null,descriptor);
+    });
+  }
   public static void parameter(int slot,String name,String descriptor,String liveRange,Object value) {
     if (stopped) return;
     capture(() -> {
@@ -395,11 +537,20 @@ public final class Recorder {
     Frame[] entered=stopped ? null : new Frame[1];
     boolean recorded=capture(() -> {
       Frame caller=c.frames.peek();
+      PendingCall pendingCall=c.calls.peek();
+      String callId=pendingCall!=null && pendingCall.frame==caller && owner.equals(pendingCall.targetOwner) && pendingCall.name.equals(method) && pendingCall.descriptor.equals(descriptor) ? "c"+pendingCall.token : null;
+      // An opaque library may swallow a pre-super failure before re-entering
+      // project code. Without a joined call, its retained constructor ancestor
+      // cannot be trusted. End observation before publishing that relationship.
+      if(caller!=null && !caller.receiverInitialized && callId==null) {
+        stop("STOPPED_UNSUPPORTED","Opaque callback across an uninitialized constructor boundary",null);
+        throw PAYLOAD_STOPPED;
+      }
       if (c.depth >= FRAME_LIMIT) limit("live frames");
       Frame frame=new Frame("f"+(++frameSequence),owner,method,descriptor,line,site);
       String receiverValue=receiver==null ? "null" : raw(receiver,"L"+owner.replace('.','/')+";",true);
       emit("enter",frame,line,site,"\"callerFrameId\":"+q(caller==null?null:caller.id)+",\"receiver\":"+receiverValue
-        +",\"parameters\":["+String.join(",",c.parameters)+"]");
+        +",\"parameters\":["+String.join(",",c.parameters)+"]"+(callId==null?"":",\"callId\":"+q(callId)));
       entered[0]=frame;
     });
     synchronized (LOCK) {
@@ -446,7 +597,7 @@ public final class Recorder {
     capture(() -> {
       Frame f=current();if(f==null)return;f.site=site;
       emit("local",f,f.line,site,"\"slot\":"+slot+",\"name\":"+q(name)+",\"descriptor\":"+q(descriptor)
-        +",\"liveRange\":"+q(liveRange)+",\"value\":"+raw(value,descriptor,true));
+        +",\"liveRange\":"+q(liveRange)+",\"value\":"+raw(value,descriptor,true)+takeOrigin());
     });
   }
   public static void localEnd(int slot,String liveRange,int site) {
@@ -458,14 +609,14 @@ public final class Recorder {
     capture(() -> {
       Frame f=current();if(f==null)return;f.site=site;
       emit("field",f,f.line,site,"\"objectId\":"+q(id(receiver)) + ",\"owner\":"+q(owner)+",\"name\":"+q(name)
-        +",\"value\":"+raw(value,descriptor,true),null,descriptor);
+        +",\"value\":"+raw(value,descriptor,true)+takeOrigin(),null,descriptor);
     });
   }
   public static void arrayRead(int[] array,int index,int value,int site) { arrayAccess("array_read",array,index,value,site); }
   public static void arrayWrite(int[] array,int index,int value,int site) { arrayAccess("array_write",array,index,value,site); }
   private static void arrayAccess(String type,int[] array,int index,int value,int site) {
     if (stopped) return;
-    capture(() -> { observeValue(array); Frame f=current();if(f!=null)emit(type,f,f.line,site,"\"objectId\":"+q(id(array))+",\"index\":"+index+",\"value\":"+value); });
+    capture(() -> { observeValue(array); Frame f=current();if(f!=null)emit(type,f,f.line,site,"\"objectId\":"+q(id(array))+",\"index\":"+index+",\"value\":"+value+takeOrigin()); });
   }
   public static void branch(int opcode,Object left,Object right,int site) {
     if (stopped) return;
@@ -484,7 +635,7 @@ public final class Recorder {
   }
   public static void returned(Object value,String descriptor,int site) {
     if (stopped) return;
-    capture(() -> { Frame f=current();if(f!=null)emit("return",f,f.line,site,"\"value\":"+raw(value,descriptor,true)); });
+    capture(() -> { Frame f=current();if(f!=null)emit("return",f,f.line,site,"\"value\":"+raw(value,descriptor,true)+takeOrigin()); });
   }
   public static void exit(int site) {
     if (!stopped) capture(() -> { Frame f=current();if(f!=null)emit("exit",f,f.line,site,""); });
@@ -492,7 +643,9 @@ public final class Recorder {
   }
   private static void leaveControl() {
     ControlContext c=CONTROL.get();
-    if(c.depth<=c.frames.size() && !c.frames.isEmpty()) c.frames.pop();
+    if(c.depth<=c.frames.size() && !c.frames.isEmpty()) {
+      Frame exited=c.frames.pop();while(!c.calls.isEmpty()&&c.calls.peek().frame==exited)c.calls.pop();
+    }
     if(c.depth>0)c.depth--;
   }
   public static void explicitThrow(Throwable error,int site) { if(error!=null) thrown(error,true,site); }
@@ -508,7 +661,7 @@ public final class Recorder {
     if(c.propagating.containsKey(error))return;
     String errorId=id(error);
     c.propagating.put(error,Boolean.TRUE);
-    emit("throw",f,f.line,site,"\"objectId\":"+q(errorId)+",\"message\":"+q(safeMessage(error))+",\"explicit\":"+explicit,error.getClass().getName(),null);
+    emit("throw",f,f.line,site,"\"objectId\":"+q(errorId)+",\"message\":"+q(safeMessage(error))+",\"explicit\":"+explicit+takeOrigin()+callContext(),error.getClass().getName(),null);
   }
   private static void thrown(Throwable error,boolean explicit,int site) {
     if (stopped && !DEBUG) return;
@@ -534,14 +687,14 @@ public final class Recorder {
     Frame f=checkpointFrame(handlerLine,site);if(f==null)return;
     f.line=handlerLine;f.site=site;
     if (DEBUG && CONTROL.get().debugException.get()==error) CONTROL.get().debugException.clear();
-    if (!stopped) capture(() -> { emit("catch",f,handlerLine,site,"\"objectId\":"+q(id(error))); CONTROL.get().propagating.remove(error); });
+    if (!stopped) capture(() -> { emit("catch",f,handlerLine,site,"\"objectId\":"+q(id(error))+callContext()); CONTROL.get().propagating.remove(error);f.failedCallId=null; });
   }
   public static void finallyEntered(Throwable error,int handlerLine,int site) {
     if (stopped && !DEBUG) return;
     thrown(error,false,site);
     Frame f=checkpointFrame(handlerLine,site);if(f==null)return;
     f.line=handlerLine;f.site=site;
-    if (!stopped) capture(() -> emit("finally",f,handlerLine,site,"\"objectId\":"+q(id(error))));
+    if (!stopped) capture(() -> emit("finally",f,handlerLine,site,"\"objectId\":"+q(id(error))+callContext()));
   }
   public static void unwind(Throwable error,int site) {
     thrown(error,false,site);

@@ -1,0 +1,748 @@
+{
+  "recordedAt": "2026-10-03T04:42:16.066758+00:00",
+  "note": "Local ignored bulk media from the final complete browser run; hashes and review flags are tracked. Thirteen representative captures were manually inspected at original resolution. The remaining captures were produced by the suite, not individually visually approved. This semantic milestone preserves the current visual system; documented dense-world/Focus limitations remain.",
+  "targetSizes": [
+    [
+      1728,
+      1117
+    ],
+    [
+      1440,
+      900
+    ],
+    [
+      1280,
+      800
+    ],
+    [
+      760,
+      900
+    ]
+  ],
+  "captureCount": 89,
+  "manuallyReviewedCount": 13,
+  "referenceComparison": [
+    "06_true3d_person_runtime.png",
+    "07_true3d_object_inspector.png",
+    "08_true3d_recursion.png",
+    "09_true3d_array_sort.png",
+    "10_true3d_reference_sheet.png",
+    "11_true3d_scene_language.png",
+    "DESIGN_SYSTEM.md",
+    "root best.png (future Spatial direction)"
+  ],
+  "screenshots": [
+    {
+      "path": "m11/person-before-focus-1440x900.png",
+      "width": 1440,
+      "height": 900,
+      "bytes": 146079,
+      "sha256": "33a9bb0e8fb6cf6f350bd778ca4ec09e7d3590f9849a5bd66828331bf947498a",
+      "reviewedAtOriginalSize": true
+    },
+    {
+      "path": "m11/person-completed-1280x800.png",
+      "width": 1280,
+      "height": 800,
+      "bytes": 110725,
+      "sha256": "386b0e9a4b42fea39d0bf9891e9f49169ae438bffd942f452e1ea45e187e8bba",
+      "reviewedAtOriginalSize": false
+    },
+    {
+      "path": "m11/person-completed-1440x900.png",
+      "width": 1440,
+      "height": 900,
+      "bytes": 126260,
+      "sha256": "da2e13b370e86641be7cdef5da822ec83f07f3672bb53605f03e98bcd0762bd5",
+      "reviewedAtOriginalSize": false
+    },
+    {
+      "path": "m11/person-completed-1728x1117.png",
+      "width": 1728,
+      "height": 1117,
+      "bytes": 153603,
+      "sha256": "3970a43636319af34c4208d85d29021678da704a2428db95cd4f86ca35806da2",
+      "reviewedAtOriginalSize": true
+    },
+    {
+      "path": "m11/person-completed-760x900.png",
+      "width": 760,
+      "height": 900,
+      "bytes": 78792,
+      "sha256": "8623fca1bc457250b176971e6506022d987b36bcbcdc8b5b753ea3c66c63e145",
+      "reviewedAtOriginalSize": false
+    },
+    {
+      "path": "m11/person-focus-1440x900.png",
+      "width": 1440,
+      "height": 900,
+      "bytes": 119930,
+      "sha256": "140d9fb3f413a5e80d78e84bbfc06b9af69fa8fa4ad656215617ce89ff2bd9a7",
+      "reviewedAtOriginalSize": false
+    },
+    {
+      "path": "product-audit-v11_5/banking-code-1280x800.png",
+      "width": 1280,
+      "height": 800,
+      "bytes": 123093,
+      "sha256": "843ae0bdc17aa5431a575f44e2a2e914e1135a39e2bfeaed0671aa36667b4ca7",
+      "reviewedAtOriginalSize": false
+    },
+    {
+      "path": "product-audit-v11_5/banking-code-1440x900.png",
+      "width": 1440,
+      "height": 900,
+      "bytes": 140528,
+      "sha256": "992a1f6a7f211e22de5d380268b8518be7b8e067c6c696ac1febda3b011dbb1f",
+      "reviewedAtOriginalSize": false
+    },
+    {
+      "path": "product-audit-v11_5/banking-code-1728x1117.png",
+      "width": 1728,
+      "height": 1117,
+      "bytes": 157102,
+      "sha256": "75cbab9181c2516835d8cb4690fe2f3ff499f6890a85c2c8c3ccf38ba187671f",
+      "reviewedAtOriginalSize": false
+    },
+    {
+      "path": "product-audit-v11_5/banking-code-760x900.png",
+      "width": 760,
+      "height": 900,
+      "bytes": 69737,
+      "sha256": "0e3e9c9118e82b26da231c7fc91b0df80407be3c81cae33ebac70c4e5a2c7718",
+      "reviewedAtOriginalSize": false
+    },
+    {
+      "path": "product-audit-v11_5/banking-completed-1280x800.png",
+      "width": 1280,
+      "height": 800,
+      "bytes": 169582,
+      "sha256": "b274a0f19f59794296584232c399ba9afe0260bc533853b6a36ff40bbc5e6c83",
+      "reviewedAtOriginalSize": false
+    },
+    {
+      "path": "product-audit-v11_5/banking-completed-1440x900.png",
+      "width": 1440,
+      "height": 900,
+      "bytes": 194833,
+      "sha256": "8de9b1a37c9b4a18a69907aecd12eb23ee8aa1d2e5b0efc2ffc9f7530bba1090",
+      "reviewedAtOriginalSize": false
+    },
+    {
+      "path": "product-audit-v11_5/banking-completed-1728x1117.png",
+      "width": 1728,
+      "height": 1117,
+      "bytes": 244637,
+      "sha256": "b327d4573472180ae3fd453c8b96a85363fd08892e8848fb832196832e285faa",
+      "reviewedAtOriginalSize": false
+    },
+    {
+      "path": "product-audit-v11_5/banking-completed-760x900.png",
+      "width": 760,
+      "height": 900,
+      "bytes": 145334,
+      "sha256": "6dc6a9b9142c8ccb6560800778aa10e0ecacfbedf7188e82bbe915605d981171",
+      "reviewedAtOriginalSize": false
+    },
+    {
+      "path": "product-audit-v11_5/banking-debug-entry-1280x800.png",
+      "width": 1280,
+      "height": 800,
+      "bytes": 117950,
+      "sha256": "f557ddf7cc1edea37b5645f59984a393b8639a49f1c6348938b64c3deb17c4f5",
+      "reviewedAtOriginalSize": false
+    },
+    {
+      "path": "product-audit-v11_5/banking-debug-entry-1440x900.png",
+      "width": 1440,
+      "height": 900,
+      "bytes": 130324,
+      "sha256": "f57c41b1233345cef34062bb018610ff4fd230c937c75809d97c8e90f16ac77d",
+      "reviewedAtOriginalSize": false
+    },
+    {
+      "path": "product-audit-v11_5/banking-debug-entry-1728x1117.png",
+      "width": 1728,
+      "height": 1117,
+      "bytes": 141818,
+      "sha256": "257ae4962c8ec92dad7af2623dee1cd39c61b6f6fe129c1fe7eb0aac27dce02c",
+      "reviewedAtOriginalSize": false
+    },
+    {
+      "path": "product-audit-v11_5/banking-debug-entry-760x900.png",
+      "width": 760,
+      "height": 900,
+      "bytes": 90556,
+      "sha256": "eff99198ad50693ff8fddaea0cd05193c0ac1e795df2d721927fd1631654934d",
+      "reviewedAtOriginalSize": false
+    },
+    {
+      "path": "product-audit-v11_5/banking-error-stack-1280x800.png",
+      "width": 1280,
+      "height": 800,
+      "bytes": 138070,
+      "sha256": "e882300ba1d106597bbb0ea11b895e7c71cd2fa0f595b651ba0e544b6877f8fa",
+      "reviewedAtOriginalSize": false
+    },
+    {
+      "path": "product-audit-v11_5/banking-error-stack-1440x900.png",
+      "width": 1440,
+      "height": 900,
+      "bytes": 147852,
+      "sha256": "7372d240f8a6d4fe760037030d6d6c7e923892622eba63ab52160f73ccc32285",
+      "reviewedAtOriginalSize": false
+    },
+    {
+      "path": "product-audit-v11_5/banking-error-stack-1728x1117.png",
+      "width": 1728,
+      "height": 1117,
+      "bytes": 172583,
+      "sha256": "e1967665ee250d26db59b4f1e60a88b07c604255df476f4356aedb3d1bf60c4d",
+      "reviewedAtOriginalSize": false
+    },
+    {
+      "path": "product-audit-v11_5/banking-error-stack-760x900.png",
+      "width": 760,
+      "height": 900,
+      "bytes": 94370,
+      "sha256": "66efabe607475855c3e231e39dbe0c32b00140eb49da7df2cd461782817c8c15",
+      "reviewedAtOriginalSize": false
+    },
+    {
+      "path": "product-audit-v11_5/banking-focus-1280x800.png",
+      "width": 1280,
+      "height": 800,
+      "bytes": 102444,
+      "sha256": "7da77de63cb52cfb8555caa845d253fbd82178c474d72860c1f8821846847eb3",
+      "reviewedAtOriginalSize": false
+    },
+    {
+      "path": "product-audit-v11_5/banking-focus-1440x900.png",
+      "width": 1440,
+      "height": 900,
+      "bytes": 116365,
+      "sha256": "b449b1791cff20946f639ffa81ccdcceddcd8d21d8fd73c51cfd8bf830113251",
+      "reviewedAtOriginalSize": false
+    },
+    {
+      "path": "product-audit-v11_5/banking-focus-1728x1117.png",
+      "width": 1728,
+      "height": 1117,
+      "bytes": 134847,
+      "sha256": "2be19e613da981f6a06b187124728a97636532b4788658e8474a63ee6cb8e5e3",
+      "reviewedAtOriginalSize": false
+    },
+    {
+      "path": "product-audit-v11_5/banking-focus-760x900.png",
+      "width": 760,
+      "height": 900,
+      "bytes": 94112,
+      "sha256": "659167b24f2150000f938159084f744b6782f927a29fc2ddcdc4a56bfc601798",
+      "reviewedAtOriginalSize": false
+    },
+    {
+      "path": "product-audit-v11_5/banking-focus-active-1280x800.png",
+      "width": 1280,
+      "height": 800,
+      "bytes": 100568,
+      "sha256": "421233d3cf0b8ee9e38bcf3a31388f55b1c1391de184123b6603cdf9e6aaa2ec",
+      "reviewedAtOriginalSize": false
+    },
+    {
+      "path": "product-audit-v11_5/banking-focus-active-1440x900.png",
+      "width": 1440,
+      "height": 900,
+      "bytes": 111554,
+      "sha256": "8a2d5a8a2a85312cc873e6fc25fb313f99ff980b66c56be0fb9f0156562c9a23",
+      "reviewedAtOriginalSize": true
+    },
+    {
+      "path": "product-audit-v11_5/banking-focus-active-1728x1117.png",
+      "width": 1728,
+      "height": 1117,
+      "bytes": 131002,
+      "sha256": "99effd4ecb3d8c734120e5fe0d491dddf18f2493a9311d264986e2f0a2d377bc",
+      "reviewedAtOriginalSize": false
+    },
+    {
+      "path": "product-audit-v11_5/banking-focus-active-760x900.png",
+      "width": 760,
+      "height": 900,
+      "bytes": 84536,
+      "sha256": "fd3d81f68349e52c1577964754dfd82532dedd4b046868d9122ee9509f939b78",
+      "reviewedAtOriginalSize": false
+    },
+    {
+      "path": "product-audit-v11_5/banking-focus-completed-1280x800.png",
+      "width": 1280,
+      "height": 800,
+      "bytes": 101627,
+      "sha256": "043979f62c7a67b4e5b5a54e40a7a24c3fc363271aa15f27572f0130e62b2555",
+      "reviewedAtOriginalSize": false
+    },
+    {
+      "path": "product-audit-v11_5/banking-focus-completed-1440x900.png",
+      "width": 1440,
+      "height": 900,
+      "bytes": 112394,
+      "sha256": "ff0dc4ace7b855d9e4c1e75a1cc9613c3748e246a11bc4d74bc55353ffb4ac6c",
+      "reviewedAtOriginalSize": false
+    },
+    {
+      "path": "product-audit-v11_5/banking-focus-completed-1728x1117.png",
+      "width": 1728,
+      "height": 1117,
+      "bytes": 131440,
+      "sha256": "c8803169ad5f7cafa0e76383feefa34bd35b78563d616f7deed7ab4307da6433",
+      "reviewedAtOriginalSize": false
+    },
+    {
+      "path": "product-audit-v11_5/banking-focus-completed-760x900.png",
+      "width": 760,
+      "height": 900,
+      "bytes": 89820,
+      "sha256": "b15c6bc65e6ca8e5c50b9f24d4faacd9fbfd457c281d9065bc66549c0f6d15b0",
+      "reviewedAtOriginalSize": false
+    },
+    {
+      "path": "product-audit-v11_5/banking-focus-failure-1280x800.png",
+      "width": 1280,
+      "height": 800,
+      "bytes": 138070,
+      "sha256": "e882300ba1d106597bbb0ea11b895e7c71cd2fa0f595b651ba0e544b6877f8fa",
+      "reviewedAtOriginalSize": false
+    },
+    {
+      "path": "product-audit-v11_5/banking-focus-failure-1440x900.png",
+      "width": 1440,
+      "height": 900,
+      "bytes": 147879,
+      "sha256": "46a04b32b10735a2224cebb3689bf96df72cba18b98c42a6477a516575b6dcc2",
+      "reviewedAtOriginalSize": false
+    },
+    {
+      "path": "product-audit-v11_5/banking-focus-failure-1728x1117.png",
+      "width": 1728,
+      "height": 1117,
+      "bytes": 172612,
+      "sha256": "28f49d8ae5b187312ed63d3bd867278d8aea91c9aa9f492f6251bc308dc6a6ab",
+      "reviewedAtOriginalSize": true
+    },
+    {
+      "path": "product-audit-v11_5/banking-focus-failure-760x900.png",
+      "width": 760,
+      "height": 900,
+      "bytes": 97982,
+      "sha256": "d6796c06b7769c9c3bdf13faf41e72aa13b491c8d04defecb3dfe76d382f27f4",
+      "reviewedAtOriginalSize": false
+    },
+    {
+      "path": "product-audit-v11_5/banking-input-1280x800.png",
+      "width": 1280,
+      "height": 800,
+      "bytes": 108882,
+      "sha256": "1f546f75864044ffd11e488d673b8f31999a27abcf761da6842f05aa0bfef32e",
+      "reviewedAtOriginalSize": false
+    },
+    {
+      "path": "product-audit-v11_5/banking-input-1440x900.png",
+      "width": 1440,
+      "height": 900,
+      "bytes": 125411,
+      "sha256": "daf074cdd4e54c5ca48b3004e8d3226f49ce5e742afae8eebef424bc616f4c17",
+      "reviewedAtOriginalSize": false
+    },
+    {
+      "path": "product-audit-v11_5/banking-input-1728x1117.png",
+      "width": 1728,
+      "height": 1117,
+      "bytes": 146755,
+      "sha256": "56150b71b8268b5be0f1c95dc0b65c3ff03684239087cf73ef1f3b7141e08eca",
+      "reviewedAtOriginalSize": false
+    },
+    {
+      "path": "product-audit-v11_5/banking-input-760x900.png",
+      "width": 760,
+      "height": 900,
+      "bytes": 91082,
+      "sha256": "553b776c5ecd7eedb994628609163541f58b7ecb30ada9ebb344b9bbaed369d6",
+      "reviewedAtOriginalSize": false
+    },
+    {
+      "path": "product-audit-v11_5/dispatch-completed-1280x800.png",
+      "width": 1280,
+      "height": 800,
+      "bytes": 149927,
+      "sha256": "860127b04d25f07d6c76881cc450897db2a08a9721f65f447ebdac9c5e98918e",
+      "reviewedAtOriginalSize": false
+    },
+    {
+      "path": "product-audit-v11_5/dispatch-completed-1440x900.png",
+      "width": 1440,
+      "height": 900,
+      "bytes": 170954,
+      "sha256": "320077d12bacfd48dea7a689f3fed86b40547bb37269b8384dc311c5c76decd7",
+      "reviewedAtOriginalSize": false
+    },
+    {
+      "path": "product-audit-v11_5/dispatch-completed-1728x1117.png",
+      "width": 1728,
+      "height": 1117,
+      "bytes": 208473,
+      "sha256": "7135f7af24b192ac63ebe2eb20558470798c5d771729e4f89a966a89b07046e8",
+      "reviewedAtOriginalSize": true
+    },
+    {
+      "path": "product-audit-v11_5/dispatch-completed-760x900.png",
+      "width": 760,
+      "height": 900,
+      "bytes": 133289,
+      "sha256": "1ea131015a423b4030840f0a0332a66916892ba1047dec0542743d44d80699e2",
+      "reviewedAtOriginalSize": false
+    },
+    {
+      "path": "product-audit-v11_5/explorer-context-1280x800.png",
+      "width": 1280,
+      "height": 800,
+      "bytes": 179371,
+      "sha256": "e55bbab909bd05ece7f1e0fa619e7e2d4490c94baa6d8e813ab51b42209fd800",
+      "reviewedAtOriginalSize": false
+    },
+    {
+      "path": "product-audit-v11_5/explorer-context-1440x900.png",
+      "width": 1440,
+      "height": 900,
+      "bytes": 201337,
+      "sha256": "9bd844a6df52bdb876bf3bc5a20328e9fb9f9b0c125410b4e9246a7abf4af60c",
+      "reviewedAtOriginalSize": false
+    },
+    {
+      "path": "product-audit-v11_5/explorer-context-1728x1117.png",
+      "width": 1728,
+      "height": 1117,
+      "bytes": 222134,
+      "sha256": "222622e47806ef4499e947e55f4b452137bdba1759f3b8dd99cea8185ea8f4fc",
+      "reviewedAtOriginalSize": false
+    },
+    {
+      "path": "product-audit-v11_5/explorer-context-760x900.png",
+      "width": 760,
+      "height": 900,
+      "bytes": 104417,
+      "sha256": "8b8cabb427c8dc0296dc8bf92500ad16886e2e8d49a5658d9e70a4976dc7473b",
+      "reviewedAtOriginalSize": false
+    },
+    {
+      "path": "product-audit-v11_5/focus-int-array-1280x800.png",
+      "width": 1280,
+      "height": 800,
+      "bytes": 128714,
+      "sha256": "49083d0b4eeb4c5e4066043d9574f7d78bf76bfcb15d045090bdf8a251c30632",
+      "reviewedAtOriginalSize": false
+    },
+    {
+      "path": "product-audit-v11_5/focus-int-array-1440x900.png",
+      "width": 1440,
+      "height": 900,
+      "bytes": 141222,
+      "sha256": "9d76de3b62f03596341ac0a11879a6ffe386fb58df5a73a50e9f4fb2a18d2b98",
+      "reviewedAtOriginalSize": false
+    },
+    {
+      "path": "product-audit-v11_5/focus-int-array-1728x1117.png",
+      "width": 1728,
+      "height": 1117,
+      "bytes": 163859,
+      "sha256": "70502f093376fb314748d45666e67b2fe22addd2318162d6c281b4c40484a820",
+      "reviewedAtOriginalSize": false
+    },
+    {
+      "path": "product-audit-v11_5/focus-int-array-760x900.png",
+      "width": 760,
+      "height": 900,
+      "bytes": 95964,
+      "sha256": "6307ed00059dfb38dc5cc3cfe3d07a9bfb7efb0c4ec15892085c82607d20e259",
+      "reviewedAtOriginalSize": true
+    },
+    {
+      "path": "product-audit-v11_5/focus-large-object-1280x800.png",
+      "width": 1280,
+      "height": 800,
+      "bytes": 114352,
+      "sha256": "ff6a5dbc763d815cd42241b91c1c9369559e93250a901414785d83bf205e1e28",
+      "reviewedAtOriginalSize": true
+    },
+    {
+      "path": "product-audit-v11_5/focus-large-object-1440x900.png",
+      "width": 1440,
+      "height": 900,
+      "bytes": 125511,
+      "sha256": "8e8d449a034766346a06507c8b6fe356f7f9f8e1fe8a3fb27198708b5847b298",
+      "reviewedAtOriginalSize": false
+    },
+    {
+      "path": "product-audit-v11_5/focus-large-object-1728x1117.png",
+      "width": 1728,
+      "height": 1117,
+      "bytes": 147337,
+      "sha256": "624309358ad93b1fb5173835cdf9f6094305f399dba8e389239fbe6264637715",
+      "reviewedAtOriginalSize": false
+    },
+    {
+      "path": "product-audit-v11_5/focus-large-object-760x900.png",
+      "width": 760,
+      "height": 900,
+      "bytes": 102849,
+      "sha256": "5841565da8625190c8e0c7fb5755829c279b263b247c110fa2928b1fbbbdbc8d",
+      "reviewedAtOriginalSize": false
+    },
+    {
+      "path": "product-audit-v11_5/focus-tiny-object-1280x800.png",
+      "width": 1280,
+      "height": 800,
+      "bytes": 106466,
+      "sha256": "ef4ee2c681d522be142642cce68b8a27d0ba037068292d1b8f8a0cc85aa5b539",
+      "reviewedAtOriginalSize": false
+    },
+    {
+      "path": "product-audit-v11_5/focus-tiny-object-1440x900.png",
+      "width": 1440,
+      "height": 900,
+      "bytes": 115209,
+      "sha256": "e583d089044e0027cbfa1ccfbd3a077e4212c3e2b58474c9f221946af46b3293",
+      "reviewedAtOriginalSize": false
+    },
+    {
+      "path": "product-audit-v11_5/focus-tiny-object-1728x1117.png",
+      "width": 1728,
+      "height": 1117,
+      "bytes": 129941,
+      "sha256": "d5da6fa944dfe83dccb2e226bfe973bcd229112b6ebfa198b031c322998f608a",
+      "reviewedAtOriginalSize": false
+    },
+    {
+      "path": "product-audit-v11_5/focus-tiny-object-760x900.png",
+      "width": 760,
+      "height": 900,
+      "bytes": 92481,
+      "sha256": "9ef2b9a8529ece1d959d269294f9f34dfbb02a616e3ae720d4c0a2073c91ec0e",
+      "reviewedAtOriginalSize": false
+    },
+    {
+      "path": "product-audit-v11_5/graph-completed-1280x800.png",
+      "width": 1280,
+      "height": 800,
+      "bytes": 143672,
+      "sha256": "3eb882cc11cd63826315e40b3e29cd6afa968be4797ca593a43e56ea660dbb34",
+      "reviewedAtOriginalSize": false
+    },
+    {
+      "path": "product-audit-v11_5/graph-completed-1440x900.png",
+      "width": 1440,
+      "height": 900,
+      "bytes": 149365,
+      "sha256": "83c8708fd5a5715b9973c1892df922ed1bc1bff972ca0e53954c436262cef425",
+      "reviewedAtOriginalSize": false
+    },
+    {
+      "path": "product-audit-v11_5/graph-completed-1728x1117.png",
+      "width": 1728,
+      "height": 1117,
+      "bytes": 154011,
+      "sha256": "a528eb81c51a1bed508b48b3c2ceb06f6c6984e196a1d295b92cc4f86d23975d",
+      "reviewedAtOriginalSize": false
+    },
+    {
+      "path": "product-audit-v11_5/graph-completed-760x900.png",
+      "width": 760,
+      "height": 900,
+      "bytes": 82856,
+      "sha256": "f2924d83ac57252ce31d09bcd3af78281d99395207d865c70aa46c249290b6a2",
+      "reviewedAtOriginalSize": false
+    },
+    {
+      "path": "product-audit-v11_5/graph-deep-focus-1280x800.png",
+      "width": 1280,
+      "height": 800,
+      "bytes": 119751,
+      "sha256": "1c4a822098f238e0cb94a23b398fd2f0f360eaf783f42622e318e9972a33af98",
+      "reviewedAtOriginalSize": false
+    },
+    {
+      "path": "product-audit-v11_5/graph-deep-focus-1440x900.png",
+      "width": 1440,
+      "height": 900,
+      "bytes": 133678,
+      "sha256": "b8f5a4a45e576f1da5a6162054473d41ea06d8ae40bae3eaf0f3b9ef5ff7d584",
+      "reviewedAtOriginalSize": true
+    },
+    {
+      "path": "product-audit-v11_5/graph-deep-focus-1728x1117.png",
+      "width": 1728,
+      "height": 1117,
+      "bytes": 158409,
+      "sha256": "4f9d2191ee9ee9bf550c901add6b0f8c506e633bd90340249a8a97088c29c181",
+      "reviewedAtOriginalSize": false
+    },
+    {
+      "path": "product-audit-v11_5/graph-deep-focus-760x900.png",
+      "width": 760,
+      "height": 900,
+      "bytes": 103572,
+      "sha256": "2a69082a9a0d4b0a9d7c1526a23e7fed4fa7aa002bd7dec48b2febc1e889a54d",
+      "reviewedAtOriginalSize": false
+    },
+    {
+      "path": "product-audit-v11_5/graph-focus-1440x900.png",
+      "width": 1440,
+      "height": 900,
+      "bytes": 121128,
+      "sha256": "63379172299675a6c3221250e779aa8cdb816440c466d8621ec653d5148b6789",
+      "reviewedAtOriginalSize": false
+    },
+    {
+      "path": "product-audit-v11_5/graph-focus-760x900.png",
+      "width": 760,
+      "height": 900,
+      "bytes": 96271,
+      "sha256": "db8b92ffc2e4fff5464690d859cce751e6ce951d620ea523ecc02642faef45e1",
+      "reviewedAtOriginalSize": false
+    },
+    {
+      "path": "product-audit-v11_5/graph-polished-1280x800.png",
+      "width": 1280,
+      "height": 800,
+      "bytes": 170615,
+      "sha256": "dd5c5139747062dcd7fb1e3004f4e197a012b20ad3130f52f1e5311716b8270a",
+      "reviewedAtOriginalSize": false
+    },
+    {
+      "path": "product-audit-v11_5/graph-polished-1440x900.png",
+      "width": 1440,
+      "height": 900,
+      "bytes": 191112,
+      "sha256": "cfe497e3ecf9a7af130be4ff5dc430616bbfb4160ebfb3397b96994a2dc9bb56",
+      "reviewedAtOriginalSize": false
+    },
+    {
+      "path": "product-audit-v11_5/graph-polished-1728x1117.png",
+      "width": 1728,
+      "height": 1117,
+      "bytes": 239661,
+      "sha256": "6349951734671248ac345d71d37d787808604aee4410d95c054c40b392defb5c",
+      "reviewedAtOriginalSize": false
+    },
+    {
+      "path": "product-audit-v11_5/graph-polished-760x900.png",
+      "width": 760,
+      "height": 900,
+      "bytes": 127841,
+      "sha256": "3020342996c10eb5bb296919adbe9a1734b0c8fbbe29dcaa1bc8ec297cde0e87",
+      "reviewedAtOriginalSize": false
+    },
+    {
+      "path": "product-audit-v11_5/startup-1280x800.png",
+      "width": 1280,
+      "height": 800,
+      "bytes": 52097,
+      "sha256": "e2306365e7dc1227eb8a11ee9c120f4b956d2f6fc39d6bf59cbe1c52f507591f",
+      "reviewedAtOriginalSize": false
+    },
+    {
+      "path": "product-audit-v11_5/startup-1440x900.png",
+      "width": 1440,
+      "height": 900,
+      "bytes": 53968,
+      "sha256": "84d1f48b405ffee1a3d61892d0583100fcb0f1bb322d3dee602f3eb3db0aad0c",
+      "reviewedAtOriginalSize": false
+    },
+    {
+      "path": "product-audit-v11_5/startup-1728x1117.png",
+      "width": 1728,
+      "height": 1117,
+      "bytes": 57174,
+      "sha256": "2fc995f139068d16f6637ee9ef899ff01831b2fc3f18952211c93153be1556c7",
+      "reviewedAtOriginalSize": false
+    },
+    {
+      "path": "product-audit-v11_5/startup-760x900.png",
+      "width": 760,
+      "height": 900,
+      "bytes": 33129,
+      "sha256": "1ee08c22875e7cea057137a879afed278235de2f0501dfb0c732da360d6ed22f",
+      "reviewedAtOriginalSize": false
+    },
+    {
+      "path": "provenance/constructor-focus-1280x800.png",
+      "width": 1280,
+      "height": 800,
+      "bytes": 150257,
+      "sha256": "0eb50ed7717942502e98c0c67ae445599412ca50c08d35dd414b9f528fec66e5",
+      "reviewedAtOriginalSize": true
+    },
+    {
+      "path": "provenance/constructor-focus-1440x900.png",
+      "width": 1440,
+      "height": 900,
+      "bytes": 163343,
+      "sha256": "6b66f15a67a4ddb692ebfbc50641b8c3a0474732e90caec168b3c9db6c72ef8c",
+      "reviewedAtOriginalSize": true
+    },
+    {
+      "path": "provenance/constructor-focus-1728x1117.png",
+      "width": 1728,
+      "height": 1117,
+      "bytes": 183139,
+      "sha256": "b0ed64fe0ca3fd3b51203f96377d521cd58608c41902a89ebd05bec50baa0b40",
+      "reviewedAtOriginalSize": true
+    },
+    {
+      "path": "provenance/constructor-focus-760x900.png",
+      "width": 760,
+      "height": 900,
+      "bytes": 106785,
+      "sha256": "33c37c053aa870d9a20a12027332de6bbf0923531a6f5d574509c21c992cb55c",
+      "reviewedAtOriginalSize": true
+    },
+    {
+      "path": "screenshots/partial-1280x800.png",
+      "width": 1280,
+      "height": 800,
+      "bytes": 138239,
+      "sha256": "7f3fd32ddb120bf6c350094f6b9b9b9b2705beb75f929eebde87445f82b13f8c",
+      "reviewedAtOriginalSize": false
+    },
+    {
+      "path": "screenshots/partial-1440x900.png",
+      "width": 1440,
+      "height": 900,
+      "bytes": 150048,
+      "sha256": "457e758d680611ffa2f75b526c4c407f2d71d426e1ca60e31a74bec681476db4",
+      "reviewedAtOriginalSize": false
+    },
+    {
+      "path": "screenshots/partial-1728x1117.png",
+      "width": 1728,
+      "height": 1117,
+      "bytes": 168782,
+      "sha256": "d6bd4c214024afebc54ee17f32e1b18badf22c8131d86ae2dba8fc7ca12894f8",
+      "reviewedAtOriginalSize": false
+    },
+    {
+      "path": "screenshots/partial-760x900.png",
+      "width": 760,
+      "height": 900,
+      "bytes": 119065,
+      "sha256": "1285861e19c3fdddeb048ffc2a2b48dc5157a1ee35e337a5d6fcc4ea74508bc0",
+      "reviewedAtOriginalSize": false
+    },
+    {
+      "path": "screenshots/partial-overview-1440x900.png",
+      "width": 1440,
+      "height": 900,
+      "bytes": 191986,
+      "sha256": "288dd3ceae66a480f174a1ecc492cb4ae9dcd898e28ba33dddc53b4505f58498",
+      "reviewedAtOriginalSize": true
+    }
+  ]
+}

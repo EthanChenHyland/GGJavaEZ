@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test'
 import { writeFile, mkdir } from 'node:fs/promises'
 
+const outputRoot = process.env.VJ_QA_OUTPUT_ROOT ?? 'docs/checkpoints/v12-p2'
 let ownedProject: string | null = null
 test.afterEach(async ({ request }) => {
   if (!ownedProject) return
@@ -79,8 +80,8 @@ test('delta reconnect and duplicates preserve History while live Java advances',
   await expect(page.locator('.ide-console-output')).toContainText('DONE 12720')
   await expect(page.getByRole('slider', { name: 'Scrub execution' })).toBeVisible()
   expect(errors).toEqual([])
-  await mkdir('docs/checkpoints/v12-p2', { recursive: true })
-  await writeFile('docs/checkpoints/v12-p2/transport-browser.json', JSON.stringify({ transport, rawEventCount: done.rawEventCount, stdout: done.stdout, exitCode: done.exitCode, errors }, null, 2)+'\n')
+  await mkdir(outputRoot, { recursive: true })
+  await writeFile(`${outputRoot}/transport-browser.json`, JSON.stringify({ transport, rawEventCount: done.rawEventCount, stdout: done.stdout, exitCode: done.exitCode, errors }, null, 2)+'\n')
 })
 
 test('browser ingestion yields bounded slices while a real 3D scene stays mounted', async ({ page }) => {
@@ -120,5 +121,5 @@ test('browser ingestion yields bounded slices while a real 3D scene stays mounte
   expect(report.semanticEvents).toBeGreaterThan(120000)
   expect(report.sliceMs.p95).toBeLessThan(30)
   expect(report.concurrentFrameMs.count).toBeGreaterThan(5)
-  await writeFile('docs/checkpoints/v12-p2/browser-performance.json', JSON.stringify(report, null, 2)+'\n')
+  await writeFile(`${outputRoot}/browser-performance.json`, JSON.stringify(report, null, 2)+'\n')
 })

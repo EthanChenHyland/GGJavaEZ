@@ -81,7 +81,7 @@
   {
    "id": "libraryBoundaries",
    "kind": "eventCount",
-   "status": "target:P4",
+   "status": "current",
    "requirement": "R7.1",
    "type": "CALL",
    "min": 4

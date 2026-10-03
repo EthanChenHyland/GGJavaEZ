@@ -425,3 +425,28 @@ describe('normalizeTrace', () => {
       .toEqual({ fileId: 'src/Person.java', line: 3 })
   })
 })
+
+
+it('construction provenance retains the allocating caller source with duplicate source filenames', () => {
+  const mapping: InstrumentationSourceManifest = {
+    sources: [
+      { fileId: 'src/a/Main.java', name: 'Main.java', content: '// a\n\n\nnew object\n', sha256: 'a' },
+      { fileId: 'src/b/Main.java', name: 'Main.java', content: '// b\n\n\nclass Widget\n', sha256: 'b' },
+    ],
+    classes: ['a.Main', 'b.Main$Widget'].map((className, index) => ({ className, sourceFile: 'Main.java',
+      fileId: `src/${index ? 'b' : 'a'}/Main.java`, sourceSha256: index ? 'b' : 'a', status: 'resolved',
+      candidates: [`src/${index ? 'b' : 'a'}/Main.java`] })),
+  }
+  const raw = events(
+    { type: 'enter', provenanceVersion: 1, className: 'a.Main', callerFrameId: null, receiver: null, parameters: [], line: 4 },
+    { type: 'object', className: 'b.Main$Widget', objectId: '17', fields: [], line: 4 },
+    { type: 'constructed', className: 'b.Main$Widget', objectId: '17', newSite: 2, site: 7, line: 4 },
+    { type: 'exit', className: 'a.Main', line: 4 },
+  )
+  const result = normalizeTrace(raw, mapping, complete)
+  const constructed = result.trace.events.find(event => event.type === 'EXECUTION_FACT' && event.fact.kind === 'constructed')
+  expect(constructed).toMatchObject({ source: { fileId: 'src/a/Main.java', line: 4 },
+    fact: { context: { owner: 'a.Main', name: 'main', descriptor: '([Ljava/lang/String;)V', site: 7, source: { fileId: 'src/a/Main.java', line: 4 } } } })
+  expect(result.capability.diagnostics).toEqual([])
+  expect(replay(validateTrace(result.trace)).status).toBe('ended')
+})

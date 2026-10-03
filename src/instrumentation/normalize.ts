@@ -1,5 +1,6 @@
 /** Pure Raw NDJSON v1 -> semantic trace v2 boundary. No source-level facts are inferred. */
 import type { RuntimeSlot, RuntimeState, RuntimeValue, ScalarValue, SlotOwner, SourceLocation, TraceDocument, TraceEvent, TraceEventBase } from '../contracts/runtime'
+import { ProvenanceNormalizer, provenanceValue } from './provenance'
 import { isRecordingStop } from '../runtime/state'
 import { ExecutionHistory, attachHistory } from '../runtime/history'
 import { freezeValue } from '../runtime/storage'
@@ -147,6 +148,7 @@ export class TraceNormalizer {
     this.trace = { schemaVersion: 2, demoId, sourceFiles, events }
     emit({ type: 'PROGRAM_START' }, null, 'Program started', 'major')
     attachHistory(this.trace, this.history)
+    const provenance = new ProvenanceNormalizer()
     const openExceptions = new Set<string>()
     const registered = new Set<string>()
     const displayIds = new Map<string, number>()
@@ -273,13 +275,13 @@ export class TraceNormalizer {
             }
           }
           const frame = raw.frameId === null ? null : frameId(raw.frameId)
-          const contextClass = raw.type === 'throw' || raw.type === 'object'
+          const contextClass = raw.type === 'throw' || raw.type === 'object' || raw.type === 'constructed'
             ? frame ? this.state.frames[frame]?.className ?? null : null : raw.className
           if (contextClass && classes.has(contextClass) && !coveredClasses.has(contextClass)) {
             coveredClasses.add(contextClass)
             classesChanged = true
           }
-          // Throw/object className names a semantic type, not the emitting frame's source owner.
+          // Throw/object/constructed className names a semantic type, not the emitting frame's source owner.
           const source = sourceFor(raw, contextClass)
           switch (raw.type) {
             case 'object': {
@@ -331,14 +333,24 @@ export class TraceNormalizer {
               emit({ type: 'ENTER_METHOD', frameId: frame,
                 callerFrameId: raw.callerFrameId === null ? null : frameId(raw.callerFrameId),
                 className: raw.className, methodName: raw.methodName, locals: [],
-                ...(scalarReturn ? { returnType } : {}) }, source, `${raw.methodName} entered`, 'major')
+                ...(scalarReturn || provenance.enabled || raw.provenanceVersion === 1 ? { returnType } : {}) }, source, `${raw.methodName} entered`, 'major')
               observed('methods')
-              if (!scalarReturn) mark('returns', 'partial', `Reference return type ${returnType} cannot be represented as a scalar transfer`)
+              if (!scalarReturn && !provenance.enabled && raw.provenanceVersion !== 1) mark('returns', 'partial', `Reference return type ${returnType} cannot be represented as a scalar transfer`)
               if (raw.receiver) declare(frame, 0, 'receiver', 'this', `L${raw.className.replaceAll('.', '/')};`, raw.receiver, 'parameter', source)
               for (const parameter of raw.parameters) declare(frame, parameter.slot, parameter.liveRange,
                 parameter.name, parameter.descriptor, parameter.value, 'parameter', source)
               break
             }
+            case 'receiver_ready': {
+              if (!frame || !raw.className) throw new Error('Receiver ready without frame')
+              declare(frame, 0, 'receiver', 'this', `L${raw.className.replaceAll('.', '/')};`, raw.receiver, 'parameter', source)
+              break
+            }
+            case 'call':
+            case 'call_return':
+            case 'field_read':
+            case 'constructed':
+              break
             case 'line':
               if (frame && source) emit({ type: 'LINE_EXECUTE', frameId: frame }, source, `Line ${raw.line}`, 'quiet')
               else mark('sourceMapping', 'partial', `Line ${raw.line} has no resolved project source`)
@@ -395,7 +407,8 @@ export class TraceNormalizer {
                 mark('returns', 'partial', 'Reference return has no representable scalar transfer')
                 break
               }
-              const value = rawScalar(raw.value)
+              const graphValue = provenance.enabled ? provenanceValue(raw.value) : null
+              const value = graphValue?.kind === 'reference' ? { ...graphValue, javaType: this.state.frames[frame].returnType! } : rawScalar(raw.value)
               if (!value) { mark('returns', 'partial', 'Reference or unsupported return has no scalar transfer'); break }
               emit({ type: 'RETURN_VALUE', frameId: frame, value, destination: null }, source, 'Value returned', 'major')
               observed('returns')
@@ -442,6 +455,8 @@ export class TraceNormalizer {
             default:
               throw new Error(`Unknown raw event type ${(raw as RawRuntimeEvent).type}`)
           }
+          const fact = provenance.fact(raw, source)
+          if (fact) emit({ type: 'EXECUTION_FACT', fact }, source, `JVM ${fact.kind}`, 'quiet')
           lastRecordedSeq = raw.seq
         } catch (error) {
           failure = `Raw event ${raw.seq}: ${(error as Error).message}`

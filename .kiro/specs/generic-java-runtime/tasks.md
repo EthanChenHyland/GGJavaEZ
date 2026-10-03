@@ -223,3 +223,7 @@ Corrections found while implementing Phase 0, checked against the code:
 - **0.2:** The spec's fixture-word list (`Person`, `Scanner`, …) would also flag legitimate generic code that handles JDK types (for example a future `java.util.Scanner` library boundary in P4). The rule therefore checks literals only, and will need an allowlist once P4/P6 add JDK-aware summaries.
 - **0.7:** The design §10 budgets assume a GPU reference machine. The sandbox baseline uses software WebGL, so only the pipeline (Node) numbers are comparable across environments.
 - **ACC-13/14:** As specified, these cannot pass any `current` "large world" fact today, because the Recorder halts the JVM. Their current facts characterize the halt; the large-world facts are `target:P1`.
+
+## User-scoped Phase 3 checkpoint
+
+The later user request scopes Phase 3 to truthful invocation/value provenance, rather than all storage coverage above. Constructor true-start/receiver_ready/frame-token spike and real nested invocation semantics are implemented in [ADR-013](../../../docs/architecture/ADR-013-truthful-invocations-and-provenance.md). Installed JDK 26 and --release 17/21/25 class files are verified; actual 17/21/25 runtimes are unavailable. Synthetic pre-super outer links, broad arrays/statics/library coverage and Spatial 2.0 remain deferred. See [Phase 3 checkpoint](../../../docs/checkpoints/v12-p3/ARCHITECTURE.md) for the locked graph contract and final validation.

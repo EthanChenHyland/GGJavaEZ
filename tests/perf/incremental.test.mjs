@@ -6,7 +6,7 @@ import { generateRawTrace } from '../../src/testing/traceGen.ts';
 import { TraceNormalizer } from '../../src/instrumentation/normalize.ts';
 import { validateTrace } from '../../src/runtime/trace.ts';
 import { seek } from '../../src/runtime/seek.ts';
-const out='docs/checkpoints/v12-p2/performance.json';
+const out=`${process.env.VJ_PERF_OUTPUT_ROOT ?? 'docs/checkpoints/v12-p2'}/performance.json`;
 const time=f=>{const start=performance.now();const value=f();return [value,performance.now()-start]};
 const pct=(values,p)=>{const sorted=[...values].sort((a,b)=>a-b);return sorted[Math.min(sorted.length-1,Math.floor(p*sorted.length))]};
 const terminal={status:'complete',exitCode:0,diagnostic:null};
@@ -55,7 +55,7 @@ function measure(size) {
  return summary;
 }
 test('Phase 2 incremental pipeline and random scrub benchmark',async()=>{
- await mkdir('docs/checkpoints/v12-p2',{recursive:true});
+ await mkdir(process.env.VJ_PERF_OUTPUT_ROOT ?? 'docs/checkpoints/v12-p2',{recursive:true});
  const report={phase:'v12-p2',base:'14e2a17',recordedAt:new Date().toISOString(),environment:{node:process.version,platform:process.platform,arch:process.arch,cpu:cpus()[0]?.model,cpus:cpus().length,memoryGiB:totalmem()/2**30},
   note:'Node processing, not WebGL/GPU. Append: 1000 raw-event batches. Scrub: 30 deterministic random samples. One construction sample per size. Retained heap includes generator raw input, semantic events/history and exported JSON; reload transients are collected with explicit GC. Not isolated checkpoint bytes.',samples:[]};
  for(const size of (process.env.VJ_P2_SIZES??'5000,20000,100000,205000').split(',').map(Number)){

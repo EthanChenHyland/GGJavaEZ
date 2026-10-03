@@ -1,0 +1,60 @@
+{
+  "constructors": [
+    {
+      "id": "jvm:frame:f2",
+      "method": {
+        "owner": "InheritanceMain$Extension",
+        "name": "<init>",
+        "descriptor": "()V"
+      },
+      "callerInvocationId": "jvm:frame:f1",
+      "callId": "jvm:call:c1",
+      "parameterIds": [],
+      "status": "returned",
+      "enteredAt": "jvm:event:7",
+      "receiverObjectId": "jvm:object:o1",
+      "completedAt": "jvm:event:45"
+    },
+    {
+      "id": "jvm:frame:f3",
+      "method": {
+        "owner": "InheritanceMain$Extension",
+        "name": "<init>",
+        "descriptor": "(I)V"
+      },
+      "callerInvocationId": "jvm:frame:f2",
+      "callId": "jvm:call:c2",
+      "parameterIds": [
+        "jvm:frame:f3:local:1:1:0:15"
+      ],
+      "status": "returned",
+      "enteredAt": "jvm:event:12",
+      "receiverObjectId": "jvm:object:o1",
+      "completedAt": "jvm:event:39"
+    },
+    {
+      "id": "jvm:frame:f4",
+      "method": {
+        "owner": "InheritanceMain$Foundation",
+        "name": "<init>",
+        "descriptor": "(I)V"
+      },
+      "callerInvocationId": "jvm:frame:f3",
+      "callId": "jvm:call:c3",
+      "parameterIds": [
+        "jvm:frame:f4:local:1:1:0:8"
+      ],
+      "status": "returned",
+      "enteredAt": "jvm:event:17",
+      "receiverObjectId": "jvm:object:o1",
+      "completedAt": "jvm:event:29"
+    }
+  ],
+  "diagnostics": [],
+  "semanticEvents": 123,
+  "edges": 104,
+  "retainedSameHead": true,
+  "exitCode": 0,
+  "stdout": "34\n",
+  "errors": []
+}

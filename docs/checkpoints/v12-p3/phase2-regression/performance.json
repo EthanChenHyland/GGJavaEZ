@@ -1,0 +1,184 @@
+{
+  "phase": "v12-p2",
+  "base": "14e2a17",
+  "recordedAt": "2026-10-03T03:45:36.801Z",
+  "environment": {
+    "node": "v24.20.0",
+    "platform": "darwin",
+    "arch": "arm64",
+    "cpu": "Apple M4 Pro",
+    "cpus": 12,
+    "memoryGiB": 24
+  },
+  "note": "Node processing, not WebGL/GPU. Append: 1000 raw-event batches. Scrub: 30 deterministic random samples. One construction sample per size. Retained heap includes generator raw input, semantic events/history and exported JSON; reload transients are collected with explicit GC. Not isolated checkpoint bytes.",
+  "samples": [
+    {
+      "rawEvents": 5021,
+      "semanticEvents": 6264,
+      "generator": {
+        "invocations": 382,
+        "objects": 110,
+        "maxDepth": 12
+      },
+      "normalizeMs": 48.855832999999976,
+      "indexValidateMs": 0,
+      "finishMs": 0.21879099999999596,
+      "reloadMs": 57.603375000000014,
+      "appendBatchMs": {
+        "p50": 8.947333,
+        "p95": 12.849791999999994,
+        "first": 12.849791999999994,
+        "last": 0.2219999999999942
+      },
+      "scrubMs": {
+        "p50": 0.34583299999999895,
+        "p95": 0.7870840000000214,
+        "max": 1.569749999999999
+      },
+      "returnToLiveMs": 0.0262079999999969,
+      "deltaBytes": 976289,
+      "fullBytes": 2920066,
+      "eventJsonBytes": 1730835,
+      "heapMiB": 28.87323760986328,
+      "retainedDeltaMiB": 18.88233184814453,
+      "explicitGc": true,
+      "checkpointPolicy": {
+        "length": 6264,
+        "checkpointCount": 25,
+        "checkpointInterval": 256,
+        "maxCheckpoints": 256,
+        "cachedMaterializationCount": 1,
+        "cachedMaterializationCursor": 5341,
+        "retainedStateRoots": 27,
+        "replayedEvents": 3406
+      },
+      "releasedHistoryMiB": 9.122817993164062
+    },
+    {
+      "rawEvents": 20007,
+      "semanticEvents": 24591,
+      "generator": {
+        "invocations": 1409,
+        "objects": 370,
+        "maxDepth": 12
+      },
+      "normalizeMs": 161.05599899999993,
+      "indexValidateMs": 0,
+      "finishMs": 0.04050000000000864,
+      "reloadMs": 186.238792,
+      "appendBatchMs": {
+        "p50": 6.6283750000000055,
+        "p95": 14.327375000000018,
+        "first": 7.437375000000003,
+        "last": 0.050791000000003805
+      },
+      "scrubMs": {
+        "p50": 0.43183299999998326,
+        "p95": 0.8802500000000464,
+        "max": 8.793708000000038
+      },
+      "returnToLiveMs": 0.001249999999913598,
+      "deltaBytes": 3882887,
+      "fullBytes": 40747436,
+      "eventJsonBytes": 6600298,
+      "heapMiB": 75.3423843383789,
+      "retainedDeltaMiB": 63.241058349609375,
+      "explicitGc": true,
+      "checkpointPolicy": {
+        "length": 24591,
+        "checkpointCount": 97,
+        "checkpointInterval": 256,
+        "maxCheckpoints": 256,
+        "cachedMaterializationCount": 1,
+        "cachedMaterializationCursor": 20968,
+        "retainedStateRoots": 99,
+        "replayedEvents": 3933
+      },
+      "releasedHistoryMiB": 36.931617736816406
+    },
+    {
+      "rawEvents": 100017,
+      "semanticEvents": 122139,
+      "generator": {
+        "invocations": 6814,
+        "objects": 1693,
+        "maxDepth": 12
+      },
+      "normalizeMs": 819.0975759999993,
+      "indexValidateMs": 0,
+      "finishMs": 0.07237499999996544,
+      "reloadMs": 1052.3990840000001,
+      "appendBatchMs": {
+        "p50": 6.1001249999999345,
+        "p95": 17.411917000000017,
+        "first": 7.074374999999918,
+        "last": 0.18933300000003328
+      },
+      "scrubMs": {
+        "p50": 0.8823750000001382,
+        "p95": 1.4802079999999478,
+        "max": 9.321374999999989
+      },
+      "returnToLiveMs": 0.002624999999625288,
+      "deltaBytes": 19463510,
+      "fullBytes": 981358328,
+      "eventJsonBytes": 32652162,
+      "heapMiB": 313.4834899902344,
+      "retainedDeltaMiB": 299.6696319580078,
+      "explicitGc": true,
+      "checkpointPolicy": {
+        "length": 122139,
+        "checkpointCount": 239,
+        "checkpointInterval": 512,
+        "maxCheckpoints": 256,
+        "cachedMaterializationCount": 1,
+        "cachedMaterializationCursor": 104146,
+        "retainedStateRoots": 241,
+        "replayedEvents": 8165
+      },
+      "releasedHistoryMiB": 169.8955535888672
+    },
+    {
+      "rawEvents": 205024,
+      "semanticEvents": 250289,
+      "generator": {
+        "invocations": 13967,
+        "objects": 3377,
+        "maxDepth": 12
+      },
+      "normalizeMs": 1647.2287939999974,
+      "indexValidateMs": 0,
+      "finishMs": 0.10679199999958655,
+      "reloadMs": 2155.188625,
+      "appendBatchMs": {
+        "p50": 6.112500000000182,
+        "p95": 16.52220800000032,
+        "first": 14.66549999999961,
+        "last": 0.314249999999447
+      },
+      "scrubMs": {
+        "p50": 1.510958999999275,
+        "p95": 10.458208000000013,
+        "max": 12.37920800000029
+      },
+      "returnToLiveMs": 0.0031249999992724042,
+      "deltaBytes": 40073042,
+      "fullBytes": 4115465661,
+      "eventJsonBytes": 67174371,
+      "heapMiB": 616.6551208496094,
+      "retainedDeltaMiB": 594.8923873901367,
+      "explicitGc": true,
+      "checkpointPolicy": {
+        "length": 250289,
+        "checkpointCount": 245,
+        "checkpointInterval": 1024,
+        "maxCheckpoints": 256,
+        "cachedMaterializationCount": 1,
+        "cachedMaterializationCursor": 213417,
+        "retainedStateRoots": 247,
+        "replayedEvents": 14840
+      },
+      "releasedHistoryMiB": 335.21192169189453
+    }
+  ]
+}

@@ -4,6 +4,9 @@ status: 'current' = must hold today; 'target:Pn' = required by the spec phase n,
 import json, os
 Q = "Does Spatial understand this because its runtime model is generic?"
 def F(id, kind, status, req=None, **kw):
+    # Phase 3 implements these semantic facts through ExecutionGraph rather than renderer inference.
+    if kind in ("referenceReturn", "returnDestination", "parameterOrigin", "inputDestination") or kind == "eventCount" and kw.get("type") == "CALL" or id.startswith("ctorNest"):
+        status = "current"
     d = {"id": id, "kind": kind, "status": status}
     if req: d["requirement"] = req
     d.update(kw); return d
@@ -38,7 +41,7 @@ P["acc02-shapes-plain"] = dict(id="ACC-2", title="Shape hierarchy: abstract clas
  F("superDescribe3","caller",C,callee="Shape.describe",caller="Polygon.describe"),
  F("concrete","objects",C,className="Square",min=1,max=1), F("records","objects",C,className="Dimensions",min=2,max=2),
  F("enumConstants","objects",C,className="Unit",min=2,max=2), F("recordComponent","field",C,className="Dimensions",field="width",includes=[6,3]),
- F("ctorNestPolygon","caller","target:P3","R5.5",callee="Polygon.<init>",caller="Rectangle.<init>",note="Today recorded as a sibling under Main.main (tests/characterization/constructorNesting)"),
+ F("ctorNestPolygon","caller","target:P3","R5.5",callee="Polygon.<init>",caller="Rectangle.<init>",note="Phase 3 true-start constructor entry; regression in tests/characterization/constructorNesting"),
  F("ctorNestShape","caller","target:P3","R5.5",callee="Shape.<init>",caller="Polygon.<init>"),
  F("enumStatics","statics","target:P3","R5.2",className="Unit",fields=["CENTIMETRE","INCH"]),
  F("dispatchFacts","eventCount","target:P4","R6.1-6.2",type="CALL",min=2)])

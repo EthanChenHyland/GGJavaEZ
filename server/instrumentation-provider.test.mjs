@@ -37,7 +37,9 @@ test('Person: stable identity, constructor and successful field/local observatio
     assert.notEqual(objects[0].objectId, objects[1].objectId);
     assert.deepEqual(types(r, 'field').map((e) => e.value.value), [18, 7]);
     assert.ok(types(r, 'local').some((e) => e.name === 'a' && e.value.objectId === objects[0].objectId));
-    assert.ok(types(r, 'enter').some((e) => e.methodName === '<init>' && e.receiver.objectId === objects[0].objectId));
+    const constructor = types(r, 'enter').find((e) => e.methodName === '<init>' && e.className === 'Person');
+    assert.equal(constructor.receiver, null);
+    assert.ok(types(r, 'receiver_ready').some((e) => e.frameId === constructor.frameId && e.receiver.objectId === objects[0].objectId));
     assert.ok(types(r, 'line').some((e) => e.className === 'Person'));
     assert.equal(r.capability.coveredClasses.length, 2);
     assert.equal(r.capability.features.console.status, 'partial');

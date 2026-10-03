@@ -107,21 +107,21 @@
   {
    "id": "returnLands",
    "kind": "returnDestination",
-   "status": "target:P4",
+   "status": "current",
    "requirement": "R6.4",
    "min": 4
   },
   {
    "id": "argumentOrigins",
    "kind": "parameterOrigin",
-   "status": "target:P4",
+   "status": "current",
    "requirement": "R6.5",
    "min": 6
   },
   {
    "id": "callSites",
    "kind": "eventCount",
-   "status": "target:P4",
+   "status": "current",
    "requirement": "R6.1",
    "type": "CALL",
    "min": 10

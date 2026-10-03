@@ -4,6 +4,7 @@ import type { RuntimeSlot, RuntimeState, SlotOwner, TraceDocument } from '../con
 import { seek } from '../runtime'
 import { formatValue } from '../ui/Inspector'
 import { causeHistory, type CauseTarget } from './causality'
+import { committedExceptionCursor } from './exceptionCursor'
 import './debugger.css'
 
 export function ErrorExplorer({ trace, runtime, selection, stderr, onNavigate }: {
@@ -15,7 +16,7 @@ export function ErrorExplorer({ trace, runtime, selection, stderr, onNavigate }:
   const failures = complete.exceptions
   const [chosen, setChosen] = useState('')
   const failure = failures.find((item) => item.eventId === chosen) ?? failures.at(-1)
-  const throwCursor = failure ? trace.events.findIndex((event) => event.eventId === failure.eventId) + 1 : 0
+  const throwCursor = failure ? committedExceptionCursor(trace, trace.events.findIndex((event) => event.eventId === failure.eventId)) : 0
   const snapshot = useMemo(() => seek(trace, throwCursor), [trace, throwCursor])
   const [target, setTarget] = useState<CauseTarget | null>(null)
   const [tracing, setTracing] = useState(false)
@@ -39,7 +40,7 @@ export function ErrorExplorer({ trace, runtime, selection, stderr, onNavigate }:
   }}><span>{slot.name}<small>{slot.role === 'parameter' ? 'parameter · ' : ''}{slot.javaType}</small></span><code className={slot.value.kind === 'null' ? 'is-null' : ''}>{slot.value.kind === 'uninitialized' ? 'unavailable' : formatValue(slot.value, snapshot.objects)}</code></button>
   if (!failure) return <p className="debug-empty">No exception was observed in this execution.</p>
   const sourceLine = failure.source ? trace.sourceFiles.find((file) => file.fileId === failure.source!.fileId)?.content.split('\n')[failure.source.line - 1] : null
-  const lifecycle = trace.events.flatMap((event, index) => 'exceptionId' in event && event.exceptionId === failure.exceptionId ? [{ event, cursor: index + 1 }] : [])
+  const lifecycle = trace.events.flatMap((event, index) => 'exceptionId' in event && event.exceptionId === failure.exceptionId ? [{ event, cursor: committedExceptionCursor(trace, index) }] : [])
   const liveFailure = runtime?.exceptions.find((item) => item.eventId === failure.eventId)
   const terminalEvent = trace.events.at(-1)
   const runCrashed = terminalEvent?.type === 'PROGRAM_ABORT' && terminalEvent.reason === 'program_crashed'

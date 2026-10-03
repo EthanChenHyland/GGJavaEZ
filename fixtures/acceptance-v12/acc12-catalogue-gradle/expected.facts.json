@@ -96,7 +96,7 @@
   {
    "id": "foundBook",
    "kind": "referenceReturn",
-   "status": "target:P3",
+   "status": "current",
    "requirement": "R5.3",
    "method": "catalogue.search.TitleSearch.firstContaining"
   }

@@ -10,19 +10,23 @@ import { endpointPosition, relevantFlowHistory, semanticFlowPoints, transitionIs
 import { deriveSemanticTransition, transitionsForTrace, type SemanticTransition } from './semanticTransition'
 
 describe('semantic transition pipeline', () => {
-  it('derives field mutation from adjacent immutable snapshots and only correlates the same named parameter', () => {
+  it('keeps field writes destination-only even when a parameter has the same name and value', () => {
     const trace = loadPersonTrace()
     const index = trace.events.findIndex((item) => item.type === 'SET_FIELD' && item.label.includes('age'))
     const before = seek(trace, index)
     const after = seek(trace, index + 1)
     const prior = before.objects['object:person:17'].fields
     const flow = deriveSemanticTransition(before, trace.events[index], after)!
-    expect(flow).toMatchObject({ kind: 'field-write', evidence: 'correlated', value: { value: 18 } })
-    expect(flow.from?.id).toContain('setAge:1:age')
+    expect(flow).toMatchObject({ kind: 'field-write', evidence: 'local', value: { value: 18 } })
+    expect(flow).not.toHaveProperty('from')
     expect(flow.to?.id).toContain('person:17:age')
-    expect(transitionIsFlow(flow)).toBe(true)
+    expect(transitionIsFlow(flow)).toBe(false)
     expect(prior).not.toEqual(after.objects['object:person:17'].fields)
     expect(before.objects['object:person:17'].fields).toEqual(prior)
+  })
+
+  it.each([loadPersonTrace, loadRecursionTrace, loadArrayTrace, loadControlTrace])('never emits correlated data flow (%#)', (load) => {
+    expect(transitionsForTrace(load()).some(item => item.evidence === 'correlated')).toBe(false)
   })
 
   it('uses explicit array origins and retains cell XYZ across history', () => {

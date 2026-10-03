@@ -253,7 +253,7 @@ describe('control malformed events', () => {
     ['EVALUATE_CONDITION', 'takenLabel', ''], ['EVALUATE_CONDITION', 'skippedLabel', null],
     ['LOOP_ITERATION', 'loopId', ''], ['LOOP_ITERATION', 'iteration', -1],
     ['LOOP_ITERATION', 'iteration', 1.5], ['LOOP_ITERATION', 'status', 'pending'],
-    ['INPUT_READ', 'readerObjectId', ''], ['INPUT_READ', 'method', 'nextDouble'],
+    ['INPUT_READ', 'readerObjectId', ''], ['INPUT_READ', 'method', ''],
     ['INPUT_READ', 'inputIndex', -1], ['INPUT_READ', 'inputIndex', 0.5],
     ['INPUT_READ', 'destinationSlotId', ''], ['INPUT_READ', 'text', 42],
     ['INPUT_READ', 'value', { kind: 'primitive', javaType: 'double', value: -7 }],
@@ -431,7 +431,7 @@ describe('condition and loop validation', () => {
 
 describe('console and reader validation', () => {
   it.each([
-    ['unknown reader', 'INPUT_READ', (event: EventOf<'INPUT_READ'>) => { event.readerObjectId = 'missing' }, 'existing Scanner'],
+    ['unknown reader', 'INPUT_READ', (event: EventOf<'INPUT_READ'>) => { event.readerObjectId = 'missing' }, 'existing object'],
     ['out of order input', 'INPUT_READ', (event: EventOf<'INPUT_READ'>) => { event.inputIndex = 1 }, 'consumed input count'],
     ['unknown input destination', 'INPUT_READ', (event: EventOf<'INPUT_READ'>) => { event.destinationSlotId = 'missing' }, 'Unknown slot'],
     ['wrong destination type', 'INPUT_READ', (event: EventOf<'INPUT_READ'>) => { event.destinationSlotId = slot('input') }, 'Value type mismatch'],
@@ -454,16 +454,16 @@ describe('console and reader validation', () => {
     expect(() => validateTrace(trace)).toThrow()
   })
 
-  it('rejects repeated input indices and a Scanner with no current live reference', () => {
+  it('rejects repeated input indices and a reader with no current live reference', () => {
     expect(() => validateTrace(changedEvent('INPUT_READ', 1, (event) => { event.inputIndex = 0 }))).toThrow('consumed input count')
     const trace = loadControlTrace()
     const input = eventsOf(trace, 'INPUT_READ')[0]
     const before = snapshotCopy(seek(trace, input.seq))
     before.frames[main].locals[slot('input')].value = { kind: 'null' }
-    expect(() => applyEvent(before, input)).toThrow('live Scanner reference')
-    const nonScanner = snapshotCopy(seek(trace, input.seq))
-    nonScanner.objects[scanner].className = 'Person'
-    expect(() => applyEvent(nonScanner, input)).toThrow('existing Scanner')
+    expect(() => applyEvent(before, input)).toThrow('live reference')
+    const otherReader = snapshotCopy(seek(trace, input.seq))
+    otherReader.objects[scanner].className = 'OtherReader'
+    expect(applyEvent(otherReader, input).console.at(-1)?.value).toEqual(input.value)
   })
 
   it('supports signed Java int endpoints and console scalar output without an observed origin', () => {

@@ -65,7 +65,7 @@ export const evaluators = {
     return { ok: values.some((value) => sameScalar(value, f.value)), detail: `${f.method} ${f.name} observed ${JSON.stringify(values.slice(0, 8))}` };
   },
   eventCount: (run, f) => {
-    const n = run.trace.events.filter((event) => f.type === '*' || event.type === f.type).length;
+    const n = f.type === 'CALL' ? Object.keys(run.final.executionGraph?.calls ?? {}).length : run.trace.events.filter((event) => f.type === '*' || event.type === f.type).length;
     return { ok: n >= (f.min ?? 0) && (f.max === undefined || n <= f.max), detail: `${n} ${f.type}` };
   },
   maxDepth: (run, f) => { const d = Math.max(...Object.values(run.final.frames).map((frame) => frame.depth)); return { ok: d >= f.min, detail: `max depth ${d}` }; },
@@ -75,7 +75,15 @@ export const evaluators = {
     const values = run.final.returns.filter((r) => !f.method || methodOf(frames[r.frameId]) === f.method).map((r) => scalar(r.value));
     return { ok: f.values.every((v, i) => sameScalar(values[i], v)) && values.length === f.values.length, detail: `returns ${JSON.stringify(values)}` };
   },
-  returnDestination: (run, f) => { const n = run.final.returns.filter((r) => r.destination).length; return { ok: n >= f.min, detail: `${n} returns with a caller destination` }; },
+  returnDestination: (run, f) => {
+    const graph = run.final.executionGraph;
+    const n = graph ? Object.values(graph.invocations).filter(invocation => invocation.returnValueId && (graph.outgoing[invocation.returnValueId] ?? []).some(index => {
+      const edge = graph.edges[index], destination = graph.storage[edge.to];
+      return edge.evidence !== 'unknown' && ((edge.kind === 'ASSIGN' && destination?.kind === 'variable' && destination.ownerId === invocation.callerInvocationId)
+        || (edge.kind === 'COMPUTE' && graph.values[edge.to]?.context.frameId === invocation.callerInvocationId));
+    })).length : run.final.returns.filter(r => r.destination).length;
+    return { ok: n >= f.min, detail: `${n} returns with a proven caller variable or computed-value destination` };
+  },
   referenceReturn: (run, f) => {
     const n = run.final.returns.filter((r) => r.value.kind === 'reference' && (!f.method || methodOf(run.final.frames[r.frameId]) === f.method)).length;
     return { ok: n >= (f.min ?? 1), detail: `${n} reference-valued returns` };
@@ -112,8 +120,7 @@ export const evaluators = {
     const names = (run.dependencies ?? []).map((d) => d.name);
     return { ok: names.some((name) => name.includes(f.name)), detail: `dependencies ${JSON.stringify(names)}` };
   },
-  // ---- Facts naming capabilities that do not exist yet. They read schema fields introduced
-  // ---- by later phases; today they fail honestly because the state has no such data.
+  // Future coverage facts remain expected failures; Phase 3 flow facts query the semantic graph.
   statics: (run, f) => {
     const cls = run.final.classes?.[`jvm:class:${f.className}`] ?? Object.values(run.final.classes ?? {}).find((c) => c.className === f.className);
     const names = cls ? Object.values(cls.statics).map((slot) => slot.name) : [];
@@ -124,11 +131,17 @@ export const evaluators = {
     return { ok: found.length >= (f.min ?? 1) && (f.size === undefined || found.some((o) => o.library?.size === f.size)), detail: `${found.length} ${f.className} library values` };
   },
   parameterOrigin: (run, f) => {
-    const origins = run.trace.events.filter((event) => event.type === 'DECLARE_LOCAL' && event.slot.role === 'parameter' && event.slot.origin?.evidence === 'proven').length;
+    const graph = run.final.executionGraph;
+    const parameters = new Set(Object.values(graph?.invocations ?? {}).flatMap(invocation => invocation.parameterIds));
+    const origins = (graph?.edges ?? []).filter(edge => edge.kind === 'ARGUMENT_BIND' && parameters.has(edge.to) && edge.evidence === 'bytecode-derived').length;
     return { ok: origins >= f.min, detail: `${origins} parameters with proven origin` };
   },
   inputDestination: (run, f) => {
-    const n = run.final.console.filter((entry) => entry.kind === 'input' && entry.destinationSlotId).length;
+    const graph = run.final.executionGraph;
+    const n = graph ? Object.values(graph.io).filter(input => input.kind === 'input-consume' && input.valueId && (graph.outgoing[input.valueId] ?? []).some(index => {
+      const edge = graph.edges[index];
+      return edge.kind === 'ASSIGN' && edge.evidence !== 'unknown' && graph.storage[edge.to]?.kind === 'variable';
+    })).length : run.final.console.filter(entry => entry.kind === 'input' && entry.destinationSlotId).length;
     return { ok: n >= f.min, detail: `${n} input chunks bound to a destination slot` };
   },
 };
