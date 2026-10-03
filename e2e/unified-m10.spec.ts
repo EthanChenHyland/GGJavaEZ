@@ -161,11 +161,16 @@ test('Stop owns the current JVM and a subsequent Run has a fresh session', async
 })
 
 test('free orbit, pan and dolly remain available while live recording advances', async ({ page, request }) => {
-  const id = await project(request, [{ path: 'Main.java', content: 'public class Main { public static void main(String[] a) throws Exception { int n = 0; for (int i = 0; i < 100; i++) { n += i; Thread.sleep(35); } System.out.println(n); } }' }])
+  const id = await project(request, [{ path: 'Main.java', content: 'public class Main { public static void main(String[] a) throws Exception { int n = 0; for (int i = 0; i < 100; i++) { n += i; Thread.sleep(75); } System.out.println(n); } }' }])
   await open(page, id)
   await page.getByRole('button', { name: 'Run', exact: true }).click()
   const running = await phase(request, id, 'RUNNING')
   await expect(page.locator('.spatial-view canvas')).toBeVisible()
+  // The idle ready canvas precedes raw delivery. Drag only after observed
+  // runtime content replaces its overlay and establishes the runtime pane.
+  await expect(page.getByLabel('Runtime ready')).toBeHidden()
+  await expect(page.getByRole('combobox', { name: 'Select runtime entity' })).toContainText('main()')
+  await expect.poll(async () => (await current(request)).phase).toBe('RUNNING')
   const box = await page.locator('.world-canvas').boundingBox()
   expect(box).not.toBeNull()
   const x = box!.x + box!.width * 0.55, y = box!.y + box!.height * 0.52
@@ -182,6 +187,8 @@ test('free orbit, pan and dolly remain available while live recording advances',
   expect((await current(request)).id).toBe(running.id)
   const done = await phase(request, id, 'COMPLETED')
   expect(done.rawEvents.length).toBeGreaterThan(running.rawEvents.length)
+  await expect(page.getByRole('button', { name: 'Return to execution' })).toBeVisible()
+  expect(done.stdout).toBe('4950\n')
 })
 
 test('advanced Run without visualization uses the plain escape path quietly', async ({ page, request }) => {

@@ -1,0 +1,67 @@
+{
+  "base": "14e2a17",
+  "platform": "darwin",
+  "node": "v24.20.0",
+  "samples": [
+    {
+      "rawEvents": 5021,
+      "semanticEvents": 6264,
+      "stats": {
+        "invocations": 382,
+        "objects": 110,
+        "maxDepth": 12
+      },
+      "normalizeMs": 60.099542,
+      "validateMs": 55.86058400000002,
+      "coldSeekMs": 27.01637500000001,
+      "reloadMs": 88.16620800000004,
+      "scrub": {
+        "p50": 1.2027920000000165,
+        "p95": 2.2437500000000057
+      },
+      "fullBytes": 2920066,
+      "deltaBytes": 972816,
+      "heapMiB": 29.133071899414062
+    },
+    {
+      "rawEvents": 20007,
+      "semanticEvents": 24591,
+      "stats": {
+        "invocations": 1409,
+        "objects": 370,
+        "maxDepth": 12
+      },
+      "normalizeMs": 825.5240409999999,
+      "validateMs": 821.559291,
+      "coldSeekMs": 671.2308750000002,
+      "reloadMs": 1490.2517909999997,
+      "scrub": {
+        "p50": 8.251750000000357,
+        "p95": 27.827666000000136
+      },
+      "fullBytes": 40747436,
+      "deltaBytes": 3881668,
+      "heapMiB": 169.33875274658203
+    },
+    {
+      "rawEvents": 100017,
+      "semanticEvents": 122139,
+      "stats": {
+        "invocations": 6814,
+        "objects": 1693,
+        "maxDepth": 12
+      },
+      "normalizeMs": 28120.078042,
+      "validateMs": 29403.836625000004,
+      "coldSeekMs": 28336.4525,
+      "reloadMs": 59762.65804200001,
+      "scrub": {
+        "p50": 287.039208999995,
+        "p95": 793.5742920000048
+      },
+      "fullBytes": 981358328,
+      "deltaBytes": 19460625,
+      "heapMiB": 239.2938690185547
+    }
+  ]
+}

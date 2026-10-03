@@ -163,3 +163,8 @@ Shared DESIGN_TOKENS 2.7 adds neutral history body/face/slot materials: detailed
 ## Phase 1 process output retention
 
 Normal unified Run/Debug streams real process stdout/stderr independently of the semantic recorder. Inline session snapshots retain 32 MiB combined. Complete original stdout/stderr bytes are archived to private local temporary files and can be downloaded when inline retention fills. Archives use bounded-memory writes without an event queue; files remain for up to 32 retained recorder sessions, then are removed on eviction or graceful bridge shutdown. Disk failure is reported as an output-archive failure and does not terminate Java. Abrupt bridge termination can leave temporary archives; they are not durable project history. The legacy finite capture helper still returns a bounded 32 MiB inline console with an explicit truncation flag; it is not the ordinary IDE Run path.
+
+
+## Phase 2 processing infrastructure
+
+Sequence deltas, an accepted raw-file archive, incremental normalization/validation and shared immutable runtime checkpoints replace repeated whole-prefix processing. These changes add no Java type, constructor, library or threading coverage and do not raise the recorder limits. Legacy raw v1/semantic v1-v2 traces remain readable. Live head and historical cursor remain separate, and actual Console/exit continues after observation stops. See [architecture](docs/checkpoints/v12-p2/ARCHITECTURE.md), [performance](docs/checkpoints/v12-p2/PERFORMANCE.md) and [validation](docs/checkpoints/v12-p2/VALIDATION.md).

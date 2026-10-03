@@ -1,0 +1,10 @@
+{
+  "semanticEvents": 3007,
+  "indexMs": 45.278707999999995,
+  "batchLayoutMs": 58.330417,
+  "incrementalLayoutMs": 286.210833,
+  "sceneMs": 15.834957999999972,
+  "frames": 1001,
+  "objects": 3,
+  "anchors": 13292
+}

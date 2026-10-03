@@ -2,7 +2,9 @@ import type { BuildResult, JdkStatus, ProjectEntry, ProjectFile, ProjectSummary,
 import type { DebugCommand, DebugSession, SourceBreakpoint } from '../debugger/contracts'
 import type { JavaProject, LaunchConfiguration } from './javaProject'
 import type { LanguageSnapshot } from '../language/protocol'
-import type { ExecutionSession, StartExecutionRequest } from '../execution/contracts'
+import type { ExecutionSession, RawTraceDelta, StartExecutionRequest } from '../execution/contracts'
+
+export interface ExecutionStream { close(): void }
 
 async function request<T>(url: string, method = 'GET', data?: unknown): Promise<T> {
   const response = await fetch(url, { method, headers: data === undefined ? undefined : { 'content-type': 'application/json' }, body: data === undefined ? undefined : JSON.stringify(data) })
@@ -13,17 +15,46 @@ async function request<T>(url: string, method = 'GET', data?: unknown): Promise<
 
 const project = (id: string) => `/api/projects/${encodeURIComponent(id)}`
 export const bridge = {
-  executionCurrent: () => request<ExecutionSession | null>('/api/execution/current'),
-  executionStart: (id: string, options: StartExecutionRequest) => request<ExecutionSession>(`${project(id)}/execution`, 'POST', options),
-  executionSnapshot: (id: string) => request<ExecutionSession>(`/api/execution/${encodeURIComponent(id)}`),
-  executionCommand: (id: string, command: DebugCommand) => request<ExecutionSession>(`/api/execution/${encodeURIComponent(id)}/command`, 'POST', { command }),
+  executionCurrent: () => request<ExecutionSession | null>('/api/execution/current?transport=delta'),
+  executionStart: (id: string, options: StartExecutionRequest) => request<ExecutionSession>(`${project(id)}/execution?transport=delta`, 'POST', options),
+  executionSnapshot: (id: string) => request<ExecutionSession>(`/api/execution/${encodeURIComponent(id)}?transport=delta`),
+  executionCommand: (id: string, command: DebugCommand) => request<ExecutionSession>(`/api/execution/${encodeURIComponent(id)}/command?transport=delta`, 'POST', { command }),
   executionInput: (id: string, text: string) => request<{ ok: boolean }>(`/api/execution/${encodeURIComponent(id)}/input`, 'POST', { text }),
-  executionStop: (id: string) => request<ExecutionSession>(`/api/execution/${encodeURIComponent(id)}/stop`, 'POST', {}),
-  executionBreakpoints: (id: string, breakpoints: SourceBreakpoint[]) => request<ExecutionSession>(`/api/execution/${encodeURIComponent(id)}/breakpoints`, 'POST', { breakpoints }),
-  executionEvents: (id: string, onSnapshot: (session: ExecutionSession) => void) => {
-    const source = new EventSource(`/api/execution/${encodeURIComponent(id)}/events`)
-    source.addEventListener('session', (event) => onSnapshot(JSON.parse((event as MessageEvent).data) as ExecutionSession))
-    return source
+  executionStop: (id: string) => request<ExecutionSession>(`/api/execution/${encodeURIComponent(id)}/stop?transport=delta`, 'POST', {}),
+  executionBreakpoints: (id: string, breakpoints: SourceBreakpoint[]) => request<ExecutionSession>(`/api/execution/${encodeURIComponent(id)}/breakpoints?transport=delta`, 'POST', { breakpoints }),
+  executionRaw: (id: string, from: number, limit = 256) => request<RawTraceDelta>(`/api/execution/${encodeURIComponent(id)}/raw?from=${from}&limit=${limit}`),
+  executionEvents: (id: string, onSnapshot: (session: ExecutionSession) => void,
+    onRaw: (delta: RawTraceDelta) => Promise<void>, nextSequence: () => number,
+    onError: (error: unknown) => void): ExecutionStream => {
+    let source: EventSource | null = null, stopped = false, timer: ReturnType<typeof setTimeout> | undefined
+    let pendingBytes = 0, pending = Promise.resolve()
+    const reconnect = () => {
+      source?.close(); source = null
+      if (stopped || timer) return
+      // Drain bounded accepted work, then reconnect with its committed cursor.
+      timer = setTimeout(() => { timer = undefined; void pending.then(connect) }, 200)
+    }
+    const connect = () => {
+      if (stopped) return
+      source = new EventSource(`/api/execution/${encodeURIComponent(id)}/events?transport=delta&from=${nextSequence()}`)
+      source.addEventListener('session', event => {
+        try { onSnapshot(JSON.parse((event as MessageEvent).data) as ExecutionSession) } catch (error) { onError(error) }
+      })
+      source.addEventListener('raw', event => {
+        const data = (event as MessageEvent<string>).data
+        // A single indivisible record may consume the 8 MiB recorder budget.
+        // Allow one such frame while empty; ordinary queued work stays under 2 MiB.
+        const queueLimit = pendingBytes === 0 ? 17 * 1024 * 1024 : 2 * 1024 * 1024
+        if (pendingBytes + data.length * 2 > queueLimit) { reconnect(); return }
+        pendingBytes += data.length * 2
+        pending = pending.then(async () => {
+          if (!stopped) await onRaw(JSON.parse(data) as RawTraceDelta)
+        }).catch(error => { onError(error); reconnect() }).finally(() => { pendingBytes -= data.length * 2 })
+      })
+      source.onerror = reconnect
+    }
+    connect()
+    return { close() { stopped = true; source?.close(); clearTimeout(timer) } }
   },
   health: () => request<{ jdk: JdkStatus }>('/api/health'),
   detectJdk: (home: string | null) => request<JdkStatus>('/api/jdk/detect', 'POST', { home }),

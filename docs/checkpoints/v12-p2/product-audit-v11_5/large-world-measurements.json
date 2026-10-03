@@ -1,0 +1,21 @@
+{
+  "sessionId": "c9c3a615-30d5-4f4e-af64-5f6618ddfa11",
+  "loadMs": 10781,
+  "normalizedEvents": 21553,
+  "rawEvents": 12608,
+  "timings": [
+    {
+      "cursor": 10776,
+      "uiCommitAndTwoFramesMs": 354
+    },
+    {
+      "cursor": 7184,
+      "uiCommitAndTwoFramesMs": 654
+    },
+    {
+      "cursor": 21553,
+      "uiCommitAndTwoFramesMs": 582
+    }
+  ],
+  "metric": "UI commit plus two browser animation frames; not GPU presentation or percentile statistics"
+}

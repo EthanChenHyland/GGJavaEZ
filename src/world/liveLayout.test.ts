@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import type { RuntimeSlot, TraceDocument, TraceEvent } from '../contracts/runtime'
-import { loadArrayTrace, loadPersonTrace, loadRecursionTrace } from '../examples/traces'
+import { loadArrayTrace, loadPersonTrace, loadRecursionTrace, loadControlTrace } from '../examples/traces'
+import { createLayout as batchLayout, createLayoutBuilder } from './layout'
+import { createCuratedLayout } from '../examples/curatedLayout'
+import { createScopedLayout } from '../examples/scopedLayout'
 import { worldUnits } from '../theme/tokens'
 import { layoutForTrace as createLayout } from '../app/layoutForTrace'
 
@@ -106,5 +109,106 @@ describe('live debug layout', () => {
     }
     expect(createLayout({ ...trace, events: [first] }).anchors.first).toEqual(layout.anchors.first)
     expect(createLayout({ ...trace, events: [first, array] }).anchors.array).toEqual(layout.anchors.array)
+  })
+})
+
+describe('append-aware generic layout', () => {
+  it.each([loadPersonTrace, loadRecursionTrace, loadArrayTrace, loadControlTrace])('matches every batch prefix, including exact JSON property and corner order (%#)', (load) => {
+    const full = { ...load(), capture }
+    const builder = createLayoutBuilder()
+    for (let cursor = 0; cursor <= full.events.length; cursor++) {
+      if (cursor) builder.append([full.events[cursor - 1]])
+      const expected = batchLayout({ ...full, events: full.events.slice(0, cursor) })
+      expect(builder.state).toEqual(expected)
+      expect(JSON.stringify(builder.state)).toBe(JSON.stringify(expected))
+    }
+  })
+
+  it('preserves old snapshots and shares solids/corners on declaration and value updates', () => {
+    const source = loadRecursionTrace()
+    const trace = { ...source, capture, events: [] as TraceEvent[] }
+    const declaration = source.events.findIndex(event => event.type === 'DECLARE_LOCAL')
+    expect(declaration).toBeGreaterThan(0)
+    trace.events.push(...source.events.slice(0, declaration))
+    const before = createLayout(trace)
+    const frozen = JSON.stringify(before)
+    trace.events.push(source.events[declaration])
+    const after = createLayout(trace)
+    expect(after).toEqual(batchLayout(trace))
+    expect(JSON.stringify(before)).toBe(frozen)
+    expect(after.bounds!.points).toBe(before.bounds!.points)
+    const declare = source.events[declaration]
+    if (declare.type !== 'DECLARE_LOCAL') throw new Error('Expected declaration')
+    expect(after.anchors[declare.frameId].ports).not.toBe(before.anchors[declare.frameId].ports)
+    const unrelated = Object.keys(before.anchors).find(id => id !== declare.frameId)
+    if (unrelated) expect(after.anchors[unrelated]).toBe(before.anchors[unrelated])
+    expect(createLayout(trace)).toBe(after)
+    const event: TraceEvent = { eventId: 'layout-line', seq: trace.events.length, source: null, importance: 'normal', label: 'line', type: 'LINE_EXECUTE', frameId: declare.frameId }
+    trace.events.push(event)
+    expect(createLayout(trace)).toBe(after)
+  })
+
+  it('does not revisit prior semantic events on stable trace growth', () => {
+    const source = loadPersonTrace()
+    const trace = { ...source, capture, events: source.events.slice(0, 8) }
+    const first = createLayout(trace)
+    // Cache boundary reads are permitted; all earlier interior reads fail.
+    for (let index = 1; index < trace.events.length - 1; index++) {
+      Object.defineProperty(trace.events, index, { get() { throw new Error('Rescanned prior semantic prefix') }, configurable: true })
+    }
+    trace.events.push(source.events[8])
+    const result = createLayout(trace)
+    expect(result).toEqual(batchLayout({ ...source, capture, events: source.events.slice(0, 9) }))
+    expect(first.anchors).not.toBeUndefined()
+  })
+
+  it('resets on replacement/truncation and preserves scoped/curated selection', () => {
+    const source = loadPersonTrace()
+    const trace = { ...source, capture, events: source.events.slice(0, 10) }
+    createLayout(trace)
+    trace.events = source.events.slice(0, 2)
+    expect(createLayout(trace)).toEqual(batchLayout(trace))
+    trace.events = source.events.slice(0, 10).map(event => ({ ...event }))
+    expect(createLayout(trace)).toEqual(batchLayout(trace))
+    const curated = { ...source, events: [] as TraceEvent[] }
+    for (const event of source.events) {
+      curated.events.push(event)
+      expect(createLayout(curated)).toEqual(createCuratedLayout(curated))
+    }
+    const scopes = { ...loadControlTrace(), capture, events: [] as TraceEvent[] }
+    let hasScopes = false
+    for (const event of loadControlTrace().events) {
+      scopes.events.push(event)
+      hasScopes ||= event.type === 'ENTER_SCOPE'
+      expect(createLayout(scopes)).toEqual(hasScopes ? createScopedLayout(scopes) : batchLayout(scopes))
+    }
+  })
+
+  it('matches shelf wrapping, empty/large arrays, tall objects and interleaved methods', () => {
+    const source = loadPersonTrace()
+    const events: TraceEvent[] = []
+    const add = (event: TraceEvent) => events.push({ ...event, eventId: `mixed:${events.length}`, seq: events.length })
+    const method = source.events.find(event => event.type === 'ENTER_METHOD')!
+    const allocation = source.events.find(event => event.type === 'ALLOCATE_OBJECT')!
+    for (let index = 0; index < 12; index++) {
+      if (method.type !== 'ENTER_METHOD' || allocation.type !== 'ALLOCATE_OBJECT') throw new Error('Expected fixtures')
+      add({ ...method, frameId: `frame:${index}`, callerFrameId: index % 3 === 0 ? null : `frame:${index - 1}`, locals: [], returnType: 'int' })
+      add({ ...allocation, objectId: `object:${index}`, displayId: index, fields: Array.from({ length: index }, (_, field) => ({
+        id: `field:${index}:${field}`, name: `field${field}`, javaType: 'int', value: { kind: 'uninitialized' },
+      })) })
+      if (index % 3 === 0) add({ eventId: '', seq: 0, source: null, label: 'array', importance: 'major',
+        type: 'ALLOCATE_ARRAY', objectId: `array:${index}`, displayId: 100 + index, elementType: 'int',
+        elements: Array.from({ length: index }, () => ({ kind: 'primitive', javaType: 'int', value: 1 })) })
+    }
+    const builder = createLayoutBuilder()
+    const trace = { ...source, capture, events: [] as TraceEvent[] }
+    for (const event of events) {
+      const prior = JSON.stringify(builder.state)
+      const retained = builder.state
+      trace.events.push(event)
+      builder.append([event])
+      expect(JSON.stringify(builder.state)).toBe(JSON.stringify(batchLayout(trace)))
+      expect(JSON.stringify(retained)).toBe(prior)
+    }
   })
 })

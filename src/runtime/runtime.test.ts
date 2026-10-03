@@ -70,7 +70,7 @@ describe('Person trace', () => {
     expect(seek(trace, trace.events.length).objects[personId].id).toBe(personId)
 
     const mutableCopy = seek(trace, 16)
-    mutableCopy.objects[personId].fields[`slot:${personId}:age`].value = { kind: 'null' }
+    expect(() => { mutableCopy.objects[personId].fields[`slot:${personId}:age`].value = { kind: 'null' } }).toThrow(TypeError)
     expect(seek(trace, 16).objects[personId].fields[`slot:${personId}:age`].value).toEqual({
       kind: 'primitive', javaType: 'int', value: 0,
     })
@@ -79,7 +79,7 @@ describe('Person trace', () => {
   it('keeps reducer inputs unchanged and derives edges from live slots', () => {
     const trace = loadPersonTrace()
     const before = after(trace, 'CREATE_REFERENCE')
-    const original = structuredClone(before)
+    const original = snapshotCopy(before)
     const clear: TraceEvent = {
       type: 'CLEAR_REFERENCE', eventId: 'test:clear', seq: before.cursor,
       source: { fileId: 'Main.java', line: 18 }, label: 'Clear p', importance: 'normal',
@@ -119,3 +119,6 @@ describe('Person trace', () => {
     expect(() => seek(trace, trace.events.length + 1)).toThrow(RangeError)
   })
 })
+
+// Persistent seek snapshots cross the wire through JSON; clone only deliberate forged test states.
+function snapshotCopy<T>(value: T): T { return JSON.parse(JSON.stringify(value)) as T }

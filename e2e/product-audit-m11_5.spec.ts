@@ -195,6 +195,10 @@ test('fresh Maven banking project imports, edits, saves, accepts stdin and retai
   // Failure must retain the user-selected main record and the immersive view.
   await page.getByRole('button', { name:'Run', exact:true }).click()
   await phase(request, id, 'WAITING_FOR_INPUT')
+  // Process metadata arrives independently of the coalesced world. Select the
+  // new session's observed main, after the retained previous recording is replaced.
+  await expect(page.getByRole('status', { name:'Previous recording' })).toHaveCount(0)
+  await expect(picker.locator('option').filter({ hasText:/^main\(\) · invocation/ })).toHaveCount(1)
   const main = await picker.locator('option').filter({ hasText:/^main\(\)/ }).first().getAttribute('value')
   await picker.selectOption(main!)
   await page.getByRole('complementary', { name:'Runtime inspector' }).getByRole('button', { name:'Focus', exact:true }).click()

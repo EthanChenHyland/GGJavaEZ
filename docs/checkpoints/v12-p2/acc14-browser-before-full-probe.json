@@ -1,0 +1,26 @@
+{
+  "recordedAt": "2026-10-02T23:55:45.785Z",
+  "browser": "chromium 154.0.8037.93",
+  "viewport": "1440x900",
+  "note": "macOS Chrome; actual WebGL renderer reported below. Phase 0 used Linux/software WebGL: browser comparison is not identical hardware. CPU uses CDP TaskDuration, frames are RAF timing, not physical GPU presentation.",
+  "runClickToFirstWorldMs": 1588,
+  "runClickToTerminalPhaseMs": 1595,
+  "runClickToFullWorldMs": 11021,
+  "session": {
+    "phase": "COMPLETED",
+    "terminalStatus": "complete",
+    "rawEvents": 20001,
+    "exitCode": 0,
+    "stdout": "PROCESSED 2400\nMAX_QUEUE 400\nCLOCK 5163\n",
+    "recording": {
+      "state": "STOPPED_LIMIT",
+      "reason": "Recording budget exceeded: events",
+      "budget": "events",
+      "lastRecordedSeq": 19999,
+      "executionContinued": true
+    }
+  },
+  "runBrowserTaskCpuMs": 3009.7590000000005,
+  "runTransportDecodedSseBytes": 4507498,
+  "webglRenderer": "unavailable"
+}

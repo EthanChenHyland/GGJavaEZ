@@ -10,7 +10,8 @@ export function ErrorExplorer({ trace, runtime, selection, stderr, onNavigate }:
   trace: TraceDocument; runtime: RuntimeState | null; selection: Selection; stderr: string
   onNavigate: (cursor: number, selection?: Selection) => void
 }) {
-  const complete = useMemo(() => seek(trace, trace.events.length), [trace])
+  const eventCount = trace.events.length
+  const complete = useMemo(() => seek(trace, eventCount), [trace, eventCount])
   const failures = complete.exceptions
   const [chosen, setChosen] = useState('')
   const failure = failures.find((item) => item.eventId === chosen) ?? failures.at(-1)

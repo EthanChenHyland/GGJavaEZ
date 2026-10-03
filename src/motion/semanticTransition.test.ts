@@ -1,11 +1,13 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { seek } from '../runtime'
+import { applyEvent, createInitialState } from '../runtime/state'
+import { historyForTrace } from '../runtime/history'
 import { loadArrayTrace, loadControlTrace, loadPersonTrace, loadRecursionTrace } from '../examples/traces'
 import { layoutForTrace as createLayout } from '../app/layoutForTrace'
 import { buildSceneModel } from '../world/sceneModel'
 import type { TraceEvent } from '../contracts/runtime'
 import { endpointPosition, relevantFlowHistory, semanticFlowPoints, transitionIsFlow } from './flowPresentation'
-import { deriveSemanticTransition, transitionsForTrace } from './semanticTransition'
+import { deriveSemanticTransition, transitionsForTrace, type SemanticTransition } from './semanticTransition'
 
 describe('semantic transition pipeline', () => {
   it('derives field mutation from adjacent immutable snapshots and only correlates the same named parameter', () => {
@@ -107,5 +109,91 @@ describe('semantic transition pipeline', () => {
       from: { kind: 'frame' as const, id: 'caller' }, to: { kind: 'slot' as const, id: 'parameter' } }
     expect(transitionIsFlow(local)).toBe(false)
     expect(relevantFlowHistory([local], 'parameter', 1)).toEqual([])
+  })
+})
+
+describe('append-only transition cache', () => {
+  const oracle = (events: TraceEvent[]) => {
+    let state = createInitialState()
+    const result: SemanticTransition[] = []
+    for (const event of events) {
+      const next = applyEvent(state, event)
+      const transition = deriveSemanticTransition(state, event, next)
+      if (transition) result.push(transition)
+      state = next
+    }
+    return result
+  }
+
+  it.each([loadPersonTrace, loadRecursionTrace, loadArrayTrace, loadControlTrace])('matches the pure reducer at every prefix and retains old transition snapshots (%#)', (load) => {
+    const full = load()
+    const trace = { ...full, events: [] as TraceEvent[] }
+    let before = transitionsForTrace(trace)
+    const expected = oracle(full.events)
+    for (const event of full.events) {
+      const retained = JSON.stringify(before)
+      trace.events.push(event)
+      const after = transitionsForTrace(trace)
+      expect(after).toEqual(expected.filter(item => item.seq < trace.events.length))
+      expect(JSON.stringify(before)).toBe(retained)
+      for (let index = 0; index < before.length; index++) expect(after[index]).toBe(before[index])
+      expect(transitionsForTrace(trace)).toBe(after)
+      before = after
+    }
+  })
+
+  it('uses only suffix materialization in the shared history and leaves the live head unchanged', () => {
+    const source = loadPersonTrace()
+    const trace = { ...source, events: source.events.slice(0, 9) }
+    const history = historyForTrace(trace)
+    const materialize = vi.spyOn(history, 'materialize')
+    transitionsForTrace(trace)
+    expect(materialize.mock.calls.map(([cursor]) => cursor)).toEqual(Array.from({ length: 10 }, (_, i) => i))
+    materialize.mockClear()
+    const head = history.state
+    const retained = transitionsForTrace(trace)
+    expect(materialize).not.toHaveBeenCalled()
+    trace.events.push(...source.events.slice(9, 12))
+    const after = transitionsForTrace(trace)
+    expect(materialize.mock.calls.map(([cursor]) => cursor)).toEqual([9, 10, 11, 12])
+    expect(after).toEqual(oracle(trace.events))
+    expect(history.state.cursor).toBe(12)
+    expect(head.cursor).toBe(9)
+    expect(retained).toEqual(oracle(source.events.slice(0, 9)))
+    materialize.mockRestore()
+  })
+
+  it('isolates traces sharing demo IDs and even event IDs with different interior semantics', () => {
+    const source = loadPersonTrace()
+    const first = { ...source, events: source.events.map(event => ({ ...event })) }
+    const second = { ...source, events: source.events.map(event => event.type === 'DECLARE_LOCAL'
+      ? { ...event, label: `${event.label} alternate` } : { ...event }) }
+    const left = transitionsForTrace(first)
+    const right = transitionsForTrace(second)
+    expect(left).toEqual(oracle(first.events))
+    expect(right).toEqual(oracle(second.events))
+    expect(right).not.toEqual(left)
+    expect(transitionsForTrace(first)).toBe(left)
+  })
+
+  it('rebuilds for truncated/replaced traces with reused event IDs', () => {
+    const full = loadPersonTrace()
+    const trace = { ...full, events: full.events.slice(0, 12) }
+    transitionsForTrace(trace)
+    trace.events = full.events.slice(0, 4)
+    expect(transitionsForTrace(trace)).toEqual(oracle(trace.events))
+    trace.events = full.events.slice(0, 12).map(event => ({ ...event, label: `${event.label} replaced` }))
+    expect(transitionsForTrace(trace)).toEqual(oracle(trace.events))
+  })
+
+  it.each(['STOPPED_LIMIT', 'STOPPED_UNSUPPORTED', 'STOPPED_ERROR'] as const)('retains partial trace transitions without synthetic completion (%s)', (state) => {
+    const full = loadPersonTrace()
+    const trace = { ...full, schemaVersion: 2 as const, events: full.events.slice(0, 10) }
+    transitionsForTrace(trace)
+    trace.events.push({ eventId: 'partial-stop', seq: trace.events.length, label: 'Recording stopped', source: null, importance: 'major',
+      type: 'CAPTURE_STOP', recording: { state, reason: 'stopped', budget: state === 'STOPPED_LIMIT' ? 'events' : null,
+        lastRecordedSeq: 9, executionContinued: true } })
+    expect(transitionsForTrace(trace)).toEqual(oracle(trace.events))
+    expect(historyForTrace(trace).state.status).toBe('partial')
   })
 })

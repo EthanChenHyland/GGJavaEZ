@@ -1,0 +1,15 @@
+{
+  "transport": {
+    "urls": [
+      "/api/execution/6082b185-ac9c-4c67-9539-160ad64baf22/events?transport=delta&from=0",
+      "/api/execution/6082b185-ac9c-4c67-9539-160ad64baf22/events?transport=delta&from=27"
+    ],
+    "raw": 30,
+    "duplicate": true,
+    "disconnect": true
+  },
+  "rawEventCount": 500,
+  "stdout": "FIRST WAIT\nSECOND WAIT 12720\nDONE 12720\n",
+  "exitCode": 0,
+  "errors": []
+}

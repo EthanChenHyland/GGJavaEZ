@@ -209,12 +209,18 @@ describe('control fixture and deterministic reconstruction', () => {
     }
     for (let cursor = 0; cursor <= trace.events.length; cursor++) {
       const snapshot = seek(trace, cursor)
-      const copy = structuredClone(snapshot)
-      snapshot.console.forEach((entry) => { entry.text = 'changed'; entry.value = int(999) })
-      snapshot.variableLifetimes.forEach((life) => { life.slot.value = int(999); life.exitedAt = 'changed' })
-      Object.values(snapshot.scopes).forEach((scope) => { scope.label = 'changed' })
-      Object.values(snapshot.conditions).forEach((condition) => { condition.operands[0].label = 'changed' })
-      Object.values(snapshot.loops).forEach((loop) => { loop.iteration = 999 })
+      const copy = snapshotCopy(snapshot)
+      snapshot.console.forEach((entry) => {
+        expect(() => { entry.text = 'changed' }).toThrow(TypeError)
+        expect(() => { entry.value = int(999) }).toThrow(TypeError)
+      })
+      snapshot.variableLifetimes.forEach((life) => {
+        expect(() => { life.slot.value = int(999) }).toThrow(TypeError)
+        expect(() => { life.exitedAt = 'changed' }).toThrow(TypeError)
+      })
+      Object.values(snapshot.scopes).forEach((scope) => expect(() => { scope.label = 'changed' }).toThrow(TypeError))
+      Object.values(snapshot.conditions).forEach((condition) => expect(() => { condition.operands[0].label = 'changed' }).toThrow(TypeError))
+      Object.values(snapshot.loops).forEach((loop) => expect(() => { loop.iteration = 999 }).toThrow(TypeError))
       expect(seek(trace, cursor)).toEqual(copy)
     }
     expect(seek(loadControlTrace(), 72)).toEqual(seek(trace, 72))
@@ -305,7 +311,7 @@ describe('scope and lifetime validation', () => {
     expect(() => applyEvent(exited, { ...atCursor(trace.events[26], exited.cursor), type: 'ASSIGN_LOCAL', frameId: main, slotId: slot('raw'), value: int(0) })).toThrow('Unknown slot')
     const declaration = eventsOf(trace, 'DECLARE_LOCAL')[3]
     expect(() => applyEvent(exited, atCursor(declaration, exited.cursor))).toThrow('innermost')
-    const missingScope = structuredClone(entered)
+    const missingScope = snapshotCopy(entered)
     missingScope.scopes[root].status = 'closed'
     expect(() => applyEvent(missingScope, { ...atCursor(trace.events[23], missingScope.cursor), type: 'ASSIGN_LOCAL', frameId: main, slotId: slot('total'), value: int(4) })).toThrow('active owning scope')
   })
@@ -368,7 +374,7 @@ describe('condition and loop validation', () => {
     const condition = eventsOf(trace, 'EVALUATE_CONDITION').at(-1)!
     const evaluated = applyEvent(ended, atCursor(condition, ended.cursor))
     expect(() => applyEvent(evaluated, { ...atCursor(iteration, evaluated.cursor), iteration: 4 })).toThrow('already ended')
-    const switchedFrame = structuredClone(seek(trace, 28))
+    const switchedFrame = snapshotCopy(seek(trace, 28))
     switchedFrame.loops[loop].frameId = 'another-frame'
     expect(() => applyEvent(switchedFrame, trace.events[28])).toThrow('another frame')
   })
@@ -388,7 +394,7 @@ describe('condition and loop validation', () => {
     const ended = applyEvent(zero, { ...iteration, iteration: 0, status: 'ended' })
     expect(ended.loops[loop]).toMatchObject({ iteration: 0, status: 'ended' })
 
-    const running = seek(trace, 11)
+    const running = snapshotCopy(seek(trace, 11))
     running.frames[main].returnType = 'int'
     const returning: TraceEvent = { ...atCursor(trace.events[21], running.cursor), type: 'RETURN_VALUE', frameId: main, destination: null, value: int(0) }
     const returned = applyEvent(running, returning)
@@ -452,10 +458,10 @@ describe('console and reader validation', () => {
     expect(() => validateTrace(changedEvent('INPUT_READ', 1, (event) => { event.inputIndex = 0 }))).toThrow('consumed input count')
     const trace = loadControlTrace()
     const input = eventsOf(trace, 'INPUT_READ')[0]
-    const before = seek(trace, input.seq)
+    const before = snapshotCopy(seek(trace, input.seq))
     before.frames[main].locals[slot('input')].value = { kind: 'null' }
     expect(() => applyEvent(before, input)).toThrow('live Scanner reference')
-    const nonScanner = seek(trace, input.seq)
+    const nonScanner = snapshotCopy(seek(trace, input.seq))
     nonScanner.objects[scanner].className = 'Person'
     expect(() => applyEvent(nonScanner, input)).toThrow('existing Scanner')
   })
@@ -479,3 +485,6 @@ describe('console and reader validation', () => {
     }
   })
 })
+
+// Persistent seek snapshots cross the wire through JSON; clone only deliberate forged test states.
+function snapshotCopy<T>(value: T): T { return JSON.parse(JSON.stringify(value)) as T }

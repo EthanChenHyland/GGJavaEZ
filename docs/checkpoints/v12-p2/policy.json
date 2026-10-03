@@ -1,0 +1,110 @@
+{
+  "rawEvents": 100017,
+  "semanticEvents": 122139,
+  "explicitGc": true,
+  "batches": [
+    {
+      "batchSize": 64,
+      "totalMs": 820.2955880000037,
+      "p50": 0.3743339999999904,
+      "p95": 0.5190829999999949,
+      "max": 28.05533300000002
+    },
+    {
+      "batchSize": 256,
+      "totalMs": 749.1567549999985,
+      "p50": 1.4547499999998763,
+      "p95": 2.22791600000005,
+      "max": 21.10695799999985
+    },
+    {
+      "batchSize": 1024,
+      "totalMs": 749.7586629999987,
+      "p50": 5.830500000000029,
+      "p95": 18.619332999999642,
+      "max": 29.393125000000055
+    }
+  ],
+  "checkpoints": [
+    {
+      "maxCheckpoints": 16,
+      "indexMs": 583.107375,
+      "indexedMiB": 146.2062530517578,
+      "scrubMs": {
+        "p50": 19.369666000000507,
+        "p95": 65.13766699999996,
+        "max": 78.95049999999992
+      },
+      "stats": {
+        "length": 122139,
+        "checkpointCount": 8,
+        "checkpointInterval": 16384,
+        "maxCheckpoints": 16,
+        "cachedMaterializationCount": 1,
+        "cachedMaterializationCursor": 104146,
+        "retainedStateRoots": 10,
+        "replayedEvents": 189646
+      }
+    },
+    {
+      "maxCheckpoints": 64,
+      "indexMs": 579.5435419999994,
+      "indexedMiB": 157.35540008544922,
+      "scrubMs": {
+        "p50": 3.479041999999936,
+        "p95": 14.08600000000024,
+        "max": 14.104707999999846
+      },
+      "stats": {
+        "length": 122139,
+        "checkpointCount": 60,
+        "checkpointInterval": 2048,
+        "maxCheckpoints": 64,
+        "cachedMaterializationCount": 1,
+        "cachedMaterializationCursor": 104146,
+        "retainedStateRoots": 62,
+        "replayedEvents": 30181
+      }
+    },
+    {
+      "maxCheckpoints": 128,
+      "indexMs": 577.5462080000007,
+      "indexedMiB": 163.36040496826172,
+      "scrubMs": {
+        "p50": 1.682832999999846,
+        "p95": 6.245791000000281,
+        "max": 7.539416999999958
+      },
+      "stats": {
+        "length": 122139,
+        "checkpointCount": 120,
+        "checkpointInterval": 1024,
+        "maxCheckpoints": 128,
+        "cachedMaterializationCount": 1,
+        "cachedMaterializationCursor": 104146,
+        "retainedStateRoots": 122,
+        "replayedEvents": 15845
+      }
+    },
+    {
+      "maxCheckpoints": 256,
+      "indexMs": 580.5899170000002,
+      "indexedMiB": 169.44422149658203,
+      "scrubMs": {
+        "p50": 0.8552079999999478,
+        "p95": 1.447041999999783,
+        "max": 4.379917000000205
+      },
+      "stats": {
+        "length": 122139,
+        "checkpointCount": 239,
+        "checkpointInterval": 512,
+        "maxCheckpoints": 256,
+        "cachedMaterializationCount": 1,
+        "cachedMaterializationCursor": 104146,
+        "retainedStateRoots": 241,
+        "replayedEvents": 8165
+      }
+    }
+  ]
+}

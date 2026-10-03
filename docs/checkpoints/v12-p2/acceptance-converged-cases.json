@@ -1,0 +1,55 @@
+{
+  "recordedAt": "2026-10-03T00:44:38.466Z",
+  "results": {
+    "acc13-socialgraph-plain": {
+      "built": true,
+      "stdout": "MEMBERS 3000\nFOLLOWS 12000\nREACHABLE 2929\nFARTHEST 10\n",
+      "stderr": "",
+      "exitCode": 0,
+      "terminalStatus": "complete",
+      "recording": {
+        "state": "STOPPED_LIMIT",
+        "reason": "Recording budget exceeded: objects",
+        "budget": "objects",
+        "lastRecordedSeq": 3074,
+        "executionContinued": true
+      },
+      "rawEvents": 3076,
+      "semanticEvents": 3849,
+      "visualStatus": "partial",
+      "timings": {
+        "buildMs": 197,
+        "executionMs": 643,
+        "normalizeMs": 32,
+        "deltaBytes": 690476,
+        "rawBatchesHead": 3076,
+        "worldMs": 16
+      }
+    },
+    "acc14-simulator-plain": {
+      "built": true,
+      "stdout": "PROCESSED 2400\nMAX_QUEUE 400\nCLOCK 5163\n",
+      "stderr": "",
+      "exitCode": 0,
+      "terminalStatus": "complete",
+      "recording": {
+        "state": "STOPPED_LIMIT",
+        "reason": "Recording budget exceeded: events",
+        "budget": "events",
+        "lastRecordedSeq": 19999,
+        "executionContinued": true
+      },
+      "rawEvents": 20001,
+      "semanticEvents": 24765,
+      "visualStatus": "partial",
+      "timings": {
+        "buildMs": 205,
+        "executionMs": 829,
+        "normalizeMs": 139,
+        "deltaBytes": 4165450,
+        "rawBatchesHead": 20001,
+        "worldMs": 418
+      }
+    }
+  }
+}

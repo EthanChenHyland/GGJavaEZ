@@ -1,39 +1,20 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import type { RuntimeState, TraceDocument, TraceEvent, TraceEventBase } from '../contracts/runtime'
 import { applyEvent, createInitialState } from './state'
 import { loadArrayTrace, loadControlTrace, loadPersonTrace, loadRecursionTrace } from '../examples/traces'
 import { seek } from './seek'
 
-// Count work without retaining every intermediate RuntimeState in a mock log.
-const reducerWork = vi.hoisted(() => ({ calls: 0 }))
-vi.mock(import('./state'), async (importOriginal) => {
-  const actual = await importOriginal()
-  return { ...actual, applyEvent: (...args: Parameters<typeof actual.applyEvent>) => {
-    reducerWork.calls++
-    return actual.applyEvent(...args)
-  } }
-})
+import { ExecutionHistory, historyForTrace } from './history'
 
 const int = (value: number) => ({ kind: 'primitive' as const, javaType: 'int' as const, value })
 type EventPayload = {
   [Type in TraceEvent['type']]: Omit<Extract<TraceEvent, { type: Type }>, keyof TraceEventBase>
 }[TraceEvent['type']]
-type CacheStorage = { interval: number; snapshots: { cursor: number; state: RuntimeState }[]; recent: RuntimeState | null }
-
-function captureCache(trace: TraceDocument): CacheStorage {
-  // Inspect storage without exporting mutable cache state or a test-only API.
-  const registration = vi.spyOn(WeakMap.prototype, 'set')
-  try {
-    seek(trace, 0)
-    return registration.mock.calls.find(([key]) => key === trace)![1]
-  } finally { registration.mockRestore() }
-}
-
 function stressTrace(): TraceDocument {
   const events: TraceEvent[] = []
   const emit = (event: EventPayload) => {
     const seq = events.length
-    events.push({ eventId: `event:${seq}`, seq, source: null, label: 'Stress event', importance: 'normal', ...event } as TraceEvent)
+    events.push({ eventId: `event:${seq}`, seq, source: event.type === 'LINE_EXECUTE' ? { fileId: 'stress.java', line: 1 } : null, label: 'Stress event', importance: 'normal', ...event } as TraceEvent)
   }
   emit({ type: 'PROGRAM_START' })
   emit({ type: 'ENTER_METHOD', frameId: 'main', callerFrameId: null, className: 'Main', methodName: 'main',
@@ -54,7 +35,7 @@ function stressTrace(): TraceDocument {
   while (events.length < 12606) emit({ type: 'SET_FIELD', objectId: 'object:0', slotId: 'field:0', value: int(events.length) })
   emit({ type: 'EXIT_METHOD', frameId: 'main' })
   emit({ type: 'PROGRAM_END' })
-  return { schemaVersion: 2, demoId: 'seek-stress', sourceFiles: [], events }
+  return { schemaVersion: 2, demoId: 'seek-stress', sourceFiles: [{ fileId: 'stress.java', name: 'stress.java', content: '// stress' }], events }
 }
 
 describe('bounded seek checkpoints', () => {
@@ -84,57 +65,55 @@ describe('bounded seek checkpoints', () => {
     }
     expect(Object.keys(state.frames)).toHaveLength(1756)
 
-    const cache = captureCache(trace)
-    const assertBound = () => expect(cache.snapshots.length + Number(cache.recent !== null)).toBeLessThanOrEqual(64)
+    const cache = historyForTrace(trace)
+    const assertBound = () => expect(cache.stats.retainedStateRoots).toBeLessThanOrEqual(256)
 
-    reducerWork.calls = 0
+    const beforeWork = cache.stats.replayedEvents
     expect(seek(trace, trace.events.length)).toEqual(expected.get(trace.events.length))
-    expect(reducerWork.calls).toBe(trace.events.length)
+    expect(cache.stats.replayedEvents - beforeWork).toBe(0)
     assertBound()
-    expect(cache.snapshots.length).toBeGreaterThan(1)
+    expect(cache.stats.checkpointCount).toBeGreaterThan(1)
     for (const cursor of [6304, 205, 10001, 8, 12607, 130, 2048, ...[...cursors].reverse()]) {
-      reducerWork.calls = 0
+      const beforeWork = cache.stats.replayedEvents
       expect(seek(trace, cursor)).toEqual(expected.get(cursor))
-      expect(reducerWork.calls).toBeLessThan(cache.interval)
+      expect(cache.stats.replayedEvents - beforeWork).toBeLessThan(cache.stats.checkpointInterval)
       assertBound()
     }
     // Cursor 205 is not periodic: its rolling snapshot must accelerate cursor 206.
     const at205 = seek(trace, 205)
     const at206 = applyEvent(at205, trace.events[205])
-    reducerWork.calls = 0
+    const beforeSequential = cache.stats.replayedEvents
     expect(seek(trace, 206)).toEqual(at206)
-    expect(reducerWork.calls).toBe(1)
+    expect(cache.stats.replayedEvents - beforeSequential).toBe(1)
     assertBound()
 
     const mutable = seek(trace, 12607)
-    mutable.frames.main.locals.result.value = int(-1)
-    mutable.frames['call:0'].locals['local:0'].name = 'changed'
-    mutable.objects['object:0'].fields['field:0'].value = int(-1)
-    mutable.returns[0].destination!.slotId = 'changed'
-    mutable.returns[0].value = int(-1)
-    mutable.activeFrameIds.push('changed')
+    expect(() => { mutable.frames.main.locals.result.value = int(-1) }).toThrow()
+    expect(() => { mutable.frames['call:0'].locals['local:0'].name = 'changed' }).toThrow()
+    expect(() => { mutable.objects['object:0'].fields['field:0'].value = int(-1) }).toThrow()
+    expect(() => { mutable.returns[0].destination!.slotId = 'changed' }).toThrow()
+    expect(() => { mutable.returns[0].value = int(-1) }).toThrow()
+    expect(() => mutable.activeFrameIds.push('changed')).toThrow()
     expect(seek(trace, 12607)).toEqual(expected.get(12607))
     expect(seek(trace, 12608)).toEqual(expected.get(12608))
     expect(seek(trace, 204)).toEqual(expected.get(204))
     assertBound()
   })
 
-  it('includes cursor zero and the rolling snapshot in the exact 64-snapshot limit', () => {
+  it('bounds roots while adapting spacing and keeps append checkpoints', () => {
     const trace = stressTrace()
-    const complete = trace.events
-    trace.events = complete.slice(0, 496)
-    const cache = captureCache(trace)
-    seek(trace, 496)
-    expect(cache.snapshots).toHaveLength(63)
-    seek(trace, 495)
-    expect(cache.snapshots.length + Number(cache.recent !== null)).toBe(64)
-    seek(trace, 494)
-    expect(cache.snapshots.length + Number(cache.recent !== null)).toBe(64)
-    const at496 = seek(trace, 496)
-    trace.events = complete.slice(0, 512)
-    const expected = trace.events.slice(496).reduce(applyEvent, at496)
-    expect(seek(trace, 512)).toEqual(expected)
-    expect(seek(trace, 496)).toEqual(at496)
+    const history = new ExecutionHistory({ checkpointInterval: 8, maxCheckpoints: 64 })
+    history.append(trace.events.slice(0, 496))
+    const saved = history.materialize(495)
+    expect(history.stats.retainedStateRoots).toBeLessThanOrEqual(64)
+    history.append(trace.events.slice(496))
+    expect(history.stats.checkpointInterval).toBeGreaterThan(8)
+    expect(history.stats.retainedStateRoots).toBeLessThanOrEqual(64)
+    expect(history.materialize(495)).toEqual(saved)
+    expect(history.state).toEqual(trace.events.reduce(applyEvent, createInitialState()))
+    history.dispose()
+    expect(history.stats.retainedStateRoots).toBe(1)
+    expect(() => history.materialize(0)).toThrow('disposed')
   })
 
   it('isolates traces and resets spacing when the same trace grows or shrinks', () => {
@@ -148,7 +127,7 @@ describe('bounded seek checkpoints', () => {
     trace.events = original
     expect(seek(trace, original.length)).toEqual(final)
     const copy = seek(trace, 0)
-    copy.status = 'aborted'
+    expect(() => { copy.status = 'aborted' }).toThrow()
     expect(seek(trace, 0)).toEqual(createInitialState())
   })
 

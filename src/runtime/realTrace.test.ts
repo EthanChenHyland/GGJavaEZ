@@ -59,8 +59,8 @@ describe('partial recording state and replay', () => {
     expect(states[7].status).toBe('running')
     expect(states[7].recordingStop).toBeUndefined()
     const changed = seek(trace, 8)
-    changed.recordingStop!.reason = 'consumer mutation'
-    changed.frames.call.locals.count.value = { kind: 'primitive', javaType: 'int', value: -1 }
+    expect(() => { changed.recordingStop!.reason = 'consumer mutation' }).toThrow(TypeError)
+    expect(() => { changed.frames.call.locals.count.value = { kind: 'primitive', javaType: 'int', value: -1 } }).toThrow(TypeError)
     expect(seek(trace, 8)).toEqual(states[8])
   })
 

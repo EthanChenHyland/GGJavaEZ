@@ -6,12 +6,46 @@ import type {
   RuntimeScope,
   RuntimeState,
   RuntimeValue,
+  RuntimeLoop,
+  VariableLifetime,
   ScalarValue,
   SlotOwner,
   TraceEvent,
 } from '../contracts/runtime'
 import { arrayElementSlotId } from '../contracts/runtime'
 import type { RecordingStatus } from '../instrumentation/contracts'
+
+/** Internal collection operations; semantics remain in applyEvent for both engines. */
+export interface ReductionStorage {
+  put<T>(record: Record<string, T>, key: string, value: T): Record<string, T>
+  remove<T>(record: Record<string, T>, key: string): Record<string, T>
+  append<T>(array: T[], value: T): T[]
+  set<T>(array: T[], index: number, value: T): T[]
+  pop<T>(array: T[]): T[]
+  scopes(state: RuntimeState, frameId: string): RuntimeScope[]
+  scoped(state: RuntimeState, frameId: string): boolean
+  loops(state: RuntimeState, frameId: string): RuntimeLoop[]
+  lives(state: RuntimeState, frameId: string, slotId?: string, scopeId?: string): number[]
+  firstLife(state: RuntimeState, slotId: string): VariableLifetime | undefined
+  inputCount(state: RuntimeState): number
+  exceptionIndex(state: RuntimeState, exceptionId: string): number
+  displayUsed(state: RuntimeState, displayId: number): boolean
+}
+const referenceStorage: ReductionStorage = {
+  put: (record, key, value) => ({ ...record, [key]: value }),
+  remove: (record, key) => { const next = { ...record }; delete next[key]; return next },
+  append: (array, value) => [...array, value],
+  set: (array, index, value) => { const next = [...array]; next[index] = value; return next },
+  pop: array => array.slice(0, -1),
+  scopes: (state, frameId) => Object.values(state.scopes).filter(scope => scope.frameId === frameId && scope.status === 'active').sort((a, b) => a.depth - b.depth),
+  scoped: (state, frameId) => Object.values(state.scopes).some(scope => scope.frameId === frameId),
+  loops: (state, frameId) => Object.values(state.loops).filter(loop => loop.frameId === frameId && loop.status === 'running'),
+  lives: (state, frameId, slotId, scopeId) => state.variableLifetimes.flatMap((life, i) => life.frameId === frameId && life.exitedAt === undefined && (slotId === undefined || life.slot.id === slotId) && (scopeId === undefined || life.scopeId === scopeId) ? [i] : []),
+  firstLife: (state, slotId) => state.variableLifetimes.find(life => life.slot.id === slotId),
+  inputCount: state => state.console.filter(entry => entry.kind === 'input').length,
+  exceptionIndex: (state, exceptionId) => state.exceptions.map(item => item.exceptionId === exceptionId && !item.caughtBy).lastIndexOf(true),
+  displayUsed: (state, displayId) => Object.values(state.objects).some(object => object.displayId === displayId),
+}
 
 /** A stopped observer never asserts a Java exit or a later runtime state. */
 export function isRecordingStop(value: unknown): value is RecordingStatus {
@@ -112,19 +146,20 @@ function scalarText(value: ScalarValue): string {
   return String(value.value)
 }
 
-function activeScopes(state: RuntimeState, frameId: string): RuntimeScope[] {
-  return Object.values(state.scopes).filter((scope) => scope.frameId === frameId && scope.status === 'active')
-    .sort((a, b) => a.depth - b.depth)
-}
-
-function closeScope(state: RuntimeState, scope: RuntimeScope, eventId: string): RuntimeState {
+function closeScope(state: RuntimeState, scope: RuntimeScope, eventId: string, storage: ReductionStorage): RuntimeState {
   const frame = state.frames[scope.frameId]
-  const locals = Object.fromEntries(Object.entries(frame.locals).filter(([, slot]) => slot.scopeId !== scope.id))
+  let locals = frame.locals
+  for (const slot of Object.values(frame.locals)) if (slot.scopeId === scope.id) locals = storage.remove(locals, slot.id)
+  let variableLifetimes = state.variableLifetimes
+  for (const index of storage.lives(state, frame.id, undefined, scope.id)) {
+    const life = variableLifetimes[index]
+    // A method exit may close several scopes in this one reduction.
+    if (life.exitedAt === undefined) variableLifetimes = storage.set(variableLifetimes, index, { ...life, exitedAt: eventId })
+  }
   return {
-    ...withFrame(state, { ...frame, locals }),
-    scopes: { ...state.scopes, [scope.id]: { ...scope, status: 'closed', exitedAt: eventId } },
-    variableLifetimes: state.variableLifetimes.map((life) =>
-      life.frameId === frame.id && life.scopeId === scope.id && life.exitedAt === undefined ? { ...life, exitedAt: eventId } : life),
+    ...withFrame(state, { ...frame, locals }, storage),
+    scopes: storage.put(state.scopes, scope.id, { ...scope, status: 'closed', exitedAt: eventId }),
+    variableLifetimes,
   }
 }
 
@@ -141,15 +176,15 @@ function slotsById(slots: RuntimeSlot[], state: RuntimeState): Record<string, Ru
   return result
 }
 
-function withFrame(state: RuntimeState, frame: RuntimeFrame): RuntimeState {
-  return { ...state, frames: { ...state.frames, [frame.id]: frame } }
+function withFrame(state: RuntimeState, frame: RuntimeFrame, storage: ReductionStorage): RuntimeState {
+  return { ...state, frames: storage.put(state.frames, frame.id, frame) }
 }
 
-function withObject(state: RuntimeState, object: RuntimeObject): RuntimeState {
-  return { ...state, objects: { ...state.objects, [object.id]: object } }
+function withObject(state: RuntimeState, object: RuntimeObject, storage: ReductionStorage): RuntimeState {
+  return { ...state, objects: storage.put(state.objects, object.id, object) }
 }
 
-function setSlot(state: RuntimeState, owner: SlotOwner, value: RuntimeValue, eventId: string): RuntimeState {
+function setSlot(state: RuntimeState, owner: SlotOwner, value: RuntimeValue, eventId: string, storage: ReductionStorage): RuntimeState {
   if (owner.kind === 'frame') {
     const frame = state.frames[owner.frameId]
     requireCondition(frame?.status === 'active', `Frame ${owner.frameId} is not active`)
@@ -160,12 +195,16 @@ function setSlot(state: RuntimeState, owner: SlotOwner, value: RuntimeValue, eve
       state.scopes[slot.scopeId].frameId === frame.id, `Slot ${slot.id} has no active owning scope`)
     const next = withFrame(state, {
       ...frame,
-      locals: { ...frame.locals, [slot.id]: { ...slot, value: { ...value } } },
-    })
-    return { ...next, variableLifetimes: state.variableLifetimes.map((life) =>
-      life.frameId === frame.id && life.slot.id === slot.id && life.exitedAt === undefined ? {
+      locals: storage.put(frame.locals, slot.id, { ...slot, value: { ...value } }),
+    }, storage)
+    let variableLifetimes = state.variableLifetimes
+    for (const index of storage.lives(state, frame.id, slot.id)) {
+      const life = variableLifetimes[index]
+      variableLifetimes = storage.set(variableLifetimes, index, {
         ...life, slot: { ...slot, value: { ...value } }, lastChangedAt: eventId,
-      } : life) }
+      })
+    }
+    return { ...next, variableLifetimes }
   }
 
   const object = state.objects[owner.objectId]
@@ -175,12 +214,17 @@ function setSlot(state: RuntimeState, owner: SlotOwner, value: RuntimeValue, eve
   assertCompatible(slot, value)
   return withObject(state, {
     ...object,
-    fields: { ...object.fields, [slot.id]: { ...slot, value: { ...value } } },
-  })
+    fields: storage.put(object.fields, slot.id, { ...slot, value: { ...value } }),
+  }, storage)
 }
 
 /** Apply exactly the next semantic event. The input state and event are never mutated. */
 export function applyEvent(state: RuntimeState, event: TraceEvent): RuntimeState {
+  return applyEventWithStorage(state, event, referenceStorage)
+}
+
+/** Internal storage seam. applyEvent keeps its two-argument Array.reduce-compatible API. */
+export function applyEventWithStorage(state: RuntimeState, event: TraceEvent, storage: ReductionStorage): RuntimeState {
   requireCondition(event.seq === state.cursor, `Expected event seq ${state.cursor}, received ${event.seq}`)
   requireCondition(state.status !== 'ended' && state.status !== 'aborted', state.status === 'ended'
     ? 'Cannot apply an event after PROGRAM_END' : 'Cannot apply an event after PROGRAM_ABORT')
@@ -203,7 +247,7 @@ export function applyEvent(state: RuntimeState, event: TraceEvent): RuntimeState
       requireCondition(activeFrameId === event.frameId, `Scope entered outside active frame ${event.frameId}`)
       requireCondition(typeof event.scopeId === 'string' && event.scopeId.length > 0 &&
         typeof event.labelScope === 'string' && event.labelScope.length > 0, 'Invalid scope identity or label')
-      const innermost = activeScopes(state, event.frameId).at(-1)
+      const innermost = storage.scopes(state, event.frameId).at(-1)
       requireCondition(event.parentId === (innermost?.id ?? null), 'Scope parent must be the innermost active scope')
       const previous = state.scopes[event.scopeId]
       requireCondition(previous?.status !== 'active', `Scope ${event.scopeId} already active`)
@@ -211,10 +255,10 @@ export function applyEvent(state: RuntimeState, event: TraceEvent): RuntimeState
         previous.label === event.labelScope), `Lexical scope identity changed for ${event.scopeId}`)
       requireCondition(innermost || Object.keys(state.frames[event.frameId].locals).length === 0,
         'Root scope must enter before scoped declarations')
-      next = { ...state, scopes: { ...state.scopes, [event.scopeId]: {
+      next = { ...state, scopes: storage.put(state.scopes, event.scopeId, {
         id: event.scopeId, frameId: event.frameId, parentId: event.parentId, label: event.labelScope,
         depth: innermost ? innermost.depth + 1 : 0, status: 'active', enteredAt: event.eventId,
-      } } }
+      }) }
       break
     }
 
@@ -223,9 +267,9 @@ export function applyEvent(state: RuntimeState, event: TraceEvent): RuntimeState
       const scope = state.scopes[event.scopeId]
       requireCondition(scope?.status === 'active' && scope.frameId === event.frameId,
         `Scope ${event.scopeId} is not active in frame ${event.frameId}`)
-      requireCondition(activeScopes(state, event.frameId).at(-1)?.id === event.scopeId,
+      requireCondition(storage.scopes(state, event.frameId).at(-1)?.id === event.scopeId,
         'Scope must exit in innermost order')
-      next = closeScope(state, scope, event.eventId)
+      next = closeScope(state, scope, event.eventId, storage)
       break
     }
 
@@ -260,10 +304,10 @@ export function applyEvent(state: RuntimeState, event: TraceEvent): RuntimeState
       }
       requireCondition(result === event.result, 'Condition result mismatch')
       const { frameId, conditionId, kind, expression, operator, takenLabel, skippedLabel } = event
-      next = { ...state, conditions: { ...state.conditions, [frameId]: {
+      next = { ...state, conditions: storage.put(state.conditions, frameId, {
         eventId: event.eventId, frameId, conditionId, kind, expression, operator, result, takenLabel, skippedLabel,
         operands: [{ ...event.operands[0], value: { ...left } }, { ...event.operands[1], value: { ...right } }],
-      } } }
+      }) }
       break
     }
 
@@ -282,10 +326,10 @@ export function applyEvent(state: RuntimeState, event: TraceEvent): RuntimeState
       requireCondition(condition.result === (event.status === 'running'), 'Loop status and condition result mismatch')
       requireCondition(event.iteration === (previous?.iteration ?? 0) + (event.status === 'running' ? 1 : 0),
         'Loop iteration must be sequential or end with the completed count')
-      next = { ...state, loops: { ...state.loops, [event.loopId]: {
+      next = { ...state, loops: storage.put(state.loops, event.loopId, {
         eventId: event.eventId, frameId: event.frameId, loopId: event.loopId,
         iteration: event.iteration, status: event.status,
-      } } }
+      }) }
       break
     }
 
@@ -302,17 +346,17 @@ export function applyEvent(state: RuntimeState, event: TraceEvent): RuntimeState
         ['Scanner', 'java.util.Scanner'].includes(slot.javaType)), 'Input reader requires a live Scanner reference')
       requireCondition(event.method === 'nextInt', 'Input method must be nextInt')
       requireCondition(Number.isInteger(event.inputIndex) &&
-        event.inputIndex === state.console.filter((entry) => entry.kind === 'input').length,
+        event.inputIndex === storage.inputCount(state),
         'Input index must match the zero-based consumed input count')
       requireInt(event.value)
       requireCondition(typeof event.text === 'string' && /^[+-]?\d+$/.test(event.text) &&
         Number(event.text) === event.value.value, 'Input text and Java int value mismatch')
-      next = setSlot(state, { kind: 'frame', frameId: event.frameId, slotId: event.destinationSlotId }, event.value, event.eventId)
-      next = { ...next, console: [...state.console, {
+      next = setSlot(state, { kind: 'frame', frameId: event.frameId, slotId: event.destinationSlotId }, event.value, event.eventId, storage)
+      next = { ...next, console: storage.append(state.console, {
         eventId: event.eventId, frameId: event.frameId, source: event.source ? { ...event.source } : null,
         kind: 'input', text: event.text, value: { ...event.value },
         destinationSlotId: event.destinationSlotId, readerObjectId: event.readerObjectId,
-      }] }
+      }) }
       break
     }
 
@@ -326,10 +370,10 @@ export function applyEvent(state: RuntimeState, event: TraceEvent): RuntimeState
         requireCondition(slot, `Unknown output origin slot ${event.originSlotId}`)
         requireCondition(sameValue(slot.value, event.value), `Observed output value mismatch at ${event.originSlotId}`)
       }
-      next = { ...state, console: [...state.console, {
+      next = { ...state, console: storage.append(state.console, {
         eventId: event.eventId, frameId: event.frameId, source: event.source ? { ...event.source } : null,
         kind: 'output', text: event.text, value: { ...event.value },
-      }] }
+      }) }
       break
     }
 
@@ -337,21 +381,21 @@ export function applyEvent(state: RuntimeState, event: TraceEvent): RuntimeState
       requireCondition(event.frameId === null || activeFrameId === event.frameId,
         `Console written outside active frame ${event.frameId}`)
       requireCondition(['stdout', 'stderr'].includes(event.channel) && typeof event.text === 'string', 'Invalid console write')
-      next = { ...state, console: [...state.console, {
+      next = { ...state, console: storage.append(state.console, {
         eventId: event.eventId, frameId: event.frameId, source: event.source ? { ...event.source } : null,
         kind: 'output', channel: event.channel, text: event.text,
         value: { kind: 'stringSummary', javaType: 'String', value: event.text },
-      }] }
+      }) }
       break
 
     case 'CONSOLE_INPUT':
       requireCondition(event.frameId === null || activeFrameId === event.frameId,
         `Console input outside active frame ${event.frameId}`)
-      next = { ...state, console: [...state.console, {
+      next = { ...state, console: storage.append(state.console, {
         eventId: event.eventId, frameId: event.frameId, source: event.source ? { ...event.source } : null,
         kind: 'input', text: event.text,
         value: { kind: 'stringSummary', javaType: 'String', value: event.text },
-      }] }
+      }) }
       break
 
     case 'PROGRAM_START':
@@ -396,8 +440,8 @@ export function applyEvent(state: RuntimeState, event: TraceEvent): RuntimeState
         ...(event.invocationLabel !== undefined ? { invocationLabel: event.invocationLabel } : {}),
         ...(event.returnType !== undefined ? { returnType: event.returnType } : {}),
       }
-      next = withFrame(state, frame)
-      next = { ...next, activeFrameIds: [...state.activeFrameIds, frame.id] }
+      next = withFrame(state, frame, storage)
+      next = { ...next, activeFrameIds: storage.append(state.activeFrameIds, frame.id) }
       break
     }
 
@@ -406,14 +450,13 @@ export function applyEvent(state: RuntimeState, event: TraceEvent): RuntimeState
       const frame = state.frames[event.frameId]
       requireCondition(!frame.returnType || frame.returnType === 'void' || frame.returnValue !== undefined,
         `Non-void frame ${event.frameId} must return a value before exit`)
-      requireCondition(!Object.values(state.loops).some((loop) => loop.frameId === frame.id && loop.status === 'running') ||
+      requireCondition(storage.loops(state, frame.id).length === 0 ||
         frame.returnValue !== undefined, 'Running loop must terminate before method exit')
-      for (const scope of activeScopes(state, frame.id).reverse()) next = closeScope(next, scope, event.eventId)
-      next = { ...next, loops: Object.fromEntries(Object.entries(next.loops).map(([id, loop]) =>
-        [id, loop.frameId === frame.id && loop.status === 'running' ?
-          { ...loop, eventId: event.eventId, status: 'ended' as const } : loop])) }
-      next = withFrame(next, { ...next.frames[frame.id], status: 'returned', exitedAt: event.eventId })
-      next = { ...next, activeFrameIds: state.activeFrameIds.slice(0, -1) }
+      for (const scope of storage.scopes(state, frame.id).reverse()) next = closeScope(next, scope, event.eventId, storage)
+      for (const loop of storage.loops(state, frame.id)) next = { ...next,
+        loops: storage.put(next.loops, loop.loopId, { ...loop, eventId: event.eventId, status: 'ended' }) }
+      next = withFrame(next, { ...next.frames[frame.id], status: 'returned', exitedAt: event.eventId }, storage)
+      next = { ...next, activeFrameIds: storage.pop(state.activeFrameIds) }
       break
     }
 
@@ -430,18 +473,18 @@ export function applyEvent(state: RuntimeState, event: TraceEvent): RuntimeState
       } else if (event.destination) {
         requireCondition(event.destination.frameId === frame.callerFrameId &&
           state.activeFrameIds.at(-2) === frame.callerFrameId, 'Return destination must be the direct caller')
-        next = setSlot(state, { kind: 'frame', ...event.destination }, event.value, event.eventId)
+        next = setSlot(state, { kind: 'frame', ...event.destination }, event.value, event.eventId, storage)
       }
-      next = withFrame(next, { ...frame, returnValue: { ...event.value } })
+      next = withFrame(next, { ...frame, returnValue: { ...event.value } }, storage)
       next = {
         ...next,
-        returns: [...state.returns, {
+        returns: storage.append(state.returns, {
           eventId: event.eventId,
           frameId: event.frameId,
           destination: event.destination ? { ...event.destination } : null,
           value: { ...event.value },
           ...(event.expression !== undefined ? { expression: event.expression } : {}),
-        }],
+        }),
       }
       break
     }
@@ -450,8 +493,8 @@ export function applyEvent(state: RuntimeState, event: TraceEvent): RuntimeState
       requireCondition(activeFrameId === event.frameId, `Local declared outside active frame ${event.frameId}`)
       const frame = state.frames[event.frameId]
       requireCondition(!frame.locals[event.slot.id], `Duplicate slot ${event.slot.id}`)
-      const scopes = activeScopes(state, frame.id)
-      const scopedFrame = Object.values(state.scopes).some((scope) => scope.frameId === frame.id)
+      const scopes = storage.scopes(state, frame.id)
+      const scopedFrame = storage.scoped(state, frame.id)
       requireCondition(!scopedFrame || event.slot.scopeId !== undefined, 'Scoped frame declarations require scopeId')
       if (event.slot.scopeId !== undefined) {
         requireCondition(scopes.at(-1)?.id === event.slot.scopeId,
@@ -459,7 +502,7 @@ export function applyEvent(state: RuntimeState, event: TraceEvent): RuntimeState
         requireCondition(!Object.values(frame.locals).some((slot) => slot.name === event.slot.name),
           `Duplicate live variable name ${event.slot.name}`)
         if (event.slot.role === 'parameter') requireCondition(scopes.length === 1, 'Parameter must belong to the root scope')
-        const old = state.variableLifetimes.find((life) => life.slot.id === event.slot.id)
+        const old = storage.firstLife(state, event.slot.id)
         requireCondition(!old || (old.frameId === frame.id && old.scopeId === event.slot.scopeId &&
           old.slot.name === event.slot.name && old.slot.javaType === event.slot.javaType && old.slot.role === event.slot.role),
         `Lexical slot identity changed for ${event.slot.id}`)
@@ -470,12 +513,12 @@ export function applyEvent(state: RuntimeState, event: TraceEvent): RuntimeState
       }
       next = withFrame(state, {
         ...frame,
-        locals: { ...frame.locals, [event.slot.id]: { ...event.slot, value: { ...event.slot.value } } },
-      })
-      if (event.slot.scopeId !== undefined) next = { ...next, variableLifetimes: [...state.variableLifetimes, {
+        locals: storage.put(frame.locals, event.slot.id, { ...event.slot, value: { ...event.slot.value } }),
+      }, storage)
+      if (event.slot.scopeId !== undefined) next = { ...next, variableLifetimes: storage.append(state.variableLifetimes, {
         slot: { ...event.slot, value: { ...event.slot.value } }, frameId: frame.id, scopeId: event.slot.scopeId,
         declaredAt: event.eventId, source: event.source ? { ...event.source } : null, lastChangedAt: event.eventId,
-      }] }
+      }) }
       break
     }
 
@@ -484,21 +527,20 @@ export function applyEvent(state: RuntimeState, event: TraceEvent): RuntimeState
       const frame = state.frames[event.frameId]
       requireCondition(frame.locals[event.slotId], `Unknown slot ${event.slotId}`)
       requireCondition(frame.locals[event.slotId].scopeId === undefined, 'Scoped locals close through EXIT_SCOPE or EXIT_METHOD')
-      const locals = { ...frame.locals }
-      delete locals[event.slotId]
-      next = withFrame(state, { ...frame, locals })
+      const locals = storage.remove(frame.locals, event.slotId)
+      next = withFrame(state, { ...frame, locals }, storage)
       break
     }
 
     case 'ASSIGN_LOCAL':
       requireCondition(activeFrameId === event.frameId, `Local assigned outside active frame ${event.frameId}`)
-      next = setSlot(state, { kind: 'frame', frameId: event.frameId, slotId: event.slotId }, event.value, event.eventId)
+      next = setSlot(state, { kind: 'frame', frameId: event.frameId, slotId: event.slotId }, event.value, event.eventId, storage)
       break
 
     case 'ALLOCATE_OBJECT': {
       requireCondition(!state.objects[event.objectId], `Duplicate object ${event.objectId}`)
       requireCondition(
-        !Object.values(state.objects).some((object) => object.displayId === event.displayId),
+        !storage.displayUsed(state, event.displayId),
         `Duplicate display ID ${event.displayId}`,
       )
       next = withObject(state, {
@@ -507,7 +549,7 @@ export function applyEvent(state: RuntimeState, event: TraceEvent): RuntimeState
         className: event.className,
         fields: slotsById(event.fields, state),
         allocatedAt: event.eventId,
-      })
+      }, storage)
       break
     }
 
@@ -515,7 +557,7 @@ export function applyEvent(state: RuntimeState, event: TraceEvent): RuntimeState
       requireCondition(activeFrameId, 'Array allocation requires an active frame')
       requireCondition(!state.objects[event.objectId], `Duplicate object ${event.objectId}`)
       requireCondition(Number.isInteger(event.displayId) && event.displayId > 0, 'Invalid array display ID')
-      requireCondition(!Object.values(state.objects).some((object) => object.displayId === event.displayId),
+      requireCondition(!storage.displayUsed(state, event.displayId),
         `Duplicate display ID ${event.displayId}`)
       requireCondition(event.elementType === 'int', 'Array element type must be int')
       const elements = event.elements.map((value, index) => {
@@ -529,7 +571,7 @@ export function applyEvent(state: RuntimeState, event: TraceEvent): RuntimeState
         id: event.objectId, displayId: event.displayId, className: 'int[]', fields: {},
         allocatedAt: event.eventId,
         array: { elementType: 'int', length: elements.length, elements },
-      })
+      }, storage)
       break
     }
 
@@ -538,7 +580,7 @@ export function applyEvent(state: RuntimeState, event: TraceEvent): RuntimeState
       const element = requireElement(requireArray(state, event.objectId), event.index)
       requireObserved(element, event.value)
       if (event.destinationSlotId !== undefined) {
-        next = setSlot(state, { kind: 'frame', frameId: event.frameId, slotId: event.destinationSlotId }, event.value, event.eventId)
+        next = setSlot(state, { kind: 'frame', frameId: event.frameId, slotId: event.destinationSlotId }, event.value, event.eventId, storage)
       }
       next = { ...next, arrayActivity: {
         kind: 'read', eventId: event.eventId, objectId: event.objectId, index: event.index,
@@ -587,9 +629,8 @@ export function applyEvent(state: RuntimeState, event: TraceEvent): RuntimeState
         requireInt(origin.value)
         requireCondition(origin.value.value === event.value.value, 'Array write origin value mismatch')
       }
-      const elements = [...object.array.elements]
-      elements[event.index] = { ...element, value: { ...event.value } }
-      next = withObject(state, { ...object, array: { ...object.array, elements } })
+      const elements = storage.set(object.array.elements, event.index, { ...element, value: { ...event.value } })
+      next = withObject(state, { ...object, array: { ...object.array, elements } }, storage)
       const mutation = {
         eventId: event.eventId, objectId: event.objectId, index: event.index,
         before: { ...element.value }, after: { ...event.value },
@@ -599,13 +640,13 @@ export function applyEvent(state: RuntimeState, event: TraceEvent): RuntimeState
         arrayActivity: { kind: 'write', ...mutation,
           before: { ...mutation.before }, after: { ...mutation.after },
           ...(mutation.from ? { from: { ...mutation.from } } : {}) },
-        arrayMutations: [...state.arrayMutations, mutation],
+        arrayMutations: storage.append(state.arrayMutations, mutation),
       }
       break
     }
 
     case 'SET_FIELD':
-      next = setSlot(state, { kind: 'object', objectId: event.objectId, slotId: event.slotId }, event.value, event.eventId)
+      next = setSlot(state, { kind: 'object', objectId: event.objectId, slotId: event.slotId }, event.value, event.eventId, storage)
       break
 
     case 'CREATE_REFERENCE': {
@@ -620,7 +661,7 @@ export function applyEvent(state: RuntimeState, event: TraceEvent): RuntimeState
         kind: 'reference',
         javaType: event.javaType,
         objectId: event.targetObjectId,
-      }, event.eventId)
+      }, event.eventId, storage)
       break
     }
 
@@ -630,7 +671,7 @@ export function applyEvent(state: RuntimeState, event: TraceEvent): RuntimeState
         ? state.frames[owner.frameId]?.locals[owner.slotId]
         : state.objects[owner.objectId]?.fields[owner.slotId]
       requireCondition(slot?.value.kind === 'reference', `Slot ${owner.slotId} has no reference to clear`)
-      next = setSlot(state, owner, { kind: 'null' }, event.eventId)
+      next = setSlot(state, owner, { kind: 'null' }, event.eventId, storage)
       break
     }
 
@@ -644,44 +685,43 @@ export function applyEvent(state: RuntimeState, event: TraceEvent): RuntimeState
 
     case 'THROW_EXCEPTION':
       requireCondition(activeFrameId === event.frameId, `Exception thrown outside active frame ${event.frameId}`)
-      requireCondition(!state.exceptions.some((item) => item.exceptionId === event.exceptionId && !item.caughtBy),
+      requireCondition(storage.exceptionIndex(state, event.exceptionId) < 0,
         `Exception ${event.exceptionId} already active`)
-      next = { ...state, exceptions: [...state.exceptions, {
+      next = { ...state, exceptions: storage.append(state.exceptions, {
         eventId: event.eventId, exceptionId: event.exceptionId, className: event.className,
-        message: event.message, explicit: event.explicit, source: event.source,
+        message: event.message, explicit: event.explicit, source: event.source ? { ...event.source } : null,
         frameIds: [...state.activeFrameIds], unwoundFrameIds: [],
-      }] }
+      }) }
       break
 
     case 'UNWIND_EXCEPTION': {
       requireCondition(activeFrameId === event.frameId, `Exception unwind outside top frame ${event.frameId}`)
-      const index = state.exceptions.map((item) => item.exceptionId === event.exceptionId && !item.caughtBy).lastIndexOf(true)
+      const index = storage.exceptionIndex(state, event.exceptionId)
       requireCondition(index >= 0, `Unknown active exception ${event.exceptionId}`)
       const frame = state.frames[event.frameId]
-      for (const scope of activeScopes(state, frame.id).reverse()) next = closeScope(next, scope, event.eventId)
-      next = withFrame(next, { ...next.frames[frame.id], status: 'unwound', exitedAt: event.eventId })
-      const exceptions = [...next.exceptions]
-      exceptions[index] = { ...exceptions[index], unwoundFrameIds: [...exceptions[index].unwoundFrameIds, frame.id] }
-      next = { ...next, activeFrameIds: state.activeFrameIds.slice(0, -1), exceptions }
+      for (const scope of storage.scopes(state, frame.id).reverse()) next = closeScope(next, scope, event.eventId, storage)
+      next = withFrame(next, { ...next.frames[frame.id], status: 'unwound', exitedAt: event.eventId }, storage)
+      const fact = next.exceptions[index]
+      const exceptions = storage.set(next.exceptions, index, { ...fact, unwoundFrameIds: storage.append(fact.unwoundFrameIds, frame.id) })
+      next = { ...next, activeFrameIds: storage.pop(state.activeFrameIds), exceptions }
       break
     }
 
     case 'CATCH_EXCEPTION': {
       requireCondition(activeFrameId === event.frameId, `Exception caught outside top frame ${event.frameId}`)
-      const index = state.exceptions.map((item) => item.exceptionId === event.exceptionId && !item.caughtBy).lastIndexOf(true)
+      const index = storage.exceptionIndex(state, event.exceptionId)
       requireCondition(index >= 0, `Unknown active exception ${event.exceptionId}`)
-      const exceptions = [...state.exceptions]
-      exceptions[index] = { ...exceptions[index], caughtBy: event.frameId }
+      const exceptions = storage.set(state.exceptions, index, { ...state.exceptions[index], caughtBy: event.frameId })
       next = { ...state, exceptions }
       break
     }
 
     case 'FINALLY_ENTER': {
       requireCondition(activeFrameId === event.frameId, `Finally entered outside top frame ${event.frameId}`)
-      const index = state.exceptions.map((item) => item.exceptionId === event.exceptionId && !item.caughtBy).lastIndexOf(true)
+      const index = storage.exceptionIndex(state, event.exceptionId)
       requireCondition(index >= 0, `Unknown active exception ${event.exceptionId}`)
-      const exceptions = [...state.exceptions]
-      exceptions[index] = { ...exceptions[index], finallyFrameIds: [...(exceptions[index].finallyFrameIds ?? []), event.frameId] }
+      const fact = state.exceptions[index]
+      const exceptions = storage.set(state.exceptions, index, { ...fact, finallyFrameIds: storage.append(fact.finallyFrameIds ?? [], event.frameId) })
       next = { ...state, exceptions }
       break
     }

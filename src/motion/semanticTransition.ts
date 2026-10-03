@@ -1,5 +1,6 @@
 import { arrayElementSlotId, type RuntimeState, type RuntimeValue, type TraceDocument, type TraceEvent } from '../contracts/runtime'
-import { applyEvent, createInitialState } from '../runtime/state'
+import { historyForTrace } from '../runtime/history'
+import { persistentAppend, persistentArray } from '../runtime/storage'
 
 export type FlowEndpoint =
   | { kind: 'slot'; id: string }
@@ -95,25 +96,34 @@ export function deriveSemanticTransition(before: RuntimeState, event: TraceEvent
   }
 }
 
-type TransitionIndex = { lastEventId: string | null; count: number; state: RuntimeState; items: SemanticTransition[] }
-const indices = new Map<string, TransitionIndex>()
+type TransitionIndex = { first: TraceEvent | undefined; last: TraceEvent | undefined; count: number; items: SemanticTransition[] }
+const indices = new WeakMap<TraceDocument, TransitionIndex>()
 
-/** Append-only live prefixes share work; a changed prefix rebuilds from trace truth. */
+/** Derive only the semantic suffix from the shared history's adjacent snapshots.
+ * Materialization uses the efficient engine/checkpoints, avoiding the former second
+ * whole-entity reducer pass. Cache lifetime follows the trace document; equal demo
+ * IDs in separate sessions cannot share history.
+ * Events are immutable; replacing/truncating the prefix boundary resets the index.
+ */
 export function transitionsForTrace(trace: TraceDocument): readonly SemanticTransition[] {
-  let index = indices.get(trace.demoId)
-  if (!index || index.count > trace.events.length || (index.count > 0 && trace.events[index.count - 1]?.eventId !== index.lastEventId)) {
-    index = { count: 0, lastEventId: null, state: createInitialState(), items: [] }
-    indices.set(trace.demoId, index)
-    if (indices.size > 4) indices.delete(indices.keys().next().value!)
+  let index = indices.get(trace)
+  if (!index || index.count > trace.events.length || (index.count > 0 &&
+    (trace.events[0] !== index.first || trace.events[index.count - 1] !== index.last))) {
+    index = { count: 0, first: undefined, last: undefined, items: persistentArray([]) }
+    indices.set(trace, index)
   }
+  if (index.count === trace.events.length) return index.items
+  const history = historyForTrace(trace)
+  let before = history.materialize(index.count)
   for (let cursor = index.count; cursor < trace.events.length; cursor++) {
     const event = trace.events[cursor]
-    const next = applyEvent(index.state, event)
-    const transition = deriveSemanticTransition(index.state, event, next)
-    if (transition) index.items.push(transition)
-    index.state = next
+    const next = history.materialize(cursor + 1)
+    const transition = deriveSemanticTransition(before, event, next)
+    if (transition) index.items = persistentAppend(index.items, transition)
+    before = next
     index.count = cursor + 1
-    index.lastEventId = event.eventId
+    index.first = trace.events[0]
+    index.last = event
   }
   return index.items
 }

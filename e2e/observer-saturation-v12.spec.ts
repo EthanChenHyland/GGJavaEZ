@@ -2,6 +2,8 @@ import { expect, test, type APIRequestContext, type Page } from '@playwright/tes
 import { mkdir } from 'node:fs/promises'
 import type { ExecutionSession } from '../src/execution/contracts'
 
+const screenshots = process.env.VJ_QA_OUTPUT_ROOT ? `${process.env.VJ_QA_OUTPUT_ROOT}/screenshots` : 'docs/checkpoints/v12-p1/screenshots'
+
 test.describe.configure({ mode: 'serial', timeout: 120_000 })
 let ownedProjectId: string | null = null
 test.afterEach(async ({ request }) => {
@@ -77,9 +79,9 @@ test('object saturation keeps stdin, complete console, natural exit and inspecta
   await partialDetail.locator('summary').click()
   await page.getByRole('button', { name: /Return to last recorded event/ }).click()
   await expect(page.locator('.vj-timeline__lens')).toHaveText('LAST RECORDED')
-  await mkdir('docs/checkpoints/v12-p1/screenshots', { recursive: true })
+  await mkdir(screenshots, { recursive: true })
   await page.waitForTimeout(600)
-  await page.screenshot({ path: 'docs/checkpoints/v12-p1/screenshots/partial-overview-1440x900.png' })
+  await page.screenshot({ path: `${screenshots}/partial-overview-1440x900.png` })
   const picker = page.getByRole('combobox', { name: 'Select runtime entity' })
   const objectId = await picker.locator('option').filter({ hasText: /Item #/ }).last().getAttribute('value')
   expect(objectId).toBeTruthy()
@@ -89,7 +91,7 @@ test('object saturation keeps stdin, complete console, natural exit and inspecta
   for (const [width, height] of [[1728, 1117], [1440, 900], [1280, 800], [760, 900]]) {
     await page.setViewportSize({ width, height })
     await page.waitForTimeout(600)
-    await page.screenshot({ path: `docs/checkpoints/v12-p1/screenshots/partial-${width}x${height}.png` })
+    await page.screenshot({ path: `${screenshots}/partial-${width}x${height}.png` })
   }
   await page.setViewportSize({ width: 1440, height: 900 })
   await page.reload()

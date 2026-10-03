@@ -1,0 +1,24 @@
+{
+  "rawEvents": 820023,
+  "semanticEvents": 1003111,
+  "constructMs": 13075.600625000001,
+  "retainedMiB": 1872.5950393676758,
+  "explicitGc": true,
+  "scrubMs": {
+    "p50": 18.423624999999447,
+    "p95": 58.825417000000016,
+    "max": 73.97691699999996
+  },
+  "returnToLiveMs": 0.0057500000002619345,
+  "policy": {
+    "length": 1003111,
+    "checkpointCount": 245,
+    "checkpointInterval": 4096,
+    "maxCheckpoints": 256,
+    "cachedMaterializationCount": 1,
+    "cachedMaterializationCursor": 855338,
+    "retainedStateRoots": 247,
+    "replayedEvents": 60894
+  },
+  "note": "Single probe; no million-event archive reload or WebGL scene. Heap includes raw generator input plus canonical semantic events/state and shared checkpoint roots."
+}

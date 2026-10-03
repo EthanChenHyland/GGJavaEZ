@@ -126,7 +126,7 @@ async function mockReader(records, options = {}) {
   const temp = await mkdtemp(join(tmpdir(), 'vj-mock-reader-')), trace = join(temp, 'raw.ndjson');
   await writeFile(trace, lines(records));
   const reader = new CaptureReader({ trace, rawEventLimit: 2, rawByteLimit: 4096, ...options });
-  return { trace, reader, cleanup: async () => { await reader.close(); await rm(temp, { recursive: true, force: true }); } };
+  return { trace, reader, cleanup: async () => { await reader.dispose(); await rm(temp, { recursive: true, force: true }); } };
 }
 
 test('mocked Phase 1: reserved saturation fits outside exact event and byte budgets; later semantic records are ignored', async () => {

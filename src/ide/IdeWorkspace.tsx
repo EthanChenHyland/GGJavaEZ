@@ -3,14 +3,14 @@ import { CirclePlay, Code2, Files, FolderOpen, Hammer, Maximize2, Minimize2, Pan
 import { App, type RuntimeNavigation } from '../app/App'
 import type { RuntimeState, SourceLocation as RuntimeSourceLocation, TraceDocument } from '../contracts/runtime'
 import type { Selection } from '../contracts/interaction'
-import { normalizeTrace } from '../instrumentation/normalize'
-import { validateTrace } from '../runtime/trace'
+import { ExecutionIngest } from '../execution/ingest'
+import { yieldTraceWork } from '../execution/schedule'
 import type { DebugCommand, DebugSession, ResolvedBreakpoint, SourceBreakpoint } from '../debugger/contracts'
 import { DebugPanel } from '../debugger/DebugPanel'
 import { ErrorExplorer } from '../debugger/ErrorExplorer'
 import type { VisualizationCapabilityReport } from '../instrumentation/contracts'
-import { bridge } from './client'
-import type { ExecutionSession, TimelineLens } from '../execution/contracts'
+import { bridge, type ExecutionStream } from './client'
+import type { ExecutionSession, RawTraceDelta, TimelineLens } from '../execution/contracts'
 import { EditableJavaEditor } from './EditableJavaEditor'
 import { ProblemsPanel } from './ProblemsPanel'
 import { LaunchDialog } from './LaunchDialog'
@@ -112,6 +112,9 @@ export function IdeWorkspace() {
   const shownFailure = useRef(false)
   const normalizedSignature = useRef('')
   const runtimeSessionId = useRef<string | null>(null)
+  const ingestRef = useRef<ExecutionIngest | null>(null)
+  const latestExecutionRef = useRef<ExecutionSession | null>(null)
+  const ingestPublication = useRef<{ at: number; timer?: ReturnType<typeof setTimeout> }>({ at: -Infinity })
   const userLayoutOverride = useRef(false)
   const explorerOverride = useRef(false)
   const [projectWidth, setProjectWidth] = useState(14)
@@ -125,7 +128,7 @@ export function IdeWorkspace() {
   const contentRef = useRef<HTMLDivElement>(null)
   const upperRef = useRef<HTMLDivElement>(null)
   const importRef = useRef<HTMLInputElement>(null)
-  const eventSourceRef = useRef<EventSource | null>(null)
+  const eventSourceRef = useRef<ExecutionStream | null>(null)
   const consoleRef = useRef<HTMLDivElement>(null)
   const confirmRef = useRef<HTMLDivElement>(null)
   const projectDialogRef = useRef<HTMLFormElement>(null)
@@ -310,6 +313,8 @@ export function IdeWorkspace() {
     setBuild(null)
     setExecution(null); setTimelineLens('LIVE'); activeExecutionId.current = null
     setVisualization(null)
+    ingestRef.current?.dispose(); ingestRef.current = null; latestExecutionRef.current = null
+    clearTimeout(ingestPublication.current.timer); ingestPublication.current = { at: -Infinity }
     setWorkspaceMode('code')
     setEditorWidth(modeEditorWidths.current.code)
     setBottomOpen(false); setFocusSourceOpen(false)
@@ -374,10 +379,16 @@ export function IdeWorkspace() {
   useEffect(() => {
     eventSourceRef.current?.close()
     if (!execution?.id) return
-    const source = bridge.executionEvents(execution.id, acceptExecution)
+    const source = bridge.executionEvents(execution.id, acceptExecution, acceptRaw,
+      () => ingestRef.current?.sessionId === execution.id ? ingestRef.current.nextSequence : 0, fail)
     eventSourceRef.current = source
     return () => source.close()
   }, [execution?.id])
+
+  useEffect(() => () => {
+    clearTimeout(ingestPublication.current.timer)
+    ingestRef.current?.dispose(); ingestRef.current = null
+  }, [])
 
   useEffect(() => {
     const beforeUnload = (event: BeforeUnloadEvent) => { if (tabsRef.current.some((tab) => tab.draft !== tab.content)) { event.preventDefault(); event.returnValue = '' } }
@@ -449,10 +460,52 @@ export function IdeWorkspace() {
   }, [])
   const handleRuntimeChange = useCallback((next: RuntimeState, selection: Selection) => { setRuntime(next); setRuntimeSelection(selection) }, [])
   useEffect(() => { setInspectorHidden(false) }, [runtimeSelection?.id])
+  const publishIngest = useCallback(function publish(session: ExecutionSession) {
+    const ingest = ingestRef.current
+    if (!ingest || ingest.sessionId !== session.id) return
+    const normalized = ingest.update(session)
+    // Metadata can precede the first raw page. Keep the ready placeholder until
+    // actual observed facts exist instead of mounting an empty execution world.
+    if (ingest.nextSequence === 0) return
+    // Metadata can advertise a retained backlog before its raw pages arrive.
+    // Coalesce that catch-up into one world publication at the advertised head;
+    // repeatedly projecting large intermediate worlds can starve ingestion.
+    // Actual process/Console metadata is already published independently.
+    const recordedHead = session.rawEventCount ?? session.rawEvents.length
+    if (ingest.nextSequence < recordedHead) return
+    const signature = `${session.id}:${normalized.trace.events.length}:${session.terminalStatus ?? 'live'}:${session.recording?.state ?? 'FULL'}`
+    if (signature === normalizedSignature.current) return
+    // Ingestion keeps every fact; presentation coalesces catch-up batches to the
+    // existing 100 ms live cadence, independently of immediate Console metadata.
+    const publication = ingestPublication.current
+    const remaining = 100 - (performance.now() - publication.at)
+    if (remaining > 0) {
+      if (!publication.timer) publication.timer = setTimeout(() => {
+        publication.timer = undefined
+        const latest = latestExecutionRef.current
+        if (latest) publish(latest)
+      }, remaining)
+      return
+    }
+    clearTimeout(publication.timer); publication.timer = undefined; publication.at = performance.now()
+    normalizedSignature.current = signature
+    if (runtimeSessionId.current !== session.id) { setRuntime(null); setRuntimeSelection(null); runtimeSessionId.current = session.id }
+    setVisualization({ sessionId: session.id, trace: ingest.publishTrace(), capability: normalized.capability })
+    if (!userLayoutOverride.current) {
+      const emphasis = session.kind === 'debug' ? 'debug' : 'visualize'
+      setWorkspaceMode(emphasis); setEditorWidth(modeEditorWidths.current[emphasis])
+      if (!explorerOverride.current) setExplorerOpen(false)
+    }
+    if (session.phase === 'PAUSED' && session.pause?.reason === 'exception') { setTool('errors'); setBottomOpen(true); setBottomHeight(35) }
+    if (session.phase === 'FAILED' && normalized.trace.events.some(event => event.type === 'THROW_EXCEPTION') && !shownFailure.current) {
+      shownFailure.current = true; setTool('errors'); setBottomOpen(true); setBottomHeight(35)
+    }
+  }, [])
   const acceptExecution = useCallback((session: ExecutionSession) => {
     if (activeExecutionId.current && activeExecutionId.current !== session.id) return
     if (session.projectId !== projectIdRef.current || session.revision <= executionRevision.current) return
     executionRevision.current = session.revision
+    latestExecutionRef.current = session
     setExecution(session)
     if (session.build) {
       setBuild(session.build)
@@ -460,34 +513,53 @@ export function IdeWorkspace() {
       setMainClass(session.mainClass ?? session.build.mainClasses[0] ?? '')
     }
     if (session.kind === 'debug' && session.phase !== 'BUILDING') setBreakpoints(session.breakpoints)
-    const signature = `${session.id}:${session.rawEvents.length}:${session.terminalStatus ?? 'live'}:${session.recording?.state ?? 'FULL'}`
-    if (session.rawEvents.length && session.build?.success && signature !== normalizedSignature.current) {
-      normalizedSignature.current = signature
-      if (runtimeSessionId.current !== session.id) { setRuntime(null); setRuntimeSelection(null); runtimeSessionId.current = session.id }
-      const normalized = normalizeTrace(session.rawEvents, session.sourceManifest, {
-        status: session.terminalStatus ?? 'live', exitCode: session.exitCode, diagnostic: session.diagnostic, recording: session.recording,
-        ...(session.capability ? { capability: session.capability } : {}),
-      }, `execution:${session.id}`)
-      const trace = validateTrace(normalized.trace, { allowLive: session.terminalStatus === null })
-      trace.capture = { origin: 'jvm', sourceHashes: Object.fromEntries(session.sourceManifest.sources.map((file) => [file.fileId, file.sha256])), recordedAt: session.startedAt }
-      setVisualization({ sessionId: session.id, trace, capability: normalized.capability })
-      if (!userLayoutOverride.current) {
-        const emphasis = session.kind === 'debug' ? 'debug' : 'visualize'
-        setWorkspaceMode(emphasis)
-        setEditorWidth(modeEditorWidths.current[emphasis])
-        if (!explorerOverride.current) setExplorerOpen(false)
+    if ((session.rawEventCount ?? session.rawEvents.length) > 0 && session.build?.success) {
+      if (ingestRef.current?.sessionId !== session.id) {
+        ingestRef.current?.dispose(); ingestRef.current = new ExecutionIngest(session)
+        clearTimeout(ingestPublication.current.timer)
+        ingestPublication.current = { at: performance.now() }
       }
-      if (session.phase === 'PAUSED' && session.pause?.reason === 'exception') { setTool('errors'); setBottomOpen(true); setBottomHeight(35) }
-      if (session.phase === 'FAILED' && trace.events.some((event) => event.type === 'THROW_EXCEPTION') && !shownFailure.current) {
-        shownFailure.current = true; setTool('errors'); setBottomOpen(true); setBottomHeight(35)
-      }
+      publishIngest(session)
     } else if (session.phase === 'FAILED' && session.failureKind === 'build') {
       setTool('problems'); setBottomOpen(true); setNotice(session.diagnostic ?? 'Compilation failed')
     } else if (session.support === 'RUN_ONLY' && ['RUNNING', 'WAITING_FOR_INPUT', 'COMPLETED'].includes(session.phase)) {
       setTool('console'); setBottomOpen(true)
     }
     if (session.phase === 'WAITING_FOR_INPUT') { setTool('console'); setBottomOpen(true) }
-  }, [])
+  }, [publishIngest])
+  const acceptRaw = useCallback(async (delta: RawTraceDelta) => {
+    const session = latestExecutionRef.current
+    if (!session || session.id !== delta.sessionId || session.projectId !== projectIdRef.current) return
+    if (ingestRef.current?.sessionId !== session.id) {
+      ingestRef.current?.dispose(); ingestRef.current = new ExecutionIngest(session)
+      clearTimeout(ingestPublication.current.timer)
+      ingestPublication.current = { at: performance.now() }
+    }
+    const ingest = ingestRef.current
+    // A gap is repaired from the retained raw prefix before the later batch is applied.
+    while (delta.fromSequence > ingest.nextSequence) {
+      const missing = await bridge.executionRaw(session.id, ingest.nextSequence, Math.min(256, delta.fromSequence - ingest.nextSequence))
+      if (ingestRef.current !== ingest) return
+      if (!missing.events.length) throw new Error('Missing recorded trace range is unavailable')
+      ingest.append(missing)
+      await yieldTraceWork()
+      if (ingestRef.current !== ingest) return
+    }
+    let publishedAt = performance.now(), sliceStarted = performance.now()
+    for (let offset = 0; offset < delta.events.length; offset += 32) {
+      if (ingestRef.current !== ingest) return
+      const events = delta.events.slice(offset, offset + 32)
+      ingest.append({ ...delta, fromSequence: delta.fromSequence + offset, toSequence: delta.fromSequence + offset + events.length, events })
+      if (performance.now() - publishedAt >= 100) {
+        const latest = latestExecutionRef.current
+        if (latest?.id === session.id) publishIngest(latest)
+        publishedAt = performance.now()
+      }
+      if (performance.now() - sliceStarted >= 4) { await yieldTraceWork(); sliceStarted = performance.now() }
+    }
+    const latest = latestExecutionRef.current
+    if (latest?.id === session.id) publishIngest(latest)
+  }, [publishIngest])
   const startExecution = (kind: 'run' | 'debug', withoutVisualization = false) => action(async () => {
     await saveAll()
     eventSourceRef.current?.close(); activeExecutionId.current = 'pending'

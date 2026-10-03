@@ -1,0 +1,1335 @@
+{
+  "sessionId": "7436db40-bd8b-4b8c-a424-3d879d1706ac",
+  "initial": {
+    "durationMs": 34875.647,
+    "samples": 28108,
+    "functions": [
+      {
+        "inclusive": 28108,
+        "self": 0,
+        "fn": {
+          "functionName": "(root)",
+          "scriptId": "0",
+          "url": "",
+          "lineNumber": -1,
+          "columnNumber": -1
+        }
+      },
+      {
+        "inclusive": 19113,
+        "self": 0,
+        "fn": {
+          "functionName": "performWorkUntilDeadline",
+          "scriptId": "42",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/scheduler-kNtYHXIZ.js?v=1dfc5541",
+          "lineNumber": 13,
+          "columnNumber": 35
+        }
+      },
+      {
+        "inclusive": 18659,
+        "self": 1,
+        "fn": {
+          "functionName": "performWorkOnRootViaSchedulerTask",
+          "scriptId": "12",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-dom_client.js?v=1dfc5541",
+          "lineNumber": 9576,
+          "columnNumber": 44
+        }
+      },
+      {
+        "inclusive": 18658,
+        "self": 0,
+        "fn": {
+          "functionName": "performWorkOnRoot",
+          "scriptId": "12",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-dom_client.js?v=1dfc5541",
+          "lineNumber": 8413,
+          "columnNumber": 28
+        }
+      },
+      {
+        "inclusive": 17445,
+        "self": 0,
+        "fn": {
+          "functionName": "commitRoot",
+          "scriptId": "12",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-dom_client.js?v=1dfc5541",
+          "lineNumber": 9054,
+          "columnNumber": 21
+        }
+      },
+      {
+        "inclusive": 17445,
+        "self": 0,
+        "fn": {
+          "functionName": "completeRoot",
+          "scriptId": "12",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-dom_client.js?v=1dfc5541",
+          "lineNumber": 9006,
+          "columnNumber": 23
+        }
+      },
+      {
+        "inclusive": 17445,
+        "self": 0,
+        "fn": {
+          "functionName": "completeRootWhenReady",
+          "scriptId": "12",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-dom_client.js?v=1dfc5541",
+          "lineNumber": 8532,
+          "columnNumber": 32
+        }
+      },
+      {
+        "inclusive": 16892,
+        "self": 2,
+        "fn": {
+          "functionName": "commitLayoutEffectOnFiber",
+          "scriptId": "12",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-dom_client.js?v=1dfc5541",
+          "lineNumber": 7238,
+          "columnNumber": 36
+        }
+      },
+      {
+        "inclusive": 16892,
+        "self": 0,
+        "fn": {
+          "functionName": "recursivelyTraverseLayoutEffects",
+          "scriptId": "12",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-dom_client.js?v=1dfc5541",
+          "lineNumber": 7898,
+          "columnNumber": 43
+        }
+      },
+      {
+        "inclusive": 16892,
+        "self": 0,
+        "fn": {
+          "functionName": "commitLayoutEffectOnFiber",
+          "scriptId": "12",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-dom_client.js?v=1dfc5541",
+          "lineNumber": 7238,
+          "columnNumber": 36
+        }
+      },
+      {
+        "inclusive": 16892,
+        "self": 0,
+        "fn": {
+          "functionName": "flushLayoutEffects",
+          "scriptId": "12",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-dom_client.js?v=1dfc5541",
+          "lineNumber": 9175,
+          "columnNumber": 29
+        }
+      },
+      {
+        "inclusive": 16890,
+        "self": 1,
+        "fn": {
+          "functionName": "commitLayoutEffectOnFiber",
+          "scriptId": "12",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-dom_client.js?v=1dfc5541",
+          "lineNumber": 7238,
+          "columnNumber": 36
+        }
+      },
+      {
+        "inclusive": 16890,
+        "self": 0,
+        "fn": {
+          "functionName": "recursivelyTraverseLayoutEffects",
+          "scriptId": "12",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-dom_client.js?v=1dfc5541",
+          "lineNumber": 7898,
+          "columnNumber": 43
+        }
+      },
+      {
+        "inclusive": 16890,
+        "self": 0,
+        "fn": {
+          "functionName": "commitLayoutEffectOnFiber",
+          "scriptId": "12",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-dom_client.js?v=1dfc5541",
+          "lineNumber": 7238,
+          "columnNumber": 36
+        }
+      },
+      {
+        "inclusive": 16890,
+        "self": 0,
+        "fn": {
+          "functionName": "recursivelyTraverseLayoutEffects",
+          "scriptId": "12",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-dom_client.js?v=1dfc5541",
+          "lineNumber": 7898,
+          "columnNumber": 43
+        }
+      },
+      {
+        "inclusive": 16890,
+        "self": 0,
+        "fn": {
+          "functionName": "commitLayoutEffectOnFiber",
+          "scriptId": "12",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-dom_client.js?v=1dfc5541",
+          "lineNumber": 7238,
+          "columnNumber": 36
+        }
+      },
+      {
+        "inclusive": 16890,
+        "self": 0,
+        "fn": {
+          "functionName": "recursivelyTraverseLayoutEffects",
+          "scriptId": "12",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-dom_client.js?v=1dfc5541",
+          "lineNumber": 7898,
+          "columnNumber": 43
+        }
+      },
+      {
+        "inclusive": 16890,
+        "self": 0,
+        "fn": {
+          "functionName": "commitLayoutEffectOnFiber",
+          "scriptId": "12",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-dom_client.js?v=1dfc5541",
+          "lineNumber": 7238,
+          "columnNumber": 36
+        }
+      },
+      {
+        "inclusive": 16890,
+        "self": 0,
+        "fn": {
+          "functionName": "recursivelyTraverseLayoutEffects",
+          "scriptId": "12",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-dom_client.js?v=1dfc5541",
+          "lineNumber": 7898,
+          "columnNumber": 43
+        }
+      },
+      {
+        "inclusive": 16890,
+        "self": 0,
+        "fn": {
+          "functionName": "commitLayoutEffectOnFiber",
+          "scriptId": "12",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-dom_client.js?v=1dfc5541",
+          "lineNumber": 7238,
+          "columnNumber": 36
+        }
+      },
+      {
+        "inclusive": 16890,
+        "self": 0,
+        "fn": {
+          "functionName": "recursivelyTraverseLayoutEffects",
+          "scriptId": "12",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-dom_client.js?v=1dfc5541",
+          "lineNumber": 7898,
+          "columnNumber": 43
+        }
+      },
+      {
+        "inclusive": 16890,
+        "self": 0,
+        "fn": {
+          "functionName": "commitLayoutEffectOnFiber",
+          "scriptId": "12",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-dom_client.js?v=1dfc5541",
+          "lineNumber": 7238,
+          "columnNumber": 36
+        }
+      },
+      {
+        "inclusive": 16890,
+        "self": 0,
+        "fn": {
+          "functionName": "recursivelyTraverseLayoutEffects",
+          "scriptId": "12",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-dom_client.js?v=1dfc5541",
+          "lineNumber": 7898,
+          "columnNumber": 43
+        }
+      },
+      {
+        "inclusive": 16890,
+        "self": 0,
+        "fn": {
+          "functionName": "commitLayoutEffectOnFiber",
+          "scriptId": "12",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-dom_client.js?v=1dfc5541",
+          "lineNumber": 7238,
+          "columnNumber": 36
+        }
+      },
+      {
+        "inclusive": 16890,
+        "self": 0,
+        "fn": {
+          "functionName": "recursivelyTraverseLayoutEffects",
+          "scriptId": "12",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-dom_client.js?v=1dfc5541",
+          "lineNumber": 7898,
+          "columnNumber": 43
+        }
+      },
+      {
+        "inclusive": 16890,
+        "self": 0,
+        "fn": {
+          "functionName": "commitLayoutEffectOnFiber",
+          "scriptId": "12",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-dom_client.js?v=1dfc5541",
+          "lineNumber": 7238,
+          "columnNumber": 36
+        }
+      },
+      {
+        "inclusive": 16890,
+        "self": 0,
+        "fn": {
+          "functionName": "recursivelyTraverseLayoutEffects",
+          "scriptId": "12",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-dom_client.js?v=1dfc5541",
+          "lineNumber": 7898,
+          "columnNumber": 43
+        }
+      },
+      {
+        "inclusive": 16890,
+        "self": 0,
+        "fn": {
+          "functionName": "commitLayoutEffectOnFiber",
+          "scriptId": "12",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-dom_client.js?v=1dfc5541",
+          "lineNumber": 7238,
+          "columnNumber": 36
+        }
+      },
+      {
+        "inclusive": 16890,
+        "self": 0,
+        "fn": {
+          "functionName": "recursivelyTraverseLayoutEffects",
+          "scriptId": "12",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-dom_client.js?v=1dfc5541",
+          "lineNumber": 7898,
+          "columnNumber": 43
+        }
+      },
+      {
+        "inclusive": 16890,
+        "self": 0,
+        "fn": {
+          "functionName": "commitLayoutEffectOnFiber",
+          "scriptId": "12",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-dom_client.js?v=1dfc5541",
+          "lineNumber": 7238,
+          "columnNumber": 36
+        }
+      },
+      {
+        "inclusive": 16890,
+        "self": 0,
+        "fn": {
+          "functionName": "recursivelyTraverseLayoutEffects",
+          "scriptId": "12",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-dom_client.js?v=1dfc5541",
+          "lineNumber": 7898,
+          "columnNumber": 43
+        }
+      },
+      {
+        "inclusive": 16890,
+        "self": 0,
+        "fn": {
+          "functionName": "commitLayoutEffectOnFiber",
+          "scriptId": "12",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-dom_client.js?v=1dfc5541",
+          "lineNumber": 7238,
+          "columnNumber": 36
+        }
+      },
+      {
+        "inclusive": 16890,
+        "self": 0,
+        "fn": {
+          "functionName": "recursivelyTraverseLayoutEffects",
+          "scriptId": "12",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-dom_client.js?v=1dfc5541",
+          "lineNumber": 7898,
+          "columnNumber": 43
+        }
+      },
+      {
+        "inclusive": 16890,
+        "self": 0,
+        "fn": {
+          "functionName": "commitLayoutEffectOnFiber",
+          "scriptId": "12",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-dom_client.js?v=1dfc5541",
+          "lineNumber": 7238,
+          "columnNumber": 36
+        }
+      },
+      {
+        "inclusive": 16890,
+        "self": 0,
+        "fn": {
+          "functionName": "recursivelyTraverseLayoutEffects",
+          "scriptId": "12",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-dom_client.js?v=1dfc5541",
+          "lineNumber": 7898,
+          "columnNumber": 43
+        }
+      },
+      {
+        "inclusive": 16890,
+        "self": 0,
+        "fn": {
+          "functionName": "commitLayoutEffectOnFiber",
+          "scriptId": "12",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-dom_client.js?v=1dfc5541",
+          "lineNumber": 7238,
+          "columnNumber": 36
+        }
+      },
+      {
+        "inclusive": 16890,
+        "self": 0,
+        "fn": {
+          "functionName": "recursivelyTraverseLayoutEffects",
+          "scriptId": "12",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-dom_client.js?v=1dfc5541",
+          "lineNumber": 7898,
+          "columnNumber": 43
+        }
+      },
+      {
+        "inclusive": 16890,
+        "self": 0,
+        "fn": {
+          "functionName": "commitLayoutEffectOnFiber",
+          "scriptId": "12",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-dom_client.js?v=1dfc5541",
+          "lineNumber": 7238,
+          "columnNumber": 36
+        }
+      },
+      {
+        "inclusive": 16890,
+        "self": 0,
+        "fn": {
+          "functionName": "recursivelyTraverseLayoutEffects",
+          "scriptId": "12",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-dom_client.js?v=1dfc5541",
+          "lineNumber": 7898,
+          "columnNumber": 43
+        }
+      },
+      {
+        "inclusive": 16890,
+        "self": 0,
+        "fn": {
+          "functionName": "commitLayoutEffectOnFiber",
+          "scriptId": "12",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-dom_client.js?v=1dfc5541",
+          "lineNumber": 7238,
+          "columnNumber": 36
+        }
+      },
+      {
+        "inclusive": 16890,
+        "self": 0,
+        "fn": {
+          "functionName": "recursivelyTraverseLayoutEffects",
+          "scriptId": "12",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-dom_client.js?v=1dfc5541",
+          "lineNumber": 7898,
+          "columnNumber": 43
+        }
+      },
+      {
+        "inclusive": 16890,
+        "self": 0,
+        "fn": {
+          "functionName": "commitLayoutEffectOnFiber",
+          "scriptId": "12",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-dom_client.js?v=1dfc5541",
+          "lineNumber": 7238,
+          "columnNumber": 36
+        }
+      },
+      {
+        "inclusive": 16890,
+        "self": 0,
+        "fn": {
+          "functionName": "recursivelyTraverseLayoutEffects",
+          "scriptId": "12",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-dom_client.js?v=1dfc5541",
+          "lineNumber": 7898,
+          "columnNumber": 43
+        }
+      },
+      {
+        "inclusive": 16889,
+        "self": 0,
+        "fn": {
+          "functionName": "commitLayoutEffectOnFiber",
+          "scriptId": "12",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-dom_client.js?v=1dfc5541",
+          "lineNumber": 7238,
+          "columnNumber": 36
+        }
+      },
+      {
+        "inclusive": 16889,
+        "self": 0,
+        "fn": {
+          "functionName": "recursivelyTraverseLayoutEffects",
+          "scriptId": "12",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-dom_client.js?v=1dfc5541",
+          "lineNumber": 7898,
+          "columnNumber": 43
+        }
+      },
+      {
+        "inclusive": 16889,
+        "self": 0,
+        "fn": {
+          "functionName": "commitLayoutEffectOnFiber",
+          "scriptId": "12",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-dom_client.js?v=1dfc5541",
+          "lineNumber": 7238,
+          "columnNumber": 36
+        }
+      },
+      {
+        "inclusive": 16889,
+        "self": 0,
+        "fn": {
+          "functionName": "recursivelyTraverseLayoutEffects",
+          "scriptId": "12",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-dom_client.js?v=1dfc5541",
+          "lineNumber": 7898,
+          "columnNumber": 43
+        }
+      },
+      {
+        "inclusive": 16889,
+        "self": 0,
+        "fn": {
+          "functionName": "commitLayoutEffectOnFiber",
+          "scriptId": "12",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-dom_client.js?v=1dfc5541",
+          "lineNumber": 7238,
+          "columnNumber": 36
+        }
+      },
+      {
+        "inclusive": 16889,
+        "self": 0,
+        "fn": {
+          "functionName": "recursivelyTraverseLayoutEffects",
+          "scriptId": "12",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-dom_client.js?v=1dfc5541",
+          "lineNumber": 7898,
+          "columnNumber": 43
+        }
+      },
+      {
+        "inclusive": 16889,
+        "self": 0,
+        "fn": {
+          "functionName": "commitLayoutEffectOnFiber",
+          "scriptId": "12",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-dom_client.js?v=1dfc5541",
+          "lineNumber": 7238,
+          "columnNumber": 36
+        }
+      },
+      {
+        "inclusive": 16889,
+        "self": 0,
+        "fn": {
+          "functionName": "recursivelyTraverseLayoutEffects",
+          "scriptId": "12",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-dom_client.js?v=1dfc5541",
+          "lineNumber": 7898,
+          "columnNumber": 43
+        }
+      },
+      {
+        "inclusive": 16838,
+        "self": 0,
+        "fn": {
+          "functionName": "",
+          "scriptId": "78",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-three-fiber.esm-D51A0nbO.js?v=1dfc5541",
+          "lineNumber": 10344,
+          "columnNumber": 27
+        }
+      },
+      {
+        "inclusive": 16838,
+        "self": 0,
+        "fn": {
+          "functionName": "react_stack_bottom_frame",
+          "scriptId": "12",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-dom_client.js?v=1dfc5541",
+          "lineNumber": 13927,
+          "columnNumber": 170
+        }
+      },
+      {
+        "inclusive": 16838,
+        "self": 0,
+        "fn": {
+          "functionName": "runWithFiberInDEV",
+          "scriptId": "12",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-dom_client.js?v=1dfc5541",
+          "lineNumber": 692,
+          "columnNumber": 28
+        }
+      },
+      {
+        "inclusive": 16838,
+        "self": 0,
+        "fn": {
+          "functionName": "commitHookEffectListMount",
+          "scriptId": "12",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-dom_client.js?v=1dfc5541",
+          "lineNumber": 6646,
+          "columnNumber": 36
+        }
+      },
+      {
+        "inclusive": 16838,
+        "self": 0,
+        "fn": {
+          "functionName": "commitHookLayoutEffects",
+          "scriptId": "12",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-dom_client.js?v=1dfc5541",
+          "lineNumber": 6640,
+          "columnNumber": 34
+        }
+      },
+      {
+        "inclusive": 16823,
+        "self": 1,
+        "fn": {
+          "functionName": "_c",
+          "scriptId": "78",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-three-fiber.esm-D51A0nbO.js?v=1dfc5541",
+          "lineNumber": 3209,
+          "columnNumber": 14
+        }
+      },
+      {
+        "inclusive": 16823,
+        "self": 0,
+        "fn": {
+          "functionName": "Ur",
+          "scriptId": "78",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-three-fiber.esm-D51A0nbO.js?v=1dfc5541",
+          "lineNumber": 3143,
+          "columnNumber": 14
+        }
+      },
+      {
+        "inclusive": 16823,
+        "self": 0,
+        "fn": {
+          "functionName": "Cd",
+          "scriptId": "78",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-three-fiber.esm-D51A0nbO.js?v=1dfc5541",
+          "lineNumber": 7244,
+          "columnNumber": 14
+        }
+      },
+      {
+        "inclusive": 16823,
+        "self": 0,
+        "fn": {
+          "functionName": "commit",
+          "scriptId": "78",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-three-fiber.esm-D51A0nbO.js?v=1dfc5541",
+          "lineNumber": 9849,
+          "columnNumber": 18
+        }
+      }
+    ]
+  },
+  "scrub": {
+    "durationMs": 11859.256,
+    "samples": 8619,
+    "functions": [
+      {
+        "inclusive": 8619,
+        "self": 0,
+        "fn": {
+          "functionName": "(root)",
+          "scriptId": "0",
+          "url": "",
+          "lineNumber": -1,
+          "columnNumber": -1
+        }
+      },
+      {
+        "inclusive": 5452,
+        "self": 0,
+        "fn": {
+          "functionName": "performWorkUntilDeadline",
+          "scriptId": "42",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/scheduler-kNtYHXIZ.js?v=1dfc5541",
+          "lineNumber": 13,
+          "columnNumber": 35
+        }
+      },
+      {
+        "inclusive": 3206,
+        "self": 0,
+        "fn": {
+          "functionName": "Zm",
+          "scriptId": "78",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-three-fiber.esm-D51A0nbO.js?v=1dfc5541",
+          "lineNumber": 7121,
+          "columnNumber": 14
+        }
+      },
+      {
+        "inclusive": 3206,
+        "self": 0,
+        "fn": {
+          "functionName": "Mf",
+          "scriptId": "78",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-three-fiber.esm-D51A0nbO.js?v=1dfc5541",
+          "lineNumber": 3202,
+          "columnNumber": 14
+        }
+      },
+      {
+        "inclusive": 2270,
+        "self": 0,
+        "fn": {
+          "functionName": "Qp",
+          "scriptId": "78",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-three-fiber.esm-D51A0nbO.js?v=1dfc5541",
+          "lineNumber": 7330,
+          "columnNumber": 14
+        }
+      },
+      {
+        "inclusive": 2269,
+        "self": 2,
+        "fn": {
+          "functionName": "ng",
+          "scriptId": "78",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-three-fiber.esm-D51A0nbO.js?v=1dfc5541",
+          "lineNumber": 7372,
+          "columnNumber": 14
+        }
+      },
+      {
+        "inclusive": 2267,
+        "self": 0,
+        "fn": {
+          "functionName": "rg",
+          "scriptId": "78",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-three-fiber.esm-D51A0nbO.js?v=1dfc5541",
+          "lineNumber": 7452,
+          "columnNumber": 14
+        }
+      },
+      {
+        "inclusive": 2264,
+        "self": 86,
+        "fn": {
+          "functionName": "B",
+          "scriptId": "78",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-three-fiber.esm-D51A0nbO.js?v=1dfc5541",
+          "lineNumber": 2800,
+          "columnNumber": 13
+        }
+      },
+      {
+        "inclusive": 2011,
+        "self": 101,
+        "fn": {
+          "functionName": "run",
+          "scriptId": "0",
+          "url": "",
+          "lineNumber": -1,
+          "columnNumber": -1
+        }
+      },
+      {
+        "inclusive": 1888,
+        "self": 32,
+        "fn": {
+          "functionName": "Su",
+          "scriptId": "78",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-three-fiber.esm-D51A0nbO.js?v=1dfc5541",
+          "lineNumber": 5320,
+          "columnNumber": 14
+        }
+      },
+      {
+        "inclusive": 1240,
+        "self": 0,
+        "fn": {
+          "functionName": "Zm",
+          "scriptId": "78",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-three-fiber.esm-D51A0nbO.js?v=1dfc5541",
+          "lineNumber": 7121,
+          "columnNumber": 14
+        }
+      },
+      {
+        "inclusive": 1240,
+        "self": 0,
+        "fn": {
+          "functionName": "_c",
+          "scriptId": "78",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-three-fiber.esm-D51A0nbO.js?v=1dfc5541",
+          "lineNumber": 3209,
+          "columnNumber": 14
+        }
+      },
+      {
+        "inclusive": 1240,
+        "self": 0,
+        "fn": {
+          "functionName": "Ur",
+          "scriptId": "78",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-three-fiber.esm-D51A0nbO.js?v=1dfc5541",
+          "lineNumber": 3143,
+          "columnNumber": 14
+        }
+      },
+      {
+        "inclusive": 1240,
+        "self": 0,
+        "fn": {
+          "functionName": "gl",
+          "scriptId": "78",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-three-fiber.esm-D51A0nbO.js?v=1dfc5541",
+          "lineNumber": 3166,
+          "columnNumber": 14
+        }
+      },
+      {
+        "inclusive": 1240,
+        "self": 0,
+        "fn": {
+          "functionName": "",
+          "scriptId": "78",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-three-fiber.esm-D51A0nbO.js?v=1dfc5541",
+          "lineNumber": 3219,
+          "columnNumber": 24
+        }
+      },
+      {
+        "inclusive": 1166,
+        "self": 0,
+        "fn": {
+          "functionName": "performWorkOnRoot",
+          "scriptId": "12",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-dom_client.js?v=1dfc5541",
+          "lineNumber": 8413,
+          "columnNumber": 28
+        }
+      },
+      {
+        "inclusive": 1166,
+        "self": 0,
+        "fn": {
+          "functionName": "performWorkOnRootViaSchedulerTask",
+          "scriptId": "12",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-dom_client.js?v=1dfc5541",
+          "lineNumber": 9576,
+          "columnNumber": 44
+        }
+      },
+      {
+        "inclusive": 1101,
+        "self": 0,
+        "fn": {
+          "functionName": "performUnitOfWork",
+          "scriptId": "12",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-dom_client.js?v=1dfc5541",
+          "lineNumber": 8898,
+          "columnNumber": 28
+        }
+      },
+      {
+        "inclusive": 1101,
+        "self": 0,
+        "fn": {
+          "functionName": "workLoopSync",
+          "scriptId": "12",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-dom_client.js?v=1dfc5541",
+          "lineNumber": 8795,
+          "columnNumber": 23
+        }
+      },
+      {
+        "inclusive": 1101,
+        "self": 0,
+        "fn": {
+          "functionName": "renderRootSync",
+          "scriptId": "12",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-dom_client.js?v=1dfc5541",
+          "lineNumber": 8739,
+          "columnNumber": 25
+        }
+      },
+      {
+        "inclusive": 1072,
+        "self": 0,
+        "fn": {
+          "functionName": "Yp",
+          "scriptId": "78",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-three-fiber.esm-D51A0nbO.js?v=1dfc5541",
+          "lineNumber": 7704,
+          "columnNumber": 14
+        }
+      },
+      {
+        "inclusive": 1072,
+        "self": 0,
+        "fn": {
+          "functionName": "",
+          "scriptId": "78",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-three-fiber.esm-D51A0nbO.js?v=1dfc5541",
+          "lineNumber": 7567,
+          "columnNumber": 272
+        }
+      },
+      {
+        "inclusive": 1061,
+        "self": 8,
+        "fn": {
+          "functionName": "runWithFiberInDEV",
+          "scriptId": "12",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-dom_client.js?v=1dfc5541",
+          "lineNumber": 692,
+          "columnNumber": 28
+        }
+      },
+      {
+        "inclusive": 1053,
+        "self": 11,
+        "fn": {
+          "functionName": "run",
+          "scriptId": "0",
+          "url": "",
+          "lineNumber": -1,
+          "columnNumber": -1
+        }
+      },
+      {
+        "inclusive": 1042,
+        "self": 4,
+        "fn": {
+          "functionName": "beginWork",
+          "scriptId": "12",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-dom_client.js?v=1dfc5541",
+          "lineNumber": 6080,
+          "columnNumber": 20
+        }
+      },
+      {
+        "inclusive": 978,
+        "self": 0,
+        "fn": {
+          "functionName": "Hm",
+          "scriptId": "78",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-three-fiber.esm-D51A0nbO.js?v=1dfc5541",
+          "lineNumber": 6787,
+          "columnNumber": 14
+        }
+      },
+      {
+        "inclusive": 978,
+        "self": 0,
+        "fn": {
+          "functionName": "dr",
+          "scriptId": "78",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-three-fiber.esm-D51A0nbO.js?v=1dfc5541",
+          "lineNumber": 6782,
+          "columnNumber": 14
+        }
+      },
+      {
+        "inclusive": 978,
+        "self": 0,
+        "fn": {
+          "functionName": "Hm",
+          "scriptId": "78",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-three-fiber.esm-D51A0nbO.js?v=1dfc5541",
+          "lineNumber": 6787,
+          "columnNumber": 14
+        }
+      },
+      {
+        "inclusive": 977,
+        "self": 0,
+        "fn": {
+          "functionName": "Hm",
+          "scriptId": "78",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-three-fiber.esm-D51A0nbO.js?v=1dfc5541",
+          "lineNumber": 6787,
+          "columnNumber": 14
+        }
+      },
+      {
+        "inclusive": 977,
+        "self": 0,
+        "fn": {
+          "functionName": "dr",
+          "scriptId": "78",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-three-fiber.esm-D51A0nbO.js?v=1dfc5541",
+          "lineNumber": 6782,
+          "columnNumber": 14
+        }
+      },
+      {
+        "inclusive": 977,
+        "self": 0,
+        "fn": {
+          "functionName": "Hm",
+          "scriptId": "78",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-three-fiber.esm-D51A0nbO.js?v=1dfc5541",
+          "lineNumber": 6787,
+          "columnNumber": 14
+        }
+      },
+      {
+        "inclusive": 977,
+        "self": 0,
+        "fn": {
+          "functionName": "dr",
+          "scriptId": "78",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-three-fiber.esm-D51A0nbO.js?v=1dfc5541",
+          "lineNumber": 6782,
+          "columnNumber": 14
+        }
+      },
+      {
+        "inclusive": 977,
+        "self": 0,
+        "fn": {
+          "functionName": "Hm",
+          "scriptId": "78",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-three-fiber.esm-D51A0nbO.js?v=1dfc5541",
+          "lineNumber": 6787,
+          "columnNumber": 14
+        }
+      },
+      {
+        "inclusive": 977,
+        "self": 0,
+        "fn": {
+          "functionName": "dr",
+          "scriptId": "78",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-three-fiber.esm-D51A0nbO.js?v=1dfc5541",
+          "lineNumber": 6782,
+          "columnNumber": 14
+        }
+      },
+      {
+        "inclusive": 977,
+        "self": 0,
+        "fn": {
+          "functionName": "Hm",
+          "scriptId": "78",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-three-fiber.esm-D51A0nbO.js?v=1dfc5541",
+          "lineNumber": 6787,
+          "columnNumber": 14
+        }
+      },
+      {
+        "inclusive": 977,
+        "self": 0,
+        "fn": {
+          "functionName": "dr",
+          "scriptId": "78",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-three-fiber.esm-D51A0nbO.js?v=1dfc5541",
+          "lineNumber": 6782,
+          "columnNumber": 14
+        }
+      },
+      {
+        "inclusive": 977,
+        "self": 0,
+        "fn": {
+          "functionName": "Hm",
+          "scriptId": "78",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-three-fiber.esm-D51A0nbO.js?v=1dfc5541",
+          "lineNumber": 6787,
+          "columnNumber": 14
+        }
+      },
+      {
+        "inclusive": 977,
+        "self": 0,
+        "fn": {
+          "functionName": "dr",
+          "scriptId": "78",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-three-fiber.esm-D51A0nbO.js?v=1dfc5541",
+          "lineNumber": 6782,
+          "columnNumber": 14
+        }
+      },
+      {
+        "inclusive": 977,
+        "self": 0,
+        "fn": {
+          "functionName": "Hm",
+          "scriptId": "78",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-three-fiber.esm-D51A0nbO.js?v=1dfc5541",
+          "lineNumber": 6787,
+          "columnNumber": 14
+        }
+      },
+      {
+        "inclusive": 977,
+        "self": 0,
+        "fn": {
+          "functionName": "dr",
+          "scriptId": "78",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-three-fiber.esm-D51A0nbO.js?v=1dfc5541",
+          "lineNumber": 6782,
+          "columnNumber": 14
+        }
+      },
+      {
+        "inclusive": 977,
+        "self": 0,
+        "fn": {
+          "functionName": "Hm",
+          "scriptId": "78",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-three-fiber.esm-D51A0nbO.js?v=1dfc5541",
+          "lineNumber": 6787,
+          "columnNumber": 14
+        }
+      },
+      {
+        "inclusive": 977,
+        "self": 0,
+        "fn": {
+          "functionName": "dr",
+          "scriptId": "78",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-three-fiber.esm-D51A0nbO.js?v=1dfc5541",
+          "lineNumber": 6782,
+          "columnNumber": 14
+        }
+      },
+      {
+        "inclusive": 977,
+        "self": 0,
+        "fn": {
+          "functionName": "Hm",
+          "scriptId": "78",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-three-fiber.esm-D51A0nbO.js?v=1dfc5541",
+          "lineNumber": 6787,
+          "columnNumber": 14
+        }
+      },
+      {
+        "inclusive": 977,
+        "self": 0,
+        "fn": {
+          "functionName": "dr",
+          "scriptId": "78",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-three-fiber.esm-D51A0nbO.js?v=1dfc5541",
+          "lineNumber": 6782,
+          "columnNumber": 14
+        }
+      },
+      {
+        "inclusive": 977,
+        "self": 0,
+        "fn": {
+          "functionName": "Hm",
+          "scriptId": "78",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-three-fiber.esm-D51A0nbO.js?v=1dfc5541",
+          "lineNumber": 6787,
+          "columnNumber": 14
+        }
+      },
+      {
+        "inclusive": 977,
+        "self": 0,
+        "fn": {
+          "functionName": "dr",
+          "scriptId": "78",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-three-fiber.esm-D51A0nbO.js?v=1dfc5541",
+          "lineNumber": 6782,
+          "columnNumber": 14
+        }
+      },
+      {
+        "inclusive": 977,
+        "self": 0,
+        "fn": {
+          "functionName": "Hm",
+          "scriptId": "78",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-three-fiber.esm-D51A0nbO.js?v=1dfc5541",
+          "lineNumber": 6787,
+          "columnNumber": 14
+        }
+      },
+      {
+        "inclusive": 977,
+        "self": 0,
+        "fn": {
+          "functionName": "dr",
+          "scriptId": "78",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-three-fiber.esm-D51A0nbO.js?v=1dfc5541",
+          "lineNumber": 6782,
+          "columnNumber": 14
+        }
+      },
+      {
+        "inclusive": 977,
+        "self": 0,
+        "fn": {
+          "functionName": "Hm",
+          "scriptId": "78",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-three-fiber.esm-D51A0nbO.js?v=1dfc5541",
+          "lineNumber": 6787,
+          "columnNumber": 14
+        }
+      },
+      {
+        "inclusive": 977,
+        "self": 0,
+        "fn": {
+          "functionName": "dr",
+          "scriptId": "78",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-three-fiber.esm-D51A0nbO.js?v=1dfc5541",
+          "lineNumber": 6782,
+          "columnNumber": 14
+        }
+      },
+      {
+        "inclusive": 977,
+        "self": 0,
+        "fn": {
+          "functionName": "Hm",
+          "scriptId": "78",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-three-fiber.esm-D51A0nbO.js?v=1dfc5541",
+          "lineNumber": 6787,
+          "columnNumber": 14
+        }
+      },
+      {
+        "inclusive": 977,
+        "self": 0,
+        "fn": {
+          "functionName": "dr",
+          "scriptId": "78",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-three-fiber.esm-D51A0nbO.js?v=1dfc5541",
+          "lineNumber": 6782,
+          "columnNumber": 14
+        }
+      },
+      {
+        "inclusive": 969,
+        "self": 0,
+        "fn": {
+          "functionName": "Hm",
+          "scriptId": "78",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-three-fiber.esm-D51A0nbO.js?v=1dfc5541",
+          "lineNumber": 6787,
+          "columnNumber": 14
+        }
+      },
+      {
+        "inclusive": 969,
+        "self": 0,
+        "fn": {
+          "functionName": "dr",
+          "scriptId": "78",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-three-fiber.esm-D51A0nbO.js?v=1dfc5541",
+          "lineNumber": 6782,
+          "columnNumber": 14
+        }
+      },
+      {
+        "inclusive": 966,
+        "self": 1,
+        "fn": {
+          "functionName": "react_stack_bottom_frame",
+          "scriptId": "12",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-dom_client.js?v=1dfc5541",
+          "lineNumber": 13890,
+          "columnNumber": 89
+        }
+      },
+      {
+        "inclusive": 966,
+        "self": 0,
+        "fn": {
+          "functionName": "renderWithHooks",
+          "scriptId": "12",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-dom_client.js?v=1dfc5541",
+          "lineNumber": 4140,
+          "columnNumber": 26
+        }
+      },
+      {
+        "inclusive": 966,
+        "self": 0,
+        "fn": {
+          "functionName": "updateFunctionComponent",
+          "scriptId": "12",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-dom_client.js?v=1dfc5541",
+          "lineNumber": 5519,
+          "columnNumber": 34
+        }
+      },
+      {
+        "inclusive": 961,
+        "self": 0,
+        "fn": {
+          "functionName": "Hm",
+          "scriptId": "78",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-three-fiber.esm-D51A0nbO.js?v=1dfc5541",
+          "lineNumber": 6787,
+          "columnNumber": 14
+        }
+      },
+      {
+        "inclusive": 961,
+        "self": 0,
+        "fn": {
+          "functionName": "dr",
+          "scriptId": "78",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-three-fiber.esm-D51A0nbO.js?v=1dfc5541",
+          "lineNumber": 6782,
+          "columnNumber": 14
+        }
+      },
+      {
+        "inclusive": 956,
+        "self": 1,
+        "fn": {
+          "functionName": "dr",
+          "scriptId": "78",
+          "url": "http://127.0.0.1:5173/node_modules/.vite/deps/react-three-fiber.esm-D51A0nbO.js?v=1dfc5541",
+          "lineNumber": 6782,
+          "columnNumber": 14
+        }
+      }
+    ]
+  }
+}

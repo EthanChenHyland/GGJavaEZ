@@ -1,0 +1,28 @@
+{
+  "recordedAt": "2026-10-03T00:11:18.409Z",
+  "browser": "chromium 154.0.8037.93",
+  "viewport": "1440x900",
+  "note": "macOS Chrome; actual WebGL renderer reported below. Phase 0 used Linux/software WebGL: browser comparison is not identical hardware. CPU uses CDP TaskDuration, frames are RAF timing, not physical GPU presentation.",
+  "runClickToFirstWorldMs": 10416,
+  "runClickToTerminalPhaseMs": 10423,
+  "runClickToFullWorldMs": 10816,
+  "session": {
+    "phase": "COMPLETED",
+    "terminalStatus": "complete",
+    "rawEvents": 20001,
+    "exitCode": 0,
+    "stdout": "PROCESSED 2400\nMAX_QUEUE 400\nCLOCK 5163\n",
+    "recording": {
+      "state": "STOPPED_LIMIT",
+      "reason": "Recording budget exceeded: events",
+      "budget": "events",
+      "lastRecordedSeq": 19999,
+      "executionContinued": true
+    }
+  },
+  "runBrowserTaskCpuMs": 2912.991,
+  "runTransportDecodedSseBytes": 4507399,
+  "webglRenderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4 Pro, Unspecified Version)",
+  "probeStatus": "Run-to-retained-head after presentation fixes, before final server drain correction; dense-frame probe is reported separately.",
+  "completed": true
+}

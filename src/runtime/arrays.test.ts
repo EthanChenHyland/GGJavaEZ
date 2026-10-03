@@ -222,7 +222,7 @@ describe('five-value bubble sort trace', () => {
     const trace = loadArrayTrace()
     const write = structuredClone(eventsOf(trace, 'ARRAY_WRITE')[0])
     const before = seek(trace, write.seq)
-    const original = structuredClone(before)
+    const original = snapshotCopy(before)
     const after = applyEvent(before, write)
     write.value = int(999)
     write.from = { kind: 'element', index: 4 }
@@ -234,8 +234,8 @@ describe('five-value bubble sort trace', () => {
     expect(after.arrayActivity).toMatchObject({ before: int(8) })
     expect(before.objects[objectId].array!.elements[0].value).toEqual(int(8))
     const cached = seek(trace, 80)
-    cached.objects[objectId].array!.elements[0].id = 'mutated'
-    cached.arrayMutations[0].after = int(-1)
+    expect(() => { cached.objects[objectId].array!.elements[0].id = 'mutated' }).toThrow(TypeError)
+    expect(() => { cached.arrayMutations[0].after = int(-1) }).toThrow(TypeError)
     expect(seek(trace, 80).objects[objectId].array!.elements[0].id).toBe(arrayElementSlotId(objectId, 0))
     expect(seek(trace, 80).arrayMutations[0].after).toEqual(int(3))
 
@@ -375,10 +375,10 @@ describe('array lifecycle and input validation', () => {
     expect(() => validateTrace(trace)).toThrow('must be int')
     writes[1].from = { kind: 'slot', frameId: mainId, slotId: slotId('temp') }
     const before = seek(trace, writes[1].seq)
-    const uninitialized = structuredClone(before)
+    const uninitialized = snapshotCopy(before)
     uninitialized.frames[mainId].locals[slotId('temp')].value = { kind: 'uninitialized' }
     expect(() => applyEvent(uninitialized, writes[1])).toThrow('concrete Java int')
-    const changed = structuredClone(before)
+    const changed = snapshotCopy(before)
     changed.frames[mainId].locals[slotId('temp')].value = int(99)
     expect(() => applyEvent(changed, writes[1])).toThrow('origin value mismatch')
     const removed = applyEvent(before, { ...writes[1], type: 'REMOVE_LOCAL', slotId: slotId('temp') })
@@ -432,3 +432,6 @@ describe('array lifecycle and input validation', () => {
     expect(cells(endpoints)).toEqual([-2147483648, 2147483647].map(int))
   })
 })
+
+// Persistent seek snapshots cross the wire through JSON; clone only deliberate forged test states.
+function snapshotCopy<T>(value: T): T { return JSON.parse(JSON.stringify(value)) as T }

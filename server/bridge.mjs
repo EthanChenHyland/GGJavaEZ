@@ -12,6 +12,7 @@ import { runInstrumented } from './instrumentation-provider.mjs'
 import { buildInstrumentationSourceManifest } from './instrumentation-sources.mjs'
 import { DebugManager } from './debug-manager.mjs'
 import { ExecutionManager } from './execution-manager.mjs'
+import { transportOptions, handleExecutionRequest } from './execution-transport.mjs'
 
 const repository = resolve(fileURLToPath(new URL('..', import.meta.url)))
 const workspace = resolve(process.env.GGJAVA_WORKSPACE || join(repository, '.ggjavaez'))
@@ -90,39 +91,16 @@ const server = http.createServer(async (request, response) => {
     const parts = segments(url.pathname)
     const method = request.method
     if (url.pathname === '/api/health' && method === 'GET') return json(response, 200, { jdk: await detectJdk(settings.jdkHome) })
-    if (url.pathname === '/api/execution/current' && method === 'GET') return json(response, 200, executions.current())
-    if (parts[0] === 'api' && parts[1] === 'execution' && parts[2]) {
-      const id = parts[2]
-      if (!executions.snapshot(id)) return json(response, 404, { error: 'Execution session not found' })
-      if (parts[3] === 'events' && method === 'GET') {
-        response.writeHead(200, { 'content-type': 'text/event-stream; charset=utf-8', 'cache-control': 'no-cache, no-transform', connection: 'keep-alive', 'x-accel-buffering': 'no' })
-        response.write(': connected\n\n')
-        const unsubscribe = executions.subscribe(id, (session) => response.write(`event: session\ndata: ${JSON.stringify(session)}\n\n`))
-        request.on('close', unsubscribe)
-        return
-      }
-      if (parts.length === 3 && method === 'GET') return json(response, 200, executions.snapshot(id))
-      if (parts[3] === 'command' && method === 'POST') return json(response, 200, await executions.command(id, (await body(request)).command))
-      if (parts[3] === 'input' && method === 'POST') return json(response, 200, await executions.input(id, (await body(request)).text))
-      if (parts[3] === 'stop' && method === 'POST') { await body(request); return json(response, 200, await executions.stop(id)) }
-      if (parts[3] === 'output' && method === 'GET' && parts.length === 5) {
-        const stream = executions.output(id, parts[4])
-        response.writeHead(200, { 'content-type': 'text/plain; charset=utf-8', 'content-disposition': `attachment; filename="${parts[4]}.txt"`, 'cache-control': 'no-store', 'x-content-type-options': 'nosniff' })
-        stream.on('error', () => response.destroy())
-        response.on('close', () => stream.destroy())
-        stream.pipe(response)
-        return
-      }
-      if (parts[3] === 'breakpoints' && method === 'POST') return json(response, 200, await executions.setBreakpoints(id, (await body(request)).breakpoints))
-    }
-    if (url.pathname === '/api/debug/current' && method === 'GET') return json(response, 200, debuggerSessions.current())
+    if (await handleExecutionRequest(request, response, url, executions, { body, json })) return
+    if (url.pathname === '/api/debug/current' && method === 'GET') return json(response, 200, debuggerSessions.current(transportOptions(url)))
     if (parts[0] === 'api' && parts[1] === 'debug' && parts[2]) {
       const id = parts[2]
-      if (!debuggerSessions.snapshot(id)) return json(response, 404, { error: 'Debug session not found' })
-      if (parts.length === 3 && method === 'GET') return json(response, 200, debuggerSessions.snapshot(id))
-      if (parts[3] === 'command' && method === 'POST') return json(response, 200, await debuggerSessions.command(id, (await body(request)).command))
+      const transport = transportOptions(url)
+      if (!debuggerSessions.snapshot(id, { transport: 'delta' })) return json(response, 404, { error: 'Debug session not found' })
+      if (parts.length === 3 && method === 'GET') return json(response, 200, debuggerSessions.snapshot(id, transport))
+      if (parts[3] === 'command' && method === 'POST') return json(response, 200, await debuggerSessions.command(id, (await body(request)).command, transport))
       if (parts[3] === 'input' && method === 'POST') return json(response, 200, await debuggerSessions.input(id, (await body(request)).text))
-      if (parts[3] === 'breakpoints' && method === 'POST') return json(response, 200, await debuggerSessions.setBreakpoints(id, (await body(request)).breakpoints))
+      if (parts[3] === 'breakpoints' && method === 'POST') return json(response, 200, await debuggerSessions.setBreakpoints(id, (await body(request)).breakpoints, transport))
     }
     if (url.pathname === '/api/jdk/detect' && method === 'POST') {
       const payload = await body(request)
@@ -171,18 +149,13 @@ const server = http.createServer(async (request, response) => {
         return json(response, 200, await projects.renameEntry(id, from, to))
       }
       if (action === 'entries' && method === 'DELETE') return json(response, 200, await projects.deleteEntry(id, url.searchParams.get('path')))
-      if (action === 'build' && method === 'POST') { await body(request); return json(response, 200, await serialized(async () => { await executions.stop(); await debuggerSessions.stop(); await runs.stop(); return publicBuild(await build(id)) })) }
-      if (action === 'execution' && method === 'POST') {
-        const configuration = await body(request)
-        return json(response, 200, executions.start({ projectId: id, kind: configuration.kind, configuration,
-          withoutVisualization: configuration.withoutVisualization ?? false, breakpoints: configuration.breakpoints ?? [] }))
-      }
+      if (action === 'build' && method === 'POST') { await body(request); return json(response, 200, await serialized(async () => { await executions.stop(undefined, { transport: 'delta' }); await debuggerSessions.stop(undefined, { transport: 'delta' }); await runs.stop(); return publicBuild(await build(id)) })) }
       if (action === 'debug' && method === 'POST') {
         const configuration = await body(request)
         const { breakpoints } = configuration
         return json(response, 200, await serialized(async () => {
-          await executions.stop()
-          await runs.stop(); await debuggerSessions.stop()
+          await executions.stop(undefined, { transport: 'delta' })
+          await runs.stop(); await debuggerSessions.stop(undefined, { transport: 'delta' })
           const compilation = await build(id, true)
           const sourceManifest = { sources: [], classes: [] }
           if (!compilation.success || !compilation.mainClasses.length) return {
@@ -201,9 +174,9 @@ const server = http.createServer(async (request, response) => {
       if (action === 'run' && method === 'POST') {
         const configuration = await body(request)
         return json(response, 200, await serialized(async () => {
-          await executions.stop()
+          await executions.stop(undefined, { transport: 'delta' })
           await runs.stop()
-          await debuggerSessions.stop()
+          await debuggerSessions.stop(undefined, { transport: 'delta' })
           const result = await build(id)
           if (!result.success || !result.mainClasses.length) return { build: publicBuild(result), run: null }
           const projectRoot = await projects.getProjectRoot(id)
@@ -215,9 +188,9 @@ const server = http.createServer(async (request, response) => {
       if (action === 'visualize' && method === 'POST') {
         const configuration = await body(request)
         return json(response, 200, await serialized(async () => {
-          await executions.stop()
+          await executions.stop(undefined, { transport: 'delta' })
           await runs.stop()
-          await debuggerSessions.stop()
+          await debuggerSessions.stop(undefined, { transport: 'delta' })
           const compilation = await build(id, true)
           const emptyManifest = { sources: [], classes: [] }
           if (!compilation.success) return { build: publicBuild(compilation), status: 'compile_failed', diagnostic: 'Compilation failed',

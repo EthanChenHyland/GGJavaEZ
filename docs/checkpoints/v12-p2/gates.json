@@ -1,0 +1,74 @@
+{
+  "recordedAt": "2026-10-03T00:59:44.165Z",
+  "branch": "kiro-runtime-audit",
+  "base": "14e2a17",
+  "phase": 2,
+  "scope": "Incremental processing/transport/history only; no Phase 3 or push.",
+  "gates": {
+    "typecheck": "passed",
+    "lint": "passed",
+    "build": "passed",
+    "unit": {
+      "files": 76,
+      "passed": 834,
+      "expectedFailures": 2,
+      "durationSeconds": 102.16
+    },
+    "browser": {
+      "passed": 89,
+      "failed": 0,
+      "skipped": 0,
+      "retries": 0,
+      "durationMinutes": 7.3
+    },
+    "acceptanceFull": {
+      "passed": 159,
+      "expectedFailures": 36,
+      "durationSeconds": 160.46
+    },
+    "acceptanceFinalRecheck": {
+      "passed": 14,
+      "expectedFailures": 4,
+      "unselected": 177,
+      "durationSeconds": 8.54,
+      "selection": "ACC13/ACC14"
+    },
+    "performance": {
+      "files": 4,
+      "passed": 4,
+      "durationSeconds": 25.15
+    },
+    "screenshots": {
+      "captured": 86,
+      "reviewed": 18,
+      "manifest": "screenshots.json"
+    },
+    "transportFocused": {
+      "files": 2,
+      "passed": 18
+    },
+    "browserServerConvergence": {
+      "firstPass": 6,
+      "durationSeconds": 34.1,
+      "tickBudgetPass": 4,
+      "tickBudgetDurationSeconds": 20.8,
+      "loadedFinalPass": 1,
+      "loadedFinalDurationSeconds": 7.6
+    }
+  },
+  "denseBrowser": {
+    "complete": false,
+    "capSeconds": 300,
+    "stage": "orbit sampling",
+    "evidence": "acc14-dense-browser.json",
+    "note": "Separate opt-in dense-world probe. No completed orbit/fps claim. Run-to-head passed after presentation fixes, before final server drain correction."
+  },
+  "equivalence": "Pure reducer versus persistent engine at every event in four curated and four seeded traces, immutable saved roots, bounded arbitrary/reverse seeks, golden normalizer output verified from baseline source, exact layout oracles including 13292 anchors.",
+  "knownLimits": [
+    "Dense scene commits/text/camera rendering remain slow; overview clutter and long-value truncation remain.",
+    "One-million-event retained fixture is about 1.78 GiB and scrub p95 about 30.8 ms; no million-world rendering/reload.",
+    "Cooperative slices may exceed 4 ms on one event or GC.",
+    "Inline Console metadata and explicit legacy snapshots retain existing linear costs.",
+    "Local raw archives are temporary session retention, not durable project history."
+  ]
+}

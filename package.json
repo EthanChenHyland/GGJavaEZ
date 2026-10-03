@@ -14,7 +14,8 @@
     "test:e2e": "playwright test",
     "perf:browser": "playwright test --config playwright.perf.config.ts",
     "capture:visual": "node scripts/capture-visual.mjs",
-    "lint": "eslint src"
+    "lint": "eslint src",
+    "perf:incremental": "VJ_SUITE=perf vitest run tests/perf/incremental.test.mjs --execArgv=--expose-gc --maxWorkers=1 --fileParallelism=false"
   },
   "dependencies": {
     "@monaco-editor/react": "^4.7.0",

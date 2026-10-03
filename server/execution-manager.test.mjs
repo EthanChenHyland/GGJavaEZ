@@ -89,7 +89,7 @@ test('partial coverage stays PARTIAL and burst updates preserve all facts with b
   const initial = h.manager.start({ projectId: 'p1' });
   await until(h.manager, (session) => session.phase === 'RUNNING');
   const published = [];
-  const unsubscribe = h.manager.subscribe(initial.id, (snapshot) => published.push(snapshot));
+  const unsubscribe = h.manager.subscribe(initial.id, (snapshot) => published.push(snapshot), { transport: 'legacy' });
   const prefix = [observed];
   for (let i = 1; i <= 30; i++) {
     prefix.push({ ...observed, seq: i, type: 'line' });
@@ -163,8 +163,8 @@ test('Debug uses the same session snapshots; input, breakpoint and command targe
   await h.manager.command(initial.id, 'stepOver');
   await h.manager.setBreakpoints(initial.id, []);
   expect(h.debug.input).toHaveBeenCalledWith('debug-1', '18\n');
-  expect(h.debug.command).toHaveBeenCalledWith('debug-1', 'stepOver');
-  expect(h.debug.setBreakpoints).toHaveBeenCalledWith('debug-1', []);
+  expect(h.debug.command).toHaveBeenCalledWith('debug-1', 'stepOver', { transport: 'delta' });
+  expect(h.debug.setBreakpoints).toHaveBeenCalledWith('debug-1', [], { transport: 'delta' });
 });
 
 test('Stop during build prevents launch; Stop after start stops the existing child', async () => {
@@ -180,7 +180,7 @@ test('Stop during build prevents launch; Stop after start stops the existing chi
   const live = h.manager.start({ projectId: 'p1' });
   await until(h.manager, (session) => session.phase === 'RUNNING');
   await h.manager.stop(live.id);
-  expect(h.debug.stop).toHaveBeenCalledWith('debug-1');
+  expect(h.debug.stop).toHaveBeenCalledWith('debug-1', { transport: 'delta' });
   expect(h.manager.snapshot(live.id).phase).toBe('STOPPED');
 });
 

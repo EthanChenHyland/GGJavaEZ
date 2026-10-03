@@ -1,4 +1,6 @@
 import { randomUUID } from 'node:crypto';
+import { RAW_BATCH_BYTES, rawRange } from './raw-trace-archive.mjs';
+import { fullRecording } from './instrumentation-provider.mjs';
 
 const EMPTY_MANIFEST = { sources: [], classes: [] };
 const TERMINAL = new Set(['COMPLETED', 'FAILED', 'STOPPED']);
@@ -12,9 +14,7 @@ function publicBuildDefault(result) {
   return dto;
 }
 
-function capabilityFromObserved(snapshot) {
-  const counts = Object.create(null);
-  for (const event of snapshot.rawEvents) counts[event.type] = (counts[event.type] ?? 0) + 1;
+function capabilityFromObserved(snapshot, counts) {
   const tally = (...types) => types.reduce((sum, type) => sum + (counts[type] ?? 0), 0);
   const feature = (status, reason, observedEvents) => ({ status, reason, observedEvents });
   const coveredClasses = snapshot.coverage?.coveredClasses ?? [];
@@ -46,13 +46,12 @@ function capabilityFromObserved(snapshot) {
   };
 }
 
-function supportFromObserved(snapshot) {
-  if (!snapshot.rawEvents.length) return 'RUN_ONLY';
+function supportFromObserved(snapshot, count, counts) {
+  if (!count) return 'RUN_ONLY';
   const covered = new Set(snapshot.coverage?.coveredClasses ?? []);
   const resolved = snapshot.sourceManifest.classes.filter((entry) => entry.status === 'resolved');
   const completeClasses = resolved.length > 0 && resolved.every((entry) => covered.has(entry.className));
-  const hasCoreTrace = snapshot.rawEvents.some((event) => event.type === 'enter')
-    && snapshot.rawEvents.some((event) => event.type === 'line');
+  const hasCoreTrace = counts.enter > 0 && counts.line > 0;
   // A live prefix cannot prove that the remaining JVM execution is covered.
   return snapshot.status === 'exited' && snapshot.terminalStatus === 'complete'
     && (!snapshot.recording || snapshot.recording.state === 'FULL') && completeClasses && hasCoreTrace && !snapshot.coverage?.transformInfo?.localsWithoutDebug ? 'FULL' : 'PARTIAL';
@@ -75,11 +74,19 @@ export class ExecutionManager {
     return record;
   }
 
+  #snapshot(record, { transport = 'legacy', mode } = {}) {
+    const snapshot = clone(record.dto);
+    if (transport !== 'delta' && mode !== 'metadata') {
+      snapshot.rawEvents = record.backend === 'recorder' && this.debuggerSessions.snapshot
+        ? this.debuggerSessions.snapshot(record.backendId)?.rawEvents ?? [] : clone(record.legacyRawEvents);
+    }
+    return snapshot;
+  }
+
   #flush(record) {
     clearTimeout(record.publishTimer); record.publishTimer = null;
-    const snapshot = clone(record.dto);
-    for (const listener of record.listeners) {
-      try { listener(snapshot); } catch { /* Observers cannot interrupt capture. */ }
+    for (const [listener, options] of record.listeners) {
+      try { listener(this.#snapshot(record, options)); } catch { /* Observers cannot interrupt capture. */ }
     }
     record.lastPublishedAt = Date.now();
   }
@@ -102,29 +109,33 @@ export class ExecutionManager {
     this.#update(record, { phase: 'FAILED', diagnostic: failure.message ?? String(failure), failureKind: kind }, true);
   }
 
-  start({ projectId, kind = 'run', configuration = {}, withoutVisualization = false, breakpoints = [] } = {}) {
+  start({ projectId, kind = 'run', configuration = {}, withoutVisualization = false, breakpoints = [] } = {}, options = {}) {
     if (typeof projectId !== 'string' || !projectId || !['run', 'debug'].includes(kind)
       || typeof configuration !== 'object' || !configuration || Array.isArray(configuration)
       || typeof withoutVisualization !== 'boolean' || !Array.isArray(breakpoints)) throw fault('Invalid execution request', 400);
     if (kind === 'debug' && withoutVisualization) throw fault('Debug requires visualization', 400);
     const dto = { id: randomUUID(), revision: 0, projectId, mainClass: null, kind, phase: 'BUILDING',
-      support: 'RUN_ONLY', supportReason: null, build: null, rawEvents: [], sourceManifest: clone(EMPTY_MANIFEST),
+      support: 'RUN_ONLY', supportReason: null, build: null, rawEvents: [], rawEventCount: 0, transportVersion: 1, recording: fullRecording(), sourceManifest: clone(EMPTY_MANIFEST),
       capability: null, stdout: '', stderr: '', runEvents: [], pause: null, breakpoints: [],
       terminalStatus: null, exitCode: null, diagnostic: null, failureKind: null, startedAt: new Date().toISOString() };
-    const record = { dto, backend: null, backendId: null, stopped: false, listeners: new Set(), unsubscribe: null,
+    const record = { dto, backend: null, backendId: null, stopped: false, listeners: new Map(), unsubscribe: null,
       publishTimer: null, lastPublishedAt: 0, task: null, observedCount: -1, observedCapability: null,
-      observedSupport: 'RUN_ONLY', observedDiagnostic: null, observedTerminal: null, observedRecording: null };
+      counts: Object.create(null), legacyRawEvents: [], observedSupport: 'RUN_ONLY', observedDiagnostic: null, observedTerminal: null, observedRecording: null };
     this.sessions.set(dto.id, record); this.latest = record;
-    while (this.sessions.size > 32) this.sessions.delete(this.sessions.keys().next().value);
+    while (this.sessions.size > 32) {
+      const oldest = this.sessions.keys().next().value, expired = this.sessions.get(oldest);
+      clearTimeout(expired.publishTimer); expired.unsubscribe?.(); expired.listeners.clear();
+      this.sessions.delete(oldest);
+    }
     const work = this.startQueue.then(() => this.#launch(record, configuration, withoutVisualization, breakpoints));
     record.task = work.catch((failure) => this.#fail(record, failure, record.dto.phase === 'BUILDING' ? 'build' : 'launch'));
     this.startQueue = record.task;
-    return clone(dto);
+    return this.#snapshot(record, options);
   }
 
   async #launch(record, configuration, withoutVisualization, breakpoints) {
     // Legacy managers still own their children. Stop both before starting the new build.
-    await this.debuggerSessions.stop();
+    await this.debuggerSessions.stop(undefined, { transport: 'delta' });
     await this.runs.stop();
     if (record.stopped) return;
     const { dto } = record;
@@ -157,10 +168,10 @@ export class ExecutionManager {
       try {
         const session = await this.debuggerSessions.start({ ...base, sourceManifest, build: dto.build,
           breakpoints: dto.kind === 'debug' ? breakpoints : [], control: dto.kind === 'debug',
-          rawEventLimit: 20000, rawByteLimit: 8 * 1024 * 1024, timeoutMs: 30000 });
+          rawEventLimit: 20000, rawByteLimit: 8 * 1024 * 1024, timeoutMs: 30000 }, { transport: 'delta' });
         record.backend = 'recorder'; record.backendId = session.sessionId;
-        record.unsubscribe = this.debuggerSessions.subscribe(session.sessionId, (next) => this.#recorderSnapshot(record, next));
-        if (record.stopped) await this.debuggerSessions.stop(session.sessionId);
+        record.unsubscribe = this.debuggerSessions.subscribe(session.sessionId, (next) => this.#recorderSnapshot(record, next), { transport: 'delta' });
+        if (record.stopped) await this.debuggerSessions.stop(session.sessionId, { transport: 'delta' });
       } catch (failure) {
         // Only preparation failed before child creation is a safe fallback. A
         // launched JVM is never replayed to recover its output or trace.
@@ -196,6 +207,16 @@ export class ExecutionManager {
   }
 
   #recorderSnapshot(record, session) {
+    const count = session.rawEventCount ?? session.rawEvents.length;
+    if (session.rawEventCounts) record.counts = session.rawEventCounts;
+    else {
+      // Compatibility for explicitly supplied legacy backend snapshots: count only the suffix.
+      for (let index = Math.max(0, record.observedCount); index < count; index++) {
+        const type = session.rawEvents[index].type;
+        record.counts[type] = (record.counts[type] ?? 0) + 1;
+      }
+      record.legacyRawEvents = session.rawEvents;
+    }
     const terminal = DEBUG_TERMINAL.has(session.status);
     const captureOnlyFailure = record.dto.kind === 'run' && terminal && session.exitCode === 0
       && session.terminalStatus === 'instrumentation_failed';
@@ -207,22 +228,22 @@ export class ExecutionManager {
       : terminal ? failed ? 'FAILED' : 'COMPLETED'
         : session.status === 'paused' ? 'PAUSED' : session.status === 'starting' ? 'STARTING'
           : waitingForInput ? 'WAITING_FOR_INPUT' : 'RUNNING';
-    if (record.observedCount !== session.rawEvents.length || record.observedDiagnostic !== session.diagnostic
+    if (record.observedCount !== count || record.observedDiagnostic !== session.diagnostic
       || record.observedTerminal !== session.terminalStatus || record.observedRecording !== recordingKey) {
-      record.observedCount = session.rawEvents.length;
+      record.observedCount = count;
       record.observedDiagnostic = session.diagnostic;
       record.observedTerminal = session.terminalStatus;
       record.observedRecording = recordingKey;
-      record.observedSupport = supportFromObserved(session);
-      record.observedCapability = session.rawEvents.length ? capabilityFromObserved(session) : null;
+      record.observedSupport = supportFromObserved(session, count, record.counts);
+      record.observedCapability = count ? capabilityFromObserved(session, record.counts) : null;
     }
     const support = record.observedSupport;
     const recordingStopped = session.recording && session.recording.state !== 'FULL';
     this.#update(record, { phase, support, supportReason: recordingStopped ? `${session.recording.reason}. Visualization ends at raw event ${session.recording.lastRecordedSeq ?? 'none'}; ${terminal ? `Java ${session.exitCode === 0 ? 'completed' : 'ended'} separately with exit code ${session.exitCode ?? 'unknown'}` : 'Java execution continues independently'}.` : captureOnlyFailure ? session.diagnostic ?? 'Runtime capture unavailable; program completed'
-      : support === 'RUN_ONLY' ? session.rawEvents.length ? null : 'No verified runtime events yet'
+      : support === 'RUN_ONLY' ? count ? null : 'No verified runtime events yet'
         : support === 'PARTIAL' ? 'Some runtime facts are outside verified project coverage' : null,
-    rawEvents: session.rawEvents, sourceManifest: session.sourceManifest, capability: record.observedCapability,
-    recording: session.recording, outputTruncated: session.outputTruncated,
+    rawEventCount: count, sourceManifest: session.sourceManifest, capability: record.observedCapability,
+    recording: session.recording ?? fullRecording(), outputTruncated: session.outputTruncated,
     outputArchiveAvailable: session.outputArchiveAvailable, outputArchiveError: session.outputArchiveError,
     stdout: session.stdout, stderr: session.stderr, pause: session.pause, breakpoints: session.breakpoints,
     terminalStatus: session.terminalStatus, exitCode: session.exitCode, diagnostic: session.diagnostic,
@@ -235,21 +256,38 @@ export class ExecutionManager {
     if (record.backend !== 'recorder') throw fault('This execution has no archived recorder-process output', 409);
     return this.debuggerSessions.output(record.backendId, channel);
   }
-  current() { return this.latest ? clone(this.latest.dto) : null; }
-  snapshot(id) { const record = this.sessions.get(id); return record ? clone(record.dto) : null; }
-  subscribe(id, listener) {
+  has(id) { return this.sessions.has(id); }
+  current(options) { return this.latest ? this.#snapshot(this.latest, options) : null; }
+  snapshot(id, options) { const record = this.sessions.get(id); return record ? this.#snapshot(record, options) : null; }
+  raw(id, from = 0, limit) {
+    const record = this.#get(id);
+    ({ from, limit } = rawRange(from, limit));
+    if (from > record.dto.rawEventCount) throw fault('Raw from is ahead of retained history', 400);
+    if (record.backend === 'recorder' && this.debuggerSessions.raw) {
+      return { ...this.debuggerSessions.raw(record.backendId, from, limit), sessionId: id };
+    }
+    const events = []; let bytes = 0;
+    for (let seq = from; seq < Math.min(record.dto.rawEventCount, from + limit); seq++) {
+      const event = record.legacyRawEvents[seq], size = Buffer.byteLength(JSON.stringify(event));
+      if (events.length && bytes + size > RAW_BATCH_BYTES) break;
+      events.push(clone(event)); bytes += size;
+    }
+    return { version: 1, sessionId: id, fromSequence: from, toSequence: from + events.length,
+      events, recording: clone(record.dto.recording) };
+  }
+  subscribe(id, listener, options = { transport: 'delta' }) {
     if (typeof listener !== 'function') throw new TypeError('Subscriber must be a function');
-    const record = this.#get(id); record.listeners.add(listener); listener(clone(record.dto));
+    const record = this.#get(id); record.listeners.set(listener, options); listener(this.#snapshot(record, options));
     return () => record.listeners.delete(listener);
   }
 
-  async command(id, command) {
+  async command(id, command, options = {}) {
     const record = this.#get(id);
-    if (command === 'stop') return this.stop(id);
+    if (command === 'stop') return this.stop(id, options);
     if (record.dto.kind !== 'debug' || record.backend !== 'recorder' || !record.backendId)
       throw fault('This execution has no debugger control', 400);
-    await this.debuggerSessions.command(record.backendId, command);
-    return this.snapshot(id);
+    await this.debuggerSessions.command(record.backendId, command, { transport: 'delta' });
+    return this.snapshot(id, options);
   }
 
   async input(id, text) {
@@ -262,24 +300,24 @@ export class ExecutionManager {
     return result;
   }
 
-  async setBreakpoints(id, list) {
+  async setBreakpoints(id, list, options = {}) {
     const record = this.#get(id);
     if (record.dto.kind !== 'debug' || record.backend !== 'recorder' || !record.backendId)
       throw fault('This execution has no debugger control', 400);
-    await this.debuggerSessions.setBreakpoints(record.backendId, list);
-    return this.snapshot(id);
+    await this.debuggerSessions.setBreakpoints(record.backendId, list, { transport: 'delta' });
+    return this.snapshot(id, options);
   }
 
-  async stop(id) {
+  async stop(id, options = {}) {
     const record = id ? this.#get(id) : this.latest;
     if (!record) return null;
-    if (TERMINAL.has(record.dto.phase)) return clone(record.dto);
+    if (TERMINAL.has(record.dto.phase)) return this.#snapshot(record, options);
     record.stopped = true;
     this.#update(record, { phase: 'STOPPED', diagnostic: 'Execution stopped by user' }, true);
     if (record.backendId) {
-      if (record.backend === 'recorder') await this.debuggerSessions.stop(record.backendId);
+      if (record.backend === 'recorder') await this.debuggerSessions.stop(record.backendId, { transport: 'delta' });
       else await this.runs.stop(record.backendId);
     }
-    return clone(record.dto);
+    return this.#snapshot(record, options);
   }
 }

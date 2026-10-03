@@ -73,7 +73,8 @@ function ExecutionWorkspace({ trace, example, onChooseExample, embedded, onSourc
 }) {
   const hasConsole = trace.events.some((event) => event.type === 'INPUT_READ' || event.type === 'OUTPUT_WRITE')
   const hasScopes = trace.events.some((event) => event.type === 'ENTER_SCOPE')
-  const layout = useMemo(() => layoutForTrace(trace), [trace])
+  const eventCount = trace.events.length
+  const layout = useMemo(() => layoutForTrace(trace), [trace, eventCount])
   const [view, setView] = useState<VisualizationMode>(() => localStorage.getItem('ggjavaez:runtime-view') === 'classic' ? 'classic' : 'spatial')
   const [presentation, setPresentation] = useState<'spatial' | 'theater'>('spatial')
   const [flowDisplay, setFlowDisplay] = useState<'relevant' | 'current' | 'all'>('relevant')
@@ -129,7 +130,7 @@ function ExecutionWorkspace({ trace, example, onChooseExample, embedded, onSourc
     seekTo: (next: number) => { motionIntent.current = 'scrub'; playback.seekTo(next) },
   }
   const runtime = useMemo(() => seek(trace, cursor), [trace, cursor])
-  const transitions = useMemo(() => transitionsForTrace(trace), [trace])
+  const transitions = useMemo(() => transitionsForTrace(trace), [trace, eventCount])
   const previousMotionCursor = useRef({ demoId: trace.demoId, cursor, playing })
   useEffect(() => {
     const previous = previousMotionCursor.current

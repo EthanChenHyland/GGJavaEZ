@@ -6,6 +6,7 @@ import { StringDecoder } from 'node:string_decoder';
 import { prepareInstrumented, CaptureReader, fullRecording } from './instrumentation-provider.mjs';
 import { launchRequest } from './launch.mjs';
 import { OutputArchive } from './output-archive.mjs';
+import { rawRange } from './raw-trace-archive.mjs';
 
 const OUTPUT_LIMIT = 32 * 1024 * 1024;
 const HARD_DEADLINE = 10 * 60 * 1000;
@@ -32,10 +33,16 @@ export class DebugManager {
     return result;
   }
 
+  #snapshot(run, { transport = 'legacy', mode } = {}) {
+    const snapshot = clone(run.dto);
+    if (transport !== 'delta' && mode !== 'metadata') snapshot.rawEvents = run.reader.events;
+    return snapshot;
+  }
+
   #publish(run) {
     run.dto.revision++;
-    for (const listener of run.listeners) {
-      try { listener(clone(run.dto)); } catch { /* Consumers cannot interrupt capture. */ }
+    for (const [listener, options] of run.listeners) {
+      try { listener(this.#snapshot(run, options)); } catch { /* Consumers cannot interrupt capture. */ }
     }
   }
 
@@ -77,26 +84,34 @@ export class DebugManager {
     return payload;
   }
 
-  start(request) {
+  start(request, options = {}) {
     return this.#serialize(async () => {
       if (!request?.projectId || !request.sourceManifest || !request.build?.success) throw error('Debug requires a successful build and source manifest', 400);
       const launch = launchRequest(request);
-      if (this.latest && !TERMINAL.has(this.latest.dto.status)) await this.#stopRun(this.latest);
+      if (this.latest && !TERMINAL.has(this.latest.dto.status)) await this.#stopRun(this.latest, { transport: 'delta' });
       let prepared;
       try { prepared = await this.prepare(request); }
       catch (failure) { failure.preparationFailed = true; throw failure; }
       const controlled = request.control !== false;
       const dto = { sessionId: randomUUID(), projectId: request.projectId, revision: 0, status: 'starting', pause: null,
-        breakpoints: [], rawEvents: [], sourceManifest: clone(request.sourceManifest), build: clone(request.build),
+        breakpoints: [], rawEvents: [], transportVersion: 1, rawEventCount: 0, rawEventCounts: {}, sourceManifest: clone(request.sourceManifest), build: clone(request.build),
         stdout: '', stderr: '', recording: fullRecording(), waitingForInput: false, outputTruncated: false, exitCode: null, terminalStatus: null, diagnostic: null,
         coverage: { coveredClasses: [...prepared.coveredClasses], transformInfo: clone(prepared.transformInfo) } };
-      const run = { dto, prepared, request, child: null, server: null, socket: null, connected: false,
+      let run;
+      try { run = { dto, prepared, request, child: null, server: null, socket: null, connected: false,
         controlled,
         reader: new CaptureReader(prepared), archive: new OutputArchive(), outputBytes: 0, refreshPromise: null, polling: false,
         messageQueue: Promise.resolve(), commands: Promise.resolve(), activeClockEnabled: true,
-        pending: new Map(), listeners: new Set(), activeMs: 0, activeSince: performance.now(),
+        pending: new Map(), listeners: new Map(), activeMs: 0, activeSince: performance.now(),
         finishing: false, closing: false, stopRequested: false, failureStatus: null, timer: null, hardTimer: null,
-        token: randomBytes(32).toString('hex'), candidates: new Set(), queuedMessages: 0, processStartedAt: 0 };
+        token: randomBytes(32).toString('hex'), candidates: new Set(), queuedMessages: 0, processStartedAt: 0 }; }
+      catch (failure) {
+        // Archive initialization is observer preparation, before any application child.
+        // Canonical Run can safely choose its existing plain fallback exactly once.
+        failure.preparationFailed = true; failure.executionStarted = false;
+        try { await prepared.cleanup(); } catch (cleanupFailure) { failure.cleanupFailure = cleanupFailure.message; }
+        throw failure;
+      }
       try {
         dto.outputArchiveAvailable = !run.archive.error;
         dto.outputArchiveError = run.archive.error;
@@ -126,7 +141,7 @@ export class DebugManager {
         if (!controlled) this.#transition(run, 'running');
         while (this.sessions.size > 32) {
           const oldest = this.sessions.keys().next().value;
-          this.sessions.get(oldest).archive.dispose(); this.sessions.delete(oldest);
+          this.sessions.get(oldest).archive.dispose(); await this.sessions.get(oldest).reader.dispose(); this.sessions.delete(oldest);
         }
         for (const [stream, name] of [[run.child.stdout, 'stdout'], [run.child.stderr, 'stderr']]) {
           const decoder = new StringDecoder('utf8');
@@ -158,14 +173,14 @@ export class DebugManager {
           }).catch((failure) => this.#stopObservation(run, failure.message)).finally(() => { run.polling = false; });
         }, 20);
         this.#publish(run);
-        return clone(dto);
+        return this.#snapshot(run, options);
       } catch (failure) {
         failure.executionStarted = Boolean(run.child);
         clearInterval(run.timer); clearTimeout(run.hardTimer);
         for (const socket of run.candidates) socket.destroy();
         run.socket?.destroy(); run.server?.close();
         if (run.child) this.#signal(run, 'SIGKILL');
-        run.archive.dispose(); await run.reader.close(); await prepared.cleanup();
+        run.archive.dispose(); await run.reader.dispose(); await prepared.cleanup();
         throw failure;
       }
     });
@@ -257,7 +272,7 @@ export class DebugManager {
       || !Number.isSafeInteger(message.line) || message.line < 1
       || !Number.isSafeInteger(message.rawEventCount) || message.rawEventCount < 0) throw new Error('Invalid debugger pause');
     await this.#refresh(run);
-    if (run.dto.rawEvents.length !== message.rawEventCount) {
+    if (run.dto.rawEventCount !== message.rawEventCount) {
       if (run.dto.recording.state === 'FULL') this.#stopObservation(run, 'Pause watermark does not match flushed Recorder prefix');
       // Keep the actual control watermark; an older/malformed observer prefix may be shorter.
       // Pausing still excludes intentional stopped time and does not invent visual facts.
@@ -277,7 +292,7 @@ export class DebugManager {
   #refresh(run, final = false) {
     if (run.refreshPromise) return run.refreshPromise.then(() => final ? this.#refresh(run, true) : undefined);
     run.refreshPromise = (async () => {
-      const beforeCount = run.dto.rawEvents.length;
+      const beforeCount = run.dto.rawEventCount;
       const beforeStatus = JSON.stringify(run.dto.recording);
       await run.reader.refresh(final);
       const activeClockEnabled = run.reader.inputStatusKnown || run.reader.recording.state === 'FULL';
@@ -289,9 +304,10 @@ export class DebugManager {
         run.dto.waitingForInput = run.reader.waitingForInput; run.activeClockEnabled = activeClockEnabled;
         this.#publish(run);
       }
-      run.dto.rawEvents = run.reader.events;
+      run.dto.rawEventCount = run.reader.count;
+      run.dto.rawEventCounts = { ...run.reader.counts };
       run.dto.recording = clone(run.reader.recording);
-      if (beforeCount !== run.dto.rawEvents.length || beforeStatus !== JSON.stringify(run.dto.recording)) this.#publish(run);
+      if (beforeCount !== run.dto.rawEventCount || beforeStatus !== JSON.stringify(run.dto.recording)) this.#publish(run);
     })().finally(() => { run.refreshPromise = null; });
     return run.refreshPromise;
   }
@@ -314,7 +330,7 @@ export class DebugManager {
     run.finishing = true; run.archive.close(); clearInterval(run.timer); clearTimeout(run.hardTimer); clearTimeout(run.disconnectTimer);
     try { await this.#refresh(run, true); }
     catch (failure) { this.#stopObservation(run, failure.message); }
-    if (!run.stopRequested && !run.failureStatus && (!run.dto.rawEvents.length
+    if (!run.stopRequested && !run.failureStatus && (!run.dto.rawEventCount
       || /Trace write failed/.test(run.dto.stderr))) this.#stopObservation(run, 'No verified instrumented execution prefix');
     if (!run.stopRequested && code !== 0 && /VerifyError|ClassFormatError|NoClassDefFoundError: visualjava/.test(run.dto.stderr)) {
       run.failureStatus = 'instrumentation_failed'; run.dto.diagnostic ??= 'Instrumented JVM launch failed verification or could not load its observer';
@@ -357,21 +373,21 @@ export class DebugManager {
     });
   }
 
-  command(id, command) {
+  command(id, command, options = {}) {
     if (!COMMANDS.has(command)) return Promise.reject(error('Unknown debug command', 400));
-    if (command === 'stop') return this.stop(id);
+    if (command === 'stop') return this.stop(id, options);
     const run = this.#get(id);
     if (!run.controlled) return Promise.reject(error('Run does not have debugger control', 400));
     const task = run.commands.then(async () => {
       if (command === 'pause' ? run.dto.status !== 'running' : run.dto.status !== 'paused') throw error(`Cannot ${command} while debugger is ${run.dto.status}`);
       await this.#send(run, command);
-      return clone(run.dto);
+      return this.#snapshot(run, options);
     });
     run.commands = task.catch(() => {});
     return task;
   }
 
-  setBreakpoints(id, list) {
+  setBreakpoints(id, list, options = {}) {
     const run = this.#get(id);
     if (!run.controlled) return Promise.reject(error('Run does not have debugger control', 400));
     const task = run.commands.then(async () => {
@@ -379,7 +395,7 @@ export class DebugManager {
       const payload = this.#breakpointPayload(run, resolved);
       if (!TERMINAL.has(run.dto.status)) await this.#send(run, 'breakpoints', payload);
       run.dto.breakpoints = resolved; this.#publish(run);
-      return clone(run.dto);
+      return this.#snapshot(run, options);
     });
     run.commands = task.catch(() => {});
     return task;
@@ -393,30 +409,38 @@ export class DebugManager {
     return { ok: true };
   }
 
-  async #stopRun(run) {
-    if (TERMINAL.has(run.dto.status)) return clone(run.dto);
+  async #stopRun(run, options = {}) {
+    if (TERMINAL.has(run.dto.status)) return this.#snapshot(run, options);
     run.stopRequested = true;
     try { run.child.stdin.end(); } catch { /* Process may have exited. */ }
     // Stop must work even if the application is in native code or blocked away from a checkpoint.
     this.#signal(run, 'SIGTERM');
     const timer = setTimeout(() => this.#signal(run, 'SIGKILL'), this.stopGraceMs);
     try { await run.closed; } finally { clearTimeout(timer); }
-    return clone(run.dto);
+    return this.#snapshot(run, options);
   }
 
-  stop(id) { return this.#serialize(async () => {
+  stop(id, options = {}) { return this.#serialize(async () => {
     const run = id ? this.#get(id) : this.latest;
-    return run ? this.#stopRun(run) : null;
+    return run ? this.#stopRun(run, options) : null;
   }); }
   output(id, channel) { return this.#get(id).archive.stream(channel); }
   async dispose() {
-    await this.stop();
-    for (const run of this.sessions.values()) run.archive.dispose();
+    await this.stop(undefined, { transport: 'delta' });
+    for (const run of this.sessions.values()) { run.archive.dispose(); await run.reader.dispose(); run.listeners.clear(); }
   }
-  current() { return this.latest ? clone(this.latest.dto) : null; }
-  snapshot(id) { const run = this.sessions.get(id); return run ? clone(run.dto) : null; }
-  subscribe(id, listener) {
-    const run = this.#get(id); run.listeners.add(listener); listener(clone(run.dto));
+  raw(id, from = 0, limit) {
+    const run = this.#get(id);
+    ({ from, limit } = rawRange(from, limit));
+    const events = run.reader.archive.read(from, limit);
+    return { version: 1, sessionId: id, fromSequence: from, toSequence: from + events.length,
+      events, recording: clone(run.dto.recording) };
+  }
+  current(options) { return this.latest ? this.#snapshot(this.latest, options) : null; }
+  snapshot(id, options) { const run = this.sessions.get(id); return run ? this.#snapshot(run, options) : null; }
+  subscribe(id, listener, options = { transport: 'delta' }) {
+    if (typeof listener !== 'function') throw new TypeError('Subscriber must be a function');
+    const run = this.#get(id); run.listeners.set(listener, options); listener(this.#snapshot(run, options));
     return () => run.listeners.delete(listener);
   }
 }

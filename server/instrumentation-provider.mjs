@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { StringDecoder } from 'node:string_decoder';
 import { performance } from 'node:perf_hooks';
 import { javaLaunchArgs, launchRequest } from './launch.mjs';
+import { RawTraceArchive } from './raw-trace-archive.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const javaSources = ['Recorder', 'OfflineTransformer', 'DebugControl'].map((name) => join(root, `instrumentation/java/visualjava/${name}.java`));
@@ -95,13 +96,16 @@ function checkedRecording(value) {
 export class CaptureReader {
   constructor({ trace, rawByteLimit = BYTE_LIMIT, rawEventLimit = EVENT_LIMIT }) {
     Object.assign(this, { trace, rawByteLimit, rawEventLimit });
-    this.events = []; this.recording = fullRecording(); this.waitingForInput = false; this.inputStatusKnown = false;
+    this.archive = new RawTraceArchive(); this.recording = fullRecording(); this.waitingForInput = false; this.inputStatusKnown = false;
     this.offset = 0; this.semanticBytes = 0; this.tail = Buffer.alloc(0);
     this.file = null; this.stopped = false; this.inflight = null; this.firstThread = null;
   }
+  get events() { return this.archive.snapshot(); } // Explicit legacy materialization only.
+  get count() { return this.archive.count; }
+  get counts() { return this.archive.counts; }
   stop(reason, state = 'STOPPED_ERROR', budget = null) {
     if (this.recording.state !== 'FULL') return;
-    this.recording = { state, reason, budget, lastRecordedSeq: this.events.at(-1)?.seq ?? null, executionContinued: true };
+    this.recording = { state, reason, budget, lastRecordedSeq: this.count ? this.count - 1 : null, executionContinued: true };
     this.stopped = true; this.tail = Buffer.alloc(0);
   }
   async readStatus(final = false) {
@@ -160,7 +164,7 @@ export class CaptureReader {
             this.tail = this.tail.subarray(lineBytes);
             let record;
             try { record = JSON.parse(line.toString('utf8')); } catch { throw new Error('Malformed raw Recorder event'); }
-            if (!record || record.v !== 1 || record.seq !== this.events.length || typeof record.threadId !== 'string'
+            if (!record || record.v !== 1 || record.seq !== this.count || typeof record.threadId !== 'string'
               || typeof record.type !== 'string' || ['frameId', 'className', 'methodName', 'descriptor', 'line', 'site'].some((key) => !Object.hasOwn(record, key))) {
               throw new Error('Raw Recorder sequence or common fields are invalid');
             }
@@ -168,16 +172,16 @@ export class CaptureReader {
               if (lineBytes > STATUS_LIMIT) throw new Error('Saturation control exceeded 1 KiB');
               const recording = checkedRecording(record.recording);
               if (recording.state === 'FULL' || recording.lastRecordedSeq !== this.recording.lastRecordedSeq) throw new Error('Invalid saturation watermark');
-              this.events.push(record); this.recording = recording; this.stopped = true; this.tail = Buffer.alloc(0); break;
+              this.archive.append(record, line); this.recording = recording; this.stopped = true; this.tail = Buffer.alloc(0); break;
             }
-            if (this.events.length >= this.rawEventLimit) { this.stop('Raw trace exceeded event limit', 'STOPPED_LIMIT', 'events'); break; }
+            if (this.count >= this.rawEventLimit) { this.stop('Raw trace exceeded event limit', 'STOPPED_LIMIT', 'events'); break; }
             if (this.semanticBytes + lineBytes > this.rawByteLimit) { this.stop('Raw trace exceeded byte limit', 'STOPPED_LIMIT', 'bytes'); break; }
             if (record.type === 'enter' && (!record.frameId || !Array.isArray(record.parameters))) throw new Error('Invalid raw enter');
             if (record.type !== 'console' || record.frameId !== null) {
               this.firstThread ??= record.threadId;
               if (record.threadId !== this.firstThread) { this.stop('Multiple project threads are unsupported for visualization', 'STOPPED_UNSUPPORTED'); break; }
             }
-            this.semanticBytes += lineBytes; this.events.push(record);
+            this.archive.append(record, line); this.semanticBytes += lineBytes;
             this.recording.lastRecordedSeq = record.seq;
             if (record.type === 'stdin_wait') this.waitingForInput = true;
             if (record.type === 'stdin_read') this.waitingForInput = false;
@@ -188,7 +192,11 @@ export class CaptureReader {
     } catch (failure) { if (failure.code !== 'ENOENT') this.stop(failure.message); }
     await this.readStatus(final);
   }
-  async close() { await this.inflight; await this.file?.close(); this.file = null; }
+  async close() { await this.inflight; await this.file?.close(); this.file = null; this.archive.close(); }
+  async dispose() {
+    try { await this.close(); } catch (error) { this.cleanupError = error; }
+    this.archive.dispose();
+  }
 }
 async function checkJars() {
   for (const jar of jars) {
@@ -311,7 +319,7 @@ export async function runInstrumented(request, { spawnProcess = spawn, prepare =
       cwd: prepared.workingDirectory, timeoutMs: prepared.timeoutMs, hardTimeoutMs: prepared.hardTimeoutMs ?? HARD_DEADLINE, spawnProcess,
       monitor: async () => {
         try { await reader.refresh(); } catch (failure) { reader.stop(`Recorder observation failed: ${failure.message}`); }
-        if (reader.events.length && firstTraceMs === null) firstTraceMs = performance.now() - executionStart;
+        if (reader.count && firstTraceMs === null) firstTraceMs = performance.now() - executionStart;
         return { waitingForInput: reader.waitingForInput, activeClockEnabled: reader.inputStatusKnown || reader.recording.state === 'FULL' };
       },
     });
@@ -321,7 +329,7 @@ export async function runInstrumented(request, { spawnProcess = spawn, prepare =
     result.exitCode = execution.code; result.stdout = execution.stdout; result.stderr = execution.stderr;
     result.outputTruncated = execution.outputTruncated;
     result.rawEvents = reader.events; result.recording = reader.recording;
-    result.metrics.rawBytes = reader.offset; result.metrics.rawEvents = reader.events.length;
+    result.metrics.rawBytes = reader.offset; result.metrics.rawEvents = reader.count;
     if (execution.stopped === 'timeout' || execution.stopped === 'hard_timeout') {
       result.status = 'limit_exceeded'; result.diagnostic = execution.stopped === 'hard_timeout'
         ? 'Hard process safety deadline exceeded (applies in all states)' : 'Active execution deadline exceeded';
@@ -329,7 +337,7 @@ export async function runInstrumented(request, { spawnProcess = spawn, prepare =
       result.status = 'instrumentation_failed'; result.diagnostic = execution.stopped ?? 'Instrumented JVM launch failed verification or could not load its observer';
       reader.stop(result.diagnostic); result.recording = reader.recording;
     } else {
-      if (!reader.events.length && reader.recording.state === 'FULL') reader.stop('Recorder produced no verified events');
+      if (!reader.count && reader.recording.state === 'FULL') reader.stop('Recorder produced no verified events');
       if (/Trace write failed/.test(execution.stderr)) reader.stop('Recorder write failed');
       result.recording = reader.recording;
       result.status = execution.code === 0 ? 'complete' : 'program_crashed';
@@ -339,6 +347,6 @@ export async function runInstrumented(request, { spawnProcess = spawn, prepare =
   } catch (error) {
     result.status = 'instrumentation_failed'; result.diagnostic = error.message;
     result.capability.diagnostics.push(error.message);
-  } finally { await reader?.close(); if (prepared) await prepared.cleanup(); }
+  } finally { await reader?.dispose(); if (prepared) await prepared.cleanup(); }
   return result;
 }

@@ -124,8 +124,8 @@ describe('recursive factorial trace', () => {
     expect(after.frames[frameId(1)].returnValue).toEqual(int(1))
     expect(after.frames[frameId(2)].locals[childId(2)].value).toEqual(int(1))
     const cached = seek(trace, 24)
-    cached.returns[0].value = int(-1)
-    cached.frames[frameId(2)].returnValue = int(-1)
+    expect(() => { cached.returns[0].value = int(-1) }).toThrow(TypeError)
+    expect(() => { cached.frames[frameId(2)].returnValue = int(-1) }).toThrow(TypeError)
     expect(seek(trace, 24).returns[0].value).toEqual(int(1))
     expect(seek(trace, 24).frames[frameId(2)].returnValue).toEqual(int(2))
   })
@@ -172,7 +172,7 @@ describe('return lifecycle validation', () => {
     'rejects %s after a return until the frame exits', (type) => {
       const trace = loadRecursionTrace()
       const before = seek(trace, 20)
-      const original = structuredClone(before)
+      const original = snapshotCopy(before)
       const base = {
         seq: before.cursor, eventId: `invalid:after-return:${type}`,
         source: { fileId: 'Main.java', line: 4 }, label: 'Execute after return', importance: 'normal' as const,
@@ -237,3 +237,6 @@ describe('return lifecycle validation', () => {
     expect(() => validateTrace(trace)).toThrow('Malformed event')
   })
 })
+
+// Persistent seek snapshots cross the wire through JSON; clone only deliberate forged test states.
+function snapshotCopy<T>(value: T): T { return JSON.parse(JSON.stringify(value)) as T }

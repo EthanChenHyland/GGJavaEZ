@@ -1,0 +1,65 @@
+{
+  "recordedAt": "2026-10-03T00:02:51.576Z",
+  "browser": "chromium 154.0.8037.93",
+  "viewport": "1440x900",
+  "note": "macOS Chrome; actual WebGL renderer reported below. Phase 0 used Linux/software WebGL: browser comparison is not identical hardware. CPU uses CDP TaskDuration, frames are RAF timing, not physical GPU presentation.",
+  "runClickToFirstWorldMs": 2029,
+  "runClickToTerminalPhaseMs": 2037,
+  "runClickToFullWorldMs": 106655,
+  "session": {
+    "phase": "COMPLETED",
+    "terminalStatus": "complete",
+    "rawEvents": 20001,
+    "exitCode": 0,
+    "stdout": "PROCESSED 2400\nMAX_QUEUE 400\nCLOCK 5163\n",
+    "recording": {
+      "state": "STOPPED_LIMIT",
+      "reason": "Recording budget exceeded: events",
+      "budget": "events",
+      "lastRecordedSeq": 19999,
+      "executionContinued": true
+    }
+  },
+  "runBrowserTaskCpuMs": 90822.663,
+  "runTransportDecodedSseBytes": 4507086,
+  "webglRenderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4 Pro, Unspecified Version)",
+  "retainedReloadToInteractiveMs": 13181,
+  "reloadBrowserTaskCpuMs": null,
+  "reloadTransportDecodedSseBytes": 4493246,
+  "normalizedEvents": 24765,
+  "scrubJumpUiCommitPlusTwoFramesMs": {
+    "p50": 6779,
+    "p95": 46179,
+    "max": 46179,
+    "samples": [
+      46179,
+      6609,
+      7117,
+      6695,
+      6623,
+      7462,
+      6779,
+      6736
+    ]
+  },
+  "scrubAdjacentUiCommitPlusTwoFramesMs": {
+    "p50": 6112,
+    "p95": 7118,
+    "samples": [
+      6611,
+      6177,
+      6112,
+      6031,
+      6012,
+      6341,
+      7118,
+      6098,
+      5853,
+      5883
+    ]
+  },
+  "completed": false,
+  "probeStatus": "Reached all eight jumps and ten adjacent samples, then hit the 300-second cap during orbit sampling.",
+  "reloadCpuNote": "TaskDuration reset at navigation invalidated the delta in this run; removed instead of reporting a negative CPU time. Harness now reads the per-document cumulative value.",
+  "sourceNote": "Measured after the stable presentation-prefix fix, before the final initial-publication 100 ms delay. Node pipeline and dense R3F costs are distinct."
+}

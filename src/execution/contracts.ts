@@ -20,6 +20,9 @@ export interface ExecutionSession {
   supportReason: string | null
   build: BuildResult | null
   rawEvents: RawRuntimeEvent[]
+  /** v1 delta metadata carries an empty compatibility array and the accepted raw head. */
+  transportVersion?: 1
+  rawEventCount?: number
   sourceManifest: InstrumentationSourceManifest
   capability: VisualizationCapabilityReport | null
   /** Omitted by retained sessions predating observer saturation. */
@@ -40,6 +43,16 @@ export interface ExecutionSession {
   failureKind: 'build' | 'launch' | 'runtime' | 'capture' | null
   /** A complete prefix is retained through stop/failure; partial recording never invents a program end marker. */
   startedAt: string
+}
+
+/** Raw Recorder sequencing is independent of the normalized semantic cursor. End-exclusive. */
+export interface RawTraceDelta {
+  version: 1
+  sessionId: string
+  fromSequence: number
+  toSequence: number
+  events: RawRuntimeEvent[]
+  recording: RecordingStatus
 }
 
 export interface StartExecutionRequest {

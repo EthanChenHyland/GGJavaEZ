@@ -127,7 +127,7 @@ async function buildFromUI(page: Page, id: string): Promise<BuildResult> {
   return response.json() as Promise<BuildResult>
 }
 async function runFromUI(page: Page, request: APIRequestContext, id: string) {
-  const pending = page.waitForResponse((response) => response.url().endsWith(`/api/projects/${id}/execution`) && response.request().method() === 'POST')
+  const pending = page.waitForResponse((response) => new URL(response.url()).pathname === `/api/projects/${id}/execution` && response.request().method() === 'POST')
   await page.getByRole('button', { name: 'Run', exact: true }).click()
   const response = await pending
   expect(response.ok(), await response.text()).toBe(true)
@@ -141,7 +141,7 @@ async function runFromUI(page: Page, request: APIRequestContext, id: string) {
   return completed
 }
 async function debugFromUI(page: Page, id: string) {
-  const pending = page.waitForResponse((response) => response.url().endsWith(`/api/projects/${id}/execution`) && response.request().method() === 'POST')
+  const pending = page.waitForResponse((response) => new URL(response.url()).pathname === `/api/projects/${id}/execution` && response.request().method() === 'POST')
   await page.getByRole('button', { name: 'Debug', exact: true }).click()
   const response = await pending
   expect(response.ok(), await response.text()).toBe(true)
@@ -303,7 +303,7 @@ test('multiple mains and program arguments use one selected launch target', asyn
   await dialog.getByLabel('Program arguments').fill('["M9_TARGET_ARG"]')
   await dialog.getByRole('button', { name: 'Save configuration' }).click()
   await expect(page.getByRole('combobox', { name: 'Main class' })).toHaveValue(target)
-  const pending = page.waitForResponse((response) => response.url().endsWith(`/api/projects/${id}/execution`) && response.request().method() === 'POST')
+  const pending = page.waitForResponse((response) => new URL(response.url()).pathname === `/api/projects/${id}/execution` && response.request().method() === 'POST')
   await page.getByRole('button', { name: 'Run', exact: true }).click()
   const response = await pending
   expect(response.ok(), await response.text()).toBe(true)
