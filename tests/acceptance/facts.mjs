@@ -5,25 +5,25 @@
  * Every evaluator returns { ok, detail } so failures explain themselves.
  */
 const methodOf = (frame) => frame ? `${frame.className}.${frame.methodName}` : null;
-const scalar = (value) => value?.kind === 'primitive' || value?.kind === 'stringSummary' ? value.value
-  : value?.kind === 'null' ? null : value?.kind === 'uninitialized' ? '<unavailable>' : value?.kind === 'reference' ? `<ref ${value.objectId}>` : undefined;
+const scalar = (value, objects) => value?.kind === 'primitive' || value?.kind === 'stringSummary' ? value.value
+  : value?.kind === 'null' ? null : value?.kind === 'uninitialized' ? '<unavailable>' : value?.kind === 'reference' ? objects?.[value.objectId]?.string?.value ?? `<ref ${value.objectId}>` : undefined;
 const sameScalar = (actual, expected) => String(actual) === String(expected);
 
 function localWrites(run, method, name) {
   const frames = run.final.frames;
   const out = [];
   for (const event of run.trace.events) {
-    if (event.type === 'DECLARE_LOCAL' && event.slot.name === name && methodOf(frames[event.frameId]) === method) out.push(scalar(event.slot.value));
+    if (event.type === 'DECLARE_LOCAL' && event.slot.name === name && methodOf(frames[event.frameId]) === method) out.push(scalar(event.slot.value, run.final.objects));
     if (event.type === 'ASSIGN_LOCAL' && methodOf(frames[event.frameId]) === method) {
       const declared = run.trace.events.find((e) => e.type === 'DECLARE_LOCAL' && e.slot.id === event.slotId);
-      if (declared?.slot.name === name) out.push(scalar(event.value));
+      if (declared?.slot.name === name) out.push(scalar(event.value, run.final.objects));
     }
   }
   return out;
 }
 const objectsOf = (run, className) => Object.values(run.final.objects).filter((object) => object.className === className);
 const fieldValues = (run, className, field) => objectsOf(run, className)
-  .map((object) => Object.values(object.fields).find((slot) => slot.name === field)).filter(Boolean).map((slot) => scalar(slot.value));
+  .map((object) => Object.values(object.fields).find((slot) => slot.name === field)).filter(Boolean).map((slot) => scalar(slot.value, run.final.objects));
 
 export const evaluators = {
   exit: (run, f) => {
@@ -90,8 +90,8 @@ export const evaluators = {
   },
   array: (run, f) => {
     const arrays = Object.values(run.final.objects).filter((object) => object.array);
-    const match = arrays.filter((object) => object.array.elementType === f.elementType || object.className === f.className);
-    const elements = match[0]?.array.elements.map((slot) => scalar(slot.value));
+    const match = arrays.filter((object) => object.array.elementType === f.elementType || object.className === f.className || object.className === `java.lang.${f.className}`);
+    const elements = match[0]?.array.elements.map((slot) => scalar(slot.value, run.final.objects));
     const ok = match.length >= (f.min ?? 1) && (!f.elements || JSON.stringify(elements) === JSON.stringify(f.elements));
     return { ok, detail: `arrays ${JSON.stringify(arrays.map((a) => a.className))} elements ${JSON.stringify(elements)}` };
   },

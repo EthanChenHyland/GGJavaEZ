@@ -1,0 +1,22 @@
+{
+  "category": "dynamic-loading",
+  "mainClass": "Main",
+  "stdout": "42:true\n",
+  "stderr": "",
+  "exitCode": 0,
+  "recording": [
+    "FULL",
+    "STOPPED_UNSUPPORTED"
+  ],
+  "facts": [
+    {
+      "kind": "unobservedMethod",
+      "owner": "RuntimePlugin",
+      "method": "evaluate"
+    },
+    {
+      "kind": "noFabricatedDynamicBinding"
+    }
+  ],
+  "limitation": "Runtime-compiled classes bypass the offline project transformer. FULL observer state does not imply full dynamic-code coverage."
+}

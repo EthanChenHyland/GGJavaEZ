@@ -1,0 +1,124 @@
+{
+  "category": "cross-feature",
+  "mainClass": "dispatch.app.Main",
+  "stdin": "3\n",
+  "stdout": "Harbor,25,2,SENT\ntrue:true:true:0\n",
+  "stderr": "rejected:negative shipment\n",
+  "exitCode": 0,
+  "recording": "FULL",
+  "buildSystem": "maven",
+  "files": {
+    "dispatch.csv": "Harbor,25,2,SENT\n"
+  },
+  "facts": [
+    {
+      "kind": "dependency",
+      "name": "commons-lang3"
+    },
+    {
+      "kind": "invoked",
+      "owner": "dispatch.service.RushPricing",
+      "method": "cost"
+    },
+    {
+      "kind": "invoked",
+      "owner": "dispatch.service.Dispatch",
+      "method": "enqueue"
+    },
+    {
+      "kind": "invoked",
+      "owner": "dispatch.service.Dispatch",
+      "method": "mark"
+    },
+    {
+      "kind": "alias",
+      "left": "cargo",
+      "right": "alias"
+    },
+    {
+      "kind": "alias",
+      "left": "first",
+      "right": "selected"
+    },
+    {
+      "kind": "arrayCell",
+      "array": "cargo",
+      "index": 0,
+      "reference": "first"
+    },
+    {
+      "kind": "arrayCell",
+      "array": "capacities",
+      "index": 2,
+      "null": true
+    },
+    {
+      "kind": "static",
+      "owner": "dispatch.service.Dispatch",
+      "field": "sent",
+      "javaType": "int",
+      "value": 2
+    },
+    {
+      "kind": "collectionHistory",
+      "className": "java.util.ArrayList",
+      "collectionKind": "LIST",
+      "stages": [
+        {
+          "size": 2,
+          "items": [
+            "first",
+            "second"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "collectionHistory",
+      "className": "java.util.HashMap",
+      "collectionKind": "MAP",
+      "stages": [
+        {
+          "size": 2,
+          "entries": [
+            {
+              "keyText": "Harbor",
+              "reference": "first"
+            },
+            {
+              "keyText": "Inland",
+              "reference": "second"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "exception",
+      "className": "java.lang.IllegalArgumentException",
+      "caught": true
+    },
+    {
+      "kind": "fileOperation",
+      "operation": "write",
+      "pathSuffix": "dispatch.csv"
+    },
+    {
+      "kind": "inputConsumed",
+      "text": "3"
+    },
+    {
+      "kind": "sourceFiles",
+      "min": 7
+    },
+    {
+      "kind": "libraryBoundary",
+      "owner": "org.apache.commons.lang3.StringUtils"
+    },
+    {
+      "kind": "invoked",
+      "owner": "dispatch.service.Pricing",
+      "method": "quoted"
+    }
+  ]
+}

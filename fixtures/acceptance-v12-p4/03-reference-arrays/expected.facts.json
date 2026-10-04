@@ -1,0 +1,38 @@
+{
+  "category": 3,
+  "mainClass": "Main",
+  "stdout": "true:true:true:cargo\n",
+  "stderr": "",
+  "exitCode": 0,
+  "recording": "FULL",
+  "facts": [
+    {
+      "kind": "alias",
+      "left": "first",
+      "right": "alias"
+    },
+    {
+      "kind": "alias",
+      "left": "parcel",
+      "right": "selected"
+    },
+    {
+      "kind": "arrayCell",
+      "array": "first",
+      "index": 0,
+      "reference": "parcel"
+    },
+    {
+      "kind": "arrayCell",
+      "array": "first",
+      "index": 1,
+      "null": true
+    },
+    {
+      "kind": "arrayCell",
+      "array": "first",
+      "index": 2,
+      "reference": "parcel"
+    }
+  ]
+}

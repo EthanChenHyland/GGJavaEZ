@@ -1,0 +1,25 @@
+{
+  "category": 20,
+  "mainClass": "Main",
+  "stdout": "2\n7\ntotal=9\n",
+  "stderr": "",
+  "exitCode": 0,
+  "recording": "FULL",
+  "facts": [
+    {
+      "kind": "invoked",
+      "owner": "Main",
+      "method": "process"
+    },
+    {
+      "kind": "field",
+      "className": "Main",
+      "field": "total",
+      "javaType": "int",
+      "value": 9
+    },
+    {
+      "kind": "noMachineryFlood"
+    }
+  ]
+}

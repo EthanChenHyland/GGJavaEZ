@@ -1,0 +1,20 @@
+{
+  "category": 17,
+  "mainClass": "Main",
+  "stdout": "18\n",
+  "stderr": "",
+  "exitCode": 0,
+  "recording": "FULL",
+  "facts": [
+    {
+      "kind": "outerReference",
+      "className": "Main$Channel",
+      "reference": "owner"
+    },
+    {
+      "kind": "invoked",
+      "owner": "Main$Channel",
+      "method": "read"
+    }
+  ]
+}

@@ -1,0 +1,58 @@
+{
+  "category": 13,
+  "mainClass": "Main",
+  "stdout": "2:3:4\n",
+  "stderr": "",
+  "exitCode": 0,
+  "recording": "FULL",
+  "facts": [
+    {
+      "kind": "collectionHistory",
+      "className": "java.util.ArrayDeque",
+      "collectionKind": "DEQUE",
+      "stages": [
+        {
+          "size": 3,
+          "items": [
+            "urgent",
+            "first",
+            "second"
+          ]
+        },
+        {
+          "size": 2,
+          "items": [
+            "first",
+            "second"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "collectionHistory",
+      "className": "java.util.LinkedList",
+      "collectionKind": "QUEUE",
+      "stages": [
+        {
+          "size": 2,
+          "items": [
+            "first",
+            "second"
+          ]
+        },
+        {
+          "size": 1,
+          "items": [
+            "second"
+          ]
+        }
+      ],
+      "order": "fifo"
+    },
+    {
+      "kind": "alias",
+      "left": "polled",
+      "right": "first"
+    }
+  ]
+}

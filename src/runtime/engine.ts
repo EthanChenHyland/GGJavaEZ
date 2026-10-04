@@ -1,4 +1,4 @@
-import type { RuntimeFrame, RuntimeObject, RuntimeState, TraceEvent, VariableLifetime } from '../contracts/runtime'
+import type { RuntimeClass, RuntimeFrame, RuntimeObject, RuntimeState, TraceEvent, VariableLifetime } from '../contracts/runtime'
 import { applyEventWithStorage, createInitialState, type ReductionStorage } from './state'
 import { freezeValue, persistentAppend, persistentArray, persistentDelete, persistentPop, persistentPut, persistentRecord, persistentSet } from './storage'
 
@@ -21,7 +21,9 @@ function emptyIndexes(): Indexes {
 function frameValue(frame: RuntimeFrame): RuntimeFrame { return freezeValue({ ...frame, locals: persistentRecord(frame.locals) }) }
 function objectValue(object: RuntimeObject): RuntimeObject {
   return freezeValue({ ...object, fields: persistentRecord(object.fields), ...(object.array ? {
-    array: { ...object.array, elements: persistentArray(object.array.elements) },
+    array: { ...object.array, elements: persistentArray(object.array.elements),
+      ...(object.array.sparseElements ? { sparseElements: persistentRecord(object.array.sparseElements) } : {}),
+    },
   } : {}) })
 }
 function prepare(initial: RuntimeState): RuntimeState {
@@ -30,6 +32,8 @@ function prepare(initial: RuntimeState): RuntimeState {
   return freezeValue({ ...initial,
     frames: persistentRecord(Object.fromEntries(Object.entries(initial.frames).map(([id, frame]) => [id, frameValue(frame)]))),
     objects: persistentRecord(Object.fromEntries(Object.entries(initial.objects).map(([id, object]) => [id, objectValue(object)]))),
+    ...(initial.classes ? { classes: persistentRecord(Object.fromEntries(Object.entries(initial.classes).map(([id, owner]) =>
+      [id, freezeValue({ ...owner, statics: persistentRecord(owner.statics) })]))) } : {}),
     scopes: persistentRecord(initial.scopes), conditions: persistentRecord(initial.conditions), loops: persistentRecord(initial.loops),
     activeFrameIds: persistentArray(initial.activeFrameIds), returns: persistentArray(initial.returns),
     arrayMutations: persistentArray(initial.arrayMutations), variableLifetimes: persistentArray(initial.variableLifetimes),
@@ -71,6 +75,10 @@ export function createReductionEngine(initial: RuntimeState = createInitialState
       if (value && typeof value === 'object') {
         if ('locals' in value) value = frameValue(value as unknown as RuntimeFrame) as unknown as typeof value
         else if ('fields' in value) value = objectValue(value as unknown as RuntimeObject) as unknown as typeof value
+        else if ('statics' in value) {
+          const owner = value as unknown as RuntimeClass
+          value = freezeValue({ ...owner, statics: persistentRecord(owner.statics) }) as unknown as typeof value
+        }
       }
       return persistentPut(record, key, value)
     },

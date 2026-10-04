@@ -1,0 +1,24 @@
+{
+  "category": 23,
+  "mainClass": "cargo.Main",
+  "stdout": "Cargo:2\n",
+  "stderr": "",
+  "exitCode": 0,
+  "recording": "FULL",
+  "buildSystem": "gradle",
+  "facts": [
+    {
+      "kind": "dependency",
+      "name": "commons-lang3"
+    },
+    {
+      "kind": "invoked",
+      "owner": "cargo.Main",
+      "method": "normalize"
+    },
+    {
+      "kind": "libraryBoundary",
+      "owner": "org.apache.commons.lang3.StringUtils"
+    }
+  ]
+}

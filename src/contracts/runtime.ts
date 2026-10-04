@@ -13,6 +13,7 @@ export type SourceLocation = { fileId: string; line: number }
 
 export type RuntimeValue =
   | { kind: 'uninitialized' }
+  | { kind: 'unavailable'; reason: string; javaType?: string }
   | { kind: 'null' }
   | { kind: 'primitive'; javaType: 'int' | 'boolean' | 'double' | 'long' | 'float' | 'short' | 'byte' | 'char'; value: number | boolean | string }
   | { kind: 'stringSummary'; javaType: 'String'; value: string }
@@ -28,6 +29,40 @@ export interface RuntimeSlot {
   /** Expression operands are VM evaluation slots, not invented Java locals. */
   role?: 'local' | 'parameter' | 'operand' | 'return'
   scopeId?: ScopeId
+  synthetic?: 'outer' | 'compiler'
+  declaringClass?: string
+  static?: boolean
+  observedAt?: EventId
+  changedAt?: EventId
+}
+
+export interface RuntimeTypeMetadata {
+  ownership: 'PROJECT' | 'LIBRARY' | 'JDK' | 'SYNTHETIC'
+  runtimeType: string
+  packageName: string
+  synthetic?: boolean
+  record?: boolean
+  enum?: boolean
+  components?: Array<{ name: string; javaType: string }>
+}
+export interface RuntimeLibrarySummary {
+  kind: 'LIST' | 'SET' | 'MAP' | 'QUEUE' | 'DEQUE' | 'BOXED' | 'OPAQUE'
+  size?: number
+  order?: 'index' | 'iteration' | 'unordered' | 'sorted' | 'fifo'
+  items?: RuntimeValue[]
+  entries?: Array<{ key: RuntimeValue; value: RuntimeValue }>
+  value?: RuntimeValue
+  truncated?: boolean
+  reason?: string
+}
+export interface RuntimeClass {
+  id: string
+  className: string
+  statics: Record<SlotId, RuntimeSlot>
+  initialization: 'started' | 'completed' | 'observed'
+  observedAt: EventId
+  initializedAt?: EventId
+  metadata?: RuntimeTypeMetadata
 }
 
 export interface RuntimeFrame {
@@ -54,9 +89,12 @@ export interface ReturnTransfer {
 }
 
 export interface RuntimeArray {
-  elementType: 'int'
+  elementType: string
   length: number
   elements: RuntimeSlot[]
+  truncated?: boolean
+  /** Observed cells outside a bounded initial prefix; no invented unknown prefix. */
+  sparseElements?: Record<string, RuntimeSlot>
 }
 
 export type ArrayValueOrigin = { kind: 'element'; index: number } | { kind: 'slot'; frameId: FrameId; slotId: SlotId }
@@ -64,13 +102,13 @@ export interface ArrayMutation {
   eventId: EventId
   objectId: ObjectId
   index: number
-  before: ScalarValue
-  after: ScalarValue
+  before: RuntimeValue
+  after: RuntimeValue
   /** Absent when the JVM store operand has no provable named origin. */
   from?: ArrayValueOrigin
 }
 export type ArrayActivity =
-  | { kind: 'read'; eventId: EventId; objectId: ObjectId; index: number; value: ScalarValue; destinationSlotId?: SlotId }
+  | { kind: 'read'; eventId: EventId; objectId: ObjectId; index: number; value: RuntimeValue; destinationSlotId?: SlotId }
   | { kind: 'compare'; eventId: EventId; objectId: ObjectId; indices: readonly [number, number]; values: readonly [ScalarValue, ScalarValue]; operator: '>'; result: boolean }
   | ({ kind: 'write' } & ArrayMutation)
 
@@ -83,6 +121,10 @@ export interface RuntimeObject {
   fields: Record<SlotId, RuntimeSlot>
   allocatedAt: EventId
   array?: RuntimeArray
+  metadata?: RuntimeTypeMetadata
+  library?: RuntimeLibrarySummary
+  string?: { value: string; length: number; truncated: boolean }
+  observedAt?: EventId
 }
 
 export interface RuntimeScope {
@@ -181,6 +223,8 @@ export interface RuntimeState {
   abortReason: string | null
   recordingStop?: RecordingStatus
   executionGraph?: ExecutionGraph
+  /** Actual per-declaring-class static storage, separate from heap instances. */
+  classes?: Record<string, RuntimeClass>
 }
 
 export type SlotOwner =
@@ -207,6 +251,9 @@ export type TraceEvent = TraceEventBase & (
   | { type: 'CONSOLE_WRITE'; frameId: FrameId | null; channel: 'stdout' | 'stderr'; text: string }
   | { type: 'CONSOLE_INPUT'; frameId: FrameId | null; text: string }
   | { type: 'EXECUTION_FACT'; fact: ExecutionFact }
+  | { type: 'CLASS_OBSERVE'; classId: string; className: string; fields: RuntimeSlot[]; initialization: RuntimeClass['initialization']; metadata?: RuntimeTypeMetadata }
+  | { type: 'SET_STATIC'; classId: string; slotId: SlotId; value: RuntimeValue }
+  | { type: 'OBJECT_OBSERVE'; objectId: ObjectId; fields?: RuntimeSlot[]; replaceFields?: boolean; arrayElements?: Array<{ index: number; value: RuntimeValue }>; library?: RuntimeLibrarySummary; string?: RuntimeObject['string']; metadata?: RuntimeTypeMetadata }
   | { type: 'PROGRAM_START' }
   | { type: 'PROGRAM_END' }
   | { type: 'CAPTURE_STOP'; recording: RecordingStatus }
@@ -217,12 +264,12 @@ export type TraceEvent = TraceEventBase & (
   | { type: 'RETURN_VALUE'; frameId: FrameId; value: RuntimeValue; destination: ReturnTransfer['destination']; expression?: string }
   | { type: 'DECLARE_LOCAL'; frameId: FrameId; slot: RuntimeSlot }
   | { type: 'REMOVE_LOCAL'; frameId: FrameId; slotId: SlotId }
-  | { type: 'ALLOCATE_ARRAY'; objectId: ObjectId; displayId: number; elementType: 'int'; elements: ScalarValue[] }
-  | { type: 'ARRAY_READ'; frameId: FrameId; objectId: ObjectId; index: number; value: ScalarValue; destinationSlotId?: SlotId }
+  | { type: 'ALLOCATE_ARRAY'; objectId: ObjectId; displayId: number; elementType: string; elements: RuntimeValue[]; length?: number; truncated?: boolean; metadata?: RuntimeTypeMetadata; observed?: boolean }
+  | { type: 'ARRAY_READ'; frameId: FrameId; objectId: ObjectId; index: number; value: RuntimeValue; destinationSlotId?: SlotId; observed?: boolean }
   | { type: 'ARRAY_COMPARE'; frameId: FrameId; objectId: ObjectId; indices: readonly [number, number]; values: readonly [ScalarValue, ScalarValue]; operator: '>'; result: boolean }
-  | { type: 'ARRAY_WRITE'; frameId: FrameId; objectId: ObjectId; index: number; value: ScalarValue; from?: ArrayValueOrigin }
+  | { type: 'ARRAY_WRITE'; frameId: FrameId; objectId: ObjectId; index: number; value: RuntimeValue; from?: ArrayValueOrigin }
   | { type: 'ASSIGN_LOCAL'; frameId: FrameId; slotId: SlotId; value: ScalarValue }
-  | { type: 'ALLOCATE_OBJECT'; objectId: ObjectId; displayId: number; className: string; fields: RuntimeSlot[] }
+  | { type: 'ALLOCATE_OBJECT'; objectId: ObjectId; displayId: number; className: string; fields: RuntimeSlot[]; metadata?: RuntimeTypeMetadata }
   | { type: 'SET_FIELD'; objectId: ObjectId; slotId: SlotId; value: ScalarValue }
   | { type: 'CREATE_REFERENCE'; sourceSlot: SlotOwner; targetObjectId: ObjectId; javaType: string }
   | { type: 'CLEAR_REFERENCE'; sourceSlot: SlotOwner }

@@ -201,7 +201,15 @@ test('actual multifile breakpoint and Into/Over/Out synchronize source, objects,
   const final = await current(request)
   expect(final!.exitCode).toBe(0)
   expect(final!.stdout.trim()).toBe('18')
-  expect(final!.rawEvents.filter((event) => event.type === 'object' && event.className === 'Person')).toHaveLength(1)
+  const personObservations = final!.rawEvents.filter((event) => event.type === 'object' && event.className === 'Person')
+  expect(personObservations.filter((event) => !event.resnapshot)).toHaveLength(1)
+  expect(new Set(personObservations.map((event) => event.objectId)).size).toBe(1)
+  const replay = normalizeTrace(final!.rawEvents, final!.sourceManifest, {
+    status: final!.terminalStatus!, exitCode: final!.exitCode, diagnostic: final!.diagnostic,
+  }).trace
+  expect(replay.events.filter((event) => event.type === 'ALLOCATE_OBJECT' && event.className === 'Person')).toHaveLength(1)
+  const personState = Object.values(seek(replay, replay.events.length).objects).find((object) => object.className === 'Person')!
+  expect(Object.values(personState.fields).find((slot) => slot.name === 'age')!.value).toEqual({ kind: 'primitive', javaType: 'int', value: 18 })
 })
 
 test('Pause suspends real execution at a project boundary and topbar Stop reaps it', async ({ page, request }) => {

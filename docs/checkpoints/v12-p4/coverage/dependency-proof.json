@@ -1,0 +1,17 @@
+{
+  "fixture": "22-maven-dependency",
+  "exitCode": 0,
+  "recording": {
+    "state": "FULL",
+    "reason": null,
+    "budget": null,
+    "lastRecordedSeq": 28,
+    "executionContinued": true
+  },
+  "semanticEvents": 58,
+  "selected": {
+    "value": "jvm:frame:f1",
+    "label": "main() · completed · invocation 1"
+  },
+  "errors": []
+}

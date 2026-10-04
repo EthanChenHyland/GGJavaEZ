@@ -11,9 +11,10 @@ import { easeOutCubic, useReducedMotion } from './presentationMotion'
 
 export function formatRuntimeValue(value: RuntimeValue): string {
   switch (value.kind) {
+    case 'unavailable': return `unavailable (${value.reason})`
     case 'uninitialized': return '—'
     case 'null': return 'null'
-    case 'primitive': return String(value.value)
+    case 'primitive': return value.javaType === 'char' ? JSON.stringify(value.value) : String(value.value)
     case 'stringSummary': return `"${value.value}"`
     case 'reference': return `→ ${value.objectId}`
   }

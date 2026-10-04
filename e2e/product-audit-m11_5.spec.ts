@@ -237,7 +237,15 @@ test('fresh plain graph stress project executes and leaves a navigable recorded 
   await evidence('graph', session)
   expect(session.stdout).toContain('CHECKSUM 69089')
   expect(session.rawEvents.length).toBeGreaterThan(3000)
-  expect(session.rawEvents.some(event => event.type === 'catch')).toBe(true)
+  // Phase 4 observes the real String map keys as well as Nodes. Those actual
+  // identities reach the unchanged 256-object budget before the final catch;
+  // recording must stop honestly while the same Java process completes it.
+  expect(session.recording).toMatchObject({ state: 'STOPPED_LIMIT', budget: 'objects', executionContinued: true })
+  expect(session.support).toBe('PARTIAL')
+  expect(session.exitCode).toBe(0)
+  expect(session.stdout).toContain('CAUGHT 1')
+  expect(session.rawEvents.filter(event => event.type === 'capture_saturated')).toHaveLength(1)
+  expect(session.rawEvents.some(event => event.type === 'catch')).toBe(false)
   await expect(page.locator('.spatial-view canvas')).toBeVisible()
   await capture(page, 'graph-completed')
   await inspectRetainedWorld(page, request)

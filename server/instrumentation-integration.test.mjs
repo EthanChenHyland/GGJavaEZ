@@ -68,7 +68,7 @@ test('array writes, branch truth, caught exception and crash remain replayable',
   expect(trace.events.some((event) => event.type === 'ARRAY_WRITE')).toBe(true);
   expect(trace.events.some((event) => event.type === 'BRANCH_EVALUATE')).toBe(true);
   expect(trace.events.some((event) => event.type === 'CATCH_EXCEPTION')).toBe(true);
-  const array = Object.values(seek(trace, trace.events.length).objects).find((object) => object.array);
+  const array = Object.values(seek(trace, trace.events.length).objects).find((object) => object.array?.elementType === 'int');
   expect(array.array.elements.map((item) => item.value.value)).toEqual([1, 3]);
 });
 

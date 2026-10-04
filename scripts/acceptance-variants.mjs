@@ -85,7 +85,7 @@ export function worldSignature(run, { stripLines = false } = {}) {
   const frames = run.scene.frames.map((frame) => ({ id: frame.id, label: frame.label, status: frame.invocationStatus, slots: frame.slots.map((slot) => [slot.id, slot.name, slot.javaType, slot.value]) }));
   const objects = run.scene.objects.map((object) => ({ id: object.id, label: object.label, fields: object.fields.map((slot) => [slot.id, slot.name, slot.value]) }));
   const anchors = Object.fromEntries(Object.entries(run.layout.anchors).map(([id, anchor]) => [id, { position: anchor.position, size: anchor.size, ports: anchor.ports }]));
-  return JSON.stringify({ exit: run.snapshot.exitCode, stdout: run.snapshot.stdout, stderr: run.snapshot.stderr.replace(/\/tmp\/\S+/g, ''), events, frames, objects, anchors, bounds: run.layout.bounds ?? null });
+  return JSON.stringify({ exit: run.snapshot.exitCode, stdout: run.snapshot.stdout, stderr: run.snapshot.stderr.replace(/\/tmp\/\S+/g, ''), events, frames, objects, anchors, bounds: run.layout.bounds ?? null }).replace(/\/0x[0-9a-f]+/gi, '/<vm-address>');
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
@@ -93,4 +93,23 @@ if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
   if (!projectDir || !kind || !outDir) { console.error('usage: acceptance-variants.mjs <projectDir> <permuted|shifted> <outDir>'); process.exit(2); }
   const facts = JSON.parse(await readFile(join(projectDir, 'expected.facts.json'), 'utf8'));
   console.log(await makeVariant(projectDir, kind, outDir, facts.renames ?? {}));
+}
+
+/** Rename enum/member-derived text along with labels, updating its truthful observed
+ * UTF-16 length. No events, identities, geometry or relationships are discarded. */
+export function renameWorldSignature(signature, renames) {
+  const rename = renamer(renames);
+  const transform = value => {
+    if (Array.isArray(value)) return value.map(transform);
+    if (value && typeof value === 'object') {
+      // Schema keys are contracts, not application identifiers. Dynamic keys
+      // contain canonical IDs/paths and must still follow their member rename.
+      const result = Object.fromEntries(Object.entries(value).map(([key, item]) =>
+        [key.includes(':') || key.includes('/') ? rename(key) : key, transform(item)]));
+      if (result.string && !result.string.truncated) result.string.length = result.string.value.length;
+      return result;
+    }
+    return typeof value === 'string' ? rename(value) : value;
+  };
+  return JSON.stringify(transform(JSON.parse(signature)));
 }

@@ -1,0 +1,31 @@
+{
+  "category": 24,
+  "mainClass": "Main",
+  "stdout": "42\n",
+  "stderr": "",
+  "exitCode": 0,
+  "recording": "FULL",
+  "facts": [
+    {
+      "kind": "invoked",
+      "owner": "Main$Scale",
+      "method": "<init>"
+    },
+    {
+      "kind": "invoked",
+      "owner": "Main$Scale",
+      "method": "apply"
+    },
+    {
+      "kind": "local",
+      "name": "result",
+      "javaType": "int",
+      "value": 42
+    },
+    {
+      "kind": "reflectiveBoundary",
+      "owner": "Main$Scale",
+      "method": "apply"
+    }
+  ]
+}

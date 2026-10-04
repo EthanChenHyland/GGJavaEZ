@@ -1,0 +1,41 @@
+{
+  "category": 1,
+  "mainClass": "Main",
+  "stdout": "init\n6:11:81:true\n",
+  "stderr": "",
+  "exitCode": 0,
+  "recording": "FULL",
+  "facts": [
+    {
+      "kind": "static",
+      "owner": "Main$Meter",
+      "field": "total",
+      "javaType": "int",
+      "value": 11
+    },
+    {
+      "kind": "static",
+      "owner": "Main$Hidden",
+      "field": "total",
+      "javaType": "int",
+      "value": 81
+    },
+    {
+      "kind": "classInitialization",
+      "owner": "Main$Meter"
+    },
+    {
+      "kind": "invoked",
+      "owner": "Main$Meter",
+      "method": "<clinit>"
+    },
+    {
+      "kind": "staticMutation",
+      "owner": "Main$Meter",
+      "field": "total",
+      "javaType": "int",
+      "before": 6,
+      "after": 11
+    }
+  ]
+}

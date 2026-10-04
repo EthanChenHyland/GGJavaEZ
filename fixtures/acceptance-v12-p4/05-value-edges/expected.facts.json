@@ -1,0 +1,108 @@
+{
+  "category": 5,
+  "mainClass": "Main",
+  "stdout": "9223372036854775807:-9223372036854775808:9007199254740993:-2147483648:-9223372036854775808:23383:57343:true\n",
+  "stderr": "",
+  "exitCode": 0,
+  "recording": "FULL",
+  "facts": [
+    {
+      "kind": "local",
+      "name": "max",
+      "javaType": "long",
+      "value": "9223372036854775807",
+      "method": "retain"
+    },
+    {
+      "kind": "local",
+      "name": "min",
+      "javaType": "long",
+      "value": "-9223372036854775808",
+      "method": "retain"
+    },
+    {
+      "kind": "local",
+      "name": "exact",
+      "javaType": "long",
+      "value": "9007199254740993",
+      "method": "retain"
+    },
+    {
+      "kind": "local",
+      "name": "unicode",
+      "javaType": "char",
+      "value": "\u5b57",
+      "method": "retain"
+    },
+    {
+      "kind": "local",
+      "name": "surrogate",
+      "javaType": "char",
+      "value": "\udfff",
+      "method": "retain"
+    },
+    {
+      "kind": "local",
+      "name": "yes",
+      "javaType": "boolean",
+      "value": true,
+      "method": "retain"
+    },
+    {
+      "kind": "local",
+      "name": "fnan",
+      "javaType": "float",
+      "value": "NaN",
+      "method": "retain"
+    },
+    {
+      "kind": "local",
+      "name": "finf",
+      "javaType": "float",
+      "value": "Infinity",
+      "method": "retain"
+    },
+    {
+      "kind": "local",
+      "name": "fnegative",
+      "javaType": "float",
+      "value": "-Infinity",
+      "method": "retain"
+    },
+    {
+      "kind": "local",
+      "name": "fzero",
+      "javaType": "float",
+      "value": "-0.0",
+      "method": "retain"
+    },
+    {
+      "kind": "local",
+      "name": "dnan",
+      "javaType": "double",
+      "value": "NaN",
+      "method": "retain"
+    },
+    {
+      "kind": "local",
+      "name": "dinf",
+      "javaType": "double",
+      "value": "Infinity",
+      "method": "retain"
+    },
+    {
+      "kind": "local",
+      "name": "dnegative",
+      "javaType": "double",
+      "value": "-Infinity",
+      "method": "retain"
+    },
+    {
+      "kind": "local",
+      "name": "dzero",
+      "javaType": "double",
+      "value": "-0.0",
+      "method": "retain"
+    }
+  ]
+}

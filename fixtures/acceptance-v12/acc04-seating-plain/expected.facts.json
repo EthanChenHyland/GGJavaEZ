@@ -72,52 +72,57 @@
   {
    "id": "exactLong",
    "kind": "local",
-   "status": "target:P1",
+   "status": "current",
    "requirement": "R5.4",
    "method": "Main.main",
    "name": "largestTicket",
    "value": "9007199254740993",
-   "note": "Today unavailable: long beyond 2^53 rejected by rawScalar"
+   "promotion": "Phase 4: bounded generic observation verified on the production JVM path"
   },
   {
    "id": "objectGrid",
    "kind": "array",
-   "status": "target:P3",
+   "status": "current",
    "requirement": "R5.1",
-   "className": "Seat[][]"
+   "className": "Seat[][]",
+   "promotion": "Phase 4: bounded generic observation verified on the production JVM path"
   },
   {
    "id": "doubles",
    "kind": "array",
-   "status": "target:P3",
+   "status": "current",
    "requirement": "R5.1",
    "className": "double[]",
    "elements": [
     12.5,
     18.0,
     30.25
-   ]
+   ],
+   "promotion": "Phase 4: bounded generic observation verified on the production JVM path"
   },
   {
    "id": "chars",
    "kind": "array",
-   "status": "target:P3",
+   "status": "current",
    "requirement": "R5.1",
-   "className": "char[]"
+   "className": "char[]",
+   "promotion": "Phase 4: bounded generic observation verified on the production JVM path"
   },
   {
    "id": "longs",
    "kind": "array",
-   "status": "target:P3",
+   "status": "current",
    "requirement": "R5.1",
-   "className": "long[]"
+   "className": "long[]",
+   "promotion": "Phase 4: bounded generic observation verified on the production JVM path"
   },
   {
    "id": "mainArgs",
    "kind": "array",
-   "status": "target:P3",
+   "status": "current",
    "requirement": "R5.1",
-   "className": "String[]"
+   "className": "String[]",
+   "promotion": "Phase 4: bounded generic observation verified on the production JVM path"
   }
  ]
 }

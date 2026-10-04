@@ -2,6 +2,7 @@ import { arrayElementSlotId, type TraceDocument, type RuntimeSlot, type TraceEve
 import type { LayoutState, Vec3, WorldAnchor } from '../contracts/world'
 import { worldUnits } from '../theme/tokens'
 import { persistentAppend, persistentArray, persistentPut, persistentRecord } from '../runtime/storage'
+import { objectFaceRowCount } from './objectFace'
 
 export function portsForSlots(position: Vec3, size: Vec3, slots: RuntimeSlot[], region: 'stack' | 'heap', spacious = false): Record<string, Vec3> {
   const top = position[1] + size[1] / 2 - (region === 'stack' ? spacious ? 1.15 : 0.95 : 1.07)
@@ -111,6 +112,13 @@ export function createLayout(trace: TraceDocument): LayoutState {
         size,
         ports: portsForSlots(position, size, event.fields, 'heap'),
         bodyPort: [position[0] - size[0] / 2 - 0.04, position[1] + 0.1, position[2] + size[2] * 0.18],
+      }
+    }
+    if (event.type === 'OBJECT_OBSERVE' && event.fields) {
+      const anchor = anchors[event.objectId]
+      if (anchor) for (const [id, port] of Object.entries(portsForSlots(anchor.position, anchor.size,
+        event.fields.slice(0, objectFaceRowCount(anchor.size[1], event.fields.length)), 'heap'))) {
+        if (!anchor.ports[id]) anchor.ports[id] = port
       }
     }
   }
@@ -243,6 +251,22 @@ export function createLayoutBuilder() {
       reserve({ entityId: event.objectId, region: 'heap', position, size,
         ports: persistentRecord(portsForSlots(position, size, event.fields, 'heap')),
         bodyPort: [position[0] - size[0] / 2 - 0.04, position[1] + 0.1, position[2] + size[2] * 0.18] })
+    }
+    if (event.type === 'OBJECT_OBSERVE' && event.fields) {
+      const anchor = anchors[event.objectId]
+      if (anchor) {
+        let ports = anchor.ports
+        const visible = event.fields.slice(0, objectFaceRowCount(anchor.size[1], event.fields.length))
+        for (const [id, port] of Object.entries(portsForSlots(anchor.position, anchor.size, visible, 'heap'))) {
+          if (!ports[id]) ports = persistentPut(ports, id, port)
+        }
+        if (ports !== anchor.ports) {
+          const next = { ...anchor, ports }
+          anchors = persistentPut(anchors, event.objectId, next)
+          expanded = persistentPut(expanded, event.objectId, next)
+          snapshot = undefined
+        }
+      }
     }
     if (event.type === 'ALLOCATE_ARRAY') {
       if (!hasArrays) {

@@ -75,7 +75,9 @@ export interface SceneObjectNode {
   displayId: number
   anchor: WorldAnchor
   fields: SceneSlot[]
-  array?: { elementType: 'int'; length: number; cells: SceneArrayCell[] }
+  /** Bounded semantic summary, shown without implying project implementation fields. */
+  summaryLabel?: string
+  array?: { elementType: string; length: number; cells: SceneArrayCell[] }
 }
 
 export interface SceneReferenceEdge {

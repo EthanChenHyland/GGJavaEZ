@@ -1,0 +1,33 @@
+{
+  "category": 12,
+  "mainClass": "Main",
+  "stdout": "apple:pear:2\n",
+  "stderr": "",
+  "exitCode": 0,
+  "recording": "FULL",
+  "facts": [
+    {
+      "kind": "collectionHistory",
+      "className": "java.util.TreeSet",
+      "collectionKind": "SET",
+      "stages": [
+        {
+          "size": 3,
+          "texts": [
+            "apple",
+            "fig",
+            "pear"
+          ]
+        },
+        {
+          "size": 2,
+          "texts": [
+            "apple",
+            "pear"
+          ]
+        }
+      ],
+      "order": "sorted"
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "fixture": "03-reference-arrays",
+  "exitCode": 0,
+  "recording": {
+    "state": "FULL",
+    "reason": null,
+    "budget": null,
+    "lastRecordedSeq": 44,
+    "executionContinued": true
+  },
+  "semanticEvents": 90,
+  "selected": {
+    "value": "jvm:object:o3",
+    "label": "Main$Parcel[] #3"
+  },
+  "errors": []
+}

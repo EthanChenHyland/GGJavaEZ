@@ -1,5 +1,5 @@
-/** Persistent radix storage with Record/Array facades for existing runtime consumers.
- * Updating a collection copies at most one 32-way path, never the entity/history prefix.
+/** Persistent hash trie records and radix vectors with existing Record/Array facades.
+ * Updating a collection copies only its changed path, never the entity/history prefix.
  * Facades reject writes in every build; newly created semantic values are frozen.
  * Use JSON serialization for wire transfer: these internal proxies are not structured-cloneable.
  */
@@ -80,25 +80,57 @@ export function persistentPop<T>(array: T[]): T[] {
   const shorter = vectorPut(vector, vector.length - 1, undefined as T)
   return vectorFacade({ ...shorter, length: Math.max(0, vector.length - 1) })
 }
-interface Entry<T> { key: string; value: T | undefined; ordinal: number }
-interface PersistentRecord<T> { root: Node<Entry<T>[]>; keys: Vector<string> }
+interface Entry<T> { key: string; hash: number; value: T | undefined; ordinal: number }
+type HashNode<T> = Entry<T> | { bitmap: number; branches: HashNode<T>[] } | { collisions: Entry<T>[] }
+interface PersistentRecord<T> { root: HashNode<T> | undefined; keys: Vector<string> }
 function hash(key: string): number {
   let result = 2166136261
   for (let i = 0; i < key.length; i++) result = Math.imul(result ^ key.charCodeAt(i), 16777619)
   return result >>> 0
 }
-function recordEntry<T>(record: PersistentRecord<T>, key: string): Entry<T> | undefined {
-  return get(record.root, hash(key), Math.ceil(32 / BITS) - 1)?.find(entry => entry.key === key)
+function popcount(bits: number): number {
+  bits -= (bits >>> 1) & 0x55555555
+  bits = (bits & 0x33333333) + ((bits >>> 2) & 0x33333333)
+  return (((bits + (bits >>> 4)) & 0x0f0f0f0f) * 0x01010101) >>> 24
 }
+/** Packed branches allocate no holes and stop at the first unique hash prefix.
+ * Full 32-bit collisions retain keys, never equate distinct keys by their hash.
+ */
+function hashEntry<T>(node: HashNode<T> | undefined, key: string, hashed: number): Entry<T> | undefined {
+  let shift = 0
+  while (node && 'bitmap' in node) {
+    const bit = 1 << ((hashed >>> shift) & 31)
+    if (!(node.bitmap & bit)) return undefined
+    node = node.branches[popcount(node.bitmap & (bit - 1))]
+    shift += BITS
+  }
+  return node && ('key' in node ? node.key === key ? node : undefined : node.collisions.find(entry => entry.key === key))
+}
+function hashPut<T>(node: HashNode<T> | undefined, entry: Entry<T>, shift = 0): HashNode<T> {
+  if (!node) return entry
+  if ('bitmap' in node) {
+    const bit = 1 << ((entry.hash >>> shift) & 31)
+    const index = popcount(node.bitmap & (bit - 1)), branches = node.branches.slice()
+    if (node.bitmap & bit) branches[index] = hashPut(branches[index], entry, shift + BITS)
+    else branches.splice(index, 0, entry)
+    return { bitmap: node.bitmap | bit, branches }
+  }
+  if ('key' in node && node.key === entry.key) return entry
+  const hashed = 'key' in node ? node.hash : node.collisions[0].hash
+  if (hashed === entry.hash) return { collisions: [...('key' in node ? [node] : node.collisions).filter(item => item.key !== entry.key), entry] }
+  const priorDigit = (hashed >>> shift) & 31, nextDigit = (entry.hash >>> shift) & 31
+  return priorDigit === nextDigit
+    ? { bitmap: 1 << priorDigit, branches: [hashPut(node, entry, shift + BITS)] }
+    : { bitmap: (1 << priorDigit) | (1 << nextDigit), branches: priorDigit < nextDigit ? [node, entry] : [entry, node] }
+}
+function recordEntry<T>(record: PersistentRecord<T>, key: string): Entry<T> | undefined { return hashEntry(record.root, key, hash(key)) }
 function recordGet<T>(record: PersistentRecord<T>, key: string): T | undefined { return recordEntry(record, key)?.value }
 function recordPut<T>(record: PersistentRecord<T>, key: string, value: T | undefined): PersistentRecord<T> {
   const index = hash(key)
-  const bucket = get(record.root, index, Math.ceil(32 / BITS) - 1) ?? []
-  const previous = bucket.find(entry => entry.key === key)
+  const previous = hashEntry(record.root, key, index)
   const exists = previous?.value !== undefined
-  const next = bucket.filter(entry => entry.key !== key)
-  next.push({ key, value: freezeValue(value), ordinal: exists ? previous!.ordinal : record.keys.length })
-  return { root: put(record.root, index, Math.ceil(32 / BITS) - 1, next),
+  const next = { key, hash: index, value: freezeValue(value), ordinal: exists ? previous!.ordinal : record.keys.length }
+  return { root: hashPut(record.root, next),
     keys: !exists && value !== undefined ? vectorPut(record.keys, record.keys.length, key) : record.keys }
 }
 function recordKeys<T>(record: PersistentRecord<T>): string[] {
@@ -134,7 +166,7 @@ function recordFacade<T>(record: PersistentRecord<T>): Record<string, T> {
 function recordOf<T>(record: Record<string, T>): PersistentRecord<T> {
   const existing = records.get(record)
   if (existing) return existing as PersistentRecord<T>
-  let result: PersistentRecord<T> = { root: {}, keys: { root: {}, depth: 0, length: 0 } }
+  let result: PersistentRecord<T> = { root: undefined, keys: { root: {}, depth: 0, length: 0 } }
   for (const [key, value] of Object.entries(record)) result = recordPut(result, key, value)
   return result
 }

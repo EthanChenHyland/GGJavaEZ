@@ -1,0 +1,31 @@
+{
+  "category": 21,
+  "mainClass": "Main",
+  "stdout": "dock=7:dock=7\n",
+  "stderr": "",
+  "exitCode": 0,
+  "recording": "FULL",
+  "facts": [
+    {
+      "kind": "fileOperation",
+      "operation": "write",
+      "pathSuffix": "manifest.txt",
+      "preview": "dock=7\n"
+    },
+    {
+      "kind": "fileOperation",
+      "operation": "read",
+      "pathSuffix": "manifest.txt",
+      "preview": "dock=7\n"
+    },
+    {
+      "kind": "fileOperation",
+      "operation": "close",
+      "pathSuffix": "buffered.txt"
+    }
+  ],
+  "files": {
+    "manifest.txt": "dock=7\n",
+    "buffered.txt": "dock=7\ndone\n"
+  }
+}

@@ -1,0 +1,137 @@
+{
+  "phase": 4,
+  "baseCommit": "0e05c4384dc7fb103d0b5e43f693a1d0be7ead82",
+  "branch": "kiro-runtime-audit",
+  "toolchain": {
+    "os": "macOS 15.5 arm64",
+    "cpu": "Apple M4 Pro",
+    "memoryGiB": 24,
+    "node": "24.20.0",
+    "java": "OpenJDK 26.0.2.1",
+    "javac": "26.0.2.1",
+    "maven": "3.9.16",
+    "gradle": "9.4.1",
+    "dependencyRelease": 17,
+    "otherRuntimeVersionsTested": []
+  },
+  "gates": {
+    "typecheck": "passed",
+    "lint": "passed",
+    "productionBuild": "passed",
+    "unit": {
+      "passed": 1204,
+      "skipped": 52,
+      "total": 1256,
+      "passedFiles": 94,
+      "skippedFiles": 4,
+      "seconds": 146.55
+    },
+    "acceptance": {
+      "passed": 191,
+      "expectedFailures": 4,
+      "total": 195
+    },
+    "actualJvm": {
+      "passed": 51,
+      "files": 3,
+      "seconds": 58.49,
+      "freshProjects": 30,
+      "freshFull": 29,
+      "freshIntentionalStoppedLimit": 1,
+      "phase3Goldens": 17,
+      "invarianceTests": 4,
+      "invarianceRecordingsPerTest": 3
+    },
+    "performance": {
+      "passed": 3,
+      "isolatedIncrementalRerunPassed": 1
+    },
+    "browser": {
+      "passed": 100,
+      "total": 100,
+      "durationMinutes": 9.4
+    },
+    "finalPolishBrowser": {
+      "passed": 8,
+      "seconds": 56.5
+    }
+  },
+  "controlledMemoryGate": {
+    "enrichedEvents": 190031,
+    "baselineMiB": 817.75816,
+    "packedMiB": 353.18261,
+    "retainedReductionPercent": 56.8,
+    "baselineAppendMs": 2559.99704,
+    "packedAppendMs": 1965.529208,
+    "appendReductionPercent": 23.2,
+    "matchingGraphDigests": 4,
+    "invocations": 6814,
+    "calls": 6813,
+    "values": 67849,
+    "edges": 110408,
+    "measurement": "one paired controlled workload; explicit GC retention, not isolated graph bytes or percentile statistics"
+  },
+  "finalRichProbe": {
+    "enrichedEvents": 190031,
+    "retainedMiB": 354.4501,
+    "appendMs": 1844.74
+  },
+  "reviewedScreenshots": [
+    "coverage/arrays-focus-1440x900.png",
+    "coverage/arrays-overview-1440x900.png",
+    "coverage/collections-focus-1280x800.png",
+    "coverage/collections-focus-1440x900.png",
+    "coverage/collections-focus-1728x1117.png",
+    "coverage/collections-focus-760x900.png",
+    "coverage/collections-overview-1440x900.png",
+    "coverage/collections-populated-focus-1440x900.png",
+    "coverage/dependency-focus-1440x900.png",
+    "coverage/dependency-overview-1440x900.png",
+    "coverage/exception-focus-1440x900.png",
+    "coverage/exception-overview-1440x900.png",
+    "coverage/large-world-focus-1440x900.png",
+    "coverage/large-world-overview-1440x900.png",
+    "coverage/oop-focus-1280x800.png",
+    "coverage/oop-focus-1440x900.png",
+    "coverage/oop-focus-1728x1117.png",
+    "coverage/oop-focus-760x900.png",
+    "coverage/oop-overview-1440x900.png",
+    "coverage/statics-focus-1440x900.png",
+    "coverage/statics-overview-1440x900.png",
+    "coverage/stdin-stdout-focus-1440x900.png",
+    "coverage/stdin-stdout-overview-1440x900.png",
+    "commands/rename-history-1440x900.png"
+  ],
+  "viewports": [
+    [
+      1728,
+      1117
+    ],
+    [
+      1440,
+      900
+    ],
+    [
+      1280,
+      800
+    ],
+    [
+      760,
+      900
+    ]
+  ],
+  "warnings": [
+    "large production chunks",
+    "Troika dynamic import also imported statically by Drei",
+    "Three.js dependency CommonJS deprecation"
+  ],
+  "remainingLimits": [
+    "bounded observer prefixes and indirect library/reflection coverage",
+    "custom/dynamic classes and concurrency have incomplete or unsupported recording",
+    "collection layouts verified on this actual JDK only",
+    "native filesystem QA on macOS only; no multi-process rename lock",
+    "dense-world load 3214 ms and three UI commits plus two animation frames 741/493/482 ms; not GPU presentation",
+    "dense geometry/labels, spatial class and sparse-cell rendering, clustering and shell hierarchy remain Phase 5"
+  ],
+  "nextPhaseStarted": false
+}

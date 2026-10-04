@@ -1,0 +1,33 @@
+{
+  "category": 6,
+  "mainClass": "Main",
+  "stdout": "true:true:false:8:true\n",
+  "stderr": "",
+  "exitCode": 0,
+  "recording": "FULL",
+  "facts": [
+    {
+      "kind": "alias",
+      "left": "text",
+      "right": "alias"
+    },
+    {
+      "kind": "alias",
+      "left": "text",
+      "right": "returned"
+    },
+    {
+      "kind": "differentIdentity",
+      "left": "text",
+      "right": "equalCopy"
+    },
+    {
+      "kind": "string",
+      "local": "text",
+      "value": "harbor\u0000\u03a9",
+      "length": 8,
+      "truncated": false,
+      "noInternals": true
+    }
+  ]
+}

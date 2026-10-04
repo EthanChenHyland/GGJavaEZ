@@ -1,0 +1,59 @@
+{
+  "category": "observer-transparency",
+  "mainClass": "Main",
+  "stdout": "violations=0\n",
+  "stderr": "",
+  "exitCode": 0,
+  "recording": "FULL",
+  "facts": [
+    {
+      "kind": "opaqueCollection",
+      "className": "Main$HostileList"
+    },
+    {
+      "kind": "opaqueCollection",
+      "className": "Main$HostileMap"
+    },
+    {
+      "kind": "opaqueCollection",
+      "className": "Main$HostileSet"
+    },
+    {
+      "kind": "collectionHistory",
+      "className": "java.util.HashMap",
+      "collectionKind": "MAP",
+      "stages": [
+        {
+          "size": 1,
+          "entries": [
+            {
+              "keyReference": "key",
+              "reference": "list"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "collectionHistory",
+      "className": "java.util.HashSet",
+      "collectionKind": "SET",
+      "stages": [
+        {
+          "size": 1,
+          "items": [
+            "key"
+          ],
+          "unordered": true
+        }
+      ]
+    },
+    {
+      "kind": "static",
+      "owner": "Main",
+      "field": "violations",
+      "javaType": "int",
+      "value": 0
+    }
+  ]
+}

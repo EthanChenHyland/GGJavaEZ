@@ -92,6 +92,7 @@ export function slotValue(slot: SceneSlot): string {
   if (slot.displayValue !== undefined) return slot.displayValue
   if (slot.role === 'return' && slot.value.kind === 'uninitialized') return 'pending'
   switch (slot.value.kind) {
+    case 'unavailable': return `unavailable (${slot.value.reason})`
     case 'uninitialized': return '—'
     case 'null': return 'null'
     case 'primitive': return String(slot.value.value)

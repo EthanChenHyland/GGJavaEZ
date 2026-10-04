@@ -139,12 +139,13 @@
   {
    "id": "issuedStatic",
    "kind": "statics",
-   "status": "target:P3",
+   "status": "current",
    "requirement": "R5.2",
    "className": "clinic.Invoice",
    "fields": [
     "issued"
-   ]
+   ],
+   "promotion": "Phase 4: bounded generic observation verified on the production JVM path"
   },
   {
    "id": "returnLands",

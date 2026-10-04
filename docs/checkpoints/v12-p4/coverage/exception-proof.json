@@ -1,0 +1,17 @@
+{
+  "fixture": "29-exception-interactions",
+  "exitCode": 0,
+  "recording": {
+    "state": "FULL",
+    "reason": null,
+    "budget": null,
+    "lastRecordedSeq": 67,
+    "executionContinued": true
+  },
+  "semanticEvents": 131,
+  "selected": {
+    "value": "jvm:frame:f2",
+    "label": "main() · completed · invocation 2"
+  },
+  "errors": []
+}

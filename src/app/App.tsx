@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Box, Crosshair, Home, MousePointer2, Route, ScanEye, Maximize2, Minimize2, ZoomIn, ZoomOut } from 'lucide-react'
 import { ClassicRuntime } from '../classic/ClassicRuntime'
 import { visualizationModes, type VisualizationMode } from '../contracts/visualization'
-import type { RuntimeState, SourceLocation, TraceDocument, TraceEvent } from '../contracts/runtime'
+import type { RuntimeState, RuntimeValue, SourceLocation, TraceDocument, TraceEvent } from '../contracts/runtime'
 import type { Selection } from '../contracts/interaction'
 import type { ExecutionPhase, TimelineLens } from '../execution/contracts'
 import { renderQuality } from '../theme/tokens'
@@ -11,7 +11,7 @@ import { SourcePane } from '../ui/SourcePane'
 import { ConsolePane } from '../ui/ConsolePane'
 import { ControlFlowStatus } from '../examples/ControlFlowStatus'
 import { curatedCompareCaption } from '../examples/captions'
-import { Inspector } from '../ui/Inspector'
+import { Inspector, formatValue } from '../ui/Inspector'
 import { Timeline, resolveTimelinePosition } from '../ui/timeline/Timeline'
 import { navigationActions, useNavigationStore } from '../navigation'
 import { usePlayback } from '../playback'
@@ -29,7 +29,9 @@ type ExampleId = CuratedExampleId
 function eventDescribesSelection(event: TraceEvent, selection: NonNullable<Selection>): boolean {
   const id = selection.kind === 'reference' ? selection.id.replace(/^ref:/, '') : selection.id
   if (selection.kind === 'frame') return 'frameId' in event && event.frameId === id
-  if (selection.kind === 'object') return 'objectId' in event && event.objectId === id
+  // Passive boundary snapshots have the caller's source, not the object's
+  // defining/writing source. Keep selection navigation on actual operations.
+  if (selection.kind === 'object') return event.type !== 'OBJECT_OBSERVE' && 'objectId' in event && event.objectId === id
   if (selection.kind === 'slot' || selection.kind === 'reference') {
     if (event.type === 'DECLARE_LOCAL') return event.slot.id === id
     if (event.type === 'ENTER_METHOD') return event.locals.some((slot) => slot.id === id)
@@ -204,11 +206,20 @@ function ExecutionWorkspace({ trace, example, onChooseExample, embedded, onSourc
 
   useEffect(() => { navigationActions.resetView(); navigationActions.followExecution() }, [])
 
-  const array = Object.values(runtime.objects).find((object) => object.array)
+  const arrays = Object.values(runtime.objects).filter((object) => object.array)
+  const firstNonemptyArray = arrays.find((object) => (object.array?.length ?? 0) > 0)
+  const selectedArray = selection?.kind === 'object' ? arrays.find((object) => object.id === selection.id)
+    : selection?.kind === 'slot' ? arrays.find((object) => object.array?.elements.some((cell) => cell.id === selection.id)
+      || Object.values(object.array?.sparseElements ?? {}).some((cell) => cell.id === selection.id)) : undefined
+  const activityArray = runtime.arrayActivity ? runtime.objects[runtime.arrayActivity.objectId] : undefined
+  const array = selectedArray ?? (activityArray?.array ? activityArray : undefined) ?? firstNonemptyArray
   const latestException = runtime.exceptions.at(-1)
   const arrayName = array?.className ?? 'int[]'
-  const activity = runtime.arrayActivity
-  const scalar = (value: { kind: string; value?: number | boolean | string }) => value.kind === 'primitive' ? String(value.value) : '—'
+  const activity = runtime.arrayActivity?.objectId === array?.id ? runtime.arrayActivity : null
+  const scalar = (value: RuntimeValue) => formatValue(value, runtime.objects)
+  const arrayWrites = array ? runtime.arrayMutations.filter((mutation) => mutation.objectId === array.id).length : 0
+  const arrayPrefix = array?.array && array.array.elements.length < array.array.length
+  const arrayValues = array?.array ? `[${array.array.elements.map((cell) => scalar(cell.value)).join(', ')}${arrayPrefix ? `${array.array.elements.length ? ', ' : ''}…` : ''}]` : ''
   const selectionLive = !!selection && (scene.frames.some((node) => node.id === selection.id || node.slots.some((slot) => slot.id === selection.id)) || scene.objects.some((node) => node.id === selection.id || node.fields.some((slot) => slot.id === selection.id) || node.array?.cells.some((slot) => slot.id === selection.id)) || scene.references.some((edge) => edge.id === selection.id))
   const selectedLifetime = selection?.kind === 'slot' ? runtime.variableLifetimes.slice().reverse().find((life) => life.slot.id === selection.id) : undefined
   const focusSelection = () => {
@@ -287,20 +298,23 @@ function ExecutionWorkspace({ trace, example, onChooseExample, embedded, onSourc
           </div>
         </div>
         <span className="world-label world-label--compact" aria-live="polite">{isolatedSelection ? 'ISOLATED · ' : ''}{mode.replaceAll('_', ' ')}</span>
+        <div className="runtime-status-readouts">
         {!isolatedSelection && scene.stackDepth !== undefined && scene.stackDepth > 1 && <section className="call-status" aria-label="Call and return state">
           <span className="eyebrow">{runtime.status === 'ended' ? 'COMPLETE' : `${runtime.activeFrameIds.length} ${runtime.status === 'partial' ? 'LAST OBSERVED FRAMES' : 'LIVE FRAMES'}`}</span>
-          {runtime.returns.length > 0 && <div className="return-history"><span>{runtime.returns.length} returns</span>{runtime.returns.slice(-8).map((item) => <span key={item.eventId} title={item.expression}>{item.value.kind === 'primitive' ? String(item.value.value) : ''}</span>)}</div>}
-          {runtime.status === 'ended' && finalTransfer && <strong className="final-result">{finalSlot?.name ?? `Last return · ${runtime.frames[finalTransfer.frameId]?.methodName ?? 'method'}()`} = {finalTransfer.value.kind === 'primitive' ? String(finalTransfer.value.value) : ''}</strong>}
-          {guided && scene.returnFlow && runtime.status !== 'ended' && <span className="return-explanation">{scene.returnFlow.expression ?? `${scene.returnFlow.fromLabel} returns`}: {scene.returnFlow.value.kind === 'primitive' ? String(scene.returnFlow.value.value) : ''} → {scene.returnFlow.toLabel}</span>}
+          {runtime.returns.length > 0 && <div className="return-history"><span>{runtime.returns.length} returns</span>{runtime.returns.slice(-8).map((item) => <span key={item.eventId} title={`${item.expression ? `${item.expression}: ` : ''}${scalar(item.value)}`}>{scalar(item.value)}</span>)}</div>}
+          {runtime.status === 'ended' && finalTransfer && <strong className="final-result" title={scalar(finalTransfer.value)}>{finalSlot?.name ?? `Last return · ${runtime.frames[finalTransfer.frameId]?.methodName ?? 'method'}()`} = {scalar(finalTransfer.value)}</strong>}
+          {guided && scene.returnFlow && runtime.status !== 'ended' && <span className="return-explanation" title={scalar(scene.returnFlow.value)}>{scene.returnFlow.expression ?? `${scene.returnFlow.fromLabel} returns`}: {scalar(scene.returnFlow.value)} → {scene.returnFlow.toLabel}</span>}
         </section>}
         {array?.array && <section className="call-status array-status" aria-label="Array execution state">
-          <span className="eyebrow">{runtime.status === 'ended' ? 'EXECUTION COMPLETE' : 'ARRAY EXECUTION'} · {runtime.arrayMutations.length} INDEXED WRITES</span>
-          {runtime.status === 'ended' ? <strong className="final-result">[{array.array.elements.map((cell) => scalar(cell.value)).join(', ')}]</strong>
+          <span className="eyebrow">{runtime.status === 'ended' ? 'EXECUTION COMPLETE' : 'ARRAY EXECUTION'} · {arrayName} #{array.displayId} · {arrayWrites} INDEXED WRITES</span>
+          {runtime.status === 'ended' ? <strong className="final-result" title={arrayValues}>{arrayValues}</strong>
             : activity?.kind === 'compare' ? <strong>{curatedCompareCaption(activity, scalar)}</strong>
             : activity?.kind === 'write' ? <strong>[{activity.index}]: {scalar(activity.before)} → {scalar(activity.after)}</strong>
             : activity?.kind === 'read' ? <strong>Read [{activity.index}] = {scalar(activity.value)}</strong> : <strong>{arrayName} · {array.array.length} elements</strong>}
+          {arrayPrefix && <span className="return-explanation">Observed prefix · {array.array.elements.length} of {array.array.length} elements</span>}
           {activity && runtime.status !== 'ended' && <span className="return-explanation">{activity.kind === 'compare' ? `Compare indices ${activity.indices.join(' and ')}` : activity.kind === 'write' ? `Value from ${activity.from?.kind === 'element' ? `[${activity.from.index}]` : activity.from?.kind === 'slot' ? 'local slot' : 'observed JVM store'} · cells stay at their indices` : activity.destinationSlotId ? 'Value assigned to a local slot' : 'Observed indexed read'}</span>}
         </section>}
+        </div>
         {hasScopes && <ControlFlowStatus runtime={runtime} event={event} guided={guided} />}
         {runtime.status === 'aborted' && <div className="event-chip event-chip--failure" title={latestException?.message ?? runtime.abortReason ?? undefined}><strong>{latestException ? latestException.className.split('.').at(-1) : 'Recording stopped'}</strong> · {latestException?.message ?? runtime.abortReason}</div>}
         {runtime.status === 'partial' && <div className="event-chip" role="status" title="The world shows the last observed state. Java execution and its exit are reported separately."><strong>Visualization partial</strong> · {runtime.recordingStop?.reason} · Last recorded state</div>}

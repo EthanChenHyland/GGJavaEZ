@@ -1,0 +1,26 @@
+{
+  "category": 18,
+  "mainClass": "Main",
+  "stdout": "13\n",
+  "stderr": "",
+  "exitCode": 0,
+  "recording": "FULL",
+  "facts": [
+    {
+      "kind": "invoked",
+      "owner": "Main$1",
+      "method": "apply"
+    },
+    {
+      "kind": "local",
+      "name": "result",
+      "javaType": "int",
+      "value": 13
+    },
+    {
+      "kind": "metadata",
+      "className": "Main$1",
+      "ownership": "PROJECT"
+    }
+  ]
+}

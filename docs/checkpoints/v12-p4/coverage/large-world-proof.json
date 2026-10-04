@@ -1,0 +1,17 @@
+{
+  "fixture": "28-bounded-values",
+  "exitCode": 0,
+  "recording": {
+    "state": "FULL",
+    "reason": null,
+    "budget": null,
+    "lastRecordedSeq": 248,
+    "executionContinued": true
+  },
+  "semanticEvents": 372,
+  "selected": {
+    "value": "jvm:object:o4",
+    "label": "long[] #4"
+  },
+  "errors": []
+}

@@ -1,0 +1,74 @@
+{
+  "category": 2,
+  "mainClass": "Main",
+  "stdout": "-128:32767:-2147483648:9007199254740993:-0.0:-Infinity:true:55296\n",
+  "stderr": "",
+  "exitCode": 0,
+  "recording": "FULL",
+  "facts": [
+    {
+      "kind": "arrayCell",
+      "array": "bytes",
+      "index": 1,
+      "javaType": "byte",
+      "value": -128,
+      "readAndWrite": true
+    },
+    {
+      "kind": "arrayCell",
+      "array": "shorts",
+      "index": 1,
+      "javaType": "short",
+      "value": 32767,
+      "readAndWrite": true
+    },
+    {
+      "kind": "arrayCell",
+      "array": "ints",
+      "index": 1,
+      "javaType": "int",
+      "value": -2147483648,
+      "readAndWrite": true
+    },
+    {
+      "kind": "arrayCell",
+      "array": "longs",
+      "index": 1,
+      "javaType": "long",
+      "value": "9007199254740993",
+      "readAndWrite": true
+    },
+    {
+      "kind": "arrayCell",
+      "array": "floats",
+      "index": 1,
+      "javaType": "float",
+      "value": "-0.0",
+      "readAndWrite": true
+    },
+    {
+      "kind": "arrayCell",
+      "array": "doubles",
+      "index": 1,
+      "javaType": "double",
+      "value": "-Infinity",
+      "readAndWrite": true
+    },
+    {
+      "kind": "arrayCell",
+      "array": "flags",
+      "index": 1,
+      "javaType": "boolean",
+      "value": true,
+      "readAndWrite": true
+    },
+    {
+      "kind": "arrayCell",
+      "array": "chars",
+      "index": 1,
+      "javaType": "char",
+      "value": "\ud800",
+      "readAndWrite": true
+    }
+  ]
+}

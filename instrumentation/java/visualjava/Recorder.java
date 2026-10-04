@@ -6,6 +6,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.lang.ref.WeakReference;
+import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.nio.ByteBuffer;
@@ -35,6 +36,9 @@ public final class Recorder {
   private static Path statusPath;
   private static final IdentityHashMap<Object, String> IDS = new IdentityHashMap<>();
   private static final IdentityHashMap<Object, Boolean> SEEN = new IdentityHashMap<>();
+  private static final Set<Class<?>> SEEN_CLASSES = new HashSet<>();
+  private static final IdentityHashMap<Object,String> FILE_PATHS = new IdentityHashMap<>();
+  private static int observationDepth;
   private static final java.util.Map<String,String> DISPATCH = new java.util.HashMap<>();
   private static final ThreadLocal<ControlContext> CONTROL = ThreadLocal.withInitial(ControlContext::new);
   private static final long EVENT_LIMIT = Long.getLong("visualjava.eventLimit", 20000L);
@@ -98,7 +102,7 @@ public final class Recorder {
       Runtime.getRuntime().addShutdownHook(new Thread(() -> {
         synchronized (LOCK) {
           try { if (out != null) out.close(); } catch (IOException ignored) {}
-          IDS.clear(); SEEN.clear(); DISPATCH.clear(); pending.clear();
+          IDS.clear(); SEEN.clear(); SEEN_CLASSES.clear(); FILE_PATHS.clear(); DISPATCH.clear(); pending.clear();
           if (recordingContext != null) clearPayload(recordingContext);
         }
       }, "VisualJava recorder cleanup"));
@@ -134,7 +138,7 @@ public final class Recorder {
     stopped=true; recordingState=state; reason=why; budget=triggeringBudget;
     lastRecordedSeq=seq == 0 ? null : seq-1;
     pending.clear(); pendingBytes=0; serializedBytes=0;
-    IDS.clear(); SEEN.clear(); DISPATCH.clear();
+    IDS.clear(); SEEN.clear(); SEEN_CLASSES.clear(); FILE_PATHS.clear(); DISPATCH.clear();
     if (recordingContext != null) clearPayload(recordingContext);
     // Null context keeps this bounded even for extremely long project identifiers.
     String record="{" + context("capture_saturated", null, -1, -1, null, null, seq)
@@ -152,7 +156,9 @@ public final class Recorder {
     writeStatus();
   }
   private static void limit(String which) {
-    stop("STOPPED_LIMIT", "Recording budget exceeded: " + which, which);
+    // Class and field metadata consume the same bounded identity-observation budget.
+    String category=which.equals("classes") || which.equals("object fields") ? "objects" : which;
+    stop("STOPPED_LIMIT", "Recording budget exceeded: " + which, category);
     throw PAYLOAD_STOPPED;
   }
   private static void write(byte[] bytes) throws IOException {
@@ -213,7 +219,7 @@ public final class Recorder {
         case '\n': b.append("\\n"); break;
         case '\r': b.append("\\r"); break;
         case '\t': b.append("\\t"); break;
-        default: if(c<32) { String hex=Integer.toHexString(c); b.append("\\u"); for(int j=hex.length();j<4;j++) b.append('0'); b.append(hex); } else b.append(c);
+        default: if(c<32 || Character.isSurrogate(c)) { String hex=Integer.toHexString(c); b.append("\\u"); for(int j=hex.length();j<4;j++) b.append('0'); b.append(hex); } else b.append(c);
       }
     }
     return b.append('"').toString();
@@ -225,7 +231,7 @@ public final class Recorder {
     long escaped=2;
     for (int i=0;i<s.length();i++) {
       char c=s.charAt(i);
-      escaped+=c=='"'||c=='\\'||c=='\n'||c=='\r'||c=='\t' ? 2 : c<32 ? 6 : c<128 ? 1 : c<2048 ? 2 : 3;
+      escaped+=c=='"'||c=='\\'||c=='\n'||c=='\r'||c=='\t' ? 2 : (c<32 || Character.isSurrogate(c)) ? 6 : c<128 ? 1 : c<2048 ? 2 : 3;
       room(escaped);
     }
     reserve(escaped);
@@ -240,7 +246,7 @@ public final class Recorder {
     String created="o" + (++objectSequence); IDS.put(object, created); return created;
   }
   private static String context(String type, Frame frame, int line, int site, String classOverride, String descriptorOverride, long sequence) {
-    return "\"v\":1,\"provenanceVersion\":1,\"seq\":" + sequence + ",\"threadId\":" + quote(Long.toString(Thread.currentThread().threadId()))
+    return "\"v\":1,\"provenanceVersion\":1,\"coverageVersion\":1,\"seq\":" + sequence + ",\"threadId\":" + quote(Long.toString(Thread.currentThread().threadId()))
       + ",\"type\":" + quote(type) + ",\"frameId\":" + quote(frame == null ? null : frame.id)
       + ",\"className\":" + quote(classOverride == null ? frame == null ? null : frame.owner : classOverride) + ",\"methodName\":" + quote(frame == null ? null : frame.method)
       + ",\"descriptor\":" + quote(descriptorOverride == null ? frame == null ? null : frame.descriptor : descriptorOverride) + ",\"line\":" + (line > 0 ? line : "null")
@@ -261,32 +267,28 @@ public final class Recorder {
     return new FilterInputStream(original) {
       @Override public int read() throws IOException {
         inputBoundary(true);
-        int value=-1;
-        try { value=in.read(); return value; }
-        finally { inputFinished(value); }
+        try { int value=in.read(); inputFinished(value); return value; }
+        finally { inputBoundary(false); }
       }
       @Override public int read(byte[] bytes,int offset,int length) throws IOException {
         java.util.Objects.checkFromIndexSize(offset,length,bytes.length);
         if (length==0) return in.read(bytes,offset,length);
         inputBoundary(true);
-        int count=-1;
-        try { count=in.read(bytes,offset,length); return count; }
-        finally {
-          final int readCount=count;
+        try {
+          final int readCount=in.read(bytes,offset,length);
           capture(() -> {
             Frame f=current(); room(Math.max(0,readCount));
             String text=readCount <= 0 ? "" : new String(bytes,offset,readCount,StandardCharsets.UTF_8);
             emit("stdin_read",f,f==null?-1:f.line,f==null?-1:f.site,"\"text\":"+q(text)+callContext());
           });
-          inputBoundary(false);
-        }
+          return readCount;
+        } finally { inputBoundary(false); }
       }
       private void inputFinished(int value) {
         capture(() -> {
           Frame f=current(); String text=value<0 ? "" : new String(new byte[]{(byte)value},StandardCharsets.UTF_8);
           emit("stdin_read",f,f==null?-1:f.line,f==null?-1:f.site,"\"text\":"+q(text)+callContext());
         });
-        inputBoundary(false);
       }
     };
   }
@@ -327,40 +329,102 @@ public final class Recorder {
   }
 
   public static void observe(Object object) { if (!stopped) capture(() -> observeValue(object)); }
-  private static void observeValue(Object object) {
-    if (stopped) throw PAYLOAD_STOPPED;
-    if (object == null || object instanceof String) return;
-    if (object instanceof int[] array) {
-      String objectId=id(object); if (SEEN.put(object, Boolean.TRUE) != null) return;
-      room((long)array.length*2+2);
-      StringBuilder elements=new StringBuilder("[");
-      reserve(2);
-      for(int i=0;i<array.length;i++) {
-        String value=Integer.toString(array[i]); reserve(value.length()+(i>0 ? 1 : 0));
-        if(i>0) elements.append(','); elements.append(value); room(elements.length());
+  private static String ownership(Class<?> type) {
+    if (PROJECT_CLASSES.contains(type.getName())) return "PROJECT";
+    if (type.isSynthetic()) return "SYNTHETIC";
+    return type.getClassLoader()==null || type.getClassLoader()==ClassLoader.getPlatformClassLoader() ? "JDK" : "LIBRARY";
+  }
+  private static String typeName(Class<?> type) { return type.isArray() ? typeName(type.getComponentType())+"[]" : type.getName(); }
+  private static String metadata(Class<?> type) {
+    StringBuilder result=new StringBuilder("{\"ownership\":").append(q(ownership(type)))
+      .append(",\"runtimeType\":").append(q(typeName(type))).append(",\"packageName\":").append(q(type.getPackageName()))
+      .append(",\"synthetic\":").append(type.isSynthetic() || type.isAnonymousClass()).append(",\"record\":").append(type.isRecord())
+      .append(",\"enum\":").append(type.isEnum());
+    if(type.isRecord()) {
+      result.append(",\"components\":[");boolean first=true;
+      for(java.lang.reflect.RecordComponent component:type.getRecordComponents()) {
+        if(!first)result.append(',');first=false;
+        result.append("{\"name\":").append(q(component.getName())).append(",\"javaType\":").append(q(typeName(component.getType()))).append('}');
       }
-      elements.append(']');
-      Frame f=current(); emit("array", f, f==null ? -1:f.line, f==null ? -1:f.site,
-        "\"objectId\":"+q(objectId)+",\"elementType\":\"int\",\"elements\":"+elements);
+      result.append(']');
+    }
+    return result.append('}').toString();
+  }
+  private static void observeValue(Object object) { observeValue(object,false,null); }
+  private static void observeValue(Object object,boolean refresh,String viewKind) {
+    if (stopped) throw PAYLOAD_STOPPED;
+    if (object == null) return;
+    Class<?> type=object.getClass();String objectId=id(object);
+    boolean seen=SEEN.put(object,Boolean.TRUE)!=null;
+    if(seen && !refresh)return;
+    Frame f=current();int line=f==null?-1:f.line,site=f==null?-1:f.site;
+    String common="\"objectId\":"+q(objectId)+",\"metadata\":"+metadata(type);
+    if(object instanceof String string) {
+      if(seen)return;
+      SemanticObservations.StringSnapshot snapshot=StringObservations.snapshot(string);
+      emit("string_object",f,line,site,common+",\"value\":"+q(snapshot.preview)+",\"length\":"+snapshot.length+",\"truncated\":"+snapshot.truncated,type.getName(),null);
       return;
     }
-    Class<?> type=object.getClass();
-    if (type.isArray() || !PROJECT_CLASSES.contains(type.getName())) return;
-    String objectId=id(object); if (SEEN.put(object, Boolean.TRUE) != null) return;
-    StringBuilder fields=new StringBuilder("["); boolean first=true;
-    for(Class<?> c=type;c!=null && c.getClassLoader()!=null;c=c.getSuperclass()) for(Field field:c.getDeclaredFields()) {
-      if(Modifier.isStatic(field.getModifiers()) || field.isSynthetic()) continue;
-      try {
-        field.setAccessible(true); Object value=field.get(object);
-        if(!first) fields.append(','); first=false;
-        fields.append("{\"owner\":").append(q(c.getName())).append(",\"name\":").append(q(field.getName()))
-          .append(",\"descriptor\":").append(q(descriptor(field.getType()))).append(",\"value\":")
-          .append(raw(value,descriptor(field.getType()),true)).append('}');
-        room(fields.length());
-      } catch (ReflectiveOperationException e) { throw new IllegalStateException("Cannot inspect field",e); }
+    if(type.isArray()) {
+      if(seen)return;
+      int length=Array.getLength(object),count=Math.min(length,SemanticObservations.MAX_CHILD_REFERENCES);
+      String elementDescriptor=descriptor(type.getComponentType());StringBuilder elements=new StringBuilder("[");
+      observationDepth++;
+      try { for(int i=0;i<count;i++){if(i>0)elements.append(',');elements.append(raw(Array.get(object,i),elementDescriptor,true));} }
+      finally { observationDepth--; }
+      elements.append(']');
+      emit("array",f,line,site,common+",\"elementType\":"+q(typeName(type.getComponentType()))+",\"length\":"+length+",\"truncated\":"+(count<length)+",\"elements\":"+elements);
+      return;
     }
-    fields.append(']'); Frame f=current(); emit("object",f,f==null?-1:f.line,f==null?-1:f.site,
-      "\"objectId\":"+q(objectId)+",\"fields\":"+fields,type.getName(),null);
+    if(!PROJECT_CLASSES.contains(type.getName())) {
+      SemanticObservations.CollectionSnapshot snapshot=observationDepth<8 ? CollectionObservations.snapshot(object,viewKind) : null;
+      StringBuilder summary=new StringBuilder("{\"kind\":").append(q(snapshot==null?"OPAQUE":snapshot.kind));
+      String boxed=boxedDescriptor(type);
+      if(!boxed.isEmpty()) summary=new StringBuilder("{\"kind\":\"BOXED\",\"value\":").append(raw(object,boxed,false));
+      else if(snapshot!=null) {
+        if(snapshot.size!=null)summary.append(",\"size\":").append(snapshot.size);
+        if(snapshot.order!=null)summary.append(",\"order\":").append(q(snapshot.order));
+        summary.append(",\"truncated\":").append(snapshot.truncated);
+        if(snapshot.reason!=null)summary.append(",\"reason\":").append(q(snapshot.reason));
+        summary.append(",\"items\":[");observationDepth++;
+        try {
+          for(int i=0;i<snapshot.items.length;i++){if(i>0)summary.append(',');summary.append(raw(snapshot.items[i],"Ljava/lang/Object;",true));}
+          summary.append("],\"entries\":[");
+          for(int i=0;i<snapshot.entries.length;i++) {
+            if(i>0)summary.append(',');SemanticObservations.Entry entry=snapshot.entries[i];
+            summary.append("{\"key\":").append(raw(entry.key,"Ljava/lang/Object;",true)).append(",\"value\":").append(raw(entry.value,"Ljava/lang/Object;",true)).append('}');
+          }
+          summary.append(']');
+        } finally { observationDepth--; }
+      } else summary.append(",\"truncated\":true,\"reason\":\"Bounded observation depth\"");
+      emit("library",f,line,site,common+",\"summary\":"+summary.append('}'),type.getName(),null);
+      return;
+    }
+    StringBuilder fields=new StringBuilder("[");boolean first=true;int count=0;observationDepth++;
+    try {
+      for(Class<?> c=type;c!=null && PROJECT_CLASSES.contains(c.getName());c=c.getSuperclass()) for(Field field:c.getDeclaredFields()) {
+        if(Modifier.isStatic(field.getModifiers()))continue;
+        if(++count>256)limit("object fields");
+        Object value;String encoded;
+        try { if(!field.trySetAccessible())throw new IllegalAccessException();value=field.get(object);encoded=raw(value,descriptor(field.getType()),true); }
+        catch(ReflectiveOperationException | SecurityException inaccessible) {encoded="{\"kind\":\"unsupported\",\"javaType\":"+q(typeName(field.getType()))+"}";}
+        if(!first)fields.append(',');first=false;
+        fields.append("{\"owner\":").append(q(c.getName())).append(",\"name\":").append(q(field.getName()))
+          .append(",\"descriptor\":").append(q(descriptor(field.getType()))).append(",\"synthetic\":").append(field.isSynthetic())
+          .append(",\"value\":").append(encoded).append('}');room(fields.length());
+      }
+    } finally {observationDepth--;}
+    emit("object",f,line,site,common+",\"resnapshot\":"+seen+",\"fields\":"+fields.append(']'),type.getName(),null);
+    if(object instanceof java.util.Collection<?> || object instanceof java.util.Map<?,?>) {
+      // User subclasses keep their real project fields. Their inherited JDK
+      // storage is deliberately opaque: never dispatch an overridden accessor.
+      emit("library",f,line,site,common+",\"summary\":{\"kind\":\"OPAQUE\",\"truncated\":true,\"reason\":\"Project collection subclass; no safe exact-class adapter\"}",type.getName(),null);
+    }
+  }
+  private static String boxedDescriptor(Class<?> type) {
+    if(type==Boolean.class)return "Z";if(type==Byte.class)return "B";if(type==Character.class)return "C";
+    if(type==Short.class)return "S";if(type==Integer.class)return "I";if(type==Long.class)return "J";
+    if(type==Float.class)return "F";if(type==Double.class)return "D";return "";
   }
   private static String descriptor(Class<?> type) {
     if(type==void.class)return "V"; if(type==boolean.class)return "Z"; if(type==byte.class)return "B";
@@ -374,21 +438,21 @@ public final class Recorder {
     char d=descriptor.charAt(0);
     String kind=switch(d) { case 'Z'->"boolean";case 'B'->"byte";case 'C'->"char";case 'S'->"short";case 'I'->"int";case 'J'->"long";case 'F'->"float";case 'D'->"double";default->""; };
     if(!kind.isEmpty()) {
-      String literal = d=='C' ? q(String.valueOf((char)value)) : String.valueOf(value);
-      if((d=='F'||d=='D') && !Double.isFinite(((Number)value).doubleValue())) return "{\"kind\":\"unsupported\",\"javaType\":"+q(descriptor)+"}";
+      String literal=d=='C' ? q(String.valueOf((char)value)) : d=='J' ? q(Long.toString((Long)value)) : String.valueOf(value);
+      if(d=='F'||d=='D') {
+        double number=((Number)value).doubleValue();
+        if(Double.isNaN(number))literal=q("NaN");else if(number==Double.POSITIVE_INFINITY)literal=q("Infinity");else if(number==Double.NEGATIVE_INFINITY)literal=q("-Infinity");
+        else if(number==0 && Double.doubleToRawLongBits(number)<0)literal=q("-0.0");
+      }
       return "{\"kind\":"+q(kind)+",\"value\":"+literal+"}";
     }
-    if(value instanceof String s) return "{\"kind\":\"string\",\"value\":"+q(s)+"}";
-    if(value instanceof int[]) { if(register) observeValue(value); return "{\"kind\":\"ref\",\"objectId\":"+q(id(value))+",\"className\":\"int[]\"}"; }
-    if(value.getClass().isArray() || !PROJECT_CLASSES.contains(value.getClass().getName()))
-      return "{\"kind\":\"unsupported\",\"javaType\":"+q(value.getClass().getName())+"}";
-    if(register) observeValue(value);
-    return "{\"kind\":\"ref\",\"objectId\":"+q(id(value))+",\"className\":"+q(value.getClass().getName())+"}";
+    if(register)observeValue(value);
+    return "{\"kind\":\"ref\",\"objectId\":"+q(id(value))+",\"className\":"+q(typeName(value.getClass()))+"}";
   }
   private static final class PendingCall {
-    final long token;final Frame frame;final int site,line;final String name,descriptor,targetOwner;
-    PendingCall(long token,Frame frame,String name,String descriptor,String targetOwner,int site) {
-      this.site=site;this.line=frame.line;this.token=token;this.frame=frame;this.name=name;this.descriptor=descriptor;this.targetOwner=targetOwner;
+    final long token;final Frame frame;final int site,line;final String name,descriptor,targetOwner,owner;final Object[] arguments;
+    PendingCall(long token,Frame frame,String name,String descriptor,String targetOwner,int site,String owner,Object[] arguments) {
+      this.site=site;this.line=frame.line;this.token=token;this.frame=frame;this.name=name;this.descriptor=descriptor;this.targetOwner=targetOwner;this.owner=owner;this.arguments=arguments;
     }
   }
   private static String callContext() {
@@ -445,11 +509,17 @@ public final class Recorder {
       String kind=switch(opcode){case 184->"static";case 185->"interface";case 183->"special";case 186->"dynamic";default->"virtual";};
       emit("call",frame,frame.line,site,"\"callId\":"+q("c"+id)+",\"invokeKind\":"+q(kind)+",\"owner\":"+q(owner)+",\"name\":"+q(name)
         +",\"callDescriptor\":"+q(descriptor)+",\"receiver\":"+(receiver==null?"null":raw(receiver,"L"+owner.replace('.','/')+";",true))
-        +",\"arguments\":"+values+",\"argumentOrigins\":"+origins+",\"receiverOrigin\":"+receiverOrigin);
+        +",\"ownership\":"+q(ownerOwnership(owner,receiver))+",\"arguments\":"+values+",\"argumentOrigins\":"+origins+",\"receiverOrigin\":"+receiverOrigin);
       String targetOwner=resolvedTarget(opcode,owner,name,descriptor,receiver,declaredTarget);
-      CONTROL.get().calls.push(new PendingCall(id,frame,name,descriptor,targetOwner,site));token[0]=id;
+      CONTROL.get().calls.push(new PendingCall(id,frame,name,descriptor,targetOwner,site,owner,arguments));token[0]=id;
     });
     return token[0];
+  }
+  private static String ownerOwnership(String owner,Object receiver) {
+    if(PROJECT_CLASSES.contains(owner))return "PROJECT";
+    if(receiver!=null && receiver.getClass().isSynthetic())return "SYNTHETIC";
+    try {Class<?> type=Class.forName(owner,false,ClassLoader.getPlatformClassLoader());return ownership(type);}
+    catch(ClassNotFoundException | LinkageError | SecurityException unavailable) {return "LIBRARY";}
   }
   /** Resolve metadata only, without invoking user methods or loading classes by user loaders. */
   private static String resolvedTarget(int opcode,String owner,String name,String signature,Object receiver,String declaredTarget) {
@@ -501,6 +571,23 @@ public final class Recorder {
       emit("call_return",frame,pending.line,pending.site,"\"callId\":"+q("c"+token)+",\"value\":"+(descriptor.equals("V")?"{\"kind\":\"null\"}":raw(value,descriptor,true))+input);
       if(newSite>=0 && value!=null && PROJECT_CLASSES.contains(value.getClass().getName()))
         emit("constructed",frame,pending.line,pending.site,"\"objectId\":"+q(id(value))+",\"className\":"+q(value.getClass().getName())+",\"newSite\":"+newSite);
+      // Only real successful calls can produce I/O facts. Never repeat the operation.
+      var io=FileIoObservations.successful(pending.owner,pending.name,pending.descriptor,receiver,pending.arguments,value);
+      if((pending.owner.equals("java.nio.file.Path")||pending.owner.equals("java.nio.file.Paths")) && (pending.name.equals("of")||pending.name.equals("get"))
+          && value!=null && pending.arguments.length==2 && pending.arguments[0] instanceof String path && pending.arguments[1] instanceof String[] more
+          && more.length==0 && path.length()<=256 && FILE_PATHS.size()<256)FILE_PATHS.put(value,path);
+      // A buffered wrapper alone is not proof of a file resource (e.g. StringReader).
+      if(io!=null && (receiver==null || FILE_PATHS.containsKey(receiver))) {
+        String path=io.path;
+        if(path==null && io.resource!=null)path=FILE_PATHS.get(io.resource);
+        if(path==null && pending.arguments.length>0)path=FILE_PATHS.get(pending.arguments[0]);
+        if(io.resource!=null && FILE_PATHS.size()<256 && (path!=null || receiver==null && io.operation.equals("open")))FILE_PATHS.put(io.resource,path);
+        emit("file_io",frame,pending.line,pending.site,"\"operation\":"+q(io.operation)+",\"path\":"+q(path)+",\"callId\":"+q("c"+token)
+          +(io.byteCount==null?"":",\"byteCount\":"+io.byteCount)+(io.charCount==null?"":",\"charCount\":"+io.charCount)
+          +(io.preview==null?"":",\"preview\":"+q(io.preview))+",\"truncated\":"+io.truncated);
+      }
+      if(receiver!=null && (PROJECT_CLASSES.contains(receiver.getClass().getName()) || receiver instanceof java.util.Collection<?> || receiver instanceof java.util.Map<?,?>))
+        observeValue(receiver,true,pending.owner.equals("java.util.Queue")?"QUEUE":pending.owner.equals("java.util.Deque")?"DEQUE":null);
       c.calls.pop();
     });
   }
@@ -510,7 +597,7 @@ public final class Recorder {
   }
   /** An unresolved declaration cannot produce a truthful storage identity. Java already succeeded. */
   public static void unsupportedField() {
-    if(!stopped)capture(() -> stop("STOPPED_UNSUPPORTED","Field declaration metadata unavailable",null));
+    if(!stopped)capture(() -> stop("STOPPED_UNSUPPORTED","Field storage outside observed project declarations",null));
   }
   public static void fieldRead(Object receiver,Object value,String owner,String name,String descriptor,int site) {
     if(stopped)return;
@@ -549,8 +636,10 @@ public final class Recorder {
       if (c.depth >= FRAME_LIMIT) limit("live frames");
       Frame frame=new Frame("f"+(++frameSequence),owner,method,descriptor,line,site);
       String receiverValue=receiver==null ? "null" : raw(receiver,"L"+owner.replace('.','/')+";",true);
+      int packageEnd=owner.lastIndexOf('.');
+      String entryMetadata="{\"ownership\":\"PROJECT\",\"runtimeType\":"+q(owner)+",\"packageName\":"+q(packageEnd<0?"":owner.substring(0,packageEnd))+"}";
       emit("enter",frame,line,site,"\"callerFrameId\":"+q(caller==null?null:caller.id)+",\"receiver\":"+receiverValue
-        +",\"parameters\":["+String.join(",",c.parameters)+"]"+(callId==null?"":",\"callId\":"+q(callId)));
+        +",\"metadata\":"+entryMetadata+",\"parameters\":["+String.join(",",c.parameters)+"]"+(callId==null?"":",\"callId\":"+q(callId)));
       entered[0]=frame;
     });
     synchronized (LOCK) {
@@ -612,11 +701,53 @@ public final class Recorder {
         +",\"value\":"+raw(value,descriptor,true)+takeOrigin(),null,descriptor);
     });
   }
-  public static void arrayRead(int[] array,int index,int value,int site) { arrayAccess("array_read",array,index,value,site); }
-  public static void arrayWrite(int[] array,int index,int value,int site) { arrayAccess("array_write",array,index,value,site); }
-  private static void arrayAccess(String type,int[] array,int index,int value,int site) {
-    if (stopped) return;
-    capture(() -> { observeValue(array); Frame f=current();if(f!=null)emit(type,f,f.line,site,"\"objectId\":"+q(id(array))+",\"index\":"+index+",\"value\":"+value+takeOrigin()); });
+  public static void arrayRead(Object array,int index,Object value,int site) { arrayAccess("array_read",array,index,value,site); }
+  public static void arrayWrite(Object array,int index,Object value,int site) { arrayAccess("array_write",array,index,value,site); }
+  private static void arrayAccess(String type,Object array,int index,Object value,int site) {
+    if(stopped)return;
+    capture(() -> {
+      observeValue(array);Frame f=current();if(f==null)return;
+      Class<?> component=array.getClass().getComponentType();
+      // The original opcode succeeded. Keep its operand/result, including JVM narrow
+      // stores, rather than rereading a cell that another producer could have changed.
+      Object actual=value;
+      if(component==byte.class)actual=((Number)value).byteValue();
+      else if(component==short.class)actual=((Number)value).shortValue();
+      else if(component==char.class && !(value instanceof Character))actual=(char)((Number)value).intValue();
+      else if(component==boolean.class && !(value instanceof Boolean))actual=(((Number)value).intValue()&1)!=0;
+      emit(type,f,f.line,site,"\"objectId\":"+q(id(array))+",\"index\":"+index+",\"elementType\":"+q(component.getTypeName())+",\"value\":"+raw(actual,descriptor(component),true)+takeOrigin());
+    });
+  }
+  public static void classInitialize(Class<?> owner,int site) {classSnapshot(owner,"started",site);}
+  public static void classInitialized(Class<?> owner,int site) {classSnapshot(owner,"completed",site);}
+  private static void classSnapshot(Class<?> owner,String initialization,int site) {
+    classSnapshot(owner,initialization,site,null,null);
+  }
+  private static void classSnapshot(Class<?> owner,String initialization,int site,String justWrittenName,String justWrittenDescriptor) {
+    if(stopped || !PROJECT_CLASSES.contains(owner.getName()))return;
+    capture(() -> {
+      if(SEEN_CLASSES.size()>=256&&!SEEN_CLASSES.contains(owner))limit("classes");
+      SEEN_CLASSES.add(owner);StringBuilder fields=new StringBuilder("[");boolean first=true;
+      for(Field field:owner.getDeclaredFields()) {
+        if(!Modifier.isStatic(field.getModifiers()))continue;
+        if(!first)fields.append(',');first=false;
+        String d=descriptor(field.getType());String value;
+        if(field.getName().equals(justWrittenName) && d.equals(justWrittenDescriptor))
+          value="{\"kind\":\"unsupported\",\"javaType\":"+q(typeName(field.getType()))+"}";
+        else try {value=field.trySetAccessible()?raw(field.get(null),d,true):"{\"kind\":\"unsupported\",\"javaType\":"+q(field.getType().getTypeName())+"}";}
+        catch(ReflectiveOperationException | RuntimeException unavailable) {value="{\"kind\":\"unsupported\",\"javaType\":"+q(field.getType().getTypeName())+"}";}
+        fields.append("{\"owner\":").append(q(owner.getName())).append(",\"name\":").append(q(field.getName())).append(",\"descriptor\":").append(q(d))
+          .append(",\"synthetic\":").append(field.isSynthetic()).append(",\"value\":").append(value).append('}');room(fields.length());
+      }
+      Frame f=current();emit("class_state",f,f==null?-1:f.line,site,"\"owner\":"+q(owner.getName())+",\"initialization\":"+q(initialization)+",\"fields\":"+fields.append(']')+",\"metadata\":"+metadata(owner));
+    });
+  }
+  public static void staticField(Class<?> owner,Object value,String name,String descriptor,int site) {staticAccess("static",owner,value,name,descriptor,site);}
+  public static void staticRead(Class<?> owner,Object value,String name,String descriptor,int site) {staticAccess("static_read",owner,value,name,descriptor,site);}
+  private static void staticAccess(String type,Class<?> owner,Object value,String name,String descriptor,int site) {
+    if(stopped)return;
+    if(!SEEN_CLASSES.contains(owner))classSnapshot(owner,"observed",site,type.equals("static")?name:null,type.equals("static")?descriptor:null);
+    capture(() -> {Frame f=current();emit(type,f,f==null?-1:f.line,site,"\"owner\":"+q(owner.getName())+",\"name\":"+q(name)+",\"value\":"+raw(value,descriptor,true)+takeOrigin(),null,descriptor);});
   }
   public static void branch(int opcode,Object left,Object right,int site) {
     if (stopped) return;
@@ -651,7 +782,10 @@ public final class Recorder {
   public static void explicitThrow(Throwable error,int site) { if(error!=null) thrown(error,true,site); }
   private static String safeMessage(Throwable error) {
     try {
-      if(error.getClass().getMethod("getMessage").getDeclaringClass().getClassLoader()!=null)return null;
+      Class<?> declaration=error.getClass().getMethod("getMessage").getDeclaringClass();
+      // Throwable.getMessage returns its stored String directly. Overridden JDK
+      // implementations can call user overrides (FileSystemException.getReason).
+      if(declaration!=Throwable.class && error.getClass()!=NullPointerException.class)return null;
       return error.getMessage();
     } catch(ReflectiveOperationException | SecurityException unavailable) { return null; }
   }

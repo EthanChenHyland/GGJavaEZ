@@ -1,0 +1,34 @@
+{
+  "category": "exceptions",
+  "mainClass": "Main",
+  "stdout": "caught:1:7\nstore-failed\n",
+  "stderr": "still-running\n",
+  "exitCode": 0,
+  "recording": "FULL",
+  "facts": [
+    {
+      "kind": "exception",
+      "className": "java.lang.ArrayIndexOutOfBoundsException",
+      "caught": true,
+      "unwoundMethod": "failing"
+    },
+    {
+      "kind": "exception",
+      "className": "java.lang.ArrayStoreException",
+      "caught": true
+    },
+    {
+      "kind": "static",
+      "owner": "Main",
+      "field": "attempts",
+      "javaType": "int",
+      "value": 1
+    },
+    {
+      "kind": "noSuccessfulArrayOperation",
+      "owner": "Main",
+      "method": "failing",
+      "operation": "array_read"
+    }
+  ]
+}

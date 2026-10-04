@@ -1,0 +1,35 @@
+{
+  "category": 11,
+  "mainClass": "Main",
+  "stdout": "true:2\n",
+  "stderr": "",
+  "exitCode": 0,
+  "recording": "FULL",
+  "facts": [
+    {
+      "kind": "collectionHistory",
+      "className": "java.util.HashSet",
+      "collectionKind": "SET",
+      "stages": [
+        {
+          "size": 3,
+          "items": [
+            "red",
+            "blue",
+            null
+          ],
+          "unordered": true
+        },
+        {
+          "size": 2,
+          "items": [
+            "blue",
+            null
+          ],
+          "unordered": true
+        }
+      ],
+      "order": "unordered"
+    }
+  ]
+}

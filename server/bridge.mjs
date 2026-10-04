@@ -12,6 +12,7 @@ import { runInstrumented } from './instrumentation-provider.mjs'
 import { buildInstrumentationSourceManifest } from './instrumentation-sources.mjs'
 import { DebugManager } from './debug-manager.mjs'
 import { ExecutionManager } from './execution-manager.mjs'
+import { createExecutionBuild } from './execution-build.mjs'
 import { transportOptions, handleExecutionRequest } from './execution-transport.mjs'
 
 const repository = resolve(fileURLToPath(new URL('..', import.meta.url)))
@@ -21,9 +22,9 @@ const projects = new ProjectStore(workspace)
 const runs = new RunManager()
 const debuggerSessions = new DebugManager()
 const executions = new ExecutionManager({
-  build: (id, debug) => builds.build(id, { debug }),
+  ...createExecutionBuild({ serialized, build: (id, debug) => builds.build(id, { debug }),
+    getProjectRoot: (id) => projects.getProjectRoot(id), buildManifest: buildInstrumentationSourceManifest }),
   resolveLaunch,
-  buildManifest: buildInstrumentationSourceManifest,
   getProjectRoot: (id) => projects.getProjectRoot(id),
   publicBuild,
   runs,
@@ -38,6 +39,26 @@ function serialized(work) {
   const next = executionQueue.then(work, work)
   executionQueue = next.catch(() => {})
   return next
+}
+
+const flattenEntries = entries => entries.flatMap(entry => [entry, ...flattenEntries(entry.children ?? [])])
+const withinEntry = (path, ancestor) => path === ancestor || path.startsWith(`${ancestor}/`)
+const languageUri = (id, path) => `inmemory://ggjavaez/${encodeURIComponent(id)}/${path.split('/').map(encodeURIComponent).join('/')}`
+async function filesystemChanged(id, changes) {
+  // File routes share the build queue: an old pending model cannot be published
+  // after invalidation, and the next Build/Run resolves the actual new tree.
+  await builds.pending.get(id)?.catch(() => {})
+  builds.models.delete(id)
+  if (language.status(id).status === 'stopped') return
+  try {
+    await language.notify(id, 'workspace/didChangeWatchedFiles', {
+      changes: changes.map(({ path, type }) => ({ uri: languageUri(id, path), type })),
+    })
+  } catch (error) {
+    // A stopped/unavailable JDT must not turn a committed filesystem move into
+    // an apparent failure. The client's next open refreshes the derived model.
+    console.warn('Java watched-file notification unavailable:', error.message)
+  }
 }
 
 await mkdir(workspace, { recursive: true })
@@ -137,18 +158,49 @@ const server = http.createServer(async (request, response) => {
       if (action === 'files' && method === 'GET') return json(response, 200, await projects.readFile(id, url.searchParams.get('path')))
       if (action === 'files' && method === 'PUT') {
         const { path, content, revision } = await body(request)
-        return json(response, 200, await projects.writeFile(id, path, content, revision))
+        return json(response, 200, await serialized(async () => {
+          const result = await projects.writeFile(id, path, content, revision)
+          await filesystemChanged(id, [{ path, type: 2 }])
+          return result
+        }))
       }
       if (action === 'files' && method === 'POST') {
         const { path, content } = await body(request)
-        return json(response, 201, await projects.createFile(id, path, content ?? ''))
+        return json(response, 201, await serialized(async () => {
+          const result = await projects.createFile(id, path, content ?? '')
+          await filesystemChanged(id, [{ path, type: 1 }])
+          return result
+        }))
       }
-      if (action === 'folders' && method === 'POST') return json(response, 201, await projects.createFolder(id, (await body(request)).path))
+      if (action === 'folders' && method === 'POST') {
+        const { path } = await body(request)
+        return json(response, 201, await serialized(async () => {
+          const result = await projects.createFolder(id, path)
+          await filesystemChanged(id, [{ path, type: 1 }])
+          return result
+        }))
+      }
       if (action === 'rename' && method === 'POST') {
-        const { from, to } = await body(request)
-        return json(response, 200, await projects.renameEntry(id, from, to))
+        const { from, to, operationId } = await body(request)
+        return json(response, 200, await serialized(async () => {
+          const receipt = await projects.renameEntry(id, from, to, { operationId })
+          const moved = flattenEntries(await projects.getTree(id)).filter(entry => entry.kind === 'file' && withinEntry(entry.path, to))
+          const paths = moved.length ? moved.map(entry => entry.path) : [to]
+          await filesystemChanged(id, paths.flatMap(path => [
+            { path: from + path.slice(to.length), type: 3 }, { path, type: 1 },
+          ]))
+          return receipt
+        }))
       }
-      if (action === 'entries' && method === 'DELETE') return json(response, 200, await projects.deleteEntry(id, url.searchParams.get('path')))
+      if (action === 'entries' && method === 'DELETE') {
+        const path = url.searchParams.get('path')
+        return json(response, 200, await serialized(async () => {
+          const removed = flattenEntries(await projects.getTree(id)).filter(entry => entry.kind === 'file' && withinEntry(entry.path, path))
+          const result = await projects.deleteEntry(id, path)
+          await filesystemChanged(id, (removed.length ? removed.map(entry => entry.path) : [path]).map(path => ({ path, type: 3 })))
+          return result
+        }))
+      }
       if (action === 'build' && method === 'POST') { await body(request); return json(response, 200, await serialized(async () => { await executions.stop(undefined, { transport: 'delta' }); await debuggerSessions.stop(undefined, { transport: 'delta' }); await runs.stop(); return publicBuild(await build(id)) })) }
       if (action === 'debug' && method === 'POST') {
         const configuration = await body(request)

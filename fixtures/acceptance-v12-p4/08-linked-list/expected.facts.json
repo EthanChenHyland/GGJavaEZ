@@ -1,0 +1,46 @@
+{
+  "category": 8,
+  "mainClass": "Main",
+  "stdout": "9:0\n",
+  "stderr": "",
+  "exitCode": 0,
+  "recording": "FULL",
+  "facts": [
+    {
+      "kind": "collectionHistory",
+      "className": "java.util.LinkedList",
+      "collectionKind": "LIST",
+      "stages": [
+        {
+          "size": 2,
+          "items": [
+            "head",
+            "tail"
+          ]
+        },
+        {
+          "size": 2,
+          "items": [
+            "tail",
+            "tail"
+          ]
+        },
+        {
+          "size": 1,
+          "items": [
+            "tail"
+          ]
+        },
+        {
+          "size": 0,
+          "items": []
+        }
+      ]
+    },
+    {
+      "kind": "alias",
+      "left": "chosen",
+      "right": "tail"
+    }
+  ]
+}

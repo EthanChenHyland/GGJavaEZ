@@ -1,0 +1,25 @@
+{
+  "category": 19,
+  "mainClass": "Main",
+  "stdout": "22\n",
+  "stderr": "",
+  "exitCode": 0,
+  "recording": "FULL",
+  "facts": [
+    {
+      "kind": "invoked",
+      "owner": "Main",
+      "method": "accumulate"
+    },
+    {
+      "kind": "static",
+      "owner": "Main",
+      "field": "total",
+      "javaType": "int",
+      "value": 22
+    },
+    {
+      "kind": "noMachineryFlood"
+    }
+  ]
+}

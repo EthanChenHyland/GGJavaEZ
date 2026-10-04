@@ -37,6 +37,7 @@ function valueLabel(value: RuntimeValue): string {
     case 'stringSummary': return JSON.stringify(value.value)
     case 'reference': return `→ ${value.objectId}`
     case 'null': return 'null'
+    case 'unavailable': return `unavailable (${value.reason})`
     case 'uninitialized': return 'uninitialized'
   }
 }

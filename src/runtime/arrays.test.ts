@@ -402,7 +402,7 @@ describe('array lifecycle and input validation', () => {
     expect(() => applyEvent(ordinary, { ...atCursor(read, ordinary.cursor), objectId: 'person' })).toThrow('not an int array')
     ;(allocation as unknown as { elementType: string }).elementType = 'double'
     expect(() => validateTrace(trace)).toThrow('Malformed event')
-    expect(() => applyEvent(seek(loadArrayTrace(), allocation.seq), allocation)).toThrow('element type must be int')
+    expect(() => applyEvent(seek(loadArrayTrace(), allocation.seq), allocation)).toThrow('Value type mismatch')
     const noFrame = applyEvent(createInitialState(), trace.events[0])
     expect(() => applyEvent(noFrame, atCursor(allocation, noFrame.cursor))).toThrow('requires an active frame')
   })

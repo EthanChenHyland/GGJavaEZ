@@ -74,6 +74,7 @@ test('Run returns BUILDING immediately, streams one recorder prefix and complete
   expect(initial).toMatchObject({ phase: 'BUILDING', kind: 'run', rawEvents: [] });
   const live = await until(h.manager, (session) => session.phase === 'RUNNING');
   expect(h.debug.start).toHaveBeenCalledOnce();
+  expect(h.deps.buildManifest).toHaveBeenCalledWith('/tmp', '/tmp/classes', ['Main.java'], buildResult);
   expect(h.debug.start.mock.calls[0][0].control).toBe(false);
   expect(h.runs.start).not.toHaveBeenCalled();
   h.emitDebug({ rawEvents: [observed, { ...observed, seq: 1, type: 'line' }], stdout: 'Hello\n' });

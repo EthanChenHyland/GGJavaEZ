@@ -8,6 +8,7 @@ export function emptyExecutionGraph(): ExecutionGraph {
 function same(a: RuntimeValue, b: RuntimeValue): boolean {
   if (a.kind !== b.kind) return false
   if (a.kind === 'reference' && b.kind === 'reference') return a.objectId === b.objectId
+  if (a.kind === 'unavailable' && b.kind === 'unavailable') return a.reason === b.reason && a.javaType === b.javaType
   return !('value' in a) || 'value' in b && a.value === b.value
 }
 function constantMatches(expected: RuntimeValue, actual: RuntimeValue): boolean {
@@ -18,7 +19,7 @@ function constantMatches(expected: RuntimeValue, actual: RuntimeValue): boolean 
 }
 const unknown: RuntimeValue = { kind: 'uninitialized' }
 /** One fact changes only its own graph paths. Plain and persistent engines share semantics. */
-export function applyExecutionFact(previous: ExecutionGraph | undefined, fact: ExecutionFact, eventId: string, store: Pick<ReductionStorage, 'put' | 'append'>): ExecutionGraph {
+export function applyExecutionFact(previous: ExecutionGraph | undefined, fact: ExecutionFact, eventId: string, store: Pick<ReductionStorage, 'put' | 'remove' | 'append'>): ExecutionGraph {
   let graph = previous ?? emptyExecutionGraph()
   const context = fact.context
   let serial = 0
@@ -48,10 +49,10 @@ export function applyExecutionFact(previous: ExecutionGraph | undefined, fact: E
     switch (recipe.kind) {
       case 'local': id = graph.storage[recipe.slotId]?.valueId; break
       case 'call_result': id = graph.results[key(recipe.site)]; break
-      case 'field_read': case 'array_read': id = graph.reads[key(recipe.site)]; break
+      case 'field_read': case 'static_read': case 'array_read': id = graph.reads[key(recipe.site)]; break
       case 'new': id = graph.results[key(recipe.site)]; break
       case 'constant':
-        return recipe.value.kind !== 'uninitialized' && (!observed || constantMatches(recipe.value, observed))
+        return recipe.value.kind !== 'uninitialized' && recipe.value.kind !== 'unavailable' && (!observed || constantMatches(recipe.value, observed))
           ? { id: value(observed ?? recipe.value, 'literal'), evidence: 'bytecode-derived' }
           : { id: value(observed ?? unknown, 'unknown'), evidence: 'unknown' }
       case 'computed': {
@@ -75,10 +76,39 @@ export function applyExecutionFact(previous: ExecutionGraph | undefined, fact: E
   switch (fact.kind) {
     case 'object': {
       if (graph.objects[fact.objectId]) throw new Error(`Duplicate graph object ${fact.objectId}`)
-      graph = { ...graph, objects: store.put(graph.objects, fact.objectId, { id: fact.objectId, className: fact.className, allocatedAt: eventId }) }
+      graph = { ...graph, objects: store.put(graph.objects, fact.objectId, { id: fact.objectId, className: fact.className, allocatedAt: eventId, ...(fact.boundedSummary ? { summarySlotIds: fact.fields.map(f => f.slotId) } : {}), ...(fact.metadata ? { metadata: fact.metadata } : {}) }) }
       for (const field of fact.fields) {
         const id = value(field.value, 'observed')
-        graph = { ...graph, storage: store.put(graph.storage, field.slotId, { id: field.slotId, ownerId: fact.objectId, kind: 'field', name: field.name, javaType: field.javaType, valueId: id }) }
+        graph = { ...graph, storage: store.put(graph.storage, field.slotId, { id: field.slotId, ownerId: fact.objectId, kind: field.storageKind ?? 'field', name: field.name, javaType: field.javaType, valueId: id }) }
+        edge('OBSERVE', id, field.slotId)
+      }
+      break
+    }
+    case 'class': case 'observe': {
+      const ownerId = fact.kind === 'class' ? fact.classId : fact.objectId
+      if (fact.kind === 'class') {
+        const prior = graph.classes?.[ownerId]
+        graph = { ...graph, classes: store.put(graph.classes ?? {}, ownerId, {
+          ...prior, id: ownerId, className: fact.className,
+          initialization: fact.initialization === 'observed' ? prior?.initialization ?? 'observed' : fact.initialization,
+          observedAt: eventId, ...(fact.metadata ? { metadata: fact.metadata } : {}),
+        }) }
+      }
+      else {
+        const object = graph.objects[ownerId]
+        if (!object) throw new Error(`Observation without graph object ${ownerId}`)
+        if (fact.replaceFields) {
+          const current = new Set(fact.fields.map(f => f.slotId))
+          for (const id of object.summarySlotIds ?? []) if (!current.has(id)) graph = { ...graph, storage: store.remove(graph.storage, id) }
+        }
+        graph = { ...graph, objects: store.put(graph.objects, ownerId, { ...object, observedAt: eventId, ...(fact.replaceFields ? { summarySlotIds: fact.fields.map(f => f.slotId) } : {}), ...(fact.metadata ? { metadata: fact.metadata } : {}) }) }
+      }
+      for (const field of fact.fields) {
+        const prior = graph.storage[field.slotId], priorValue = prior?.valueId ? graph.values[prior.valueId] : undefined
+        if (priorValue && same(priorValue.value, field.value)) continue
+        const id = value(field.value, 'observed')
+        graph = { ...graph, storage: store.put(graph.storage, field.slotId, { id: field.slotId, ownerId,
+          kind: fact.kind === 'class' ? 'static' : field.storageKind ?? 'field', name: field.name, javaType: field.javaType, valueId: id }) }
         edge('OBSERVE', id, field.slotId)
       }
       break
@@ -89,7 +119,7 @@ export function applyExecutionFact(previous: ExecutionGraph | undefined, fact: E
       const receiver = fact.receiver ? origin(fact.receiverOrigin, fact.receiver) : undefined
       graph = { ...graph, calls: store.put(graph.calls, fact.callId, { id: fact.callId, callerInvocationId: context.frameId,
         declared: fact.declared, invokeKind: fact.invokeKind, context, argumentValueIds: args.map(arg => arg.id), argumentOriginSlotIds: args.map(arg => arg.slotId ?? null),
-        ...(receiver ? { receiverValueId: receiver.id, ...(receiver.slotId ? { receiverOriginSlotId: receiver.slotId } : {}) } : {}), status: 'pending' }) }
+        ...(receiver ? { receiverValueId: receiver.id, ...(receiver.slotId ? { receiverOriginSlotId: receiver.slotId } : {}) } : {}), status: 'pending', ...(fact.ownership ? { ownership: fact.ownership } : {}) }) }
       if (context.frameId) edge('CALL', context.frameId, fact.callId)
       args.forEach((arg, index) => edge('ARGUMENT_BIND', arg.id, `${fact.callId}:argument:${index}`, arg.evidence, arg.slotId))
       if (receiver) edge('RECEIVER_BIND', receiver.id, fact.callId, receiver.evidence, receiver.slotId)
@@ -104,7 +134,7 @@ export function applyExecutionFact(previous: ExecutionGraph | undefined, fact: E
         id: fact.invocationId, method: fact.method, callerInvocationId: call?.callerInvocationId ?? null,
         ...(!call && fact.callerInvocationId ? { observedAncestorInvocationId: fact.callerInvocationId } : {}),
         ...(call ? { callId: call.id } : {}), ...(fact.receiver?.kind === 'reference' ? { receiverObjectId: fact.receiver.objectId } : {}),
-        parameterIds: fact.parameters.map(parameter => parameter.slotId), status: 'active', enteredAt: eventId,
+        parameterIds: fact.parameters.map(parameter => parameter.slotId), status: 'active', enteredAt: eventId, ...(fact.metadata ? { metadata: fact.metadata } : {}),
       }) }
       if (call) {
         graph = { ...graph, calls: store.put(graph.calls, call.id, { ...call, calleeInvocationId: fact.invocationId }) }
@@ -133,7 +163,7 @@ export function applyExecutionFact(previous: ExecutionGraph | undefined, fact: E
     }
     case 'write': {
       const producer = origin(fact.origin, fact.value)
-      write(fact.target, producer.id, fact.target.kind === 'field' ? 'FIELD_WRITE' : fact.target.kind === 'array-element' ? 'ARRAY_WRITE' : 'ASSIGN', producer.evidence, producer.slotId)
+      write(fact.target, producer.id, fact.target.kind === 'field' ? 'FIELD_WRITE' : fact.target.kind === 'static' ? 'STATIC_WRITE' : fact.target.kind === 'array-element' ? 'ARRAY_WRITE' : 'ASSIGN', producer.evidence, producer.slotId)
       if (fact.value.kind === 'reference') edge('REFERENCE_BIND', fact.target.id, fact.value.objectId)
       break
     }
@@ -141,7 +171,7 @@ export function applyExecutionFact(previous: ExecutionGraph | undefined, fact: E
       const result = value(fact.value, 'observed')
       graph = { ...graph, reads: store.put(graph.reads, key(context.site ?? -1), result) }
       if (!graph.storage[fact.target.id]) graph = { ...graph, storage: store.put(graph.storage, fact.target.id, { ...fact.target }) }
-      edge(fact.target.kind === 'field' ? 'FIELD_READ' : 'ARRAY_READ', fact.target.id, result)
+      edge(fact.target.kind === 'field' ? 'FIELD_READ' : fact.target.kind === 'static' ? 'STATIC_READ' : 'ARRAY_READ', fact.target.id, result)
       break
     }
     case 'return': {
@@ -210,6 +240,28 @@ export function applyExecutionFact(previous: ExecutionGraph | undefined, fact: E
       if (fact.channel !== 'stdin') edge('OUTPUT', call?.id ?? context.frameId ?? `io:${fact.channel}:unknown-operation:${eventId}`, id, call || context.frameId ? 'observed' : 'unknown')
       break
     }
+    case 'file': {
+      const id = fresh('file'), call = fact.callId ? graph.calls[fact.callId] : undefined
+      graph = { ...graph, io: store.put(graph.io, id, { id, kind: 'file', channel: 'file', text: fact.text,
+        operation: fact.operation, path: fact.path, eventId, context, ...(call ? { callId: call.id } : {}),
+        ...(fact.byteCount === undefined ? {} : { byteCount: fact.byteCount }),
+        ...(fact.charCount === undefined ? {} : { charCount: fact.charCount }),
+        ...(fact.truncated === undefined ? {} : { truncated: fact.truncated }) }) }
+      edge('FILE_OPERATION', call?.id ?? context.frameId ?? `file:unknown:${eventId}`, id, call || context.frameId ? 'observed' : 'unknown')
+      if (fact.operation === 'read' && call?.resultValueId) edge('FILE_READ', id, call.resultValueId)
+      // Only exact successful API signatures prove which argument supplied text.
+      // Arbitrary CharSequence implementations and mutable buffers stay opaque.
+      if (fact.operation === 'write' && call) {
+        const textIndex = call.declared.owner === 'java.nio.file.Files' && call.declared.name === 'writeString'
+          && call.declared.descriptor.startsWith('(Ljava/nio/file/Path;Ljava/lang/CharSequence;') ? 1
+          : ['java.io.BufferedWriter', 'java.io.Writer'].includes(call.declared.owner) && call.declared.name === 'write'
+            && call.declared.descriptor.startsWith('(Ljava/lang/String;') ? 0 : -1
+        const valueId = call.argumentValueIds[textIndex], observed = valueId && graph.values[valueId]?.value
+        if (observed && (observed.kind === 'stringSummary' || observed.kind === 'reference' && ['String', 'java.lang.String'].includes(observed.javaType)))
+          edge('FILE_WRITE', valueId, id)
+      }
+      break
+    }
   }
   return graph
 }
@@ -229,14 +281,14 @@ export function invocationInputs(graph: ExecutionGraph, id: string) {
 }
 export function fieldOrigin(graph: ExecutionGraph, id: string) {
   const field = graph.storage[id]
-  if (field?.kind !== 'field') return null
+  if (field?.kind !== 'field' && field?.kind !== 'static') return null
   return { field, value: field.valueId ? graph.values[field.valueId] : undefined,
     writer: field.writerInvocationId ? graph.invocations[field.writerInvocationId] : undefined,
-    writes: incomingEdges(graph, id).filter(edge => edge.kind === 'FIELD_WRITE' || edge.kind === 'OBSERVE') }
+    writes: incomingEdges(graph, id).filter(edge => edge.kind === 'FIELD_WRITE' || edge.kind === 'STATIC_WRITE' || edge.kind === 'OBSERVE') }
 }
 export function returnDestinations(graph: ExecutionGraph, invocationId: string): GraphEdge[] {
   const id = graph.invocations[invocationId]?.returnValueId
-  return id ? outgoingEdges(graph, id).filter(edge => ['ASSIGN', 'FIELD_WRITE', 'ARRAY_WRITE', 'ARGUMENT_BIND', 'COMPUTE', 'RETURN'].includes(edge.kind)) : []
+  return id ? outgoingEdges(graph, id).filter(edge => ['ASSIGN', 'FIELD_WRITE', 'STATIC_WRITE', 'ARRAY_WRITE', 'ARGUMENT_BIND', 'COMPUTE', 'RETURN'].includes(edge.kind)) : []
 }
 export function operationOutput(graph: ExecutionGraph, callId: string) {
   return outgoingEdges(graph, callId).filter(edge => edge.kind === 'OUTPUT').map(edge => graph.io[edge.to])

@@ -1,0 +1,46 @@
+{
+  "category": "bounded-observation",
+  "mainClass": "Main",
+  "stdout": "100000:9007199254740993:40\n",
+  "stderr": "",
+  "exitCode": 0,
+  "recording": "FULL",
+  "facts": [
+    {
+      "kind": "string",
+      "local": "text",
+      "length": 100000,
+      "truncated": true,
+      "noInternals": true
+    },
+    {
+      "kind": "arrayShape",
+      "array": "values",
+      "elementType": "long",
+      "length": 100000,
+      "bounded": true
+    },
+    {
+      "kind": "arrayCell",
+      "array": "values",
+      "index": 99999,
+      "javaType": "long",
+      "value": "9007199254740993",
+      "readAndWrite": true
+    },
+    {
+      "kind": "collectionHistory",
+      "className": "java.util.ArrayList",
+      "collectionKind": "LIST",
+      "stages": [
+        {
+          "size": 40,
+          "truncated": true
+        }
+      ]
+    },
+    {
+      "kind": "boundedPreviews"
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "category": "observer-limits",
+  "mainClass": "Main",
+  "stdout": "6000:9003000\ncontinued\n",
+  "stderr": "caught-after-limit\n",
+  "exitCode": 0,
+  "recording": "STOPPED_LIMIT",
+  "facts": [
+    {
+      "kind": "recordingStopped",
+      "budget": "events"
+    }
+  ],
+  "rawEventLimit": 24
+}

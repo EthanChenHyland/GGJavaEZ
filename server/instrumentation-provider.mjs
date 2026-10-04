@@ -10,7 +10,8 @@ import { javaLaunchArgs, launchRequest } from './launch.mjs';
 import { RawTraceArchive } from './raw-trace-archive.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const javaSources = ['Recorder', 'OfflineTransformer', 'DebugControl'].map((name) => join(root, `instrumentation/java/visualjava/${name}.java`));
+const javaSources = ['Recorder', 'OfflineTransformer', 'DebugControl', 'SemanticObservations', 'CollectionObservations', 'StringObservations', 'FileIoObservations', 'JdkAccess'].map((name) => join(root, `instrumentation/java/visualjava/${name}.java`));
+javaSources.push(join(root, 'instrumentation/java/module-info.java'));
 const jars = ['asm', 'asm-tree', 'asm-util', 'asm-analysis'].map((name) => join(root, `instrumentation/lib/${name}-9.10.1.jar`));
 const hashes = {
   'asm-9.10.1.jar': 'ed825d10ab1399c8c0cb669e688cf0c8c82629b4c8399b58352b68e92ca10fcb',
@@ -278,7 +279,7 @@ export async function prepareInstrumented(request, { spawnProcess = spawn } = {}
     const helper = join(temp, 'helper'), transformed = join(temp, 'transformed'), trace = join(temp, 'raw.ndjson');
     await mkdir(helper); await mkdir(transformed);
     const transformStart = performance.now();
-    const compiled = await run(request.javacPath, ['-encoding', 'UTF-8', '-cp', jars.join(delimiter), '-d', helper, ...javaSources], { timeoutMs: preparationTimeoutMs, spawnProcess });
+    const compiled = await run(request.javacPath, ['-encoding', 'UTF-8', '--add-reads=visualjava.observer=ALL-UNNAMED', '-cp', jars.join(delimiter), '-d', helper, ...javaSources], { timeoutMs: preparationTimeoutMs, spawnProcess });
     if (compiled.code !== 0 || compiled.stopped) throw new Error(`Instrumentation helper compilation failed: ${compiled.stderr || compiled.stopped}`);
     const classpath = [helper, ...jars].join(delimiter);
     const dependencies = launch.classpath.slice(1);
@@ -293,8 +294,8 @@ export async function prepareInstrumented(request, { spawnProcess = spawn } = {}
       if (!coveredClasses.includes(className) || !Array.isArray(lines) || lines.some((line, index) =>
         !Number.isSafeInteger(line) || line < 1 || index > 0 && line <= lines[index - 1])) throw new Error('Invalid executable line report');
     }
-    const executionClasspath = [transformed, helper, ...dependencies];
-    const args = javaLaunchArgs({ ...launch, classpath: executionClasspath }, ['-Xverify:all', `-Dvisualjava.trace=${trace}`, `-Dvisualjava.classes=${coveredClasses.join(',')}`,
+    const executionClasspath = [transformed, ...dependencies];
+    const args = javaLaunchArgs({ ...launch, classpath: executionClasspath }, ['-Xverify:all', '--module-path', helper, '--add-modules=visualjava.observer', '--add-opens=java.base/java.util=visualjava.observer', `-Dvisualjava.trace=${trace}`, `-Dvisualjava.classes=${coveredClasses.join(',')}`,
       `-Dvisualjava.eventLimit=${rawEventLimit}`, `-Dvisualjava.byteLimit=${rawByteLimit}`]);
     let cleaned = false;
     return { temp, helper, transformed, trace, args, workingDirectory: launch.workingDirectory, classpath: executionClasspath, coveredClasses, transformInfo, executableLines,

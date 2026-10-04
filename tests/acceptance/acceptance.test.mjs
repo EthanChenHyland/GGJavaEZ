@@ -2,7 +2,7 @@ import { mkdir, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promis
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, describe, expect, test } from 'vitest';
-import { makeVariant, renamer, SHIFT_LINES, worldSignature } from '../../scripts/acceptance-variants.mjs';
+import { makeVariant, renameWorldSignature, SHIFT_LINES, worldSignature } from '../../scripts/acceptance-variants.mjs';
 import { evaluate } from './facts.mjs';
 import { runAcceptanceProject } from './runner.mjs';
 
@@ -70,7 +70,7 @@ describe.each(projects)('acceptance %s', (name) => {
     const base = await run();
     const variant = await runAcceptanceProject(await makeVariant(dir, 'permuted', join(scratch, `${name}-permuted`), spec.renames), { stdin: spec.stdin ?? null });
     expect(variant.built, variant.buildOutput).toBe(true);
-    expect(worldSignature(variant)).toBe(renamer(spec.renames)(worldSignature(base)));
+    expect(worldSignature(variant)).toBe(renameWorldSignature(worldSignature(base), spec.renames));
   }, TIMEOUT);
 
   test(`INVARIANCE (R15.4): +${SHIFT_LINES}-line source shift changes only source lines`, async () => {

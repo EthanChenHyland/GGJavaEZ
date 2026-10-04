@@ -139,13 +139,14 @@
   {
    "id": "enumStatics",
    "kind": "statics",
-   "status": "target:P3",
+   "status": "current",
    "requirement": "R5.2",
    "className": "Unit",
    "fields": [
     "CENTIMETRE",
     "INCH"
-   ]
+   ],
+   "promotion": "Phase 4: bounded generic observation verified on the production JVM path"
   },
   {
    "id": "dispatchFacts",

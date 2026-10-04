@@ -1,6 +1,7 @@
 import { referenceIdForSlot, type RuntimeState, type SlotOwner } from '../contracts/runtime'
 import type { DetailLevel, LayoutState, SceneFrameNode, SceneModel, SceneObjectNode, SceneReferenceEdge } from '../contracts/world'
 import { getReferences } from '../runtime/selectors'
+import { objectFaceRowCount } from './objectFace'
 
 export function buildSceneModel(runtime: RuntimeState, layout: LayoutState, detailLevel: DetailLevel, presentation: 'spatial' | 'theater' = 'spatial'): SceneModel {
   const stage = presentation === 'theater' && layout.theater ? layout.theater : layout
@@ -48,6 +49,8 @@ export function buildSceneModel(runtime: RuntimeState, layout: LayoutState, deta
       className: object.className,
       displayId: object.displayId,
       anchor,
+      ...(object.library ? { summaryLabel: `${object.library.kind}${object.library.size === undefined ? '' : ` · size ${object.library.size}`}${object.library.truncated ? ' · bounded' : ''}` }
+        : object.string ? { summaryLabel: `STRING · ${object.string.length} UTF-16 units${object.string.truncated ? ' · bounded' : ''}` } : {}),
       array: object.array ? { elementType: object.array.elementType, length: object.array.length, cells: object.array.elements.map((slot, index) => ({ ...slot, index, anchor: stage.anchors[slot.id], port: stage.anchors[slot.id]?.bodyPort ?? anchor.bodyPort })) } : undefined,
       fields: Object.values(object.fields).map((slot) => ({ ...slot, displayValue: displayValue(slot.value), port: anchor.ports[slot.id] ?? anchor.bodyPort })),
     }]
@@ -56,8 +59,14 @@ export function buildSceneModel(runtime: RuntimeState, layout: LayoutState, deta
   const references: SceneReferenceEdge[] = []
   const addReference = (source: SlotOwner, slotId: string, targetObjectId: string, historical = false) => {
     const sourceId = source.kind === 'frame' ? source.frameId : source.objectId
-    const sourceAnchor = stage.anchors[sourceId]
+    const cellAnchor = source.kind === 'object' && runtime.objects[source.objectId]?.array ? stage.anchors[slotId] : undefined
+    const sourceAnchor = cellAnchor ?? stage.anchors[sourceId]
     const targetAnchor = stage.anchors[targetObjectId]
+    if (source.kind === 'object' && sourceAnchor) {
+      const fields = Object.values(runtime.objects[source.objectId]?.fields ?? {})
+      const index = fields.findIndex(field => field.id === slotId)
+      if (index >= objectFaceRowCount(sourceAnchor.size[1], fields.length)) return
+    }
     const from = sourceAnchor?.ports[slotId]
     const to = targetAnchor?.bodyPort
     if (from && to && sourceAnchor && targetAnchor && runtime.objects[targetObjectId]) {

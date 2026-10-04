@@ -9,7 +9,12 @@ import type { DebugCommand, DebugSession, ResolvedBreakpoint, SourceBreakpoint }
 import { DebugPanel } from '../debugger/DebugPanel'
 import { ErrorExplorer } from '../debugger/ErrorExplorer'
 import type { VisualizationCapabilityReport } from '../instrumentation/contracts'
-import { bridge, type ExecutionStream } from './client'
+import { bridge, draftStorageKey, readProjectDrafts, persistProjectPathChange, withStorageTransaction, renameIntentKey, type RenameReceipt } from './bridge'
+import type { ExecutionStream } from './client'
+import { createIdeCommandService, ideCommandDefinitions, type CommandContext, type DirtyDecision, type IdeCommandHost, type IdeCommandId, type CommandArguments } from './commands'
+import { pathIsWithin, transitionWorkspacePaths, type WorkspacePathChange } from './pathChanges'
+import { restoreSourceBindings, bindRenamedSources, unbindDeletedSources, verifiedWorkspaceSource, recordedBreakpointPath, projectSessionBreakpoints, type SourceBindings } from './sourceBindings'
+import SourceEditor from '../ui/SourceEditor'
 import type { ExecutionSession, RawTraceDelta, TimelineLens } from '../execution/contracts'
 import { EditableJavaEditor } from './EditableJavaEditor'
 import { ProblemsPanel } from './ProblemsPanel'
@@ -17,7 +22,7 @@ import { LaunchDialog } from './LaunchDialog'
 import { SymbolSearch } from './SymbolSearch'
 import { defaultLaunch, type JavaProject, type LaunchConfiguration } from './javaProject'
 import { LanguageClient } from '../language/client'
-import { documentPath, type LanguageSnapshot, type LspWorkspaceEdit } from '../language/protocol'
+import { documentPath, documentUri, type LanguageSnapshot, type LspWorkspaceEdit } from '../language/protocol'
 import { registerJavaIntelligence } from '../language/monaco'
 import { applyWorkspaceEdit, type WorkspaceEditHost } from '../language/workspaceEdit'
 import { mergeProblems } from './problems'
@@ -28,11 +33,16 @@ import type { BuildResult, CompileDiagnostic, JdkStatus, ProjectEntry, ProjectFi
 import './ide.css'
 
 type Tab = ProjectFile & { draft: string }
+type BreakpointProjection = {
+  projectId: string; sessionId: string; generation: number; bindings: SourceBindings
+  desired: readonly ResolvedBreakpoint[]; tabs: readonly Tab[]; acknowledgments: readonly ResolvedBreakpoint[]
+  points: ResolvedBreakpoint[]
+}
 type Tool = 'console' | 'problems' | 'debugger' | 'errors'
 type WorkspaceMode = 'code' | 'visualize' | 'debug'
-type PendingDecision = { label: string; paths: string[]; action: () => void | Promise<void> } | null
-type ProjectDialog = { kind: 'class' | 'file' | 'folder' | 'rename' | 'delete' | 'project'; path: string; value: string } | null
-const draftKey = (id: string, path: string) => `ggjavaez:draft:${id}:${path}`
+type PendingDecision = { label: string; paths: string[]; action?: () => void | Promise<void>; resolve?: (choice: DirtyDecision) => void } | null
+type ProjectDialog = { kind: 'class' | 'file' | 'folder' | 'rename' | 'delete' | 'project' | 'open'; path: string; value: string; resolve?: (value: string | null) => void; resolveDelete?: (value: DirtyDecision) => void; dirtyPaths?: readonly string[] } | null
+const draftKey = draftStorageKey
 const sessionKey = (id: string) => `ggjavaez:session:${id}`
 const breakpointKey = (id: string) => `ggjavaez:breakpoints:${id}`
 const launchKey = (id: string) => `ggjavaez:launch:${id}`
@@ -102,11 +112,25 @@ export function IdeWorkspace() {
   const [languageSnapshot, setLanguageSnapshot] = useState<LanguageSnapshot>(() => languageClient.getSnapshot())
   const [visualization, setVisualization] = useState<{ sessionId: string; trace: TraceDocument; capability: VisualizationCapabilityReport } | null>(null)
   const [runtimeExpanded, setRuntimeExpanded] = useState(false)
-  const [executingSource, setExecutingSource] = useState<RuntimeSourceLocation | null>(null)
+  const executingSourceRef = useRef<RuntimeSourceLocation | null>(null)
+  const visualizationRef = useRef(visualization)
+  visualizationRef.current = visualization
   const [breakpoints, setBreakpoints] = useState<ResolvedBreakpoint[]>([])
+  const [breakpointProjection, setBreakpointProjection] = useState<BreakpointProjection | null>(null)
   const [runtime, setRuntime] = useState<RuntimeState | null>(null)
   const [runtimeSelection, setRuntimeSelection] = useState<Selection>(null)
   const [runtimeNavigation, setRuntimeNavigation] = useState<RuntimeNavigation | null>(null)
+  const [recordedView, setRecordedView] = useState<{ file: TraceDocument['sourceFiles'][number]; location: RuntimeSourceLocation } | null>(null)
+  const [mappedExecutingSource, setMappedExecutingSource] = useState<SourceLocation | null>(null)
+  const [cwdInvalid, setCwdInvalid] = useState(false)
+  const workspaceGeneration = useRef(0)
+  const sourceBindings = useRef(new Map<string, SourceBindings>())
+  const sessionWorkspaceGeneration = useRef(new Map<string, number>())
+  const sourceRequest = useRef(0)
+  const commandHost = useRef<IdeCommandHost>({ snapshot: () => { throw new Error('Workspace commands are not ready') }, operations: {}, prompts: {} })
+  const [commands] = useState(() => createIdeCommandService(commandHost.current))
+  const languageEditHost = useRef<WorkspaceEditHost | null>(null)
+  const deletingPath = useRef<string | null>(null)
   const executionRevision = useRef(-1)
   const activeExecutionId = useRef<string | null>(null)
   const shownFailure = useRef(false)
@@ -140,9 +164,25 @@ export function IdeWorkspace() {
   const projectIdRef = useRef(projectId)
   projectIdRef.current = projectId
   const requestedSourceRef = useRef('')
+  const treeRef = useRef(tree); treeRef.current = tree
+  const navRef = useRef(nav); navRef.current = nav
+  const launchRef = useRef(launch); launchRef.current = launch
+  const breakpointsRef = useRef(breakpoints); breakpointsRef.current = breakpoints
+  const modelRef = useRef(javaProject); modelRef.current = javaProject
+  const executionRef = useRef(execution); executionRef.current = execution
+  const mainClassRef = useRef(mainClass); mainClassRef.current = mainClass
+  const cwdInvalidRef = useRef(cwdInvalid); cwdInvalidRef.current = cwdInvalid
+  const breakpointBindings = execution ? sourceBindings.current.get(execution.id) : undefined
+  const displayedBreakpoints = breakpointProjection && execution?.kind === 'debug' && breakpointProjection.projectId === projectId && breakpointProjection.sessionId === execution.id &&
+    breakpointProjection.generation === workspaceGeneration.current && breakpointProjection.bindings === breakpointBindings &&
+    breakpointProjection.desired === breakpoints && breakpointProjection.tabs === tabs && breakpointProjection.acknowledgments === execution.breakpoints
+    ? breakpointProjection.points : breakpoints
 
   const activeTab = tabs.find((tab) => tab.path === active)
-  const dirty = tabs.some((tab) => tab.draft !== tab.content)
+  const dirty = tabs.some((tab) => tab.draft !== tab.content) || (() => {
+    try { return Object.keys(readProjectDrafts(localStorage, projectId)).some((path) => !tabs.some((tab) => tab.path === path)) }
+    catch { return true }
+  })()
   const entries = useMemo(() => flatten(tree), [tree])
   const diagnostics = build?.diagnostics ?? []
   const languageProblems = useMemo<CompileDiagnostic[]>(() => languageSnapshot.projectId === projectId ? languageSnapshot.diagnostics.flatMap((group) => {
@@ -173,7 +213,12 @@ export function IdeWorkspace() {
   const recordedTerminal = visualization?.trace.events.at(-1)?.type
   const recordedPhase: ExecutionSession['phase'] = recordedTerminal === 'PROGRAM_END' ? 'COMPLETED'
     : recordedTerminal === 'PROGRAM_ABORT' ? 'FAILED' : 'STOPPED'
-  const traceStale = recordingIsCurrent && tabs.some((tab) => visualization.trace.sourceFiles.find((file) => file.fileId === tab.path)?.content !== tab.draft)
+  const currentBindings = visualization ? sourceBindings.current.get(visualization.sessionId) : undefined
+  const traceStale = recordingIsCurrent && visualization.trace.sourceFiles.some((file) => {
+    const bound = currentBindings?.sources.find((source) => source.fileId === file.fileId)
+    const path = bound ? bound.workspacePath : file.fileId
+    return !entries.some((entry) => entry.kind === 'file' && entry.path === path) || tabs.some((tab) => tab.path === path && tab.draft !== file.content)
+  })
 
   const fail = (error: unknown) => setNotice(errorText(error))
   const enterMode = (mode: WorkspaceMode) => {
@@ -199,7 +244,11 @@ export function IdeWorkspace() {
     return () => narrow.removeEventListener('change', collapse)
   }, [])
   useEffect(() => { modeEditorWidths.current[workspaceMode] = editorWidth; localStorage.setItem(widthKey, JSON.stringify(modeEditorWidths.current)) }, [workspaceMode, editorWidth])
-  const refreshTree = useCallback(async (id: string) => setTree(await bridge.tree(id)), [])
+  const refreshTree = useCallback(async (id: string) => {
+    const generation = workspaceGeneration.current
+    const next = await bridge.tree(id)
+    if (projectIdRef.current === id && workspaceGeneration.current === generation) { treeRef.current = next; setTree(next) }
+  }, [])
 
   useEffect(() => languageClient.subscribe(setLanguageSnapshot), [languageClient])
   useEffect(() => {
@@ -241,12 +290,16 @@ export function IdeWorkspace() {
 
   const openFile = useCallback(async (id: string, path: string, location?: SourceLocation) => {
     if (!path) return
+    const generation = workspaceGeneration.current
     if (!tabsRef.current.some((tab) => tab.path === path)) {
       const file = await bridge.file(id, path)
-      setTabs((current) => current.some((tab) => tab.path === path) ? current : [...current, hydratedTab(id, file)])
+      if (id !== projectIdRef.current || generation !== workspaceGeneration.current) throw new Error('Open belongs to an older workspace')
+      const next = tabsRef.current.some((tab) => tab.path === path) ? tabsRef.current : [...tabsRef.current, hydratedTab(id, file)]
+      tabsRef.current = next; setTabs(next)
     }
-    setActive(path)
-    if (location) setNav({ ...location })
+    if (id !== projectIdRef.current || generation !== workspaceGeneration.current) throw new Error('Open belongs to an older workspace')
+    activeRef.current = path; setActive(path); setRecordedView(null)
+    if (location) { navRef.current = { ...location }; setNav(navRef.current) }
   }, [])
 
   useEffect(() => {
@@ -271,6 +324,7 @@ export function IdeWorkspace() {
         return { content: draft, revision: file.revision }
       },
       commitDrafts: (changes) => {
+        if (deletingPath.current && changes.some((change) => pathIsWithin(change.path, deletingPath.current!))) throw new Error('Wait for the pending delete before applying Java edits')
         const id = projectIdRef.current
         for (const change of changes) if (!tabsRef.current.some((tab) => tab.path === change.path)) {
           const file = loaded.get(change.path)
@@ -284,22 +338,22 @@ export function IdeWorkspace() {
           throw error
         }
         const byPath = new Map(changes.map((change) => [change.path, change]))
-        setTabs((current) => {
-          const updated = current.map((tab) => byPath.has(tab.path) ? { ...tab, draft: byPath.get(tab.path)!.content } : tab)
+        const current = tabsRef.current
+        const updated = current.map((tab) => byPath.has(tab.path) ? { ...tab, draft: byPath.get(tab.path)!.content } : tab)
           for (const change of changes) if (!current.some((tab) => tab.path === change.path)) {
             updated.push({ ...loaded.get(change.path)!, draft: change.content })
           }
-          return updated
-        })
+        tabsRef.current = updated; setTabs(updated)
       },
     }
+    languageEditHost.current = host
     const registered = registerJavaIntelligence(monacoApi, {
       client: languageClient,
-      onOpen: (location) => openFile(projectIdRef.current, location.path, location),
+      onOpen: (location) => commands.execute('file.open', commandContext(location.path), { location }).then(() => {}),
       applyEdit: (edit: LspWorkspaceEdit) => applyWorkspaceEdit(monacoApi, languageClient, edit, host),
       onError: setNotice,
     })
-    return () => registered.dispose()
+    return () => { registered.dispose(); if (languageEditHost.current === host) languageEditHost.current = null }
   }, [languageClient, openFile])
 
   const switchProject = useCallback(async (nextId: string, stopExisting = true) => {
@@ -307,9 +361,11 @@ export function IdeWorkspace() {
       const current = await bridge.executionCurrent()
       if (current && ['BUILDING', 'STARTING', 'RUNNING', 'WAITING_FOR_INPUT', 'PAUSED'].includes(current.phase)) await bridge.executionStop(current.id)
     }
-    setProjectId(nextId)
-    setTabs([])
-    setActive('')
+    workspaceGeneration.current++; sourceRequest.current++
+    projectIdRef.current = nextId
+    tabsRef.current = []; activeRef.current = ''; treeRef.current = []; navRef.current = null; executionRef.current = null
+    cwdInvalidRef.current = false
+    setProjectId(nextId); setTabs([]); setActive(''); setRecordedView(null); setMappedExecutingSource(null); setCwdInvalid(false)
     setBuild(null)
     setExecution(null); setTimelineLens('LIVE'); activeExecutionId.current = null
     setVisualization(null)
@@ -319,37 +375,43 @@ export function IdeWorkspace() {
     setEditorWidth(modeEditorWidths.current.code)
     setBottomOpen(false); setFocusSourceOpen(false)
     setRuntimeExpanded(false)
-    setExecutingSource(null)
+    executingSourceRef.current = null
     setRuntime(null); setRuntimeSelection(null); setRuntimeNavigation(null)
     executionRevision.current = -1; shownFailure.current = false; normalizedSignature.current = ''; runtimeSessionId.current = null; userLayoutOverride.current = false; explorerOverride.current = false
     try {
       const stored = JSON.parse(localStorage.getItem(breakpointKey(nextId)) ?? '[]')
-      setBreakpoints(Array.isArray(stored) ? stored.filter((point) => typeof point.fileId === 'string' && Number.isInteger(point.line) && point.line > 0).map((point) => ({ fileId: point.fileId, line: point.line, status: 'pending', reason: null })) : [])
-    } catch { setBreakpoints([]) }
+      breakpointsRef.current = Array.isArray(stored) ? stored.filter((point) => typeof point.fileId === 'string' && Number.isInteger(point.line) && point.line > 0).map((point) => ({ fileId: point.fileId, line: point.line, status: 'pending', reason: null })) : []
+      setBreakpoints(breakpointsRef.current)
+    } catch { breakpointsRef.current = []; setBreakpoints([]) }
     let savedLaunch = defaultLaunch
     try {
       const saved = JSON.parse(localStorage.getItem(launchKey(nextId)) ?? 'null')
       if (saved && typeof saved.mainClass === 'string' && typeof saved.workingDirectory === 'string' && Array.isArray(saved.programArgs) && Array.isArray(saved.jvmArgs) && [...saved.programArgs, ...saved.jvmArgs].every((arg) => typeof arg === 'string')) savedLaunch = saved
+      cwdInvalidRef.current = saved?.cwdInvalid === true; setCwdInvalid(cwdInvalidRef.current)
     } catch { /* Invalid settings use the beginner defaults. */ }
-    setLaunch(savedLaunch); setMainClass(savedLaunch.mainClass); setShowLaunch(false); setShowSymbols(false)
+    launchRef.current = savedLaunch; setLaunch(savedLaunch); mainClassRef.current = savedLaunch.mainClass; setMainClass(savedLaunch.mainClass); setShowLaunch(false); setShowSymbols(false)
     setJavaProject(null); setProjectStatus('Resolving Java project…')
-    void bridge.javaProject(nextId).then((model) => {
-      if (projectIdRef.current !== nextId) return
-      setJavaProject(model); setProjectStatus(model.status === 'ready' ? model.buildSystem === 'plain' ? 'Plain Java' : model.buildSystem === 'maven' ? 'Maven' : 'Gradle' : model.diagnostic ?? 'Project unavailable')
-    }).catch((error) => { if (projectIdRef.current === nextId) setProjectStatus(errorText(error)) })
     setNav(null)
     setHydrated(false)
     localStorage.setItem('ggjavaez:project', nextId)
+    await recoverRename(nextId)
+    const generation = workspaceGeneration.current
+    void bridge.javaProject(nextId).then((model) => {
+      if (projectIdRef.current !== nextId || workspaceGeneration.current !== generation) return
+      modelRef.current = model; setJavaProject(model); setProjectStatus(model.status === 'ready' ? model.buildSystem === 'plain' ? 'Plain Java' : model.buildSystem === 'maven' ? 'Maven' : 'Gradle' : model.diagnostic ?? 'Project unavailable')
+    }).catch((error) => { if (projectIdRef.current === nextId && workspaceGeneration.current === generation) setProjectStatus(errorText(error)) })
     const nextTree = await bridge.tree(nextId)
-    setTree(nextTree)
+    if (projectIdRef.current !== nextId) return
+    treeRef.current = nextTree; setTree(nextTree)
     const files = flatten(nextTree).filter((item) => item.kind === 'file')
     let previous: { paths?: string[]; active?: string } = {}
     try { previous = JSON.parse(localStorage.getItem(sessionKey(nextId)) || '{}') } catch { /* malformed session */ }
     const savedPaths = (previous.paths ?? []).filter((path) => files.some((file) => file.path === path))
     const paths = savedPaths.length ? savedPaths : [files.find((file) => file.path === 'Main.java')?.path ?? files.find((file) => file.path.endsWith('.java'))?.path].filter((path): path is string => !!path)
     const opened = await Promise.all(paths.map(async (path) => hydratedTab(nextId, await bridge.file(nextId, path))))
-    setTabs(opened)
-    setActive(paths.includes(previous.active ?? '') ? previous.active! : paths[0] ?? '')
+    if (projectIdRef.current !== nextId) return
+    tabsRef.current = opened; setTabs(opened)
+    activeRef.current = paths.includes(previous.active ?? '') ? previous.active! : paths[0] ?? ''; setActive(activeRef.current)
     setHydrated(true)
   }, [])
 
@@ -357,8 +419,8 @@ export function IdeWorkspace() {
     if (hydrated && projectId) localStorage.setItem(sessionKey(projectId), JSON.stringify({ paths: tabs.map((tab) => tab.path), active }))
   }, [hydrated, projectId, tabs, active])
   useEffect(() => {
-    if (hydrated && projectId) localStorage.setItem(launchKey(projectId), JSON.stringify({ ...launch, mainClass }))
-  }, [hydrated, projectId, launch, mainClass])
+    if (hydrated && projectId) localStorage.setItem(launchKey(projectId), JSON.stringify({ ...launch, mainClass, cwdInvalid }))
+  }, [hydrated, projectId, launch, mainClass, cwdInvalid])
 
   useEffect(() => {
     let alive = true
@@ -397,24 +459,53 @@ export function IdeWorkspace() {
   }, [])
 
   const edit = (path: string, draft: string) => {
-    setTabs((current) => current.map((tab) => tab.path === path ? { ...tab, draft } : tab))
+    if (deletingPath.current && pathIsWithin(path, deletingPath.current)) return
+    sourceRequest.current++; setMappedExecutingSource(null)
+    const next = tabsRef.current.map((tab) => tab.path === path ? { ...tab, draft } : tab)
+    tabsRef.current = next; setTabs(next)
     if (projectId) {
       try { localStorage.setItem(draftKey(projectId, path), JSON.stringify({ draft, revision: tabsRef.current.find((tab) => tab.path === path)?.revision })) }
       catch { setNotice('Browser draft storage is full. Save your changes before leaving this page.') }
     }
   }
 
-  const saveTab = async (tab: Tab) => {
-    if (!projectId || tab.draft === tab.content) return
-    const saved = await bridge.save(projectId, tab.path, tab.draft, tab.revision)
-    void languageClient.saveDocument(tab.path, saved.content).catch(() => {})
-    setTabs((current) => current.map((item) => item.path === tab.path ? { ...item, content: saved.content, revision: saved.revision } : item))
-    const latestDraft = tabsRef.current.find((item) => item.path === tab.path)?.draft
-    if (latestDraft === saved.content) localStorage.removeItem(draftKey(projectId, tab.path))
-    else if (latestDraft !== undefined) localStorage.setItem(draftKey(projectId, tab.path), JSON.stringify({ draft: latestDraft, revision: saved.revision }))
+  const checkContext = (context: CommandContext) => {
+    if (context.projectId !== projectIdRef.current || context.workspaceGeneration !== workspaceGeneration.current) throw new Error('Command belongs to an older workspace')
   }
-  const saveAll = async () => {
-    for (const tab of tabsRef.current) await saveTab(tab)
+  const commandContext = (path?: string): CommandContext => ({ projectId: projectIdRef.current, workspaceGeneration: workspaceGeneration.current,
+    ...(path ? { target: { projectId: projectIdRef.current, path, kind: flatten(treeRef.current).find((item) => item.path === path)?.kind ?? 'file' } } : {}),
+  })
+  const saveTab = async (tab: Tab, context = commandContext()) => {
+    checkContext(context)
+    if (tab.draft === tab.content) return
+    const current = tabsRef.current.find((item) => item.path === tab.path)
+    if (!current || current.draft !== tab.draft || current.revision !== tab.revision) throw new Error(`Source changed before Save: ${tab.path}`)
+    const saved = await bridge.save(context.projectId, tab.path, tab.draft, tab.revision)
+    checkContext(context)
+    void languageClient.saveDocument(tab.path, saved.content).catch(() => {})
+    const next = tabsRef.current.map((item) => item.path === tab.path ? { ...item, content: saved.content, revision: saved.revision } : item)
+    tabsRef.current = next; setTabs(next)
+    const latestDraft = next.find((item) => item.path === tab.path)?.draft
+    if (latestDraft === saved.content) localStorage.removeItem(draftKey(context.projectId, tab.path))
+    else if (latestDraft !== undefined) localStorage.setItem(draftKey(context.projectId, tab.path), JSON.stringify({ draft: latestDraft, revision: saved.revision }))
+  }
+  const saveAll = async (context = commandContext()) => {
+    for (const tab of [...tabsRef.current]) await saveTab({ ...tab }, context)
+    for (const [path, draft] of Object.entries(readProjectDrafts(localStorage, context.projectId))) {
+      if (tabsRef.current.some((tab) => tab.path === path)) continue
+      checkContext(context)
+      const file = await bridge.file(context.projectId, path)
+      checkContext(context)
+      if (draft.revision !== file.revision) throw new Error(`Source changed since the saved draft: ${path}`)
+      const saved = draft.draft !== file.content ? await bridge.save(context.projectId, path, draft.draft, draft.revision) : file
+      checkContext(context)
+      const latest = readProjectDrafts(localStorage, context.projectId)[path]
+      if (latest?.draft === draft.draft && latest.revision === draft.revision) localStorage.removeItem(draftKey(context.projectId, path))
+      else {
+        if (latest?.revision === draft.revision) localStorage.setItem(draftKey(context.projectId, path), JSON.stringify({ ...latest, revision: saved.revision }))
+        throw new Error(`Closed draft changed while saving: ${path}`)
+      }
+    }
   }
   const requestDecision = (label: string, paths: string[], continuation: () => void | Promise<void>) => {
     const changed = tabsRef.current.filter((tab) => paths.includes(tab.path) && tab.draft !== tab.content).map((tab) => tab.path)
@@ -423,6 +514,7 @@ export function IdeWorkspace() {
   }
   const resolveDecision = async (choice: 'save' | 'discard' | 'cancel') => {
     if (!pending) return
+    if (pending.resolve) { const resolve = pending.resolve; setPending(null); resolve(choice); return }
     if (choice === 'cancel') { setPending(null); return }
     setBusy(true)
     try {
@@ -430,14 +522,14 @@ export function IdeWorkspace() {
       else pending.paths.forEach((path) => localStorage.removeItem(draftKey(projectId, path)))
       const next = pending.action
       setPending(null)
-      await next()
+      await next?.()
     } catch (error) { fail(error) } finally { setBusy(false) }
   }
-  const closeTab = (path: string) => requestDecision(`closing ${filename(path)}`, [path], () => {
-    const rest = tabsRef.current.filter((item) => item.path !== path)
-    setTabs(rest)
-    if (active === path) setActive(rest.at(-1)?.path ?? '')
-  })
+  const invoke = <K extends IdeCommandId>(id: K, args: CommandArguments[K], path?: string) => {
+    setNotice('')
+    void commands.execute(id, commandContext(path), args).catch(fail)
+  }
+  const closeTab = (path: string) => invoke('editor.close', {}, path)
   const action = async (work: () => Promise<void>) => {
     setBusy(true)
     setNotice('')
@@ -445,8 +537,12 @@ export function IdeWorkspace() {
   }
   const buildProject = () => action(async () => {
     enterMode('code')
-    await saveAll()
-    const result = await bridge.build(projectId)
+    const id = projectIdRef.current
+    await recoverRename(id)
+    if (id !== projectIdRef.current) throw new Error('Build belongs to an older workspace')
+    const context = commandContext()
+    await saveAll(context); checkContext(context)
+    const result = await bridge.build(id); checkContext(context)
     setBuild(result)
     if (result.javaProject) { setJavaProject(result.javaProject); setProjectStatus(result.javaProject.buildSystem === 'plain' ? 'Plain Java' : result.javaProject.buildSystem === 'maven' ? 'Maven' : 'Gradle') }
     // A build does not replace the last recorded execution world.
@@ -506,13 +602,19 @@ export function IdeWorkspace() {
     if (session.projectId !== projectIdRef.current || session.revision <= executionRevision.current) return
     executionRevision.current = session.revision
     latestExecutionRef.current = session
-    setExecution(session)
-    if (session.build) {
+    executionRef.current = session; setExecution(session)
+    if (!sessionWorkspaceGeneration.current.has(session.id)) sessionWorkspaceGeneration.current.set(session.id, workspaceGeneration.current)
+    if (session.sourceManifest.sources.length && !sourceBindings.current.has(session.id)) {
+      let stored: unknown
+      try { stored = JSON.parse(localStorage.getItem(`ggjavaez:source-bindings:${session.projectId}:${session.id}`) ?? 'null') } catch { /* captured paths are the conservative default */ }
+      sourceBindings.current.set(session.id, restoreSourceBindings(session.projectId, session.sourceManifest.sources, stored))
+    }
+    if (session.build && sessionWorkspaceGeneration.current.get(session.id) === workspaceGeneration.current) {
       setBuild(session.build)
       if (session.build.javaProject) setJavaProject(session.build.javaProject)
       setMainClass(session.mainClass ?? session.build.mainClasses[0] ?? '')
     }
-    if (session.kind === 'debug' && session.phase !== 'BUILDING') setBreakpoints(session.breakpoints)
+    // Desired workspace breakpoints are independent of the session's captured identities.
     if ((session.rawEventCount ?? session.rawEvents.length) > 0 && session.build?.success) {
       if (ingestRef.current?.sessionId !== session.id) {
         ingestRef.current?.dispose(); ingestRef.current = new ExecutionIngest(session)
@@ -560,102 +662,375 @@ export function IdeWorkspace() {
     const latest = latestExecutionRef.current
     if (latest?.id === session.id) publishIngest(latest)
   }, [publishIngest])
-  const startExecution = (kind: 'run' | 'debug', withoutVisualization = false) => action(async () => {
-    await saveAll()
+  const performExecution = async (kind: 'run' | 'debug', withoutVisualization = false, context = commandContext()) => {
+    checkContext(context)
+    if (cwdInvalidRef.current) throw new Error('The working directory was deleted. Choose a directory in Launch settings before Run.')
+    await recoverRename(context.projectId)
+    if (context.projectId !== projectIdRef.current) throw new Error('Run belongs to an older workspace')
+    context = commandContext()
+    await saveAll(context)
+    checkContext(context)
     eventSourceRef.current?.close(); activeExecutionId.current = 'pending'
-    setTimelineLens('LIVE'); setExecutingSource(null); setBuild(null); setTool('console'); setNotice('')
+    setTimelineLens('LIVE'); executingSourceRef.current = null; setBuild(null); setTool('console'); setNotice('')
     executionRevision.current = -1; shownFailure.current = false; normalizedSignature.current = ''
     if (!userLayoutOverride.current && !visualization) { setWorkspaceMode('code'); setEditorWidth(modeEditorWidths.current.code) }
-    const session = await bridge.executionStart(projectId, { ...launch, kind, mainClass, breakpoints, withoutVisualization })
+    const session = await bridge.executionStart(context.projectId, { ...launchRef.current, kind, mainClass: mainClassRef.current, breakpoints: breakpointsRef.current.map(({ fileId, line }) => ({ fileId, line })), withoutVisualization })
+    checkContext(context)
     activeExecutionId.current = session.id
     acceptExecution(session)
-  })
+  }
+  const startExecution = (kind: 'run' | 'debug', withoutVisualization = false) => action(() => performExecution(kind, withoutVisualization))
   const runProject = () => startExecution('run')
-  const debugProject = () => startExecution('debug')
-  const debugCommand = (command: DebugCommand) => action(async () => {
-    if (execution?.kind === 'debug') acceptExecution(await bridge.executionCommand(execution.id, command))
-  })
+  const debugProject = () => invoke('debug.startOrContinue', {})
+  const debugCommand = (command: DebugCommand) => invoke(command === 'continue' ? 'debug.startOrContinue' : `debug.${command}`, {})
   const toggleBreakpoint = (fileId: string, line: number) => {
     const next: ResolvedBreakpoint[] = breakpoints.some((point) => point.fileId === fileId && point.line === line)
       ? breakpoints.filter((point) => point.fileId !== fileId || point.line !== line)
       : [...breakpoints, { fileId, line, status: 'pending', reason: null }]
-    setBreakpoints(next); localStorage.setItem(breakpointKey(projectId), JSON.stringify(next.map(({ fileId, line }) => ({ fileId, line }))))
-    if (execution?.kind === 'debug' && ['STARTING', 'RUNNING', 'WAITING_FOR_INPUT', 'PAUSED'].includes(execution.phase)) void bridge.executionBreakpoints(execution.id, next).then(acceptExecution).catch(fail)
+    breakpointsRef.current = next; setBreakpoints(next); localStorage.setItem(breakpointKey(projectId), JSON.stringify(next.map(({ fileId, line }) => ({ fileId, line }))))
+    if (execution?.kind === 'debug' && ['STARTING', 'RUNNING', 'WAITING_FOR_INPUT', 'PAUSED'].includes(execution.phase)) void syncSessionBreakpoints(execution, next).catch(fail)
   }
   const removeBreakpoint = (point: SourceBreakpoint) => toggleBreakpoint(point.fileId, point.line)
   const handleExecutingSource = useCallback((location: RuntimeSourceLocation | null) => {
-    setExecutingSource(location)
-    if (!location || location.fileId === activeRef.current || requestedSourceRef.current === location.fileId) return
-    const id = projectIdRef.current
+    executingSourceRef.current = location
+    const request = ++sourceRequest.current
+    if (!location) { setMappedExecutingSource(null); setRecordedView(null); return }
+    const captured = visualizationRef.current
+    if (!captured) return
+    const bindings = sourceBindings.current.get(captured.sessionId)
+    const id = projectIdRef.current, generation = workspaceGeneration.current
     requestedSourceRef.current = location.fileId
-    void openFile(id, location.fileId).catch(fail).finally(() => { requestedSourceRef.current = '' })
+    void (async () => {
+      const path = bindings ? await verifiedWorkspaceSource(bindings, location.fileId, (path) => effectiveSource(id, path)) : null
+      if (request !== sourceRequest.current || id !== projectIdRef.current || generation !== workspaceGeneration.current) return
+      if (path) {
+        setMappedExecutingSource({ path, line: location.line, column: null }); setRecordedView(null)
+        if (path !== activeRef.current) await openFile(id, path, { path, line: location.line, column: null })
+      } else {
+        setMappedExecutingSource(null)
+        const file = captured.trace.sourceFiles.find((source) => source.fileId === location.fileId)
+        if (file) setRecordedView({ file, location })
+      }
+    })().catch(fail).finally(() => { requestedSourceRef.current = '' })
   }, [openFile])
-  const stopRun = () => action(async () => { if (execution) acceptExecution(await bridge.executionStop(execution.id)) })
+  const stopRun = () => execution?.kind === 'debug' ? invoke('debug.stop', {}) : action(async () => { if (execution) acceptExecution(await bridge.executionStop(execution.id)) })
   const sendInput = () => action(async () => {
     if (!execution) return
     await bridge.executionInput(execution.id, input + '\n')
     setInput('')
   })
-  const newEntry = (kind: 'file' | 'folder' | 'class', parent = '') => {
-    const directory = parent === '.' ? '' : parent.replace(/\/$/, '')
-    const sourceRoot = kind === 'class' && javaProject?.status === 'ready' ? javaProject.sourceRoots[0] : undefined
-    const destination = directory || (sourceRoot && sourceRoot !== '.' ? sourceRoot : '')
-    const name = kind === 'class' ? 'NewClass.java' : kind === 'file' ? 'new-file.txt' : 'new-folder'
-    const suggestion = destination ? `${destination}/${name}` : name
-    setProjectDialog({ kind, path: '', value: suggestion })
+  async function effectiveSource(id: string, path: string): Promise<string | null> {
+    if (id !== projectIdRef.current) return null
+    const open = tabsRef.current.find((tab) => tab.path === path)
+    if (open) return open.draft
+    const closed = readProjectDrafts(localStorage, id)[path]
+    if (closed) return closed.draft
+    try { return (await bridge.file(id, path)).content } catch { return null }
   }
-  const renameEntry = (path: string) => setProjectDialog({ kind: 'rename', path, value: path })
-  const deleteEntry = (path: string) => setProjectDialog({ kind: 'delete', path, value: path })
-  const submitProjectDialog = () => {
-    if (!projectDialog) return
-    if (projectDialog.kind === 'delete') {
-      const path = projectDialog.path
-      const affected = tabsRef.current.filter((tab) => tab.path === path || tab.path.startsWith(`${path}/`)).map((tab) => tab.path)
-      setProjectDialog(null)
-      requestDecision(`deleting ${path}`, affected, () => action(async () => {
-        await bridge.delete(projectId, path)
-        affected.forEach((item) => localStorage.removeItem(draftKey(projectId, item)))
-        setTabs((current) => current.filter((tab) => tab.path !== path && !tab.path.startsWith(`${path}/`)))
-        if (activeRef.current === path || activeRef.current.startsWith(`${path}/`)) setActive('')
-        await refreshTree(projectId)
-      }))
-      return
+  useEffect(() => {
+    const session = execution
+    if (session?.kind !== 'debug' || session.projectId !== projectId || !breakpointBindings || !breakpoints.length) { setBreakpointProjection(null); return }
+    const bindings = breakpointBindings, desired = breakpoints, capturedTabs = tabs
+    const generation = workspaceGeneration.current
+    let cancelled = false
+    const current = () => {
+      const latest = executionRef.current
+      return !cancelled && projectIdRef.current === session.projectId && workspaceGeneration.current === generation &&
+        latest?.id === session.id && latest.breakpoints === session.breakpoints &&
+        sourceBindings.current.get(session.id) === bindings && breakpointsRef.current === desired && tabsRef.current === capturedTabs
     }
-    return action(async () => {
-      const { kind, path } = projectDialog
-      const value = projectDialog.value.trim()
-      if (!value) throw new Error('Enter a name or path.')
-      if (kind === 'project') {
-        const next = await bridge.createProject(value)
-        setProjects(await bridge.projects())
-        requestDecision('opening the new project', tabsRef.current.map((tab) => tab.path), () => switchProject(next.id))
-      } else if (kind === 'class') {
-        const name = filename(value).replace(/\.java$/, '')
-        if (!value.endsWith('.java') || !/^[A-Za-z_$][\w$]*$/.test(name)) throw new Error('A Java class needs a valid name ending in .java')
-        const roots = (javaProject?.sourceRoots ?? []).filter((root) => root === '.' || value.startsWith(`${root}/`)).sort((a, b) => b.length - a.length)
-        const relative = roots.length === 1 ? roots[0] === '.' ? value : value.slice(roots[0].length + 1) : ''
-        const packageParts = relative.split('/').slice(0, -1)
-        const packageName = packageParts.length && packageParts.every((part) => /^[A-Za-z_$][\w$]*$/.test(part)) ? `package ${packageParts.join('.')};\n\n` : ''
-        await bridge.createFile(projectId, value, `${packageName}public class ${name} {\n}\n`)
-        await openFile(projectId, value)
-        await refreshTree(projectId)
-      } else if (kind === 'file' || kind === 'folder') {
-        if (kind === 'file') { await bridge.createFile(projectId, value); await openFile(projectId, value) }
-        else await bridge.createFolder(projectId, value)
-        await refreshTree(projectId)
-      } else if (kind === 'rename') {
-        if (value !== path) {
-          const affected = tabsRef.current.filter((tab) => tab.path === path || tab.path.startsWith(`${path}/`))
-          for (const tab of affected) await saveTab(tab)
-          await bridge.rename(projectId, path, value)
-          const mapPath = (item: string) => item === path || item.startsWith(`${path}/`) ? value + item.slice(path.length) : item
-          setTabs((current) => current.map((tab) => ({ ...tab, path: mapPath(tab.path) })))
-          setActive((current) => mapPath(current))
-          affected.forEach((tab) => localStorage.removeItem(draftKey(projectId, tab.path)))
-          await refreshTree(projectId)
+    const observed = new Map<string, string | null>()
+    void (async () => {
+      const points = await projectSessionBreakpoints(bindings, desired, session, async (path) => {
+        const content = await effectiveSource(session.projectId, path)
+        observed.set(path, content)
+        return content
+      })
+      if (!current()) return
+      // Closed drafts can change without a tab render; do not publish a proof for older text.
+      for (const [path, content] of observed) {
+        if (await effectiveSource(session.projectId, path) !== content) return
+        if (!current()) return
+      }
+      setBreakpointProjection({ projectId: session.projectId, sessionId: session.id, generation, bindings, desired, tabs: capturedTabs, acknowledgments: session.breakpoints, points })
+    })().catch(() => { if (current()) setBreakpointProjection(null) })
+    return () => { cancelled = true }
+  }, [execution?.id, execution?.kind, execution?.breakpoints, projectId, breakpointBindings, breakpoints, tabs])
+  async function syncSessionBreakpoints(session: ExecutionSession, desired: readonly SourceBreakpoint[]) {
+    const bindings = sourceBindings.current.get(session.id)
+    if (!bindings) return
+    const generation = workspaceGeneration.current
+    const translated: SourceBreakpoint[] = []
+    for (const point of desired) {
+      const fileId = await recordedBreakpointPath(bindings, point.fileId, (path) => effectiveSource(session.projectId, path))
+      if (fileId) translated.push({ fileId, line: point.line })
+    }
+    if (executionRef.current?.id !== session.id || generation !== workspaceGeneration.current) return
+    acceptExecution(await bridge.executionBreakpoints(session.id, translated))
+  }
+  function retireModels(id: string, path: string) {
+    for (const model of monacoApi.editor.getModels()) {
+      const relative = documentPath(model.uri.toString(), id)
+      if (!relative || !pathIsWithin(relative, path)) continue
+      monacoApi.editor.setModelMarkers(model, 'javac', [])
+      monacoApi.editor.setModelMarkers(model, 'language', [])
+      for (const editor of monacoApi.editor.getEditors()) if (editor.getModel() === model) editor.setModel(null)
+      model.dispose()
+    }
+  }
+  function invalidateWorkspaceModel() {
+    modelRef.current = null; setJavaProject(null); setBuild(null)
+    setProjectStatus('Project files changed. Build or Run refreshes the project.')
+    sourceRequest.current++; requestedSourceRef.current = ''; setMappedExecutingSource(null)
+  }
+  async function reconcileFileChange(id: string, change: WorkspacePathChange, receipt?: RenameReceipt) {
+    const source = change.kind === 'rename' ? change.from : change.path
+    const current = id === projectIdRef.current
+    const state = { tabs: current ? tabsRef.current : [], drafts: readProjectDrafts(localStorage, id), activePath: current ? activeRef.current || null : null,
+      breakpoints: current ? breakpointsRef.current : [], workingDirectory: current ? cwdInvalidRef.current ? null : launchRef.current.workingDirectory : '.', navigation: current ? navRef.current : null }
+    const result = transitionWorkspacePaths(state, change)
+    // Keep the pending nonce and every original draft if migration fails after a committed move.
+    // A subsequent retry/reload can recover the same receipt without another physical rename.
+    const nextBindings = new Map<string, SourceBindings>()
+    for (const [sessionId, bindings] of sourceBindings.current) if (bindings.projectId === id) {
+      const next = receipt ? bindRenamedSources(bindings, receipt) : unbindDeletedSources(bindings, source)
+      nextBindings.set(sessionId, next)
+    }
+    // Reload recovery may precede attachment of the server's current session.
+    const bindingPrefix = `ggjavaez:source-bindings:${id}:`
+    for (let index = 0; index < localStorage.length; index++) {
+      const key = localStorage.key(index)
+      if (!key?.startsWith(bindingPrefix) || nextBindings.has(key.slice(bindingPrefix.length))) continue
+      try {
+        const saved = JSON.parse(localStorage.getItem(key)!) as SourceBindings
+        const captured = saved.sources.map(({ fileId, sha256 }) => ({ fileId, sha256, content: '' }))
+        const bindings = restoreSourceBindings(id, captured, saved)
+        nextBindings.set(key.slice(bindingPrefix.length), receipt ? bindRenamedSources(bindings, receipt) : unbindDeletedSources(bindings, source))
+      } catch { /* Invalid stored mappings cannot authorize workspace source navigation. */ }
+    }
+    const mapPath = (path: string) => change.kind === 'rename' && pathIsWithin(path, source) ? change.to + path.slice(source.length) : path
+    withStorageTransaction(localStorage, (transaction) => {
+      persistProjectPathChange(transaction, id, change)
+      for (const [sessionId, next] of nextBindings) transaction.setItem(`ggjavaez:source-bindings:${id}:${sessionId}`, JSON.stringify(next))
+    })
+    for (const [sessionId, next] of nextBindings) if (sourceBindings.current.has(sessionId)) sourceBindings.current.set(sessionId, next)
+    if (!current) return
+    workspaceGeneration.current++
+    const generation = workspaceGeneration.current
+    tabsRef.current = result.state.tabs.map((tab) => ({ ...tab })); setTabs(tabsRef.current)
+    activeRef.current = result.state.activePath ?? ''; setActive(activeRef.current)
+    navRef.current = result.state.navigation; setNav(navRef.current)
+    breakpointsRef.current = result.state.breakpoints.map((point) => ({ ...point, status: 'pending', reason: null }))
+    setBreakpoints(breakpointsRef.current)
+    if (result.workingDirectoryDeleted) { cwdInvalidRef.current = true; setCwdInvalid(true) }
+    if (result.state.workingDirectory !== null) {
+      launchRef.current = { ...launchRef.current, workingDirectory: result.state.workingDirectory }; setLaunch(launchRef.current)
+    }
+    setCollapsed((previous) => new Set([...previous].filter((path) => change.kind !== 'delete' || !pathIsWithin(path, source)).map(mapPath)))
+    invalidateWorkspaceModel()
+    retireModels(id, source)
+    const oldLanguagePaths = [...languagePaths.current].filter((path) => pathIsWithin(path, source))
+    for (const path of oldLanguagePaths) { languagePaths.current.delete(path); await languageClient.closeDocument(path).catch(() => {}) }
+    await refreshTree(id)
+    if (id !== projectIdRef.current || generation !== workspaceGeneration.current) return
+    // open() invalidates pending JDT responses; the server resolves the new model before connecting.
+    languagePaths.current.clear()
+    await languageClient.open(id)
+    if (id !== projectIdRef.current || generation !== workspaceGeneration.current) return
+    for (const tab of tabsRef.current.filter((tab) => tab.path.endsWith('.java'))) {
+      languageClient.openDocument(tab.path, tab.draft); languagePaths.current.add(tab.path)
+    }
+    await languageClient.flush().catch(() => {})
+    if (id === projectIdRef.current && generation === workspaceGeneration.current)
+      handleExecutingSource(executingSourceRef.current)
+  }
+  async function recoverRename(id: string) {
+    const raw = localStorage.getItem(renameIntentKey(id))
+    if (!raw) return
+    const intent = JSON.parse(raw) as { from: string; to: string; operationId: string }
+    const receipt = await bridge.renameWithReceipt(id, intent.from, intent.to, intent.operationId)
+    await reconcileFileChange(id, { kind: 'rename', from: receipt.from, to: receipt.to }, receipt)
+    localStorage.removeItem(renameIntentKey(id))
+  }
+  const commandIO = async (work: () => Promise<void>) => {
+    setBusy(true)
+    try { await work() } finally { setBusy(false) }
+  }
+  commandHost.current.snapshot = () => {
+    const id = projectIdRef.current, session = executionRef.current
+    const activeDebug = session?.kind === 'debug' && ['BUILDING', 'STARTING', 'RUNNING', 'WAITING_FOR_INPUT', 'PAUSED'].includes(session.phase)
+    return { projectId: id, workspaceGeneration: workspaceGeneration.current, tabs: tabsRef.current, activePath: activeRef.current || null,
+      resources: flatten(treeRef.current).map(({ path, kind }) => ({ projectId: id, path, kind })),
+      closedDrafts: Object.entries(readProjectDrafts(localStorage, id)).filter(([path]) => !tabsRef.current.some((tab) => tab.path === path))
+        .map(([path, draft]) => ({ path, ...draft, dirty: true })),
+      debugState: activeDebug ? session.phase === 'PAUSED' ? 'paused' : session.phase === 'BUILDING' || session.phase === 'STARTING' ? 'starting' : 'running' : 'inactive',
+      languageReady: languageClient.projectId === id && languageClient.getSnapshot().status === 'ready', editorPath: recordedView ? null : activeRef.current || null }
+  }
+  commandHost.current.prompts = {
+    path: ({ command, context, initialPath }) => new Promise((resolve) => {
+      checkContext(context)
+      const kind = command === 'resource.rename' ? 'rename' : command === 'java.newClass' ? 'class' : command === 'folder.new' ? 'folder' : 'file'
+      const sourceRoot = kind === 'class' && !context.target ? modelRef.current?.sourceRoots[0] : undefined
+      setProjectDialog({ kind, path: context.target?.path ?? '', value: sourceRoot && sourceRoot !== '.' ? `${sourceRoot}/${initialPath}` : initialPath, resolve })
+    }),
+    dirty: ({ command, context, dirtyPaths }) => new Promise((resolve) => {
+      checkContext(context); setPending({ label: ideCommandDefinitions[command].title.toLowerCase(), paths: [...dirtyPaths], resolve })
+    }),
+    delete: ({ context, target, dirtyPaths }) => new Promise((resolveDelete) => {
+      checkContext(context); setProjectDialog({ kind: 'delete', path: target.path, value: target.path, dirtyPaths, resolveDelete })
+    }),
+  }
+  commandHost.current.operations = {
+    open: (target, location, context) => commandIO(async () => { checkContext(context); await openFile(target.projectId, target.path, location) }),
+    save: (_target, tab, context) => commandIO(() => saveTab(tab, context)),
+    saveAll: (context) => commandIO(() => saveAll(context)),
+    close: (plan) => {
+      checkContext(plan.context)
+      for (const expected of plan.expectedTabs) {
+        const tab = tabsRef.current.find((item) => item.path === expected.path)
+        if (!tab || tab.draft !== expected.draft || tab.content !== expected.content || tab.revision !== expected.revision) throw new Error(`Editor changed before Close: ${expected.path}`)
+      }
+      const previous = plan.discardPaths.map((path) => [path, localStorage.getItem(draftKey(plan.context.projectId, path))] as const)
+      try { for (const path of plan.discardPaths) localStorage.removeItem(draftKey(plan.context.projectId, path)) }
+      catch (error) { for (const [path, value] of previous) if (value !== null) localStorage.setItem(draftKey(plan.context.projectId, path), value); throw error }
+      tabsRef.current = tabsRef.current.filter((tab) => !plan.paths.includes(tab.path)); setTabs(tabsRef.current)
+      if (plan.paths.includes(activeRef.current)) { activeRef.current = tabsRef.current.at(-1)?.path ?? ''; setActive(activeRef.current) }
+      if (navRef.current && plan.paths.includes(navRef.current.path)) { navRef.current = null; setNav(null) }
+    },
+    createFile: (id, path, content, context) => commandIO(async () => {
+      checkContext(context); await bridge.createFile(id, path, content); checkContext(context)
+      workspaceGeneration.current++; invalidateWorkspaceModel(); await refreshTree(id); await openFile(id, path)
+    }),
+    createFolder: (id, path, context) => commandIO(async () => {
+      checkContext(context); await bridge.createFolder(id, path); checkContext(context)
+      workspaceGeneration.current++; invalidateWorkspaceModel(); await refreshTree(id)
+    }),
+    createJavaClass: (id, path, context) => commandIO(async () => {
+      checkContext(context)
+      const name = filename(path).replace(/\.java$/, '')
+      if (!path.endsWith('.java') || !/^[A-Za-z_$][\w$]*$/.test(name)) throw new Error('A Java class needs a valid name ending in .java')
+      const roots = (modelRef.current?.sourceRoots ?? ['.']).filter((root) => root === '.' || pathIsWithin(path, root)).sort((a, b) => b.length - a.length)
+      const relative = roots[0] === '.' ? path : roots[0] ? path.slice(roots[0].length + 1) : ''
+      const parts = relative.split('/').slice(0, -1)
+      const packageName = parts.length && parts.every((part) => /^[A-Za-z_$][\w$]*$/.test(part)) ? `package ${parts.join('.')};\n\n` : ''
+      await bridge.createFile(id, path, `${packageName}public class ${name} {\n}\n`); checkContext(context)
+      workspaceGeneration.current++; invalidateWorkspaceModel(); await refreshTree(id); await openFile(id, path)
+    }),
+    rename: (target, to, context) => commandIO(async () => {
+      checkContext(context)
+      // Validate held tab/closed-draft collisions before the filesystem moves.
+      transitionWorkspacePaths({ tabs: tabsRef.current, drafts: readProjectDrafts(localStorage, target.projectId), activePath: activeRef.current || null,
+        breakpoints: breakpointsRef.current, workingDirectory: launchRef.current.workingDirectory, navigation: navRef.current }, { kind: 'rename', from: target.path, to })
+      const raw = localStorage.getItem(renameIntentKey(target.projectId))
+      const intent = raw ? JSON.parse(raw) as { from: string; to: string; operationId: string } : { from: target.path, to, operationId: crypto.randomUUID() }
+      if (intent.from !== target.path || intent.to !== to) throw new Error('Recover the pending rename before starting another move.')
+      localStorage.setItem(renameIntentKey(target.projectId), JSON.stringify(intent))
+      const receipt = await bridge.renameWithReceipt(target.projectId, target.path, to, intent.operationId)
+      await reconcileFileChange(target.projectId, { kind: 'rename', from: receipt.from, to: receipt.to }, receipt)
+      localStorage.removeItem(renameIntentKey(target.projectId))
+    }),
+    delete: (plan) => commandIO(async () => {
+      checkContext(plan.context)
+      if (localStorage.getItem(renameIntentKey(plan.context.projectId))) throw new Error('Recover the pending rename before deleting files.')
+      const expectedClosed = plan.expectedClosedDrafts.map((draft) => ({ ...draft }))
+      if (plan.decision === 'save') {
+        for (const tab of plan.expectedTabs) await saveTab(tab, plan.context)
+        for (const draft of expectedClosed) {
+          const current = readProjectDrafts(localStorage, plan.context.projectId)[draft.path]
+          if (!current || current.draft !== draft.draft || current.revision !== draft.revision) throw new Error(`Closed draft changed: ${draft.path}`)
+          const saved = await bridge.save(plan.context.projectId, draft.path, draft.draft, draft.revision)
+          checkContext(plan.context)
+          const latest = readProjectDrafts(localStorage, plan.context.projectId)[draft.path]
+          if (!latest || latest.draft !== draft.draft || latest.revision !== draft.revision) throw new Error(`Closed draft changed while saving: ${draft.path}`)
+          draft.revision = saved.revision
+          localStorage.setItem(draftKey(plan.context.projectId, draft.path), JSON.stringify({ draft: draft.draft, revision: saved.revision }))
         }
       }
+      checkContext(plan.context)
+      const currentDrafts = readProjectDrafts(localStorage, plan.context.projectId)
+      for (const expected of plan.expectedTabs) {
+        const current = tabsRef.current.find((tab) => tab.path === expected.path)
+        if (!current || current.draft !== expected.draft || plan.decision === 'discard' && current.revision !== expected.revision) throw new Error(`Editor changed before Delete: ${expected.path}`)
+      }
+      for (const expected of expectedClosed) if (currentDrafts[expected.path]?.draft !== expected.draft || currentDrafts[expected.path]?.revision !== expected.revision) throw new Error(`Closed draft changed before Delete: ${expected.path}`)
+      const approved = new Map([...plan.expectedTabs.map((tab) => [tab.path, tab.draft] as const), ...expectedClosed.map((draft) => [draft.path, draft.draft] as const)])
+      for (const tab of tabsRef.current) if (pathIsWithin(tab.path, plan.target.path) && tab.draft !== tab.content && approved.get(tab.path) !== tab.draft) throw new Error(`New dirty editor before Delete: ${tab.path}`)
+      for (const [path, draft] of Object.entries(currentDrafts)) if (pathIsWithin(path, plan.target.path) && approved.get(path) !== draft.draft) throw new Error(`New closed draft before Delete: ${path}`)
+      // Destructive commits protect editor input; retained text also covers closed drafts.
+      const locked = monacoApi.editor.getEditors().filter((editor) => {
+        const model = editor.getModel(), path = model ? documentPath(model.uri.toString(), plan.context.projectId) : null
+        return path !== null && pathIsWithin(path, plan.target.path)
+      }).map((editor) => ({ editor, readOnly: editor.getRawOptions().readOnly ?? false }))
+      const recoveryKey = `ggjavaez:deleted-drafts:${plan.context.projectId}:${crypto.randomUUID()}`
+      if (plan.dirtyPaths.length) localStorage.setItem(recoveryKey, JSON.stringify({ path: plan.target.path, tabs: plan.expectedTabs, drafts: expectedClosed }))
+      deletingPath.current = plan.target.path
+      for (const { editor } of locked) editor.updateOptions({ readOnly: true })
+      try {
+        await bridge.delete(plan.context.projectId, plan.target.path)
+        await reconcileFileChange(plan.context.projectId, { kind: 'delete', path: plan.target.path })
+      } finally {
+        deletingPath.current = null
+        for (const { editor, readOnly } of locked) if (monacoApi.editor.getEditors().includes(editor)) editor.updateOptions({ readOnly })
+      }
+    }),
+    reveal: async (target, context) => { checkContext(context); revealEntry(target.path) },
+    copyText: async (text, context) => { checkContext(context); await navigator.clipboard.writeText(text) },
+    renameSymbol: async (target, newName, context) => {
+      checkContext(context)
+      const editor = monacoApi.editor.getEditors().find((editor) => editor.hasTextFocus())
+      if (!editor) throw new Error('Focus the Java editor before Rename Symbol')
+      if (newName === undefined) { await editor.getAction('editor.action.rename')?.run(); return }
+      const model = editor.getModel(), position = editor.getPosition(), host = languageEditHost.current
+      if (!model || documentPath(model.uri.toString(), context.projectId) !== target.path || !position || !host) throw new Error('The Java editor target changed')
+      const version = model.getVersionId()
+      const edit = await languageClient.request<LspWorkspaceEdit | null>('textDocument/rename', { textDocument: { uri: documentUri(context.projectId, target.path) }, position: { line: position.lineNumber - 1, character: position.column - 1 }, newName }, { path: target.path })
+      checkContext(context)
+      if (model.isDisposed() || model.getVersionId() !== version) throw new Error('The Java document changed while renaming')
+      if (edit) await applyWorkspaceEdit(monacoApi, languageClient, edit, host)
+    },
+    startDebug: (context) => commandIO(() => performExecution('debug', false, context)),
+    debug: (command, context) => commandIO(async () => {
+      checkContext(context); const session = executionRef.current
+      if (session?.kind !== 'debug') throw new Error('There is no active debugger')
+      const next = await bridge.executionCommand(session.id, command); checkContext(context); acceptExecution(next)
+    }),
+    quickOpen: (context) => new Promise<void>((resolve, reject) => {
+      checkContext(context); setProjectDialog({ kind: 'open', path: '', value: activeRef.current, resolve: (path) => {
+        if (!path) { resolve(); return }
+        try { checkContext(context) } catch (error) { reject(error); return }
+        // Call the injected open operation directly; enqueueing inside this command would deadlock.
+        openFile(context.projectId, path).then(resolve, reject)
+      } })
+    }),
+    commandPalette: async (context) => {
+      checkContext(context)
+      const editor = monacoApi.editor.getEditors().find((editor) => editor.hasTextFocus())
+      if (!editor) throw new Error('Focus the editor to open its command palette')
+      await editor.getAction('editor.action.quickCommand')?.run()
+    },
+  }
+  if (!jdk?.available) delete commandHost.current.operations.startDebug
+  const newEntry = (kind: 'file' | 'folder' | 'class', parent = '') => {
+    const id = kind === 'class' ? 'java.newClass' : kind === 'folder' ? 'folder.new' : 'file.new'
+    invoke(id, {}, parent && parent !== '.' ? parent : undefined)
+  }
+  const renameEntry = (path: string) => invoke('resource.rename', {}, path)
+  const deleteEntry = (path: string) => invoke('resource.delete', {}, path)
+  const cancelProjectDialog = () => {
+    const dialog = projectDialog
+    setProjectDialog(null)
+    dialog?.resolve?.(null); dialog?.resolveDelete?.('cancel')
+  }
+  const submitProjectDialog = () => {
+    if (!projectDialog) return
+    if (projectDialog.resolve) { const dialog = projectDialog; setProjectDialog(null); dialog.resolve!(dialog.value); return }
+    if (projectDialog.resolveDelete) { const dialog = projectDialog; setProjectDialog(null); dialog.resolveDelete!('discard'); return }
+    if (projectDialog.kind !== 'project') return
+    return action(async () => {
+      const next = await bridge.createProject(projectDialog.value.trim())
+      setProjects(await bridge.projects())
       setProjectDialog(null)
+      requestDecision('opening the new project', tabsRef.current.map((tab) => tab.path), () => switchProject(next.id))
     })
   }
   const importFiles = (files: FileList | null) => action(async () => {
@@ -678,7 +1053,7 @@ export function IdeWorkspace() {
     setProjects(await bridge.projects())
     requestDecision('opening the imported project', tabsRef.current.map((tab) => tab.path), () => switchProject(created.id))
   })
-  const openDiagnostic = (item: CompileDiagnostic) => action(async () => { await openFile(projectId, item.location.path, item.location) })
+  const openDiagnostic = (item: CompileDiagnostic) => invoke('file.open', { location: item.location }, item.location.path)
   const setDivider = (kind: 'project' | 'runtime' | 'bottom', clientX: number, clientY: number) => {
     userLayoutOverride.current = true
     if (kind === 'bottom') {
@@ -724,7 +1099,7 @@ export function IdeWorkspace() {
     if (kind === 'class' || kind === 'file' || kind === 'folder') void newEntry(kind, parent)
     else if (kind === 'rename' && entry) void renameEntry(entry.path)
     else if (kind === 'delete' && entry) void deleteEntry(entry.path)
-    else if (kind === 'reveal' && entry) { revealEntry(entry.path); if (entry.kind === 'file') void action(() => openFile(projectId, entry.path)) }
+    else if (kind === 'reveal' && entry) invoke('explorer.reveal', {}, entry.path)
     else if (kind === 'refresh') void action(() => refreshTree(projectId))
   }
 
@@ -732,10 +1107,14 @@ export function IdeWorkspace() {
     const shortcuts = (event: KeyboardEvent) => {
       if (projectDialog) return
       if (event.key === 'Escape' && runtimeExpanded && !pending && !(event.target instanceof HTMLElement && event.target.closest('.monaco-editor'))) { setRuntimeExpanded(false); setFocusSourceOpen(false); return }
-      if (!pending && !busy && matchesShortcut(event, ideShortcuts.saveAll, platform)) {
-        event.preventDefault(); action(saveAll); return
-      }
       if (pending) return
+      if (!busy && !event.defaultPrevented) {
+        const editorFocused = event.target instanceof HTMLElement && !!event.target.closest('.monaco-editor')
+        const canonical = Object.values(ideCommandDefinitions).find((definition) => (definition.scope !== 'editor' || editorFocused) && definition.bindings.some((binding) => matchesShortcut(event, binding, platform)))
+        if (canonical && commands.availability(canonical.id, commandContext()).enabled) {
+          event.preventDefault(); event.stopPropagation(); invoke(canonical.id, {}); return
+        }
+      }
       const key = (Object.entries(ideShortcuts) as [keyof typeof ideShortcuts, (typeof ideShortcuts)[keyof typeof ideShortcuts]][]).find(([name, shortcut]) => !['save', 'saveAll', 'breakpoint', 'commandPalette'].includes(name) && matchesShortcut(event, shortcut, platform))?.[0]
       if (!key) return
       event.preventDefault()
@@ -751,8 +1130,8 @@ export function IdeWorkspace() {
       if (key === 'debug' && projectId && jdk?.available && !busy && !['starting', 'running', 'paused'].includes(debugSession?.status ?? '')) void debugProject()
       if (key === 'run' && projectId && jdk?.available && !busy) void runProject()
     }
-    window.addEventListener('keydown', shortcuts)
-    return () => window.removeEventListener('keydown', shortcuts)
+    window.addEventListener('keydown', shortcuts, true)
+    return () => window.removeEventListener('keydown', shortcuts, true)
   })
 
   const activeExecution = !!execution && ['BUILDING', 'STARTING', 'RUNNING', 'WAITING_FOR_INPUT', 'PAUSED'].includes(execution.phase)
@@ -775,8 +1154,8 @@ export function IdeWorkspace() {
         }} onKeyDown={(event) => {
           if (event.key === 'Escape') { event.currentTarget.open = false; event.currentTarget.querySelector('summary')?.focus() }
         }}><summary aria-label="More actions" title="More actions"><Settings2 size={16}/></summary><div>
-          <button onClick={() => activeTab && action(() => saveTab(activeTab))} disabled={!activeTab || activeTab.draft === activeTab.content || busy}><Save size={15}/> Save</button>
-          <button onClick={() => action(saveAll)} disabled={!dirty || busy}><Save size={15}/> Save All</button>
+          <button onClick={() => invoke('file.save', {})} disabled={!activeTab || activeTab.draft === activeTab.content || busy}><Save size={15}/> Save</button>
+          <button onClick={() => invoke('file.saveAll', {})} disabled={!dirty || busy}><Save size={15}/> Save All</button>
           <button onClick={buildProject} disabled={!projectId || busy}><Hammer size={15}/> Build</button>
           <button onClick={() => setShowLaunch(true)} disabled={!projectId || busy}>Launch settings</button>
           <button onClick={() => setShowSymbols(true)} disabled={languageSnapshot.status !== 'ready'}><Search size={15}/> Find symbol</button>
@@ -793,7 +1172,7 @@ export function IdeWorkspace() {
       {execution && <span className="ide-execution-status" aria-live="polite">{execution.phase === 'FAILED' && execution.failureKind === 'build' ? 'BUILD FAILED' : execution.phase.replaceAll('_', ' ')}{execution.support === 'RUN_ONLY' && (execution.supportReason !== 'No verified runtime events yet' || ['COMPLETED', 'FAILED'].includes(execution.phase)) && execution.phase !== 'BUILDING' ? ' · console only' : ''}</span>}
       {traceStale && <span className="is-warning">Source changed since Run</span>}
       {execution?.supportReason && (execution.support === 'RUN_ONLY' && execution.supportReason !== 'No verified runtime events yet' || execution.support === 'PARTIAL' && ['COMPLETED', 'FAILED', 'STOPPED'].includes(execution.phase)) && <details className="ide-support-detail"><summary>Visualization {execution.support.toLowerCase().replace('_', ' ')}</summary><p>{execution.supportReason}</p></details>}
-      {recordingIsCurrent && <details className="ide-support-detail"><summary>Capture limits</summary><p>Recording stops at 20,000 raw events, 8 MiB, 256 identities or 128 live frames; Java continues. The 30-second active watchdog excludes input waits and Debug pauses; a 10-minute hard safety deadline applies in all states. Project code is recorded. Library internals, static fields and object arrays are not shown. — means unavailable. Values are last observed; changes outside recorded code may be absent.{visualization.capability.diagnostics.length > 0 && <><br/>{visualization.capability.diagnostics.slice(0, 3).join(' · ')}</>}</p></details>}
+      {recordingIsCurrent && <details className="ide-support-detail"><summary>Capture limits</summary><p>Recording stops at 20,000 raw events, 8 MiB, 256 identities or 128 live frames; Java continues. The 30-second active watchdog excludes input waits and Debug pauses; a 10-minute hard safety deadline applies in all states. Project code is recorded. Primitive and reference arrays have bounded summaries; class statics are available in the inspector. Library internals are collapsed. — means unavailable. Values and effects are last observed; changes outside recorded code may be absent.{visualization.capability.diagnostics.length > 0 && <><br/>{visualization.capability.diagnostics.slice(0, 3).join(' · ')}</>}</p></details>}
       <span className="ide-status-spacer"/><span>{notice}</span>
       <details className="ide-shortcuts"><summary>Shortcuts</summary><div><p>{formatShortcut(ideShortcuts.run, platform)} Run · {formatShortcut(ideShortcuts.debug, platform)} Debug · {formatShortcut(ideShortcuts.stop, platform)} Stop<br/>{formatShortcut(ideShortcuts.focus, platform)} Focus · {formatShortcut(ideShortcuts.explorer, platform)} Explorer · {formatShortcut(ideShortcuts.tools, platform)} Tools<br/>{formatShortcut(ideShortcuts.console, platform)} Console · {formatShortcut(ideShortcuts.problems, platform)} Problems · {formatShortcut(ideShortcuts.returnLive, platform)} Live<br/>{formatShortcut(ideShortcuts.save, platform)} Save · {formatShortcut(ideShortcuts.saveAll, platform)} Save All<br/>{formatShortcut(ideShortcuts.breakpoint, platform)} Breakpoint · {formatShortcut(ideShortcuts.commandPalette, platform)} Editor commands</p></div></details>
     </div>
@@ -812,8 +1191,8 @@ export function IdeWorkspace() {
         <button className="ide-open-project" onClick={() => importRef.current?.click()}><Upload size={13}/> Import folder (copy)</button>
         <span className="ide-import-note">Creates a managed copy; originals stay in place.</span>
         <button className="ide-new-project" onClick={() => setProjectDialog({ kind: 'project', path: '', value: 'New Java Project' })}><Plus size={13}/> New project</button>
-        <button className="ide-reveal-active" disabled={!active} onClick={() => revealEntry(active)}>Reveal active file</button>
-        <ProjectExplorer tree={tree} active={active} collapsed={collapsed} onToggle={toggleTreeEntry} onOpen={(path) => void action(() => openFile(projectId, path))} onAction={treeAction}/>
+        <button className="ide-reveal-active" disabled={!active} onClick={() => invoke('explorer.reveal', {}, active)}>Reveal active file</button>
+        <ProjectExplorer tree={tree} active={active} collapsed={collapsed} onToggle={toggleTreeEntry} onOpen={(path) => invoke('file.open', {}, path)} onAction={treeAction}/>
         <div className="ide-project-foot">{entries.filter((item) => item.kind === 'file').length} files · Managed local workspace</div>
       </aside>
       <div className="ide-divider ide-divider--vertical" role="separator" aria-label="Resize project pane" tabIndex={0} {...divider('project')}/>
@@ -827,9 +1206,9 @@ export function IdeWorkspace() {
         <div className="ide-upper" ref={upperRef}>
           <div className="ide-editor-panel">
             {runtimeExpanded && <div className="ide-focus-source-heading"><span>Source · {active || 'Java'}</span><button onClick={() => setFocusSourceOpen(false)} aria-label="Close source drawer"><X size={15}/></button></div>}
-            <div className="ide-tabs" role="tablist">{tabs.map((tab) => <div key={tab.path} className={`ide-tab ${active === tab.path ? 'is-active' : ''}`} role="tab" aria-selected={active === tab.path}><button onClick={() => setActive(tab.path)} title={tab.path}><span className="ide-java-icon">J</span>{filename(tab.path)}{tab.draft !== tab.content && <span className="ide-dirty"/>}</button><button aria-label={`Close ${tab.path}`} onClick={() => closeTab(tab.path)}><X size={13}/></button></div>)}</div>
-            <div className="ide-editor-body">{activeTab ? <EditableJavaEditor key={`${projectId}:${activeTab.path}`} projectId={projectId} path={activeTab.path} value={activeTab.draft} onChange={(value) => edit(activeTab.path, value)} diagnostics={diagnostics} navigate={nav} executingLine={!traceStale && activeTab.path === executingSource?.fileId ? executingSource.line : null} pausedLine={!traceStale && debugSession?.status === 'paused' && runtime?.cursor === visualization?.trace.events.length && activeTab.path === executingSource?.fileId ? executingSource.line : null} breakpoints={breakpoints} onToggleBreakpoint={(line) => toggleBreakpoint(activeTab.path, line)} onSave={() => action(() => saveTab(tabsRef.current.find((item) => item.path === activeTab.path)!))}/> : <div className="ide-editor-empty"><span>JAVA SOURCE</span><h2>Choose a file to edit</h2><p>Open a Java file from the project explorer, or create a new one.</p></div>}</div>
-            <div className="ide-editor-foot"><span>{active || 'No file selected'}</span><span>Java · UTF-8 · {activeTab?.draft.split('\n').length ?? 0} lines</span></div>
+            <div className="ide-tabs" role="tablist">{tabs.map((tab) => <div key={tab.path} className={`ide-tab ${active === tab.path ? 'is-active' : ''}`} role="tab" aria-selected={active === tab.path}><button onClick={() => { activeRef.current = tab.path; setActive(tab.path); setRecordedView(null) }} title={tab.path}><span className="ide-java-icon">J</span>{filename(tab.path)}{tab.draft !== tab.content && <span className="ide-dirty"/>}</button><button aria-label={`Close ${tab.path}`} onClick={() => closeTab(tab.path)}><X size={13}/></button></div>)}</div>
+            <div className="ide-editor-body">{recordedView ? <SourceEditor file={recordedView.file} location={recordedView.location} onChooseLine={() => {}}/> : activeTab ? <EditableJavaEditor key={`${projectId}:${activeTab.path}`} projectId={projectId} path={activeTab.path} value={activeTab.draft} onChange={(value) => edit(activeTab.path, value)} diagnostics={diagnostics} navigate={nav} executingLine={activeTab.path === mappedExecutingSource?.path ? mappedExecutingSource.line : null} pausedLine={debugSession?.status === 'paused' && runtime?.cursor === visualization?.trace.events.length && activeTab.path === mappedExecutingSource?.path ? mappedExecutingSource.line : null} breakpoints={displayedBreakpoints} onToggleBreakpoint={(line) => toggleBreakpoint(activeTab.path, line)} onSave={() => invoke('file.save', {}, activeTab.path)}/> : <div className="ide-editor-empty"><span>JAVA SOURCE</span><h2>Choose a file to edit</h2><p>Open a Java file from the project explorer, or create a new one.</p></div>}</div>
+            <div className="ide-editor-foot"><span>{recordedView ? `Recorded source · ${recordedView.file.fileId}` : active || 'No file selected'}</span><span>Java · UTF-8 · {activeTab?.draft.split('\n').length ?? 0} lines</span></div>
           </div>
           <div className="ide-divider ide-divider--vertical" role="separator" aria-label="Resize runtime pane" tabIndex={0} {...divider('runtime')}/>
           <section className="ide-runtime-panel" aria-label="Runtime visualization area">
@@ -850,7 +1229,7 @@ export function IdeWorkspace() {
             {availableTools.map((item) => <button key={item} className={tool === item && bottomOpen ? 'is-active' : ''} onClick={() => { setBottomOpen(true); setTool(item); if (item === 'errors' || item === 'debugger') setBottomHeight(35) }}>{item === 'errors' ? 'ERROR EXPLORER' : item.toUpperCase()}{item === 'problems' && problems.length > 0 && <span className="ide-badge">{problems.length}</span>}</button>)}
             <span className="ide-status-spacer"/>
           </div>
-          {tool === 'debugger' ? <DebugPanel session={debugSession} runtime={runtime} breakpoints={breakpoints} onInspect={(selection) => navigateRuntime(runtime?.cursor ?? 0, selection)} onRemove={removeBreakpoint}/>
+          {tool === 'debugger' ? <DebugPanel session={debugSession} runtime={runtime} breakpoints={displayedBreakpoints} onInspect={(selection) => navigateRuntime(runtime?.cursor ?? 0, selection)} onRemove={removeBreakpoint}/>
           : tool === 'errors' ? recordingIsCurrent ? <ErrorExplorer key={visualization.trace.demoId} trace={visualization.trace} runtime={runtime} selection={runtimeSelection} stderr={execution?.stderr ?? ''} onNavigate={navigateRuntime}/> : <div className="debug-empty">{exception ? <><strong>{exception.type}: {exception.message}</strong><pre>{exception.rawStackTrace}</pre></> : <p>No recorded exception.</p>}</div>
           : tool === 'problems' ? <ProblemsPanel build={build} language={languageProblems} onOpen={openDiagnostic}/>
           : <div className="ide-console">
@@ -861,7 +1240,7 @@ export function IdeWorkspace() {
               {!recordingIsCurrent && allEvents.map((event) => <pre key={event.id} className={`ide-console-${event.kind}`}>{event.kind === 'exit' ? event.signal ? `Process stopped (${event.signal})` : `Process finished with exit code ${event.exitCode ?? '—'}` : event.kind === 'stdin' ? `› ${event.text}` : event.text}</pre>)}
               {!recordingIsCurrent && execution?.stdout && !allEvents.length && <pre className="ide-console-stdout">{execution.stdout}</pre>}
               {!recordingIsCurrent && execution?.stderr && !allEvents.length && <pre className="ide-console-stderr">{execution.stderr}</pre>}
-              {exception && <div className="ide-stack"><strong>{exception.type}: {exception.message}</strong><details><summary>Raw JVM stack trace</summary><pre>{exception.rawStackTrace}</pre></details>{exception.frames.map((frame, index) => <button key={index} disabled={!frame.location} onClick={() => frame.location && action(() => openFile(projectId, frame.location!.path, frame.location!))}>{frame.raw}</button>)}</div>}
+              {exception && <div className="ide-stack"><strong>{exception.type}: {exception.message}</strong><details><summary>Raw JVM stack trace</summary><pre>{exception.rawStackTrace}</pre></details>{exception.frames.map((frame, index) => <button key={index} disabled={!frame.location} onClick={() => frame.location && handleExecutingSource({ fileId: frame.location.path, line: frame.location.line })}>{frame.raw}</button>)}</div>}
               {execution?.outputTruncated && <p className="ide-empty">Inline console retention limit reached; Java continued. {execution.outputArchiveAvailable ? <><a href={`/api/execution/${execution.id}/output/stdout`} download>Download complete stdout</a> · <a href={`/api/execution/${execution.id}/output/stderr`} download>Download complete stderr</a></> : 'Complete output archive unavailable.'}</p>}
               {execution?.outputArchiveError && <p className="ide-empty">Process output archive failed: {execution.outputArchiveError}. Java execution continued.</p>}
               {!execution && !build?.rawOutput && <p className="ide-empty">Program output appears here when you run Java.</p>}
@@ -871,12 +1250,12 @@ export function IdeWorkspace() {
         </section>
       </section>}
     </div>
-    {showLaunch && <LaunchDialog value={{ ...launch, mainClass }} targets={targets} onClose={() => setShowLaunch(false)} onSave={(configuration) => { setLaunch(configuration); setMainClass(configuration.mainClass); setShowLaunch(false) }}/>}
-    {showSymbols && <SymbolSearch client={languageClient} onClose={() => setShowSymbols(false)} onOpen={(location) => openFile(projectIdRef.current, location.path, location)}/>}
-    {projectDialog && <div className="ide-confirm-backdrop"><form className="ide-confirm ide-project-dialog" ref={projectDialogRef} role="dialog" aria-modal="true" aria-labelledby="ide-project-dialog-title" onSubmit={(event) => { event.preventDefault(); void submitProjectDialog() }} onKeyDown={(event) => { if (event.key === 'Escape') { event.preventDefault(); setProjectDialog(null) } else trapDialogTab(event) }}>
-      <h2 id="ide-project-dialog-title">{projectDialog.kind === 'class' ? 'New Java Class' : projectDialog.kind === 'file' ? 'New File' : projectDialog.kind === 'folder' ? 'New Folder' : projectDialog.kind === 'rename' ? 'Rename' : projectDialog.kind === 'delete' ? 'Delete' : 'New Project'}</h2>
-      {projectDialog.kind === 'delete' ? <p>Delete <strong>{projectDialog.path}</strong> from this project?</p> : <label>{projectDialog.kind === 'project' ? 'Project name' : 'Path relative to project root'}<input value={projectDialog.value} onChange={(event) => setProjectDialog({ ...projectDialog, value: event.target.value })} spellCheck={false} required /></label>}
-      <div><button type="button" onClick={() => setProjectDialog(null)}>Cancel</button><button type="submit" className="ide-primary" disabled={busy}>{projectDialog.kind === 'delete' ? 'Delete' : projectDialog.kind === 'rename' ? 'Rename' : 'Create'}</button></div>
+    {showLaunch && <LaunchDialog value={{ ...launch, mainClass }} targets={targets} onClose={() => setShowLaunch(false)} onSave={(configuration) => { launchRef.current = configuration; setLaunch(configuration); mainClassRef.current = configuration.mainClass; setMainClass(configuration.mainClass); cwdInvalidRef.current = false; setCwdInvalid(false); setShowLaunch(false) }}/>}
+    {showSymbols && <SymbolSearch client={languageClient} onClose={() => setShowSymbols(false)} onOpen={(location) => commands.execute('file.open', commandContext(location.path), { location }).then(() => {})}/>}
+    {projectDialog && <div className="ide-confirm-backdrop"><form className="ide-confirm ide-project-dialog" ref={projectDialogRef} role="dialog" aria-modal="true" aria-labelledby="ide-project-dialog-title" onSubmit={(event) => { event.preventDefault(); void submitProjectDialog() }} onKeyDown={(event) => { if (event.key === 'Escape') { event.preventDefault(); cancelProjectDialog() } else trapDialogTab(event) }}>
+      <h2 id="ide-project-dialog-title">{projectDialog.kind === 'class' ? 'New Java Class' : projectDialog.kind === 'file' ? 'New File' : projectDialog.kind === 'folder' ? 'New Folder' : projectDialog.kind === 'rename' ? 'Rename' : projectDialog.kind === 'delete' ? 'Delete' : projectDialog.kind === 'open' ? 'Open File' : 'New Project'}</h2>
+      {projectDialog.kind === 'delete' ? <p>Delete <strong>{projectDialog.path}</strong> from this project?{!!projectDialog.dirtyPaths?.length && <> {projectDialog.dirtyPaths.length} unsaved files will be discarded unless saved first.</>}</p> : <label>{projectDialog.kind === 'project' ? 'Project name' : 'Path relative to project root'}<input value={projectDialog.value} onChange={(event) => setProjectDialog({ ...projectDialog, value: event.target.value })} spellCheck={false} required /></label>}
+      <div><button type="button" onClick={cancelProjectDialog}>Cancel</button><>{projectDialog.kind === 'delete' && !!projectDialog.dirtyPaths?.length && <button type="button" disabled={busy} onClick={() => { const resolve = projectDialog.resolveDelete; setProjectDialog(null); resolve?.('save') }}>Save and delete</button>}</><button type="submit" className="ide-primary" disabled={busy}>{projectDialog.kind === 'delete' ? 'Delete' : projectDialog.kind === 'rename' ? 'Rename' : projectDialog.kind === 'open' ? 'Open' : 'Create'}</button></div>
     </form></div>}
     {pending && <div className="ide-confirm-backdrop"><div className="ide-confirm" ref={confirmRef} onKeyDown={(event) => {
       if (event.key === 'Escape') { event.preventDefault(); void resolveDecision('cancel') }

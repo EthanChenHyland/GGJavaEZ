@@ -9,8 +9,9 @@ import { transitionIsFlow } from './flowPresentation'
 const scalar = (value = 25): Extract<RuntimeValue, { kind: 'primitive' }> => ({ kind: 'primitive', javaType: 'int', value })
 const method = { owner: 'Ledger', name: 'accept', descriptor: '(I)I' }
 const context: ExecutionSite = { ...method, frameId: 'caller', site: 7, rawSeq: 0, source: { fileId: 'Ledger.java', line: 3 } }
-const store: Pick<ReductionStorage, 'put' | 'append'> = {
+const store: Pick<ReductionStorage, 'put' | 'remove' | 'append'> = {
   put: (record, key, value) => ({ ...record, [key]: value }),
+  remove: (record, key) => Object.fromEntries(Object.entries(record).filter(([id]) => id !== key)),
   append: (array, value) => [...array, value],
 }
 const storage = (id: string, ownerId = 'caller', kind: GraphStorage['kind'] = 'variable'): Omit<GraphStorage, 'valueId' | 'writerInvocationId'> =>

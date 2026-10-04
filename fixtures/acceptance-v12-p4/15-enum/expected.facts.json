@@ -1,0 +1,32 @@
+{
+  "category": 15,
+  "mainClass": "Main",
+  "stdout": "true:true:1:3\n",
+  "stderr": "",
+  "exitCode": 0,
+  "recording": "FULL",
+  "facts": [
+    {
+      "kind": "alias",
+      "left": "chosen",
+      "right": "alias"
+    },
+    {
+      "kind": "alias",
+      "left": "chosen",
+      "right": "fromArray"
+    },
+    {
+      "kind": "staticReference",
+      "owner": "Main$Stage",
+      "field": "LOADING",
+      "reference": "chosen"
+    },
+    {
+      "kind": "metadata",
+      "className": "Main$Stage",
+      "enum": true,
+      "ownership": "PROJECT"
+    }
+  ]
+}

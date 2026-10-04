@@ -1,0 +1,52 @@
+{
+  "category": 4,
+  "mainClass": "Main",
+  "stdout": "2:8:true:91:12\n",
+  "stderr": "",
+  "exitCode": 0,
+  "recording": "FULL",
+  "facts": [
+    {
+      "kind": "arrayCell",
+      "array": "grid",
+      "index": 0,
+      "reference": "shortRow"
+    },
+    {
+      "kind": "arrayCell",
+      "array": "grid",
+      "index": 1,
+      "reference": "longRow"
+    },
+    {
+      "kind": "arrayCell",
+      "array": "grid",
+      "index": 2,
+      "null": true
+    },
+    {
+      "kind": "arrayCell",
+      "array": "cube",
+      "index": 0,
+      "reference": "grid"
+    },
+    {
+      "kind": "arrayShape",
+      "array": "shortRow",
+      "elementType": "int",
+      "length": 2
+    },
+    {
+      "kind": "arrayShape",
+      "array": "longRow",
+      "elementType": "int",
+      "length": 8
+    },
+    {
+      "kind": "arrayShape",
+      "array": "rectangular",
+      "elementType": "int[]",
+      "length": 2
+    }
+  ]
+}

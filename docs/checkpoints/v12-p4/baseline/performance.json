@@ -1,0 +1,295 @@
+{
+  "environment": {
+    "node": "v24.20.0",
+    "cpu": "Apple M4 Pro",
+    "memoryGiB": 24
+  },
+  "explicitGc": true,
+  "note": "Single construction per configuration, paired in one process; 256 raw-record batches. Baseline input held outside retained measurement. Rich measurement includes enriched raw facts, semantic events, graph and checkpoint roots. Synthetic facts simulate bytecode observations, not a JVM or WebGL benchmark. 30 deterministic random seeks. Production recorder caps unchanged.",
+  "samples": [
+    {
+      "requestedRawEvents": 200,
+      "generator": {
+        "invocations": 21,
+        "objects": 14,
+        "maxDepth": 10
+      },
+      "baseline": {
+        "rawEvents": 222,
+        "semanticEvents": 288,
+        "appendMs": 4.838416999999993,
+        "retainedMiB": 1.2774734497070312,
+        "graphDigest": null,
+        "graph": null,
+        "batchMs": {
+          "p50": 4.686167000000012,
+          "p95": 4.686167000000012
+        },
+        "scrubMs": {
+          "p50": 0.13666699999998855,
+          "p95": 1.5172910000000002,
+          "max": 1.9955420000000004
+        },
+        "returnToLiveMs": 0.06320900000000051,
+        "checkpoints": {
+          "length": 288,
+          "checkpointCount": 2,
+          "checkpointInterval": 256,
+          "maxCheckpoints": 256,
+          "cachedMaterializationCount": 1,
+          "cachedMaterializationCursor": 245,
+          "retainedStateRoots": 4,
+          "replayedEvents": 2084
+        }
+      },
+      "provenance": {
+        "rawEvents": 262,
+        "semanticEvents": 462,
+        "appendMs": 6.108209000000016,
+        "retainedMiB": 2.9680709838867188,
+        "graphDigest": "d816db945975223b28cb44e207d6e0f75a9b916e454d43e8bbf925d00fdbda85",
+        "graph": {
+          "invocations": 21,
+          "calls": 20,
+          "values": 208,
+          "edges": 332
+        },
+        "batchMs": {
+          "p50": 5.968541999999985,
+          "p95": 5.968541999999985
+        },
+        "scrubMs": {
+          "p50": 0.5837500000000091,
+          "p95": 3.057707999999991,
+          "max": 4.682165999999995
+        },
+        "returnToLiveMs": 0.0645409999999913,
+        "checkpoints": {
+          "length": 462,
+          "checkpointCount": 2,
+          "checkpointInterval": 256,
+          "maxCheckpoints": 256,
+          "cachedMaterializationCount": 1,
+          "cachedMaterializationCursor": 393,
+          "retainedStateRoots": 4,
+          "replayedEvents": 2841
+        }
+      },
+      "appendRatio": 1.262439554093834,
+      "additionalRetainedMiB": 1.6905975341796875
+    },
+    {
+      "requestedRawEvents": 5000,
+      "generator": {
+        "invocations": 382,
+        "objects": 110,
+        "maxDepth": 12
+      },
+      "baseline": {
+        "rawEvents": 5021,
+        "semanticEvents": 6264,
+        "appendMs": 40.978624999999994,
+        "retainedMiB": 12.42816162109375,
+        "graphDigest": null,
+        "graph": null,
+        "batchMs": {
+          "p50": 1.8253330000000005,
+          "p95": 6.242125000000016
+        },
+        "scrubMs": {
+          "p50": 0.35775000000001,
+          "p95": 0.7607919999999808,
+          "max": 0.7936659999999733
+        },
+        "returnToLiveMs": 0.06225000000000591,
+        "checkpoints": {
+          "length": 6264,
+          "checkpointCount": 25,
+          "checkpointInterval": 256,
+          "maxCheckpoints": 256,
+          "cachedMaterializationCount": 1,
+          "cachedMaterializationCursor": 5341,
+          "retainedStateRoots": 27,
+          "replayedEvents": 3406
+        }
+      },
+      "provenance": {
+        "rawEvents": 5783,
+        "semanticEvents": 9788,
+        "appendMs": 131.53770799999995,
+        "retainedMiB": 48.329124450683594,
+        "graphDigest": "8a162be5315a772d60ef5a6d404cf49a120f19cf39da34bf011a31941b6b87f5",
+        "graph": {
+          "invocations": 382,
+          "calls": 381,
+          "values": 3581,
+          "edges": 5965
+        },
+        "batchMs": {
+          "p50": 4.754624999999976,
+          "p95": 12.320583
+        },
+        "scrubMs": {
+          "p50": 1.2334579999999846,
+          "p95": 2.2477079999999887,
+          "max": 9.111249999999984
+        },
+        "returnToLiveMs": 0.06579099999999016,
+        "checkpoints": {
+          "length": 9788,
+          "checkpointCount": 39,
+          "checkpointInterval": 256,
+          "maxCheckpoints": 256,
+          "cachedMaterializationCount": 1,
+          "cachedMaterializationCursor": 8346,
+          "retainedStateRoots": 41,
+          "replayedEvents": 4762
+        }
+      },
+      "appendRatio": 3.2099102397896457,
+      "additionalRetainedMiB": 35.900962829589844
+    },
+    {
+      "requestedRawEvents": 20000,
+      "generator": {
+        "invocations": 1409,
+        "objects": 370,
+        "maxDepth": 12
+      },
+      "baseline": {
+        "rawEvents": 20007,
+        "semanticEvents": 24591,
+        "appendMs": 148.07675,
+        "retainedMiB": 45.566810607910156,
+        "graphDigest": null,
+        "graph": null,
+        "batchMs": {
+          "p50": 1.5279590000000098,
+          "p95": 2.953041999999982
+        },
+        "scrubMs": {
+          "p50": 0.41800000000000637,
+          "p95": 0.8188750000000482,
+          "max": 1.6691660000000184
+        },
+        "returnToLiveMs": 0.05429100000003473,
+        "checkpoints": {
+          "length": 24591,
+          "checkpointCount": 97,
+          "checkpointInterval": 256,
+          "maxCheckpoints": 256,
+          "cachedMaterializationCount": 1,
+          "cachedMaterializationCursor": 20968,
+          "retainedStateRoots": 99,
+          "replayedEvents": 3933
+        }
+      },
+      "provenance": {
+        "rawEvents": 22823,
+        "semanticEvents": 38302,
+        "appendMs": 585.251666,
+        "retainedMiB": 183.46127319335938,
+        "graphDigest": "a30e0762ef281ed5dbf7e20652062020bc8f300f350caec731732e53d0372343",
+        "graph": {
+          "invocations": 1409,
+          "calls": 1408,
+          "values": 13781,
+          "edges": 22587
+        },
+        "batchMs": {
+          "p50": 4.1454170000001795,
+          "p95": 16.218416000000047
+        },
+        "scrubMs": {
+          "p50": 0.9864999999999782,
+          "p95": 31.973541999999725,
+          "max": 32.76941600000009
+        },
+        "returnToLiveMs": 0.05341599999974278,
+        "checkpoints": {
+          "length": 38302,
+          "checkpointCount": 150,
+          "checkpointInterval": 256,
+          "maxCheckpoints": 256,
+          "cachedMaterializationCount": 1,
+          "cachedMaterializationCursor": 32659,
+          "retainedStateRoots": 152,
+          "replayedEvents": 3418
+        }
+      },
+      "appendRatio": 3.9523535328807524,
+      "additionalRetainedMiB": 137.89446258544922
+    },
+    {
+      "requestedRawEvents": 100000,
+      "generator": {
+        "invocations": 6814,
+        "objects": 1693,
+        "maxDepth": 12
+      },
+      "baseline": {
+        "rawEvents": 100017,
+        "semanticEvents": 122139,
+        "appendMs": 3000.632667,
+        "retainedMiB": 212.95470428466797,
+        "graphDigest": null,
+        "graph": null,
+        "batchMs": {
+          "p50": 1.515292000000045,
+          "p95": 46.688625000000684
+        },
+        "scrubMs": {
+          "p50": 0.8741250000002765,
+          "p95": 1.7067090000000462,
+          "max": 7.138708000000406
+        },
+        "returnToLiveMs": 0.07241700000031415,
+        "checkpoints": {
+          "length": 122139,
+          "checkpointCount": 239,
+          "checkpointInterval": 512,
+          "maxCheckpoints": 256,
+          "cachedMaterializationCount": 1,
+          "cachedMaterializationCursor": 104146,
+          "retainedStateRoots": 241,
+          "replayedEvents": 8165
+        }
+      },
+      "provenance": {
+        "rawEvents": 113643,
+        "semanticEvents": 190031,
+        "appendMs": 8099.876166999999,
+        "retainedMiB": 816.9056625366211,
+        "graphDigest": "2a7ec98d455de8e43f4fe5c0a495e312b832459a0540065b2969439ff8ae9dac",
+        "graph": {
+          "invocations": 6814,
+          "calls": 6813,
+          "values": 67849,
+          "edges": 110408
+        },
+        "batchMs": {
+          "p50": 3.9825419999997393,
+          "p95": 93.91700000000128
+        },
+        "scrubMs": {
+          "p50": 3.62029099999927,
+          "p95": 91.84666700000162,
+          "max": 98.92983399999866
+        },
+        "returnToLiveMs": 0.08304099999804748,
+        "checkpoints": {
+          "length": 190031,
+          "checkpointCount": 186,
+          "checkpointInterval": 1024,
+          "maxCheckpoints": 256,
+          "cachedMaterializationCount": 1,
+          "cachedMaterializationCursor": 162036,
+          "retainedStateRoots": 188,
+          "replayedEvents": 15332
+        }
+      },
+      "appendRatio": 2.699389450791445,
+      "additionalRetainedMiB": 603.9509582519531
+    }
+  ]
+}

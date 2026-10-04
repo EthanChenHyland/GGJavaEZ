@@ -1,6 +1,56 @@
 # Java visualization coverage
 
-## Current semantic foundation — v12 Phase 3
+## Current coverage — v12 Phase 4
+
+This section supersedes the historical matrices below. **FULL means the explicitly bounded observed concept in this row, not universal Java support or complete library instrumentation.** Java runs locally without a sandbox; Maven/Gradle execute build logic. Observation limits stop visualization, never restart or terminate a valid application. The canonical Console and actual exit status remain authoritative.
+
+Phase 4 adds exact primitive values, separate class storage, bounded generic arrays, stable String identities, structural JDK collection adapters, ownership metadata, successful file-operation evidence, and canonical IDE commands. RuntimeState/ExecutionGraph contain no camera, material or XYZ fields. Existing stable world anchors, completed calls and immutable history remain. [best.png](best.png) is the immediate Spatial 2.0 hierarchy/composition reference; the shell/camera/material rewrite is deferred.
+
+| Construct | Coverage | Observed semantics, responsible layer and remaining limit |
+| --- | --- | --- |
+| All eight primitives | FULL | Recorder, normalizer, validation, graph, archive and Inspector preserve byte/short/int/boolean, signed 64-bit decimal long, float/double negative zero/NaN/infinities and one UTF-16 char including surrogates. Floating NaN payload bits are not modeled. |
+| String | PARTIAL | Real object identity/aliasing and up to 256 UTF-16 units with full length. No internal byte array/coder/hash fields. Beyond-preview content is unavailable to history. |
+| Locals | PARTIAL | Debug slot/live-range identity and actual stores/retirement; missing debug metadata or merged bytecode provenance stays unknown. No source-wide lexical scope inference. |
+| Static fields / initialization | PARTIAL | Separate stable class/declaring-field storage; actual project GETSTATIC/PUTSTATIC and distinct ordered `<clinit>`. Reads/initial snapshots are observations, not writers. A first write without a prior observation has unavailable old value. Library/reflective writes have no general mutation probe. |
+| Instance fields | PARTIAL | Actual project declarations, inherited project ownership, reads/writes, synthetic outer fields. Inherited nonproject instance-field access stops observation unsupported after the successful original opcode; Java continues. Reflective/library changes are observed only at supported resnapshot boundaries. |
+| References / null | FULL | Actual object identity and null across supported observed locals, fields, returns, arrays and summaries; no name/value equality guessing. |
+| All primitive arrays | PARTIAL | One typed array architecture, true length, first 32 cells plus sparse observed reads/writes; actual successful opcode operands, stable indices, exact values and immutable history. Unseen cells stay unavailable. |
+| Object/reference arrays | PARTIAL | Same generic array model, aliases/covariance/nulls and real target identities. Bounded prefix/sparse coverage; no duplicate objects. |
+| Multidimensional / ragged arrays | PARTIAL | Nested array identities/references and actual independent row lengths/null rows, never an invented rectangular matrix. Bounded observation depth/prefix. |
+| Constructors | FULL | Verifier-safe pre-super entry, actual invocation tokens/chains and initialized receiver, reconciled exceptional unwind. |
+| Methods / calls / returns | PARTIAL | Original site/full descriptor, actual project implementation and values, completed retained invocations. Libraries are call boundaries, not full internal traces. Unsupported producer recipes remain unknown. |
+| Recursion | FULL | Distinct bounded project invocations and actual caller/callee identities; 128 live-frame / existing event limits stop only observation. |
+| Loops / branches | PARTIAL | Actual project lines, successful branches and executed calls; no inferred named loop/iteration entities or lexical scopes. |
+| Inheritance / overriding / interfaces / abstract classes | PARTIAL | Actual entered implementation, declaring project fields and interface/default dispatch. Abstract/native bodies and unobserved library callbacks remain boundaries. |
+| Enums | PARTIAL | Real singleton identity, project static constants, initialization and actual fields; library internals collapsed. |
+| Records | FULL | Tested generic construction, component fields, accessors and project calls; generated methods retain truthful bytecode semantics. |
+| Generics | PARTIAL | Actual erased runtime types and observed values; no reconstructed source generic argument model. |
+| ArrayList | PARTIAL | Exact trusted JDK class: verified storage, size/index order and 32 child references, refreshed after observed successful receiver calls. Add/get/set/remove/clear history tested. |
+| LinkedList | PARTIAL | Verified exact JDK node storage and list/queue/deque ordering; bounded children and traversal. |
+| Map | PARTIAL | Exact JDK HashMap/TreeMap structural entries, key/value identities/null, size and truthful unordered/key-sorted metadata. At most 16 entries/32 children and bounded scans. No callback-based decoding. |
+| Set | PARTIAL | Exact JDK HashSet/TreeSet structural membership and truthful unordered/sorted metadata. Bounded observed children, no fabricated order. |
+| Queue / Deque | PARTIAL | Exact ArrayDeque and LinkedList storage, logical front-to-back order and size; declared Queue/Deque boundary metadata when observable. |
+| Custom collections / library boundaries | PARTIAL | PROJECT/LIBRARY/JDK/SYNTHETIC metadata. Unsupported exact classes/layouts use opaque summaries; user overrides/toString/iterators/hash/compare callbacks are never invoked to inspect them. Arbitrary static library mutators may leave last-observed state stale. |
+| Static nested / inner / anonymous classes | PARTIAL | Actual runtime owner/name; static nested has no invented outer link, inner synthetic outer fields retained, anonymous/generated metadata. Closure/source naming is not reconstructed. |
+| Lambdas / captured values / method references | PARTIAL | Actual project lambda-body/callback invocations and useful observed values; invokedynamic/library boundary remains dynamic when caller/capture provenance is insufficient. No invented complete closure model. |
+| Exceptions | PARTIAL | Actual throw identity, failed call, unwind/catch/finally, Error Explorer and Trace Cause. Safe stored messages only; unsafe inherited getters suppressed, causes/suppressed internals unexpanded. |
+| stdin | PARTIAL | Actual successful wrapped reads, distinct wait state, successful Scanner lexemes and proven destination edges. Failed reads claim no consumption. No universal parser/token adapter. |
+| stdout / stderr | PARTIAL | Actual emitted text/source/invocation and proven argument edges where known; formatted text provenance can remain unknown. Complete Console survives observer limits. |
+| File I/O | PARTIAL | Successful supported Files readString/writeString/newBufferedReader/newBufferedWriter and established buffered file-resource operations; bounded 256-unit preview/count/path, never repeat I/O. Buffered memory streams are not files. Arbitrary readers/writers, constructors and non-String CharSequence contents may be opaque. |
+| Maven / Gradle dependencies | PARTIAL | Real pinned-tool builds and commons-lang3 external dependency projects passed. Runtime classpaths ordered; dependency internals collapsed, build plugins remain unsandboxed. |
+| Reflection | PARTIAL | Actual entered instrumented project methods/constructors retained; reflective relationships stay dynamic/unknown and indirect writes are not general probes. Java behavior preserved in tested calls. |
+| Dynamic loading | PARTIAL | Bounded custom-loader test preserves Java. Newly defined original uninstrumented bytes lack internal probes; no general runtime classloader transformation. |
+| Multiple threads | UNSUPPORTED | Second semantic probe thread stops observation unsupported; same JVM continues. No lanes, scheduling or happens-before model. |
+
+**Bounds:** normal production capture remains 20,000 raw records, 8 MiB, 256 cumulative identities and 128 live frames. Array/collection initial observations are bounded to 32 children; String preview 256 UTF-16 units; traversal depth/scans and field/class observation budgets are bounded. Completed observer FULL does not assert every library effect was observed. Capability remains conservative. Larger benchmark graphs use synthetic inputs without raising production caps.
+
+**Presentation:** bounded String/collection rows use existing real cuboids and explicit overflow cues; hidden rows have no fake face connectors. Sparse out-of-prefix array cells and class statics are inspectable data; dedicated static solids and dense grouping await Phase 5. Historical static/collection observations retain immutable roots. No Spatial 2.0 rendering redesign was performed.
+
+**IDE foundation:** Open/Save/Save All/close variants/new file/class/folder/rename/delete/reveal/copy path, Java symbol rename, familiar debugger shortcuts and quick-open/palette actions share a testable command service. Filesystem rename uses persisted nonce receipts, segment-aware transitions, closed/open draft retention, breakpoints/cwd/model/JDT invalidation and hash-verified external captured-source bindings. Captured source bytes and runtime IDs never change. Receipt retention is last 128 operations and the workspace queue is in-process; native testing is macOS with synthetic portable-name/path tests. Filesystem rename and JDT symbol rename remain separate.
+
+Evidence: [Phase 4 validation](docs/checkpoints/v12-p4/VALIDATION.md), [memory gate](docs/checkpoints/v12-p4/MEMORY.md), [performance](docs/checkpoints/v12-p4/PERFORMANCE.md), [fresh production corpus](tests/coverage-v12-p4/README.md), [shared contract](docs/checkpoints/v12-p4/CONTRACT.md). Actual installed runtime tested is OpenJDK 26.0.2.1; compilation release targets do not establish other installed-runtime compatibility.
+
+## Historical semantic foundation — v12 Phase 3
 
 The user-scoped Phase 3 adds a renderer-independent ExecutionGraph to the existing pure reducer and incremental history. It does not broaden every Java value/library type or redesign Spatial. The historical Milestone 11.5 matrix below records the earlier audit; this section supersedes its call/return, inheritance, dispatch and provenance limitations.
 

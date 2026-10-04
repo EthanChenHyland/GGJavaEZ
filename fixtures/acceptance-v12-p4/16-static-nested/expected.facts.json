@@ -1,0 +1,26 @@
+{
+  "category": 16,
+  "mainClass": "Main",
+  "stdout": "26\n",
+  "stderr": "",
+  "exitCode": 0,
+  "recording": "FULL",
+  "facts": [
+    {
+      "kind": "invoked",
+      "owner": "Main$Channel",
+      "method": "doubled"
+    },
+    {
+      "kind": "field",
+      "className": "Main$Channel",
+      "field": "rate",
+      "javaType": "int",
+      "value": 13
+    },
+    {
+      "kind": "noOuterReference",
+      "className": "Main$Channel"
+    }
+  ]
+}

@@ -63,7 +63,9 @@ function assertStopped(result, budget, state = 'STOPPED_LIMIT') {
     lastRecordedSeq: stop.seq === 0 ? null : stop.seq - 1 });
   expect(Buffer.byteLength(JSON.stringify(stop) + '\n')).toBeLessThanOrEqual(1024);
   expect(result.rawEvents.length - 1).toBeLessThanOrEqual(result.limits.rawEventLimit);
-  const prefixBytes = Buffer.byteLength(result.rawText.slice(0, result.rawText.lastIndexOf('{"v":1,"seq":')));
+  // The terminal control is the last line; additive envelope fields can change key order.
+  const lines = result.rawText.split('\n').filter(Boolean);
+  const prefixBytes = Buffer.byteLength(lines.slice(0, -1).map(line => line + '\n').join(''));
   expect(prefixBytes).toBeLessThanOrEqual(result.limits.rawByteLimit);
   expect(result.recording).toEqual(stop.recording);
   if (result.sidecar) {
@@ -146,13 +148,26 @@ describe.each([
   ['string', 'String huge="x".repeat(40_000_000); System.out.println("SIZE "+huge.length());'],
   ['int array', 'int[] huge=new int[12_000_000]; System.out.println("SIZE "+huge.length);'],
 ])('bounded large %s serialization', (name, action) => {
-  test('stops before allocating an oversized observer payload, with a constrained heap', async () => {
+  test('retains only a bounded preview under a constrained heap without stopping Java or capture', async () => {
     const result = await recordProgram({ 'Main.java': `public class Main { public static void main(String[] args) { ${action} System.out.println("DONE"); } }` },
       { vmArgs: ['-Xmx96m'] });
     expect(result.code).toBe(0);
     expect(result.stderr).toBe('');
     expect(result.stdout).toMatch(/^SIZE (40000000|12000000)\nDONE\n$/);
-    assertStopped(result, 'bytes');
+    // Phase 4 replaces the old whole-value serialization with a bounded preview.
+    // Forced byte/event/identity saturation remains checked above and below.
+    expect(result.recording.state).toBe('FULL');
+    expect(result.rawEvents.some(event => event.type === 'capture_saturated')).toBe(false);
+    expect(result.rawBytes).toBeLessThan(100000);
+    const observation = result.rawEvents.find(event => name === 'string'
+      ? event.type === 'string_object' && event.length === 40000000
+      : event.type === 'array' && event.length === 12000000);
+    expect(observation).toBeDefined();
+    expect(observation.truncated).toBe(true);
+    if (name === 'string') expect(observation.value).toHaveLength(256);
+    else expect(observation.elements).toHaveLength(32);
+    validateTrace(result.trace);
+    expect(seek(result.trace, result.trace.events.length).status).toBe('ended');
   }, 120000);
 });
 
@@ -277,7 +292,7 @@ test('debug pauses and steps after frame saturation have truthful overflow conte
   try {
     let watermark, frozen;
     const result = await recordProgram({ 'Main.java': debugSource }, {
-      vmArgs: [`-Dvisualjava.debugPort=${wire.port}`, '-Dvisualjava.debugToken=recorder-test', '-Xss4m'],
+      vmArgs: ['--add-opens=visualjava.observer/visualjava=ALL-UNNAMED', `-Dvisualjava.debugPort=${wire.port}`, '-Dvisualjava.debugToken=recorder-test', '-Xss4m'],
       interact: async ({ child, readStatus, readRaw, output }) => {
         await wire.paused(); await wire.command('continue');
         await waitFor(readStatus, (value) => value?.waitingForInput && value.recording.budget === 'live frames');
@@ -313,7 +328,7 @@ test('explicit debugger Stop remains authoritative after saturation', async () =
   const wire = await debugWire();
   try {
     const result = await recordProgram({ 'Main.java': debugSource }, {
-      vmArgs: [`-Dvisualjava.debugPort=${wire.port}`, '-Dvisualjava.debugToken=recorder-stop-test', '-Xss4m'],
+      vmArgs: ['--add-opens=visualjava.observer/visualjava=ALL-UNNAMED', `-Dvisualjava.debugPort=${wire.port}`, '-Dvisualjava.debugToken=recorder-stop-test', '-Xss4m'],
       interact: async ({ child, readStatus }) => {
         await wire.paused(); await wire.command('continue');
         await waitFor(readStatus, (value) => value?.waitingForInput && value.recording.state === 'STOPPED_LIMIT');

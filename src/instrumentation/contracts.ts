@@ -9,7 +9,9 @@ export interface RecordingStatus {
 
 /** Recorder/normalizer boundary. See docs/architecture/M6_TRACE_CONTRACT.md. */
 export type RawValue =
-  | { kind: 'int' | 'long' | 'float' | 'double' | 'byte' | 'short'; value: number }
+  | { kind: 'int' | 'byte' | 'short'; value: number }
+  | { kind: 'long'; value: number | string }
+  | { kind: 'float' | 'double'; value: number | 'NaN' | 'Infinity' | '-Infinity' | '-0.0' }
   | { kind: 'boolean'; value: boolean }
   | { kind: 'char'; value: string }
   | { kind: 'string'; value: string }
@@ -21,14 +23,17 @@ export type RawOrigin =
   | { kind: 'unknown' }
   | { kind: 'local'; slot: number; liveRange?: string }
   | { kind: 'constant'; value: RawValue }
-  | { kind: 'call_result' | 'field_read' | 'array_read' | 'new'; site: number }
+  | { kind: 'call_result' | 'field_read' | 'static_read' | 'array_read' | 'new'; site: number }
   | { kind: 'computed'; site: number; opcode: number; inputs: RawOrigin[] }
 
 export interface RawSourceContext {
   v: 1
+  coverageVersion?: 1
   provenanceVersion?: 1
   origin?: RawOrigin
   callId?: string
+  metadata?: RawTypeMetadata
+  ownership?: RawTypeMetadata['ownership']
   seq: number
   threadId: string
   type: string
@@ -41,7 +46,26 @@ export interface RawSourceContext {
 }
 
 export interface RawParameter { slot: number; name: string; descriptor: string; value: RawValue; liveRange: string }
-export interface RawField { owner: string; name: string; descriptor: string; value: RawValue }
+export interface RawField { owner: string; name: string; descriptor: string; value: RawValue; synthetic?: boolean }
+export interface RawTypeMetadata {
+  ownership: 'PROJECT' | 'LIBRARY' | 'JDK' | 'SYNTHETIC'
+  runtimeType: string
+  packageName: string
+  synthetic?: boolean
+  record?: boolean
+  enum?: boolean
+  components?: Array<{ name: string; javaType: string }>
+}
+export interface RawLibrarySummary {
+  kind: 'LIST' | 'SET' | 'MAP' | 'QUEUE' | 'DEQUE' | 'BOXED' | 'OPAQUE'
+  size?: number
+  order?: 'index' | 'iteration' | 'unordered' | 'sorted' | 'fifo'
+  items?: RawValue[]
+  entries?: Array<{ key: RawValue; value: RawValue }>
+  value?: RawValue
+  truncated?: boolean
+  reason?: string
+}
 
 export type RawRuntimeEvent = RawSourceContext & (
   | { type: 'call'; callId: string; invokeKind: 'static' | 'virtual' | 'interface' | 'special' | 'dynamic'; owner: string; name: string; callDescriptor: string; receiver: RawValue | null; arguments: RawValue[]; argumentOrigins: RawOrigin[]; receiverOrigin: RawOrigin }
@@ -49,14 +73,19 @@ export type RawRuntimeEvent = RawSourceContext & (
   | { type: 'receiver_ready'; frameId: string; receiver: RawValue }
   | { type: 'field_read'; frameId: string; objectId: string; owner: string; name: string; descriptor: string; value: RawValue }
   | { type: 'constructed'; objectId: string; className: string; newSite?: number }
-  | { type: 'object'; objectId: string; className: string; fields: RawField[] }
-  | { type: 'array'; objectId: string; elementType: 'int'; elements: number[] }
+  | { type: 'object'; objectId: string; className: string; fields: RawField[]; metadata?: RawTypeMetadata; resnapshot?: boolean }
+  | { type: 'array'; objectId: string; elementType: string; elements: Array<number | RawValue>; length?: number; truncated?: boolean; metadata?: RawTypeMetadata }
+  | { type: 'string_object'; objectId: string; className: string; value: string; length: number; truncated: boolean; metadata?: RawTypeMetadata }
+  | { type: 'library'; objectId: string; className: string; summary: RawLibrarySummary; metadata?: RawTypeMetadata }
+  | { type: 'class_state'; owner: string; fields: RawField[]; initialization: 'started' | 'completed' | 'observed'; metadata?: RawTypeMetadata }
+  | { type: 'static' | 'static_read'; owner: string; name: string; descriptor: string; value: RawValue }
+  | { type: 'file_io'; operation: 'open' | 'read' | 'write' | 'close'; path: string | null; byteCount?: number; charCount?: number; preview?: string; truncated?: boolean; objectId?: string }
   | { type: 'enter'; frameId: string; callerFrameId: string | null; receiver: RawValue | null; parameters: RawParameter[] }
   | { type: 'line'; frameId: string; line: number }
   | { type: 'local'; frameId: string; slot: number; name: string; descriptor: string; liveRange: string; value: RawValue }
   | { type: 'local_end'; frameId: string; slot: number; liveRange: string }
   | { type: 'field'; frameId: string; objectId: string; owner: string; name: string; descriptor: string; value: RawValue }
-  | { type: 'array_read' | 'array_write'; frameId: string; objectId: string; index: number; value: number }
+  | { type: 'array_read' | 'array_write'; frameId: string; objectId: string; index: number; value: number | RawValue; elementType?: string }
   | { type: 'branch'; frameId: string; opcode: number; site: number; left: RawValue; right?: RawValue; taken: boolean }
   | { type: 'return'; frameId: string; value: RawValue }
   | { type: 'exit'; frameId: string }

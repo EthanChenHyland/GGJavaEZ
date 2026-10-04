@@ -12,6 +12,7 @@ import type {
   SlotOwner,
   TraceEvent,
 } from '../contracts/runtime'
+import { assertAssignable, assertRuntimeValue, isTypeMetadata, isLibrarySummary, isStringObservation, runtimeValuesEqual } from './valueValidation'
 import { applyExecutionFact } from './executionGraph'
 import { arrayElementSlotId } from '../contracts/runtime'
 import type { RecordingStatus } from '../instrumentation/contracts'
@@ -97,44 +98,81 @@ function requireInt(value: RuntimeValue): asserts value is { kind: 'primitive'; 
 function requireArray(state: RuntimeState, objectId: string): RuntimeObject & { array: RuntimeArray } {
   const object = state.objects[objectId]
   requireCondition(object, `Unknown object ${objectId}`)
-  requireCondition(object.array && object.className === 'int[]', `Object ${objectId} is not an int array`)
+  requireCondition(object.array && object.className === `${object.array.elementType}[]`, `Object ${objectId} is not an int array or other Java array`)
   return object as RuntimeObject & { array: RuntimeArray }
 }
 
 function requireElement(object: RuntimeObject & { array: RuntimeArray }, index: number): RuntimeSlot {
-  requireCondition(Number.isInteger(index) && index >= 0 && index < object.array.length,
+  requireCondition(Number.isSafeInteger(index) && index >= 0 && index < object.array.length,
     `Array index ${index} outside bounds of ${object.id}`)
-  return object.array.elements[index]
-}
-
-function requireObserved(slot: RuntimeSlot, value: RuntimeValue): void {
-  requireInt(value)
-  requireInt(slot.value)
-  requireCondition(slot.value.value === value.value, `Observed array value mismatch at ${slot.id}`)
-}
-
-function assertCompatible(slot: RuntimeSlot, value: RuntimeValue): void {
-  const matches = value.kind === 'uninitialized' ||
-    (value.kind === 'null' && !['int', 'boolean', 'double', 'long', 'float', 'short', 'byte', 'char'].includes(slot.javaType)) ||
-    (value.kind === 'primitive' && value.javaType === slot.javaType) ||
-    (value.kind === 'stringSummary' && ['String', 'java.lang.String', 'java.lang.Object', 'Object', 'java.lang.CharSequence', 'CharSequence', 'java.io.Serializable', 'java.lang.Comparable', 'java.lang.constant.Constable', 'java.lang.constant.ConstantDesc'].includes(slot.javaType)) ||
-    (value.kind === 'reference' && value.javaType === slot.javaType)
-  requireCondition(matches, `Value type mismatch for ${slot.id}`)
-  if (value.kind === 'primitive') {
-    if (value.javaType === 'int') requireInt(value)
-    else requireCondition(value.javaType === 'boolean' ? typeof value.value === 'boolean' :
-      value.javaType === 'long' ? typeof value.value === 'string' && /^-?\d+$/.test(value.value) :
-      value.javaType === 'char' ? typeof value.value === 'string' && value.value.length === 1 :
-      typeof value.value === 'number' && Number.isFinite(value.value), `Invalid primitive value for ${slot.id}`)
+  return object.array.elements[index] ?? object.array.sparseElements?.[String(index)] ?? {
+    id: arrayElementSlotId(object.id, index), name: `[${index}]`, javaType: object.array.elementType,
+    value: { kind: 'unavailable', javaType: object.array.elementType, reason: 'Array element not observed' },
   }
 }
 
-function sameValue(a: RuntimeValue, b: RuntimeValue): boolean {
-  if (a.kind !== b.kind) return false
-  if (a.kind === 'primitive' && b.kind === 'primitive') return a.javaType === b.javaType && a.value === b.value
-  if (a.kind === 'stringSummary' && b.kind === 'stringSummary') return a.value === b.value
-  if (a.kind === 'reference' && b.kind === 'reference') return a.javaType === b.javaType && a.objectId === b.objectId
-  return a.kind === 'null' || a.kind === 'uninitialized'
+function assertArrayValue(elementType: string, value: RuntimeValue): void {
+  // Preserve the original concrete-int validation and its diagnostic.
+  if (elementType === 'int') requireInt(value)
+  assertCompatible({ id: 'array element', javaType: elementType }, value)
+  requireCondition(value.kind !== 'uninitialized' && value.kind !== 'unavailable', 'Array value must be observed')
+}
+function requireObserved(slot: RuntimeSlot, value: RuntimeValue): void {
+  assertArrayValue(slot.javaType, value)
+  if (slot.javaType === 'int') requireInt(slot.value)
+  requireCondition(sameValue(slot.value, value), `Observed array value mismatch at ${slot.id}`)
+}
+const assertCompatible = assertAssignable
+const sameValue = runtimeValuesEqual
+
+function setElement(state: RuntimeState, object: RuntimeObject & { array: RuntimeArray }, index: number, slot: RuntimeSlot, storage: ReductionStorage): RuntimeState {
+  const array = object.array
+  return withObject(state, { ...object, array: index < array.elements.length
+    ? { ...array, elements: storage.set(array.elements, index, slot) }
+    : { ...array, sparseElements: storage.put(array.sparseElements ?? {}, String(index), slot) },
+  }, storage)
+}
+
+function checkedMetadata(metadata: NonNullable<RuntimeObject['metadata']>): NonNullable<RuntimeObject['metadata']> {
+  requireCondition(isTypeMetadata(metadata), 'Invalid type metadata')
+  return { ...metadata, ...(metadata.components ? { components: metadata.components.map(component => ({ ...component })) } : {}) }
+}
+function checkedReference(state: RuntimeState, value: RuntimeValue, selfId?: string): void {
+  assertRuntimeValue(value)
+  if (value.kind === 'reference') requireCondition(value.objectId === selfId || state.objects[value.objectId], `Unknown reference target ${value.objectId}`)
+}
+function checkedLibrary(state: RuntimeState, library: NonNullable<RuntimeObject['library']>, selfId: string): NonNullable<RuntimeObject['library']> {
+  requireCondition(isLibrarySummary(library), 'Invalid or unbounded library summary')
+  const copy = (value: RuntimeValue) => { checkedReference(state, value, selfId); return { ...value } }
+  const previewLength = (library.items?.length ?? 0) + (library.entries?.length ?? 0)
+  requireCondition(previewLength <= 32 && (library.size === undefined || previewLength <= library.size), 'Library preview exceeds observed size or bound')
+  return { ...library,
+    ...(library.items ? { items: library.items.map(copy) } : {}),
+    ...(library.entries ? { entries: library.entries.map(entry => ({ key: copy(entry.key), value: copy(entry.value) })) } : {}),
+    ...(library.value ? { value: copy(library.value) } : {}),
+  }
+}
+
+/** Observations refresh known state without asserting a writer. */
+function observedSlots(state: RuntimeState, previous: Record<string, RuntimeSlot>, fields: RuntimeSlot[], eventId: string, storage: ReductionStorage, selfId?: string, className?: string): Record<string, RuntimeSlot> {
+  const seen = new Set<string>()
+  let slots = previous
+  for (const input of fields) {
+    requireCondition(!seen.has(input.id), `Duplicate slot ${input.id}`)
+    seen.add(input.id)
+    assertCompatible(input, input.value)
+    checkedReference(state, input.value, selfId)
+    const old = previous[input.id]
+    requireCondition(!old || old.name === input.name && old.javaType === input.javaType && old.declaringClass === (className ?? input.declaringClass),
+      `Observed slot identity changed for ${input.id}`)
+    const slot: RuntimeSlot = { ...old, ...input, value: { ...input.value }, observedAt: eventId,
+      ...(className ? { static: true, declaringClass: className } : {}) }
+    // An observation never changes or fabricates the last proven write event.
+    if (old?.changedAt !== undefined) slot.changedAt = old.changedAt
+    else delete slot.changedAt
+    slots = storage.put(slots, slot.id, slot)
+  }
+  return slots
 }
 
 function scalarText(value: ScalarValue): string {
@@ -142,7 +180,7 @@ function scalarText(value: ScalarValue): string {
     'Console and condition values must be concrete scalars')
   if (value.kind === 'null') return 'null'
   if (value.kind === 'primitive') {
-    assertCompatible({ id: 'scalar', name: 'scalar', javaType: value.javaType, value }, value)
+    assertCompatible({ id: 'scalar', javaType: value.javaType }, value)
   } else requireCondition(value.javaType === 'String' && typeof value.value === 'string', 'Invalid string scalar')
   return String(value.value)
 }
@@ -164,13 +202,13 @@ function closeScope(state: RuntimeState, scope: RuntimeScope, eventId: string, s
   }
 }
 
-function slotsById(slots: RuntimeSlot[], state: RuntimeState): Record<string, RuntimeSlot> {
+function slotsById(slots: RuntimeSlot[], state: RuntimeState, selfId?: string): Record<string, RuntimeSlot> {
   const result: Record<string, RuntimeSlot> = {}
   for (const slot of slots) {
     requireCondition(!Object.hasOwn(result, slot.id), `Duplicate slot ${slot.id}`)
     assertCompatible(slot, slot.value)
     if (slot.value.kind === 'reference') {
-      requireCondition(state.objects[slot.value.objectId], `Unknown reference target ${slot.value.objectId}`)
+      requireCondition(slot.value.objectId === selfId || state.objects[slot.value.objectId], `Unknown reference target ${slot.value.objectId}`)
     }
     result[slot.id] = { ...slot, value: { ...slot.value } }
   }
@@ -192,6 +230,7 @@ function setSlot(state: RuntimeState, owner: SlotOwner, value: RuntimeValue, eve
     const slot = frame.locals[owner.slotId]
     requireCondition(slot, `Unknown slot ${owner.slotId}`)
     assertCompatible(slot, value)
+    checkedReference(state, value)
     if (slot.scopeId !== undefined) requireCondition(state.scopes[slot.scopeId]?.status === 'active' &&
       state.scopes[slot.scopeId].frameId === frame.id, `Slot ${slot.id} has no active owning scope`)
     const next = withFrame(state, {
@@ -213,9 +252,11 @@ function setSlot(state: RuntimeState, owner: SlotOwner, value: RuntimeValue, eve
   const slot = object.fields[owner.slotId]
   requireCondition(slot, `Unknown field ${owner.slotId}`)
   assertCompatible(slot, value)
+  checkedReference(state, value)
   return withObject(state, {
     ...object,
-    fields: storage.put(object.fields, slot.id, { ...slot, value: { ...value } }),
+    fields: storage.put(object.fields, slot.id, { ...slot, value: { ...value },
+      ...(slot.observedAt !== undefined ? { observedAt: eventId, changedAt: eventId } : {}) }),
   }, storage)
 }
 
@@ -398,6 +439,65 @@ export function applyEventWithStorage(state: RuntimeState, event: TraceEvent, st
       next = { ...state, executionGraph: applyExecutionFact(state.executionGraph, event.fact, event.eventId, storage) }
       break
 
+    case 'CLASS_OBSERVE': {
+      requireCondition(event.classId === `jvm:class:${event.className}`, 'Invalid declaring class identity')
+      requireCondition(['started', 'completed', 'observed'].includes(event.initialization), 'Invalid class initialization observation')
+      const old = state.classes?.[event.classId]
+      requireCondition(!old || old.className === event.className, 'Class identity changed')
+      requireCondition(!(old?.initialization === 'completed' && event.initialization === 'started'), 'Completed class initialization cannot restart')
+      const initialization = event.initialization === 'observed' && old ? old.initialization : event.initialization
+      const statics = observedSlots(state, old?.statics ?? {}, event.fields, event.eventId, storage, undefined, event.className)
+      next = { ...state, classes: storage.put(state.classes ?? {}, event.classId, {
+        ...old, id: event.classId, className: event.className, statics, initialization, observedAt: event.eventId,
+        ...(event.initialization === 'completed' && old?.initializedAt === undefined ? { initializedAt: event.eventId } : {}),
+        ...(event.metadata !== undefined ? { metadata: checkedMetadata(event.metadata) } : {}),
+      }) }
+      break
+    }
+    case 'SET_STATIC': {
+      const owner = state.classes?.[event.classId]
+      requireCondition(owner, `Unknown class ${event.classId}`)
+      const slot = owner.statics[event.slotId]
+      requireCondition(slot, `Unknown static field ${event.slotId}`)
+      assertCompatible(slot, event.value)
+      checkedReference(state, event.value)
+      next = { ...state, classes: storage.put(state.classes!, owner.id, { ...owner,
+        observedAt: event.eventId, statics: storage.put(owner.statics, slot.id, { ...slot,
+          value: { ...event.value }, static: true, observedAt: event.eventId, changedAt: event.eventId,
+        }),
+      }) }
+      break
+    }
+    case 'OBJECT_OBSERVE': {
+      const object = state.objects[event.objectId]
+      requireCondition(object, `Unknown object ${event.objectId}`)
+      if (event.string !== undefined) requireCondition(isStringObservation(event.string), 'Invalid String observation')
+      requireCondition(event.replaceFields === undefined || typeof event.replaceFields === 'boolean', 'Invalid field replacement flag')
+      next = withObject(state, { ...object, observedAt: event.eventId,
+        ...(event.fields !== undefined ? { fields: observedSlots(state, event.replaceFields ? {} : object.fields, event.fields, event.eventId, storage, object.id) } : {}),
+        ...(event.library !== undefined ? { library: checkedLibrary(state, event.library, object.id) } : {}),
+        ...(event.string !== undefined ? { string: { ...event.string } } : {}),
+        ...(event.metadata !== undefined ? { metadata: checkedMetadata(event.metadata) } : {}),
+      }, storage)
+      if (event.arrayElements !== undefined) {
+        requireCondition(Array.isArray(event.arrayElements) && event.arrayElements.length <= 32, 'Invalid or unbounded array observation')
+        const seen = new Set<number>()
+        requireArray(next, object.id)
+        for (const observation of event.arrayElements) {
+          const arrayObject = requireArray(next, object.id)
+          const element = requireElement(arrayObject, observation.index)
+          requireCondition(!seen.has(observation.index), `Duplicate observed array index ${observation.index}`)
+          seen.add(observation.index)
+          assertArrayValue(arrayObject.array.elementType, observation.value)
+          checkedReference(next, observation.value)
+          next = setElement(next, arrayObject, observation.index, { ...element,
+            value: { ...observation.value }, observedAt: event.eventId,
+          }, storage)
+        }
+      }
+      break
+    }
+
     case 'PROGRAM_START':
       requireCondition(state.status === 'ready', 'PROGRAM_START can only occur once')
       next = { ...state, status: 'running' }
@@ -468,7 +568,7 @@ export function applyEventWithStorage(state: RuntimeState, event: TraceEvent, st
       requireCondition(frame.returnType && frame.returnType !== 'void', `Frame ${event.frameId} has no return type`)
       requireCondition(frame.returnValue === undefined, `Duplicate return from ${event.frameId}`)
       requireCondition(event.value.kind !== 'uninitialized', 'Return value must be concrete')
-      assertCompatible({ id: `${frame.id}:return`, name: 'return', javaType: frame.returnType, value: event.value }, event.value)
+      assertCompatible({ id: `${frame.id}:return`, javaType: frame.returnType }, event.value)
 
       if (frame.callerFrameId === null) {
         requireCondition(event.destination === null, 'Root return cannot have a caller destination')
@@ -549,40 +649,56 @@ export function applyEventWithStorage(state: RuntimeState, event: TraceEvent, st
         id: event.objectId,
         displayId: event.displayId,
         className: event.className,
-        fields: slotsById(event.fields, state),
+        fields: slotsById(event.fields, state, event.objectId),
         allocatedAt: event.eventId,
+        ...(event.metadata !== undefined ? { metadata: checkedMetadata(event.metadata) } : {}),
       }, storage)
       break
     }
 
     case 'ALLOCATE_ARRAY': {
-      requireCondition(activeFrameId, 'Array allocation requires an active frame')
+      requireCondition(activeFrameId || event.observed === true, 'Array allocation requires an active frame')
       requireCondition(!state.objects[event.objectId], `Duplicate object ${event.objectId}`)
       requireCondition(Number.isInteger(event.displayId) && event.displayId > 0, 'Invalid array display ID')
       requireCondition(!storage.displayUsed(state, event.displayId),
         `Duplicate display ID ${event.displayId}`)
-      requireCondition(event.elementType === 'int', 'Array element type must be int')
+      requireCondition(typeof event.elementType === 'string' && event.elementType.length > 0, 'Invalid array element type')
+      requireCondition(event.observed !== true || event.elements.length <= 32, 'Unbounded initial array observation')
+      const length = event.length ?? event.elements.length
+      requireCondition(Number.isSafeInteger(length) && length >= event.elements.length && length <= 2147483647, 'Invalid array length')
+      requireCondition(event.truncated === undefined || typeof event.truncated === 'boolean', 'Invalid array truncation')
+      requireCondition(event.truncated !== false || length === event.elements.length, 'Incomplete array prefix must be truncated')
       const elements = event.elements.map((value, index) => {
-        requireInt(value)
+        if (event.observed === true && value.kind === 'uninitialized') assertCompatible({ id: 'array element', javaType: event.elementType }, value)
+        else assertArrayValue(event.elementType, value)
+        checkedReference(state, value, event.objectId)
         return {
-          id: arrayElementSlotId(event.objectId, index), name: `[${index}]`, javaType: 'int',
+          id: arrayElementSlotId(event.objectId, index), name: `[${index}]`, javaType: event.elementType,
           value: { ...value },
         }
       })
       next = withObject(state, {
-        id: event.objectId, displayId: event.displayId, className: 'int[]', fields: {},
+        id: event.objectId, displayId: event.displayId, className: `${event.elementType}[]`, fields: {},
         allocatedAt: event.eventId,
-        array: { elementType: 'int', length: elements.length, elements },
+        array: { elementType: event.elementType, length, elements,
+          ...(event.truncated !== undefined ? { truncated: event.truncated } : length > elements.length ? { truncated: true } : {}),
+        },
+        ...(event.metadata !== undefined ? { metadata: checkedMetadata(event.metadata) } : {}),
       }, storage)
       break
     }
 
     case 'ARRAY_READ': {
       requireCondition(activeFrameId === event.frameId, `Array read outside active frame ${event.frameId}`)
-      const element = requireElement(requireArray(state, event.objectId), event.index)
-      requireObserved(element, event.value)
+      const object = requireArray(state, event.objectId)
+      const element = requireElement(object, event.index)
+      if (event.observed === true) {
+        assertArrayValue(object.array.elementType, event.value)
+        checkedReference(state, event.value)
+        next = setElement(state, object, event.index, { ...element, value: { ...event.value }, observedAt: event.eventId }, storage)
+      } else requireObserved(element, event.value)
       if (event.destinationSlotId !== undefined) {
-        next = setSlot(state, { kind: 'frame', frameId: event.frameId, slotId: event.destinationSlotId }, event.value, event.eventId, storage)
+        next = setSlot(next, { kind: 'frame', frameId: event.frameId, slotId: event.destinationSlotId }, event.value, event.eventId, storage)
       }
       next = { ...next, arrayActivity: {
         kind: 'read', eventId: event.eventId, objectId: event.objectId, index: event.index,
@@ -597,6 +713,7 @@ export function applyEventWithStorage(state: RuntimeState, event: TraceEvent, st
       requireCondition(event.indices.length === 2 && event.values.length === 2 && event.operator === '>' &&
         typeof event.result === 'boolean', 'Invalid array comparison')
       const object = requireArray(state, event.objectId)
+      requireCondition(object.array.elementType === 'int', 'Array comparison requires concrete Java ints')
       requireObserved(requireElement(object, event.indices[0]), event.values[0])
       requireObserved(requireElement(object, event.indices[1]), event.values[1])
       requireInt(event.values[0])
@@ -615,8 +732,8 @@ export function applyEventWithStorage(state: RuntimeState, event: TraceEvent, st
       requireCondition(activeFrameId === event.frameId, `Array write outside active frame ${event.frameId}`)
       const object = requireArray(state, event.objectId)
       const element = requireElement(object, event.index)
-      requireInt(event.value)
-      requireInt(element.value)
+      assertArrayValue(object.array.elementType, event.value)
+      checkedReference(state, event.value)
       if (event.from) {
         let origin: RuntimeSlot
         if (event.from.kind === 'element') {
@@ -626,13 +743,14 @@ export function applyEventWithStorage(state: RuntimeState, event: TraceEvent, st
             'Array write origin must be a local in the active frame')
           origin = state.frames[event.from.frameId].locals[event.from.slotId]
           requireCondition(origin, `Unknown origin slot ${event.from.slotId}`)
-          requireCondition(origin.javaType === 'int', `Array origin slot ${origin.id} must be int`)
+          requireCondition(origin.javaType === object.array.elementType, `Array origin slot ${origin.id} must be ${object.array.elementType}`)
         }
-        requireInt(origin.value)
-        requireCondition(origin.value.value === event.value.value, 'Array write origin value mismatch')
+        assertArrayValue(object.array.elementType, origin.value)
+        requireCondition(sameValue(origin.value, event.value), 'Array write origin value mismatch')
       }
-      const elements = storage.set(object.array.elements, event.index, { ...element, value: { ...event.value } })
-      next = withObject(state, { ...object, array: { ...object.array, elements } }, storage)
+      next = setElement(state, object, event.index, { ...element, value: { ...event.value },
+        ...(element.observedAt !== undefined || object.array.truncated || object.array.elementType !== 'int' ? { observedAt: event.eventId, changedAt: event.eventId } : {}),
+      }, storage)
       const mutation = {
         eventId: event.eventId, objectId: event.objectId, index: event.index,
         before: { ...element.value }, after: { ...event.value },

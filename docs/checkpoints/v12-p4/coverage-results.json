@@ -1,0 +1,6363 @@
+{
+  "note": "Final 30 serial actual-JVM accepted cases after audit corrections and named observer module isolation. Node heap deltas include harness/raw/trace/history; one sample, not isolated graph or GPU bytes. Accepted source-bearing trace caches remain local and ignored.",
+  "cases": [
+    {
+      "version": 1,
+      "case": "01-static-initialization",
+      "category": 1,
+      "mainClass": "Main",
+      "accepted": true,
+      "recordedAt": "2026-10-04T02:57:55.973Z",
+      "error": null,
+      "buildSystem": "plain",
+      "timings": {
+        "buildMs": 196.6415,
+        "executionMs": 715.2866670000001,
+        "normalizationMs": 5.325166999999965
+      },
+      "counts": {
+        "rawEvents": 52,
+        "semanticEvents": 97,
+        "rawBatches": 1,
+        "deltaBytes": 18151,
+        "runtimeObjects": 5,
+        "runtimeClasses": 2,
+        "invocations": 4,
+        "calls": 5,
+        "values": 34,
+        "storage": 9,
+        "graphObjects": 5,
+        "io": 2,
+        "edges": 64
+      },
+      "java": {
+        "status": "exited",
+        "exitCode": 0,
+        "stdoutBytes": 18,
+        "stderrBytes": 0,
+        "stdoutSha256": "2de2a777a8fbe6c89bcb51c31332e818fb4a90ca4b043cbfa19c3011cc1a1a2e",
+        "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "observer": {
+        "state": "FULL",
+        "reason": null,
+        "budget": null,
+        "lastRecordedSeq": 51,
+        "executionContinued": true
+      },
+      "semantic": {
+        "status": "ended",
+        "capability": "partial",
+        "diagnostics": []
+      },
+      "jdk": {
+        "available": true,
+        "version": "26.0.2.1",
+        "platform": "darwin",
+        "architecture": "arm64"
+      },
+      "dependencies": [],
+      "classpaths": {
+        "compile": [
+          "<project-classes>"
+        ],
+        "runtime": [
+          "<project-classes>"
+        ]
+      },
+      "outputs": {},
+      "probe": {
+        "domain": "Node semantic seek only; no browser, rendering or GPU measurement",
+        "sampleCount": 30,
+        "seed": "0x4c0ffee",
+        "samples": [
+          {
+            "cursor": 0,
+            "milliseconds": 0.003165999999964697
+          },
+          {
+            "cursor": 97,
+            "milliseconds": 0.0008330000000569271
+          },
+          {
+            "cursor": 83,
+            "milliseconds": 0.8455420000000231
+          },
+          {
+            "cursor": 30,
+            "milliseconds": 0.2587499999999636
+          },
+          {
+            "cursor": 41,
+            "milliseconds": 0.09016700000006495
+          },
+          {
+            "cursor": 56,
+            "milliseconds": 0.1175829999999678
+          },
+          {
+            "cursor": 5,
+            "milliseconds": 0.025624999999990905
+          },
+          {
+            "cursor": 74,
+            "milliseconds": 0.6599579999999605
+          },
+          {
+            "cursor": 79,
+            "milliseconds": 0.039416999999957625
+          },
+          {
+            "cursor": 36,
+            "milliseconds": 0.31870900000012625
+          },
+          {
+            "cursor": 23,
+            "milliseconds": 0.163124999999809
+          },
+          {
+            "cursor": 36,
+            "milliseconds": 0.12950000000000728
+          },
+          {
+            "cursor": 63,
+            "milliseconds": 0.37704200000007404
+          },
+          {
+            "cursor": 66,
+            "milliseconds": 0.022334000000000742
+          },
+          {
+            "cursor": 73,
+            "milliseconds": 0.051791999999977634
+          },
+          {
+            "cursor": 58,
+            "milliseconds": 0.5538750000000618
+          },
+          {
+            "cursor": 97,
+            "milliseconds": 0.0006670000000212895
+          },
+          {
+            "cursor": 46,
+            "milliseconds": 0.37045899999998255
+          },
+          {
+            "cursor": 17,
+            "milliseconds": 0.10845799999992778
+          },
+          {
+            "cursor": 96,
+            "milliseconds": 0.7225000000000819
+          },
+          {
+            "cursor": 23,
+            "milliseconds": 0.14745799999991505
+          },
+          {
+            "cursor": 50,
+            "milliseconds": 0.2114160000000993
+          },
+          {
+            "cursor": 3,
+            "milliseconds": 0.024457999999867752
+          },
+          {
+            "cursor": 58,
+            "milliseconds": 0.41325000000006185
+          },
+          {
+            "cursor": 21,
+            "milliseconds": 0.13720800000010058
+          },
+          {
+            "cursor": 8,
+            "milliseconds": 0.047708999999940715
+          },
+          {
+            "cursor": 63,
+            "milliseconds": 0.5377920000000813
+          },
+          {
+            "cursor": 34,
+            "milliseconds": 0.5348340000000462
+          },
+          {
+            "cursor": 61,
+            "milliseconds": 0.2952090000001135
+          },
+          {
+            "cursor": 80,
+            "milliseconds": 0.15162499999996726
+          }
+        ],
+        "medianScrubMs": 0.14954149999994115,
+        "maximumScrubMs": 0.8455420000000231,
+        "explicitGc": true,
+        "heapBeforeMiB": 14.864570617675781,
+        "heapAfterMiB": 17.200927734375,
+        "retainedMiB": 2.3363571166992188,
+        "heapScope": "Per-case process heap delta retaining raw events, semantic trace, graph, bounded history, source manifest and test harness; not isolated graph bytes",
+        "caveat": "One ordered-suite sample per case; GC/JIT/cache noise and prior-case retention can affect deltas. Negative deltas are reported unchanged.",
+        "history": {
+          "length": 97,
+          "checkpointCount": 1,
+          "checkpointInterval": 256,
+          "maxCheckpoints": 256,
+          "cachedMaterializationCount": 1,
+          "cachedMaterializationCursor": 80,
+          "retainedStateRoots": 3,
+          "replayedEvents": 988
+        }
+      }
+    },
+    {
+      "version": 1,
+      "case": "02-primitive-arrays",
+      "category": 2,
+      "mainClass": "Main",
+      "accepted": true,
+      "recordedAt": "2026-10-04T02:57:56.938Z",
+      "error": null,
+      "buildSystem": "plain",
+      "timings": {
+        "buildMs": 185.65916700000002,
+        "executionMs": 679.8196249999999,
+        "normalizationMs": 2.203084000000217
+      },
+      "counts": {
+        "rawEvents": 55,
+        "semanticEvents": 115,
+        "rawBatches": 1,
+        "deltaBytes": 20109,
+        "runtimeObjects": 11,
+        "runtimeClasses": 0,
+        "invocations": 1,
+        "calls": 2,
+        "values": 46,
+        "storage": 34,
+        "graphObjects": 11,
+        "io": 1,
+        "edges": 84
+      },
+      "java": {
+        "status": "exited",
+        "exitCode": 0,
+        "stdoutBytes": 66,
+        "stderrBytes": 0,
+        "stdoutSha256": "373337346385afd1c4eccbd58dba2e324649f9c9a70c1beb0062cd0bdf7e0f47",
+        "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "observer": {
+        "state": "FULL",
+        "reason": null,
+        "budget": null,
+        "lastRecordedSeq": 54,
+        "executionContinued": true
+      },
+      "semantic": {
+        "status": "ended",
+        "capability": "partial",
+        "diagnostics": []
+      },
+      "jdk": {
+        "available": true,
+        "version": "26.0.2.1",
+        "platform": "darwin",
+        "architecture": "arm64"
+      },
+      "dependencies": [],
+      "classpaths": {
+        "compile": [
+          "<project-classes>"
+        ],
+        "runtime": [
+          "<project-classes>"
+        ]
+      },
+      "outputs": {},
+      "probe": {
+        "domain": "Node semantic seek only; no browser, rendering or GPU measurement",
+        "sampleCount": 30,
+        "seed": "0x4c0ffee",
+        "samples": [
+          {
+            "cursor": 0,
+            "milliseconds": 0.0025000000000545697
+          },
+          {
+            "cursor": 115,
+            "milliseconds": 0.0007080000000314612
+          },
+          {
+            "cursor": 29,
+            "milliseconds": 0.20729100000016842
+          },
+          {
+            "cursor": 40,
+            "milliseconds": 0.08041600000024118
+          },
+          {
+            "cursor": 107,
+            "milliseconds": 0.41329199999972843
+          },
+          {
+            "cursor": 22,
+            "milliseconds": 0.12691700000004857
+          },
+          {
+            "cursor": 53,
+            "milliseconds": 0.2122919999997066
+          },
+          {
+            "cursor": 32,
+            "milliseconds": 0.2010840000002645
+          },
+          {
+            "cursor": 55,
+            "milliseconds": 0.16708299999982046
+          },
+          {
+            "cursor": 90,
+            "milliseconds": 0.18125000000009095
+          },
+          {
+            "cursor": 53,
+            "milliseconds": 0.33633400000007896
+          },
+          {
+            "cursor": 32,
+            "milliseconds": 0.19058399999994435
+          },
+          {
+            "cursor": 3,
+            "milliseconds": 0.01720900000009351
+          },
+          {
+            "cursor": 10,
+            "milliseconds": 0.06191599999965547
+          },
+          {
+            "cursor": 37,
+            "milliseconds": 0.20541700000012497
+          },
+          {
+            "cursor": 0,
+            "milliseconds": 0.0006669999997939158
+          },
+          {
+            "cursor": 71,
+            "milliseconds": 0.41729199999963384
+          },
+          {
+            "cursor": 22,
+            "milliseconds": 0.12433300000020608
+          },
+          {
+            "cursor": 25,
+            "milliseconds": 0.026667000000088592
+          },
+          {
+            "cursor": 8,
+            "milliseconds": 0.028166999999939435
+          },
+          {
+            "cursor": 63,
+            "milliseconds": 0.3578330000000278
+          },
+          {
+            "cursor": 46,
+            "milliseconds": 0.3298749999999018
+          },
+          {
+            "cursor": 21,
+            "milliseconds": 0.19650000000001455
+          },
+          {
+            "cursor": 100,
+            "milliseconds": 0.7274160000001757
+          },
+          {
+            "cursor": 83,
+            "milliseconds": 0.6424589999996897
+          },
+          {
+            "cursor": 70,
+            "milliseconds": 0.5045000000000073
+          },
+          {
+            "cursor": 29,
+            "milliseconds": 0.21791600000005928
+          },
+          {
+            "cursor": 56,
+            "milliseconds": 0.19070799999963128
+          },
+          {
+            "cursor": 63,
+            "milliseconds": 0.040208000000347965
+          },
+          {
+            "cursor": 46,
+            "milliseconds": 0.2775000000001455
+          }
+        ],
+        "medianScrubMs": 0.19360399999982292,
+        "maximumScrubMs": 0.7274160000001757,
+        "explicitGc": true,
+        "heapBeforeMiB": 16.908470153808594,
+        "heapAfterMiB": 17.62646484375,
+        "retainedMiB": 0.7179946899414062,
+        "heapScope": "Per-case process heap delta retaining raw events, semantic trace, graph, bounded history, source manifest and test harness; not isolated graph bytes",
+        "caveat": "One ordered-suite sample per case; GC/JIT/cache noise and prior-case retention can affect deltas. Negative deltas are reported unchanged.",
+        "history": {
+          "length": 115,
+          "checkpointCount": 1,
+          "checkpointInterval": 256,
+          "maxCheckpoints": 256,
+          "cachedMaterializationCount": 1,
+          "cachedMaterializationCursor": 46,
+          "retainedStateRoots": 3,
+          "replayedEvents": 1152
+        }
+      }
+    },
+    {
+      "version": 1,
+      "case": "03-reference-arrays",
+      "category": 3,
+      "mainClass": "Main",
+      "accepted": true,
+      "recordedAt": "2026-10-04T02:57:57.896Z",
+      "error": null,
+      "buildSystem": "plain",
+      "timings": {
+        "buildMs": 183.462,
+        "executionMs": 679.8885829999999,
+        "normalizationMs": 1.7532089999999698
+      },
+      "counts": {
+        "rawEvents": 45,
+        "semanticEvents": 90,
+        "rawBatches": 1,
+        "deltaBytes": 16726,
+        "runtimeObjects": 7,
+        "runtimeClasses": 0,
+        "invocations": 2,
+        "calls": 4,
+        "values": 28,
+        "storage": 18,
+        "graphObjects": 7,
+        "io": 1,
+        "edges": 69
+      },
+      "java": {
+        "status": "exited",
+        "exitCode": 0,
+        "stdoutBytes": 21,
+        "stderrBytes": 0,
+        "stdoutSha256": "d5f1fd3f5ceb9c487c2a3617cdd38d1e19910fb28352e2ace8a90c179657d970",
+        "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "observer": {
+        "state": "FULL",
+        "reason": null,
+        "budget": null,
+        "lastRecordedSeq": 44,
+        "executionContinued": true
+      },
+      "semantic": {
+        "status": "ended",
+        "capability": "partial",
+        "diagnostics": []
+      },
+      "jdk": {
+        "available": true,
+        "version": "26.0.2.1",
+        "platform": "darwin",
+        "architecture": "arm64"
+      },
+      "dependencies": [],
+      "classpaths": {
+        "compile": [
+          "<project-classes>"
+        ],
+        "runtime": [
+          "<project-classes>"
+        ]
+      },
+      "outputs": {},
+      "probe": {
+        "domain": "Node semantic seek only; no browser, rendering or GPU measurement",
+        "sampleCount": 30,
+        "seed": "0x4c0ffee",
+        "samples": [
+          {
+            "cursor": 0,
+            "milliseconds": 0.0015000000003055902
+          },
+          {
+            "cursor": 90,
+            "milliseconds": 0.00045799999998052954
+          },
+          {
+            "cursor": 34,
+            "milliseconds": 0.19900000000006912
+          },
+          {
+            "cursor": 51,
+            "milliseconds": 0.11687500000016371
+          },
+          {
+            "cursor": 76,
+            "milliseconds": 0.1759159999996882
+          },
+          {
+            "cursor": 63,
+            "milliseconds": 0.38124999999990905
+          },
+          {
+            "cursor": 68,
+            "milliseconds": 0.04224999999996726
+          },
+          {
+            "cursor": 81,
+            "milliseconds": 0.09920799999963492
+          },
+          {
+            "cursor": 79,
+            "milliseconds": 0.5099159999999756
+          },
+          {
+            "cursor": 85,
+            "milliseconds": 0.044834000000264496
+          },
+          {
+            "cursor": 58,
+            "milliseconds": 0.3501249999999345
+          },
+          {
+            "cursor": 64,
+            "milliseconds": 0.04162499999983993
+          },
+          {
+            "cursor": 56,
+            "milliseconds": 0.34366599999975733
+          },
+          {
+            "cursor": 45,
+            "milliseconds": 0.26766700000007404
+          },
+          {
+            "cursor": 38,
+            "milliseconds": 0.20537500000000364
+          },
+          {
+            "cursor": 79,
+            "milliseconds": 0.2568750000000364
+          },
+          {
+            "cursor": 20,
+            "milliseconds": 0.10141600000042672
+          },
+          {
+            "cursor": 32,
+            "milliseconds": 1.0308749999999236
+          },
+          {
+            "cursor": 73,
+            "milliseconds": 0.3166659999997137
+          },
+          {
+            "cursor": 61,
+            "milliseconds": 0.3127079999999296
+          },
+          {
+            "cursor": 86,
+            "milliseconds": 0.1606659999997646
+          },
+          {
+            "cursor": 71,
+            "milliseconds": 0.3945829999997841
+          },
+          {
+            "cursor": 87,
+            "milliseconds": 0.14004100000011022
+          },
+          {
+            "cursor": 79,
+            "milliseconds": 0.7438329999999951
+          },
+          {
+            "cursor": 49,
+            "milliseconds": 0.4679590000000644
+          },
+          {
+            "cursor": 1,
+            "milliseconds": 0.004791999999724794
+          },
+          {
+            "cursor": 7,
+            "milliseconds": 0.03850000000011278
+          },
+          {
+            "cursor": 76,
+            "milliseconds": 0.5441670000000158
+          },
+          {
+            "cursor": 75,
+            "milliseconds": 0.4515830000000278
+          },
+          {
+            "cursor": 38,
+            "milliseconds": 0.20974999999998545
+          }
+        ],
+        "medianScrubMs": 0.20756249999999454,
+        "maximumScrubMs": 1.0308749999999236,
+        "explicitGc": true,
+        "heapBeforeMiB": 17.270790100097656,
+        "heapAfterMiB": 17.750572204589844,
+        "retainedMiB": 0.4797821044921875,
+        "heapScope": "Per-case process heap delta retaining raw events, semantic trace, graph, bounded history, source manifest and test harness; not isolated graph bytes",
+        "caveat": "One ordered-suite sample per case; GC/JIT/cache noise and prior-case retention can affect deltas. Negative deltas are reported unchanged.",
+        "history": {
+          "length": 90,
+          "checkpointCount": 1,
+          "checkpointInterval": 256,
+          "maxCheckpoints": 256,
+          "cachedMaterializationCount": 1,
+          "cachedMaterializationCursor": 38,
+          "retainedStateRoots": 3,
+          "replayedEvents": 1174
+        }
+      }
+    },
+    {
+      "version": 1,
+      "case": "04-ragged-arrays",
+      "category": 4,
+      "mainClass": "Main",
+      "accepted": true,
+      "recordedAt": "2026-10-04T02:57:58.853Z",
+      "error": null,
+      "buildSystem": "plain",
+      "timings": {
+        "buildMs": 181.39350000000013,
+        "executionMs": 682.0196659999997,
+        "normalizationMs": 1.3250410000000556
+      },
+      "counts": {
+        "rawEvents": 39,
+        "semanticEvents": 83,
+        "rawBatches": 1,
+        "deltaBytes": 14954,
+        "runtimeObjects": 10,
+        "runtimeClasses": 0,
+        "invocations": 1,
+        "calls": 2,
+        "values": 47,
+        "storage": 29,
+        "graphObjects": 10,
+        "io": 1,
+        "edges": 80
+      },
+      "java": {
+        "status": "exited",
+        "exitCode": 0,
+        "stdoutBytes": 15,
+        "stderrBytes": 0,
+        "stdoutSha256": "997802be3afe87e3caf55b7757085440aff94302f1a6f2ff6e1d99c02b7ff2ed",
+        "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "observer": {
+        "state": "FULL",
+        "reason": null,
+        "budget": null,
+        "lastRecordedSeq": 38,
+        "executionContinued": true
+      },
+      "semantic": {
+        "status": "ended",
+        "capability": "partial",
+        "diagnostics": []
+      },
+      "jdk": {
+        "available": true,
+        "version": "26.0.2.1",
+        "platform": "darwin",
+        "architecture": "arm64"
+      },
+      "dependencies": [],
+      "classpaths": {
+        "compile": [
+          "<project-classes>"
+        ],
+        "runtime": [
+          "<project-classes>"
+        ]
+      },
+      "outputs": {},
+      "probe": {
+        "domain": "Node semantic seek only; no browser, rendering or GPU measurement",
+        "sampleCount": 30,
+        "seed": "0x4c0ffee",
+        "samples": [
+          {
+            "cursor": 0,
+            "milliseconds": 0.002457999999933236
+          },
+          {
+            "cursor": 83,
+            "milliseconds": 0.0007080000000314612
+          },
+          {
+            "cursor": 13,
+            "milliseconds": 0.16525000000001455
+          },
+          {
+            "cursor": 16,
+            "milliseconds": 0.02545800000007148
+          },
+          {
+            "cursor": 83,
+            "milliseconds": 0.0006249999996725819
+          },
+          {
+            "cursor": 14,
+            "milliseconds": 0.06874999999990905
+          },
+          {
+            "cursor": 33,
+            "milliseconds": 0.1512920000000122
+          },
+          {
+            "cursor": 60,
+            "milliseconds": 0.16883300000017698
+          },
+          {
+            "cursor": 79,
+            "milliseconds": 0.1289160000001175
+          },
+          {
+            "cursor": 50,
+            "milliseconds": 0.3845829999995658
+          },
+          {
+            "cursor": 37,
+            "milliseconds": 0.28291600000011385
+          },
+          {
+            "cursor": 64,
+            "milliseconds": 0.1532919999999649
+          },
+          {
+            "cursor": 63,
+            "milliseconds": 0.4276669999999285
+          },
+          {
+            "cursor": 66,
+            "milliseconds": 0.020459000000300875
+          },
+          {
+            "cursor": 45,
+            "milliseconds": 0.2963329999997768
+          },
+          {
+            "cursor": 16,
+            "milliseconds": 0.0807079999999587
+          },
+          {
+            "cursor": 27,
+            "milliseconds": 0.0933749999999236
+          },
+          {
+            "cursor": 46,
+            "milliseconds": 0.12833399999999529
+          },
+          {
+            "cursor": 45,
+            "milliseconds": 0.29320800000004965
+          },
+          {
+            "cursor": 12,
+            "milliseconds": 0.053875000000061846
+          },
+          {
+            "cursor": 51,
+            "milliseconds": 0.265791000000263
+          },
+          {
+            "cursor": 22,
+            "milliseconds": 0.11966700000039054
+          },
+          {
+            "cursor": 17,
+            "milliseconds": 0.0752079999997477
+          },
+          {
+            "cursor": 72,
+            "milliseconds": 0.48645799999985684
+          },
+          {
+            "cursor": 35,
+            "milliseconds": 0.36029099999996106
+          },
+          {
+            "cursor": 22,
+            "milliseconds": 0.2013329999999769
+          },
+          {
+            "cursor": 77,
+            "milliseconds": 0.5006250000001273
+          },
+          {
+            "cursor": 76,
+            "milliseconds": 0.6327500000002146
+          },
+          {
+            "cursor": 19,
+            "milliseconds": 0.1321250000000873
+          },
+          {
+            "cursor": 10,
+            "milliseconds": 0.05658300000004601
+          }
+        ],
+        "medianScrubMs": 0.14170850000004975,
+        "maximumScrubMs": 0.6327500000002146,
+        "explicitGc": true,
+        "heapBeforeMiB": 17.467514038085938,
+        "heapAfterMiB": 17.818931579589844,
+        "retainedMiB": 0.35141754150390625,
+        "heapScope": "Per-case process heap delta retaining raw events, semantic trace, graph, bounded history, source manifest and test harness; not isolated graph bytes",
+        "caveat": "One ordered-suite sample per case; GC/JIT/cache noise and prior-case retention can affect deltas. Negative deltas are reported unchanged.",
+        "history": {
+          "length": 83,
+          "checkpointCount": 1,
+          "checkpointInterval": 256,
+          "maxCheckpoints": 256,
+          "cachedMaterializationCount": 1,
+          "cachedMaterializationCursor": 10,
+          "retainedStateRoots": 3,
+          "replayedEvents": 902
+        }
+      }
+    },
+    {
+      "version": 1,
+      "case": "05-value-edges",
+      "category": 5,
+      "mainClass": "Main",
+      "accepted": true,
+      "recordedAt": "2026-10-04T02:57:59.800Z",
+      "error": null,
+      "buildSystem": "plain",
+      "timings": {
+        "buildMs": 183.25908299999992,
+        "executionMs": 675.57125,
+        "normalizationMs": 0.9227909999999611
+      },
+      "counts": {
+        "rawEvents": 20,
+        "semanticEvents": 48,
+        "rawBatches": 1,
+        "deltaBytes": 10889,
+        "runtimeObjects": 3,
+        "runtimeClasses": 0,
+        "invocations": 2,
+        "calls": 5,
+        "values": 24,
+        "storage": 16,
+        "graphObjects": 3,
+        "io": 1,
+        "edges": 57
+      },
+      "java": {
+        "status": "exited",
+        "exitCode": 0,
+        "stdoutBytes": 108,
+        "stderrBytes": 0,
+        "stdoutSha256": "eb8f3858436be3755edb15b81046ce42ea11ad9414340b7d0e1904956468659c",
+        "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "observer": {
+        "state": "FULL",
+        "reason": null,
+        "budget": null,
+        "lastRecordedSeq": 19,
+        "executionContinued": true
+      },
+      "semantic": {
+        "status": "ended",
+        "capability": "partial",
+        "diagnostics": []
+      },
+      "jdk": {
+        "available": true,
+        "version": "26.0.2.1",
+        "platform": "darwin",
+        "architecture": "arm64"
+      },
+      "dependencies": [],
+      "classpaths": {
+        "compile": [
+          "<project-classes>"
+        ],
+        "runtime": [
+          "<project-classes>"
+        ]
+      },
+      "outputs": {},
+      "probe": {
+        "domain": "Node semantic seek only; no browser, rendering or GPU measurement",
+        "sampleCount": 30,
+        "seed": "0x4c0ffee",
+        "samples": [
+          {
+            "cursor": 0,
+            "milliseconds": 0.0030419999993682723
+          },
+          {
+            "cursor": 48,
+            "milliseconds": 0.0006660000008196221
+          },
+          {
+            "cursor": 34,
+            "milliseconds": 0.2844999999997526
+          },
+          {
+            "cursor": 30,
+            "milliseconds": 0.22325000000000728
+          },
+          {
+            "cursor": 41,
+            "milliseconds": 0.10649999999986903
+          },
+          {
+            "cursor": 7,
+            "milliseconds": 0.03662499999973079
+          },
+          {
+            "cursor": 5,
+            "milliseconds": 0.016417000000728876
+          },
+          {
+            "cursor": 25,
+            "milliseconds": 0.1680420000002414
+          },
+          {
+            "cursor": 30,
+            "milliseconds": 0.03633400000035181
+          },
+          {
+            "cursor": 36,
+            "milliseconds": 0.06387499999982538
+          },
+          {
+            "cursor": 23,
+            "milliseconds": 0.12308399999983521
+          },
+          {
+            "cursor": 36,
+            "milliseconds": 0.15495800000007875
+          },
+          {
+            "cursor": 14,
+            "milliseconds": 0.0989159999999174
+          },
+          {
+            "cursor": 17,
+            "milliseconds": 0.010583000000224274
+          },
+          {
+            "cursor": 24,
+            "milliseconds": 0.023540999999568157
+          },
+          {
+            "cursor": 9,
+            "milliseconds": 0.07487500000024738
+          },
+          {
+            "cursor": 48,
+            "milliseconds": 0.0006250000005820766
+          },
+          {
+            "cursor": 46,
+            "milliseconds": 0.2733749999997599
+          },
+          {
+            "cursor": 17,
+            "milliseconds": 0.10495799999989686
+          },
+          {
+            "cursor": 47,
+            "milliseconds": 0.2415000000000873
+          },
+          {
+            "cursor": 23,
+            "milliseconds": 0.11083400000006804
+          },
+          {
+            "cursor": 1,
+            "milliseconds": 0.0024169999996956903
+          },
+          {
+            "cursor": 3,
+            "milliseconds": 0.027207999999518506
+          },
+          {
+            "cursor": 9,
+            "milliseconds": 0.06254199999966659
+          },
+          {
+            "cursor": 21,
+            "milliseconds": 0.03704199999992852
+          },
+          {
+            "cursor": 8,
+            "milliseconds": 0.028917000000546977
+          },
+          {
+            "cursor": 14,
+            "milliseconds": 0.05629100000078324
+          },
+          {
+            "cursor": 34,
+            "milliseconds": 0.14600000000064028
+          },
+          {
+            "cursor": 12,
+            "milliseconds": 0.08137499999975262
+          },
+          {
+            "cursor": 31,
+            "milliseconds": 0.14975000000049477
+          }
+        ],
+        "medianScrubMs": 0.06937500000003638,
+        "maximumScrubMs": 0.2844999999997526,
+        "explicitGc": true,
+        "heapBeforeMiB": 17.547256469726562,
+        "heapAfterMiB": 18.083030700683594,
+        "retainedMiB": 0.5357742309570312,
+        "heapScope": "Per-case process heap delta retaining raw events, semantic trace, graph, bounded history, source manifest and test harness; not isolated graph bytes",
+        "caveat": "One ordered-suite sample per case; GC/JIT/cache noise and prior-case retention can affect deltas. Negative deltas are reported unchanged.",
+        "history": {
+          "length": 48,
+          "checkpointCount": 1,
+          "checkpointInterval": 256,
+          "maxCheckpoints": 256,
+          "cachedMaterializationCount": 1,
+          "cachedMaterializationCursor": 31,
+          "retainedStateRoots": 3,
+          "replayedEvents": 502
+        }
+      }
+    },
+    {
+      "version": 1,
+      "case": "06-string-aliases",
+      "category": 6,
+      "mainClass": "Main",
+      "accepted": true,
+      "recordedAt": "2026-10-04T02:58:00.750Z",
+      "error": null,
+      "buildSystem": "plain",
+      "timings": {
+        "buildMs": 186.77441699999963,
+        "executionMs": 676.2603750000007,
+        "normalizationMs": 1.091959000001225
+      },
+      "counts": {
+        "rawEvents": 35,
+        "semanticEvents": 63,
+        "rawBatches": 1,
+        "deltaBytes": 13722,
+        "runtimeObjects": 6,
+        "runtimeClasses": 0,
+        "invocations": 2,
+        "calls": 7,
+        "values": 19,
+        "storage": 10,
+        "graphObjects": 6,
+        "io": 1,
+        "edges": 56
+      },
+      "java": {
+        "status": "exited",
+        "exitCode": 0,
+        "stdoutBytes": 23,
+        "stderrBytes": 0,
+        "stdoutSha256": "6a96ae0baf06e35bb675a52d3f6e006951b37f4c901463450e4df70cb4195e2e",
+        "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "observer": {
+        "state": "FULL",
+        "reason": null,
+        "budget": null,
+        "lastRecordedSeq": 34,
+        "executionContinued": true
+      },
+      "semantic": {
+        "status": "ended",
+        "capability": "partial",
+        "diagnostics": []
+      },
+      "jdk": {
+        "available": true,
+        "version": "26.0.2.1",
+        "platform": "darwin",
+        "architecture": "arm64"
+      },
+      "dependencies": [],
+      "classpaths": {
+        "compile": [
+          "<project-classes>"
+        ],
+        "runtime": [
+          "<project-classes>"
+        ]
+      },
+      "outputs": {},
+      "probe": {
+        "domain": "Node semantic seek only; no browser, rendering or GPU measurement",
+        "sampleCount": 30,
+        "seed": "0x4c0ffee",
+        "samples": [
+          {
+            "cursor": 0,
+            "milliseconds": 0.0024169999996956903
+          },
+          {
+            "cursor": 63,
+            "milliseconds": 0.0005410000003394089
+          },
+          {
+            "cursor": 53,
+            "milliseconds": 0.365458000000217
+          },
+          {
+            "cursor": 16,
+            "milliseconds": 0.10729199999968841
+          },
+          {
+            "cursor": 47,
+            "milliseconds": 0.177375000000211
+          },
+          {
+            "cursor": 2,
+            "milliseconds": 0.007540999999946507
+          },
+          {
+            "cursor": 57,
+            "milliseconds": 0.32625000000007276
+          },
+          {
+            "cursor": 4,
+            "milliseconds": 0.013541999999688414
+          },
+          {
+            "cursor": 19,
+            "milliseconds": 0.07691699999941193
+          },
+          {
+            "cursor": 22,
+            "milliseconds": 0.014666000000033819
+          },
+          {
+            "cursor": 61,
+            "milliseconds": 0.2218750000001819
+          },
+          {
+            "cursor": 56,
+            "milliseconds": 0.29475000000002183
+          },
+          {
+            "cursor": 55,
+            "milliseconds": 0.3135839999995369
+          },
+          {
+            "cursor": 42,
+            "milliseconds": 0.22562500000003638
+          },
+          {
+            "cursor": 1,
+            "milliseconds": 0.002624999999170541
+          },
+          {
+            "cursor": 44,
+            "milliseconds": 0.23229199999968841
+          },
+          {
+            "cursor": 27,
+            "milliseconds": 0.15045899999950052
+          },
+          {
+            "cursor": 62,
+            "milliseconds": 0.24791699999968841
+          },
+          {
+            "cursor": 5,
+            "milliseconds": 0.016290999999910127
+          },
+          {
+            "cursor": 32,
+            "milliseconds": 0.15141700000003766
+          },
+          {
+            "cursor": 63,
+            "milliseconds": 0.0006249999996725819
+          },
+          {
+            "cursor": 18,
+            "milliseconds": 0.07895900000039546
+          },
+          {
+            "cursor": 9,
+            "milliseconds": 0.030625000000327418
+          },
+          {
+            "cursor": 20,
+            "milliseconds": 0.0617500000007567
+          },
+          {
+            "cursor": 35,
+            "milliseconds": 0.07179200000064156
+          },
+          {
+            "cursor": 38,
+            "milliseconds": 0.018791999999848485
+          },
+          {
+            "cursor": 13,
+            "milliseconds": 0.05304100000012113
+          },
+          {
+            "cursor": 8,
+            "milliseconds": 0.02624999999989086
+          },
+          {
+            "cursor": 7,
+            "milliseconds": 0.025040999999873748
+          },
+          {
+            "cursor": 58,
+            "milliseconds": 0.28845800000090094
+          }
+        ],
+        "medianScrubMs": 0.07435450000002675,
+        "maximumScrubMs": 0.365458000000217,
+        "explicitGc": true,
+        "heapBeforeMiB": 17.840293884277344,
+        "heapAfterMiB": 18.02985382080078,
+        "retainedMiB": 0.1895599365234375,
+        "heapScope": "Per-case process heap delta retaining raw events, semantic trace, graph, bounded history, source manifest and test harness; not isolated graph bytes",
+        "caveat": "One ordered-suite sample per case; GC/JIT/cache noise and prior-case retention can affect deltas. Negative deltas are reported unchanged.",
+        "history": {
+          "length": 63,
+          "checkpointCount": 1,
+          "checkpointInterval": 256,
+          "maxCheckpoints": 256,
+          "cachedMaterializationCount": 1,
+          "cachedMaterializationCursor": 58,
+          "retainedStateRoots": 3,
+          "replayedEvents": 725
+        }
+      }
+    },
+    {
+      "version": 1,
+      "case": "07-array-list",
+      "category": 7,
+      "mainClass": "Main",
+      "accepted": true,
+      "recordedAt": "2026-10-04T02:58:01.746Z",
+      "error": null,
+      "buildSystem": "plain",
+      "timings": {
+        "buildMs": 194.70395800000006,
+        "executionMs": 685.6899579999999,
+        "normalizationMs": 2.247083000001112
+      },
+      "counts": {
+        "rawEvents": 92,
+        "semanticEvents": 160,
+        "rawBatches": 1,
+        "deltaBytes": 34766,
+        "runtimeObjects": 6,
+        "runtimeClasses": 0,
+        "invocations": 8,
+        "calls": 19,
+        "values": 38,
+        "storage": 17,
+        "graphObjects": 6,
+        "io": 1,
+        "edges": 123
+      },
+      "java": {
+        "status": "exited",
+        "exitCode": 0,
+        "stdoutBytes": 4,
+        "stderrBytes": 0,
+        "stdoutSha256": "1e114374142085811171a477d3a891ae5f57d18abdfce321815ba3bf6a76c0a3",
+        "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "observer": {
+        "state": "FULL",
+        "reason": null,
+        "budget": null,
+        "lastRecordedSeq": 91,
+        "executionContinued": true
+      },
+      "semantic": {
+        "status": "ended",
+        "capability": "partial",
+        "diagnostics": []
+      },
+      "jdk": {
+        "available": true,
+        "version": "26.0.2.1",
+        "platform": "darwin",
+        "architecture": "arm64"
+      },
+      "dependencies": [],
+      "classpaths": {
+        "compile": [
+          "<project-classes>"
+        ],
+        "runtime": [
+          "<project-classes>"
+        ]
+      },
+      "outputs": {},
+      "probe": {
+        "domain": "Node semantic seek only; no browser, rendering or GPU measurement",
+        "sampleCount": 30,
+        "seed": "0x4c0ffee",
+        "samples": [
+          {
+            "cursor": 0,
+            "milliseconds": 0.0028339999998934218
+          },
+          {
+            "cursor": 160,
+            "milliseconds": 0.0006250000005820766
+          },
+          {
+            "cursor": 20,
+            "milliseconds": 0.18504100000063772
+          },
+          {
+            "cursor": 142,
+            "milliseconds": 1.1110410000001139
+          },
+          {
+            "cursor": 55,
+            "milliseconds": 0.4238329999998314
+          },
+          {
+            "cursor": 140,
+            "milliseconds": 0.8059579999999187
+          },
+          {
+            "cursor": 26,
+            "milliseconds": 0.19891699999971024
+          },
+          {
+            "cursor": 74,
+            "milliseconds": 0.4273329999996349
+          },
+          {
+            "cursor": 107,
+            "milliseconds": 0.3322909999997137
+          },
+          {
+            "cursor": 50,
+            "milliseconds": 0.3971669999991718
+          },
+          {
+            "cursor": 79,
+            "milliseconds": 0.25749999999970896
+          },
+          {
+            "cursor": 155,
+            "milliseconds": 0.7814579999994749
+          },
+          {
+            "cursor": 126,
+            "milliseconds": 1.1300830000000133
+          },
+          {
+            "cursor": 17,
+            "milliseconds": 0.12254099999972823
+          },
+          {
+            "cursor": 17,
+            "milliseconds": 0.0007910000003903406
+          },
+          {
+            "cursor": 121,
+            "milliseconds": 0.9680829999997513
+          },
+          {
+            "cursor": 13,
+            "milliseconds": 0.08950000000004366
+          },
+          {
+            "cursor": 123,
+            "milliseconds": 1.3317079999997077
+          },
+          {
+            "cursor": 94,
+            "milliseconds": 0.7722080000003189
+          },
+          {
+            "cursor": 124,
+            "milliseconds": 0.38000000000010914
+          },
+          {
+            "cursor": 100,
+            "milliseconds": 1.6639160000004267
+          },
+          {
+            "cursor": 120,
+            "milliseconds": 0.3398750000005748
+          },
+          {
+            "cursor": 17,
+            "milliseconds": 0.1615830000000642
+          },
+          {
+            "cursor": 93,
+            "milliseconds": 0.9072499999992942
+          },
+          {
+            "cursor": 112,
+            "milliseconds": 0.22845799999959127
+          },
+          {
+            "cursor": 106,
+            "milliseconds": 0.9963749999997162
+          },
+          {
+            "cursor": 133,
+            "milliseconds": 0.2837499999995998
+          },
+          {
+            "cursor": 20,
+            "milliseconds": 0.1758749999999054
+          },
+          {
+            "cursor": 12,
+            "milliseconds": 0.09324999999989814
+          },
+          {
+            "cursor": 73,
+            "milliseconds": 0.5644579999998314
+          }
+        ],
+        "medianScrubMs": 0.35993750000034197,
+        "maximumScrubMs": 1.6639160000004267,
+        "explicitGc": true,
+        "heapBeforeMiB": 17.71630096435547,
+        "heapAfterMiB": 18.642677307128906,
+        "retainedMiB": 0.9263763427734375,
+        "heapScope": "Per-case process heap delta retaining raw events, semantic trace, graph, bounded history, source manifest and test harness; not isolated graph bytes",
+        "caveat": "One ordered-suite sample per case; GC/JIT/cache noise and prior-case retention can affect deltas. Negative deltas are reported unchanged.",
+        "history": {
+          "length": 160,
+          "checkpointCount": 1,
+          "checkpointInterval": 256,
+          "maxCheckpoints": 256,
+          "cachedMaterializationCount": 1,
+          "cachedMaterializationCursor": 73,
+          "retainedStateRoots": 3,
+          "replayedEvents": 1821
+        }
+      }
+    },
+    {
+      "version": 1,
+      "case": "08-linked-list",
+      "category": 8,
+      "mainClass": "Main",
+      "accepted": true,
+      "recordedAt": "2026-10-04T02:58:02.736Z",
+      "error": null,
+      "buildSystem": "plain",
+      "timings": {
+        "buildMs": 198.00737500000014,
+        "executionMs": 688.3270830000001,
+        "normalizationMs": 2.0312080000003334
+      },
+      "counts": {
+        "rawEvents": 87,
+        "semanticEvents": 151,
+        "rawBatches": 1,
+        "deltaBytes": 32922,
+        "runtimeObjects": 6,
+        "runtimeClasses": 0,
+        "invocations": 7,
+        "calls": 18,
+        "values": 36,
+        "storage": 16,
+        "graphObjects": 6,
+        "io": 1,
+        "edges": 117
+      },
+      "java": {
+        "status": "exited",
+        "exitCode": 0,
+        "stdoutBytes": 4,
+        "stderrBytes": 0,
+        "stdoutSha256": "dac17f56a9c49833915634dcd3c59ae6060475b18141472d73bb09256db33c61",
+        "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "observer": {
+        "state": "FULL",
+        "reason": null,
+        "budget": null,
+        "lastRecordedSeq": 86,
+        "executionContinued": true
+      },
+      "semantic": {
+        "status": "ended",
+        "capability": "partial",
+        "diagnostics": []
+      },
+      "jdk": {
+        "available": true,
+        "version": "26.0.2.1",
+        "platform": "darwin",
+        "architecture": "arm64"
+      },
+      "dependencies": [],
+      "classpaths": {
+        "compile": [
+          "<project-classes>"
+        ],
+        "runtime": [
+          "<project-classes>"
+        ]
+      },
+      "outputs": {},
+      "probe": {
+        "domain": "Node semantic seek only; no browser, rendering or GPU measurement",
+        "sampleCount": 30,
+        "seed": "0x4c0ffee",
+        "samples": [
+          {
+            "cursor": 0,
+            "milliseconds": 0.0018749999999272404
+          },
+          {
+            "cursor": 151,
+            "milliseconds": 0.0005830000000059954
+          },
+          {
+            "cursor": 125,
+            "milliseconds": 0.7816669999992882
+          },
+          {
+            "cursor": 32,
+            "milliseconds": 0.1470420000005106
+          },
+          {
+            "cursor": 31,
+            "milliseconds": 0.15662499999962165
+          },
+          {
+            "cursor": 82,
+            "milliseconds": 0.3030829999997877
+          },
+          {
+            "cursor": 25,
+            "milliseconds": 0.11225000000013097
+          },
+          {
+            "cursor": 60,
+            "milliseconds": 0.17533299999922747
+          },
+          {
+            "cursor": 123,
+            "milliseconds": 0.40287500000067666
+          },
+          {
+            "cursor": 14,
+            "milliseconds": 0.06008300000030431
+          },
+          {
+            "cursor": 69,
+            "milliseconds": 0.29779099999996106
+          },
+          {
+            "cursor": 64,
+            "milliseconds": 0.31866699999955017
+          },
+          {
+            "cursor": 127,
+            "milliseconds": 0.6596250000002328
+          },
+          {
+            "cursor": 34,
+            "milliseconds": 0.2833339999997406
+          },
+          {
+            "cursor": 81,
+            "milliseconds": 0.5885410000000775
+          },
+          {
+            "cursor": 44,
+            "milliseconds": 0.2978750000002037
+          },
+          {
+            "cursor": 99,
+            "milliseconds": 0.43145800000002055
+          },
+          {
+            "cursor": 102,
+            "milliseconds": 0.032167000000299595
+          },
+          {
+            "cursor": 77,
+            "milliseconds": 0.549792000000707
+          },
+          {
+            "cursor": 64,
+            "milliseconds": 0.31825000000026193
+          },
+          {
+            "cursor": 127,
+            "milliseconds": 0.40495800000007875
+          },
+          {
+            "cursor": 66,
+            "milliseconds": 0.3140419999999722
+          },
+          {
+            "cursor": 137,
+            "milliseconds": 0.41083400000024994
+          },
+          {
+            "cursor": 4,
+            "milliseconds": 0.01279199999953562
+          },
+          {
+            "cursor": 3,
+            "milliseconds": 0.012166999999863037
+          },
+          {
+            "cursor": 54,
+            "milliseconds": 0.2726249999996071
+          },
+          {
+            "cursor": 37,
+            "milliseconds": 0.15883300000041345
+          },
+          {
+            "cursor": 32,
+            "milliseconds": 0.14658299999973678
+          },
+          {
+            "cursor": 143,
+            "milliseconds": 0.6199999999998909
+          },
+          {
+            "cursor": 114,
+            "milliseconds": 0.6129169999994701
+          }
+        ],
+        "medianScrubMs": 0.2978330000000824,
+        "maximumScrubMs": 0.7816669999992882,
+        "explicitGc": true,
+        "heapBeforeMiB": 18.050094604492188,
+        "heapAfterMiB": 18.783340454101562,
+        "retainedMiB": 0.733245849609375,
+        "heapScope": "Per-case process heap delta retaining raw events, semantic trace, graph, bounded history, source manifest and test harness; not isolated graph bytes",
+        "caveat": "One ordered-suite sample per case; GC/JIT/cache noise and prior-case retention can affect deltas. Negative deltas are reported unchanged.",
+        "history": {
+          "length": 151,
+          "checkpointCount": 1,
+          "checkpointInterval": 256,
+          "maxCheckpoints": 256,
+          "cachedMaterializationCount": 1,
+          "cachedMaterializationCursor": 114,
+          "retainedStateRoots": 3,
+          "replayedEvents": 1740
+        }
+      }
+    },
+    {
+      "version": 1,
+      "case": "09-hash-map",
+      "category": 9,
+      "mainClass": "Main",
+      "accepted": true,
+      "recordedAt": "2026-10-04T02:58:03.720Z",
+      "error": null,
+      "buildSystem": "plain",
+      "timings": {
+        "buildMs": 195.0460830000011,
+        "executionMs": 685.3797919999997,
+        "normalizationMs": 2.391915999998673
+      },
+      "counts": {
+        "rawEvents": 84,
+        "semanticEvents": 148,
+        "rawBatches": 1,
+        "deltaBytes": 33245,
+        "runtimeObjects": 8,
+        "runtimeClasses": 0,
+        "invocations": 6,
+        "calls": 17,
+        "values": 50,
+        "storage": 17,
+        "graphObjects": 8,
+        "io": 1,
+        "edges": 136
+      },
+      "java": {
+        "status": "exited",
+        "exitCode": 0,
+        "stdoutBytes": 5,
+        "stderrBytes": 0,
+        "stdoutSha256": "9072178dbd27bde4779be43aba102d790e921f5f7d3b73cb6500e0ca33085901",
+        "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "observer": {
+        "state": "FULL",
+        "reason": null,
+        "budget": null,
+        "lastRecordedSeq": 83,
+        "executionContinued": true
+      },
+      "semantic": {
+        "status": "ended",
+        "capability": "partial",
+        "diagnostics": []
+      },
+      "jdk": {
+        "available": true,
+        "version": "26.0.2.1",
+        "platform": "darwin",
+        "architecture": "arm64"
+      },
+      "dependencies": [],
+      "classpaths": {
+        "compile": [
+          "<project-classes>"
+        ],
+        "runtime": [
+          "<project-classes>"
+        ]
+      },
+      "outputs": {},
+      "probe": {
+        "domain": "Node semantic seek only; no browser, rendering or GPU measurement",
+        "sampleCount": 30,
+        "seed": "0x4c0ffee",
+        "samples": [
+          {
+            "cursor": 0,
+            "milliseconds": 0.001790999998775078
+          },
+          {
+            "cursor": 148,
+            "milliseconds": 0.00045899999895482324
+          },
+          {
+            "cursor": 79,
+            "milliseconds": 0.420165999999881
+          },
+          {
+            "cursor": 48,
+            "milliseconds": 0.21829199999956472
+          },
+          {
+            "cursor": 144,
+            "milliseconds": 0.6993340000008175
+          },
+          {
+            "cursor": 80,
+            "milliseconds": 0.44900000000052387
+          },
+          {
+            "cursor": 37,
+            "milliseconds": 0.18208299999969313
+          },
+          {
+            "cursor": 92,
+            "milliseconds": 0.3937500000010914
+          },
+          {
+            "cursor": 129,
+            "milliseconds": 0.23474999999962165
+          },
+          {
+            "cursor": 103,
+            "milliseconds": 0.7324580000004062
+          },
+          {
+            "cursor": 0,
+            "milliseconds": 0.0008749999997235136
+          },
+          {
+            "cursor": 65,
+            "milliseconds": 0.35037499999998545
+          },
+          {
+            "cursor": 50,
+            "milliseconds": 0.29383400000006077
+          },
+          {
+            "cursor": 89,
+            "milliseconds": 0.29724999999962165
+          },
+          {
+            "cursor": 69,
+            "milliseconds": 0.3312500000010914
+          },
+          {
+            "cursor": 81,
+            "milliseconds": 0.09699999999975262
+          },
+          {
+            "cursor": 113,
+            "milliseconds": 0.2411659999997937
+          },
+          {
+            "cursor": 127,
+            "milliseconds": 0.08266700000058336
+          },
+          {
+            "cursor": 97,
+            "milliseconds": 0.717291999999361
+          },
+          {
+            "cursor": 5,
+            "milliseconds": 0.021875000000363798
+          },
+          {
+            "cursor": 74,
+            "milliseconds": 0.5552499999994325
+          },
+          {
+            "cursor": 138,
+            "milliseconds": 0.6932919999999285
+          },
+          {
+            "cursor": 3,
+            "milliseconds": 0.011167000000568805
+          },
+          {
+            "cursor": 59,
+            "milliseconds": 0.38966700000128185
+          },
+          {
+            "cursor": 41,
+            "milliseconds": 0.27016700000058336
+          },
+          {
+            "cursor": 81,
+            "milliseconds": 0.3020409999990079
+          },
+          {
+            "cursor": 47,
+            "milliseconds": 0.26333299999896553
+          },
+          {
+            "cursor": 121,
+            "milliseconds": 2.8109160000003612
+          },
+          {
+            "cursor": 68,
+            "milliseconds": 0.3858749999999418
+          },
+          {
+            "cursor": 93,
+            "milliseconds": 0.24170800000138115
+          }
+        ],
+        "medianScrubMs": 0.2955419999998412,
+        "maximumScrubMs": 2.8109160000003612,
+        "explicitGc": true,
+        "heapBeforeMiB": 18.272682189941406,
+        "heapAfterMiB": 18.80425262451172,
+        "retainedMiB": 0.5315704345703125,
+        "heapScope": "Per-case process heap delta retaining raw events, semantic trace, graph, bounded history, source manifest and test harness; not isolated graph bytes",
+        "caveat": "One ordered-suite sample per case; GC/JIT/cache noise and prior-case retention can affect deltas. Negative deltas are reported unchanged.",
+        "history": {
+          "length": 148,
+          "checkpointCount": 1,
+          "checkpointInterval": 256,
+          "maxCheckpoints": 256,
+          "cachedMaterializationCount": 1,
+          "cachedMaterializationCursor": 93,
+          "retainedStateRoots": 3,
+          "replayedEvents": 1706
+        }
+      }
+    },
+    {
+      "version": 1,
+      "case": "10-tree-map",
+      "category": 10,
+      "mainClass": "Main",
+      "accepted": true,
+      "recordedAt": "2026-10-04T02:58:04.709Z",
+      "error": null,
+      "buildSystem": "plain",
+      "timings": {
+        "buildMs": 197.92416700000103,
+        "executionMs": 684.4618750000009,
+        "normalizationMs": 2.0625829999989946
+      },
+      "counts": {
+        "rawEvents": 80,
+        "semanticEvents": 142,
+        "rawBatches": 1,
+        "deltaBytes": 32866,
+        "runtimeObjects": 9,
+        "runtimeClasses": 0,
+        "invocations": 5,
+        "calls": 16,
+        "values": 50,
+        "storage": 21,
+        "graphObjects": 9,
+        "io": 1,
+        "edges": 135
+      },
+      "java": {
+        "status": "exited",
+        "exitCode": 0,
+        "stdoutBytes": 10,
+        "stderrBytes": 0,
+        "stdoutSha256": "4249c69b8c3ab993bec936b8cceaba1671e65c5f29bee5c60c4240c59c450e1a",
+        "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "observer": {
+        "state": "FULL",
+        "reason": null,
+        "budget": null,
+        "lastRecordedSeq": 79,
+        "executionContinued": true
+      },
+      "semantic": {
+        "status": "ended",
+        "capability": "partial",
+        "diagnostics": []
+      },
+      "jdk": {
+        "available": true,
+        "version": "26.0.2.1",
+        "platform": "darwin",
+        "architecture": "arm64"
+      },
+      "dependencies": [],
+      "classpaths": {
+        "compile": [
+          "<project-classes>"
+        ],
+        "runtime": [
+          "<project-classes>"
+        ]
+      },
+      "outputs": {},
+      "probe": {
+        "domain": "Node semantic seek only; no browser, rendering or GPU measurement",
+        "sampleCount": 30,
+        "seed": "0x4c0ffee",
+        "samples": [
+          {
+            "cursor": 0,
+            "milliseconds": 0.002207999999882304
+          },
+          {
+            "cursor": 142,
+            "milliseconds": 0.0006250000005820766
+          },
+          {
+            "cursor": 73,
+            "milliseconds": 0.4732499999990978
+          },
+          {
+            "cursor": 103,
+            "milliseconds": 0.2971660000002885
+          },
+          {
+            "cursor": 63,
+            "milliseconds": 0.34350000000085856
+          },
+          {
+            "cursor": 76,
+            "milliseconds": 0.09295799999927112
+          },
+          {
+            "cursor": 94,
+            "milliseconds": 0.18041599999924074
+          },
+          {
+            "cursor": 3,
+            "milliseconds": 0.010874999999941792
+          },
+          {
+            "cursor": 53,
+            "milliseconds": 0.26808300000084273
+          },
+          {
+            "cursor": 137,
+            "milliseconds": 0.6187079999999696
+          },
+          {
+            "cursor": 123,
+            "milliseconds": 0.8134159999990516
+          },
+          {
+            "cursor": 64,
+            "milliseconds": 0.32270900000003166
+          },
+          {
+            "cursor": 56,
+            "milliseconds": 0.3696670000008453
+          },
+          {
+            "cursor": 84,
+            "milliseconds": 0.32312499999898137
+          },
+          {
+            "cursor": 64,
+            "milliseconds": 0.4906670000000304
+          },
+          {
+            "cursor": 131,
+            "milliseconds": 0.7147910000003321
+          },
+          {
+            "cursor": 111,
+            "milliseconds": 0.8399589999989985
+          },
+          {
+            "cursor": 58,
+            "milliseconds": 0.27999999999883585
+          },
+          {
+            "cursor": 34,
+            "milliseconds": 0.18262500000128057
+          },
+          {
+            "cursor": 139,
+            "milliseconds": 0.7281669999993028
+          },
+          {
+            "cursor": 86,
+            "milliseconds": 0.506083000000217
+          },
+          {
+            "cursor": 6,
+            "milliseconds": 0.01954200000000128
+          },
+          {
+            "cursor": 74,
+            "milliseconds": 0.361124999999447
+          },
+          {
+            "cursor": 40,
+            "milliseconds": 0.19754200000170385
+          },
+          {
+            "cursor": 75,
+            "milliseconds": 0.2053329999998823
+          },
+          {
+            "cursor": 40,
+            "milliseconds": 0.18625000000065484
+          },
+          {
+            "cursor": 98,
+            "milliseconds": 2.87933300000077
+          },
+          {
+            "cursor": 24,
+            "milliseconds": 0.19112499999937427
+          },
+          {
+            "cursor": 140,
+            "milliseconds": 0.7138749999994616
+          },
+          {
+            "cursor": 90,
+            "milliseconds": 0.4982090000012249
+          }
+        ],
+        "medianScrubMs": 0.3229169999995065,
+        "maximumScrubMs": 2.87933300000077,
+        "explicitGc": true,
+        "heapBeforeMiB": 18.372474670410156,
+        "heapAfterMiB": 18.90497589111328,
+        "retainedMiB": 0.532501220703125,
+        "heapScope": "Per-case process heap delta retaining raw events, semantic trace, graph, bounded history, source manifest and test harness; not isolated graph bytes",
+        "caveat": "One ordered-suite sample per case; GC/JIT/cache noise and prior-case retention can affect deltas. Negative deltas are reported unchanged.",
+        "history": {
+          "length": 142,
+          "checkpointCount": 1,
+          "checkpointInterval": 256,
+          "maxCheckpoints": 256,
+          "cachedMaterializationCount": 1,
+          "cachedMaterializationCursor": 90,
+          "retainedStateRoots": 3,
+          "replayedEvents": 1892
+        }
+      }
+    },
+    {
+      "version": 1,
+      "case": "11-hash-set",
+      "category": 11,
+      "mainClass": "Main",
+      "accepted": true,
+      "recordedAt": "2026-10-04T02:58:05.679Z",
+      "error": null,
+      "buildSystem": "plain",
+      "timings": {
+        "buildMs": 192.9927919999991,
+        "executionMs": 679.3585410000014,
+        "normalizationMs": 1.861999000000651
+      },
+      "counts": {
+        "rawEvents": 76,
+        "semanticEvents": 131,
+        "rawBatches": 1,
+        "deltaBytes": 29504,
+        "runtimeObjects": 6,
+        "runtimeClasses": 0,
+        "invocations": 5,
+        "calls": 16,
+        "values": 35,
+        "storage": 16,
+        "graphObjects": 6,
+        "io": 1,
+        "edges": 107
+      },
+      "java": {
+        "status": "exited",
+        "exitCode": 0,
+        "stdoutBytes": 7,
+        "stderrBytes": 0,
+        "stdoutSha256": "ec2ea0f613774ab97c7c133c756dbeb93e02062b85235d034704a75aea86d3b4",
+        "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "observer": {
+        "state": "FULL",
+        "reason": null,
+        "budget": null,
+        "lastRecordedSeq": 75,
+        "executionContinued": true
+      },
+      "semantic": {
+        "status": "ended",
+        "capability": "partial",
+        "diagnostics": []
+      },
+      "jdk": {
+        "available": true,
+        "version": "26.0.2.1",
+        "platform": "darwin",
+        "architecture": "arm64"
+      },
+      "dependencies": [],
+      "classpaths": {
+        "compile": [
+          "<project-classes>"
+        ],
+        "runtime": [
+          "<project-classes>"
+        ]
+      },
+      "outputs": {},
+      "probe": {
+        "domain": "Node semantic seek only; no browser, rendering or GPU measurement",
+        "sampleCount": 30,
+        "seed": "0x4c0ffee",
+        "samples": [
+          {
+            "cursor": 0,
+            "milliseconds": 0.0029590000012831297
+          },
+          {
+            "cursor": 131,
+            "milliseconds": 0.0007079999995767139
+          },
+          {
+            "cursor": 73,
+            "milliseconds": 0.5291250000009313
+          },
+          {
+            "cursor": 4,
+            "milliseconds": 0.017958000000362517
+          },
+          {
+            "cursor": 107,
+            "milliseconds": 0.6169169999993755
+          },
+          {
+            "cursor": 98,
+            "milliseconds": 0.5286660000001575
+          },
+          {
+            "cursor": 105,
+            "milliseconds": 0.05500000000029104
+          },
+          {
+            "cursor": 36,
+            "milliseconds": 0.1661660000008851
+          },
+          {
+            "cursor": 31,
+            "milliseconds": 0.14104199999928824
+          },
+          {
+            "cursor": 38,
+            "milliseconds": 0.03524999999899592
+          },
+          {
+            "cursor": 13,
+            "milliseconds": 0.05062499999985448
+          },
+          {
+            "cursor": 64,
+            "milliseconds": 0.28087499999855936
+          },
+          {
+            "cursor": 111,
+            "milliseconds": 0.2996659999989788
+          },
+          {
+            "cursor": 18,
+            "milliseconds": 0.0864160000000993
+          },
+          {
+            "cursor": 9,
+            "milliseconds": 0.03520800000114832
+          },
+          {
+            "cursor": 76,
+            "milliseconds": 0.3582079999996495
+          },
+          {
+            "cursor": 111,
+            "milliseconds": 0.21033299999908195
+          },
+          {
+            "cursor": 58,
+            "milliseconds": 0.2815000000009604
+          },
+          {
+            "cursor": 45,
+            "milliseconds": 0.21550000000024738
+          },
+          {
+            "cursor": 84,
+            "milliseconds": 0.24183300000004238
+          },
+          {
+            "cursor": 75,
+            "milliseconds": 0.4119169999994483
+          },
+          {
+            "cursor": 94,
+            "milliseconds": 0.2134169999990263
+          },
+          {
+            "cursor": 41,
+            "milliseconds": 0.2710000000006403
+          },
+          {
+            "cursor": 84,
+            "milliseconds": 0.4192910000001575
+          },
+          {
+            "cursor": 119,
+            "milliseconds": 0.29054200000064156
+          },
+          {
+            "cursor": 106,
+            "milliseconds": 0.7176660000004631
+          },
+          {
+            "cursor": 65,
+            "milliseconds": 0.3392920000005688
+          },
+          {
+            "cursor": 112,
+            "milliseconds": 0.2900840000002063
+          },
+          {
+            "cursor": 19,
+            "milliseconds": 0.08158300000104646
+          },
+          {
+            "cursor": 46,
+            "milliseconds": 0.12883299999884912
+          }
+        ],
+        "medianScrubMs": 0.22866650000014488,
+        "maximumScrubMs": 0.7176660000004631,
+        "explicitGc": true,
+        "heapBeforeMiB": 18.450927734375,
+        "heapAfterMiB": 18.881439208984375,
+        "retainedMiB": 0.430511474609375,
+        "heapScope": "Per-case process heap delta retaining raw events, semantic trace, graph, bounded history, source manifest and test harness; not isolated graph bytes",
+        "caveat": "One ordered-suite sample per case; GC/JIT/cache noise and prior-case retention can affect deltas. Negative deltas are reported unchanged.",
+        "history": {
+          "length": 131,
+          "checkpointCount": 1,
+          "checkpointInterval": 256,
+          "maxCheckpoints": 256,
+          "cachedMaterializationCount": 1,
+          "cachedMaterializationCursor": 46,
+          "retainedStateRoots": 3,
+          "replayedEvents": 1485
+        }
+      }
+    },
+    {
+      "version": 1,
+      "case": "12-tree-set",
+      "category": 12,
+      "mainClass": "Main",
+      "accepted": true,
+      "recordedAt": "2026-10-04T02:58:06.643Z",
+      "error": null,
+      "buildSystem": "plain",
+      "timings": {
+        "buildMs": 192.26383299999907,
+        "executionMs": 680.8539170000004,
+        "normalizationMs": 1.451626000000033
+      },
+      "counts": {
+        "rawEvents": 50,
+        "semanticEvents": 88,
+        "rawBatches": 1,
+        "deltaBytes": 21078,
+        "runtimeObjects": 7,
+        "runtimeClasses": 0,
+        "invocations": 3,
+        "calls": 12,
+        "values": 29,
+        "storage": 10,
+        "graphObjects": 7,
+        "io": 1,
+        "edges": 78
+      },
+      "java": {
+        "status": "exited",
+        "exitCode": 0,
+        "stdoutBytes": 13,
+        "stderrBytes": 0,
+        "stdoutSha256": "d0c3f4a66c029c540f8c39890a1411de0312cfc03581afdf2b73647d5758f1ca",
+        "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "observer": {
+        "state": "FULL",
+        "reason": null,
+        "budget": null,
+        "lastRecordedSeq": 49,
+        "executionContinued": true
+      },
+      "semantic": {
+        "status": "ended",
+        "capability": "partial",
+        "diagnostics": []
+      },
+      "jdk": {
+        "available": true,
+        "version": "26.0.2.1",
+        "platform": "darwin",
+        "architecture": "arm64"
+      },
+      "dependencies": [],
+      "classpaths": {
+        "compile": [
+          "<project-classes>"
+        ],
+        "runtime": [
+          "<project-classes>"
+        ]
+      },
+      "outputs": {},
+      "probe": {
+        "domain": "Node semantic seek only; no browser, rendering or GPU measurement",
+        "sampleCount": 30,
+        "seed": "0x4c0ffee",
+        "samples": [
+          {
+            "cursor": 0,
+            "milliseconds": 0.0021670000005542533
+          },
+          {
+            "cursor": 88,
+            "milliseconds": 0.0005830000009154901
+          },
+          {
+            "cursor": 5,
+            "milliseconds": 0.03245799999967858
+          },
+          {
+            "cursor": 78,
+            "milliseconds": 0.4715830000004644
+          },
+          {
+            "cursor": 16,
+            "milliseconds": 0.06391699999949196
+          },
+          {
+            "cursor": 47,
+            "milliseconds": 0.1867919999986043
+          },
+          {
+            "cursor": 19,
+            "milliseconds": 0.07558400000016263
+          },
+          {
+            "cursor": 41,
+            "milliseconds": 0.1445000000003347
+          },
+          {
+            "cursor": 85,
+            "milliseconds": 0.25233299999854353
+          },
+          {
+            "cursor": 77,
+            "milliseconds": 0.48970899999949324
+          },
+          {
+            "cursor": 39,
+            "milliseconds": 0.20241700000042329
+          },
+          {
+            "cursor": 41,
+            "milliseconds": 0.01149999999870488
+          },
+          {
+            "cursor": 36,
+            "milliseconds": 0.17362499999944703
+          },
+          {
+            "cursor": 0,
+            "milliseconds": 0.0006670000002486631
+          },
+          {
+            "cursor": 57,
+            "milliseconds": 0.32791699999870616
+          },
+          {
+            "cursor": 49,
+            "milliseconds": 0.28829100000075414
+          },
+          {
+            "cursor": 68,
+            "milliseconds": 0.11924999999973807
+          },
+          {
+            "cursor": 43,
+            "milliseconds": 0.2382500000003347
+          },
+          {
+            "cursor": 87,
+            "milliseconds": 0.2649170000004233
+          },
+          {
+            "cursor": 76,
+            "milliseconds": 0.4195830000007845
+          },
+          {
+            "cursor": 79,
+            "milliseconds": 0.01824999999917054
+          },
+          {
+            "cursor": 73,
+            "milliseconds": 0.4196250000004511
+          },
+          {
+            "cursor": 33,
+            "milliseconds": 0.16404099999999744
+          },
+          {
+            "cursor": 13,
+            "milliseconds": 0.049417000000175904
+          },
+          {
+            "cursor": 14,
+            "milliseconds": 0.004749999998239218
+          },
+          {
+            "cursor": 8,
+            "milliseconds": 0.026541000001088833
+          },
+          {
+            "cursor": 42,
+            "milliseconds": 0.19774999999935972
+          },
+          {
+            "cursor": 85,
+            "milliseconds": 0.30854200000067067
+          },
+          {
+            "cursor": 26,
+            "milliseconds": 0.1255829999990965
+          },
+          {
+            "cursor": 85,
+            "milliseconds": 0.3545410000006086
+          }
+        ],
+        "medianScrubMs": 0.16883299999972223,
+        "maximumScrubMs": 0.48970899999949324,
+        "explicitGc": true,
+        "heapBeforeMiB": 18.506141662597656,
+        "heapAfterMiB": 18.943809509277344,
+        "retainedMiB": 0.4376678466796875,
+        "heapScope": "Per-case process heap delta retaining raw events, semantic trace, graph, bounded history, source manifest and test harness; not isolated graph bytes",
+        "caveat": "One ordered-suite sample per case; GC/JIT/cache noise and prior-case retention can affect deltas. Negative deltas are reported unchanged.",
+        "history": {
+          "length": 88,
+          "checkpointCount": 1,
+          "checkpointInterval": 256,
+          "maxCheckpoints": 256,
+          "cachedMaterializationCount": 1,
+          "cachedMaterializationCursor": 85,
+          "retainedStateRoots": 3,
+          "replayedEvents": 1105
+        }
+      }
+    },
+    {
+      "version": 1,
+      "case": "13-queue-deque",
+      "category": 13,
+      "mainClass": "Main",
+      "accepted": true,
+      "recordedAt": "2026-10-04T02:58:07.627Z",
+      "error": null,
+      "buildSystem": "plain",
+      "timings": {
+        "buildMs": 194.8316250000007,
+        "executionMs": 681.7473750000008,
+        "normalizationMs": 2.570668000000296
+      },
+      "counts": {
+        "rawEvents": 112,
+        "semanticEvents": 195,
+        "rawBatches": 1,
+        "deltaBytes": 42394,
+        "runtimeObjects": 8,
+        "runtimeClasses": 0,
+        "invocations": 8,
+        "calls": 22,
+        "values": 52,
+        "storage": 25,
+        "graphObjects": 8,
+        "io": 1,
+        "edges": 165
+      },
+      "java": {
+        "status": "exited",
+        "exitCode": 0,
+        "stdoutBytes": 6,
+        "stderrBytes": 0,
+        "stdoutSha256": "4876357b4608b763f9c0b8adf8ec0222244e57137630995aec4a643fe57bff00",
+        "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "observer": {
+        "state": "FULL",
+        "reason": null,
+        "budget": null,
+        "lastRecordedSeq": 111,
+        "executionContinued": true
+      },
+      "semantic": {
+        "status": "ended",
+        "capability": "partial",
+        "diagnostics": []
+      },
+      "jdk": {
+        "available": true,
+        "version": "26.0.2.1",
+        "platform": "darwin",
+        "architecture": "arm64"
+      },
+      "dependencies": [],
+      "classpaths": {
+        "compile": [
+          "<project-classes>"
+        ],
+        "runtime": [
+          "<project-classes>"
+        ]
+      },
+      "outputs": {},
+      "probe": {
+        "domain": "Node semantic seek only; no browser, rendering or GPU measurement",
+        "sampleCount": 30,
+        "seed": "0x4c0ffee",
+        "samples": [
+          {
+            "cursor": 0,
+            "milliseconds": 0.0029169999997975538
+          },
+          {
+            "cursor": 195,
+            "milliseconds": 0.0007079999995767139
+          },
+          {
+            "cursor": 181,
+            "milliseconds": 1.0540839999994205
+          },
+          {
+            "cursor": 128,
+            "milliseconds": 0.6845829999983835
+          },
+          {
+            "cursor": 139,
+            "milliseconds": 0.057875000000422006
+          },
+          {
+            "cursor": 154,
+            "milliseconds": 0.10875000000123691
+          },
+          {
+            "cursor": 5,
+            "milliseconds": 0.016834000000017113
+          },
+          {
+            "cursor": 172,
+            "milliseconds": 0.9650829999991402
+          },
+          {
+            "cursor": 79,
+            "milliseconds": 0.4145410000000993
+          },
+          {
+            "cursor": 134,
+            "milliseconds": 0.3252919999995356
+          },
+          {
+            "cursor": 121,
+            "milliseconds": 0.7757920000003651
+          },
+          {
+            "cursor": 36,
+            "milliseconds": 0.2562499999985448
+          },
+          {
+            "cursor": 63,
+            "milliseconds": 3.47925000000032
+          },
+          {
+            "cursor": 66,
+            "milliseconds": 0.043541999999433756
+          },
+          {
+            "cursor": 73,
+            "milliseconds": 0.0662080000001879
+          },
+          {
+            "cursor": 156,
+            "milliseconds": 0.8242499999996653
+          },
+          {
+            "cursor": 195,
+            "milliseconds": 0.0020000000004074536
+          },
+          {
+            "cursor": 46,
+            "milliseconds": 0.2995419999988371
+          },
+          {
+            "cursor": 17,
+            "milliseconds": 0.10766599999988102
+          },
+          {
+            "cursor": 96,
+            "milliseconds": 0.5077500000006694
+          },
+          {
+            "cursor": 23,
+            "milliseconds": 0.1233749999992142
+          },
+          {
+            "cursor": 50,
+            "milliseconds": 0.11804200000005949
+          },
+          {
+            "cursor": 101,
+            "milliseconds": 0.23979099999996834
+          },
+          {
+            "cursor": 156,
+            "milliseconds": 0.2978750000002037
+          },
+          {
+            "cursor": 119,
+            "milliseconds": 0.5724589999990712
+          },
+          {
+            "cursor": 106,
+            "milliseconds": 0.4891250000000582
+          },
+          {
+            "cursor": 161,
+            "milliseconds": 0.3152090000003227
+          },
+          {
+            "cursor": 132,
+            "milliseconds": 0.6564589999998134
+          },
+          {
+            "cursor": 159,
+            "milliseconds": 0.1482080000005226
+          },
+          {
+            "cursor": 178,
+            "milliseconds": 0.10391700000036508
+          }
+        ],
+        "medianScrubMs": 0.27706249999937427,
+        "maximumScrubMs": 3.47925000000032,
+        "explicitGc": true,
+        "heapBeforeMiB": 18.51038360595703,
+        "heapAfterMiB": 19.167495727539062,
+        "retainedMiB": 0.6571121215820312,
+        "heapScope": "Per-case process heap delta retaining raw events, semantic trace, graph, bounded history, source manifest and test harness; not isolated graph bytes",
+        "caveat": "One ordered-suite sample per case; GC/JIT/cache noise and prior-case retention can affect deltas. Negative deltas are reported unchanged.",
+        "history": {
+          "length": 195,
+          "checkpointCount": 1,
+          "checkpointInterval": 256,
+          "maxCheckpoints": 256,
+          "cachedMaterializationCount": 1,
+          "cachedMaterializationCursor": 178,
+          "retainedStateRoots": 3,
+          "replayedEvents": 2063
+        }
+      }
+    },
+    {
+      "version": 1,
+      "case": "14-record",
+      "category": 14,
+      "mainClass": "Main",
+      "accepted": true,
+      "recordedAt": "2026-10-04T02:58:08.607Z",
+      "error": null,
+      "buildSystem": "plain",
+      "timings": {
+        "buildMs": 189.35220800000025,
+        "executionMs": 688.1795409999995,
+        "normalizationMs": 2.127667000000656
+      },
+      "counts": {
+        "rawEvents": 88,
+        "semanticEvents": 161,
+        "rawBatches": 1,
+        "deltaBytes": 34161,
+        "runtimeObjects": 5,
+        "runtimeClasses": 0,
+        "invocations": 8,
+        "calls": 14,
+        "values": 35,
+        "storage": 23,
+        "graphObjects": 5,
+        "io": 1,
+        "edges": 114
+      },
+      "java": {
+        "status": "exited",
+        "exitCode": 0,
+        "stdoutBytes": 29,
+        "stderrBytes": 0,
+        "stdoutSha256": "40d847e9c305fca82eb61f07107c822fdca8ed997b1fc10b99bacc83673cadba",
+        "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "observer": {
+        "state": "FULL",
+        "reason": null,
+        "budget": null,
+        "lastRecordedSeq": 87,
+        "executionContinued": true
+      },
+      "semantic": {
+        "status": "ended",
+        "capability": "partial",
+        "diagnostics": []
+      },
+      "jdk": {
+        "available": true,
+        "version": "26.0.2.1",
+        "platform": "darwin",
+        "architecture": "arm64"
+      },
+      "dependencies": [],
+      "classpaths": {
+        "compile": [
+          "<project-classes>"
+        ],
+        "runtime": [
+          "<project-classes>"
+        ]
+      },
+      "outputs": {},
+      "probe": {
+        "domain": "Node semantic seek only; no browser, rendering or GPU measurement",
+        "sampleCount": 30,
+        "seed": "0x4c0ffee",
+        "samples": [
+          {
+            "cursor": 0,
+            "milliseconds": 0.0032920000012381934
+          },
+          {
+            "cursor": 161,
+            "milliseconds": 0.0007499999992433004
+          },
+          {
+            "cursor": 55,
+            "milliseconds": 0.42004199999973935
+          },
+          {
+            "cursor": 136,
+            "milliseconds": 0.5002500000009604
+          },
+          {
+            "cursor": 47,
+            "milliseconds": 0.29054100000030303
+          },
+          {
+            "cursor": 110,
+            "milliseconds": 0.34162499999911233
+          },
+          {
+            "cursor": 27,
+            "milliseconds": 0.14354099999945902
+          },
+          {
+            "cursor": 114,
+            "milliseconds": 0.4657499999993888
+          },
+          {
+            "cursor": 121,
+            "milliseconds": 0.03816699999879347
+          },
+          {
+            "cursor": 92,
+            "milliseconds": 0.5163339999999152
+          },
+          {
+            "cursor": 49,
+            "milliseconds": 0.2822500000002037
+          },
+          {
+            "cursor": 16,
+            "milliseconds": 0.09220800000002782
+          },
+          {
+            "cursor": 63,
+            "milliseconds": 0.2767920000005688
+          },
+          {
+            "cursor": 60,
+            "milliseconds": 0.30274999999892316
+          },
+          {
+            "cursor": 27,
+            "milliseconds": 0.13358299999890733
+          },
+          {
+            "cursor": 88,
+            "milliseconds": 0.33804199999940465
+          },
+          {
+            "cursor": 105,
+            "milliseconds": 0.1339590000006865
+          },
+          {
+            "cursor": 10,
+            "milliseconds": 0.05829200000152923
+          },
+          {
+            "cursor": 39,
+            "milliseconds": 0.26583299999947485
+          },
+          {
+            "cursor": 144,
+            "milliseconds": 0.8582499999993161
+          },
+          {
+            "cursor": 117,
+            "milliseconds": 0.8739580000001297
+          },
+          {
+            "cursor": 64,
+            "milliseconds": 0.42829100000017206
+          },
+          {
+            "cursor": 83,
+            "milliseconds": 0.12016700000094716
+          },
+          {
+            "cursor": 24,
+            "milliseconds": 0.1360420000000886
+          },
+          {
+            "cursor": 47,
+            "milliseconds": 0.13408300000082818
+          },
+          {
+            "cursor": 160,
+            "milliseconds": 0.6457499999996799
+          },
+          {
+            "cursor": 101,
+            "milliseconds": 0.5352080000011483
+          },
+          {
+            "cursor": 46,
+            "milliseconds": 0.2649580000015703
+          },
+          {
+            "cursor": 73,
+            "milliseconds": 0.16112500000053842
+          },
+          {
+            "cursor": 58,
+            "milliseconds": 0.31716600000072503
+          }
+        ],
+        "medianScrubMs": 0.27952100000038627,
+        "maximumScrubMs": 0.8739580000001297,
+        "explicitGc": true,
+        "heapBeforeMiB": 18.551734924316406,
+        "heapAfterMiB": 19.000320434570312,
+        "retainedMiB": 0.44858551025390625,
+        "heapScope": "Per-case process heap delta retaining raw events, semantic trace, graph, bounded history, source manifest and test harness; not isolated graph bytes",
+        "caveat": "One ordered-suite sample per case; GC/JIT/cache noise and prior-case retention can affect deltas. Negative deltas are reported unchanged.",
+        "history": {
+          "length": 161,
+          "checkpointCount": 1,
+          "checkpointInterval": 256,
+          "maxCheckpoints": 256,
+          "cachedMaterializationCount": 1,
+          "cachedMaterializationCursor": 58,
+          "retainedStateRoots": 3,
+          "replayedEvents": 1669
+        }
+      }
+    },
+    {
+      "version": 1,
+      "case": "15-enum",
+      "category": 15,
+      "mainClass": "Main",
+      "accepted": true,
+      "recordedAt": "2026-10-04T02:58:09.602Z",
+      "error": null,
+      "buildSystem": "plain",
+      "timings": {
+        "buildMs": 195.0813330000001,
+        "executionMs": 687.625,
+        "normalizationMs": 2.598792000000685
+      },
+      "counts": {
+        "rawEvents": 110,
+        "semanticEvents": 202,
+        "rawBatches": 1,
+        "deltaBytes": 40767,
+        "runtimeObjects": 13,
+        "runtimeClasses": 1,
+        "invocations": 9,
+        "calls": 15,
+        "values": 60,
+        "storage": 32,
+        "graphObjects": 13,
+        "io": 1,
+        "edges": 176
+      },
+      "java": {
+        "status": "exited",
+        "exitCode": 0,
+        "stdoutBytes": 14,
+        "stderrBytes": 0,
+        "stdoutSha256": "14465c959ae7a12feecaffe56b5c06629e560828255e0794eca8874502f543f6",
+        "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "observer": {
+        "state": "FULL",
+        "reason": null,
+        "budget": null,
+        "lastRecordedSeq": 109,
+        "executionContinued": true
+      },
+      "semantic": {
+        "status": "ended",
+        "capability": "partial",
+        "diagnostics": []
+      },
+      "jdk": {
+        "available": true,
+        "version": "26.0.2.1",
+        "platform": "darwin",
+        "architecture": "arm64"
+      },
+      "dependencies": [],
+      "classpaths": {
+        "compile": [
+          "<project-classes>"
+        ],
+        "runtime": [
+          "<project-classes>"
+        ]
+      },
+      "outputs": {},
+      "probe": {
+        "domain": "Node semantic seek only; no browser, rendering or GPU measurement",
+        "sampleCount": 30,
+        "seed": "0x4c0ffee",
+        "samples": [
+          {
+            "cursor": 0,
+            "milliseconds": 0.0021249999990686774
+          },
+          {
+            "cursor": 202,
+            "milliseconds": 0.0006250000005820766
+          },
+          {
+            "cursor": 174,
+            "milliseconds": 1.104749999998603
+          },
+          {
+            "cursor": 156,
+            "milliseconds": 0.9403330000004644
+          },
+          {
+            "cursor": 20,
+            "milliseconds": 0.09979099999873142
+          },
+          {
+            "cursor": 196,
+            "milliseconds": 1.1135420000009617
+          },
+          {
+            "cursor": 82,
+            "milliseconds": 0.5096670000002632
+          },
+          {
+            "cursor": 32,
+            "milliseconds": 0.1793340000003809
+          },
+          {
+            "cursor": 142,
+            "milliseconds": 0.6461670000007871
+          },
+          {
+            "cursor": 148,
+            "milliseconds": 0.05245900000045367
+          },
+          {
+            "cursor": 198,
+            "milliseconds": 0.3125419999996666
+          },
+          {
+            "cursor": 148,
+            "milliseconds": 1.2227080000011483
+          },
+          {
+            "cursor": 119,
+            "milliseconds": 0.9239999999990687
+          },
+          {
+            "cursor": 10,
+            "milliseconds": 0.04437499999949068
+          },
+          {
+            "cursor": 66,
+            "milliseconds": 0.39383300000008603
+          },
+          {
+            "cursor": 58,
+            "milliseconds": 0.31512500000098953
+          },
+          {
+            "cursor": 13,
+            "milliseconds": 0.05724999999983993
+          },
+          {
+            "cursor": 109,
+            "milliseconds": 0.49175000000104774
+          },
+          {
+            "cursor": 199,
+            "milliseconds": 0.8384999999998399
+          },
+          {
+            "cursor": 124,
+            "milliseconds": 0.6391249999996944
+          },
+          {
+            "cursor": 121,
+            "milliseconds": 0.6348330000000715
+          },
+          {
+            "cursor": 162,
+            "milliseconds": 0.2251670000005106
+          },
+          {
+            "cursor": 108,
+            "milliseconds": 2.179207999999562
+          },
+          {
+            "cursor": 100,
+            "milliseconds": 0.5608750000010332
+          },
+          {
+            "cursor": 112,
+            "milliseconds": 0.07174999999915599
+          },
+          {
+            "cursor": 99,
+            "milliseconds": 0.5409999999992579
+          },
+          {
+            "cursor": 0,
+            "milliseconds": 0.0009580000005371403
+          },
+          {
+            "cursor": 27,
+            "milliseconds": 0.1477920000015729
+          },
+          {
+            "cursor": 5,
+            "milliseconds": 0.01599999999962165
+          },
+          {
+            "cursor": 17,
+            "milliseconds": 0.06945799999994051
+          }
+        ],
+        "medianScrubMs": 0.3544790000005378,
+        "maximumScrubMs": 2.179207999999562,
+        "explicitGc": true,
+        "heapBeforeMiB": 18.56568145751953,
+        "heapAfterMiB": 19.578506469726562,
+        "retainedMiB": 1.0128250122070312,
+        "heapScope": "Per-case process heap delta retaining raw events, semantic trace, graph, bounded history, source manifest and test harness; not isolated graph bytes",
+        "caveat": "One ordered-suite sample per case; GC/JIT/cache noise and prior-case retention can affect deltas. Negative deltas are reported unchanged.",
+        "history": {
+          "length": 202,
+          "checkpointCount": 1,
+          "checkpointInterval": 256,
+          "maxCheckpoints": 256,
+          "cachedMaterializationCount": 1,
+          "cachedMaterializationCursor": 17,
+          "retainedStateRoots": 3,
+          "replayedEvents": 2276
+        }
+      }
+    },
+    {
+      "version": 1,
+      "case": "16-static-nested",
+      "category": 16,
+      "mainClass": "Main",
+      "accepted": true,
+      "recordedAt": "2026-10-04T02:58:10.545Z",
+      "error": null,
+      "buildSystem": "plain",
+      "timings": {
+        "buildMs": 178.64541700000154,
+        "executionMs": 676.6733750000003,
+        "normalizationMs": 1.0449580000004062
+      },
+      "counts": {
+        "rawEvents": 31,
+        "semanticEvents": 59,
+        "rawBatches": 1,
+        "deltaBytes": 10910,
+        "runtimeObjects": 3,
+        "runtimeClasses": 0,
+        "invocations": 3,
+        "calls": 4,
+        "values": 13,
+        "storage": 7,
+        "graphObjects": 3,
+        "io": 1,
+        "edges": 38
+      },
+      "java": {
+        "status": "exited",
+        "exitCode": 0,
+        "stdoutBytes": 3,
+        "stderrBytes": 0,
+        "stdoutSha256": "20d2add851bf39edcc6b5e830930f962db7e19dffa2cab8610eed551eda6c302",
+        "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "observer": {
+        "state": "FULL",
+        "reason": null,
+        "budget": null,
+        "lastRecordedSeq": 30,
+        "executionContinued": true
+      },
+      "semantic": {
+        "status": "ended",
+        "capability": "partial",
+        "diagnostics": []
+      },
+      "jdk": {
+        "available": true,
+        "version": "26.0.2.1",
+        "platform": "darwin",
+        "architecture": "arm64"
+      },
+      "dependencies": [],
+      "classpaths": {
+        "compile": [
+          "<project-classes>"
+        ],
+        "runtime": [
+          "<project-classes>"
+        ]
+      },
+      "outputs": {},
+      "probe": {
+        "domain": "Node semantic seek only; no browser, rendering or GPU measurement",
+        "sampleCount": 30,
+        "seed": "0x4c0ffee",
+        "samples": [
+          {
+            "cursor": 0,
+            "milliseconds": 0.002749999999650754
+          },
+          {
+            "cursor": 59,
+            "milliseconds": 0.0007499999992433004
+          },
+          {
+            "cursor": 13,
+            "milliseconds": 0.10975000000144064
+          },
+          {
+            "cursor": 40,
+            "milliseconds": 0.20395800000005693
+          },
+          {
+            "cursor": 11,
+            "milliseconds": 0.06029099999977916
+          },
+          {
+            "cursor": 38,
+            "milliseconds": 0.17708300000049348
+          },
+          {
+            "cursor": 21,
+            "milliseconds": 0.1062499999989086
+          },
+          {
+            "cursor": 0,
+            "milliseconds": 0.0010000000002037268
+          },
+          {
+            "cursor": 55,
+            "milliseconds": 0.3241250000010041
+          },
+          {
+            "cursor": 38,
+            "milliseconds": 0.22441600000092876
+          },
+          {
+            "cursor": 25,
+            "milliseconds": 0.12750000000050932
+          },
+          {
+            "cursor": 52,
+            "milliseconds": 0.14125000000058208
+          },
+          {
+            "cursor": 51,
+            "milliseconds": 0.251749999999447
+          },
+          {
+            "cursor": 30,
+            "milliseconds": 0.14254199999959383
+          },
+          {
+            "cursor": 9,
+            "milliseconds": 0.037334000000555534
+          },
+          {
+            "cursor": 16,
+            "milliseconds": 0.03208300000005693
+          },
+          {
+            "cursor": 51,
+            "milliseconds": 0.17279099999905156
+          },
+          {
+            "cursor": 10,
+            "milliseconds": 0.039333999999144
+          },
+          {
+            "cursor": 9,
+            "milliseconds": 0.03483400000004622
+          },
+          {
+            "cursor": 12,
+            "milliseconds": 0.015625
+          },
+          {
+            "cursor": 39,
+            "milliseconds": 0.12766700000065612
+          },
+          {
+            "cursor": 34,
+            "milliseconds": 0.16308399999979883
+          },
+          {
+            "cursor": 5,
+            "milliseconds": 0.023167000001194538
+          },
+          {
+            "cursor": 0,
+            "milliseconds": 0.0006670000002486631
+          },
+          {
+            "cursor": 47,
+            "milliseconds": 0.22229200000037963
+          },
+          {
+            "cursor": 58,
+            "milliseconds": 0.056582999999591266
+          },
+          {
+            "cursor": 53,
+            "milliseconds": 0.2526669999988371
+          },
+          {
+            "cursor": 28,
+            "milliseconds": 0.14624999999978172
+          },
+          {
+            "cursor": 55,
+            "milliseconds": 0.1785409999993135
+          },
+          {
+            "cursor": 46,
+            "milliseconds": 0.25804100000095787
+          }
+        ],
+        "medianScrubMs": 0.12758350000058272,
+        "maximumScrubMs": 0.3241250000010041,
+        "explicitGc": true,
+        "heapBeforeMiB": 18.99579620361328,
+        "heapAfterMiB": 19.200599670410156,
+        "retainedMiB": 0.204803466796875,
+        "heapScope": "Per-case process heap delta retaining raw events, semantic trace, graph, bounded history, source manifest and test harness; not isolated graph bytes",
+        "caveat": "One ordered-suite sample per case; GC/JIT/cache noise and prior-case retention can affect deltas. Negative deltas are reported unchanged.",
+        "history": {
+          "length": 59,
+          "checkpointCount": 1,
+          "checkpointInterval": 256,
+          "maxCheckpoints": 256,
+          "cachedMaterializationCount": 1,
+          "cachedMaterializationCursor": 46,
+          "retainedStateRoots": 3,
+          "replayedEvents": 769
+        }
+      }
+    },
+    {
+      "version": 1,
+      "case": "17-inner-class",
+      "category": 17,
+      "mainClass": "Main",
+      "accepted": true,
+      "recordedAt": "2026-10-04T02:58:11.491Z",
+      "error": null,
+      "buildSystem": "plain",
+      "timings": {
+        "buildMs": 184.61262499999975,
+        "executionMs": 673.6929170000021,
+        "normalizationMs": 1.4553750000050059
+      },
+      "counts": {
+        "rawEvents": 50,
+        "semanticEvents": 88,
+        "rawBatches": 1,
+        "deltaBytes": 17478,
+        "runtimeObjects": 4,
+        "runtimeClasses": 0,
+        "invocations": 4,
+        "calls": 8,
+        "values": 21,
+        "storage": 10,
+        "graphObjects": 4,
+        "io": 1,
+        "edges": 65
+      },
+      "java": {
+        "status": "exited",
+        "exitCode": 0,
+        "stdoutBytes": 3,
+        "stderrBytes": 0,
+        "stdoutSha256": "7ee29791fc17e986b97128845622b077fb45e349fdb80523fac9dba879b4ad60",
+        "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "observer": {
+        "state": "FULL",
+        "reason": null,
+        "budget": null,
+        "lastRecordedSeq": 49,
+        "executionContinued": true
+      },
+      "semantic": {
+        "status": "ended",
+        "capability": "partial",
+        "diagnostics": []
+      },
+      "jdk": {
+        "available": true,
+        "version": "26.0.2.1",
+        "platform": "darwin",
+        "architecture": "arm64"
+      },
+      "dependencies": [],
+      "classpaths": {
+        "compile": [
+          "<project-classes>"
+        ],
+        "runtime": [
+          "<project-classes>"
+        ]
+      },
+      "outputs": {},
+      "probe": {
+        "domain": "Node semantic seek only; no browser, rendering or GPU measurement",
+        "sampleCount": 30,
+        "seed": "0x4c0ffee",
+        "samples": [
+          {
+            "cursor": 0,
+            "milliseconds": 0.0014579999988200143
+          },
+          {
+            "cursor": 88,
+            "milliseconds": 0.0005419999979494605
+          },
+          {
+            "cursor": 5,
+            "milliseconds": 0.024459000000206288
+          },
+          {
+            "cursor": 78,
+            "milliseconds": 0.4178749999991851
+          },
+          {
+            "cursor": 16,
+            "milliseconds": 0.07074999999895226
+          },
+          {
+            "cursor": 47,
+            "milliseconds": 0.16970799999762676
+          },
+          {
+            "cursor": 19,
+            "milliseconds": 0.0797500000007858
+          },
+          {
+            "cursor": 41,
+            "milliseconds": 0.11549999999988358
+          },
+          {
+            "cursor": 85,
+            "milliseconds": 0.26299999999901047
+          },
+          {
+            "cursor": 77,
+            "milliseconds": 0.42641699999876437
+          },
+          {
+            "cursor": 39,
+            "milliseconds": 0.2079169999997248
+          },
+          {
+            "cursor": 41,
+            "milliseconds": 0.013834000001224922
+          },
+          {
+            "cursor": 36,
+            "milliseconds": 0.21187499999723514
+          },
+          {
+            "cursor": 0,
+            "milliseconds": 0.0010409999995317776
+          },
+          {
+            "cursor": 57,
+            "milliseconds": 0.30858399999851827
+          },
+          {
+            "cursor": 49,
+            "milliseconds": 0.275166999999783
+          },
+          {
+            "cursor": 68,
+            "milliseconds": 0.10300000000279397
+          },
+          {
+            "cursor": 43,
+            "milliseconds": 0.2236250000023574
+          },
+          {
+            "cursor": 87,
+            "milliseconds": 0.24387500000011642
+          },
+          {
+            "cursor": 76,
+            "milliseconds": 0.3949170000014419
+          },
+          {
+            "cursor": 79,
+            "milliseconds": 0.01616700000158744
+          },
+          {
+            "cursor": 73,
+            "milliseconds": 0.4002920000020822
+          },
+          {
+            "cursor": 33,
+            "milliseconds": 0.15120799999931478
+          },
+          {
+            "cursor": 13,
+            "milliseconds": 0.05308299999887822
+          },
+          {
+            "cursor": 14,
+            "milliseconds": 0.005874999998923158
+          },
+          {
+            "cursor": 8,
+            "milliseconds": 0.03804200000013225
+          },
+          {
+            "cursor": 42,
+            "milliseconds": 0.1787079999994603
+          },
+          {
+            "cursor": 85,
+            "milliseconds": 0.22429099999862956
+          },
+          {
+            "cursor": 26,
+            "milliseconds": 0.10208399999828544
+          },
+          {
+            "cursor": 85,
+            "milliseconds": 0.3042089999980817
+          }
+        ],
+        "medianScrubMs": 0.16045799999847077,
+        "maximumScrubMs": 0.42641699999876437,
+        "explicitGc": true,
+        "heapBeforeMiB": 18.955039978027344,
+        "heapAfterMiB": 19.3153076171875,
+        "retainedMiB": 0.36026763916015625,
+        "heapScope": "Per-case process heap delta retaining raw events, semantic trace, graph, bounded history, source manifest and test harness; not isolated graph bytes",
+        "caveat": "One ordered-suite sample per case; GC/JIT/cache noise and prior-case retention can affect deltas. Negative deltas are reported unchanged.",
+        "history": {
+          "length": 88,
+          "checkpointCount": 1,
+          "checkpointInterval": 256,
+          "maxCheckpoints": 256,
+          "cachedMaterializationCount": 1,
+          "cachedMaterializationCursor": 85,
+          "retainedStateRoots": 3,
+          "replayedEvents": 1066
+        }
+      }
+    },
+    {
+      "version": 1,
+      "case": "18-anonymous-class",
+      "category": 18,
+      "mainClass": "Main",
+      "accepted": true,
+      "recordedAt": "2026-10-04T02:58:12.436Z",
+      "error": null,
+      "buildSystem": "plain",
+      "timings": {
+        "buildMs": 177.44379099999787,
+        "executionMs": 682.4649590000008,
+        "normalizationMs": 1.115457999996579
+      },
+      "counts": {
+        "rawEvents": 31,
+        "semanticEvents": 60,
+        "rawBatches": 1,
+        "deltaBytes": 10875,
+        "runtimeObjects": 3,
+        "runtimeClasses": 0,
+        "invocations": 3,
+        "calls": 4,
+        "values": 13,
+        "storage": 9,
+        "graphObjects": 3,
+        "io": 1,
+        "edges": 40
+      },
+      "java": {
+        "status": "exited",
+        "exitCode": 0,
+        "stdoutBytes": 3,
+        "stderrBytes": 0,
+        "stdoutSha256": "1a252402972f6057fa53cc172b52b9ffca698e18311facd0f3b06ecaaef79e17",
+        "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "observer": {
+        "state": "FULL",
+        "reason": null,
+        "budget": null,
+        "lastRecordedSeq": 30,
+        "executionContinued": true
+      },
+      "semantic": {
+        "status": "ended",
+        "capability": "partial",
+        "diagnostics": []
+      },
+      "jdk": {
+        "available": true,
+        "version": "26.0.2.1",
+        "platform": "darwin",
+        "architecture": "arm64"
+      },
+      "dependencies": [],
+      "classpaths": {
+        "compile": [
+          "<project-classes>"
+        ],
+        "runtime": [
+          "<project-classes>"
+        ]
+      },
+      "outputs": {},
+      "probe": {
+        "domain": "Node semantic seek only; no browser, rendering or GPU measurement",
+        "sampleCount": 30,
+        "seed": "0x4c0ffee",
+        "samples": [
+          {
+            "cursor": 0,
+            "milliseconds": 0.0024999999986903276
+          },
+          {
+            "cursor": 60,
+            "milliseconds": 0.0006250000005820766
+          },
+          {
+            "cursor": 49,
+            "milliseconds": 0.3259169999982987
+          },
+          {
+            "cursor": 33,
+            "milliseconds": 0.18233300000065356
+          },
+          {
+            "cursor": 42,
+            "milliseconds": 0.0559579999971902
+          },
+          {
+            "cursor": 23,
+            "milliseconds": 0.11624999999912689
+          },
+          {
+            "cursor": 37,
+            "milliseconds": 0.0926660000004631
+          },
+          {
+            "cursor": 26,
+            "milliseconds": 0.12741600000299513
+          },
+          {
+            "cursor": 7,
+            "milliseconds": 0.02862499999901047
+          },
+          {
+            "cursor": 18,
+            "milliseconds": 0.052665999999589985
+          },
+          {
+            "cursor": 32,
+            "milliseconds": 0.07250000000203727
+          },
+          {
+            "cursor": 52,
+            "milliseconds": 0.12545800000225427
+          },
+          {
+            "cursor": 12,
+            "milliseconds": 0.054500000002008164
+          },
+          {
+            "cursor": 19,
+            "milliseconds": 0.042417000000568805
+          },
+          {
+            "cursor": 3,
+            "milliseconds": 0.010084000001370441
+          },
+          {
+            "cursor": 53,
+            "milliseconds": 0.27212499999950523
+          },
+          {
+            "cursor": 38,
+            "milliseconds": 0.17608299999847077
+          },
+          {
+            "cursor": 39,
+            "milliseconds": 0.01279199999771663
+          },
+          {
+            "cursor": 17,
+            "milliseconds": 0.06887500000084401
+          },
+          {
+            "cursor": 42,
+            "milliseconds": 0.1343750000014552
+          },
+          {
+            "cursor": 45,
+            "milliseconds": 0.02179199999955017
+          },
+          {
+            "cursor": 20,
+            "milliseconds": 0.08687500000087311
+          },
+          {
+            "cursor": 34,
+            "milliseconds": 0.0702080000010028
+          },
+          {
+            "cursor": 4,
+            "milliseconds": 0.012125000001105946
+          },
+          {
+            "cursor": 39,
+            "milliseconds": 0.16824999999880674
+          },
+          {
+            "cursor": 32,
+            "milliseconds": 0.17145800000071176
+          },
+          {
+            "cursor": 47,
+            "milliseconds": 0.10512499999822467
+          },
+          {
+            "cursor": 28,
+            "milliseconds": 0.14683399999921676
+          },
+          {
+            "cursor": 6,
+            "milliseconds": 0.02008399999976973
+          },
+          {
+            "cursor": 44,
+            "milliseconds": 0.22025000000212458
+          }
+        ],
+        "medianScrubMs": 0.07968750000145519,
+        "maximumScrubMs": 0.3259169999982987,
+        "explicitGc": true,
+        "heapBeforeMiB": 18.971435546875,
+        "heapAfterMiB": 19.236717224121094,
+        "retainedMiB": 0.26528167724609375,
+        "heapScope": "Per-case process heap delta retaining raw events, semantic trace, graph, bounded history, source manifest and test harness; not isolated graph bytes",
+        "caveat": "One ordered-suite sample per case; GC/JIT/cache noise and prior-case retention can affect deltas. Negative deltas are reported unchanged.",
+        "history": {
+          "length": 60,
+          "checkpointCount": 1,
+          "checkpointInterval": 256,
+          "maxCheckpoints": 256,
+          "cachedMaterializationCount": 1,
+          "cachedMaterializationCursor": 44,
+          "retainedStateRoots": 3,
+          "replayedEvents": 653
+        }
+      }
+    },
+    {
+      "version": 1,
+      "case": "19-lambda-capture",
+      "category": 19,
+      "mainClass": "Main",
+      "accepted": true,
+      "recordedAt": "2026-10-04T02:58:13.409Z",
+      "error": null,
+      "buildSystem": "plain",
+      "timings": {
+        "buildMs": 199.13479200000074,
+        "executionMs": 677.859457999999,
+        "normalizationMs": 2.0068330000030983
+      },
+      "counts": {
+        "rawEvents": 74,
+        "semanticEvents": 132,
+        "rawBatches": 1,
+        "deltaBytes": 27492,
+        "runtimeObjects": 7,
+        "runtimeClasses": 1,
+        "invocations": 7,
+        "calls": 15,
+        "values": 40,
+        "storage": 16,
+        "graphObjects": 7,
+        "io": 1,
+        "edges": 99
+      },
+      "java": {
+        "status": "exited",
+        "exitCode": 0,
+        "stdoutBytes": 3,
+        "stderrBytes": 0,
+        "stdoutSha256": "f14b4987904bcb5814e4459a057ed4d20f58a633152288a761214dcd28780b56",
+        "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "observer": {
+        "state": "FULL",
+        "reason": null,
+        "budget": null,
+        "lastRecordedSeq": 73,
+        "executionContinued": true
+      },
+      "semantic": {
+        "status": "ended",
+        "capability": "partial",
+        "diagnostics": []
+      },
+      "jdk": {
+        "available": true,
+        "version": "26.0.2.1",
+        "platform": "darwin",
+        "architecture": "arm64"
+      },
+      "dependencies": [],
+      "classpaths": {
+        "compile": [
+          "<project-classes>"
+        ],
+        "runtime": [
+          "<project-classes>"
+        ]
+      },
+      "outputs": {},
+      "probe": {
+        "domain": "Node semantic seek only; no browser, rendering or GPU measurement",
+        "sampleCount": 30,
+        "seed": "0x4c0ffee",
+        "samples": [
+          {
+            "cursor": 0,
+            "milliseconds": 0.0030000000006111804
+          },
+          {
+            "cursor": 132,
+            "milliseconds": 0.0005829999972775113
+          },
+          {
+            "cursor": 125,
+            "milliseconds": 0.8348339999974996
+          },
+          {
+            "cursor": 51,
+            "milliseconds": 0.32154200000150013
+          },
+          {
+            "cursor": 69,
+            "milliseconds": 0.10158299999966403
+          },
+          {
+            "cursor": 63,
+            "milliseconds": 0.3382920000003651
+          },
+          {
+            "cursor": 82,
+            "milliseconds": 0.10020900000017718
+          },
+          {
+            "cursor": 60,
+            "milliseconds": 0.3101669999996375
+          },
+          {
+            "cursor": 9,
+            "milliseconds": 0.030791999997745734
+          },
+          {
+            "cursor": 71,
+            "milliseconds": 0.32858300000225427
+          },
+          {
+            "cursor": 107,
+            "milliseconds": 0.21862500000133878
+          },
+          {
+            "cursor": 64,
+            "milliseconds": 0.39933400000154506
+          },
+          {
+            "cursor": 70,
+            "milliseconds": 0.03616699999838602
+          },
+          {
+            "cursor": 129,
+            "milliseconds": 0.3017909999980475
+          },
+          {
+            "cursor": 24,
+            "milliseconds": 0.1022080000002461
+          },
+          {
+            "cursor": 44,
+            "milliseconds": 0.12441600000238395
+          },
+          {
+            "cursor": 118,
+            "milliseconds": 0.39650000000256114
+          },
+          {
+            "cursor": 102,
+            "milliseconds": 0.6972500000010768
+          },
+          {
+            "cursor": 115,
+            "milliseconds": 0.09229100000084145
+          },
+          {
+            "cursor": 26,
+            "milliseconds": 0.17150000000037835
+          },
+          {
+            "cursor": 51,
+            "milliseconds": 0.22795899999982794
+          },
+          {
+            "cursor": 85,
+            "milliseconds": 0.2822919999998703
+          },
+          {
+            "cursor": 80,
+            "milliseconds": 0.6125840000022436
+          },
+          {
+            "cursor": 23,
+            "milliseconds": 0.14416699999856064
+          },
+          {
+            "cursor": 98,
+            "milliseconds": 0.5736250000009022
+          },
+          {
+            "cursor": 92,
+            "milliseconds": 0.4593330000025162
+          },
+          {
+            "cursor": 56,
+            "milliseconds": 0.27333399999770336
+          },
+          {
+            "cursor": 13,
+            "milliseconds": 0.054458999999042135
+          },
+          {
+            "cursor": 124,
+            "milliseconds": 0.5489159999997355
+          },
+          {
+            "cursor": 38,
+            "milliseconds": 0.18608299999687006
+          }
+        ],
+        "medianScrubMs": 0.25064649999876565,
+        "maximumScrubMs": 0.8348339999974996,
+        "explicitGc": true,
+        "heapBeforeMiB": 18.974655151367188,
+        "heapAfterMiB": 19.511024475097656,
+        "retainedMiB": 0.5363693237304688,
+        "heapScope": "Per-case process heap delta retaining raw events, semantic trace, graph, bounded history, source manifest and test harness; not isolated graph bytes",
+        "caveat": "One ordered-suite sample per case; GC/JIT/cache noise and prior-case retention can affect deltas. Negative deltas are reported unchanged.",
+        "history": {
+          "length": 132,
+          "checkpointCount": 1,
+          "checkpointInterval": 256,
+          "maxCheckpoints": 256,
+          "cachedMaterializationCount": 1,
+          "cachedMaterializationCursor": 38,
+          "retainedStateRoots": 3,
+          "replayedEvents": 1535
+        }
+      }
+    },
+    {
+      "version": 1,
+      "case": "20-method-references",
+      "category": 20,
+      "mainClass": "Main",
+      "accepted": true,
+      "recordedAt": "2026-10-04T02:58:14.391Z",
+      "error": null,
+      "buildSystem": "plain",
+      "timings": {
+        "buildMs": 201.0762079999986,
+        "executionMs": 684.7618750000001,
+        "normalizationMs": 1.8808740000022226
+      },
+      "counts": {
+        "rawEvents": 70,
+        "semanticEvents": 122,
+        "rawBatches": 1,
+        "deltaBytes": 26896,
+        "runtimeObjects": 9,
+        "runtimeClasses": 0,
+        "invocations": 4,
+        "calls": 15,
+        "values": 39,
+        "storage": 14,
+        "graphObjects": 9,
+        "io": 3,
+        "edges": 101
+      },
+      "java": {
+        "status": "exited",
+        "exitCode": 0,
+        "stdoutBytes": 12,
+        "stderrBytes": 0,
+        "stdoutSha256": "8bf9e7a09f06068c7d47b1bbd759c9b058114092958bf3ce90f3c7e18b6ccb3d",
+        "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "observer": {
+        "state": "FULL",
+        "reason": null,
+        "budget": null,
+        "lastRecordedSeq": 69,
+        "executionContinued": true
+      },
+      "semantic": {
+        "status": "ended",
+        "capability": "partial",
+        "diagnostics": []
+      },
+      "jdk": {
+        "available": true,
+        "version": "26.0.2.1",
+        "platform": "darwin",
+        "architecture": "arm64"
+      },
+      "dependencies": [],
+      "classpaths": {
+        "compile": [
+          "<project-classes>"
+        ],
+        "runtime": [
+          "<project-classes>"
+        ]
+      },
+      "outputs": {},
+      "probe": {
+        "domain": "Node semantic seek only; no browser, rendering or GPU measurement",
+        "sampleCount": 30,
+        "seed": "0x4c0ffee",
+        "samples": [
+          {
+            "cursor": 0,
+            "milliseconds": 0.001874999998108251
+          },
+          {
+            "cursor": 122,
+            "milliseconds": 0.0006670000002486631
+          },
+          {
+            "cursor": 118,
+            "milliseconds": 0.6674160000002303
+          },
+          {
+            "cursor": 58,
+            "milliseconds": 0.30600000000049477
+          },
+          {
+            "cursor": 38,
+            "milliseconds": 0.18933300000207964
+          },
+          {
+            "cursor": 74,
+            "milliseconds": 0.21441600000252947
+          },
+          {
+            "cursor": 72,
+            "milliseconds": 0.38000000000101863
+          },
+          {
+            "cursor": 102,
+            "milliseconds": 0.18033299999660812
+          },
+          {
+            "cursor": 19,
+            "milliseconds": 0.08554200000071432
+          },
+          {
+            "cursor": 17,
+            "milliseconds": 0.07166700000016135
+          },
+          {
+            "cursor": 43,
+            "milliseconds": 0.1343750000014552
+          },
+          {
+            "cursor": 64,
+            "milliseconds": 0.1483750000006694
+          },
+          {
+            "cursor": 63,
+            "milliseconds": 0.34845900000073016
+          },
+          {
+            "cursor": 51,
+            "milliseconds": 0.26299999999901047
+          },
+          {
+            "cursor": 12,
+            "milliseconds": 0.04420799999934388
+          },
+          {
+            "cursor": 103,
+            "milliseconds": 0.5067909999997937
+          },
+          {
+            "cursor": 57,
+            "milliseconds": 0.2940420000013546
+          },
+          {
+            "cursor": 115,
+            "milliseconds": 0.3235420000019076
+          },
+          {
+            "cursor": 90,
+            "milliseconds": 0.4673750000001746
+          },
+          {
+            "cursor": 27,
+            "milliseconds": 0.11870799999815063
+          },
+          {
+            "cursor": 117,
+            "milliseconds": 0.5226660000007541
+          },
+          {
+            "cursor": 67,
+            "milliseconds": 0.39295900000070105
+          },
+          {
+            "cursor": 41,
+            "milliseconds": 0.18195899999773246
+          },
+          {
+            "cursor": 90,
+            "milliseconds": 0.27683299999989686
+          },
+          {
+            "cursor": 68,
+            "milliseconds": 0.36466699999800767
+          },
+          {
+            "cursor": 82,
+            "milliseconds": 0.09916700000030687
+          },
+          {
+            "cursor": 116,
+            "milliseconds": 0.33108400000128313
+          },
+          {
+            "cursor": 28,
+            "milliseconds": 0.1827080000002752
+          },
+          {
+            "cursor": 55,
+            "milliseconds": 0.2445000000006985
+          },
+          {
+            "cursor": 67,
+            "milliseconds": 0.12787500000194996
+          }
+        ],
+        "medianScrubMs": 0.22945800000161398,
+        "maximumScrubMs": 0.6674160000002303,
+        "explicitGc": true,
+        "heapBeforeMiB": 19.02906036376953,
+        "heapAfterMiB": 19.41321563720703,
+        "retainedMiB": 0.3841552734375,
+        "heapScope": "Per-case process heap delta retaining raw events, semantic trace, graph, bounded history, source manifest and test harness; not isolated graph bytes",
+        "caveat": "One ordered-suite sample per case; GC/JIT/cache noise and prior-case retention can affect deltas. Negative deltas are reported unchanged.",
+        "history": {
+          "length": 122,
+          "checkpointCount": 1,
+          "checkpointInterval": 256,
+          "maxCheckpoints": 256,
+          "cachedMaterializationCount": 1,
+          "cachedMaterializationCursor": 67,
+          "retainedStateRoots": 3,
+          "replayedEvents": 1469
+        }
+      }
+    },
+    {
+      "version": 1,
+      "case": "21-file-io",
+      "category": 21,
+      "mainClass": "Main",
+      "accepted": true,
+      "recordedAt": "2026-10-04T02:58:15.367Z",
+      "error": null,
+      "buildSystem": "plain",
+      "timings": {
+        "buildMs": 189.33937499999956,
+        "executionMs": 692.8882080000003,
+        "normalizationMs": 1.6694160000006377
+      },
+      "counts": {
+        "rawEvents": 73,
+        "semanticEvents": 123,
+        "rawBatches": 1,
+        "deltaBytes": 29262,
+        "runtimeObjects": 19,
+        "runtimeClasses": 0,
+        "invocations": 1,
+        "calls": 14,
+        "values": 37,
+        "storage": 15,
+        "graphObjects": 19,
+        "io": 10,
+        "edges": 115
+      },
+      "java": {
+        "status": "exited",
+        "exitCode": 0,
+        "stdoutBytes": 14,
+        "stderrBytes": 0,
+        "stdoutSha256": "8319fcc81fa483e2abac1f1b91b715259067c69b9fd728e5382e1480c6ad8967",
+        "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "observer": {
+        "state": "FULL",
+        "reason": null,
+        "budget": null,
+        "lastRecordedSeq": 72,
+        "executionContinued": true
+      },
+      "semantic": {
+        "status": "ended",
+        "capability": "partial",
+        "diagnostics": []
+      },
+      "jdk": {
+        "available": true,
+        "version": "26.0.2.1",
+        "platform": "darwin",
+        "architecture": "arm64"
+      },
+      "dependencies": [],
+      "classpaths": {
+        "compile": [
+          "<project-classes>"
+        ],
+        "runtime": [
+          "<project-classes>"
+        ]
+      },
+      "outputs": {
+        "manifest.txt": {
+          "bytes": 7,
+          "sha256": "c0c766ce0a0dc80f844de4f95077e5f57d0d1edbee4cce20e48c30d887b7ad3a"
+        },
+        "buffered.txt": {
+          "bytes": 12,
+          "sha256": "39194eade33ad0a726b8b83149df466711e3031d23b6027fd625d1deead14519"
+        }
+      },
+      "probe": {
+        "domain": "Node semantic seek only; no browser, rendering or GPU measurement",
+        "sampleCount": 30,
+        "seed": "0x4c0ffee",
+        "samples": [
+          {
+            "cursor": 0,
+            "milliseconds": 0.0020000000004074536
+          },
+          {
+            "cursor": 123,
+            "milliseconds": 0.0006250000005820766
+          },
+          {
+            "cursor": 85,
+            "milliseconds": 0.4827499999992142
+          },
+          {
+            "cursor": 8,
+            "milliseconds": 0.030999999999039574
+          },
+          {
+            "cursor": 55,
+            "milliseconds": 0.26258400000006077
+          },
+          {
+            "cursor": 70,
+            "milliseconds": 0.08916700000190758
+          },
+          {
+            "cursor": 97,
+            "milliseconds": 0.17937499999970896
+          },
+          {
+            "cursor": 92,
+            "milliseconds": 0.47295799999847077
+          },
+          {
+            "cursor": 35,
+            "milliseconds": 0.18862499999886495
+          },
+          {
+            "cursor": 30,
+            "milliseconds": 0.1529999999984284
+          },
+          {
+            "cursor": 85,
+            "milliseconds": 0.3332090000003518
+          },
+          {
+            "cursor": 40,
+            "milliseconds": 0.21983300000283634
+          },
+          {
+            "cursor": 31,
+            "milliseconds": 0.15866599999935715
+          },
+          {
+            "cursor": 30,
+            "milliseconds": 0.15391699999963748
+          },
+          {
+            "cursor": 105,
+            "milliseconds": 0.4556670000019949
+          },
+          {
+            "cursor": 84,
+            "milliseconds": 0.44741699999940465
+          },
+          {
+            "cursor": 79,
+            "milliseconds": 0.42595799999980954
+          },
+          {
+            "cursor": 26,
+            "milliseconds": 0.1147080000009737
+          },
+          {
+            "cursor": 37,
+            "milliseconds": 0.0796249999984866
+          },
+          {
+            "cursor": 80,
+            "milliseconds": 0.23933300000135205
+          },
+          {
+            "cursor": 87,
+            "milliseconds": 0.04395799999838346
+          },
+          {
+            "cursor": 122,
+            "milliseconds": 0.19729200000074343
+          },
+          {
+            "cursor": 21,
+            "milliseconds": 0.10316600000078324
+          },
+          {
+            "cursor": 28,
+            "milliseconds": 0.02933399999892572
+          },
+          {
+            "cursor": 123,
+            "milliseconds": 0.0005830000009154901
+          },
+          {
+            "cursor": 6,
+            "milliseconds": 0.018541999997978564
+          },
+          {
+            "cursor": 33,
+            "milliseconds": 0.17179200000100536
+          },
+          {
+            "cursor": 0,
+            "milliseconds": 0.0005410000012489036
+          },
+          {
+            "cursor": 95,
+            "milliseconds": 0.5558750000018335
+          },
+          {
+            "cursor": 78,
+            "milliseconds": 0.41079099999842583
+          }
+        ],
+        "medianScrubMs": 0.16522900000018126,
+        "maximumScrubMs": 0.5558750000018335,
+        "explicitGc": true,
+        "heapBeforeMiB": 18.982284545898438,
+        "heapAfterMiB": 19.433135986328125,
+        "retainedMiB": 0.4508514404296875,
+        "heapScope": "Per-case process heap delta retaining raw events, semantic trace, graph, bounded history, source manifest and test harness; not isolated graph bytes",
+        "caveat": "One ordered-suite sample per case; GC/JIT/cache noise and prior-case retention can affect deltas. Negative deltas are reported unchanged.",
+        "history": {
+          "length": 123,
+          "checkpointCount": 1,
+          "checkpointInterval": 256,
+          "maxCheckpoints": 256,
+          "cachedMaterializationCount": 1,
+          "cachedMaterializationCursor": 78,
+          "retainedStateRoots": 3,
+          "replayedEvents": 1234
+        }
+      }
+    },
+    {
+      "version": 1,
+      "case": "22-maven-dependency",
+      "category": 22,
+      "mainClass": "cargo.Main",
+      "accepted": true,
+      "recordedAt": "2026-10-04T02:58:19.588Z",
+      "error": null,
+      "buildSystem": "maven",
+      "timings": {
+        "buildMs": 3448.042874999999,
+        "executionMs": 685.7255839999998,
+        "normalizationMs": 1.081624999998894
+      },
+      "counts": {
+        "rawEvents": 29,
+        "semanticEvents": 58,
+        "rawBatches": 1,
+        "deltaBytes": 11918,
+        "runtimeObjects": 8,
+        "runtimeClasses": 0,
+        "invocations": 2,
+        "calls": 6,
+        "values": 17,
+        "storage": 9,
+        "graphObjects": 8,
+        "io": 1,
+        "edges": 44
+      },
+      "java": {
+        "status": "exited",
+        "exitCode": 0,
+        "stdoutBytes": 8,
+        "stderrBytes": 0,
+        "stdoutSha256": "07a62b58d1d2dc74db06d527f433da6edbe266b5288ede89fd3335ccef40b951",
+        "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "observer": {
+        "state": "FULL",
+        "reason": null,
+        "budget": null,
+        "lastRecordedSeq": 28,
+        "executionContinued": true
+      },
+      "semantic": {
+        "status": "ended",
+        "capability": "partial",
+        "diagnostics": []
+      },
+      "jdk": {
+        "available": true,
+        "version": "26.0.2.1",
+        "platform": "darwin",
+        "architecture": "arm64"
+      },
+      "dependencies": [
+        "commons-lang3-3.17.0.jar"
+      ],
+      "classpaths": {
+        "compile": [
+          "<project-classes>",
+          "commons-lang3-3.17.0.jar"
+        ],
+        "runtime": [
+          "<project-classes>",
+          "commons-lang3-3.17.0.jar"
+        ]
+      },
+      "outputs": {},
+      "probe": {
+        "domain": "Node semantic seek only; no browser, rendering or GPU measurement",
+        "sampleCount": 30,
+        "seed": "0x4c0ffee",
+        "samples": [
+          {
+            "cursor": 0,
+            "milliseconds": 0.002542000001994893
+          },
+          {
+            "cursor": 58,
+            "milliseconds": 0.0005830000009154901
+          },
+          {
+            "cursor": 44,
+            "milliseconds": 0.2947910000002594
+          },
+          {
+            "cursor": 53,
+            "milliseconds": 0.052958000000217
+          },
+          {
+            "cursor": 41,
+            "milliseconds": 0.2027909999997064
+          },
+          {
+            "cursor": 21,
+            "milliseconds": 0.09491699999853154
+          },
+          {
+            "cursor": 6,
+            "milliseconds": 0.01991699999780394
+          },
+          {
+            "cursor": 35,
+            "milliseconds": 0.15687500000058208
+          },
+          {
+            "cursor": 0,
+            "milliseconds": 0.0006250000005820766
+          },
+          {
+            "cursor": 22,
+            "milliseconds": 0.0965409999989788
+          },
+          {
+            "cursor": 7,
+            "milliseconds": 0.02675000000090222
+          },
+          {
+            "cursor": 0,
+            "milliseconds": 0.0006249999969440978
+          },
+          {
+            "cursor": 5,
+            "milliseconds": 0.013999999999214197
+          },
+          {
+            "cursor": 47,
+            "milliseconds": 0.2112909999996191
+          },
+          {
+            "cursor": 54,
+            "milliseconds": 0.037750000003143214
+          },
+          {
+            "cursor": 42,
+            "milliseconds": 0.20529199999873526
+          },
+          {
+            "cursor": 43,
+            "milliseconds": 0.007790999999997439
+          },
+          {
+            "cursor": 16,
+            "milliseconds": 0.07295800000065356
+          },
+          {
+            "cursor": 6,
+            "milliseconds": 0.018374999999650754
+          },
+          {
+            "cursor": 30,
+            "milliseconds": 0.1324160000003758
+          },
+          {
+            "cursor": 20,
+            "milliseconds": 0.08945799999855808
+          },
+          {
+            "cursor": 45,
+            "milliseconds": 0.14829099999769824
+          },
+          {
+            "cursor": 27,
+            "milliseconds": 0.13004199999704724
+          },
+          {
+            "cursor": 40,
+            "milliseconds": 0.07145899999886751
+          },
+          {
+            "cursor": 1,
+            "milliseconds": 0.002375000000029104
+          },
+          {
+            "cursor": 38,
+            "milliseconds": 0.20591700000295532
+          },
+          {
+            "cursor": 16,
+            "milliseconds": 0.07341699999960838
+          },
+          {
+            "cursor": 36,
+            "milliseconds": 0.10429199999998673
+          },
+          {
+            "cursor": 57,
+            "milliseconds": 0.132541000002675
+          },
+          {
+            "cursor": 16,
+            "milliseconds": 0.07233300000007148
+          }
+        ],
+        "medianScrubMs": 0.07318750000013097,
+        "maximumScrubMs": 0.2947910000002594,
+        "explicitGc": true,
+        "heapBeforeMiB": 19.008201599121094,
+        "heapAfterMiB": 19.447463989257812,
+        "retainedMiB": 0.43926239013671875,
+        "heapScope": "Per-case process heap delta retaining raw events, semantic trace, graph, bounded history, source manifest and test harness; not isolated graph bytes",
+        "caveat": "One ordered-suite sample per case; GC/JIT/cache noise and prior-case retention can affect deltas. Negative deltas are reported unchanged.",
+        "history": {
+          "length": 58,
+          "checkpointCount": 1,
+          "checkpointInterval": 256,
+          "maxCheckpoints": 256,
+          "cachedMaterializationCount": 1,
+          "cachedMaterializationCursor": 16,
+          "retainedStateRoots": 3,
+          "replayedEvents": 595
+        }
+      }
+    },
+    {
+      "version": 1,
+      "case": "23-gradle-dependency",
+      "category": 23,
+      "mainClass": "cargo.Main",
+      "accepted": true,
+      "recordedAt": "2026-10-04T02:58:24.324Z",
+      "error": null,
+      "buildSystem": "gradle",
+      "timings": {
+        "buildMs": 3969.9407500000016,
+        "executionMs": 681.9405000000006,
+        "normalizationMs": 0.9697080000005371
+      },
+      "counts": {
+        "rawEvents": 29,
+        "semanticEvents": 58,
+        "rawBatches": 1,
+        "deltaBytes": 11918,
+        "runtimeObjects": 8,
+        "runtimeClasses": 0,
+        "invocations": 2,
+        "calls": 6,
+        "values": 17,
+        "storage": 9,
+        "graphObjects": 8,
+        "io": 1,
+        "edges": 44
+      },
+      "java": {
+        "status": "exited",
+        "exitCode": 0,
+        "stdoutBytes": 8,
+        "stderrBytes": 0,
+        "stdoutSha256": "07a62b58d1d2dc74db06d527f433da6edbe266b5288ede89fd3335ccef40b951",
+        "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "observer": {
+        "state": "FULL",
+        "reason": null,
+        "budget": null,
+        "lastRecordedSeq": 28,
+        "executionContinued": true
+      },
+      "semantic": {
+        "status": "ended",
+        "capability": "partial",
+        "diagnostics": []
+      },
+      "jdk": {
+        "available": true,
+        "version": "26.0.2.1",
+        "platform": "darwin",
+        "architecture": "arm64"
+      },
+      "dependencies": [
+        "commons-lang3-3.17.0.jar"
+      ],
+      "classpaths": {
+        "compile": [
+          "<project-classes>",
+          "commons-lang3-3.17.0.jar"
+        ],
+        "runtime": [
+          "<project-classes>",
+          "commons-lang3-3.17.0.jar"
+        ]
+      },
+      "outputs": {},
+      "probe": {
+        "domain": "Node semantic seek only; no browser, rendering or GPU measurement",
+        "sampleCount": 30,
+        "seed": "0x4c0ffee",
+        "samples": [
+          {
+            "cursor": 0,
+            "milliseconds": 0.001583000001119217
+          },
+          {
+            "cursor": 58,
+            "milliseconds": 0.0005419999979494605
+          },
+          {
+            "cursor": 44,
+            "milliseconds": 0.2914999999993597
+          },
+          {
+            "cursor": 53,
+            "milliseconds": 0.05400000000008731
+          },
+          {
+            "cursor": 41,
+            "milliseconds": 0.212374999999156
+          },
+          {
+            "cursor": 21,
+            "milliseconds": 0.09037499999976717
+          },
+          {
+            "cursor": 6,
+            "milliseconds": 0.01995800000076997
+          },
+          {
+            "cursor": 35,
+            "milliseconds": 0.16658299999835435
+          },
+          {
+            "cursor": 0,
+            "milliseconds": 0.0007079999995767139
+          },
+          {
+            "cursor": 22,
+            "milliseconds": 0.099833000000217
+          },
+          {
+            "cursor": 7,
+            "milliseconds": 0.026624999998603016
+          },
+          {
+            "cursor": 0,
+            "milliseconds": 0.0006250000005820766
+          },
+          {
+            "cursor": 5,
+            "milliseconds": 0.014917000000423286
+          },
+          {
+            "cursor": 47,
+            "milliseconds": 0.21783399999912945
+          },
+          {
+            "cursor": 54,
+            "milliseconds": 0.03929199999765842
+          },
+          {
+            "cursor": 42,
+            "milliseconds": 0.23470799999995506
+          },
+          {
+            "cursor": 43,
+            "milliseconds": 0.008417000000918051
+          },
+          {
+            "cursor": 16,
+            "milliseconds": 0.07529200000135461
+          },
+          {
+            "cursor": 6,
+            "milliseconds": 0.02008399999976973
+          },
+          {
+            "cursor": 30,
+            "milliseconds": 0.13433400000212714
+          },
+          {
+            "cursor": 20,
+            "milliseconds": 0.09429200000158744
+          },
+          {
+            "cursor": 45,
+            "milliseconds": 0.17287500000020373
+          },
+          {
+            "cursor": 27,
+            "milliseconds": 0.15037500000107684
+          },
+          {
+            "cursor": 40,
+            "milliseconds": 0.06950000000142609
+          },
+          {
+            "cursor": 1,
+            "milliseconds": 0.002334000000701053
+          },
+          {
+            "cursor": 38,
+            "milliseconds": 0.19854099999793107
+          },
+          {
+            "cursor": 16,
+            "milliseconds": 0.07620799999858718
+          },
+          {
+            "cursor": 36,
+            "milliseconds": 0.11037500000020373
+          },
+          {
+            "cursor": 57,
+            "milliseconds": 0.13537500000165892
+          },
+          {
+            "cursor": 16,
+            "milliseconds": 0.07283400000233087
+          }
+        ],
+        "medianScrubMs": 0.0757499999999709,
+        "maximumScrubMs": 0.2914999999993597,
+        "explicitGc": true,
+        "heapBeforeMiB": 19.20891571044922,
+        "heapAfterMiB": 19.485092163085938,
+        "retainedMiB": 0.27617645263671875,
+        "heapScope": "Per-case process heap delta retaining raw events, semantic trace, graph, bounded history, source manifest and test harness; not isolated graph bytes",
+        "caveat": "One ordered-suite sample per case; GC/JIT/cache noise and prior-case retention can affect deltas. Negative deltas are reported unchanged.",
+        "history": {
+          "length": 58,
+          "checkpointCount": 1,
+          "checkpointInterval": 256,
+          "maxCheckpoints": 256,
+          "cachedMaterializationCount": 1,
+          "cachedMaterializationCursor": 16,
+          "retainedStateRoots": 3,
+          "replayedEvents": 595
+        }
+      }
+    },
+    {
+      "version": 1,
+      "case": "24-reflection",
+      "category": 24,
+      "mainClass": "Main",
+      "accepted": true,
+      "recordedAt": "2026-10-04T02:58:25.287Z",
+      "error": null,
+      "buildSystem": "plain",
+      "timings": {
+        "buildMs": 185.30295900000056,
+        "executionMs": 682.5944170000002,
+        "normalizationMs": 1.727958999999828
+      },
+      "counts": {
+        "rawEvents": 60,
+        "semanticEvents": 119,
+        "rawBatches": 1,
+        "deltaBytes": 23855,
+        "runtimeObjects": 16,
+        "runtimeClasses": 0,
+        "invocations": 3,
+        "calls": 10,
+        "values": 39,
+        "storage": 20,
+        "graphObjects": 16,
+        "io": 1,
+        "edges": 97
+      },
+      "java": {
+        "status": "exited",
+        "exitCode": 0,
+        "stdoutBytes": 3,
+        "stderrBytes": 0,
+        "stdoutSha256": "084c799cd551dd1d8d5c5f9a5d593b2e931f5e36122ee5c793c1d08a19839cc0",
+        "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "observer": {
+        "state": "FULL",
+        "reason": null,
+        "budget": null,
+        "lastRecordedSeq": 59,
+        "executionContinued": true
+      },
+      "semantic": {
+        "status": "ended",
+        "capability": "partial",
+        "diagnostics": []
+      },
+      "jdk": {
+        "available": true,
+        "version": "26.0.2.1",
+        "platform": "darwin",
+        "architecture": "arm64"
+      },
+      "dependencies": [],
+      "classpaths": {
+        "compile": [
+          "<project-classes>"
+        ],
+        "runtime": [
+          "<project-classes>"
+        ]
+      },
+      "outputs": {},
+      "probe": {
+        "domain": "Node semantic seek only; no browser, rendering or GPU measurement",
+        "sampleCount": 30,
+        "seed": "0x4c0ffee",
+        "samples": [
+          {
+            "cursor": 0,
+            "milliseconds": 0.003249999997933628
+          },
+          {
+            "cursor": 119,
+            "milliseconds": 0.0007499999992433004
+          },
+          {
+            "cursor": 13,
+            "milliseconds": 0.11445800000001327
+          },
+          {
+            "cursor": 40,
+            "milliseconds": 0.18758399999933317
+          },
+          {
+            "cursor": 71,
+            "milliseconds": 0.23408399999971152
+          },
+          {
+            "cursor": 98,
+            "milliseconds": 0.18999999999869033
+          },
+          {
+            "cursor": 81,
+            "milliseconds": 0.44120900000052643
+          },
+          {
+            "cursor": 60,
+            "milliseconds": 0.3229589999973541
+          },
+          {
+            "cursor": 115,
+            "milliseconds": 0.314249999999447
+          },
+          {
+            "cursor": 38,
+            "milliseconds": 0.17554199999722186
+          },
+          {
+            "cursor": 85,
+            "milliseconds": 0.2521249999990687
+          },
+          {
+            "cursor": 112,
+            "milliseconds": 0.16291699999783305
+          },
+          {
+            "cursor": 111,
+            "milliseconds": 0.5864589999982854
+          },
+          {
+            "cursor": 90,
+            "milliseconds": 0.4784169999984442
+          },
+          {
+            "cursor": 9,
+            "milliseconds": 0.03408299999864539
+          },
+          {
+            "cursor": 76,
+            "milliseconds": 0.39574999999967986
+          },
+          {
+            "cursor": 51,
+            "milliseconds": 0.3612089999987802
+          },
+          {
+            "cursor": 70,
+            "milliseconds": 0.16033299999980954
+          },
+          {
+            "cursor": 69,
+            "milliseconds": 0.5189170000012382
+          },
+          {
+            "cursor": 72,
+            "milliseconds": 0.023167000003013527
+          },
+          {
+            "cursor": 39,
+            "milliseconds": 0.2570420000010927
+          },
+          {
+            "cursor": 34,
+            "milliseconds": 0.2182089999987511
+          },
+          {
+            "cursor": 65,
+            "milliseconds": 0.21129199999995762
+          },
+          {
+            "cursor": 60,
+            "milliseconds": 0.4041250000009313
+          },
+          {
+            "cursor": 107,
+            "milliseconds": 0.35720800000126474
+          },
+          {
+            "cursor": 118,
+            "milliseconds": 0.06958399999712128
+          },
+          {
+            "cursor": 53,
+            "milliseconds": 0.336209000000963
+          },
+          {
+            "cursor": 88,
+            "milliseconds": 0.1915000000008149
+          },
+          {
+            "cursor": 55,
+            "milliseconds": 0.2593749999978172
+          },
+          {
+            "cursor": 106,
+            "milliseconds": 0.3160839999982272
+          }
+        ],
+        "medianScrubMs": 0.2431044999993901,
+        "maximumScrubMs": 0.5864589999982854,
+        "explicitGc": true,
+        "heapBeforeMiB": 19.25652313232422,
+        "heapAfterMiB": 19.747512817382812,
+        "retainedMiB": 0.49098968505859375,
+        "heapScope": "Per-case process heap delta retaining raw events, semantic trace, graph, bounded history, source manifest and test harness; not isolated graph bytes",
+        "caveat": "One ordered-suite sample per case; GC/JIT/cache noise and prior-case retention can affect deltas. Negative deltas are reported unchanged.",
+        "history": {
+          "length": 119,
+          "checkpointCount": 1,
+          "checkpointInterval": 256,
+          "maxCheckpoints": 256,
+          "cachedMaterializationCount": 1,
+          "cachedMaterializationCursor": 106,
+          "retainedStateRoots": 3,
+          "replayedEvents": 1378
+        }
+      }
+    },
+    {
+      "version": 1,
+      "case": "25-cross-feature-dispatch",
+      "category": "cross-feature",
+      "mainClass": "dispatch.app.Main",
+      "accepted": true,
+      "recordedAt": "2026-10-04T02:58:29.727Z",
+      "error": null,
+      "buildSystem": "maven",
+      "timings": {
+        "buildMs": 3350.2997920000016,
+        "executionMs": 832.1135419999991,
+        "normalizationMs": 11.678208000004815
+      },
+      "counts": {
+        "rawEvents": 519,
+        "semanticEvents": 922,
+        "rawBatches": 5,
+        "deltaBytes": 220012,
+        "runtimeObjects": 43,
+        "runtimeClasses": 2,
+        "invocations": 34,
+        "calls": 77,
+        "values": 244,
+        "storage": 128,
+        "graphObjects": 43,
+        "io": 7,
+        "edges": 759
+      },
+      "java": {
+        "status": "exited",
+        "exitCode": 0,
+        "stdoutBytes": 34,
+        "stderrBytes": 27,
+        "stdoutSha256": "7f55a83f15dbd7605e759c413e5678eea98ace92172e193d387f3194e4aaaf6e",
+        "stderrSha256": "69f12c251f66fad0528284c973ac5e67f6a7b3de13427f69ca4fd61807ba4763"
+      },
+      "observer": {
+        "state": "FULL",
+        "reason": null,
+        "budget": null,
+        "lastRecordedSeq": 518,
+        "executionContinued": true
+      },
+      "semantic": {
+        "status": "ended",
+        "capability": "partial",
+        "diagnostics": []
+      },
+      "jdk": {
+        "available": true,
+        "version": "26.0.2.1",
+        "platform": "darwin",
+        "architecture": "arm64"
+      },
+      "dependencies": [
+        "commons-lang3-3.17.0.jar"
+      ],
+      "classpaths": {
+        "compile": [
+          "<project-classes>",
+          "commons-lang3-3.17.0.jar"
+        ],
+        "runtime": [
+          "<project-classes>",
+          "commons-lang3-3.17.0.jar"
+        ]
+      },
+      "outputs": {
+        "dispatch.csv": {
+          "bytes": 17,
+          "sha256": "3f19bf4707a88fcc9890e558f1318bdf82502c3903fa0f3e433ae558eb24cc10"
+        }
+      },
+      "probe": {
+        "domain": "Node semantic seek only; no browser, rendering or GPU measurement",
+        "sampleCount": 30,
+        "seed": "0x4c0ffee",
+        "samples": [
+          {
+            "cursor": 0,
+            "milliseconds": 0.004957999997714069
+          },
+          {
+            "cursor": 922,
+            "milliseconds": 0.0005830000009154901
+          },
+          {
+            "cursor": 580,
+            "milliseconds": 1.2700420000037411
+          },
+          {
+            "cursor": 402,
+            "milliseconds": 1.174250000003667
+          },
+          {
+            "cursor": 206,
+            "milliseconds": 1.8935830000045826
+          },
+          {
+            "cursor": 349,
+            "milliseconds": 0.9142920000012964
+          },
+          {
+            "cursor": 328,
+            "milliseconds": 0.6467090000005555
+          },
+          {
+            "cursor": 354,
+            "milliseconds": 0.2296249999999418
+          },
+          {
+            "cursor": 742,
+            "milliseconds": 2.4159159999981057
+          },
+          {
+            "cursor": 202,
+            "milliseconds": 1.8956659999967087
+          },
+          {
+            "cursor": 565,
+            "milliseconds": 0.5746670000007725
+          },
+          {
+            "cursor": 467,
+            "milliseconds": 2.010458999997354
+          },
+          {
+            "cursor": 849,
+            "milliseconds": 0.9874589999963064
+          },
+          {
+            "cursor": 201,
+            "milliseconds": 1.7791660000002594
+          },
+          {
+            "cursor": 441,
+            "milliseconds": 1.6660000000047148
+          },
+          {
+            "cursor": 573,
+            "milliseconds": 0.7367920000033337
+          },
+          {
+            "cursor": 462,
+            "milliseconds": 1.9231250000011642
+          },
+          {
+            "cursor": 773,
+            "milliseconds": 0.07137499999953434
+          },
+          {
+            "cursor": 424,
+            "milliseconds": 1.528916000002937
+          },
+          {
+            "cursor": 61,
+            "milliseconds": 0.5206249999973807
+          },
+          {
+            "cursor": 710,
+            "milliseconds": 1.9715419999993173
+          },
+          {
+            "cursor": 448,
+            "milliseconds": 1.6940410000024713
+          },
+          {
+            "cursor": 113,
+            "milliseconds": 0.9593329999988782
+          },
+          {
+            "cursor": 586,
+            "milliseconds": 0.7395829999950365
+          },
+          {
+            "cursor": 478,
+            "milliseconds": 1.9285000000018044
+          },
+          {
+            "cursor": 820,
+            "milliseconds": 0.5073340000017197
+          },
+          {
+            "cursor": 813,
+            "milliseconds": 0.4967499999984284
+          },
+          {
+            "cursor": 687,
+            "milliseconds": 1.6475419999987935
+          },
+          {
+            "cursor": 673,
+            "milliseconds": 1.5447089999943273
+          },
+          {
+            "cursor": 493,
+            "milliseconds": 2.0592499999984284
+          }
+        ],
+        "medianScrubMs": 1.222146000003704,
+        "maximumScrubMs": 2.4159159999981057,
+        "explicitGc": true,
+        "heapBeforeMiB": 19.29145050048828,
+        "heapAfterMiB": 22.121932983398438,
+        "retainedMiB": 2.8304824829101562,
+        "heapScope": "Per-case process heap delta retaining raw events, semantic trace, graph, bounded history, source manifest and test harness; not isolated graph bytes",
+        "caveat": "One ordered-suite sample per case; GC/JIT/cache noise and prior-case retention can affect deltas. Negative deltas are reported unchanged.",
+        "history": {
+          "length": 922,
+          "checkpointCount": 4,
+          "checkpointInterval": 256,
+          "maxCheckpoints": 256,
+          "cachedMaterializationCount": 1,
+          "cachedMaterializationCursor": 493,
+          "retainedStateRoots": 6,
+          "replayedEvents": 4446
+        }
+      }
+    },
+    {
+      "version": 1,
+      "case": "26-custom-loader",
+      "category": "dynamic-loading",
+      "mainClass": "Main",
+      "accepted": true,
+      "recordedAt": "2026-10-04T02:58:30.886Z",
+      "error": null,
+      "buildSystem": "plain",
+      "timings": {
+        "buildMs": 207.1671669999996,
+        "executionMs": 831.3735829999932,
+        "normalizationMs": 3.110584000009112
+      },
+      "counts": {
+        "rawEvents": 120,
+        "semanticEvents": 217,
+        "rawBatches": 3,
+        "deltaBytes": 50426,
+        "runtimeObjects": 36,
+        "runtimeClasses": 0,
+        "invocations": 2,
+        "calls": 24,
+        "values": 72,
+        "storage": 30,
+        "graphObjects": 36,
+        "io": 2,
+        "edges": 190
+      },
+      "java": {
+        "status": "exited",
+        "exitCode": 0,
+        "stdoutBytes": 8,
+        "stderrBytes": 0,
+        "stdoutSha256": "620382dfac429b86da59c1a2b02f41bf8f4183e40f445528931d2cb2e828eb2b",
+        "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "observer": {
+        "state": "FULL",
+        "reason": null,
+        "budget": null,
+        "lastRecordedSeq": 119,
+        "executionContinued": true
+      },
+      "semantic": {
+        "status": "ended",
+        "capability": "partial",
+        "diagnostics": []
+      },
+      "jdk": {
+        "available": true,
+        "version": "26.0.2.1",
+        "platform": "darwin",
+        "architecture": "arm64"
+      },
+      "dependencies": [],
+      "classpaths": {
+        "compile": [
+          "<project-classes>"
+        ],
+        "runtime": [
+          "<project-classes>"
+        ]
+      },
+      "outputs": {},
+      "probe": {
+        "domain": "Node semantic seek only; no browser, rendering or GPU measurement",
+        "sampleCount": 30,
+        "seed": "0x4c0ffee",
+        "samples": [
+          {
+            "cursor": 0,
+            "milliseconds": 0.0017910000024130568
+          },
+          {
+            "cursor": 217,
+            "milliseconds": 0.0004580000022542663
+          },
+          {
+            "cursor": 125,
+            "milliseconds": 0.9017909999965923
+          },
+          {
+            "cursor": 128,
+            "milliseconds": 0.01695800000015879
+          },
+          {
+            "cursor": 101,
+            "milliseconds": 0.5306669999990845
+          },
+          {
+            "cursor": 66,
+            "milliseconds": 0.3624169999966398
+          },
+          {
+            "cursor": 23,
+            "milliseconds": 0.10070799999812152
+          },
+          {
+            "cursor": 200,
+            "milliseconds": 1.1592910000035772
+          },
+          {
+            "cursor": 1,
+            "milliseconds": 0.003540999998222105
+          },
+          {
+            "cursor": 72,
+            "milliseconds": 0.5190830000065034
+          },
+          {
+            "cursor": 95,
+            "milliseconds": 0.12379199999850243
+          },
+          {
+            "cursor": 96,
+            "milliseconds": 0.004375000004074536
+          },
+          {
+            "cursor": 217,
+            "milliseconds": 0.0005840000012540258
+          },
+          {
+            "cursor": 126,
+            "milliseconds": 0.14949999999953434
+          },
+          {
+            "cursor": 119,
+            "milliseconds": 0.6335420000032173
+          },
+          {
+            "cursor": 2,
+            "milliseconds": 0.006083000000216998
+          },
+          {
+            "cursor": 17,
+            "milliseconds": 0.061083000000508036
+          },
+          {
+            "cursor": 124,
+            "milliseconds": 0.5847079999948619
+          },
+          {
+            "cursor": 123,
+            "milliseconds": 0.7556669999976293
+          },
+          {
+            "cursor": 54,
+            "milliseconds": 0.4520420000044396
+          },
+          {
+            "cursor": 129,
+            "milliseconds": 0.6226250000036089
+          },
+          {
+            "cursor": 122,
+            "milliseconds": 0.8492919999989681
+          },
+          {
+            "cursor": 11,
+            "milliseconds": 0.04458300000260351
+          },
+          {
+            "cursor": 90,
+            "milliseconds": 0.4833340000041062
+          },
+          {
+            "cursor": 99,
+            "milliseconds": 0.044874999999592546
+          },
+          {
+            "cursor": 208,
+            "milliseconds": 0.5907500000030268
+          },
+          {
+            "cursor": 9,
+            "milliseconds": 0.030082999997830484
+          },
+          {
+            "cursor": 8,
+            "milliseconds": 0.024166999995941296
+          },
+          {
+            "cursor": 177,
+            "milliseconds": 0.9307499999995343
+          },
+          {
+            "cursor": 62,
+            "milliseconds": 0.3212089999942691
+          }
+        ],
+        "medianScrubMs": 0.23535449999690172,
+        "maximumScrubMs": 1.1592910000035772,
+        "explicitGc": true,
+        "heapBeforeMiB": 19.741836547851562,
+        "heapAfterMiB": 20.20012664794922,
+        "retainedMiB": 0.45829010009765625,
+        "heapScope": "Per-case process heap delta retaining raw events, semantic trace, graph, bounded history, source manifest and test harness; not isolated graph bytes",
+        "caveat": "One ordered-suite sample per case; GC/JIT/cache noise and prior-case retention can affect deltas. Negative deltas are reported unchanged.",
+        "history": {
+          "length": 217,
+          "checkpointCount": 1,
+          "checkpointInterval": 256,
+          "maxCheckpoints": 256,
+          "cachedMaterializationCount": 1,
+          "cachedMaterializationCursor": 62,
+          "retainedStateRoots": 3,
+          "replayedEvents": 1933
+        }
+      }
+    },
+    {
+      "version": 1,
+      "case": "27-adversarial-callbacks",
+      "category": "observer-transparency",
+      "mainClass": "Main",
+      "accepted": true,
+      "recordedAt": "2026-10-04T02:58:31.981Z",
+      "error": null,
+      "buildSystem": "plain",
+      "timings": {
+        "buildMs": 233.45437500000116,
+        "executionMs": 725.9668340000062,
+        "normalizationMs": 5.337499999994179
+      },
+      "counts": {
+        "rawEvents": 273,
+        "semanticEvents": 484,
+        "rawBatches": 2,
+        "deltaBytes": 94498,
+        "runtimeObjects": 12,
+        "runtimeClasses": 1,
+        "invocations": 28,
+        "calls": 41,
+        "values": 104,
+        "storage": 50,
+        "graphObjects": 12,
+        "io": 1,
+        "edges": 306
+      },
+      "java": {
+        "status": "exited",
+        "exitCode": 0,
+        "stdoutBytes": 13,
+        "stderrBytes": 0,
+        "stdoutSha256": "bb9d08c0cfb8fc0ce4192cadef050666d423a0f97e6e696d0da4962c7b88a6fe",
+        "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "observer": {
+        "state": "FULL",
+        "reason": null,
+        "budget": null,
+        "lastRecordedSeq": 272,
+        "executionContinued": true
+      },
+      "semantic": {
+        "status": "ended",
+        "capability": "partial",
+        "diagnostics": []
+      },
+      "jdk": {
+        "available": true,
+        "version": "26.0.2.1",
+        "platform": "darwin",
+        "architecture": "arm64"
+      },
+      "dependencies": [],
+      "classpaths": {
+        "compile": [
+          "<project-classes>"
+        ],
+        "runtime": [
+          "<project-classes>"
+        ]
+      },
+      "outputs": {},
+      "probe": {
+        "domain": "Node semantic seek only; no browser, rendering or GPU measurement",
+        "sampleCount": 30,
+        "seed": "0x4c0ffee",
+        "samples": [
+          {
+            "cursor": 0,
+            "milliseconds": 0.006708000000799075
+          },
+          {
+            "cursor": 484,
+            "milliseconds": 0.0007919999989098869
+          },
+          {
+            "cursor": 338,
+            "milliseconds": 0.8612920000014128
+          },
+          {
+            "cursor": 380,
+            "milliseconds": 0.20779200000106357
+          },
+          {
+            "cursor": 116,
+            "milliseconds": 0.5261250000039581
+          },
+          {
+            "cursor": 343,
+            "milliseconds": 0.4169160000019474
+          },
+          {
+            "cursor": 316,
+            "milliseconds": 0.27295800000138115
+          },
+          {
+            "cursor": 50,
+            "milliseconds": 0.23637500000040745
+          },
+          {
+            "cursor": 75,
+            "milliseconds": 0.09649999999965075
+          },
+          {
+            "cursor": 428,
+            "milliseconds": 0.8392909999965923
+          },
+          {
+            "cursor": 120,
+            "milliseconds": 0.5099579999950947
+          },
+          {
+            "cursor": 287,
+            "milliseconds": 0.16612500000337604
+          },
+          {
+            "cursor": 96,
+            "milliseconds": 0.4137090000003809
+          },
+          {
+            "cursor": 280,
+            "milliseconds": 0.10854200000176206
+          },
+          {
+            "cursor": 59,
+            "milliseconds": 0.2836669999960577
+          },
+          {
+            "cursor": 36,
+            "milliseconds": 0.1582090000010794
+          },
+          {
+            "cursor": 96,
+            "milliseconds": 0.2647499999948195
+          },
+          {
+            "cursor": 365,
+            "milliseconds": 0.5391669999953592
+          },
+          {
+            "cursor": 339,
+            "milliseconds": 0.3982079999987036
+          },
+          {
+            "cursor": 372,
+            "milliseconds": 0.18325000000186265
+          },
+          {
+            "cursor": 279,
+            "milliseconds": 0.11370799999713199
+          },
+          {
+            "cursor": 9,
+            "milliseconds": 0.03945899999962421
+          },
+          {
+            "cursor": 455,
+            "milliseconds": 1.0126670000026934
+          },
+          {
+            "cursor": 105,
+            "milliseconds": 0.471624999998312
+          },
+          {
+            "cursor": 147,
+            "milliseconds": 0.21000000000640284
+          },
+          {
+            "cursor": 98,
+            "milliseconds": 0.4530830000003334
+          },
+          {
+            "cursor": 78,
+            "milliseconds": 0.46304200000304263
+          },
+          {
+            "cursor": 58,
+            "milliseconds": 0.3321250000008149
+          },
+          {
+            "cursor": 385,
+            "milliseconds": 0.6624999999985448
+          },
+          {
+            "cursor": 41,
+            "milliseconds": 0.18999999999505235
+          }
+        ],
+        "medianScrubMs": 0.27831249999871943,
+        "maximumScrubMs": 1.0126670000026934,
+        "explicitGc": true,
+        "heapBeforeMiB": 19.522422790527344,
+        "heapAfterMiB": 20.551101684570312,
+        "retainedMiB": 1.0286788940429688,
+        "heapScope": "Per-case process heap delta retaining raw events, semantic trace, graph, bounded history, source manifest and test harness; not isolated graph bytes",
+        "caveat": "One ordered-suite sample per case; GC/JIT/cache noise and prior-case retention can affect deltas. Negative deltas are reported unchanged.",
+        "history": {
+          "length": 484,
+          "checkpointCount": 2,
+          "checkpointInterval": 256,
+          "maxCheckpoints": 256,
+          "cachedMaterializationCount": 1,
+          "cachedMaterializationCursor": 41,
+          "retainedStateRoots": 4,
+          "replayedEvents": 2834
+        }
+      }
+    },
+    {
+      "version": 1,
+      "case": "28-bounded-values",
+      "category": "bounded-observation",
+      "mainClass": "Main",
+      "accepted": true,
+      "recordedAt": "2026-10-04T02:58:33.049Z",
+      "error": null,
+      "buildSystem": "plain",
+      "timings": {
+        "buildMs": 195.92741699999897,
+        "executionMs": 692.5434999999998,
+        "normalizationMs": 6.8885840000002645
+      },
+      "counts": {
+        "rawEvents": 249,
+        "semanticEvents": 372,
+        "rawBatches": 1,
+        "deltaBytes": 151927,
+        "runtimeObjects": 7,
+        "runtimeClasses": 0,
+        "invocations": 4,
+        "calls": 49,
+        "values": 205,
+        "storage": 77,
+        "graphObjects": 7,
+        "io": 1,
+        "edges": 436
+      },
+      "java": {
+        "status": "exited",
+        "exitCode": 0,
+        "stdoutBytes": 27,
+        "stderrBytes": 0,
+        "stdoutSha256": "873d96bfb1394a6ac92ad4fe7a9c64dad6bed7a61cd6078d738366d7d2f3e4ac",
+        "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "observer": {
+        "state": "FULL",
+        "reason": null,
+        "budget": null,
+        "lastRecordedSeq": 248,
+        "executionContinued": true
+      },
+      "semantic": {
+        "status": "ended",
+        "capability": "partial",
+        "diagnostics": []
+      },
+      "jdk": {
+        "available": true,
+        "version": "26.0.2.1",
+        "platform": "darwin",
+        "architecture": "arm64"
+      },
+      "dependencies": [],
+      "classpaths": {
+        "compile": [
+          "<project-classes>"
+        ],
+        "runtime": [
+          "<project-classes>"
+        ]
+      },
+      "outputs": {},
+      "probe": {
+        "domain": "Node semantic seek only; no browser, rendering or GPU measurement",
+        "sampleCount": 30,
+        "seed": "0x4c0ffee",
+        "samples": [
+          {
+            "cursor": 0,
+            "milliseconds": 0.003958000001148321
+          },
+          {
+            "cursor": 372,
+            "milliseconds": 0.0007919999989098869
+          },
+          {
+            "cursor": 121,
+            "milliseconds": 1.0015419999981532
+          },
+          {
+            "cursor": 349,
+            "milliseconds": 0.9456659999996191
+          },
+          {
+            "cursor": 359,
+            "milliseconds": 0.10670799999934388
+          },
+          {
+            "cursor": 254,
+            "milliseconds": 2.3340420000022277
+          },
+          {
+            "cursor": 339,
+            "milliseconds": 0.8841249999968568
+          },
+          {
+            "cursor": 235,
+            "milliseconds": 2.0823749999981374
+          },
+          {
+            "cursor": 83,
+            "milliseconds": 0.6277079999999842
+          },
+          {
+            "cursor": 175,
+            "milliseconds": 0.850124999997206
+          },
+          {
+            "cursor": 336,
+            "milliseconds": 5.653291000002355
+          },
+          {
+            "cursor": 5,
+            "milliseconds": 0.028125000004365575
+          },
+          {
+            "cursor": 347,
+            "milliseconds": 0.9578330000003916
+          },
+          {
+            "cursor": 326,
+            "milliseconds": 0.7326669999965816
+          },
+          {
+            "cursor": 20,
+            "milliseconds": 0.11983300000429153
+          },
+          {
+            "cursor": 48,
+            "milliseconds": 0.23029200000019046
+          },
+          {
+            "cursor": 287,
+            "milliseconds": 0.3385420000049635
+          },
+          {
+            "cursor": 370,
+            "milliseconds": 0.7189579999976559
+          },
+          {
+            "cursor": 111,
+            "milliseconds": 0.8237499999959255
+          },
+          {
+            "cursor": 30,
+            "milliseconds": 0.23837499999353895
+          },
+          {
+            "cursor": 216,
+            "milliseconds": 1.7445000000006985
+          },
+          {
+            "cursor": 71,
+            "milliseconds": 0.5066250000018044
+          },
+          {
+            "cursor": 73,
+            "milliseconds": 0.016499999997904524
+          },
+          {
+            "cursor": 350,
+            "milliseconds": 0.8967919999995502
+          },
+          {
+            "cursor": 198,
+            "milliseconds": 1.528082999997423
+          },
+          {
+            "cursor": 52,
+            "milliseconds": 0.3431250000066939
+          },
+          {
+            "cursor": 200,
+            "milliseconds": 1.2404999999998836
+          },
+          {
+            "cursor": 68,
+            "milliseconds": 0.44554100000095787
+          },
+          {
+            "cursor": 307,
+            "milliseconds": 0.6070000000036089
+          },
+          {
+            "cursor": 102,
+            "milliseconds": 0.6978749999980209
+          }
+        ],
+        "medianScrubMs": 0.7084164999978384,
+        "maximumScrubMs": 5.653291000002355,
+        "explicitGc": true,
+        "heapBeforeMiB": 19.561065673828125,
+        "heapAfterMiB": 20.961219787597656,
+        "retainedMiB": 1.4001541137695312,
+        "heapScope": "Per-case process heap delta retaining raw events, semantic trace, graph, bounded history, source manifest and test harness; not isolated graph bytes",
+        "caveat": "One ordered-suite sample per case; GC/JIT/cache noise and prior-case retention can affect deltas. Negative deltas are reported unchanged.",
+        "history": {
+          "length": 372,
+          "checkpointCount": 2,
+          "checkpointInterval": 256,
+          "maxCheckpoints": 256,
+          "cachedMaterializationCount": 1,
+          "cachedMaterializationCursor": 102,
+          "retainedStateRoots": 4,
+          "replayedEvents": 2946
+        }
+      }
+    },
+    {
+      "version": 1,
+      "case": "29-exception-interactions",
+      "category": "exceptions",
+      "mainClass": "Main",
+      "accepted": true,
+      "recordedAt": "2026-10-04T02:58:34.047Z",
+      "error": null,
+      "buildSystem": "plain",
+      "timings": {
+        "buildMs": 203.27599999999802,
+        "executionMs": 691.9833750000034,
+        "normalizationMs": 1.9243749999950523
+      },
+      "counts": {
+        "rawEvents": 68,
+        "semanticEvents": 131,
+        "rawBatches": 1,
+        "deltaBytes": 26165,
+        "runtimeObjects": 14,
+        "runtimeClasses": 1,
+        "invocations": 3,
+        "calls": 11,
+        "values": 39,
+        "storage": 16,
+        "graphObjects": 14,
+        "io": 3,
+        "edges": 96
+      },
+      "java": {
+        "status": "exited",
+        "exitCode": 0,
+        "stdoutBytes": 24,
+        "stderrBytes": 14,
+        "stdoutSha256": "9f8ba0448aa0356368635812dd0f3ed6958cbe08137a6bbe3b2dbbcfa2c6d7e4",
+        "stderrSha256": "9095cbc14bbcb7d545ee9c6744f0d2adaefc9a629e9f54eb790677ab99be828f"
+      },
+      "observer": {
+        "state": "FULL",
+        "reason": null,
+        "budget": null,
+        "lastRecordedSeq": 67,
+        "executionContinued": true
+      },
+      "semantic": {
+        "status": "ended",
+        "capability": "partial",
+        "diagnostics": []
+      },
+      "jdk": {
+        "available": true,
+        "version": "26.0.2.1",
+        "platform": "darwin",
+        "architecture": "arm64"
+      },
+      "dependencies": [],
+      "classpaths": {
+        "compile": [
+          "<project-classes>"
+        ],
+        "runtime": [
+          "<project-classes>"
+        ]
+      },
+      "outputs": {},
+      "probe": {
+        "domain": "Node semantic seek only; no browser, rendering or GPU measurement",
+        "sampleCount": 30,
+        "seed": "0x4c0ffee",
+        "samples": [
+          {
+            "cursor": 0,
+            "milliseconds": 0.0028329999986453913
+          },
+          {
+            "cursor": 131,
+            "milliseconds": 0.0006250000005820766
+          },
+          {
+            "cursor": 73,
+            "milliseconds": 0.5645000000004075
+          },
+          {
+            "cursor": 4,
+            "milliseconds": 0.022250000001804437
+          },
+          {
+            "cursor": 107,
+            "milliseconds": 0.6227079999953276
+          },
+          {
+            "cursor": 98,
+            "milliseconds": 0.5362910000039847
+          },
+          {
+            "cursor": 105,
+            "milliseconds": 0.03366700000333367
+          },
+          {
+            "cursor": 36,
+            "milliseconds": 0.16883400000369875
+          },
+          {
+            "cursor": 31,
+            "milliseconds": 0.14591700000164565
+          },
+          {
+            "cursor": 38,
+            "milliseconds": 0.04804100000183098
+          },
+          {
+            "cursor": 13,
+            "milliseconds": 0.06929200000013225
+          },
+          {
+            "cursor": 64,
+            "milliseconds": 0.24937499999941792
+          },
+          {
+            "cursor": 111,
+            "milliseconds": 0.2657499999986612
+          },
+          {
+            "cursor": 18,
+            "milliseconds": 0.09512499999982538
+          },
+          {
+            "cursor": 9,
+            "milliseconds": 0.05029099999956088
+          },
+          {
+            "cursor": 76,
+            "milliseconds": 0.3593330000003334
+          },
+          {
+            "cursor": 111,
+            "milliseconds": 0.17420900000433903
+          },
+          {
+            "cursor": 58,
+            "milliseconds": 0.3083330000008573
+          },
+          {
+            "cursor": 45,
+            "milliseconds": 0.22004200000083074
+          },
+          {
+            "cursor": 84,
+            "milliseconds": 0.2227500000008149
+          },
+          {
+            "cursor": 75,
+            "milliseconds": 0.4924579999933485
+          },
+          {
+            "cursor": 94,
+            "milliseconds": 0.1668749999953434
+          },
+          {
+            "cursor": 41,
+            "milliseconds": 0.31962499999644933
+          },
+          {
+            "cursor": 84,
+            "milliseconds": 0.37212499999441206
+          },
+          {
+            "cursor": 119,
+            "milliseconds": 0.30425000000104774
+          },
+          {
+            "cursor": 106,
+            "milliseconds": 0.7189579999976559
+          },
+          {
+            "cursor": 65,
+            "milliseconds": 0.3819580000053975
+          },
+          {
+            "cursor": 112,
+            "milliseconds": 0.327540999998746
+          },
+          {
+            "cursor": 19,
+            "milliseconds": 0.08279199999378761
+          },
+          {
+            "cursor": 46,
+            "milliseconds": 0.13829099999566097
+          }
+        ],
+        "medianScrubMs": 0.22139600000082282,
+        "maximumScrubMs": 0.7189579999976559,
+        "explicitGc": true,
+        "heapBeforeMiB": 19.55866241455078,
+        "heapAfterMiB": 19.94622802734375,
+        "retainedMiB": 0.38756561279296875,
+        "heapScope": "Per-case process heap delta retaining raw events, semantic trace, graph, bounded history, source manifest and test harness; not isolated graph bytes",
+        "caveat": "One ordered-suite sample per case; GC/JIT/cache noise and prior-case retention can affect deltas. Negative deltas are reported unchanged.",
+        "history": {
+          "length": 131,
+          "checkpointCount": 1,
+          "checkpointInterval": 256,
+          "maxCheckpoints": 256,
+          "cachedMaterializationCount": 1,
+          "cachedMaterializationCursor": 46,
+          "retainedStateRoots": 3,
+          "replayedEvents": 1365
+        }
+      }
+    },
+    {
+      "version": 1,
+      "case": "30-observer-budget",
+      "category": "observer-limits",
+      "mainClass": "Main",
+      "accepted": true,
+      "recordedAt": "2026-10-04T02:58:34.999Z",
+      "error": null,
+      "buildSystem": "plain",
+      "timings": {
+        "buildMs": 184.5080420000013,
+        "executionMs": 683.9930410000015,
+        "normalizationMs": 1.0613759999905596
+      },
+      "counts": {
+        "rawEvents": 25,
+        "semanticEvents": 49,
+        "rawBatches": 1,
+        "deltaBytes": 9158,
+        "runtimeObjects": 2,
+        "runtimeClasses": 1,
+        "invocations": 1,
+        "calls": 0,
+        "values": 24,
+        "storage": 5,
+        "graphObjects": 2,
+        "io": 0,
+        "edges": 36
+      },
+      "java": {
+        "status": "exited",
+        "exitCode": 0,
+        "stdoutBytes": 23,
+        "stderrBytes": 19,
+        "stdoutSha256": "b35e465d77221e190d8d50a1702be83d360d3752594063580c9a14df816f870c",
+        "stderrSha256": "abc4f5ab2f3c3b7aeac4b977df2032c33fc325fa6d743ae680196680b2bfeb22"
+      },
+      "observer": {
+        "state": "STOPPED_LIMIT",
+        "reason": "Recording budget exceeded: events",
+        "budget": "events",
+        "lastRecordedSeq": 23,
+        "executionContinued": true
+      },
+      "semantic": {
+        "status": "partial",
+        "capability": "partial",
+        "diagnostics": [
+          "Recording budget exceeded: events"
+        ]
+      },
+      "jdk": {
+        "available": true,
+        "version": "26.0.2.1",
+        "platform": "darwin",
+        "architecture": "arm64"
+      },
+      "dependencies": [],
+      "classpaths": {
+        "compile": [
+          "<project-classes>"
+        ],
+        "runtime": [
+          "<project-classes>"
+        ]
+      },
+      "outputs": {},
+      "probe": {
+        "domain": "Node semantic seek only; no browser, rendering or GPU measurement",
+        "sampleCount": 30,
+        "seed": "0x4c0ffee",
+        "samples": [
+          {
+            "cursor": 0,
+            "milliseconds": 0.0022499999977299012
+          },
+          {
+            "cursor": 49,
+            "milliseconds": 0.0005420000015874393
+          },
+          {
+            "cursor": 13,
+            "milliseconds": 0.09904200000164565
+          },
+          {
+            "cursor": 30,
+            "milliseconds": 0.13154199999553384
+          },
+          {
+            "cursor": 41,
+            "milliseconds": 0.07195900000078836
+          },
+          {
+            "cursor": 48,
+            "milliseconds": 0.04841699999815319
+          },
+          {
+            "cursor": 41,
+            "milliseconds": 0.2304580000054557
+          },
+          {
+            "cursor": 30,
+            "milliseconds": 0.1635420000020531
+          },
+          {
+            "cursor": 25,
+            "milliseconds": 0.11704200000531273
+          },
+          {
+            "cursor": 28,
+            "milliseconds": 0.01900000000023283
+          },
+          {
+            "cursor": 45,
+            "milliseconds": 0.09391699999832781
+          },
+          {
+            "cursor": 22,
+            "milliseconds": 0.10120900000038091
+          },
+          {
+            "cursor": 31,
+            "milliseconds": 0.050708999995549675
+          },
+          {
+            "cursor": 0,
+            "milliseconds": 0.0005830000009154901
+          },
+          {
+            "cursor": 29,
+            "milliseconds": 0.14774999999644933
+          },
+          {
+            "cursor": 6,
+            "milliseconds": 0.018665999996301252
+          },
+          {
+            "cursor": 11,
+            "milliseconds": 0.026250000002619345
+          },
+          {
+            "cursor": 40,
+            "milliseconds": 0.17133300000568852
+          },
+          {
+            "cursor": 49,
+            "milliseconds": 0.0007909999985713512
+          },
+          {
+            "cursor": 2,
+            "milliseconds": 0.007583000005979557
+          },
+          {
+            "cursor": 39,
+            "milliseconds": 0.2006249999976717
+          },
+          {
+            "cursor": 4,
+            "milliseconds": 0.013417000001936685
+          },
+          {
+            "cursor": 35,
+            "milliseconds": 0.16216699999495177
+          },
+          {
+            "cursor": 10,
+            "milliseconds": 0.03845799999544397
+          },
+          {
+            "cursor": 27,
+            "milliseconds": 0.08545800000138115
+          },
+          {
+            "cursor": 8,
+            "milliseconds": 0.02741700000478886
+          },
+          {
+            "cursor": 23,
+            "milliseconds": 0.07591700000193669
+          },
+          {
+            "cursor": 38,
+            "milliseconds": 0.08237499999813735
+          },
+          {
+            "cursor": 45,
+            "milliseconds": 0.03899999999703141
+          },
+          {
+            "cursor": 46,
+            "milliseconds": 0.006959000005736016
+          }
+        ],
+        "medianScrubMs": 0.06133399999816902,
+        "maximumScrubMs": 0.2304580000054557,
+        "explicitGc": true,
+        "heapBeforeMiB": 19.545928955078125,
+        "heapAfterMiB": 19.771865844726562,
+        "retainedMiB": 0.2259368896484375,
+        "heapScope": "Per-case process heap delta retaining raw events, semantic trace, graph, bounded history, source manifest and test harness; not isolated graph bytes",
+        "caveat": "One ordered-suite sample per case; GC/JIT/cache noise and prior-case retention can affect deltas. Negative deltas are reported unchanged.",
+        "history": {
+          "length": 49,
+          "checkpointCount": 1,
+          "checkpointInterval": 256,
+          "maxCheckpoints": 256,
+          "cachedMaterializationCount": 1,
+          "cachedMaterializationCursor": 46,
+          "retainedStateRoots": 3,
+          "replayedEvents": 496
+        }
+      }
+    }
+  ]
+}

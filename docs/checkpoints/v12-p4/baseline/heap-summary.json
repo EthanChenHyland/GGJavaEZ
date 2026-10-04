@@ -1,0 +1,186 @@
+{
+  "note": "One explicit-GC bounded heap snapshot. Includes test runner and all live inputs. Counts/shallow self bytes, not graph-only retention or dominators. Categories overlap. Source text, values and host paths omitted.",
+  "totalSelfBytes": 212827354,
+  "nodeCount": 2534106,
+  "categories": {
+    "graphValues": {
+      "count": 13782,
+      "selfBytes": 992304
+    },
+    "radixBranches": {
+      "count": 384238,
+      "selfBytes": 12296512
+    },
+    "methodIdentities": {
+      "count": 4671,
+      "selfBytes": 239024
+    },
+    "semanticFactEnvelopes": {
+      "count": 13711,
+      "selfBytes": 548440
+    },
+    "semanticEvents": {
+      "count": 38302,
+      "selfBytes": 1756792
+    },
+    "sourceLocationsAndFiles": {
+      "count": 19531,
+      "selfBytes": 782264
+    },
+    "persistentEntries": {
+      "count": 75943,
+      "selfBytes": 3645264
+    },
+    "executionContexts": {
+      "count": 13712,
+      "selfBytes": 1096960
+    },
+    "graphEdges": {
+      "count": 22588,
+      "selfBytes": 1987744
+    },
+    "checkpointAndStateHolders": {
+      "count": 162,
+      "selfBytes": 6448
+    },
+    "packedHashBranches": {
+      "count": 2,
+      "selfBytes": 112
+    },
+    "uniqueTrieChildArrays": {
+      "count": 384239,
+      "selfBytes": 12295648
+    },
+    "uniqueTrieArrayBacking": {
+      "count": 384230,
+      "selfBytes": 101912968
+    }
+  },
+  "allocations": [
+    {
+      "kind": "array:(object elements)",
+      "count": 505845,
+      "selfBytes": 117928488
+    },
+    {
+      "kind": "object:Object",
+      "count": 959570,
+      "selfBytes": 42323192
+    },
+    {
+      "kind": "object:Array",
+      "count": 509773,
+      "selfBytes": 16312880
+    },
+    {
+      "kind": "string",
+      "count": 158815,
+      "selfBytes": 10497376
+    },
+    {
+      "kind": "concatenated string",
+      "count": 170327,
+      "selfBytes": 5450464
+    },
+    {
+      "kind": "hidden:system / PropertyArray",
+      "count": 91063,
+      "selfBytes": 5111952
+    },
+    {
+      "kind": "array:",
+      "count": 1108,
+      "selfBytes": 4940416
+    },
+    {
+      "kind": "array:(object properties)",
+      "count": 1992,
+      "selfBytes": 671256
+    },
+    {
+      "kind": "code:system / BytecodeArray",
+      "count": 3190,
+      "selfBytes": 635352
+    },
+    {
+      "kind": "closure:get",
+      "count": 9148,
+      "selfBytes": 512936
+    },
+    {
+      "kind": "object:system / Context",
+      "count": 10857,
+      "selfBytes": 512856
+    },
+    {
+      "kind": "code:system / TrustedByteArray",
+      "count": 5074,
+      "selfBytes": 493400
+    },
+    {
+      "kind": "closure:has",
+      "count": 8798,
+      "selfBytes": 492688
+    },
+    {
+      "kind": "closure:getOwnPropertyDescriptor",
+      "count": 8788,
+      "selfBytes": 492128
+    },
+    {
+      "kind": "closure:ownKeys",
+      "count": 8781,
+      "selfBytes": 491736
+    },
+    {
+      "kind": "object shape:system / Map",
+      "count": 6572,
+      "selfBytes": 473184
+    },
+    {
+      "kind": "code:system / ScopeInfo",
+      "count": 3637,
+      "selfBytes": 412992
+    },
+    {
+      "kind": "code:",
+      "count": 142,
+      "selfBytes": 366496
+    },
+    {
+      "kind": "object shape:system / DescriptorArray",
+      "count": 1871,
+      "selfBytes": 340824
+    },
+    {
+      "kind": "hidden:system / JSProxy",
+      "count": 8986,
+      "selfBytes": 287552
+    },
+    {
+      "kind": "code:(constant pool)",
+      "count": 2964,
+      "selfBytes": 263056
+    },
+    {
+      "kind": "code:system / FeedbackVector",
+      "count": 586,
+      "selfBytes": 161768
+    },
+    {
+      "kind": "code:system / FeedbackCell",
+      "count": 6270,
+      "selfBytes": 150456
+    },
+    {
+      "kind": "closure:",
+      "count": 2345,
+      "selfBytes": 146432
+    },
+    {
+      "kind": "native:system / JSArrayBufferData",
+      "count": 39,
+      "selfBytes": 144050
+    }
+  ]
+}

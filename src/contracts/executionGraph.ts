@@ -1,11 +1,11 @@
-import type { RuntimeValue, SourceLocation } from './runtime'
+import type { RuntimeClass, RuntimeTypeMetadata, RuntimeValue, SourceLocation } from './runtime'
 
 /** JVM producer recipes. Local identity is a debug slot/live range, never a name. */
 export type ValueOrigin =
   | { kind: 'unknown' }
   | { kind: 'local'; slotId: string }
   | { kind: 'constant'; value: RuntimeValue }
-  | { kind: 'call_result' | 'field_read' | 'array_read' | 'new'; site: number }
+  | { kind: 'call_result' | 'field_read' | 'static_read' | 'array_read' | 'new'; site: number }
   | { kind: 'computed'; site: number; opcode: number; inputs: ValueOrigin[] }
 export type Evidence = 'observed' | 'bytecode-derived' | 'unknown'
 export interface MethodIdentity { owner: string; name: string; descriptor: string }
@@ -25,7 +25,7 @@ export interface GraphValue {
 }
 export interface GraphStorage {
   id: string
-  kind: 'variable' | 'field' | 'array-element'
+  kind: 'variable' | 'field' | 'static' | 'array-element'
   ownerId: string
   name: string
   javaType: string
@@ -45,6 +45,7 @@ export interface GraphInvocation {
   status: 'active' | 'returned' | 'unwound'
   enteredAt: string
   completedAt?: string
+  metadata?: RuntimeTypeMetadata
 }
 export interface GraphCall {
   id: string
@@ -60,19 +61,26 @@ export interface GraphCall {
   calleeInvocationId?: string
   resultValueId?: string
   status: 'pending' | 'returned' | 'threw'
+  ownership?: RuntimeTypeMetadata['ownership']
 }
-export interface GraphObject { id: string; className: string; allocatedAt: string; constructedAt?: string }
+export interface GraphObject {
+  summarySlotIds?: string[]; id: string; className: string; allocatedAt: string; constructedAt?: string; metadata?: RuntimeTypeMetadata; observedAt?: string }
 export interface GraphIO {
   id: string
-  kind: 'input-bytes' | 'input-consume' | 'output'
-  channel: 'stdin' | 'stdout' | 'stderr'
+  kind: 'input-bytes' | 'input-consume' | 'output' | 'file'
+  channel: 'stdin' | 'stdout' | 'stderr' | 'file'
   text: string
   callId?: string
   valueId?: string
   eventId: string
   context: ExecutionSite
+  operation?: 'open' | 'read' | 'write' | 'close'
+  path?: string | null
+  byteCount?: number
+  charCount?: number
+  truncated?: boolean
 }
-export type GraphEdgeKind = 'CALL' | 'ARGUMENT_BIND' | 'RECEIVER_BIND' | 'RETURN' | 'ASSIGN' | 'FIELD_WRITE' | 'FIELD_READ' | 'ARRAY_WRITE' | 'ARRAY_READ' | 'REFERENCE_BIND' | 'INPUT_CONSUME' | 'OUTPUT' | 'THROW' | 'UNWIND' | 'CATCH' | 'COMPUTE' | 'CONSTRUCT' | 'OBSERVE'
+export type GraphEdgeKind = 'CALL' | 'ARGUMENT_BIND' | 'RECEIVER_BIND' | 'RETURN' | 'ASSIGN' | 'FIELD_WRITE' | 'FIELD_READ' | 'STATIC_WRITE' | 'STATIC_READ' | 'ARRAY_WRITE' | 'ARRAY_READ' | 'REFERENCE_BIND' | 'INPUT_CONSUME' | 'OUTPUT' | 'THROW' | 'UNWIND' | 'CATCH' | 'COMPUTE' | 'CONSTRUCT' | 'OBSERVE' | 'FILE_READ' | 'FILE_WRITE' | 'FILE_OPERATION'
 export interface GraphEdge {
   id: string
   kind: GraphEdgeKind
@@ -99,18 +107,22 @@ export interface ExecutionGraph {
   results: Record<string, string>
   reads: Record<string, string>
   observationEndedAt?: string
+  classes?: Record<string, { id: string; className: string; initialization: RuntimeClass['initialization']; observedAt: string; metadata?: RuntimeTypeMetadata }>
 }
-export interface ObservedBinding { slotId: string; name: string; javaType: string; value: RuntimeValue }
+export interface ObservedBinding { slotId: string; name: string; javaType: string; value: RuntimeValue; storageKind?: 'field' | 'array-element' }
 export type ExecutionFact = { context: ExecutionSite } & (
-  | { kind: 'call'; callId: string; declared: MethodIdentity; invokeKind: GraphCall['invokeKind']; receiver: RuntimeValue | null; arguments: RuntimeValue[]; argumentOrigins: ValueOrigin[]; receiverOrigin: ValueOrigin }
+  | { kind: 'call'; callId: string; declared: MethodIdentity; invokeKind: GraphCall['invokeKind']; receiver: RuntimeValue | null; arguments: RuntimeValue[]; argumentOrigins: ValueOrigin[]; receiverOrigin: ValueOrigin; ownership?: RuntimeTypeMetadata['ownership'] }
   | { kind: 'call-return'; callId: string; value: RuntimeValue; inputText?: string }
-  | { kind: 'enter'; invocationId: string; callerInvocationId: string | null; method: MethodIdentity; callId?: string; receiver: RuntimeValue | null; parameters: ObservedBinding[] }
+  | { kind: 'enter'; invocationId: string; callerInvocationId: string | null; method: MethodIdentity; callId?: string; receiver: RuntimeValue | null; parameters: ObservedBinding[]; metadata?: RuntimeTypeMetadata }
   | { kind: 'receiver-ready'; invocationId: string; receiver: RuntimeValue; slotId: string }
   | { kind: 'write'; target: Omit<GraphStorage, 'valueId' | 'writerInvocationId'>; value: RuntimeValue; origin: ValueOrigin }
   | { kind: 'read'; target: Omit<GraphStorage, 'valueId' | 'writerInvocationId'>; value: RuntimeValue; origin: ValueOrigin }
   | { kind: 'return'; invocationId: string; value: RuntimeValue; origin: ValueOrigin }
   | { kind: 'exit' | 'unwind'; invocationId: string; exceptionId?: string }
-  | { kind: 'object'; objectId: string; className: string; fields: ObservedBinding[] }
+  | { kind: 'object'; boundedSummary?: boolean; objectId: string; className: string; fields: ObservedBinding[]; metadata?: RuntimeTypeMetadata }
+  | { kind: 'observe'; replaceFields?: boolean; objectId: string; fields: ObservedBinding[]; metadata?: RuntimeTypeMetadata }
+  | { kind: 'class'; classId: string; className: string; fields: ObservedBinding[]; initialization: RuntimeClass['initialization']; metadata?: RuntimeTypeMetadata }
+  | { kind: 'file'; operation: 'open' | 'read' | 'write' | 'close'; path: string | null; text: string; callId?: string; byteCount?: number; charCount?: number; truncated?: boolean }
   | { kind: 'constructed'; objectId: string; className: string; newSite?: number }
   | { kind: 'io'; channel: 'stdin' | 'stdout' | 'stderr'; text: string; callId?: string }
   | { kind: 'throw' | 'catch'; invocationId: string; exceptionId: string; callId?: string; className?: string }

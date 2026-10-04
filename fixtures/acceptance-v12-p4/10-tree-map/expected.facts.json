@@ -1,0 +1,39 @@
+{
+  "category": 10,
+  "mainClass": "Main",
+  "stdout": "east:29:2\n",
+  "stderr": "",
+  "exitCode": 0,
+  "recording": "FULL",
+  "facts": [
+    {
+      "kind": "collectionHistory",
+      "className": "java.util.TreeMap",
+      "collectionKind": "MAP",
+      "stages": [
+        {
+          "size": 3,
+          "entries": [
+            {
+              "keyText": "east",
+              "reference": "east"
+            },
+            {
+              "keyText": "void",
+              "nullValue": true
+            },
+            {
+              "keyText": "west",
+              "reference": "west"
+            }
+          ],
+          "exactEntries": true
+        },
+        {
+          "size": 2
+        }
+      ],
+      "order": "sorted"
+    }
+  ]
+}

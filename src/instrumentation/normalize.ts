@@ -1,5 +1,5 @@
 /** Pure Raw NDJSON v1 -> semantic trace v2 boundary. No source-level facts are inferred. */
-import type { RuntimeSlot, RuntimeState, RuntimeValue, ScalarValue, SlotOwner, SourceLocation, TraceDocument, TraceEvent, TraceEventBase } from '../contracts/runtime'
+import type { RuntimeSlot, RuntimeState, RuntimeValue, RuntimeLibrarySummary, ScalarValue, SlotOwner, SourceLocation, TraceDocument, TraceEvent, TraceEventBase } from '../contracts/runtime'
 import { ProvenanceNormalizer, provenanceValue } from './provenance'
 import { isRecordingStop } from '../runtime/state'
 import { ExecutionHistory, attachHistory } from '../runtime/history'
@@ -60,12 +60,13 @@ function javaType(descriptor: string): string {
   throw new Error(`Unsupported JVM descriptor ${descriptor}`)
 }
 
-function rawScalar(value: RawValue): ScalarValue | null {
+function rawScalar(value: RawValue, expanded = false): ScalarValue | null {
   if (value.kind === 'null') return { kind: 'null' }
   if (value.kind === 'string') return { kind: 'stringSummary', javaType: 'String', value: value.value }
-  if (value.kind === 'unsupported' || value.kind === 'ref') return null
+  if (value.kind === 'unsupported') return expanded ? { kind: 'unavailable', javaType: value.javaType, reason: 'Unsupported value observation' } : null
+  if (value.kind === 'ref') return null
   if (value.kind === 'long') {
-    return Number.isSafeInteger(value.value)
+    return typeof value.value === 'string' || Number.isSafeInteger(value.value)
       ? { kind: 'primitive', javaType: 'long', value: String(value.value) } : null
   }
   return { kind: 'primitive', javaType: value.kind, value: value.value } as ScalarValue
@@ -153,13 +154,38 @@ export class TraceNormalizer {
     const registered = new Set<string>()
     const displayIds = new Map<string, number>()
     const pending = new Map<string, Array<{ owner: SlotOwner; javaType: string }>>()
+    const pendingObservations = new Map<string, Set<() => void>>()
+    let expanded = false
+    const asValue = (raw: RawValue, type?: string): RuntimeValue => {
+      const value = provenanceValue(raw, expanded)
+      return value.kind === 'reference' && type ? { ...value, javaType: type }
+        : value.kind === 'unavailable' && type ? { ...value, javaType: type } : value
+    }
+    const ready = (raw: RawValue, self?: string) => raw.kind !== 'ref' || raw.objectId === self || registered.has(raw.objectId)
+    const initialValue = (raw: RawValue, type: string, self?: string): RuntimeValue => ready(raw, self) ? asValue(raw, type) : { kind: 'uninitialized' }
+    const afterDependencies = (values: RawValue[], action: () => void) => {
+      const missing = new Set(values.filter((value): value is Extract<RawValue, { kind: 'ref' }> => value.kind === 'ref')
+        .map(value => value.objectId).filter(id => !registered.has(id)))
+      if (!missing.size) { action(); return }
+      let applied = false
+      const resume = () => {
+        if (applied || [...missing].some(id => !registered.has(id))) return
+        applied = true
+        for (const id of missing) pendingObservations.get(id)?.delete(resume)
+        action()
+      }
+      for (const id of missing) {
+        const waiting = pendingObservations.get(id) ?? new Set<() => void>()
+        waiting.add(resume); pendingObservations.set(id, waiting)
+      }
+    }
     const liveLocals = new Map<string, string>()
     const localKey = (frame: string, slot: number, range: string) => `${frame}:${slot}:${range}`
     const queueReference = (rawId: string, owner: SlotOwner, type: string) => {
       const entries = pending.get(rawId) ?? []
       entries.push({ owner, javaType: type })
       pending.set(rawId, entries)
-      mark('references', 'partial', `Reference target ${rawId} was observed after its source`)
+      if (!expanded) mark('references', 'partial', `Reference target ${rawId} was observed after its source`)
     }
     const reference = (owner: SlotOwner, type: string, targetRawId: string, source: SourceLocation | null) => {
       if (!registered.has(targetRawId)) {
@@ -183,7 +209,7 @@ export class TraceNormalizer {
       const current = slot.value
       if (raw.kind === 'unsupported') {
         mark(owner.kind === 'frame' ? 'locals' : 'fields', 'partial', `Unsupported value ${raw.javaType}`)
-        const value: ScalarValue = { kind: 'uninitialized' }
+        const value: ScalarValue = expanded ? { kind: 'unavailable', javaType: type, reason: `Unsupported value ${raw.javaType}` } : { kind: 'uninitialized' }
         emit(owner.kind === 'frame'
           ? { type: 'ASSIGN_LOCAL', frameId: owner.frameId, slotId: owner.slotId, value }
           : { type: 'SET_FIELD', objectId: owner.objectId, slotId: owner.slotId, value },
@@ -191,7 +217,7 @@ export class TraceNormalizer {
         return
       }
       if (raw.kind === 'ref') { reference(owner, type, raw.objectId, source); return }
-      const value = rawScalar(raw)
+      const value = rawScalar(raw, expanded)
       if (!value) {
         mark(owner.kind === 'frame' ? 'locals' : 'fields', 'partial', 'Unrepresentable scalar value')
         const unavailable: ScalarValue = { kind: 'uninitialized' }
@@ -215,8 +241,8 @@ export class TraceNormalizer {
       value: RawValue, role: RuntimeSlot['role'], source: SourceLocation | null) => {
       const id = localId(frame, slot, range)
       const type = javaType(descriptor)
-      const scalar = rawScalar(value)
-      const initial: RuntimeValue = scalar ?? { kind: 'uninitialized' }
+      const scalar = rawScalar(value, expanded)
+      const initial: RuntimeValue = scalar ?? (expanded && value.kind === 'unsupported' ? provenanceValue(value, true) : { kind: 'uninitialized' })
       emit({ type: 'DECLARE_LOCAL', frameId: frame, slot: { id, name, javaType: type, value: initial, role } },
         source, `${name} observed`)
       liveLocals.set(localKey(frame, slot, range), id)
@@ -262,6 +288,7 @@ export class TraceNormalizer {
             break
           }
           expectedSeq++
+          expanded = raw.coverageVersion === 1
           currentThreadId = raw.threadId
           // Frameless JVM shutdown output may have another thread; a project-frame
           // console write is still an observation of that application thread.
@@ -275,7 +302,7 @@ export class TraceNormalizer {
             }
           }
           const frame = raw.frameId === null ? null : frameId(raw.frameId)
-          const contextClass = raw.type === 'throw' || raw.type === 'object' || raw.type === 'constructed'
+          const contextClass = ['throw', 'object', 'constructed', 'array', 'library', 'string_object', 'class_state'].includes(raw.type)
             ? frame ? this.state.frames[frame]?.className ?? null : null : raw.className
           if (contextClass && classes.has(contextClass) && !coveredClasses.has(contextClass)) {
             coveredClasses.add(contextClass)
@@ -285,46 +312,118 @@ export class TraceNormalizer {
           const source = sourceFor(raw, contextClass)
           switch (raw.type) {
             case 'object': {
-              if (registered.has(raw.objectId)) throw new Error(`Duplicate object ${raw.objectId}`)
               const id = objectId(raw.objectId)
               const fields = raw.fields.map((field): RuntimeSlot => ({
                 id: fieldId(id, field.owner, field.name, field.descriptor), name: field.name,
-                javaType: javaType(field.descriptor), value: rawScalar(field.value) ?? { kind: 'uninitialized' },
+                javaType: javaType(field.descriptor), value: expanded ? initialValue(field.value, javaType(field.descriptor), raw.objectId) : rawScalar(field.value) ?? { kind: 'uninitialized' },
+                ...(field.synthetic ? { synthetic: field.name.startsWith('this$') ? 'outer' as const : 'compiler' as const } : {}),
+                ...(expanded ? { declaringClass: field.owner } : {}),
               }))
-              displayIds.set(raw.objectId, displayIds.size + 1)
-              emit({ type: 'ALLOCATE_OBJECT', objectId: id, displayId: displayIds.get(raw.objectId)!,
-                className: raw.className, fields }, source, `${raw.className} observed`, 'major')
-              registered.add(raw.objectId)
+              if (registered.has(raw.objectId)) {
+                if (!expanded || !raw.resnapshot) throw new Error(`Duplicate object ${raw.objectId}`)
+                emit({ type: 'OBJECT_OBSERVE', objectId: id, fields, ...(raw.metadata ? { metadata: raw.metadata } : {}) }, source, 'Object state observed', 'quiet')
+              } else {
+                displayIds.set(raw.objectId, displayIds.size + 1)
+                emit({ type: 'ALLOCATE_OBJECT', objectId: id, displayId: displayIds.get(raw.objectId)!,
+                  className: raw.className, fields, ...(raw.metadata ? { metadata: raw.metadata } : {}) }, source, `${raw.className} observed`, 'major')
+                registered.add(raw.objectId)
+              }
               observed('objects')
               for (const field of raw.fields) {
                 observed('fields')
-                if (field.value.kind === 'ref') reference({ kind: 'object', objectId: id,
-                  slotId: fieldId(id, field.owner, field.name, field.descriptor) },
-                javaType(field.descriptor), field.value.objectId, source)
-                if (!rawScalar(field.value) && field.value.kind !== 'ref')
-                  mark('fields', 'partial', `Unrepresentable field ${field.name}`)
+                if (field.value.kind === 'ref' && (!expanded || !ready(field.value, raw.objectId))) reference({ kind: 'object', objectId: id,
+                  slotId: fieldId(id, field.owner, field.name, field.descriptor) }, javaType(field.descriptor), field.value.objectId, source)
+                if (!rawScalar(field.value, expanded) && field.value.kind !== 'ref') mark('fields', 'partial', `Unrepresentable field ${field.name}`)
               }
-              for (const queued of pending.get(raw.objectId) ?? []) {
-                const active = queued.owner.kind === 'object' || this.state.activeFrameIds.at(-1) === queued.owner.frameId
-                if (active) reference(queued.owner, queued.javaType, raw.objectId, source)
-              }
-              pending.delete(raw.objectId)
               break
             }
             case 'array': {
               if (registered.has(raw.objectId)) throw new Error(`Duplicate array ${raw.objectId}`)
+              const id = objectId(raw.objectId), type = expanded ? raw.elementType : 'int'
+              const values = raw.elements.map(value => typeof value === 'number' ? { kind: 'int' as const, value } : value)
               displayIds.set(raw.objectId, displayIds.size + 1)
-              emit({ type: 'ALLOCATE_ARRAY', objectId: objectId(raw.objectId), displayId: displayIds.get(raw.objectId)!,
-                elementType: 'int', elements: raw.elements.map(intValue) }, source, 'int[] observed', 'major')
+              emit({ type: 'ALLOCATE_ARRAY', objectId: id, displayId: displayIds.get(raw.objectId)!, elementType: type,
+                elements: values.map(value => initialValue(value, type, raw.objectId)),
+                ...(expanded ? { length: raw.length ?? values.length, truncated: raw.truncated ?? false, observed: true, ...(raw.metadata ? { metadata: raw.metadata } : {}) } : {}) }, source, `${type}[] observed`, 'major')
               registered.add(raw.objectId)
-              observed('intArrays')
-              for (const queued of pending.get(raw.objectId) ?? []) {
-                const active = queued.owner.kind === 'object' || this.state.activeFrameIds.at(-1) === queued.owner.frameId
-                if (active) reference(queued.owner, queued.javaType, raw.objectId, source)
-              }
-              pending.delete(raw.objectId)
+              if (type === 'int') observed('intArrays')
+              values.forEach((value, index) => {
+                if (ready(value, raw.objectId)) return
+                afterDependencies([value], () => {
+                  emit({ type: 'OBJECT_OBSERVE', objectId: id, arrayElements: [{ index, value: asValue(value, type) }] }, source, 'Array reference observed', 'quiet')
+                })
+              })
               break
             }
+            case 'string_object':
+            case 'library': {
+              const id = objectId(raw.objectId)
+              if (!registered.has(raw.objectId)) {
+                displayIds.set(raw.objectId, displayIds.size + 1)
+                emit({ type: 'ALLOCATE_OBJECT', objectId: id, displayId: displayIds.get(raw.objectId)!, className: raw.className,
+                  fields: [], ...(raw.metadata ? { metadata: raw.metadata } : {}) }, source, `${raw.className} observed`, 'major')
+                registered.add(raw.objectId)
+              }
+              const apply = () => {
+                if (raw.type === 'string_object') {
+                  emit({ type: 'OBJECT_OBSERVE', objectId: id, string: { value: raw.value, length: raw.length, truncated: raw.truncated },
+                    fields: [{ id: `${id}:summary:value`, name: 'value', javaType: 'String', value: { kind: 'stringSummary', javaType: 'String', value: raw.value } }] }, source, 'String observed', 'quiet')
+                  return true
+                }
+                const summary = raw.summary
+                const values = [...(summary.items ?? []), ...(summary.entries ?? []).flatMap(entry => [entry.key, entry.value]), ...(summary.value ? [summary.value] : [])]
+                if (!values.every(value => ready(value, raw.objectId))) return false
+                const library: RuntimeLibrarySummary = { kind: summary.kind, ...(summary.size !== undefined ? { size: summary.size } : {}), ...(summary.order ? { order: summary.order } : {}), ...(summary.truncated !== undefined ? { truncated: summary.truncated } : {}), ...(summary.reason ? { reason: summary.reason } : {}), ...(summary.items ? { items: summary.items.map(value => asValue(value, 'java.lang.Object')) } : {}),
+                  ...(summary.entries ? { entries: summary.entries.map(entry => ({ key: asValue(entry.key, 'java.lang.Object'), value: asValue(entry.value, 'java.lang.Object') })) } : {}),
+                  ...(summary.value ? { value: asValue(summary.value) } : {}) }
+                const fields: RuntimeSlot[] = [
+                  ...(library.items ?? []).map((value, index) => ({ id: `${id}:summary:item:${index}`, name: `[${index}]`, javaType: 'java.lang.Object', value })),
+                  ...(library.entries ?? []).flatMap((entry, index) => [
+                    { id: `${id}:summary:entry:${index}:key`, name: `[${index}].key`, javaType: 'java.lang.Object', value: entry.key },
+                    { id: `${id}:summary:entry:${index}:value`, name: `[${index}].value`, javaType: 'java.lang.Object', value: entry.value },
+                  ]),
+                  ...(library.value ? [{ id: `${id}:summary:value`, name: 'value', javaType: 'javaType' in library.value ? library.value.javaType! : 'java.lang.Object', value: library.value }] : []),
+                ]
+                const preserveProjectFields = raw.metadata?.ownership === 'PROJECT' && library.kind === 'OPAQUE'
+                emit({ type: 'OBJECT_OBSERVE', objectId: id, ...(preserveProjectFields ? {} : { fields, replaceFields: true }), library }, source, 'Library state observed', 'quiet')
+                return true
+              }
+              if (!apply()) {
+                const deps = raw.type === 'library' ? [...(raw.summary.items ?? []), ...(raw.summary.entries ?? []).flatMap(entry => [entry.key, entry.value]), ...(raw.summary.value ? [raw.summary.value] : [])] : []
+                afterDependencies(deps, () => { apply() })
+              }
+              observed('objects')
+              if (raw.type === 'library' && (raw.summary.kind === 'OPAQUE' || raw.summary.truncated))
+                mark('objects', 'partial', raw.summary.reason ?? 'Bounded library summary; remaining contents are not observed')
+              break
+            }
+            case 'class_state': {
+              const id = `jvm:class:${raw.owner}`
+              const apply = () => {
+                if (!raw.fields.every(field => ready(field.value))) return false
+                const fields = raw.fields.map((field): RuntimeSlot => ({ id: fieldId(id, field.owner, field.name, field.descriptor), name: field.name,
+                  javaType: javaType(field.descriptor), value: asValue(field.value, javaType(field.descriptor)), static: true, declaringClass: field.owner,
+                  ...(field.synthetic ? { synthetic: 'compiler' as const } : {}) }))
+                emit({ type: 'CLASS_OBSERVE', classId: id, className: raw.owner, fields, initialization: raw.initialization,
+                  ...(raw.metadata ? { metadata: raw.metadata } : {}) }, source, `${raw.owner}: ${raw.initialization}`, 'quiet')
+                return true
+              }
+              if (!apply()) afterDependencies(raw.fields.map(field => field.value), () => { apply() })
+              break
+            }
+            case 'static':
+            case 'static_read': {
+              const id = `jvm:class:${raw.owner}`, slotId = fieldId(id, raw.owner, raw.name, raw.descriptor!), type = javaType(raw.descriptor!)
+              if (raw.type === 'static') emit({ type: 'SET_STATIC', classId: id, slotId, value: asValue(raw.value, type) }, source, `${raw.owner}.${raw.name} assigned`)
+              else {
+                const slot = this.state.classes?.[id]?.statics[slotId]
+                if (!slot) throw new Error(`Unknown static field ${slotId}`)
+                emit({ type: 'CLASS_OBSERVE', classId: id, className: raw.owner, initialization: 'observed', fields: [{ ...slot, value: asValue(raw.value, type) }] }, source, 'Static read observed', 'quiet')
+              }
+              break
+            }
+            case 'file_io':
+              break
             case 'enter': {
               if (!frame || !raw.className || !raw.methodName || !raw.descriptor) throw new Error('Incomplete method entry')
               const returnDescriptor = raw.descriptor.slice(raw.descriptor.lastIndexOf(')') + 1)
@@ -387,7 +486,8 @@ export class TraceNormalizer {
             case 'array_write':
               if (!frame) throw new Error('Array operation without frame')
               emit({ type: raw.type === 'array_read' ? 'ARRAY_READ' : 'ARRAY_WRITE', frameId: frame,
-                objectId: objectId(raw.objectId), index: raw.index, value: intValue(raw.value) }, source,
+                objectId: objectId(raw.objectId), index: raw.index, value: typeof raw.value === 'number' ? intValue(raw.value) : asValue(raw.value, raw.elementType ?? 'int'),
+                ...(raw.type === 'array_read' && expanded ? { observed: true } : {}) }, source,
               raw.type === 'array_read' ? `Read [${raw.index}]` : `Write [${raw.index}]`)
               observed(raw.type === 'array_read' ? 'arrayReads' : 'arrayWrites')
               break
@@ -407,8 +507,8 @@ export class TraceNormalizer {
                 mark('returns', 'partial', 'Reference return has no representable scalar transfer')
                 break
               }
-              const graphValue = provenance.enabled ? provenanceValue(raw.value) : null
-              const value = graphValue?.kind === 'reference' ? { ...graphValue, javaType: this.state.frames[frame].returnType! } : rawScalar(raw.value)
+              const graphValue = provenance.enabled ? provenanceValue(raw.value, expanded) : null
+              const value = graphValue?.kind === 'reference' ? { ...graphValue, javaType: this.state.frames[frame].returnType! } : rawScalar(raw.value, expanded)
               if (!value) { mark('returns', 'partial', 'Reference or unsupported return has no scalar transfer'); break }
               emit({ type: 'RETURN_VALUE', frameId: frame, value, destination: null }, source, 'Value returned', 'major')
               observed('returns')
@@ -454,6 +554,14 @@ export class TraceNormalizer {
               break
             default:
               throw new Error(`Unknown raw event type ${(raw as RawRuntimeEvent).type}`)
+          }
+          if ('objectId' in raw && raw.objectId && ['object', 'array', 'library', 'string_object'].includes(raw.type)) {
+            for (const queued of pending.get(raw.objectId) ?? []) {
+              if (queued.owner.kind === 'object' || this.state.activeFrameIds.at(-1) === queued.owner.frameId) reference(queued.owner, queued.javaType, raw.objectId, source)
+            }
+            pending.delete(raw.objectId)
+            for (const resume of [...(pendingObservations.get(raw.objectId) ?? [])]) resume()
+            pendingObservations.delete(raw.objectId)
           }
           const fact = provenance.fact(raw, source)
           if (fact) emit({ type: 'EXECUTION_FACT', fact }, source, `JVM ${fact.kind}`, 'quiet')
@@ -513,6 +621,11 @@ export class TraceNormalizer {
         } else recordingStop = { ...terminal.recording }
       }
       let terminalStatus = terminal.status
+      if (!failure && !recordingStop && terminalStatus === 'complete' && expanded &&
+          (pending.size || [...pendingObservations.values()].some(waiting => waiting.size))) {
+        failure = 'Unobserved reference target at end of capture'
+        diagnostics.push(failure)
+      }
       if (failure || (!recordingStop && terminalStatus === 'complete' &&
           (this.state.activeFrameIds.length !== 0 || expectedSeq === 0 || terminal.exitCode !== 0))) {
         terminalStatus = 'instrumentation_failed'

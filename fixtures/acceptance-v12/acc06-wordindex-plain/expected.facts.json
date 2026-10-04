@@ -58,26 +58,29 @@
   {
    "id": "map",
    "kind": "libraryValue",
-   "status": "target:P6",
+   "status": "current",
    "requirement": "R7.3",
    "className": "java.util.HashMap",
-   "size": 7
+   "size": 7,
+   "promotion": "Phase 4: bounded generic observation verified on the production JVM path"
   },
   {
    "id": "sorted",
    "kind": "libraryValue",
-   "status": "target:P6",
+   "status": "current",
    "requirement": "R7.3",
    "className": "java.util.TreeSet",
-   "size": 7
+   "size": 7,
+   "promotion": "Phase 4: bounded generic observation verified on the production JVM path"
   },
   {
    "id": "lengths",
    "kind": "libraryValue",
-   "status": "target:P6",
+   "status": "current",
    "requirement": "R7.3",
    "className": "java.util.HashSet",
-   "size": 3
+   "size": 3,
+   "promotion": "Phase 4: bounded generic observation verified on the production JVM path"
   },
   {
    "id": "libraryBoundaries",

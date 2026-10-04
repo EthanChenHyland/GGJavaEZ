@@ -1,0 +1,46 @@
+{
+  "category": 9,
+  "mainClass": "Main",
+  "stdout": "22:0\n",
+  "stderr": "",
+  "exitCode": 0,
+  "recording": "FULL",
+  "facts": [
+    {
+      "kind": "collectionHistory",
+      "className": "java.util.HashMap",
+      "collectionKind": "MAP",
+      "stages": [
+        {
+          "size": 3,
+          "entries": [
+            {
+              "keyText": "north",
+              "reference": "north"
+            },
+            {
+              "keyText": "south",
+              "reference": "south"
+            },
+            {
+              "nullKey": true,
+              "nullValue": true
+            }
+          ]
+        },
+        {
+          "size": 2
+        },
+        {
+          "size": 0
+        }
+      ],
+      "order": "unordered"
+    },
+    {
+      "kind": "alias",
+      "left": "chosen",
+      "right": "south"
+    }
+  ]
+}

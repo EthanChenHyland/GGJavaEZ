@@ -33,6 +33,8 @@ export async function recordProgram(files, {
     await beforeLaunch(prepared);
     const args = [...vmArgs, ...prepared.args];
     if (manualProbes) {
+      // Only isolated test probes can inspect private observer budget/control fields.
+      args.unshift('--add-opens=visualjava.observer/visualjava=ALL-UNNAMED');
       const cp = args.indexOf('-cp') + 1;
       args[cp] = args[cp].split(delimiter).map((path) => path === prepared.transformed ? classesDir : path).join(delimiter);
     }

@@ -22,7 +22,7 @@ export function getReferences(state: RuntimeState): DerivedReference[] {
   }
 
   for (const object of Object.values(state.objects)) {
-    for (const slot of Object.values(object.fields)) {
+    for (const slot of Object.values(object.fields).concat(object.array?.elements ?? [], Object.values(object.array?.sparseElements ?? {}))) {
       if (slot.value.kind === 'reference') {
         collect({ kind: 'object', objectId: object.id, slotId: slot.id }, slot.value.objectId)
       }

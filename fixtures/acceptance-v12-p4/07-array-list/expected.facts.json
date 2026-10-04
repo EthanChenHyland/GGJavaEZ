@@ -1,0 +1,52 @@
+{
+  "category": 7,
+  "mainClass": "Main",
+  "stdout": "2:0\n",
+  "stderr": "",
+  "exitCode": 0,
+  "recording": "FULL",
+  "facts": [
+    {
+      "kind": "collectionHistory",
+      "className": "java.util.ArrayList",
+      "collectionKind": "LIST",
+      "stages": [
+        {
+          "size": 1,
+          "items": [
+            "one"
+          ]
+        },
+        {
+          "size": 2,
+          "items": [
+            "one",
+            "two"
+          ]
+        },
+        {
+          "size": 2,
+          "items": [
+            "two",
+            "two"
+          ]
+        },
+        {
+          "size": 1,
+          "items": [
+            "two"
+          ]
+        },
+        {
+          "size": 0,
+          "items": []
+        }
+      ]
+    },
+    {
+      "kind": "alias",
+      "left": "chosen",
+      "right": "two"
+    }
+  ]
+}

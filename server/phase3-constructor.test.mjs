@@ -150,7 +150,7 @@ test('nested new arguments, inner synthetic pre-super fields and wide operands r
   const nested=entries.find(event=>event.className==='Main$Derived'&&event.descriptor==='(I)V');
   expect(nested.callerFrameId).toBe(outer.frameId);
   expect(entries.filter(event=>event.className==='Main$Base').map(event=>event.callerFrameId)).toContain(outer.frameId);
-  expect(result.rawEvents.find(event=>event.type==='call'&&event.name==='wide').arguments).toEqual([{kind:'long',value:3},{kind:'double',value:4}]);
+  expect(result.rawEvents.find(event=>event.type==='call'&&event.name==='wide').arguments).toEqual([{kind:'long',value:'3'},{kind:'double',value:4}]);
 },120000);
 
 test('inherited static and special methods link to the actual declaring method rather than reference owner',async()=>{
@@ -336,10 +336,11 @@ test('hidden base/subclass fields and differing descriptors retain distinct cano
     const object=Object.values(state.objects).find(value=>value.className===className);
     const baseSlot=`${object.id}:field:Main$Base:value:I`,childSlot=`${object.id}:field:${childOwner}:value:${childDescriptor}`;
     expect(new Set(Object.keys(object.fields))).toEqual(new Set([baseSlot,childSlot]));
-    expect(object.fields[baseSlot].value.value).toBe(baseValue);expect(object.fields[childSlot].value.value).toBe(childValue);
+    const actualValue = value => value.kind === 'reference' ? state.objects[value.objectId]?.string?.value : value.value;
+    expect(object.fields[baseSlot].value.value).toBe(baseValue);expect(actualValue(object.fields[childSlot].value)).toBe(childValue);
     expect(new Set(Object.values(graph.storage).filter(storage=>storage.ownerId===object.id&&storage.kind==='field').map(storage=>storage.id))).toEqual(new Set([baseSlot,childSlot]));
     expect(graph.values[graph.storage[baseSlot].valueId].value.value).toBe(baseValue);
-    expect(graph.values[graph.storage[childSlot].valueId].value.value).toBe(childValue);
+    expect(actualValue(graph.values[graph.storage[childSlot].valueId].value)).toBe(childValue);
     expect(graph.edges.some(edge=>edge.kind==='FIELD_READ'&&edge.from===baseSlot)).toBe(true);
     expect(graph.edges.some(edge=>edge.kind==='FIELD_READ'&&edge.from===childSlot)).toBe(true);
     expect(graph.edges.some(edge=>edge.kind==='FIELD_WRITE'&&edge.to===baseSlot)).toBe(true);

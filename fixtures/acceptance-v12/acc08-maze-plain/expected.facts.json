@@ -61,9 +61,10 @@
   {
    "id": "grid",
    "kind": "array",
-   "status": "target:P3",
+   "status": "current",
    "requirement": "R5.1",
-   "className": "char[][]"
+   "className": "char[][]",
+   "promotion": "Phase 4: bounded generic observation verified on the production JVM path"
   }
  ]
 }

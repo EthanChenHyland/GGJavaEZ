@@ -33,7 +33,8 @@ test('Person: stable identity, constructor and successful field/local observatio
   }`, 'Person.java': `public class Person { int age; Person() {} void setAge(int age) { this.age=age; } }` });
   try {
     const r = await runInstrumented(f.request); assert.equal(r.status, 'complete', r.diagnostic); assert.equal(r.stdout, '25\n'); assertPrefix(r);
-    const objects = types(r, 'object').filter((e) => e.className === 'Person'); assert.equal(objects.length, 2);
+    const objects = types(r, 'object').filter((e) => e.className === 'Person' && !e.resnapshot); assert.equal(objects.length, 2);
+    assert.ok(types(r, 'object').filter((e) => e.className === 'Person').every((e) => objects.some((object) => object.objectId === e.objectId)));
     assert.notEqual(objects[0].objectId, objects[1].objectId);
     assert.deepEqual(types(r, 'field').map((e) => e.value.value), [18, 7]);
     assert.ok(types(r, 'local').some((e) => e.name === 'a' && e.value.objectId === objects[0].objectId));
@@ -71,8 +72,8 @@ test('int array reads/writes, branch and catch are observed in JVM order', async
   }` });
   try {
     const r=await runInstrumented(f.request); assert.equal(r.status,'complete',r.diagnostic); assert.equal(r.stdout,'4\n');assertPrefix(r);
-    const array=types(r,'array')[0];assert.deepEqual(array.elements,[0,0]);
-    assert.deepEqual(types(r,'array_write').map((e)=>[e.index,e.value]),[[0,3],[1,1],[0,1],[1,3]]);
+    const array=types(r,'array').find(event=>event.elementType==='int');assert.deepEqual(array.elements,[{kind:'int',value:0},{kind:'int',value:0}]);
+    assert.deepEqual(types(r,'array_write').map((e)=>[e.index,e.value]),[[0,{kind:'int',value:3}],[1,{kind:'int',value:1}],[0,{kind:'int',value:1}],[1,{kind:'int',value:3}]]);
     assert.ok(types(r,'array_read').length>=3); assert.ok(types(r,'branch').length>0);assert.ok(types(r,'branch').every((e)=>typeof e.taken==='boolean'));
     assert.equal(types(r,'throw').filter((e)=>e.explicit).length,1);assert.equal(types(r,'catch').length,1);
   } finally { await f.cleanup(); }

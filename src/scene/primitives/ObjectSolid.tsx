@@ -8,6 +8,7 @@ import { RuntimeLabel } from './RuntimeLabel'
 import { RuntimeSlot } from './RuntimeSlot'
 import { SolidBody } from './SolidBody'
 import { useMountSettle, useReducedMotion } from './presentationMotion'
+import { objectFaceRowCount } from '../../world/objectFace'
 
 export interface ObjectSolidProps {
   node: SceneObjectNode
@@ -42,7 +43,8 @@ export function ObjectSolid({ node, selected, related, onSelect, onSelectSlot, s
   const textZ = front + 0.018
   // Keep fields present at macro distance; semantic zoom may compact them but
   // must never make the runtime solid appear to contain no state.
-  const rows = node.fields
+  const rows = node.fields.slice(0, objectFaceRowCount(height, node.fields.length))
+  const hidden = node.fields.length - rows.length
 
   const select = (event: ThreeEvent<MouseEvent>) => {
     event.stopPropagation()
@@ -57,7 +59,7 @@ export function ObjectSolid({ node, selected, related, onSelect, onSelectSlot, s
         <boxGeometry args={[width - 0.16, height - 0.16, 0.018]} />
         <meshBasicMaterial color={worldMaterial.heapFace} />
       </mesh>
-      <RuntimeLabel text="HEAP OBJECT" position={[-width / 2 + 0.22, height / 2 - 0.24, textZ]} size={0.17} color={colors.heap} maxWidth={1.7} />
+      <RuntimeLabel text={node.summaryLabel ?? 'HEAP OBJECT'} position={[-width / 2 + 0.22, height / 2 - 0.24, textZ]} size={0.17} color={colors.heap} maxWidth={width - 0.44} />
       <RuntimeLabel text={node.className.split('.').at(-1) ?? node.className} position={[-width / 2 + 0.22, height / 2 - 0.58, textZ]} size={0.37} maxWidth={width - 1.13} />
       <RuntimeLabel text={`#${node.displayId}`} position={[width / 2 - 0.22, height / 2 - 0.58, textZ]} size={0.3} color={colors.textSecondary} align="right" maxWidth={0.8} />
       <mesh position={[0, height / 2 - 0.8, textZ]}>
@@ -67,6 +69,10 @@ export function ObjectSolid({ node, selected, related, onSelect, onSelectSlot, s
       {rows.map((field, index) => (
         <RuntimeSlot key={field.id} slot={field} width={width} y={height / 2 - 1.07 - index * 0.52} z={textZ} accent={colors.heap} background={worldMaterial.heapSlot} active={field.id === activeSlotId} selected={field.id === selectedSlotId} onSelect={onSelectSlot ? () => onSelectSlot(field.id) : undefined} reducedMotion={motionReduced} textScale={inspection ? 1.55 : 1} fitText />
       ))}
+      {(hidden > 0 || !rows.length && node.summaryLabel) && <RuntimeLabel
+        text={hidden ? `+${hidden} observed values · inspect` : 'No observed entries'}
+        position={[-width / 2 + 0.22, height / 2 - 1.07 - rows.length * 0.52, textZ]}
+        size={0.2} color={colors.textSecondary} maxWidth={width - 0.44} />}
       </group>
     </group>
   )

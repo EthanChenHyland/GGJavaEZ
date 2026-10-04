@@ -1,0 +1,28 @@
+{
+  "sessionId": "27e55d45-786b-4e7f-9f67-ab6d11781930",
+  "loadMs": 3214,
+  "normalizedEvents": 6474,
+  "rawEvents": 4307,
+  "recording": {
+    "state": "STOPPED_LIMIT",
+    "reason": "Recording budget exceeded: objects",
+    "budget": "objects",
+    "lastRecordedSeq": 4305,
+    "executionContinued": true
+  },
+  "timings": [
+    {
+      "cursor": 3237,
+      "uiCommitAndTwoFramesMs": 741
+    },
+    {
+      "cursor": 2158,
+      "uiCommitAndTwoFramesMs": 493
+    },
+    {
+      "cursor": 6474,
+      "uiCommitAndTwoFramesMs": 482
+    }
+  ],
+  "metric": "UI commit plus two browser animation frames; not GPU presentation or percentile statistics"
+}

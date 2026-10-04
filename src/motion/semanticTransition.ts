@@ -54,7 +54,7 @@ function graphEndpoint(id: string, state: RuntimeState, graph: ExecutionGraph, r
   if (state.frames[id]) return frame(id)
   if (state.objects[id]) return object(id)
   const channel = graph.io[id]
-  if (channel && channel.kind !== 'input-bytes') return io(channel.channel)
+  if (channel && channel.kind !== 'input-bytes' && channel.channel !== 'file') return io(channel.channel)
   const value = graph.values[id]
   if (!value || remaining === 0) return undefined
   // A return has its own real frame subdivision, separate from its operands.

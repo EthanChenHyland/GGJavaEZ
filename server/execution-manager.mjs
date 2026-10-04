@@ -158,7 +158,7 @@ export class ExecutionManager {
         sourcePaths: compilation.project.sourcePaths };
       if (withoutVisualization) return await this.#plain(record, base, 'Visualization was disabled for this run');
       let sourceManifest;
-      try { sourceManifest = await this.buildManifest(projectRoot, base.classesDir, base.sourcePaths); }
+      try { sourceManifest = await this.buildManifest(projectRoot, base.classesDir, base.sourcePaths, compilation); }
       catch (failure) {
         if (dto.kind === 'debug') throw failure;
         return await this.#plain(record, base, `Instrumentation preparation failed: ${failure.message}`);

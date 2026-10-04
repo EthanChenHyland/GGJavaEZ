@@ -30,7 +30,8 @@ test.runIf(process.env.VJ_PHASE3_JVM === '1')('bounded real-JVM graph processing
       graph: { invocations: Object.keys(result.graph.invocations).length, calls: Object.keys(result.graph.calls).length, values: Object.keys(result.graph.values).length, edges: result.graph.edges.length },
       scrubMs: { p50: scrubs[15], p95: scrubs[28], max: scrubs[29] } });
   }
-  await mkdir('docs/checkpoints/v12-p3', { recursive: true });
-  await writeFile('docs/checkpoints/v12-p3/real-jvm-performance.json', JSON.stringify({ explicitGc: typeof globalThis.gc === 'function',
+  const outputRoot = process.env.VJ_PERF_OUTPUT_ROOT ?? 'docs/checkpoints/v12-p3';
+  await mkdir(outputRoot, { recursive: true });
+  await writeFile(`${outputRoot}/real-jvm-performance.json`, JSON.stringify({ explicitGc: typeof globalThis.gc === 'function',
     note: 'One actual application JVM per fixture run; all workloads serial. End-to-end includes javac, helper preparation and Java. normalizationMs times accepted raw batches plus terminal graph/history normalization only. Retained heap samples include trace/history/graph and returned metadata, not isolated graph bytes; without explicit GC they include transient allocation. Scrub samples measure synchronous seeks, no browser/GPU. Production caps unchanged.', samples }, null, 2)+'\n');
 }, 180000);

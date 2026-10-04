@@ -1,0 +1,37 @@
+{
+  "category": 14,
+  "mainClass": "Main",
+  "stdout": "7:9007199254740993:true:true\n",
+  "stderr": "",
+  "exitCode": 0,
+  "recording": "FULL",
+  "facts": [
+    {
+      "kind": "field",
+      "className": "Main$Coordinate",
+      "field": "north",
+      "javaType": "long",
+      "value": "9007199254740993"
+    },
+    {
+      "kind": "metadata",
+      "className": "Main$Coordinate",
+      "record": true,
+      "ownership": "PROJECT",
+      "components": [
+        "east",
+        "north"
+      ]
+    },
+    {
+      "kind": "invoked",
+      "owner": "Main$Coordinate",
+      "method": "east"
+    },
+    {
+      "kind": "invoked",
+      "owner": "Main$Coordinate",
+      "method": "north"
+    }
+  ]
+}
