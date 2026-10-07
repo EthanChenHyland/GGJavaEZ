@@ -36,7 +36,10 @@ export const bridge = {
     }
     const connect = () => {
       if (stopped) return
-      source = new EventSource(`/api/execution/${encodeURIComponent(id)}/events?transport=delta&from=${nextSequence()}`)
+      // Use the existing bounded transport maximum during retained catch-up.
+      // The server still enforces its 256 KiB frame and per-tick budgets; the
+      // client retains the same byte-pressure/reconnect safeguards below.
+      source = new EventSource(`/api/execution/${encodeURIComponent(id)}/events?transport=delta&from=${nextSequence()}&limit=1024`)
       source.addEventListener('session', event => {
         try { onSnapshot(JSON.parse((event as MessageEvent).data) as ExecutionSession) } catch (error) { onError(error) }
       })

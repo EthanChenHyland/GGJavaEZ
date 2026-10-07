@@ -40,12 +40,17 @@ test('camera input takes control while playback continues', async ({ page }) => 
 })
 
 test('reference picking, pan, and dolly work in the same world', async ({ page }) => {
+  await page.addInitScript(() => { window.__VJ_QA_RENDER_METRICS__ = true })
   await page.goto('/examples')
   await page.getByRole('button', { name: 'Go to event 18: age: 0 → 18' }).click()
   await page.getByRole('button', { name: 'Home' }).first().click()
   await page.waitForTimeout(700)
-  // Pick the reference at its position beneath the compact canvas toolbar.
-  await page.mouse.click(980, 490)
+  // Ray-pick the actual mounted curve midpoint at the settled camera pose.
+  // The dev probe only projects existing geometry; selection uses the real mouse.
+  await expect.poll(() => page.evaluate(() => Object.keys(window.__VJ_REFERENCE_PICK_POINTS__ ?? {}).length)).toBeGreaterThan(0)
+  const point = await page.evaluate(() => Object.values(window.__VJ_REFERENCE_PICK_POINTS__!)[0])
+  const bounds = (await page.locator('.world-canvas canvas').first().boundingBox())!
+  await page.mouse.click(bounds.x + point.x, bounds.y + point.y)
   await expect(page.getByRole('heading', { name: 'Reference path' })).toBeVisible()
   await expect(page.locator('.inspector')).toContainText('Person #17')
   await page.getByRole('button', { name: 'Close inspector' }).click()

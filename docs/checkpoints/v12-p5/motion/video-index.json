@@ -1,0 +1,42 @@
+{
+  "method": "Original video frames at listed seconds; sampled sequence review, not full uninterrupted playback or GPU timing",
+  "videos": [
+    {
+      "path": "motion/banking.webm",
+      "duration": "74.080000",
+      "size": "8416925",
+      "sampledSeconds": [
+        25.7,
+        28.9,
+        32.2,
+        35.5,
+        39,
+        42
+      ]
+    },
+    {
+      "path": "motion/dispatch.webm",
+      "duration": "11.160000",
+      "size": "1098352",
+      "sampledSeconds": [
+        6
+      ]
+    },
+    {
+      "path": "motion/dense.webm",
+      "duration": "32.880000",
+      "size": "3328367",
+      "sampledSeconds": [
+        20
+      ]
+    },
+    {
+      "path": "motion/focus-shapes.webm",
+      "duration": "13.320000",
+      "size": "1502364",
+      "sampledSeconds": [
+        6
+      ]
+    }
+  ]
+}

@@ -17,7 +17,8 @@ const layouts = new WeakMap<TraceDocument, LayoutCache>()
 
 /**
  * The single composition seam between generic Spatial layout and curated examples
- * (spec task 0.1, INV-15). Selection rules preserve the pre-Phase-0 batch output:
+ * (spec task 0.1, INV-15). Curated/scoped selection preserves the Phase 0 output;
+ * Phase 5 deliberately upgrades generic JVM geography to Spatial 2.0:
  * scope events select the existing scoped layout, JVM captures use generic layout,
  * and all other traces use curated layout. Only the JVM builder advances by delta.
  * Immutable events and stable trace identity are the append-only cache contract.

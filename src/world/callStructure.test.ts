@@ -15,9 +15,18 @@ describe('retained call structure', () => {
       ['frame:main:1', 'frame:person-setAge:1'],
     ])
     const back = connectorBackPlane(scene)
-    expect(edges.every((edge) => edge.points.slice(1, -1).every((point) => point[2] === back))).toBe(true)
+    expect(edges.every(edge => edge.points.slice(1, -1).every(point => point[2] > Math.max(edge.points[0][2], edge.points.at(-1)![2])))).toBe(true)
     expect(edges.every((edge) => edge.points[0][2] > back && edge.points.at(-1)![2] > back)).toBe(true)
     expect(scene.frames.every((frame) => back < frame.anchor.position[2] - frame.anchor.size[2] / 2)).toBe(true)
+  })
+
+  it('does not draw a direct call from an observed ancestor across opaque code', () => {
+    const trace = loadPersonTrace()
+    const scene = buildSceneModel(seek(trace, trace.events.length), createLayout(trace), 'meso')
+    const frame = scene.frames[1]
+    const guarded = { ...scene, frames: scene.frames.map(node => node.id === frame.id ? { ...node, callerEvidence: 'unavailable' as const } : node) }
+    expect(callEdgesForScene(guarded).some(edge => edge.calleeId === frame.id)).toBe(false)
+    expect(callEdgesForScene(guarded)).toHaveLength(1)
   })
 
   it('uses the same observed parent relationship in deeper recursion', () => {

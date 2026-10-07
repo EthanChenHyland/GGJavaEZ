@@ -53,7 +53,7 @@ describe('live debug layout', () => {
     if (firstArray?.type === 'ALLOCATE_ARRAY') expect(createLayout(arrayTrace).anchors[firstArray.objectId].position).toEqual([3.45, -0.05, -0.65])
   })
 
-  it('reserves nonoverlapping heap solids and contains every field row as a capture grows', () => {
+  it('reserves nonoverlapping heap solids and bounds visible field rows as a capture grows', () => {
     const fields = (objectId: string, count: number): RuntimeSlot[] => Array.from({ length: count }, (_, index) => ({
       id: `${objectId}:field:${index}`, name: `field${index}`, javaType: 'int', value: { kind: 'primitive', javaType: 'int', value: index },
     }))
@@ -68,15 +68,15 @@ describe('live debug layout', () => {
     const complete = createLayout(trace)
     const ids = ['object:one', 'object:many', 'object:three']
     expect(complete.anchors['object:one'].size).toEqual([...worldUnits.object])
-    expect(complete.anchors['object:one'].position[0]).toBeCloseTo(3.45)
-    expect(complete.anchors['object:one'].position[2]).toBeCloseTo(-0.65)
+    expect(complete.anchors['object:one'].position[0]).toBeCloseTo(4.6)
+    expect(complete.anchors['object:one'].position[2]).toBeCloseTo(-worldUnits.object[2] / 2)
     for (let cursor = 1; cursor <= trace.events.length; cursor++) {
       const prefix = createLayout({ ...trace, events: trace.events.slice(0, cursor) })
       for (const id of ids.slice(0, cursor)) expect(prefix.anchors[id]).toEqual(complete.anchors[id])
     }
     for (const [index, id] of ids.entries()) {
       const anchor = complete.anchors[id]
-      const count = [2, 7, 4][index]
+      const count = Math.min(6, [2, 7, 4][index])
       const lowestRow = anchor.position[1] + anchor.size[1] / 2 - 1.07 - (count - 1) * 0.52 - 0.22
       expect(lowestRow).toBeGreaterThan(anchor.position[1] - anchor.size[1] / 2 + 0.2)
       for (const port of Object.values(anchor.ports)) {
@@ -91,7 +91,7 @@ describe('live debug layout', () => {
     }
   })
 
-  it('reserves expanded array depth between live object allocations', () => {
+  it('reserves a distinct typed array shelf beside object allocations', () => {
     const first: TraceEvent = { eventId: 'first', seq: 0, source: null, label: 'first', importance: 'major',
       type: 'ALLOCATE_OBJECT', objectId: 'first', displayId: 1, className: 'Example', fields: [] }
     const array: TraceEvent = { eventId: 'array', seq: 1, source: null, label: 'array', importance: 'major',
@@ -99,7 +99,7 @@ describe('live debug layout', () => {
     const last: TraceEvent = { ...first, eventId: 'last', seq: 2, objectId: 'last', displayId: 3 }
     const trace: TraceDocument = { schemaVersion: 2, demoId: 'mixed-heap', sourceFiles: [], capture, events: [first, array, last] }
     const layout = createLayout(trace)
-    const expanded = layout.theater?.anchors.array
+    const expanded = layout.anchors.array
     expect(expanded).toBeDefined()
     if (!expanded) return
     for (const id of ['first', 'last']) {

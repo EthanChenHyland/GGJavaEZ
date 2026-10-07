@@ -1,0 +1,90 @@
+{
+  "source": "Actual event-marker UI clicks against freshly edited audit.Main; every cursor verified. Direct scrubs snap without replaying intermediate animations.",
+  "samples": [
+    {
+      "cursor": 29,
+      "timeline": "Input consumed",
+      "count": "29 / 223"
+    },
+    {
+      "cursor": 36,
+      "timeline": "<init> entered",
+      "count": "36 / 223"
+    },
+    {
+      "cursor": 41,
+      "timeline": "audit.Main$Box observed",
+      "count": "41 / 223"
+    },
+    {
+      "cursor": 46,
+      "timeline": "this observed",
+      "count": "46 / 223"
+    },
+    {
+      "cursor": 50,
+      "timeline": "JVM write",
+      "count": "50 / 223"
+    },
+    {
+      "cursor": 61,
+      "timeline": "int[] observed",
+      "count": "61 / 223"
+    },
+    {
+      "cursor": 66,
+      "timeline": "JVM write",
+      "count": "66 / 223"
+    },
+    {
+      "cursor": 70,
+      "timeline": "Read [0]",
+      "count": "70 / 223"
+    },
+    {
+      "cursor": 75,
+      "timeline": "JVM read",
+      "count": "75 / 223"
+    },
+    {
+      "cursor": 79,
+      "timeline": "JVM write",
+      "count": "79 / 223"
+    },
+    {
+      "cursor": 83,
+      "timeline": "Write [0]",
+      "count": "83 / 223"
+    },
+    {
+      "cursor": 107,
+      "timeline": "add entered",
+      "count": "107 / 223"
+    },
+    {
+      "cursor": 124,
+      "timeline": "result observed",
+      "count": "124 / 223"
+    },
+    {
+      "cursor": 127,
+      "timeline": "Exception observed",
+      "count": "127 / 223"
+    },
+    {
+      "cursor": 147,
+      "timeline": "dive entered",
+      "count": "147 / 223"
+    },
+    {
+      "cursor": 175,
+      "timeline": "Value returned",
+      "count": "175 / 223"
+    },
+    {
+      "cursor": 223,
+      "timeline": "Program completed",
+      "count": "223 / 223"
+    }
+  ]
+}

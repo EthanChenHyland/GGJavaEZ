@@ -1,5 +1,5 @@
 {
-  "version": "2.7",
+  "version": "3.0",
   "color": {
     "canvas": "#06080D",
     "canvasRaised": "#090D14",
@@ -23,7 +23,15 @@
     "shell": 8,
     "control": 6
   },
-  "spacingPx": [4, 8, 12, 16, 24, 32, 48],
+  "spacingPx": [
+    4,
+    8,
+    12,
+    16,
+    24,
+    32,
+    48
+  ],
   "line": {
     "uiBorderPx": 1,
     "referenceDefaultPx": 2,
@@ -31,16 +39,16 @@
     "referenceMaxPx": 2.5
   },
   "worldMaterial": {
-    "stackBody": "#253B57",
-    "stackFace": "#152840",
-    "stackSlot": "#1D344D",
-    "heapBody": "#342B52",
-    "heapFace": "#211A38",
-    "heapSlot": "#2C2447",
+    "stackBody": "#16395B",
+    "stackFace": "#0E223A",
+    "stackSlot": "#18304D",
+    "heapBody": "#352353",
+    "heapFace": "#211431",
+    "heapSlot": "#302041",
     "floor": "#0A111B",
-    "historyBody": "#38414B",
-    "historyFace": "#26303A",
-    "historySlot": "#303A44"
+    "historyBody": "#303A47",
+    "historyFace": "#202B36",
+    "historySlot": "#2A3542"
   },
   "typography": {
     "ui": "Inter, Geist, ui-sans-serif, system-ui, sans-serif",

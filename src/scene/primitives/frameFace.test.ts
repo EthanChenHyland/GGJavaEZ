@@ -13,7 +13,7 @@ const rendered = vi.hoisted(() => ({
 }))
 vi.mock('@react-three/fiber', () => ({ useFrame: vi.fn() }))
 vi.mock('./presentationMotion', () => ({ useReducedMotion: () => true, useMountSettle: vi.fn() }))
-vi.mock('./SolidBody', () => ({ SolidBody: ({ size }: { size: Vec3 }) => { rendered.sizes.push(size); return null } }))
+vi.mock('./SolidBody', () => ({ SolidBody: ({ size }: { size: Vec3 }) => { rendered.sizes.push(size); return null }, SolidFace: () => null }))
 vi.mock('./RuntimeLabel', async () => {
   const { useContext } = await import('react')
   const { RuntimeLabelPolicy } = await import('./runtimeText')
@@ -180,5 +180,22 @@ describe('FrameSolid face integration', () => {
     expect(rendered.rows.find(row => row.slot.id === 'local:2')?.active).toBe(true)
     selected.onSelect?.()
     expect(onSelectSlot).toHaveBeenCalledWith('local:1')
+  })
+
+  it('does not mount duplicate fallback rows or fabricated terminals for slots without reserved ports', () => {
+    const node = liveFrame(8)
+    const overflow: SceneSlot[] = Array.from({ length: 40 }, (_, index) => ({
+      id: `unreserved:${index}`, name: `overflow${index}`, javaType: 'Example',
+      value: { kind: 'reference', javaType: 'Example', objectId: 'object:7' },
+      port: node.anchor.bodyPort,
+    }))
+    node.slots.push(...overflow)
+    const before = structuredClone(node)
+    const markup = render(node, { selectedSlotId: overflow[0].id, activeSlotId: overflow[1].id, inspection: true })
+    expect(rendered.rows).toHaveLength(8)
+    expect(rendered.rows.every(row => Object.hasOwn(node.anchor.ports, row.slot.id))).toBe(true)
+    expect(markup).not.toContain('slot-terminal:unreserved:')
+    expect(rendered.labels.find(label => label.role === 'metadata')?.text).toContain('+40 values · Inspector')
+    expect(node).toEqual(before)
   })
 })

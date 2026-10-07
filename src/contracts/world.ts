@@ -1,7 +1,7 @@
-import type { EventId, FrameId, ObjectId, ReferenceId, ArrayActivity, ArrayMutation, ReturnTransfer, RuntimeValue, SlotId, SlotOwner } from './runtime'
+import type { EventId, FrameId, ObjectId, ReferenceId, ArrayActivity, ArrayMutation, ReturnTransfer, RuntimeValue, SlotId, SlotOwner, RuntimeTypeMetadata } from './runtime'
 
 export type Vec3 = readonly [number, number, number]
-export type Region = 'stack' | 'heap'
+export type Region = 'stack' | 'heap' | 'class' | 'io'
 export type DetailLevel = 'macro' | 'meso' | 'micro'
 
 export interface WorldAnchor {
@@ -22,7 +22,7 @@ export interface LayoutState {
   /** Reserved for the entire trace, never recomputed from live frame count. */
   stackDepth?: number
   bounds?: WorldBounds
-  layoutKind?: 'standard' | 'deepStack' | 'array' | 'scoped'
+  layoutKind?: 'standard' | 'deepStack' | 'array' | 'scoped' | 'spatial2'
   scopes?: Record<string, SceneScopeNode & { frameId: FrameId }>
   theater?: { anchors: Record<string, WorldAnchor>; bounds: WorldBounds; homeTarget: Vec3 }
 }
@@ -52,6 +52,10 @@ export interface SceneFrameNode {
   kind: 'frame'
   id: FrameId
   callerFrameId?: FrameId | null
+  /** An observed ancestor across opaque code is not a proven direct CALL. */
+  callerEvidence?: 'observed' | 'unavailable'
+  className?: string
+  metadata?: RuntimeTypeMetadata
   label: string
   depth: number
   active: boolean
@@ -77,12 +81,27 @@ export interface SceneObjectNode {
   fields: SceneSlot[]
   /** Bounded semantic summary, shown without implying project implementation fields. */
   summaryLabel?: string
+  metadata?: RuntimeTypeMetadata
   array?: { elementType: string; length: number; cells: SceneArrayCell[] }
 }
 
+export interface SceneClassNode {
+  kind: 'class'
+  id: string
+  className: string
+  label: string
+  initialization: 'started' | 'completed' | 'observed'
+  anchor: WorldAnchor
+  fields: SceneSlot[]
+  metadata?: RuntimeTypeMetadata
+}
+
+export type SceneSlotOwner = SlotOwner | { kind: 'class'; classId: string; slotId: SlotId }
+export const sceneSourceId = (source: SceneSlotOwner): string => source.kind === 'frame' ? source.frameId : source.kind === 'class' ? source.classId : source.objectId
+
 export interface SceneReferenceEdge {
   id: ReferenceId
-  source: SlotOwner
+  source: SceneSlotOwner
   targetObjectId: ObjectId
   from: Vec3
   to: Vec3
@@ -93,9 +112,18 @@ export interface SceneReferenceEdge {
   historical?: boolean
 }
 
+export interface SceneIoEndpoint {
+  id: 'stdin' | 'stdout' | 'stderr'
+  observations: number
+  preview: string
+  anchor: WorldAnchor
+}
+
 export interface SceneModel {
+  io?: SceneIoEndpoint[]
   frames: SceneFrameNode[]
   objects: SceneObjectNode[]
+  classes?: SceneClassNode[]
   references: SceneReferenceEdge[]
   activeEventId: EventId | null
   detailLevel: DetailLevel

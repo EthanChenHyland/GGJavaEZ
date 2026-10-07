@@ -1,0 +1,153 @@
+{
+  "id": "88e561fb-bedb-4b26-ba47-ffd5f57e8e2e",
+  "projectId": "6083ee27-d770-43a3-987b-c655b2888020",
+  "phase": "COMPLETED",
+  "support": "PARTIAL",
+  "supportReason": "Some runtime facts are outside verified project coverage",
+  "terminalStatus": "complete",
+  "diagnostic": null,
+  "exitCode": 0,
+  "stdout": "TOTAL 28\n[{\"kind\":\"parcel\",\"charge\":11},{\"kind\":\"express\",\"charge\":17}]\n",
+  "stderr": "",
+  "rawEvents": 296,
+  "invocations": 18,
+  "objects": 24,
+  "rawEventKinds": [
+    "array",
+    "enter",
+    "line",
+    "call",
+    "library",
+    "call_return",
+    "local",
+    "object",
+    "receiver_ready",
+    "field",
+    "exit",
+    "constructed",
+    "branch",
+    "field_read",
+    "return",
+    "local_end",
+    "string_object",
+    "console"
+  ],
+  "capability": {
+    "status": "partial",
+    "coveredClasses": [
+      "audit.dispatch.Main",
+      "audit.dispatch.model.AbstractDelivery",
+      "audit.dispatch.model.Delivery",
+      "audit.dispatch.model.ExpressDelivery",
+      "audit.dispatch.model.ParcelDelivery",
+      "audit.dispatch.service.DispatchService"
+    ],
+    "diagnostics": [],
+    "features": {
+      "methods": {
+        "status": "supported",
+        "reason": "Observed project method entry/exit",
+        "observedEvents": 36
+      },
+      "locals": {
+        "status": "partial",
+        "reason": "2 stores lacked debug local metadata",
+        "observedEvents": 12
+      },
+      "objects": {
+        "status": "supported",
+        "reason": "Observed project constructors",
+        "observedEvents": 23
+      },
+      "fields": {
+        "status": "supported",
+        "reason": "Observed instance field writes",
+        "observedEvents": 4
+      },
+      "references": {
+        "status": "supported",
+        "reason": "Observed reference identities",
+        "observedEvents": 24
+      },
+      "intArrays": {
+        "status": "supported",
+        "reason": "Observed int[] allocations",
+        "observedEvents": 1
+      },
+      "arrayReads": {
+        "status": "partial",
+        "reason": "No array reads observed in this execution prefix",
+        "observedEvents": 0
+      },
+      "arrayWrites": {
+        "status": "partial",
+        "reason": "No array writes observed in this execution prefix",
+        "observedEvents": 0
+      },
+      "sourceMapping": {
+        "status": "partial",
+        "reason": "Recorder lines require source-manifest resolution",
+        "observedEvents": 46
+      },
+      "branches": {
+        "status": "supported",
+        "reason": "Observed conditional outcomes",
+        "observedEvents": 6
+      },
+      "loops": {
+        "status": "partial",
+        "reason": "Branch probes do not establish source-level loop labels",
+        "observedEvents": 6
+      },
+      "scopes": {
+        "status": "partial",
+        "reason": "Lexical scopes are not completely reconstructed",
+        "observedEvents": 6
+      },
+      "returns": {
+        "status": "supported",
+        "reason": "Observed return operands and exits",
+        "observedEvents": 30
+      },
+      "exceptions": {
+        "status": "partial",
+        "reason": "Library/native exception internals are outside project capture",
+        "observedEvents": 0
+      },
+      "console": {
+        "status": "partial",
+        "reason": "Wrapped writes have recorder order; process pipes do not",
+        "observedEvents": 2
+      }
+    }
+  },
+  "javaProject": {
+    "projectId": "6083ee27-d770-43a3-987b-c655b2888020",
+    "revision": "40aedc1dfb4ef42bb5d7ce82ae899d706e2b5535d603ee44cfeafb15bec1e252",
+    "buildSystem": "gradle",
+    "status": "ready",
+    "diagnostic": null,
+    "sourceRoots": [
+      "src/main/java"
+    ],
+    "testSourceRoots": [
+      "src/test/java"
+    ],
+    "outputRoots": [
+      "build/classes/java/main",
+      "build/resources/main"
+    ],
+    "dependencies": [
+      {
+        "name": "gson-2.13.2.jar"
+      },
+      {
+        "name": "error_prone_annotations-2.41.0.jar"
+      }
+    ],
+    "runnableTargets": [
+      "audit.dispatch.Main"
+    ],
+    "elapsedMs": 2300
+  }
+}

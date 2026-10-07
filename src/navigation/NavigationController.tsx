@@ -3,13 +3,15 @@ import { useFrame, useThree } from '@react-three/fiber'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ComponentRef } from 'react'
 import { PerspectiveCamera, Vector3 } from 'three'
-import type { CameraPose } from '../contracts/interaction'
+import type { CameraPose, Selection } from '../contracts/interaction'
 import type { TraceEvent } from '../contracts/runtime'
 import type { SceneModel, Vec3 } from '../contracts/world'
+import { sceneSourceId } from '../contracts/world'
 import { motionMs } from '../theme/tokens'
 import { arrayInspectionContext, contextPose, eventFocusAnchor, frontFacePoint, frontFaceViewingPose, guidedCameraAction, inspectorFocusPose, invocationContextPose, representationTransition, sampleCameraMove, sceneHomePose, traceWaypoints } from './cameraMotion'
 import type { CameraMove, CameraWaypoint, RepresentationMemory } from './cameraMotion'
 import { cameraCollisionBoxes, collisionSafeRoute, constrainCameraPose, limitsForOverview, zoomPose } from './cameraConstraints'
+import { spatial2DetailExtent, spatial2DetailLevel, spatial2FocusPose, spatial2HomePose, spatial2Viewport } from './cameraSpatial2'
 import {
   collisionAnchorsForScene, detailDistanceForScene, detailLevelAtDistance, midpoint, navigationWorldForScene, selectionPoint, useNavigationStore,
 } from './navigation'
@@ -17,6 +19,8 @@ import {
 export interface NavigationControllerProps {
   sceneModel: SceneModel
   geometryScene?: SceneModel
+  /** Renderer-supplied cluster/protected-volume bounds used by Home. */
+  homeScene?: SceneModel
   fitShallow?: boolean
   inspectorVisible?: boolean
   /** Hidden renderers consume commands without changing the shared navigation pose. */
@@ -51,7 +55,7 @@ function usePrefersReducedMotion(): boolean {
 }
 
 /** Must be mounted inside Canvas. Camera changes are centralized and user input always interrupts them. */
-export function NavigationController({ sceneModel, geometryScene = sceneModel, event, activeEntityId, homeTarget, fitShallow = false, inspectorVisible = false, reducedMotion, visible = true }: NavigationControllerProps) {
+export function NavigationController({ sceneModel, geometryScene = sceneModel, homeScene = sceneModel, event, activeEntityId, homeTarget, fitShallow = false, inspectorVisible = false, reducedMotion, visible = true }: NavigationControllerProps) {
   const { camera, size, invalidate } = useThree()
   useEffect(() => {
     if (!(camera instanceof PerspectiveCamera)) return
@@ -66,32 +70,45 @@ export function NavigationController({ sceneModel, geometryScene = sceneModel, e
   const processedIntentRef = useRef(-1)
   const userInteractingRef = useRef(false)
   const applyingPoseRef = useRef(false)
+  const automaticPoseKeyRef = useRef<string | null>(null)
+  const firstInvocationFramedRef = useRef(false)
   const lastSafePoseRef = useRef<CameraPose | null>(null)
   const representationMemoryRef = useRef<RepresentationMemory>({ presentation: 'spatial', spatialPose: null })
   const preferredReducedMotion = usePrefersReducedMotion()
   const motionReduced = reducedMotion ?? preferredReducedMotion
   const intentRevision = useNavigationStore((state) => state.intentRevision)
   const followEnabled = useNavigationStore((state) => state.followEnabled)
+  const spatial2 = sceneModel.layoutKind === 'spatial2'
   const deepStack = (sceneModel.stackDepth ?? 0) > 1 && !!sceneModel.bounds
-  const reservedWorld = deepStack || (fitShallow && !!sceneModel.bounds) || ((sceneModel.layoutKind === 'array' || sceneModel.layoutKind === 'scoped') && !!sceneModel.bounds)
+  const reservedWorld = spatial2 || deepStack || (fitShallow && !!sceneModel.bounds) || ((sceneModel.layoutKind === 'array' || sceneModel.layoutKind === 'scoped') && !!sceneModel.bounds)
   const framing = {
     verticalFov: camera instanceof PerspectiveCamera ? camera.getEffectiveFOV() * Math.PI / 180 : Math.PI / 4,
     aspect: size.width / Math.max(size.height, 1),
   }
-  const fittedOverview = sceneHomePose(sceneModel, homeTarget, framing, fitShallow)
+  const fittedOverview = useMemo(() => spatial2
+    ? spatial2HomePose(homeScene.bounds, framing, spatial2Viewport(size.width, size.height, inspectorVisible))
+    : sceneHomePose({
+    bounds: homeScene.bounds, stackDepth: homeScene.stackDepth, layoutKind: sceneModel.layoutKind,
+  }, homeTarget, framing, fitShallow), [homeScene.bounds, homeScene.stackDepth, sceneModel.layoutKind, homeTarget, framing.verticalFov, framing.aspect, fitShallow, spatial2, size.width, size.height, inspectorVisible])
   // The embedded inspector occupies the lower world shelf. Translate the
   // overview together with its orbit target, keeping the recorded XYZ anchors
   // fixed while placing the whole scene above the shelf.
-  const shelfBias = inspectorVisible && fitShallow ? Math.min(1.5, Math.max(0.4, size.height * 0.0024)) : 0
-  const shelfScale = inspectorVisible && fitShallow ? 1.08 : 1
+  const shelfBias = !spatial2 && inspectorVisible && fitShallow ? Math.min(1.5, Math.max(0.4, size.height * 0.0024)) : 0
+  const shelfScale = !spatial2 && inspectorVisible && fitShallow ? 1.08 : 1
   const canonicalOverview: CameraPose = shelfBias ? {
     position: [0, 1, 2].map((axis) => fittedOverview.target[axis]
       + (fittedOverview.position[axis] - fittedOverview.target[axis]) * shelfScale
       - (axis === 1 ? shelfBias : 0)) as unknown as Vec3,
     target: [fittedOverview.target[0], fittedOverview.target[1] - shelfBias, fittedOverview.target[2]],
   } : fittedOverview
+  // Exploration remains available beyond a collapsed Home landscape. Collision
+  // uses only represented solids; the full catalog is never a hidden obstacle.
   const limits = limitsForOverview(canonicalOverview, reservedWorld ? sceneModel.bounds?.size : undefined)
-  const world = useMemo(() => navigationWorldForScene(sceneModel, homeTarget), [sceneModel, homeTarget])
+  const world = useMemo(() => navigationWorldForScene(geometryScene, spatial2 ? homeScene.bounds?.center : homeTarget),
+    [geometryScene, spatial2, homeScene.bounds?.center, homeTarget])
+  // LOD changes the represented population. Its median must not feed back into
+  // the next LOD decision; only a new runtime catalog can change this scale.
+  const detailExtent = useMemo(() => spatial2DetailExtent(sceneModel), [sceneModel.frames, sceneModel.objects, sceneModel.classes])
 
   const collisionBoxes = useMemo(() => cameraCollisionBoxes(collisionAnchorsForScene(geometryScene),
     camera.near, camera instanceof PerspectiveCamera ? camera.getEffectiveFOV() * Math.PI / 180 : Math.PI / 4,
@@ -106,7 +123,11 @@ export function NavigationController({ sceneModel, geometryScene = sceneModel, e
     const controls = controlsRef.current
     if (!controls) return
     const store = useNavigationStore.getState()
-    const next = detailLevelAtDistance(detailDistanceForScene(camera.position.distanceTo(controls.target), canonicalOverview, sceneModel), store.detailLevel)
+    const subject = store.isolatedSelection && selectionPoint(store.isolatedSelection, world)
+    const next = spatial2
+      ? spatial2DetailLevel(subject ? camera.position.distanceTo(new Vector3(...subject.position)) : camera.position.distanceTo(controls.target),
+        subject ? Math.min(subject.size[1], 4) : detailExtent, framing, store.detailLevel)
+      : detailLevelAtDistance(detailDistanceForScene(camera.position.distanceTo(controls.target), canonicalOverview, sceneModel), store.detailLevel)
     if (next !== store.detailLevel) store.setDetailLevel(next)
   }
 
@@ -132,6 +153,7 @@ export function NavigationController({ sceneModel, geometryScene = sceneModel, e
   }
 
   const startSequence = (waypoints: readonly CameraWaypoint[]) => {
+    if (userInteractingRef.current || !waypoints.length) return
     const from = currentPose()
     const routed: CameraWaypoint[] = []
     let prior = from
@@ -161,6 +183,19 @@ export function NavigationController({ sceneModel, geometryScene = sceneModel, e
   })
 
   const overviewPose = () => canonicalOverview
+  const focusViewport = () => spatial2 ? spatial2Viewport(size.width, size.height, inspectorVisible)
+    : { width: size.width, height: size.height, topInset: 80, bottomInset: inspectorVisible ? 124 : 24 }
+  const focusPose = (selection: NonNullable<Selection>, anchor: { position: Vec3; size: Vec3 }) => {
+    if (spatial2) return spatial2FocusPose(selection, anchor, geometryScene, viewFraming(), focusViewport())
+    const face = frontFacePoint(anchor)
+    const pivot = reservedWorld ? face : midpoint(overviewPose().target, face)
+    const context = arrayInspectionContext(selection, sceneModel)
+    if (sceneModel.layoutKind === 'scoped' && selection.kind === 'slot') {
+      const owner = sceneModel.frames.find(frame => frame.slots.some(slot => slot.id === selection.id))
+      if (owner) context.push(owner.anchor)
+    }
+    return inspectorFocusPose(pivot, anchor.size, frontFaceViewingPose(face), context, viewFraming(), focusViewport(), face, 5.8, [0.5, 0.8, 0.3])
+  }
 
   useEffect(() => {
     if (!visible || initiallyPlacedRef.current) return
@@ -177,16 +212,35 @@ export function NavigationController({ sceneModel, geometryScene = sceneModel, e
   useEffect(() => {
     if (!visible) return
     const store = useNavigationStore.getState()
-    if (store.mode === 'HOME') startMove(overviewPose(), motionMs.standard)
+    const firstInvocation = spatial2 && !firstInvocationFramedRef.current && sceneModel.frames.length > 0
+    if (firstInvocation && (store.mode === 'HOME' || store.mode === 'GUIDED_FOLLOW')) {
+      firstInvocationFramedRef.current = true
+      const first=sceneModel.frames.find(frame=>frame.active) ?? sceneModel.frames[0]
+      const destination=store.mode === 'GUIDED_FOLLOW'
+        ? spatial2FocusPose({kind:'frame',id:first.id},first.anchor,geometryScene,viewFraming(),focusViewport())
+        : overviewPose()
+      startMove(destination, motionMs.standard)
+      automaticPoseKeyRef.current = `home:${size.width}:${size.height}:${visible}:${inspectorVisible}`
+      return
+    }
+    if (store.mode === 'HOME') {
+      const key = `home:${size.width}:${size.height}:${visible}:${inspectorVisible}`
+      // World growth/array allocation is not an implicit Home command.
+      if (!spatial2 || automaticPoseKeyRef.current !== key) startMove(overviewPose(), motionMs.standard)
+      automaticPoseKeyRef.current = key
+    }
     else if (store.mode === 'FOCUS_ENTITY' && store.isolatedSelection && !userInteractingRef.current) {
       const anchor = selectionPoint(store.isolatedSelection, world)
-      if (!anchor) return
-      const face = frontFacePoint(anchor)
-      startMove(inspectorFocusPose(face, anchor.size, frontFaceViewingPose(face), arrayInspectionContext(store.isolatedSelection, sceneModel), viewFraming(), {
-        width: size.width, height: size.height, topInset: 80, bottomInset: inspectorVisible ? 124 : 24,
-      }, face, 5.8, [0.5, 0.8, 0.3]), motionMs.standard)
+      if (!anchor) {
+        moveRef.current = null
+        automaticPoseKeyRef.current = null
+        return
+      }
+      const key = JSON.stringify([store.isolatedSelection, anchor.position, anchor.size, size.width, size.height, inspectorVisible])
+      if (!spatial2 || automaticPoseKeyRef.current !== key) startMove(focusPose(store.isolatedSelection, anchor), motionMs.standard)
+      automaticPoseKeyRef.current = key
     }
-  }, [size.width, size.height, visible, homeTarget, sceneModel.bounds, sceneModel.stackDepth, sceneModel.layoutKind, fitShallow, inspectorVisible])
+  }, [size.width, size.height, visible, homeTarget, sceneModel.bounds, sceneModel.stackDepth, sceneModel.layoutKind, fitShallow, inspectorVisible, world])
 
   useEffect(() => {
     if (!visible) return
@@ -225,22 +279,14 @@ export function NavigationController({ sceneModel, geometryScene = sceneModel, e
       const anchor = selectionPoint(intent.selection, world)
       if (!anchor) return
       store.rememberPrevious(currentPose(), store.previousMode ?? 'HOME')
-      const face = frontFacePoint(anchor)
-      const center = reservedWorld ? face : midpoint(overviewPose().target, face)
-      const pivot = center
-      const context = arrayInspectionContext(intent.selection, sceneModel)
-      if (sceneModel.layoutKind === 'scoped' && intent.selection.kind === 'slot') {
-        const owner = sceneModel.frames.find((frame) => frame.slots.some((slot) => slot.id === intent.selection.id))
-        if (owner) context.push(owner.anchor)
-      }
-      startMove(inspectorFocusPose(pivot, anchor.size, frontFaceViewingPose(face), context, viewFraming(), {
-        width: size.width, height: size.height, topInset: 80, bottomInset: inspectorVisible ? 124 : 24,
-      }, face, 5.8, [0.5, 0.8, 0.3]), motionMs.deliberate)
+      startMove(focusPose(intent.selection, anchor), motionMs.deliberate)
+      automaticPoseKeyRef.current = JSON.stringify([intent.selection, anchor.position, anchor.size, size.width, size.height, inspectorVisible])
     } else if (intent.kind === 'tracePath') {
       const edge = world.references.find((reference) => reference.id === intent.referenceId)
       if (!edge) return
+      if (spatial2 && (!world.anchors[sceneSourceId(edge.source)] || !world.anchors[edge.targetObjectId])) return
       store.rememberPrevious(currentPose(), store.previousMode ?? 'HOME')
-      startSequence(traceWaypoints(edge, currentPose(), world.anchors, viewFraming(), size))
+      startSequence(traceWaypoints(edge, currentPose(), world.anchors, viewFraming(), spatial2 ? focusViewport() : size))
     } else if (intent.kind === 'returnToPrevious') {
       guidedEventRef.current = event?.eventId ?? null
       startMove(store.previousPose ?? overviewPose(), motionMs.deliberate)
@@ -256,7 +302,7 @@ export function NavigationController({ sceneModel, geometryScene = sceneModel, e
       guidedEventRef.current = event?.eventId ?? null
       return
     }
-    const action = guidedCameraAction(event, useNavigationStore.getState().followEnabled)
+    const action = guidedCameraAction(event, useNavigationStore.getState().followEnabled, sceneModel.layoutKind)
     if (!action || !event || userInteractingRef.current) return
     if (guidedEventRef.current === event.eventId) return
     if (action === 'home') {
@@ -264,13 +310,14 @@ export function NavigationController({ sceneModel, geometryScene = sceneModel, e
       startMove(overviewPose(), motionMs.deliberate)
       return
     }
-    const anchor = eventFocusAnchor(event, sceneModel, activeEntityId)
+    const anchor = eventFocusAnchor(event, geometryScene, activeEntityId)
     if (!anchor) return
     guidedEventRef.current = event.eventId
     const overview = overviewPose()
     // Bias attention toward the event without replacing the world overview with a close-up.
     const pivot = midpoint(overview.target, anchor.position)
-    startMove(deepStack ? invocationContextPose(anchor, sceneModel, currentPose(), viewFraming())
+    startMove(spatial2 ? spatial2FocusPose({ kind: anchor.region === 'class' ? 'class' : anchor.region === 'stack' ? 'frame' : 'object', id: anchor.entityId }, anchor, geometryScene, viewFraming(), focusViewport())
+      : deepStack ? invocationContextPose(anchor, sceneModel, currentPose(), viewFraming())
       : contextPose(pivot, currentPose(), Object.values(world.anchors),
         world.references.flatMap((edge) => [edge.from, edge.to]), viewFraming()), motionMs.standard)
     // A major event may arrive with its anchor on a later scene-model render.

@@ -7,6 +7,7 @@ export type FlowEndpoint =
   | { kind: 'slot'; id: string }
   | { kind: 'frame'; id: string }
   | { kind: 'object'; id: string }
+  | { kind: 'class'; id: string }
   | { kind: 'io'; id: 'stdin' | 'stdout' | 'stderr' }
 
 /** correlated remains a legacy renderer type only; this module never emits it. */
@@ -39,20 +40,22 @@ function graphEndpoint(id: string, state: RuntimeState, graph: ExecutionGraph, r
   if (--budget.remaining < 0) return undefined
   const storage = graph.storage[id]
   if (storage) {
-    const owner = storage.kind === 'variable' ? state.frames[storage.ownerId] : state.objects[storage.ownerId]
+    const owner = storage.kind === 'variable' ? state.frames[storage.ownerId] : storage.kind === 'static' ? state.classes?.[storage.ownerId] : state.objects[storage.ownerId]
     if (!owner) return undefined
     if (storage.kind === 'variable') return state.frames[storage.ownerId].locals[id] ? slot(id) : undefined
+    if (storage.kind === 'static') return state.classes?.[storage.ownerId]?.statics[id] ? slot(id) : undefined
     if (storage.kind === 'field') return state.objects[storage.ownerId].fields[id] ? slot(id) : undefined
     // Indexed cell IDs belong to the common array slot contract; no label parsing.
     const array = state.objects[storage.ownerId].array
     if (array && id.startsWith(`${storage.ownerId}:element:`)) {
       const index = Number(id.slice(`${storage.ownerId}:element:`.length))
-      if (Number.isInteger(index) && index >= 0 && array.elements[index]?.id === id) return slot(id)
+      if (Number.isInteger(index) && index >= 0 && (array.elements[index]?.id === id || array.sparseElements?.[index]?.id === id)) return slot(id)
     }
     return undefined
   }
   if (state.frames[id]) return frame(id)
   if (state.objects[id]) return object(id)
+  if (state.classes?.[id]) return { kind: 'class', id }
   const channel = graph.io[id]
   if (channel && channel.kind !== 'input-bytes' && channel.channel !== 'file') return io(channel.channel)
   const value = graph.values[id]
@@ -78,11 +81,11 @@ function graphEndpoint(id: string, state: RuntimeState, graph: ExecutionGraph, r
   return budget.remaining < 0 ? undefined : origin
 }
 
-const directProducerKinds = new Set<GraphEdgeKind>(['ASSIGN', 'FIELD_READ', 'ARRAY_READ', 'RETURN', 'INPUT_CONSUME'])
+const directProducerKinds = new Set<GraphEdgeKind>(['ASSIGN', 'FIELD_READ', 'STATIC_READ', 'ARRAY_READ', 'RETURN', 'INPUT_CONSUME'])
 const edgeKinds: Partial<Record<GraphEdgeKind, SemanticTransitionKind>> = {
   CALL: 'frame-enter', ARGUMENT_BIND: 'parameter', RECEIVER_BIND: 'reference', RETURN: 'return',
   ASSIGN: 'assignment', FIELD_WRITE: 'field-write', FIELD_READ: 'field-read', ARRAY_WRITE: 'array-write',
-  ARRAY_READ: 'array-read', REFERENCE_BIND: 'reference', INPUT_CONSUME: 'input', OUTPUT: 'output',
+  ARRAY_READ: 'array-read', STATIC_READ: 'field-read', STATIC_WRITE: 'field-write', REFERENCE_BIND: 'reference', INPUT_CONSUME: 'input', OUTPUT: 'output',
   THROW: 'exception', UNWIND: 'exception', CATCH: 'exception', CONSTRUCT: 'allocation',
 }
 
@@ -107,7 +110,7 @@ function graphTransition(event: TraceEvent, edge: GraphEdge, state: RuntimeState
   if (edge.kind === 'RETURN' && (graph.invocations[edge.from] || graph.calls[edge.from])) from = undefined
   if (edge.kind === 'OUTPUT' && !graph.values[edge.from] && !graph.storage[edge.from]) from = undefined
   if (from?.id === to?.id && from?.kind === to?.kind) from = undefined
-  if (edge.kind === 'FIELD_READ' || edge.kind === 'ARRAY_READ') {
+  if (edge.kind === 'FIELD_READ' || edge.kind === 'STATIC_READ' || edge.kind === 'ARRAY_READ') {
     // A read into an evaluation operand emphasizes its actual source subdivision.
     if (!to) { to = from; from = undefined }
   }
@@ -229,4 +232,57 @@ export function transitionsForTrace(trace: TraceDocument): readonly SemanticTran
     index.last = event
   }
   return index.items
+}
+
+
+function indexedEvent(trace: TraceDocument) {
+  let tail: Map<string, TraceEvent> | undefined
+  return { get(id: string): TraceEvent | undefined {
+    // Normalized event identities carry their semantic ordinal. Verify exact
+    // identity before use; this lookup does not infer execution from a label.
+    const ordinal = Number(id.slice(id.lastIndexOf(':') + 1))
+    const event = Number.isSafeInteger(ordinal) && ordinal >= 0 ? trace.events[ordinal] : undefined
+    if (event?.eventId === id) return event
+    // Imported/custom schemas retain arbitrary IDs. A bounded tail fallback
+    // keeps presentation queries bounded even across immutable live prefixes.
+    if (!tail) tail = new Map(trace.events.slice(-1024).map(item => [item.eventId, item]))
+    return tail.get(id)
+  } }
+}
+
+/** Bounded presentation query over the accepted graph. Unlike the export index,
+ * opening or seeking a world never materializes every adjacent history state.
+ * Selection uses real graph adjacency, including old transfers, with bounded
+ * fan-in. Runtime history itself remains complete and untouched. */
+export function recentFlowTransitions(trace: TraceDocument, state: RuntimeState, selectedIds: ReadonlySet<string>, limit = 24): SemanticTransition[] {
+  limit = Math.max(0, Math.min(24, Math.floor(limit)))
+  if (!limit) return []
+  const graph = state.executionGraph
+  const candidates = new Set<number>()
+  if (graph) {
+    if (selectedIds.size) for (const id of selectedIds) {
+      for (const list of [graph.incoming[id], graph.outgoing[id]]) {
+        if (list) for (let i = Math.max(0, list.length - 128); i < list.length; i++) candidates.add(list[i])
+      }
+    } else for (let i = Math.max(0, graph.edges.length - 256); i < graph.edges.length; i++) candidates.add(i)
+    const events = indexedEvent(trace)
+    const result: SemanticTransition[] = []
+    for (const i of [...candidates].sort((a, b) => b - a)) {
+      const edge = graph.edges[i], event = edge && events.get(edge.eventId)
+      const transition = event && graphTransition(event, edge, state, graph)
+      if (transition?.from && transition.to && transition.evidence !== 'local' && transition.kind !== 'frame-enter' && transition.kind !== 'frame-exit') result.push(transition)
+      if (result.length >= limit) break
+    }
+    return result.reverse()
+  }
+  // Deterministic demos have no graph. Only the visible historical window is
+  // reconstructed; an arbitrary seek snaps directly to its accepted state.
+  const history = historyForTrace(trace), end = Math.min(state.cursor, trace.events.length)
+  const result: SemanticTransition[] = []
+  for (let i = end - 1; i >= Math.max(0, end - 128); i--) {
+    const transition = deriveSemanticTransition(history.materialize(i), trace.events[i], history.materialize(i + 1))
+    if (transition?.from && transition.to && transition.evidence !== 'local' && transition.kind !== 'frame-enter' && transition.kind !== 'frame-exit' && (!selectedIds.size || selectedIds.has(transition.from.id) || selectedIds.has(transition.to.id))) result.push(transition)
+    if (result.length >= limit) break
+  }
+  return result.reverse()
 }

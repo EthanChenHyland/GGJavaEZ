@@ -8,6 +8,9 @@ import { layoutForTrace } from '../../src/app/layoutForTrace.ts'
  * Phase 0 (task 0.1) golden: moving curated layout code into src/examples must not
  * change any layout. Hashes were recorded from the pre-move `createLayout` for every
  * curated trace, as curated and as JVM-captured, over a set of prefixes.
+ * Phase 5 deliberately replaces only generic JVM geography with Spatial 2.0.
+ * Curated hashes remain the Phase 0 extraction baseline; these are presentation
+ * snapshots, separate from execution/graph/history semantic goldens.
  * Regenerate only with an approved behaviour change: VJ_WRITE_GOLDEN=1.
  */
 const goldenPath = new URL('./layoutGolden.json', import.meta.url)
@@ -30,8 +33,8 @@ function variants() {
 
 const hash = (value) => createHash('sha256').update(JSON.stringify(value)).digest('hex')
 
-describe('layout golden (behaviour-preserving curated extraction)', () => {
-  it('matches pre-extraction createLayout output for every curated/JVM prefix', () => {
+describe('layout golden (curated extraction and Spatial 2.0 JVM geography)', () => {
+  it('matches preserved curated and approved generic JVM layouts at every prefix', () => {
     const actual = Object.fromEntries(variants().map(([key, trace]) => [key, hash(layoutForTrace(trace))]))
     if (process.env.VJ_WRITE_GOLDEN === '1' || !existsSync(goldenPath)) {
       if (process.env.VJ_WRITE_GOLDEN !== '1') throw new Error('Missing layoutGolden.json; record it with VJ_WRITE_GOLDEN=1 from the pre-extraction code')

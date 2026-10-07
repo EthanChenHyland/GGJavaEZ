@@ -48,7 +48,7 @@ describe('semantic transition pipeline', () => {
     expect(recursion.filter((item) => item.kind === 'return' && item.to?.kind === 'slot')).toHaveLength(5)
   })
 
-  it('routes semantic movement through the rear channel for arbitrary endpoint positions', () => {
+  it('attaches semantic movement beside front-face ports for arbitrary endpoint positions', () => {
     for (const [from, to] of [
       [[-4, 2, 1], [3, -1, 0]],
       [[2, -5, -2], [-6, 3, 2]],
@@ -56,8 +56,10 @@ describe('semantic transition pipeline', () => {
       const points = semanticFlowPoints([...from], [...to], -4)
       expect(points[0]).toEqual(from)
       expect(points.at(-1)).toEqual(to)
-      expect(points[1][2]).toBeLessThan(Math.min(from[2], to[2]))
-      expect(points[2][2]).toBe(points[1][2])
+      expect(points[1][2]).toBeGreaterThan(from[2])
+      expect(points[2][2]).toBeGreaterThan(Math.max(from[2], to[2]))
+      expect(points[3][2]).toBe(points[2][2])
+      expect(points.at(-2)![0]).toBeGreaterThan(to[0])
     }
   })
 

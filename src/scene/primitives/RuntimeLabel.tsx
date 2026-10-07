@@ -1,11 +1,14 @@
 import { Text } from '@react-three/drei'
-import { useContext, useRef } from 'react'
+import { createContext, useContext, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import type { Mesh } from 'three'
 import { colors, runtimeFont } from '../../theme/tokens'
 import { identityLabelScale, preloadRuntimeText, RuntimeLabelPolicy, runtimeCharacters } from './runtimeText'
 
 preloadRuntimeText()
+
+/** Macro geometry keeps readable external names; native face values return on zoom/Focus. */
+export const RuntimeFaceLabels = createContext(true)
 
 export interface RuntimeLabelProps {
   text: string
@@ -15,6 +18,8 @@ export interface RuntimeLabelProps {
   maxWidth?: number
   align?: 'left' | 'center' | 'right'
   role?: 'identity' | 'metadata' | 'detail'
+  /** External overview annotations may remain readable over neighboring bodies. */
+  depthTest?: boolean
 }
 
 /** Text lives on an entity's front face and remains in the 3D scene. */
@@ -26,8 +31,10 @@ export function RuntimeLabel({
   maxWidth,
   align = 'left',
   role = 'detail',
+  depthTest = true,
 }: RuntimeLabelProps) {
   const policy = useContext(RuntimeLabelPolicy)
+  const faceLabelsVisible = useContext(RuntimeFaceLabels)
   const meshRef = useRef<Mesh & { textRenderInfo?: { visibleBounds: number[] } }>(null)
   useFrame(() => {
     const mesh = meshRef.current
@@ -42,6 +49,7 @@ export function RuntimeLabel({
       mesh.scale.setScalar(identityLabelScale(size, pixelsPerUnit, width, maxWidth ?? width, priority))
     } else mesh.scale.setScalar(fit)
   })
+  if (!faceLabelsVisible) return null
   return (
     <group position={[...position]} renderOrder={3}>
       <Text
@@ -58,7 +66,7 @@ export function RuntimeLabel({
         renderOrder={3}
       >
         {text}
-        <meshBasicMaterial color={color} toneMapped={false} depthTest depthWrite={false} />
+        <meshBasicMaterial color={color} toneMapped={false} depthTest={depthTest} depthWrite={false} />
       </Text>
     </group>
   )

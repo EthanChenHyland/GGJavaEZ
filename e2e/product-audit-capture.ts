@@ -1,3 +1,4 @@
+import { measureSpatialWorld } from './spatial-performance'
 import { expect, type Page, type APIRequestContext } from '@playwright/test'
 import { mkdir, writeFile } from 'node:fs/promises'
 const outputRoot = process.env.VJ_QA_OUTPUT_ROOT ? `${process.env.VJ_QA_OUTPUT_ROOT}/product-audit-v11_5` : 'docs/checkpoints/product-audit-v11_5'
@@ -33,6 +34,7 @@ export async function inspectRetainedWorld(page: Page, request: APIRequestContex
     timings.push({ cursor, uiCommitAndTwoFramesMs:Date.now() - start })
   }
   await writeFile(`${outputRoot}/large-world-measurements.json`, JSON.stringify({ sessionId:current.id, loadMs, normalizedEvents:max, rawEvents:current.rawEvents.length, recording:current.recording, timings, metric:'UI commit plus two browser animation frames; not GPU presentation or percentile statistics' }, null, 2))
+  if (process.env.VJ_QA_OUTPUT_ROOT?.includes('v12-p5')) await measureSpatialWorld(page,outputRoot,loadMs,max,current.id)
   const selected = await picker.locator('option').filter({ hasText: /^Node #/ }).first().getAttribute('value')
   expect(selected).toBeTruthy()
   await picker.selectOption(selected!)

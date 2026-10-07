@@ -2,8 +2,9 @@ import { useEffect, useRef } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import { Line, Text } from '@react-three/drei'
 import type { Group } from 'three'
-import type { Vec3 } from '../../contracts/world'
+import type { Vec3, WorldAnchor } from '../../contracts/world'
 import type { SemanticTransition } from '../../motion/semanticTransition'
+import { surfaceConnectorPoints } from '../../world/connectorRouting'
 import { semanticFlowPoints } from '../../motion/flowPresentation'
 import { colors, motionMs, runtimeFont } from '../../theme/tokens'
 import { useReducedMotion } from './presentationMotion'
@@ -23,14 +24,14 @@ function colorFor(transition: SemanticTransition): string {
   return colors.execution
 }
 
-export function SemanticFlowMotion({ transition, from, to, behindZ, quality }: { transition: SemanticTransition; from: Vec3 | null; to: Vec3; behindZ: number; quality: 'high' | 'balanced' | 'low' }) {
+export function SemanticFlowMotion({ transition, from, to, behindZ, quality, sourceAnchor, targetAnchor }: { sourceAnchor?: WorldAnchor; targetAnchor?: WorldAnchor; transition: SemanticTransition; from: Vec3 | null; to: Vec3; behindZ: number; quality: 'high' | 'balanced' | 'low' }) {
   const reduced = useReducedMotion()
   const token = useRef<Group>(null)
   const invalidate = useThree((state) => state.invalidate)
   const elapsed = useRef(0)
   const duration = reduced || quality === 'low' ? motionMs.quick : quality === 'balanced' ? motionMs.standard : motionMs.deliberate
   const origin: Vec3 = from ?? [to[0] + 0.55, to[1] + 0.2, to[2] + 0.2]
-  const points = from ? semanticFlowPoints(origin, to, behindZ) : [origin, to]
+  const points = from ? sourceAnchor && targetAnchor ? surfaceConnectorPoints(from, to, sourceAnchor, targetAnchor) : semanticFlowPoints(origin, to, behindZ) : [origin, to]
   const lengths = points.slice(1).map((point, index) => Math.hypot(point[0] - points[index][0], point[1] - points[index][1], point[2] - points[index][2]))
   const totalLength = lengths.reduce((sum, length) => sum + length, 0)
   useEffect(() => { elapsed.current = 0; invalidate() }, [transition.id, invalidate])
@@ -60,8 +61,8 @@ export function SemanticFlowMotion({ transition, from, to, behindZ, quality }: {
   </group>
 }
 
-export function HistoricalFlow({ transition, from, to, behindZ, selected = false, onSelect }: { transition: SemanticTransition; from: Vec3; to: Vec3; behindZ?: number; selected?: boolean; onSelect?: (id: string) => void }) {
-  const points = semanticFlowPoints(from, to, behindZ ?? Math.min(from[2], to[2]) - 0.5)
+export function HistoricalFlow({ transition, from, to, behindZ, selected = false, onSelect, sourceAnchor, targetAnchor }: { sourceAnchor?: WorldAnchor; targetAnchor?: WorldAnchor; transition: SemanticTransition; from: Vec3; to: Vec3; behindZ?: number; selected?: boolean; onSelect?: (id: string) => void }) {
+  const points = sourceAnchor && targetAnchor ? surfaceConnectorPoints(from, to, sourceAnchor, targetAnchor) : semanticFlowPoints(from, to, behindZ ?? Math.min(from[2], to[2]) - 0.5)
   return <group>
     <Line points={points} color={colorFor(transition)} lineWidth={selected ? 2.6 : 1.2} transparent opacity={selected ? 0.9 : transition.evidence === 'correlated' ? 0.16 : 0.25} dashed={transition.evidence === 'correlated'} dashSize={0.14} gapSize={0.12}/>
     {onSelect && <Line points={points} color={colorFor(transition)} lineWidth={12} transparent opacity={0.001}
@@ -69,10 +70,12 @@ export function HistoricalFlow({ transition, from, to, behindZ, selected = false
   </group>
 }
 
-export function IoEndpoint({ id, position }: { id: 'stdin' | 'stdout' | 'stderr'; position: Vec3 }) {
+export function IoEndpoint({ id, position, preview, observations }: { id: 'stdin' | 'stdout' | 'stderr'; position: Vec3; preview?: string; observations?: number }) {
   const color = id === 'stdin' ? colors.execution : id === 'stderr' ? colors.exception : colors.success
-  return <group position={position}>
-    <mesh><boxGeometry args={[1.25, 0.28, 0.35]} /><meshStandardMaterial color={colors.panelRaised} roughness={0.5} metalness={0.15}/></mesh>
-    <Text font={runtimeFont} position={[0, 0.22, 0.2]} fontSize={0.2} color={color} anchorX="center">{id.toUpperCase()}</Text>
+  return <group position={position} name={`observed-${id}`}>
+    <mesh><boxGeometry args={[2.8, 0.8, 0.55]} /><meshStandardMaterial color={colors.panelRaised} roughness={0.5} metalness={0.15}/></mesh>
+    <mesh position={[0, 0.32, 0.29]}><boxGeometry args={[2.55, 0.025, 0.015]}/><meshBasicMaterial color={color}/></mesh>
+    <Text font={runtimeFont} position={[-1.15, 0.13, 0.3]} fontSize={0.19} color={color} anchorX="left">{id.toUpperCase()}{observations === undefined ? '' : ` · ${observations} recorded`}</Text>
+    {preview && <Text font={runtimeFont} position={[-1.15, -0.15, 0.3]} fontSize={0.19} maxWidth={2.3} whiteSpace="nowrap" color={colors.text} anchorX="left">{preview}</Text>}
   </group>
 }

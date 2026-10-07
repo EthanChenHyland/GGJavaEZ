@@ -6,7 +6,7 @@ import { useNavigationStore } from '../navigation/navigation'
 import { displayJavaType } from '../runtime/displayType'
 import { colors, line, motionMs, typography, worldMaterial } from '../theme/tokens'
 import { buildClassicScene, emphasizedSlot, relatedReference, selectedBounds, type DiagramEntity, type DiagramRect } from './classicScene'
-import { classicHomeView, constrainClassicView, focusClassicView, zoomClassicView } from './viewport'
+import { classicDiagramBounds, classicHomeForDiagram, constrainClassicView, focusClassicView, zoomClassicView } from './viewport'
 import { useReducedMotion } from '../scene/primitives/presentationMotion'
 import type { SemanticTransition } from '../motion/semanticTransition'
 import { ClassicSemanticMotion } from './ClassicSemanticMotion'
@@ -34,15 +34,31 @@ const theme = {
   fontFamily: typography.ui,
 } as CSSProperties
 
+/** Keep a readable glyph size; the full observed text remains in title/aria. */
+function boundedText(value: string, width: number, preferred: number, minimum = preferred) {
+  const glyphs = Array.from(value)
+  const size = Math.max(minimum, Math.min(preferred, width / Math.max(1, glyphs.length * 0.62)))
+  const capacity = Math.max(1, Math.floor(width / (size * 0.62) + 1e-6))
+  return { text: glyphs.length <= capacity ? value : `${glyphs.slice(0, Math.max(0, capacity - 1)).join('')}…`, size }
+}
+
 /** An SVG representation of the shared scene, with a presentation-only viewport. */
 export function ClassicRuntime({ visible = true, playing = false, scene, event, transition, guided, selection, onSelect, onFocusSelected }: ClassicRuntimeProps) {
-  const diagram = useMemo(() => buildClassicScene(visible ? scene : { ...scene, frames: [], objects: [], references: [], returnFlow: undefined, arrayActivity: null, arrayMutations: [] }, visible ? event : null), [visible, scene, event])
+  const diagram = useMemo(() => buildClassicScene(visible ? scene : { ...scene, frames: [], objects: [], classes: [], references: [], returnFlow: undefined, arrayActivity: null, arrayMutations: [] }, visible ? event : null, selection), [visible, scene, event, selection])
   const diagramRef = useRef(diagram)
   diagramRef.current = diagram
+  const diagramBounds = useMemo(() => classicDiagramBounds(diagram.entities), [diagram])
+  const homeView = useMemo(() => classicHomeForDiagram(diagram.entities, diagramBounds), [diagram, diagramBounds])
+  const boundsRef = useRef(diagramBounds)
+  boundsRef.current = diagramBounds
+  const homeRef = useRef(homeView)
+  homeRef.current = homeView
   const visibleRef = useRef(visible)
   visibleRef.current = visible
-  const [view, setView] = useState(classicHomeView)
+  const [view, setView] = useState(() => homeView)
   const viewRef = useRef(view)
+  const initialized = useRef(visible && diagram.entities.length > 0)
+  const viewportUsed = useRef(false)
   const previousView = useRef<DiagramRect | null>(null)
   const svgRef = useRef<SVGSVGElement>(null)
   const dragging = useRef<{ x: number; y: number; scale: number; view: DiagramRect; moved: boolean } | null>(null)
@@ -54,9 +70,18 @@ export function ClassicRuntime({ visible = true, playing = false, scene, event, 
   const traceReferenceId = useNavigationStore((state) => state.traceReferenceId)
 
   function changeView(next: DiagramRect) {
+    viewportUsed.current = true
     viewRef.current = next
     setView(next)
   }
+
+  useEffect(() => {
+    // A hidden/empty mount has no world to frame. Initialize once when actual
+    // entities become visible; subsequent seeks never override user navigation.
+    if (!visible || initialized.current || !diagram.entities.length) return
+    initialized.current = true
+    if (!viewportUsed.current) changeView(homeView)
+  }, [visible, diagram, homeView])
 
   useEffect(() => {
     // Existing intents belong to the representation that consumed them. Mounting is never a navigation action.
@@ -70,18 +95,18 @@ export function ClassicRuntime({ visible = true, playing = false, scene, event, 
       if (!intent) return
       if (intent.kind === 'home' || intent.kind === 'resetView') {
         previousView.current = null
-        changeView(classicHomeView)
+        changeView(homeRef.current)
       } else if (intent.kind === 'zoom') {
-        changeView(zoomClassicView(viewRef.current, intent.direction))
+        changeView(zoomClassicView(viewRef.current, intent.direction, boundsRef.current))
       } else if (intent.kind === 'focus' || intent.kind === 'tracePath') {
         const focusSelection: NonNullable<Selection> = intent.kind === 'focus' ? intent.selection : { kind: 'reference', id: intent.referenceId }
         const bounds = selectedBounds(diagramRef.current, focusSelection)
         if (bounds) {
           previousView.current = viewRef.current
-          changeView(focusClassicView(bounds))
+          changeView(focusClassicView(bounds, boundsRef.current))
         }
       } else if (intent.kind === 'returnToPrevious') {
-        changeView(previousView.current ?? classicHomeView)
+        changeView(previousView.current ?? homeRef.current)
         previousView.current = null
       }
     }
@@ -95,7 +120,7 @@ export function ClassicRuntime({ visible = true, playing = false, scene, event, 
       if (!visibleRef.current || wheel.deltaY === 0) return
       wheel.preventDefault()
       useNavigationStore.getState().freeExplore()
-      changeView(zoomClassicView(viewRef.current, wheel.deltaY < 0 ? 'in' : 'out'))
+      changeView(zoomClassicView(viewRef.current, wheel.deltaY < 0 ? 'in' : 'out', boundsRef.current))
     }
     svg.addEventListener('wheel', zoom, { passive: false })
     return () => svg.removeEventListener('wheel', zoom)
@@ -123,8 +148,8 @@ export function ClassicRuntime({ visible = true, playing = false, scene, event, 
     const selected = selection?.kind === entity.kind && selection.id === entity.id
     const linked = diagram.references.some((edge) => relatedReference(edge, selection, diagram) && (edge.sourceEntityId === entity.id || edge.targetObjectId === entity.id))
     const accent = entity.exceptionState || entity.invocationStatus === 'failed' || entity.invocationStatus === 'unwound' ? colors.exception
-      : entity.invocationStatus === 'completed' ? colors.textMuted : entity.kind === 'frame' ? colors.stack : colors.heap
-    const body = entity.kind === 'frame' ? entity.invocationStatus && entity.invocationStatus !== 'active' ? worldMaterial.historyFace : worldMaterial.stackFace : worldMaterial.heapFace
+      : entity.invocationStatus === 'completed' ? colors.textMuted : entity.kind === 'class' ? colors.textSecondary : entity.kind === 'frame' ? colors.stack : colors.heap
+    const body = entity.kind === 'class' ? worldMaterial.historyFace : entity.kind === 'frame' ? entity.invocationStatus && entity.invocationStatus !== 'active' ? worldMaterial.historyFace : worldMaterial.stackFace : worldMaterial.heapFace
     const { x, y, width, height } = entity.rect
     const current = (guided || diagram.deepStack || diagram.scoped) && entity.active
     const compact = diagram.deepStack && !diagram.scoped && entity.kind === 'frame'
@@ -133,13 +158,15 @@ export function ClassicRuntime({ visible = true, playing = false, scene, event, 
     const rowTextSize = compact ? 15 : scopedFrame ? 17 : 20
     const arrayComplete = !!entity.array?.ascending && event?.type === 'PROGRAM_END'
     const title = entity.array?.name ? `${entity.array.name} · ${entity.label}` : entity.label
+    const fittedTitle = boundedText(title, width - 40, compact || scopedFrame ? 18 : 24, 18)
     return <g key={entity.id} data-runtime-id={entity.id} data-runtime-kind={entity.kind} data-invocation-status={entity.invocationStatus} data-exception-state={entity.exceptionState}>
       <rect x={x} y={y} width={width} height={height} rx={4} fill={body} stroke={selected ? colors.execution : accent} strokeWidth={selected ? 3 : 1.5} />
-      <g className="classic-target classic-heading" {...interactions({ kind: entity.kind, id: entity.id })} aria-label={`${entity.kind === 'frame' ? 'Stack frame' : 'Heap object'} ${title}`}>
+      <g className="classic-target classic-heading" {...interactions({ kind: entity.kind, id: entity.id })} aria-label={`${entity.kind === 'frame' ? 'Stack frame' : entity.kind === 'class' ? 'Class state' : 'Heap object'} ${title}${entity.kind === 'class' ? `, initialization ${entity.initialization}` : ''}`}>
         <rect x={x} y={y} width={width} height={headingHeight} rx={4} fill={body} />
+        {entity.kind === 'class' && <title>{`${title} · Class state · initialization ${entity.initialization}`}</title>}
         <rect x={x} y={y} width={4} height={headingHeight} fill={current ? colors.execution : accent} />
-        <text x={x + 20} y={y + (compact ? 18 : scopedFrame ? Math.min(22, headingHeight - 20) : 32)} fontSize={compact || scopedFrame ? 18 : 24} fontWeight={600} fill={colors.text}>{title}</text>
-        {!compact && headingHeight >= 48 && <text x={x + 20} y={y + headingHeight - (scopedFrame ? 10 : 12)} fontSize={12} letterSpacing={1} fill={accent}>{entity.array ? `INDEX / VALUE · LENGTH ${entity.array.length}` : entity.kind === 'frame' ? 'LOCALS / PARAMETERS' : 'FIELDS'}</text>}
+        <text x={x + 20} y={y + (compact ? 18 : scopedFrame ? Math.min(22, headingHeight - 20) : 32)} fontSize={entity.kind === 'class' || entity.array?.grid ? fittedTitle.size : compact || scopedFrame ? 18 : 24} fontWeight={600} fill={colors.text}>{entity.kind === 'class' || entity.array?.grid ? fittedTitle.text : title}</text>
+        {!compact && headingHeight >= 48 && <text x={x + 20} y={y + headingHeight - (scopedFrame ? 10 : 12)} fontSize={12} letterSpacing={1} fill={accent}>{entity.array ? `INDEX / VALUE · LENGTH ${entity.array.length}` : entity.kind === 'frame' ? 'LOCALS / PARAMETERS' : entity.kind === 'class' ? 'CLASS STATE · STATIC FIELDS' : 'FIELDS'}</text>}
         {(current || entity.exceptionState || entity.invocationStatus && entity.invocationStatus !== 'active') && <text x={x + width - 16} y={y + (compact ? 18 : scopedFrame ? Math.min(22, headingHeight - 20) : 52)} textAnchor="end" fontSize={12} fill={entity.exceptionState ? colors.exception : current ? colors.execution : accent}>{entity.exceptionState?.toUpperCase() ?? (current ? 'EXECUTING' : entity.invocationStatus?.toUpperCase())}</text>}
       </g>
       <line x1={x} y1={y + headingHeight} x2={x + width} y2={y + headingHeight} stroke={accent} strokeOpacity={0.35} />
@@ -157,15 +184,19 @@ export function ClassicRuntime({ visible = true, playing = false, scene, event, 
         const nullValue = row.slot.value.kind === 'null' || row.slot.value.kind === 'uninitialized'
         const rowY = row.rect.y
         const rowX = row.rect.x, rowWidth = row.rect.width
-        const typeX = scopedFrame ? rowX + rowWidth * 0.49 : x + (compact ? 246 : entity.kind === 'frame' ? 116 : 104)
-        const valueX = scopedFrame ? rowX + rowWidth * 0.73 : x + (compact ? 300 : entity.kind === 'frame' ? 220 : 190)
+        const typeX = scopedFrame ? rowX + rowWidth * 0.49 : x + (compact ? 246 : entity.kind === 'frame' ? 116 : entity.kind === 'class' ? 120 : 104)
+        const valueX = scopedFrame ? rowX + rowWidth * 0.73 : x + (compact ? 300 : entity.kind === 'frame' ? 220 : entity.kind === 'class' ? 208 : 190)
+        const staticName = boundedText(row.slot.name, typeX - rowX - 28, 18)
+        const staticType = boundedText(displayJavaType(row.slot.javaType), valueX - typeX - 8, 14)
+        const staticValue = boundedText(row.value, rowX + rowWidth - valueX - 16, 18)
         return <g key={row.slot.id} className="classic-target classic-slot" data-slot-id={row.slot.id}
           {...interactions({ kind: 'slot', id: row.slot.id })} aria-label={`${entity.label} ${row.slot.name}${row.slot.role === 'operand' ? ' expression operand' : ''}, ${row.slot.javaType}, ${row.value}`}>
           <rect x={rowX + 1} y={rowY} width={rowWidth - 2} height={row.rect.height} fill={highlighted ? colors.mutation : slotSelected || reading ? colors.execution : linked ? accent : body} fillOpacity={highlighted || slotSelected || reading ? 0.13 : linked ? 0.05 : 1} />
+          {entity.kind === 'class' && <title>{`${row.slot.name}, ${row.slot.javaType}, ${row.value}`}</title>}
           {highlighted && <rect x={rowX + 1} y={rowY + 5} width={3} height={row.rect.height - 10} fill={colors.mutation} />}
-          <text x={rowX + 20} y={rowY + row.rect.height / 2 + 6} fontSize={rowTextSize} fill={row.slot.role === 'operand' ? colors.textSecondary : colors.text}>{row.slot.role === 'operand' ? 'call result (operand)' : row.slot.name}</text>
-          <text x={typeX} y={rowY + row.rect.height / 2 + 6} fontSize={compact ? 12 : 16} fill={colors.textSecondary}>{displayJavaType(row.slot.javaType)}</text>
-          <text x={valueX} y={rowY + row.rect.height / 2 + 6} fontFamily={typography.code} fontSize={rowTextSize} fill={highlighted ? colors.mutation : row.slot.role === 'return' && !nullValue ? colors.success : nullValue ? colors.null : row.slot.value.kind === 'reference' ? accent : colors.text}>{row.value}</text>
+          <text x={rowX + 20} y={rowY + row.rect.height / 2 + 6} fontSize={entity.kind === 'class' ? staticName.size : rowTextSize} fill={row.slot.role === 'operand' ? colors.textSecondary : colors.text}>{entity.kind === 'class' ? staticName.text : row.slot.role === 'operand' ? 'call result (operand)' : row.slot.name}</text>
+          <text x={typeX} y={rowY + row.rect.height / 2 + 6} fontSize={entity.kind === 'class' ? staticType.size : compact ? 12 : 16} fill={colors.textSecondary}>{entity.kind === 'class' ? staticType.text : displayJavaType(row.slot.javaType)}</text>
+          <text x={valueX} y={rowY + row.rect.height / 2 + 6} fontFamily={typography.code} fontSize={entity.kind === 'class' ? staticValue.size : rowTextSize} fill={highlighted ? colors.mutation : row.slot.role === 'return' && !nullValue ? colors.success : nullValue ? colors.null : row.slot.value.kind === 'reference' ? accent : colors.text}>{entity.kind === 'class' ? staticValue.text : row.value}</text>
           <line x1={rowX + 16} y1={rowY + row.rect.height} x2={rowX + rowWidth - 16} y2={rowY + row.rect.height} stroke={colors.borderStrong} strokeOpacity={0.5} />
         </g>
       })}
@@ -175,24 +206,27 @@ export function ClassicRuntime({ visible = true, playing = false, scene, event, 
         const reading = guided && diagram.arrayActivity?.slotIds.includes(cell.slot.id)
         const emphasis = write ? colors.mutation : reading ? colors.execution : arrayComplete ? colors.success : accent
         const rect = cell.rect
+        const cellIndex = boundedText(`[${cell.index}]`, rect.width - 12, 14, 12)
+        const cellValue = boundedText(cell.value, rect.width - 12, cell.slot.value.kind === 'reference' ? 18 : 24, 16)
         return <g key={cell.slot.id} className="classic-target classic-slot classic-array-cell" data-slot-id={cell.slot.id} data-array-index={cell.index}
           data-array-state={write ? 'write' : reading ? 'read-or-compare' : arrayComplete ? 'ascending' : 'idle'}
           {...interactions({ kind: 'slot', id: cell.slot.id })} aria-label={`${title} index ${cell.index}, ${cell.slot.javaType}, value ${cell.value}${write ? `, changed from ${write.before} to ${write.after}` : ''}`}>
           <rect x={rect.x + 1} y={rect.y + 1} width={rect.width - 2} height={rect.height - 2} fill={cellSelected ? colors.execution : worldMaterial.heapSlot} fillOpacity={cellSelected ? 0.14 : 1}
             stroke={cellSelected ? colors.execution : emphasis} strokeWidth={cellSelected ? 3.5 : write || reading ? 2.5 : 1} />
+          <title>{`Index ${cell.index}, ${cell.slot.javaType}, ${cell.value}`}</title>
           {cellSelected && <circle data-array-selection={cell.slot.id} cx={rect.x + rect.width - 9} cy={rect.y + 11} r={3.5} fill={colors.execution} />}
-          <text x={rect.x + rect.width / 2} y={rect.y + 20} textAnchor="middle" fontSize={14} fontFamily={typography.code} fill={colors.textSecondary}>[{cell.index}]</text>
-          <text x={rect.x + rect.width / 2} y={rect.y + 51} textAnchor="middle" fontSize={24} fontFamily={typography.code} fill={write || reading || arrayComplete ? emphasis : colors.text}>{cell.value}</text>
+          <text x={rect.x + rect.width / 2} y={rect.y + 20} textAnchor="middle" fontSize={cellIndex.size} fontFamily={typography.code} fill={colors.textSecondary}>{cellIndex.text}</text>
+          <text x={rect.x + rect.width / 2} y={rect.y + 51} textAnchor="middle" fontSize={cellValue.size} fontFamily={typography.code} fill={write || reading || arrayComplete ? emphasis : colors.text}>{cellValue.text}</text>
         </g>
       })}
       {entity.array && <text x={x + 16} y={y + height - 7} fontSize={12} fill={arrayComplete ? colors.success : colors.textMuted}>
-        {arrayComplete ? 'Ascending order verified' : 'Equal cells · fixed indices'}
+        {arrayComplete ? 'Ascending order verified' : entity.array.grid ? `${entity.array.cells.length} of ${entity.array.observedCount} observed · ${entity.array.omittedCount ? `+${entity.array.omittedCount} · ` : ''}Inspector` : 'Equal cells · fixed indices'}
       </text>}
-      {entity.slots.length === 0 && !entity.array && !entity.scopes?.length && <text x={x + 20} y={y + (compact ? 50 : 100)} fontSize={18} fill={colors.textSecondary}>{entity.kind === 'frame' ? 'No locals yet' : 'No fields'}</text>}
+      {entity.slots.length === 0 && !entity.array && !entity.scopes?.length && <text x={x + 20} y={y + (compact ? 50 : 100)} fontSize={18} fill={colors.textSecondary}>{entity.kind === 'frame' ? 'No locals yet' : entity.kind === 'class' ? 'No observed static fields' : 'No fields'}</text>}
     </g>
   }
 
-  return <div className={`classic-view${selection ? ' has-selection' : ''}`} style={theme} aria-hidden={!visible}><svg ref={svgRef} className="classic-runtime" role="group" aria-label="Classic runtime stack and heap diagram"
+  return <div className={`classic-view${selection ? ' has-selection' : ''}`} style={theme} aria-hidden={!visible}><svg ref={svgRef} className="classic-runtime" role="group" aria-label="Classic runtime stack, heap and class storage diagram"
     data-guided={guided} data-stack-depth={scene.stackDepth ?? 1} data-layout-kind={scene.layoutKind} viewBox={`${view.x} ${view.y} ${view.width} ${view.height}`} preserveAspectRatio="xMidYMid meet"
     onPointerDown={(pointer) => {
       if (!visible) return
@@ -211,11 +245,11 @@ export function ClassicRuntime({ visible = true, playing = false, scene, event, 
         svgRef.current?.setPointerCapture(pointer.pointerId)
         useNavigationStore.getState().freeExplore()
       }
-      changeView(constrainClassicView({ ...drag.view, x: drag.view.x - dx * drag.scale, y: drag.view.y - dy * drag.scale }))
+      changeView(constrainClassicView({ ...drag.view, x: drag.view.x - dx * drag.scale, y: drag.view.y - dy * drag.scale }, boundsRef.current))
     }}
     onPointerUp={(pointer) => { dragging.current = null; if (svgRef.current?.hasPointerCapture(pointer.pointerId)) svgRef.current.releasePointerCapture(pointer.pointerId) }}
     onPointerCancel={() => { dragging.current = null }} onContextMenu={(context) => context.preventDefault()}>
-    <title>Stack frames on the left, heap objects on the right. Arrows connect named references to their objects.</title>
+    <title>Stack frames on the left, heap objects and class storage on the right. Arrows connect observed named references to their objects.</title>
     <defs>
       <marker id={`${arrowId}-mutation`} viewBox="0 0 10 10" refX={9} refY={5} markerWidth={8} markerHeight={8} orient="auto" markerUnits="userSpaceOnUse">
         <path d="M 1 1 L 9 5 L 1 9" fill="none" stroke={colors.mutation} strokeWidth={1.7} strokeLinejoin="round" />
@@ -245,7 +279,7 @@ export function ClassicRuntime({ visible = true, playing = false, scene, event, 
         <path d={edge.path} fill="none" stroke={colors.execution} strokeWidth={16} strokeOpacity={0} className="classic-reference-hit" />
         <path d={edge.path} fill="none" stroke={colors.execution} strokeWidth={related ? line.referenceMaxPx : line.referenceDefaultPx} opacity={edge.historical && !related ? 0.32 : selection && !related ? 0.5 : 0.9} markerEnd={`url(#${arrowId})`} vectorEffect="non-scaling-stroke" />
         <circle cx={edge.from[0]} cy={edge.from[1]} r={3.5} fill={colors.execution} opacity={edge.historical && !related ? 0.45 : 1} />
-        <text x={middleX} y={middleY - 13} textAnchor="middle" fontSize={16} fill={edge.historical && !related ? colors.textMuted : colors.execution} paintOrder="stroke" stroke={colors.canvas} strokeWidth={6} strokeLinejoin="round">{edge.label}</text>
+        {!source?.array?.grid && <text x={middleX} y={middleY - 13} textAnchor="middle" fontSize={16} fill={edge.historical && !related ? colors.textMuted : colors.execution} paintOrder="stroke" stroke={colors.canvas} strokeWidth={6} strokeLinejoin="round">{edge.label}</text>}
       </g>
     })}
     {visible && guided && transition && <ClassicSemanticMotion key={transition.id} transition={transition} diagram={diagram} reduced={motionReduced} />}

@@ -71,7 +71,7 @@ async function startDebug(page: Page, request: APIRequestContext) {
 async function command(page: Page, request: APIRequestContext, name: string, expected: Partial<DebugPause>, previous: ExecutionSession) {
   const returnToLive = page.getByRole('button', { name: /Return to Live/ })
   if (await returnToLive.isVisible()) await returnToLive.click()
-  await page.getByRole('button', { name, exact: true }).click()
+  await page.getByRole('button', { name: ({ Into: 'Step Into', Over: 'Step Over', Out: 'Step Out' } as Record<string, string>)[name] ?? name, exact: true }).click()
   const next = await paused(page, request, expected, previous.pause!.rawEventCount)
   expect(next.id).toBe(previous.id)
   return next
@@ -228,7 +228,8 @@ test('Pause suspends real execution at a project boundary and topbar Stop reaps 
   await page.getByRole('button', { name: 'Stop', exact: true }).click()
   await expect(page.locator('.ide-execution-status')).toContainText('STOPPED')
   expect((await current(request))!.phase).toBe('STOPPED')
-  await expect(page.getByRole('button', { name: 'Stop', exact: true })).toHaveCount(0)
+  // Spatial 2.0 retains a disabled canonical Stop control after the JVM exits.
+  await expect(page.getByRole('button', { name: 'Stop', exact: true })).toBeDisabled()
 })
 
 test('null exception pause is inspectable, causal rewind selects its assignment, and returns to failure', async ({ page, request }) => {

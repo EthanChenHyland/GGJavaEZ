@@ -11,7 +11,7 @@ const rendered = vi.hoisted(() => ({
 vi.mock('@react-three/fiber', () => ({ useFrame: vi.fn(), useThree: () => vi.fn() }))
 vi.mock('@react-three/drei', () => ({ Line: (props: typeof rendered.paths[number]) => { rendered.paths.push(props); return null } }))
 vi.mock('./RuntimeLabel', () => ({ RuntimeLabel: (props: typeof rendered.labels[number]) => { rendered.labels.push(props); return null } }))
-vi.mock('./SolidBody', () => ({ SolidBody: (props: typeof rendered.bodies[number]) => { rendered.bodies.push(props); return null } }))
+vi.mock('./SolidBody', () => ({ SolidBody: (props: typeof rendered.bodies[number]) => { rendered.bodies.push(props); return null }, SolidFace: () => null }))
 vi.mock('./presentationMotion', () => ({ useReducedMotion: () => false }))
 
 import { ArraySolid, type ArraySolidProps } from './ArraySolid'
@@ -63,11 +63,12 @@ describe('ArraySolid reserved geometry and trace facts', () => {
     expect(texts().filter((text) => /^\d+$/.test(text))).toEqual(['8', '1', '1'])
   })
 
-  it.each([true, false])('renders the supplied comparison result %s and j/j+1 relationship', (result) => {
+  it.each([true, false])('renders the supplied comparison result %s with neutral operand labels', (result) => {
     render({ node: arrayNode(true), presentation: 'theater', activity: { ...compare, result } })
     expect(texts()).toContain(`[0] 8 > [1] 1  =  ${result}`)
-    expect(texts()).toContain('j')
-    expect(texts()).toContain('j + 1')
+    expect(texts()).toContain('left')
+    expect(texts()).toContain('right')
+    expect(texts()).not.toContain('j')
     expect(rendered.bodies.slice(1, 3).every((body) => body.accent === colors.execution)).toBe(true)
     expect(Math.max(...rendered.labels.map((label) => label.position[1]))).toBeLessThan(3)
   })
@@ -85,7 +86,7 @@ describe('ArraySolid reserved geometry and trace facts', () => {
 
   it('uses the supplied local origin for the temp write and does not fabricate missing origins', () => {
     const activity: ArrayActivity = { kind: 'write', ...mutation, from: { kind: 'slot', frameId: 'main', slotId: 'temp' } }
-    render({ presentation: 'theater', activity, origins: { temp: [-5, -1, 1] } })
+    render({ presentation: 'theater', activity, origins: { temp: [-5, -1, 1] }, originLabels: { temp: 'temp' } })
     expect(rendered.paths[0].points[0]).toMatchObject({ x: -5, y: -1, z: 1 })
     expect(texts()).toContain('temp → [0]  ·  8 → 1')
     rendered.paths.length = 0
@@ -97,7 +98,7 @@ describe('ArraySolid reserved geometry and trace facts', () => {
     const slotId = 'slot:arrays-main:1:temp'
     const node = arrayNode(true)
     render({ node, presentation: 'theater', activity: { kind: 'read', eventId: 'read', objectId: 'array',
-      index: 0, value: int(8), destinationSlotId: slotId }, origins: { [slotId]: [-5, -1, 1] } })
+      index: 0, value: int(8), destinationSlotId: slotId }, origins: { [slotId]: [-5, -1, 1] }, originLabels: { [slotId]: 'temp' } })
     expect(texts()).toContain('read [0]  =  8 → temp')
     expect(rendered.paths[0].points[0]).toMatchObject({ x: node.array!.cells[0].port[0], y: -0.3 })
     expect(rendered.paths[0].points.at(-1)).toMatchObject({ x: -5, y: -1, z: 1 })
@@ -124,5 +125,41 @@ describe('ArraySolid reserved geometry and trace facts', () => {
     expect(rendered.bodies.every((body) => body.selected)).toBe(true)
     expect(texts().some((text) => text.includes('true'))).toBe(false)
     expect(rendered.paths).toHaveLength(0)
+  })
+
+  it('keeps sparse indices and multiple rows at supplied anchors as observations append', () => {
+    const node = arrayNode()
+    node.array!.length = 512
+    node.array!.cells[1].index = 29
+    node.array!.cells[1].anchor.position = [3.45, -2.4, -0.65]
+    node.array!.cells[2].index = 511
+    node.array!.cells[2].anchor.position = [6, -0.3, -2.1]
+    const before = structuredClone(node)
+    const markup = render({ node })
+    expect(texts()).toContain('[29]')
+    expect(texts()).toContain('[511]')
+    expect(texts()).toContain('length 512')
+    expect(texts()).toContain('3 shown · inspect')
+    for (const cell of node.array!.cells) expect(markup).toContain(`position="${cell.anchor.position.join(',')}"`)
+    expect(node).toEqual(before)
+  })
+
+  it('suppresses all cell labels at macro while keeping physical cells and the array identity', () => {
+    render({ detailLevel: 'macro', guided: false })
+    expect(rendered.bodies).toHaveLength(4)
+    expect(texts()).toEqual(['int[]  #23', 'length 3'])
+  })
+
+  it.each([{ selection: { kind: 'object' as const, id: 'array' } }, { inspection: true }])('keeps macro inspection cells readable %o', props => {
+    render({ detailLevel: 'macro', guided: false, ...props })
+    expect(texts()).toContain('[0]')
+    expect(texts()).toContain('[2]')
+    expect(texts().filter(text => /^\d+$/.test(text))).toEqual(['8', '1', '1'])
+  })
+
+  it('does not infer a variable name from a slot ID when no observed label is provided', () => {
+    render({ presentation: 'theater', activity: { kind: 'write', ...mutation, from: { kind: 'slot', frameId: 'main', slotId: 'temp' } } })
+    expect(texts()).toContain('local → [0]  ·  8 → 1')
+    expect(texts().some(text => text.includes('temp'))).toBe(false)
   })
 })

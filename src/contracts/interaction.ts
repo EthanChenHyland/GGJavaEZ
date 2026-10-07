@@ -4,6 +4,7 @@ import type { DetailLevel, Vec3 } from './world'
 export type Selection =
   | { kind: 'frame'; id: FrameId }
   | { kind: 'object'; id: ObjectId }
+  | { kind: 'class'; id: string }
   | { kind: 'slot'; id: SlotId }
   | { kind: 'reference'; id: ReferenceId }
   | null

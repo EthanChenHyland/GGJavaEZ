@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { CirclePlay, Code2, Files, FolderOpen, Hammer, Maximize2, Minimize2, PanelBottom, Plus, Save, ScanEye, Search, Settings2, Square, Upload, X } from 'lucide-react'
+import { Bug, CircleAlert, CirclePlay, Code2, Files, FolderOpen, Maximize2, Minimize2, PanelBottom, Plus, ScanEye, Search, Square, Terminal, Upload, X, Save, ChevronLeft, ChevronRight } from 'lucide-react'
 import { App, type RuntimeNavigation } from '../app/App'
 import type { RuntimeState, SourceLocation as RuntimeSourceLocation, TraceDocument } from '../contracts/runtime'
 import type { Selection } from '../contracts/interaction'
@@ -30,6 +30,11 @@ import { ProjectExplorer, type TreeAction } from './ProjectExplorer'
 import { currentPlatform, formatShortcut, ideShortcuts, matchesShortcut } from './shortcuts'
 import * as monacoApi from 'monaco-editor/editor/editor.api.js'
 import type { BuildResult, CompileDiagnostic, JdkStatus, ProjectEntry, ProjectFile, ProjectSummary, SourceLocation } from './contracts'
+import { WorkspaceMenu } from './WorkspaceMenu'
+import { WorkspacePicker, type WorkspacePickerItem } from './WorkspacePicker'
+import { tabMenuCommands } from './contextMenus'
+import { defaultClassFolder, javaClassContent, javaClassPath } from './classCreation'
+import type { ShellCommandId } from './commands'
 import './ide.css'
 
 type Tab = ProjectFile & { draft: string }
@@ -46,14 +51,11 @@ const draftKey = draftStorageKey
 const sessionKey = (id: string) => `ggjavaez:session:${id}`
 const breakpointKey = (id: string) => `ggjavaez:breakpoints:${id}`
 const launchKey = (id: string) => `ggjavaez:launch:${id}`
-const widthKey = 'ggjavaez:m8:editor-widths'
-const defaultEditorWidths: Record<WorkspaceMode, number> = { code: 64, visualize: 30, debug: 35 }
+const widthKey = 'ggjavaez:p5:source-width'
 const idleTrace: TraceDocument = { schemaVersion: 2, demoId: 'ide:ready', sourceFiles: [], events: [] }
-function savedEditorWidths(): Record<WorkspaceMode, number> {
-  try {
-    const saved = JSON.parse(localStorage.getItem(widthKey) ?? '{}')
-    return Object.fromEntries(Object.entries(defaultEditorWidths).map(([mode, fallback]) => [mode, typeof saved[mode] === 'number' && saved[mode] >= 24 && saved[mode] <= 80 ? saved[mode] : fallback])) as Record<WorkspaceMode, number>
-  } catch { return { ...defaultEditorWidths } }
+function savedEditorWidth(): number {
+  const width = Number(localStorage.getItem(widthKey))
+  return width >= 24 && width <= 80 ? width : 38
 }
 const hydratedTab = (id: string, file: ProjectFile): Tab => {
   const raw = localStorage.getItem(draftKey(id, file.path))
@@ -65,6 +67,11 @@ const hydratedTab = (id: string, file: ProjectFile): Tab => {
   return { ...file, draft: raw }
 }
 const flatten = (items: ProjectEntry[]): ProjectEntry[] => items.flatMap((item) => [item, ...flatten(item.children ?? [])])
+const manualRuntimeWidthKey = 'ggjavaez:spatial2:manual-runtime-width'
+function runtimeEditorWidth() {
+  const stored = Number(localStorage.getItem(manualRuntimeWidthKey))
+  return Number.isFinite(stored) && stored >= 24 && stored <= 80 ? stored : 30
+}
 const filename = (path: string) => path.split('/').at(-1) || path
 const errorText = (error: unknown) => error instanceof Error ? error.message : String(error)
 function trapDialogTab(event: React.KeyboardEvent<HTMLElement>) {
@@ -90,11 +97,16 @@ export function IdeWorkspace() {
   const [execution, setExecution] = useState<ExecutionSession | null>(null)
   const [timelineLens, setTimelineLens] = useState<TimelineLens>('LIVE')
   const [tool, setTool] = useState<Tool>('console')
+  const toolRef = useRef<Tool>('console'); toolRef.current = tool
+  const bottomPinned = useRef(false)
   const [workspaceMode, setWorkspaceMode] = useState<WorkspaceMode>('code')
   const [explorerOpen, setExplorerOpen] = useState(() => !window.matchMedia('(max-width: 900px)').matches && localStorage.getItem('ggjavaez:m8:explorer') !== 'closed')
   const [inspectorHidden, setInspectorHidden] = useState(false)
   const [bottomOpen, setBottomOpen] = useState(false)
   const [focusSourceOpen, setFocusSourceOpen] = useState(false)
+  const [sourceOpen, setSourceOpen] = useState(true)
+  const [picker, setPicker] = useState<{ mode: 'files' | 'commands'; context: CommandContext } | null>(null)
+  const [tabMenu, setTabMenu] = useState<{ context: CommandContext; x: number; y: number } | null>(null)
   const [input, setInput] = useState('')
   const [notice, setNotice] = useState('')
   const [busy, setBusy] = useState(false)
@@ -142,9 +154,7 @@ export function IdeWorkspace() {
   const userLayoutOverride = useRef(false)
   const explorerOverride = useRef(false)
   const [projectWidth, setProjectWidth] = useState(14)
-  const [initialEditorWidths] = useState(savedEditorWidths)
-  const modeEditorWidths = useRef(initialEditorWidths)
-  const [editorWidth, setEditorWidth] = useState(modeEditorWidths.current.code)
+  const [editorWidth, setEditorWidth] = useState(savedEditorWidth)
   const [bottomHeight, setBottomHeight] = useState(29)
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
   const [platform] = useState(currentPlatform)
@@ -179,10 +189,6 @@ export function IdeWorkspace() {
     ? breakpointProjection.points : breakpoints
 
   const activeTab = tabs.find((tab) => tab.path === active)
-  const dirty = tabs.some((tab) => tab.draft !== tab.content) || (() => {
-    try { return Object.keys(readProjectDrafts(localStorage, projectId)).some((path) => !tabs.some((tab) => tab.path === path)) }
-    catch { return true }
-  })()
   const entries = useMemo(() => flatten(tree), [tree])
   const diagnostics = build?.diagnostics ?? []
   const languageProblems = useMemo<CompileDiagnostic[]>(() => languageSnapshot.projectId === projectId ? languageSnapshot.diagnostics.flatMap((group) => {
@@ -222,10 +228,10 @@ export function IdeWorkspace() {
 
   const fail = (error: unknown) => setNotice(errorText(error))
   const enterMode = (mode: WorkspaceMode) => {
-    modeEditorWidths.current[workspaceMode] = editorWidth
     setWorkspaceMode(mode)
-    setEditorWidth(modeEditorWidths.current[mode])
-    if (mode === 'code') setBottomOpen(false)
+    setEditorWidth(mode === 'code' ? 64 : runtimeEditorWidth())
+    setSourceOpen(true)
+    if (mode === 'code') { bottomPinned.current = false; setBottomOpen(false) }
     if (mode === 'visualize') { setBottomOpen(false); setExplorerOpen(false) }
     if (mode === 'debug') { setBottomOpen(false); setExplorerOpen(false) }
     setRuntimeExpanded(false)
@@ -243,7 +249,7 @@ export function IdeWorkspace() {
     narrow.addEventListener('change', collapse)
     return () => narrow.removeEventListener('change', collapse)
   }, [])
-  useEffect(() => { modeEditorWidths.current[workspaceMode] = editorWidth; localStorage.setItem(widthKey, JSON.stringify(modeEditorWidths.current)) }, [workspaceMode, editorWidth])
+  useEffect(() => { localStorage.setItem(widthKey, String(editorWidth)) }, [editorWidth])
   const refreshTree = useCallback(async (id: string) => {
     const generation = workspaceGeneration.current
     const next = await bridge.tree(id)
@@ -285,6 +291,7 @@ export function IdeWorkspace() {
     const first = projectDialogRef.current?.querySelector<HTMLInputElement>('input')
       ?? projectDialogRef.current?.querySelector<HTMLButtonElement>('button')
     first?.focus()
+    if (first instanceof HTMLInputElement) first.select()
     return () => previous?.focus()
   }, [projectDialog?.kind])
 
@@ -372,8 +379,8 @@ export function IdeWorkspace() {
     ingestRef.current?.dispose(); ingestRef.current = null; latestExecutionRef.current = null
     clearTimeout(ingestPublication.current.timer); ingestPublication.current = { at: -Infinity }
     setWorkspaceMode('code')
-    setEditorWidth(modeEditorWidths.current.code)
-    setBottomOpen(false); setFocusSourceOpen(false)
+    setEditorWidth(savedEditorWidth()); setSourceOpen(true); setPicker(null); setTabMenu(null)
+    bottomPinned.current = false; setBottomOpen(false); setFocusSourceOpen(false)
     setRuntimeExpanded(false)
     executingSourceRef.current = null
     setRuntime(null); setRuntimeSelection(null); setRuntimeNavigation(null)
@@ -431,6 +438,9 @@ export function IdeWorkspace() {
       setJdkInput(health.jdk.home ?? '')
       const chosen = items.find((item) => item.id === localStorage.getItem('ggjavaez:project'))
       if (chosen) await switchProject(chosen.id, false)
+      // A launch can begin as soon as hydrated source is visible. The snapshot
+      // fetched before hydration must never replace that newer session.
+      if (!alive || activeExecutionId.current) return
       if (current && current.projectId === chosen?.id) { activeExecutionId.current = current.id; acceptExecution(current) }
       else if (current && ['BUILDING', 'STARTING', 'RUNNING', 'WAITING_FOR_INPUT', 'PAUSED'].includes(current.phase)) await bridge.executionStop(current.id)
     }).catch(fail)
@@ -589,7 +599,7 @@ export function IdeWorkspace() {
     setVisualization({ sessionId: session.id, trace: ingest.publishTrace(), capability: normalized.capability })
     if (!userLayoutOverride.current) {
       const emphasis = session.kind === 'debug' ? 'debug' : 'visualize'
-      setWorkspaceMode(emphasis); setEditorWidth(modeEditorWidths.current[emphasis])
+      setWorkspaceMode(emphasis); setEditorWidth(runtimeEditorWidth())
       if (!explorerOverride.current) setExplorerOpen(false)
     }
     if (session.phase === 'PAUSED' && session.pause?.reason === 'exception') { setTool('errors'); setBottomOpen(true); setBottomHeight(35) }
@@ -625,9 +635,12 @@ export function IdeWorkspace() {
     } else if (session.phase === 'FAILED' && session.failureKind === 'build') {
       setTool('problems'); setBottomOpen(true); setNotice(session.diagnostic ?? 'Compilation failed')
     } else if (session.support === 'RUN_ONLY' && ['RUNNING', 'WAITING_FOR_INPUT', 'COMPLETED'].includes(session.phase)) {
-      setTool('console'); setBottomOpen(true)
+      toolRef.current = 'console'; setTool('console'); setBottomOpen(true)
     }
-    if (session.phase === 'WAITING_FOR_INPUT') { setTool('console'); setBottomOpen(true) }
+    if (session.phase === 'WAITING_FOR_INPUT') { toolRef.current = 'console'; setTool('console'); setBottomOpen(true) }
+    // Only an actual finished process collapses automatically surfaced output.
+    // Recording limits alone, input waits, Debug pauses and failures do not collapse it.
+    if (session.phase === 'COMPLETED' && !bottomPinned.current && toolRef.current === 'console') setBottomOpen(false)
   }, [publishIngest])
   const acceptRaw = useCallback(async (delta: RawTraceDelta) => {
     const session = latestExecutionRef.current
@@ -671,16 +684,16 @@ export function IdeWorkspace() {
     await saveAll(context)
     checkContext(context)
     eventSourceRef.current?.close(); activeExecutionId.current = 'pending'
-    setTimelineLens('LIVE'); executingSourceRef.current = null; setBuild(null); setTool('console'); setNotice('')
+    setTimelineLens('LIVE'); executingSourceRef.current = null; setBuild(null); toolRef.current = 'console'; setTool('console'); setNotice('')
     executionRevision.current = -1; shownFailure.current = false; normalizedSignature.current = ''
-    if (!userLayoutOverride.current && !visualization) { setWorkspaceMode('code'); setEditorWidth(modeEditorWidths.current.code) }
+    userLayoutOverride.current = false; explorerOverride.current = false
+    setWorkspaceMode(kind === 'debug' ? 'debug' : 'visualize'); setEditorWidth(runtimeEditorWidth()); setSourceOpen(true); setFocusSourceOpen(false); setExplorerOpen(false); setBottomOpen(kind === 'run' || bottomPinned.current)
     const session = await bridge.executionStart(context.projectId, { ...launchRef.current, kind, mainClass: mainClassRef.current, breakpoints: breakpointsRef.current.map(({ fileId, line }) => ({ fileId, line })), withoutVisualization })
     checkContext(context)
     activeExecutionId.current = session.id
     acceptExecution(session)
   }
-  const startExecution = (kind: 'run' | 'debug', withoutVisualization = false) => action(() => performExecution(kind, withoutVisualization))
-  const runProject = () => startExecution('run')
+  const runProject = () => invoke('execution.run', {})
   const debugProject = () => invoke('debug.startOrContinue', {})
   const debugCommand = (command: DebugCommand) => invoke(command === 'continue' ? 'debug.startOrContinue' : `debug.${command}`, {})
   const toggleBreakpoint = (fileId: string, line: number) => {
@@ -713,7 +726,7 @@ export function IdeWorkspace() {
       }
     })().catch(fail).finally(() => { requestedSourceRef.current = '' })
   }, [openFile])
-  const stopRun = () => execution?.kind === 'debug' ? invoke('debug.stop', {}) : action(async () => { if (execution) acceptExecution(await bridge.executionStop(execution.id)) })
+  const stopRun = () => invoke('execution.stop', {})
   const sendInput = () => action(async () => {
     if (!execution) return
     await bridge.executionInput(execution.id, input + '\n')
@@ -815,7 +828,7 @@ export function IdeWorkspace() {
     })
     for (const [sessionId, next] of nextBindings) if (sourceBindings.current.has(sessionId)) sourceBindings.current.set(sessionId, next)
     if (!current) return
-    workspaceGeneration.current++
+    workspaceGeneration.current++; setPicker(null); setTabMenu(null)
     const generation = workspaceGeneration.current
     tabsRef.current = result.state.tabs.map((tab) => ({ ...tab })); setTabs(tabsRef.current)
     activeRef.current = result.state.activePath ?? ''; setActive(activeRef.current)
@@ -870,8 +883,12 @@ export function IdeWorkspace() {
     path: ({ command, context, initialPath }) => new Promise((resolve) => {
       checkContext(context)
       const kind = command === 'resource.rename' ? 'rename' : command === 'java.newClass' ? 'class' : command === 'folder.new' ? 'folder' : 'file'
-      const sourceRoot = kind === 'class' && !context.target ? modelRef.current?.sourceRoots[0] : undefined
-      setProjectDialog({ kind, path: context.target?.path ?? '', value: sourceRoot && sourceRoot !== '.' ? `${sourceRoot}/${initialPath}` : initialPath, resolve })
+      const folder = context.target?.path ?? defaultClassFolder(modelRef.current)
+      setProjectDialog({ kind, path: kind === 'class' ? folder : context.target?.path ?? '', value: kind === 'class' ? 'NewClass' : initialPath,
+        resolve: kind === 'class' ? (value) => {
+          if (value === null) { resolve(null); return }
+          try { resolve(javaClassPath(folder, value)) } catch (error) { fail(error); resolve(null) }
+        } : resolve })
     }),
     dirty: ({ command, context, dirtyPaths }) => new Promise((resolve) => {
       checkContext(context); setPending({ label: ideCommandDefinitions[command].title.toLowerCase(), paths: [...dirtyPaths], resolve })
@@ -881,7 +898,7 @@ export function IdeWorkspace() {
     }),
   }
   commandHost.current.operations = {
-    open: (target, location, context) => commandIO(async () => { checkContext(context); await openFile(target.projectId, target.path, location) }),
+    open: (target, location, context) => commandIO(async () => { checkContext(context); setSourceOpen(true); setFocusSourceOpen(true); await openFile(target.projectId, target.path, location) }),
     save: (_target, tab, context) => commandIO(() => saveTab(tab, context)),
     saveAll: (context) => commandIO(() => saveAll(context)),
     close: (plan) => {
@@ -899,7 +916,7 @@ export function IdeWorkspace() {
     },
     createFile: (id, path, content, context) => commandIO(async () => {
       checkContext(context); await bridge.createFile(id, path, content); checkContext(context)
-      workspaceGeneration.current++; invalidateWorkspaceModel(); await refreshTree(id); await openFile(id, path)
+      workspaceGeneration.current++; invalidateWorkspaceModel(); await refreshTree(id); setSourceOpen(true); setFocusSourceOpen(true); await openFile(id, path)
     }),
     createFolder: (id, path, context) => commandIO(async () => {
       checkContext(context); await bridge.createFolder(id, path); checkContext(context)
@@ -907,14 +924,8 @@ export function IdeWorkspace() {
     }),
     createJavaClass: (id, path, context) => commandIO(async () => {
       checkContext(context)
-      const name = filename(path).replace(/\.java$/, '')
-      if (!path.endsWith('.java') || !/^[A-Za-z_$][\w$]*$/.test(name)) throw new Error('A Java class needs a valid name ending in .java')
-      const roots = (modelRef.current?.sourceRoots ?? ['.']).filter((root) => root === '.' || pathIsWithin(path, root)).sort((a, b) => b.length - a.length)
-      const relative = roots[0] === '.' ? path : roots[0] ? path.slice(roots[0].length + 1) : ''
-      const parts = relative.split('/').slice(0, -1)
-      const packageName = parts.length && parts.every((part) => /^[A-Za-z_$][\w$]*$/.test(part)) ? `package ${parts.join('.')};\n\n` : ''
-      await bridge.createFile(id, path, `${packageName}public class ${name} {\n}\n`); checkContext(context)
-      workspaceGeneration.current++; invalidateWorkspaceModel(); await refreshTree(id); await openFile(id, path)
+      await bridge.createFile(id, path, javaClassContent(path, modelRef.current)); checkContext(context)
+      workspaceGeneration.current++; invalidateWorkspaceModel(); await refreshTree(id); setSourceOpen(true); setFocusSourceOpen(true); await openFile(id, path)
     }),
     rename: (target, to, context) => commandIO(async () => {
       checkContext(context)
@@ -977,8 +988,9 @@ export function IdeWorkspace() {
     copyText: async (text, context) => { checkContext(context); await navigator.clipboard.writeText(text) },
     renameSymbol: async (target, newName, context) => {
       checkContext(context)
-      const editor = monacoApi.editor.getEditors().find((editor) => editor.hasTextFocus())
-      if (!editor) throw new Error('Focus the Java editor before Rename Symbol')
+      const editor = monacoApi.editor.getEditors().find((editor) => { const model = editor.getModel(); return model && documentPath(model.uri.toString(), context.projectId) === target.path })
+      if (!editor) throw new Error('The Java editor target changed')
+      editor.focus()
       if (newName === undefined) { await editor.getAction('editor.action.rename')?.run(); return }
       const model = editor.getModel(), position = editor.getPosition(), host = languageEditHost.current
       if (!model || documentPath(model.uri.toString(), context.projectId) !== target.path || !position || !host) throw new Error('The Java editor target changed')
@@ -994,21 +1006,42 @@ export function IdeWorkspace() {
       if (session?.kind !== 'debug') throw new Error('There is no active debugger')
       const next = await bridge.executionCommand(session.id, command); checkContext(context); acceptExecution(next)
     }),
-    quickOpen: (context) => new Promise<void>((resolve, reject) => {
-      checkContext(context); setProjectDialog({ kind: 'open', path: '', value: activeRef.current, resolve: (path) => {
-        if (!path) { resolve(); return }
-        try { checkContext(context) } catch (error) { reject(error); return }
-        // Call the injected open operation directly; enqueueing inside this command would deadlock.
-        openFile(context.projectId, path).then(resolve, reject)
-      } })
-    }),
-    commandPalette: async (context) => {
+    quickOpen: async (context) => { checkContext(context); setPicker({ mode: 'files', context: { ...context } }) },
+    commandPalette: async (context) => { checkContext(context); setPicker({ mode: 'commands', context: { ...context } }) },
+    shell: async (id, context) => {
       checkContext(context)
-      const editor = monacoApi.editor.getEditors().find((editor) => editor.hasTextFocus())
-      if (!editor) throw new Error('Focus the editor to open its command palette')
-      await editor.getAction('editor.action.quickCommand')?.run()
+      if (id === 'execution.run' || id === 'execution.runWithoutVisualization') await commandIO(() => performExecution('run', id === 'execution.runWithoutVisualization', context))
+      else if (id === 'execution.build') await buildProject()
+      else if (id === 'execution.stop') await commandIO(async () => { const session = executionRef.current; if (session) { const next = await bridge.executionStop(session.id); checkContext(context); acceptExecution(next) } })
+      else if (id === 'workbench.explorer') toggleExplorer()
+      else if (id === 'workbench.source') { userLayoutOverride.current = true; if (runtimeExpanded) setFocusSourceOpen((value) => !value); else setSourceOpen((value) => !value) }
+      else if (id === 'workbench.edit') { userLayoutOverride.current = true; enterMode('code') }
+      else if (id === 'workbench.tools') { bottomPinned.current = !bottomOpen; setBottomOpen(!bottomOpen) }
+      else if (id === 'workbench.console' || id === 'workbench.problems' || id === 'workbench.debugger') { bottomPinned.current = true; setTool(id === 'workbench.console' ? 'console' : id === 'workbench.problems' ? 'problems' : 'debugger'); setBottomOpen(true) }
+      else if (id === 'workbench.inspector') setInspectorHidden((value) => !value)
+      else if (id === 'workbench.runtimeFocus') toggleRuntimeFocus()
+      else if (id === 'workbench.returnLive') setTimelineLens('LIVE')
+      else if (id === 'workbench.launch') setShowLaunch(true)
+      else if (id === 'workbench.symbols') setShowSymbols(true)
+      else if (id === 'workbench.jdk') setShowJdk((value) => !value)
+      else if (id === 'workbench.restartJava') await languageClient.restart()
+      else if (id === 'workbench.importProject') importRef.current?.click()
+      else if (id === 'workbench.newProject') setProjectDialog({ kind: 'project', path: '', value: 'New Java Project' })
     },
   }
+  const shellAvailability = (id: ShellCommandId) => {
+    const activeSession = executionRef.current && ['BUILDING', 'STARTING', 'RUNNING', 'WAITING_FOR_INPUT', 'PAUSED'].includes(executionRef.current.phase)
+    if (id.startsWith('execution.') && busy) return { enabled: false as const, reason: 'Wait for the current operation' }
+    if (['execution.run', 'execution.runWithoutVisualization'].includes(id) && !jdk?.available) return { enabled: false as const, reason: 'Configure a JDK first' }
+    if (id === 'execution.stop' && !activeSession) return { enabled: false as const, reason: 'No active execution' }
+    if (['workbench.inspector', 'workbench.runtimeFocus', 'workbench.returnLive'].includes(id) && !visualization) return { enabled: false as const, reason: 'Run Java to record a runtime world' }
+    if (id === 'workbench.inspector' && !runtimeSelection) return { enabled: false as const, reason: 'Select a runtime entity first' }
+    if (id === 'workbench.symbols' && languageSnapshot.status !== 'ready') return { enabled: false as const, reason: 'Java language service is not ready' }
+    return { enabled: true as const }
+  }
+  const commandSnapshot = commandHost.current.snapshot
+  const shellAvailabilitySnapshot = Object.fromEntries(Object.keys(ideCommandDefinitions).filter((id) => id.startsWith('execution.') || id.startsWith('workbench.') && !['workbench.quickOpen', 'workbench.commandPalette'].includes(id)).map((id) => [id, shellAvailability(id as ShellCommandId)]))
+  commandHost.current.snapshot = () => ({ ...commandSnapshot(), shellAvailability: shellAvailabilitySnapshot })
   if (!jdk?.available) delete commandHost.current.operations.startDebug
   const newEntry = (kind: 'file' | 'folder' | 'class', parent = '') => {
     const id = kind === 'class' ? 'java.newClass' : kind === 'folder' ? 'folder.new' : 'file.new'
@@ -1023,7 +1056,14 @@ export function IdeWorkspace() {
   }
   const submitProjectDialog = () => {
     if (!projectDialog) return
-    if (projectDialog.resolve) { const dialog = projectDialog; setProjectDialog(null); dialog.resolve!(dialog.value); return }
+    if (projectDialog.resolve) {
+      const dialog = projectDialog
+      if (dialog.kind === 'class') {
+        try { javaClassContent(javaClassPath(dialog.path || defaultClassFolder(modelRef.current), dialog.value), modelRef.current) }
+        catch (error) { fail(error); return }
+      }
+      setProjectDialog(null); dialog.resolve!(dialog.value); return
+    }
     if (projectDialog.resolveDelete) { const dialog = projectDialog; setProjectDialog(null); dialog.resolveDelete!('discard'); return }
     if (projectDialog.kind !== 'project') return
     return action(async () => {
@@ -1057,6 +1097,7 @@ export function IdeWorkspace() {
   const setDivider = (kind: 'project' | 'runtime' | 'bottom', clientX: number, clientY: number) => {
     userLayoutOverride.current = true
     if (kind === 'bottom') {
+      bottomPinned.current = true
       const bounds = contentRef.current?.getBoundingClientRect()
       if (bounds) setBottomHeight(Math.max(16, Math.min(55, (bounds.bottom - clientY) / bounds.height * 100)))
     } else {
@@ -1064,7 +1105,7 @@ export function IdeWorkspace() {
       if (bounds) {
         const pct = (clientX - bounds.left) / bounds.width * 100
         if (kind === 'project') setProjectWidth(Math.max(13, Math.min(28, pct)))
-        else setEditorWidth(Math.max(24, Math.min(80, pct)))
+        else { const width = Math.max(24, Math.min(80, pct)); if (workspaceMode !== 'code') localStorage.setItem(manualRuntimeWidthKey, String(width)); setEditorWidth(width) }
       }
     }
   }
@@ -1075,8 +1116,8 @@ export function IdeWorkspace() {
       event.preventDefault()
       userLayoutOverride.current = true
       if (kind === 'project') setProjectWidth((value) => Math.max(13, Math.min(28, value + amount)))
-      else if (kind === 'runtime') setEditorWidth((value) => Math.max(24, Math.min(80, value + amount)))
-      else setBottomHeight((value) => Math.max(16, Math.min(55, value - amount)))
+      else if (kind === 'runtime') setEditorWidth((value) => { const width = Math.max(24, Math.min(80, value + amount)); if (workspaceMode !== 'code') localStorage.setItem(manualRuntimeWidthKey, String(width)); return width })
+      else { bottomPinned.current = true; setBottomHeight((value) => Math.max(16, Math.min(55, value - amount))) }
     },
     onPointerDown: (event: React.PointerEvent<HTMLDivElement>) => event.currentTarget.setPointerCapture(event.pointerId),
     onPointerMove: (event: React.PointerEvent<HTMLDivElement>) => { if (event.currentTarget.hasPointerCapture(event.pointerId)) setDivider(kind, event.clientX, event.clientY) },
@@ -1090,7 +1131,7 @@ export function IdeWorkspace() {
   }
   const toggleTreeEntry = (path: string) => setCollapsed((previous) => { const next = new Set(previous); if (next.has(path)) next.delete(path); else next.add(path); return next })
   const revealEntry = (path: string) => {
-    setExplorerOpen(true)
+    setRuntimeExpanded(false); setFocusSourceOpen(false); setExplorerOpen(true)
     setCollapsed((previous) => { const next = new Set(previous); const parts = path.split('/'); for (let i = 1; i < parts.length; i++) next.delete(parts.slice(0, i).join('/')); return next })
     window.setTimeout(() => Array.from(document.querySelectorAll<HTMLButtonElement>('.ide-tree-name')).find((button) => button.title === path)?.focus(), 0)
   }
@@ -1100,122 +1141,120 @@ export function IdeWorkspace() {
     else if (kind === 'rename' && entry) void renameEntry(entry.path)
     else if (kind === 'delete' && entry) void deleteEntry(entry.path)
     else if (kind === 'reveal' && entry) invoke('explorer.reveal', {}, entry.path)
+    else if (kind === 'copy' && entry) invoke('resource.copyPath', {}, entry.path)
+    else if (kind === 'open' && entry) invoke('file.open', {}, entry.path)
     else if (kind === 'refresh') void action(() => refreshTree(projectId))
   }
 
   useEffect(() => {
     const shortcuts = (event: KeyboardEvent) => {
-      if (projectDialog) return
+      if (projectDialog || picker || tabMenu || showLaunch || showSymbols || event.target instanceof HTMLElement && event.target.closest('.ide-workspace-menu')) return
       if (event.key === 'Escape' && runtimeExpanded && !pending && !(event.target instanceof HTMLElement && event.target.closest('.monaco-editor'))) { setRuntimeExpanded(false); setFocusSourceOpen(false); return }
       if (pending) return
-      if (!busy && !event.defaultPrevented) {
+      if (!event.defaultPrevented) {
         const editorFocused = event.target instanceof HTMLElement && !!event.target.closest('.monaco-editor')
         const canonical = Object.values(ideCommandDefinitions).find((definition) => (definition.scope !== 'editor' || editorFocused) && definition.bindings.some((binding) => matchesShortcut(event, binding, platform)))
-        if (canonical && commands.availability(canonical.id, commandContext()).enabled) {
-          event.preventDefault(); event.stopPropagation(); invoke(canonical.id, {}); return
+        if (canonical) {
+          event.preventDefault(); event.stopPropagation()
+          if ((!busy || canonical.id === 'workbench.quickOpen' || canonical.id === 'workbench.commandPalette') && commands.availability(canonical.id, commandContext()).enabled) invoke(canonical.id, {})
+          return
         }
       }
-      const key = (Object.entries(ideShortcuts) as [keyof typeof ideShortcuts, (typeof ideShortcuts)[keyof typeof ideShortcuts]][]).find(([name, shortcut]) => !['save', 'saveAll', 'breakpoint', 'commandPalette'].includes(name) && matchesShortcut(event, shortcut, platform))?.[0]
-      if (!key) return
-      event.preventDefault()
-      if (key === 'explorer') toggleExplorer()
-      if (key === 'tools') setBottomOpen((value) => !value)
-      if (key === 'console') { setTool('console'); setBottomOpen(true) }
-      if (key === 'problems') { setTool('problems'); setBottomOpen(true) }
-      if (key === 'symbols') setShowSymbols(true)
-      if (key === 'inspector') setInspectorHidden((value) => !value)
-      if (key === 'returnLive' && visualization) setTimelineLens('LIVE')
-      if (key === 'stop' && execution && ['BUILDING', 'STARTING', 'RUNNING', 'WAITING_FOR_INPUT', 'PAUSED'].includes(execution.phase)) void stopRun()
-      if (key === 'focus' && visualization) toggleRuntimeFocus()
-      if (key === 'debug' && projectId && jdk?.available && !busy && !['starting', 'running', 'paused'].includes(debugSession?.status ?? '')) void debugProject()
-      if (key === 'run' && projectId && jdk?.available && !busy) void runProject()
+
     }
     window.addEventListener('keydown', shortcuts, true)
     return () => window.removeEventListener('keydown', shortcuts, true)
   })
 
+  const pickerContext = (id: IdeCommandId): CommandContext => {
+    const context = picker?.context ?? commandContext()
+    if (['file.open', 'resource.rename', 'resource.delete', 'resource.copyPath', 'explorer.reveal'].includes(id)) return { ...context, ...(active ? { target: { projectId: context.projectId, path: active, kind: 'file' as const } } : {}) }
+    if (['file.new', 'java.newClass', 'folder.new'].includes(id)) {
+      const parent = active.split('/').slice(0, -1).join('/')
+      return { ...context, ...(parent ? { target: { projectId: context.projectId, path: parent, kind: 'directory' as const } } : {}) }
+    }
+    return context
+  }
+  // Project membership changes independently of trace publication. Reuse these
+  // options while raw catch-up and historical navigation update the workspace.
+  const projectOptions = useMemo(() => projects.map(project => <option key={project.id} value={project.id}>{project.name}</option>), [projects])
+  const pickerItems: WorkspacePickerItem[] = !picker ? [] : picker.mode === 'files'
+    ? entries.filter((entry) => entry.kind === 'file').sort((a, b) => Number(b.path === active) - Number(a.path === active)).map((entry) => ({ id: entry.path, label: entry.name, detail: entry.path, enabled: true }))
+    : Object.values(ideCommandDefinitions).map((definition) => ({ id: definition.id, label: `${definition.category}: ${definition.title}`, keywords: definition.id, shortcut: definition.bindings[0] ? formatShortcut(definition.bindings[0], platform) : undefined, ...commands.availability(definition.id, pickerContext(definition.id)) }))
+  const choosePicker = (id: string) => {
+    if (!picker) return
+    const command = picker.mode === 'files' ? 'file.open' : id as IdeCommandId
+    const context = picker.mode === 'files' ? { ...picker.context, target: { projectId: picker.context.projectId, path: id, kind: 'file' as const } } : pickerContext(command)
+    setPicker(null); setNotice('')
+    requestAnimationFrame(() => { void commands.execute(command, context, {}).catch(fail) })
+  }
+  const showTabMenu = (path: string, x: number, y: number) => setTabMenu({ context: commandContext(path), x, y })
   const activeExecution = !!execution && ['BUILDING', 'STARTING', 'RUNNING', 'WAITING_FOR_INPUT', 'PAUSED'].includes(execution.phase)
   const acceptsInput = !!execution && ['RUNNING', 'WAITING_FOR_INPUT', 'PAUSED'].includes(execution.phase)
-  const availableTools: Tool[] = ['console', ...(problems.length || tool === 'problems' ? ['problems'] as Tool[] : []), ...(debugSession || breakpoints.length ? ['debugger'] as Tool[] : []), ...(recordingIsCurrent && visualization.trace.events.some((event) => event.type === 'THROW_EXCEPTION') || exception ? ['errors'] as Tool[] : [])]
+  const availableTools: Tool[] = ['console', 'problems', 'debugger', ...(recordingIsCurrent && visualization.trace.events.some((event) => event.type === 'THROW_EXCEPTION') || exception ? ['errors'] as Tool[] : [])]
   const targets = build?.mainClasses ?? javaProject?.runnableTargets ?? []
-  return <div className={`ide-shell ide-shell--${workspaceMode} ${explorerOpen ? 'ide-shell--explorer-open' : ''} ${bottomOpen ? 'ide-shell--bottom-open' : ''} ${focusSourceOpen ? 'ide-shell--focus-source-open' : ''} ${runtimeExpanded ? 'ide-shell--runtime-expanded' : ''} ${debugSession && ['running', 'paused'].includes(debugSession.status) ? 'ide-shell--debug-active' : ''} ${tool === 'errors' || tool === 'debugger' ? 'ide-shell--debug-inspection' : ''}`} ref={shellRef} style={{ '--ide-project-width': `${projectWidth}%`, '--ide-editor-width': `${editorWidth}%`, '--ide-bottom-height': `${bottomHeight}%` } as React.CSSProperties}>
+  return <div className={`ide-shell ide-shell--spatial ide-shell--${workspaceMode} ${sourceOpen ? '' : 'ide-shell--source-collapsed'} ${explorerOpen ? 'ide-shell--explorer-open' : ''} ${bottomOpen ? 'ide-shell--bottom-open' : ''} ${focusSourceOpen ? 'ide-shell--focus-source-open' : ''} ${runtimeExpanded ? 'ide-shell--runtime-expanded' : ''} ${debugSession && ['running', 'paused'].includes(debugSession.status) ? 'ide-shell--debug-active' : ''} ${tool === 'errors' || tool === 'debugger' ? 'ide-shell--debug-inspection' : ''}`} ref={shellRef} style={{ '--ide-project-width': `${projectWidth}%`, '--ide-editor-width': `${editorWidth}%`, '--ide-bottom-height': `${bottomHeight}%` } as React.CSSProperties}>
     <header className="ide-topbar">
-      <div className="ide-brand"><span className="ide-mark">VJ</span><span><strong>Visual Java</strong></span></div>
-      <button className="ide-chrome-toggle" onClick={toggleExplorer} aria-label={explorerOpen ? 'Hide project explorer' : 'Show project explorer'} aria-pressed={explorerOpen} title={`Toggle project explorer (${formatShortcut(ideShortcuts.explorer, platform)})`}><Files size={16}/></button>
-      <div className="ide-topbar-center"><span className="ide-breadcrumb">{projectId ? projects.find((item) => item.id === projectId)?.name ?? 'Loading project' : 'Open Project'}{projectId && <> <span>/</span> {active || 'Project'}</>}</span></div>
-
-      {runtimeExpanded && <button className="ide-focus-tool-toggle" onClick={() => setBottomOpen((value) => !value)} aria-label={bottomOpen ? 'Hide tools in runtime focus' : 'Show tools in runtime focus'} title="Reveal Console / Problems / Debugger"><PanelBottom size={16}/></button>}
+      <div className="ide-brand"><span className="ide-mark"><Code2 size={18}/></span><strong>Visual Java</strong></div>
+      <button className="ide-command-search" onClick={() => invoke('workbench.commandPalette', {})} disabled={!projectId} title="Search commands"><Search size={14}/><span>{projectId ? projects.find((item) => item.id === projectId)?.name ?? 'Java workspace' : 'Open Project'}</span><kbd>{formatShortcut(ideCommandDefinitions['workbench.commandPalette'].bindings[0], platform)}</kbd></button>
+      <button className="ide-jdk-badge" onClick={() => invoke('workbench.jdk', {})} aria-label="Configure JDK" title={jdk?.version ? `JDK ${jdk.version}` : jdk?.error ?? 'Detecting JDK'}>{jdk?.available ? `Java ${jdk.version ?? ''}`.trim() : 'JDK unavailable'}</button>
       <div className="ide-top-actions">
-        {targets.length > 1 && <select aria-label="Main class" value={mainClass} onChange={(event) => setMainClass(event.target.value)}><option value="">First runnable main</option>{targets.map((name) => <option key={name}>{name}</option>)}</select>}
-        {!activeExecution && <><button className="ide-primary" onClick={runProject} disabled={!projectId || busy || !jdk?.available}><CirclePlay size={16}/> Run</button><button className="ide-debug-action" onClick={debugProject} disabled={!projectId || busy || !jdk?.available}><CirclePlay size={16}/> Debug</button></>}
-        {activeExecution && <button className="ide-stop-action" onClick={stopRun} disabled={busy}><Square size={14}/> Stop</button>}
-        <details className="ide-more-actions" onClick={(event) => {
-          if (event.target instanceof HTMLElement && event.target.closest('button')) event.currentTarget.open = false
-        }} onKeyDown={(event) => {
-          if (event.key === 'Escape') { event.currentTarget.open = false; event.currentTarget.querySelector('summary')?.focus() }
-        }}><summary aria-label="More actions" title="More actions"><Settings2 size={16}/></summary><div>
-          <button onClick={() => invoke('file.save', {})} disabled={!activeTab || activeTab.draft === activeTab.content || busy}><Save size={15}/> Save</button>
-          <button onClick={() => invoke('file.saveAll', {})} disabled={!dirty || busy}><Save size={15}/> Save All</button>
-          <button onClick={buildProject} disabled={!projectId || busy}><Hammer size={15}/> Build</button>
-          <button onClick={() => setShowLaunch(true)} disabled={!projectId || busy}>Launch settings</button>
-          <button onClick={() => setShowSymbols(true)} disabled={languageSnapshot.status !== 'ready'}><Search size={15}/> Find symbol</button>
-          <button onClick={() => startExecution('run', true)} disabled={!projectId || busy || !jdk?.available}>Run without visualization</button>
-          <button onClick={() => setShowJdk((value) => !value)}>Configure JDK</button>
-        </div></details>
+        {targets.length > 1 && <select aria-label="Main class" value={mainClass} onChange={(event) => { mainClassRef.current = event.target.value; setMainClass(event.target.value) }}><option value="">First runnable main</option>{targets.map((name) => <option key={name}>{name}</option>)}</select>}
+        <button className="ide-primary" onClick={runProject} disabled={!projectId || busy || !jdk?.available || activeExecution} title={`Run (${formatShortcut(ideCommandDefinitions['execution.run'].bindings[0], platform)})`}><CirclePlay size={15}/> Run</button>
+        <button className="ide-debug-action" onClick={debugProject} disabled={!projectId || busy || !jdk?.available || activeExecution} title="Start Debug (F5)"><Bug size={15}/> Debug</button>
+        <button className="ide-stop-action" onClick={stopRun} disabled={busy || !activeExecution} title={`Stop (${formatShortcut(ideCommandDefinitions['execution.stop'].bindings[0], platform)})`}><Square size={13}/> Stop</button>
+        <button className="ide-launch-action" onClick={() => invoke('workbench.launch', {})} disabled={!projectId || busy} title="Launch settings" aria-label="Launch settings"><ChevronRight size={14}/></button>
       </div>
     </header>
-    <div className="ide-status-line">
-      {!jdk?.available && <span className="is-error">JDK unavailable</span>}
-      {(projectStatus.startsWith('Resolving') || javaProject?.status !== 'ready') && <span className="ide-project-status" title={javaProject?.diagnostic ?? projectStatus}>{projectStatus}</span>}
-      {(["failed", "unavailable"].includes(languageSnapshot.status) || languageSnapshot.metrics.classpathMismatch === 1) && <span className={languageSnapshot.metrics.classpathMismatch === 1 ? 'is-warning' : 'is-error'} title={languageSnapshot.message ?? 'Java language service'}>Java {languageSnapshot.metrics.classpathMismatch === 1 ? 'classpath differs' : languageSnapshot.status}</span>}
-      {["failed", "unavailable"].includes(languageSnapshot.status) && <button className="ide-language-restart" onClick={() => void languageClient.restart()}>Retry Java</button>}
-      {execution && <span className="ide-execution-status" aria-live="polite">{execution.phase === 'FAILED' && execution.failureKind === 'build' ? 'BUILD FAILED' : execution.phase.replaceAll('_', ' ')}{execution.support === 'RUN_ONLY' && (execution.supportReason !== 'No verified runtime events yet' || ['COMPLETED', 'FAILED'].includes(execution.phase)) && execution.phase !== 'BUILDING' ? ' · console only' : ''}</span>}
-      {traceStale && <span className="is-warning">Source changed since Run</span>}
-      {execution?.supportReason && (execution.support === 'RUN_ONLY' && execution.supportReason !== 'No verified runtime events yet' || execution.support === 'PARTIAL' && ['COMPLETED', 'FAILED', 'STOPPED'].includes(execution.phase)) && <details className="ide-support-detail"><summary>Visualization {execution.support.toLowerCase().replace('_', ' ')}</summary><p>{execution.supportReason}</p></details>}
-      {recordingIsCurrent && <details className="ide-support-detail"><summary>Capture limits</summary><p>Recording stops at 20,000 raw events, 8 MiB, 256 identities or 128 live frames; Java continues. The 30-second active watchdog excludes input waits and Debug pauses; a 10-minute hard safety deadline applies in all states. Project code is recorded. Primitive and reference arrays have bounded summaries; class statics are available in the inspector. Library internals are collapsed. — means unavailable. Values and effects are last observed; changes outside recorded code may be absent.{visualization.capability.diagnostics.length > 0 && <><br/>{visualization.capability.diagnostics.slice(0, 3).join(' · ')}</>}</p></details>}
-      <span className="ide-status-spacer"/><span>{notice}</span>
-      <details className="ide-shortcuts"><summary>Shortcuts</summary><div><p>{formatShortcut(ideShortcuts.run, platform)} Run · {formatShortcut(ideShortcuts.debug, platform)} Debug · {formatShortcut(ideShortcuts.stop, platform)} Stop<br/>{formatShortcut(ideShortcuts.focus, platform)} Focus · {formatShortcut(ideShortcuts.explorer, platform)} Explorer · {formatShortcut(ideShortcuts.tools, platform)} Tools<br/>{formatShortcut(ideShortcuts.console, platform)} Console · {formatShortcut(ideShortcuts.problems, platform)} Problems · {formatShortcut(ideShortcuts.returnLive, platform)} Live<br/>{formatShortcut(ideShortcuts.save, platform)} Save · {formatShortcut(ideShortcuts.saveAll, platform)} Save All<br/>{formatShortcut(ideShortcuts.breakpoint, platform)} Breakpoint · {formatShortcut(ideShortcuts.commandPalette, platform)} Editor commands</p></div></details>
-    </div>
     {showJdk && <div className="ide-jdk"><label>JDK home <input value={jdkInput} placeholder="Auto-detect from PATH" onChange={(event) => setJdkInput(event.target.value)} /></label><button onClick={() => action(async () => setJdk(await bridge.detectJdk(jdkInput || null)))}>Use JDK</button><span>{jdk?.error}</span></div>}
     {debugSession && activeExecution && <div className="debug-toolbar" aria-label="JVM debugger controls">
       <span className="debug-live-state">{execution?.phase === 'PAUSED' ? `Paused · ${debugSession.pause?.reason ?? 'checkpoint'}` : 'Debugging'}</span>
-      {execution?.phase === 'PAUSED' ? <><button onClick={() => debugCommand('continue')} disabled={busy}>Continue</button><button onClick={() => debugCommand('stepOver')} disabled={busy}>Over</button><button onClick={() => debugCommand('stepInto')} disabled={busy}>Into</button><button onClick={() => debugCommand('stepOut')} disabled={busy}>Out</button></>
+      {execution?.phase === 'PAUSED' ? <><button onClick={() => debugCommand('continue')} disabled={busy} title="Continue (F5)">Continue</button><button onClick={() => debugCommand('stepOver')} disabled={busy} title="Step Over (F10)">Step Over</button><button onClick={() => debugCommand('stepInto')} disabled={busy} title="Step Into (F11)">Step Into</button><button onClick={() => debugCommand('stepOut')} disabled={busy} title="Step Out (Shift+F11)">Step Out</button></>
         : <button onClick={() => debugCommand('pause')} disabled={busy || execution?.phase !== 'RUNNING'} title="Pause at next project source boundary">Pause</button>}
-      <button onClick={() => { setTool('debugger'); setBottomOpen(true); setBottomHeight(35) }}>Inspect</button>
+      <button onClick={() => invoke('workbench.debugger', {})}>Inspect</button>
     </div>}
     <div className="ide-main" ref={contentRef}>
+      <nav className="ide-activity-rail" aria-label="Workspace views">
+        <button onClick={() => invoke('workbench.explorer', {})} aria-label={explorerOpen ? 'Hide project explorer' : 'Show project explorer'} aria-pressed={explorerOpen} title="Explorer"><Files size={19}/></button>
+        <button onClick={() => invoke('workbench.quickOpen', {})} disabled={!projectId} aria-label="Quick Open" title={`Quick Open (${formatShortcut(ideCommandDefinitions['workbench.quickOpen'].bindings[0], platform)})`}><Search size={19}/></button>
+        <button onClick={() => invoke('workbench.debugger', {})} disabled={!projectId} aria-label="Run and Debug" aria-pressed={tool === 'debugger' && bottomOpen} title="Run & Debug"><Bug size={19}/></button>
+        <button onClick={() => invoke('workbench.problems', {})} disabled={!projectId} aria-label="Show Problems" aria-pressed={tool === 'problems' && bottomOpen} title={`Problems · ${problems.length}`}><CircleAlert size={19}/>{problems.length > 0 && <span className="ide-activity-count">{problems.length}</span>}</button>
+        <span className="ide-activity-spacer"/>
+        <button onClick={() => invoke('workbench.source', {})} disabled={!projectId} aria-label={runtimeExpanded ? focusSourceOpen ? 'Hide source drawer' : 'Show source drawer' : sourceOpen ? 'Hide source' : 'Show source'} aria-pressed={runtimeExpanded ? focusSourceOpen : sourceOpen} title="Source"><Code2 size={19}/></button>
+        <button onClick={() => invoke('workbench.console', {})} disabled={!projectId} aria-label="Show Console" aria-pressed={tool === 'console' && bottomOpen} title="Console"><Terminal size={19}/></button>
+      </nav>
       <aside className="ide-project-panel">
         <div className="ide-panel-heading"><span>PROJECT</span><span className="ide-panel-actions"><button title="New file" aria-label="Create File" disabled={!projectId} onClick={() => newEntry('file')}><Plus size={15}/></button><button title="New folder" aria-label="Create Folder" disabled={!projectId} onClick={() => newEntry('folder')}><FolderOpen size={15}/></button><button title="Refresh project" aria-label="Refresh Project" disabled={!projectId} onClick={() => void action(() => refreshTree(projectId))}>↻</button></span></div>
-        <select className="ide-project-select" aria-label="Project" disabled={busy} value={projectId} onChange={(event) => requestDecision('switching projects', tabs.map((tab) => tab.path), () => action(() => switchProject(event.target.value)))}><option value="" disabled>Open Project</option>{projects.map((project) => <option key={project.id} value={project.id}>{project.name}</option>)}</select>
+        <select className="ide-project-select" aria-label="Project" disabled={busy} value={projectId} onChange={(event) => requestDecision('switching projects', tabs.map((tab) => tab.path), () => action(() => switchProject(event.target.value)))}><option value="" disabled>Open Project</option>{projectOptions}</select>
         <input ref={importRef} type="file" hidden multiple {...{ webkitdirectory: '' }} onChange={(event) => { void importFiles(event.target.files); event.target.value = '' }} />
-        <button className="ide-open-project" onClick={() => importRef.current?.click()}><Upload size={13}/> Import folder (copy)</button>
+        <button className="ide-open-project" onClick={() => invoke('workbench.importProject', {})}><Upload size={13}/> Import folder (copy)</button>
         <span className="ide-import-note">Creates a managed copy; originals stay in place.</span>
-        <button className="ide-new-project" onClick={() => setProjectDialog({ kind: 'project', path: '', value: 'New Java Project' })}><Plus size={13}/> New project</button>
+        <button className="ide-new-project" onClick={() => invoke('workbench.newProject', {})}><Plus size={13}/> New project</button>
         <button className="ide-reveal-active" disabled={!active} onClick={() => invoke('explorer.reveal', {}, active)}>Reveal active file</button>
-        <ProjectExplorer tree={tree} active={active} collapsed={collapsed} onToggle={toggleTreeEntry} onOpen={(path) => invoke('file.open', {}, path)} onAction={treeAction}/>
+        <ProjectExplorer tree={tree} active={active} collapsed={collapsed} onToggle={toggleTreeEntry} onOpen={(path) => invoke('file.open', {}, path)} onAction={treeAction} getCommandContext={(entry) => commandContext(entry?.path)} onCommand={(id, context) => { setNotice(''); void commands.execute(id, context, {}).catch(fail) }} availability={(id, entry, context) => busy ? { enabled: false, reason: 'Wait for the current operation' } : commands.availability(id, context ?? commandContext(entry?.path))}/>
         <div className="ide-project-foot">{entries.filter((item) => item.kind === 'file').length} files · Managed local workspace</div>
       </aside>
       <div className="ide-divider ide-divider--vertical" role="separator" aria-label="Resize project pane" tabIndex={0} {...divider('project')}/>
       {!projectId ? <section className="ide-first-use" aria-labelledby="ide-first-use-title"><div className="ide-first-use-content">
         <span>VISUAL JAVA</span><h1 id="ide-first-use-title">Open Project</h1>
         <p>Choose a managed project, import a folder copy, or create a new Java project.</p>
-        {projects.length > 0 && <label>Managed projects<select aria-label="Open existing project" value="" disabled={busy} onChange={(event) => void action(() => switchProject(event.target.value))}><option value="" disabled>Choose a project</option>{projects.map((project) => <option key={project.id} value={project.id}>{project.name}</option>)}</select></label>}
-        <div className="ide-first-use-actions"><button type="button" onClick={() => importRef.current?.click()}><Upload size={15}/> Import folder (copy)</button><button type="button" className="ide-primary" onClick={() => setProjectDialog({ kind: 'project', path: '', value: 'New Java Project' })}><Plus size={15}/> New Project</button></div>
+        {projects.length > 0 && <label>Managed projects<select aria-label="Open existing project" value="" disabled={busy} onChange={(event) => void action(() => switchProject(event.target.value))}><option value="" disabled>Choose a project</option>{projectOptions}</select></label>}
+        <div className="ide-first-use-actions"><button type="button" onClick={() => invoke('workbench.importProject', {})}><Upload size={15}/> Import folder (copy)</button><button type="button" className="ide-primary" onClick={() => invoke('workbench.newProject', {})}><Plus size={15}/> New Project</button></div>
         <small>Imported folders become managed copies; originals stay in place.</small>
       </div></section> : <section className="ide-code-workspace">
         <div className="ide-upper" ref={upperRef}>
           <div className="ide-editor-panel">
-            {runtimeExpanded && <div className="ide-focus-source-heading"><span>Source · {active || 'Java'}</span><button onClick={() => setFocusSourceOpen(false)} aria-label="Close source drawer"><X size={15}/></button></div>}
-            <div className="ide-tabs" role="tablist">{tabs.map((tab) => <div key={tab.path} className={`ide-tab ${active === tab.path ? 'is-active' : ''}`} role="tab" aria-selected={active === tab.path}><button onClick={() => { activeRef.current = tab.path; setActive(tab.path); setRecordedView(null) }} title={tab.path}><span className="ide-java-icon">J</span>{filename(tab.path)}{tab.draft !== tab.content && <span className="ide-dirty"/>}</button><button aria-label={`Close ${tab.path}`} onClick={() => closeTab(tab.path)}><X size={13}/></button></div>)}</div>
+            <div className="ide-source-heading"><span>SOURCE</span><span className="ide-panel-actions"><button onClick={() => invoke('file.save', {})} disabled={!activeTab || activeTab.draft === activeTab.content || busy} title="Save active file" aria-label="Save active file"><Save size={13}/></button><button onClick={() => invoke('workbench.edit', {})} aria-label="Expand source for editing" title="Expand source for editing"><Maximize2 size={13}/></button><button onClick={() => invoke('workbench.source', {})} aria-label={runtimeExpanded ? 'Close source drawer' : 'Collapse source'} title="Collapse source"><ChevronLeft size={15}/></button></span></div>
+            <div className="ide-tabs" role="tablist">{tabs.map((tab) => <div key={tab.path} className={`ide-tab ${active === tab.path ? 'is-active' : ''}`} onContextMenu={(event) => { event.preventDefault(); const button = event.currentTarget.querySelector<HTMLButtonElement>('button'); button?.focus(); showTabMenu(tab.path, event.clientX, event.clientY) }} onKeyDown={(event) => { if (event.key === 'ContextMenu' || event.key === 'F10' && event.shiftKey) { event.preventDefault(); const rect = event.currentTarget.getBoundingClientRect(); showTabMenu(tab.path, rect.left, rect.bottom) } }} role="tab" aria-selected={active === tab.path}><button onClick={() => { activeRef.current = tab.path; setActive(tab.path); setRecordedView(null) }} title={tab.path}><span className="ide-java-icon">J</span>{filename(tab.path)}{tab.draft !== tab.content && <span className="ide-dirty"/>}</button><button aria-label={`Close ${tab.path}`} onClick={() => closeTab(tab.path)}><X size={13}/></button></div>)}</div>
             <div className="ide-editor-body">{recordedView ? <SourceEditor file={recordedView.file} location={recordedView.location} onChooseLine={() => {}}/> : activeTab ? <EditableJavaEditor key={`${projectId}:${activeTab.path}`} projectId={projectId} path={activeTab.path} value={activeTab.draft} onChange={(value) => edit(activeTab.path, value)} diagnostics={diagnostics} navigate={nav} executingLine={activeTab.path === mappedExecutingSource?.path ? mappedExecutingSource.line : null} pausedLine={debugSession?.status === 'paused' && runtime?.cursor === visualization?.trace.events.length && activeTab.path === mappedExecutingSource?.path ? mappedExecutingSource.line : null} breakpoints={displayedBreakpoints} onToggleBreakpoint={(line) => toggleBreakpoint(activeTab.path, line)} onSave={() => invoke('file.save', {}, activeTab.path)}/> : <div className="ide-editor-empty"><span>JAVA SOURCE</span><h2>Choose a file to edit</h2><p>Open a Java file from the project explorer, or create a new one.</p></div>}</div>
             <div className="ide-editor-foot"><span>{recordedView ? `Recorded source · ${recordedView.file.fileId}` : active || 'No file selected'}</span><span>Java · UTF-8 · {activeTab?.draft.split('\n').length ?? 0} lines</span></div>
           </div>
           <div className="ide-divider ide-divider--vertical" role="separator" aria-label="Resize runtime pane" tabIndex={0} {...divider('runtime')}/>
           <section className="ide-runtime-panel" aria-label="Runtime visualization area">
             <div className="ide-panel-heading"><span>RUNTIME</span>{previousRecording && <small role="status" aria-label="Previous recording" title="The current session has no verified runtime trace yet">Previous recording</small>}<div className="ide-runtime-heading-actions">
-              {runtimeSelection && visualization && <button type="button" onClick={() => setInspectorHidden((value) => !value)} aria-label="Toggle inspector" aria-pressed={!inspectorHidden} title={`Toggle inspector (${formatShortcut(ideShortcuts.inspector, platform)})`}><ScanEye size={14}/></button>}
-              {runtimeExpanded && <button type="button" onClick={() => setFocusSourceOpen((value) => !value)} aria-label={focusSourceOpen ? 'Hide source drawer' : 'Show source drawer'} title="Toggle source drawer"><Code2 size={14}/><span>Source</span></button>}
-              {visualization && <button type="button" onClick={toggleRuntimeFocus} aria-label={runtimeExpanded ? 'Restore IDE layout' : 'Expand runtime'} title={`${runtimeExpanded ? 'Restore IDE layout' : 'Focus runtime'} (${formatShortcut(ideShortcuts.focus, platform)})`}>{runtimeExpanded ? <><Minimize2 size={14}/><span>Exit Focus</span></> : <Maximize2 size={14}/>}</button>}
+              {runtimeSelection && visualization && <button type="button" onClick={() => invoke('workbench.inspector', {})} aria-label="Toggle inspector" aria-pressed={!inspectorHidden} title={`Toggle inspector (${formatShortcut(ideShortcuts.inspector, platform)})`}><ScanEye size={14}/></button>}
+              {(runtimeExpanded || !sourceOpen) && <button type="button" onClick={() => invoke('workbench.source', {})} aria-label={runtimeExpanded ? focusSourceOpen ? 'Hide source drawer' : 'Show source drawer' : 'Show source'} title="Toggle source"><Code2 size={14}/><span>Source</span></button>}
+              {visualization && <button type="button" onClick={() => invoke('workbench.runtimeFocus', {})} aria-label={runtimeExpanded ? 'Restore IDE layout' : 'Expand runtime'} title={`${runtimeExpanded ? 'Restore IDE layout' : 'Focus runtime'} (${formatShortcut(ideShortcuts.focus, platform)})`}>{runtimeExpanded ? <><Minimize2 size={14}/><span>Exit Focus</span></> : <Maximize2 size={14}/>}</button>}
             </div></div>
             <div className={`ide-runtime-live${visualization ? '' : ' ide-runtime-live--idle'}`}>
               <App trace={visualization?.trace ?? idleTrace} embedded onSourceChange={recordingIsCurrent ? handleExecutingSource : undefined} onRuntimeChange={handleRuntimeChange} navigation={runtimeNavigation} suppressInspector={tool === 'errors' && bottomOpen || inspectorHidden} execution={visualization ? { phase: recordingIsCurrent ? execution!.phase : recordedPhase, lens: timelineLens, liveCursor: visualization.trace.events.length, onLensChange: (lens) => setTimelineLens(lens) } : undefined}/>
@@ -1225,8 +1264,8 @@ export function IdeWorkspace() {
         </div>
         <div className="ide-divider ide-divider--horizontal" role="separator" aria-label="Resize bottom panel" tabIndex={0} {...divider('bottom')}/>
         <section className="ide-bottom-panel">
-          <div className="ide-tool-tabs"><button className="ide-bottom-toggle" onClick={() => setBottomOpen((value) => !value)} aria-label={bottomOpen ? 'Collapse bottom panel' : 'Expand bottom panel'} title={`Toggle bottom panel (${formatShortcut(ideShortcuts.tools, platform)})`}><PanelBottom size={15}/></button>
-            {availableTools.map((item) => <button key={item} className={tool === item && bottomOpen ? 'is-active' : ''} onClick={() => { setBottomOpen(true); setTool(item); if (item === 'errors' || item === 'debugger') setBottomHeight(35) }}>{item === 'errors' ? 'ERROR EXPLORER' : item.toUpperCase()}{item === 'problems' && problems.length > 0 && <span className="ide-badge">{problems.length}</span>}</button>)}
+          <div className="ide-tool-tabs"><button className="ide-bottom-toggle" onClick={() => invoke('workbench.tools', {})} aria-label={bottomOpen ? 'Collapse bottom panel' : 'Expand bottom panel'} title={`Toggle bottom panel (${formatShortcut(ideShortcuts.tools, platform)})`}><PanelBottom size={15}/></button>
+            {availableTools.map((item) => <button key={item} className={tool === item && bottomOpen ? 'is-active' : ''} onClick={() => { bottomPinned.current = true; setBottomOpen(true); setTool(item); if (item === 'errors' || item === 'debugger') setBottomHeight(35) }}>{item === 'errors' ? 'ERROR EXPLORER' : item.toUpperCase()}{item === 'problems' && problems.length > 0 && <span className="ide-badge">{problems.length}</span>}</button>)}
             <span className="ide-status-spacer"/>
           </div>
           {tool === 'debugger' ? <DebugPanel session={debugSession} runtime={runtime} breakpoints={displayedBreakpoints} onInspect={(selection) => navigateRuntime(runtime?.cursor ?? 0, selection)} onRemove={removeBreakpoint}/>
@@ -1250,11 +1289,30 @@ export function IdeWorkspace() {
         </section>
       </section>}
     </div>
+    <footer className="ide-status-line" aria-label="Workspace status">
+      {!jdk?.available && <span className="is-error">JDK unavailable</span>}
+      {(projectStatus.startsWith('Resolving') || javaProject?.status !== 'ready') && <span className="ide-project-status" title={javaProject?.diagnostic ?? projectStatus}>{projectStatus}</span>}
+      {(["failed", "unavailable"].includes(languageSnapshot.status) || languageSnapshot.metrics.classpathMismatch === 1) && <span className={languageSnapshot.metrics.classpathMismatch === 1 ? 'is-warning' : 'is-error'} title={languageSnapshot.message ?? 'Java language service'}>Java {languageSnapshot.metrics.classpathMismatch === 1 ? 'classpath differs' : languageSnapshot.status}</span>}
+      {["failed", "unavailable"].includes(languageSnapshot.status) && <button className="ide-language-restart" onClick={() => invoke('workbench.restartJava', {})}>Retry Java</button>}
+      {execution && <span className="ide-execution-status" aria-live="polite">{execution.phase === 'FAILED' && execution.failureKind === 'build' ? 'BUILD FAILED' : execution.phase.replaceAll('_', ' ')}{execution.support === 'RUN_ONLY' && (execution.supportReason !== 'No verified runtime events yet' || ['COMPLETED', 'FAILED'].includes(execution.phase)) && execution.phase !== 'BUILDING' ? ' · console only' : ''}</span>}
+      {traceStale && <span className="is-warning">Source changed since Run</span>}
+      {execution?.supportReason && (execution.support === 'RUN_ONLY' && execution.supportReason !== 'No verified runtime events yet' || execution.support === 'PARTIAL' && ['COMPLETED', 'FAILED', 'STOPPED'].includes(execution.phase)) && <details className="ide-support-detail"><summary>Visualization {execution.support.toLowerCase().replace('_', ' ')}</summary><p>{execution.supportReason}</p></details>}
+      {recordingIsCurrent && <details className="ide-support-detail"><summary>Capture limits</summary><p>Recording stops at 20,000 raw events, 8 MiB, 256 identities or 128 live frames; Java continues. The 30-second active watchdog excludes input waits and Debug pauses; a 10-minute hard safety deadline applies in all states. Project code is recorded. Primitive and reference arrays have bounded summaries; class statics are available in the inspector. Library internals are collapsed. — means unavailable. Values and effects are last observed; changes outside recorded code may be absent.{visualization.capability.diagnostics.length > 0 && <><br/>{visualization.capability.diagnostics.slice(0, 3).join(' · ')}</>}</p></details>}
+      <span className="ide-status-spacer"/><span>{notice}</span>
+      <span className="ide-status-language" title={jdk?.version ?? 'JDK unavailable'}>{jdk?.available ? `Java ${jdk.version ?? ''}`.trim() : 'No JDK'} · {javaProject?.buildSystem ?? 'project'} · {languageSnapshot.status === 'ready' ? 'JDT ready' : `JDT ${languageSnapshot.status}`}</span>
+      <details className="ide-shortcuts"><summary>Shortcuts</summary><div>{Object.values(ideCommandDefinitions).filter((definition) => definition.bindings.length).map((definition) => <p key={definition.id}><kbd>{formatShortcut(definition.bindings[0], platform)}</kbd> {definition.title}</p>)}<p>F9 Toggle breakpoint · F1 Editor commands</p></div></details>
+
+    </footer>
+    {tabMenu && <WorkspaceMenu label={`Tab actions for ${tabMenu.context.target?.path}`} x={tabMenu.x} y={tabMenu.y}
+      items={tabMenuCommands.map((id) => ({ id, label: id === 'resource.rename' ? 'Rename' : ideCommandDefinitions[id].title, ...(busy ? { enabled: false as const, reason: 'Wait for the current operation' } : commands.availability(id, tabMenu.context)) }))}
+      onClose={() => setTabMenu(null)} onChoose={(id) => { const context = tabMenu.context; setTabMenu(null); setNotice(''); requestAnimationFrame(() => { void commands.execute(id as IdeCommandId, context, {}).catch(fail) }) }}/>}
+    {picker && <WorkspacePicker key={picker.mode} mode={picker.mode} items={pickerItems} onClose={() => setPicker(null)} onChoose={choosePicker}/>}
     {showLaunch && <LaunchDialog value={{ ...launch, mainClass }} targets={targets} onClose={() => setShowLaunch(false)} onSave={(configuration) => { launchRef.current = configuration; setLaunch(configuration); mainClassRef.current = configuration.mainClass; setMainClass(configuration.mainClass); cwdInvalidRef.current = false; setCwdInvalid(false); setShowLaunch(false) }}/>}
     {showSymbols && <SymbolSearch client={languageClient} onClose={() => setShowSymbols(false)} onOpen={(location) => commands.execute('file.open', commandContext(location.path), { location }).then(() => {})}/>}
     {projectDialog && <div className="ide-confirm-backdrop"><form className="ide-confirm ide-project-dialog" ref={projectDialogRef} role="dialog" aria-modal="true" aria-labelledby="ide-project-dialog-title" onSubmit={(event) => { event.preventDefault(); void submitProjectDialog() }} onKeyDown={(event) => { if (event.key === 'Escape') { event.preventDefault(); cancelProjectDialog() } else trapDialogTab(event) }}>
       <h2 id="ide-project-dialog-title">{projectDialog.kind === 'class' ? 'New Java Class' : projectDialog.kind === 'file' ? 'New File' : projectDialog.kind === 'folder' ? 'New Folder' : projectDialog.kind === 'rename' ? 'Rename' : projectDialog.kind === 'delete' ? 'Delete' : projectDialog.kind === 'open' ? 'Open File' : 'New Project'}</h2>
-      {projectDialog.kind === 'delete' ? <p>Delete <strong>{projectDialog.path}</strong> from this project?{!!projectDialog.dirtyPaths?.length && <> {projectDialog.dirtyPaths.length} unsaved files will be discarded unless saved first.</>}</p> : <label>{projectDialog.kind === 'project' ? 'Project name' : 'Path relative to project root'}<input value={projectDialog.value} onChange={(event) => setProjectDialog({ ...projectDialog, value: event.target.value })} spellCheck={false} required /></label>}
+      {projectDialog.kind === 'delete' ? <p>Delete <strong>{projectDialog.path}</strong> from this project?{!!projectDialog.dirtyPaths?.length && <> {projectDialog.dirtyPaths.length} unsaved files will be discarded unless saved first.</>}</p> : <label>{projectDialog.kind === 'project' ? 'Project name' : projectDialog.kind === 'class' ? 'Class name' : 'Path relative to project root'}<input value={projectDialog.value} onChange={(event) => setProjectDialog({ ...projectDialog, value: event.target.value })} spellCheck={false} required /></label>}
+      {notice && <p className="ide-dialog-notice" role="alert">{notice}</p>}
       <div><button type="button" onClick={cancelProjectDialog}>Cancel</button><>{projectDialog.kind === 'delete' && !!projectDialog.dirtyPaths?.length && <button type="button" disabled={busy} onClick={() => { const resolve = projectDialog.resolveDelete; setProjectDialog(null); resolve?.('save') }}>Save and delete</button>}</><button type="submit" className="ide-primary" disabled={busy}>{projectDialog.kind === 'delete' ? 'Delete' : projectDialog.kind === 'rename' ? 'Rename' : projectDialog.kind === 'open' ? 'Open' : 'Create'}</button></div>
     </form></div>}
     {pending && <div className="ide-confirm-backdrop"><div className="ide-confirm" ref={confirmRef} onKeyDown={(event) => {

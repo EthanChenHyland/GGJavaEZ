@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import type { CameraIntent, CameraMode, CameraPose, NavigationState, Selection } from '../contracts/interaction'
 import type { ReferenceId } from '../contracts/runtime'
 import type { DetailLevel, SceneModel, SceneReferenceEdge, Vec3, WorldAnchor } from '../contracts/world'
+import { sceneSourceId } from '../contracts/world'
 import { worldUnits } from '../theme/tokens'
 
 export const defaultHomePose: CameraPose = {
@@ -13,11 +14,15 @@ export type NavigationWorld = {
   anchors: Record<string, WorldAnchor>
   references: readonly SceneReferenceEdge[]
   homeTarget?: Vec3
+  /** Generic navigation must not resolve a departed slot from reserved ports. */
+  slotIds?: ReadonlySet<string>
+  /** Observed overflow slots focus their real owner without inventing a port. */
+  slotOwners?: ReadonlyMap<string, WorldAnchor>
 }
 
 /** Live geometry participates in collision/selection; framing stays trace-reserved. */
 export function navigationWorldForScene(scene: SceneModel, homeTarget?: Vec3): NavigationWorld {
-  const reserved = !!scene.bounds && ((scene.stackDepth ?? 0) > 1 || (scene.layoutKind === 'array' || scene.layoutKind === 'scoped'))
+  const reserved = !!scene.bounds && ((scene.stackDepth ?? 0) > 1 || (scene.layoutKind === 'array' || scene.layoutKind === 'scoped' || scene.layoutKind === 'spatial2'))
   return {
     anchors: Object.fromEntries([
       ...scene.frames.map((node) => [node.id, node.anchor] as const),
@@ -28,9 +33,20 @@ export function navigationWorldForScene(scene: SceneModel, homeTarget?: Vec3): N
         ports: {}, bodyPort: slot.port,
       }] as const)) : []),
       ...scene.objects.map((node) => [node.id, node.anchor] as const),
+      ...(scene.classes ?? []).map((node) => [node.id, node.anchor] as const),
+      ...(scene.io ?? []).map((node) => [node.id, node.anchor] as const),
       ...scene.objects.flatMap((node) => node.array?.cells.map((cell) => [cell.id, cell.anchor] as const) ?? []),
     ]),
     references: scene.references,
+    ...(scene.layoutKind === 'spatial2' ? { slotIds: new Set([
+      ...scene.frames.flatMap(node => node.slots.map(slot => slot.id)),
+      ...scene.objects.flatMap(node => [...node.fields.map(slot => slot.id), ...(node.array?.cells.map(cell => cell.id) ?? [])]),
+      ...(scene.classes ?? []).flatMap(node => node.fields.map(slot => slot.id)),
+    ]), slotOwners: new Map([
+      ...scene.frames.flatMap(node => node.slots.map(slot => [slot.id, node.anchor] as const)),
+      ...scene.objects.flatMap(node => node.fields.map(slot => [slot.id, node.anchor] as const)),
+      ...(scene.classes ?? []).flatMap(node => node.fields.map(slot => [slot.id, node.anchor] as const)),
+    ]) } : {}),
     homeTarget: reserved ? homeTarget ?? scene.bounds?.center : homeTarget,
   }
 }
@@ -39,6 +55,8 @@ export function navigationWorldForScene(scene: SceneModel, homeTarget?: Vec3): N
 export function collisionAnchorsForScene(scene: SceneModel): WorldAnchor[] {
   return [
     ...scene.frames.map((node) => node.anchor),
+    ...(scene.classes ?? []).map((node) => node.anchor),
+    ...(scene.io ?? []).map((node) => node.anchor),
     ...scene.objects.flatMap((node) => {
       if (!node.array) return [node.anchor]
       const { position, size } = node.anchor
@@ -61,6 +79,8 @@ export interface NavigationStore extends NavigationState {
   previousMode: CameraMode | null
   intent: CameraIntent | null
   intentRevision: number
+  /** Changes only across coarse camera tiles, not every orbit frame. */
+  viewRevision: number
   setRepresentation: (presentation: 'spatial' | 'theater') => void
   home: () => void
   resetView: () => void
@@ -90,6 +110,7 @@ export const useNavigationStore = create<NavigationStore>((set) => ({
   previousMode: null,
   intent: null,
   intentRevision: 0,
+  viewRevision: 0,
   setRepresentation: (presentation) => set((state) => ({
     mode: presentation === 'theater' ? 'THEATER' : 'FREE_EXPLORE', isolatedSelection: null,
     followEnabled: false, traceReferenceId: null,
@@ -141,7 +162,9 @@ export const useNavigationStore = create<NavigationStore>((set) => ({
     isolatedSelection: null,
     intent: { kind: 'returnToPrevious' }, intentRevision: state.intentRevision + 1,
   })),
-  setPose: (pose) => set({ pose }),
+  setPose: (pose) => set(state => ({ pose,
+    viewRevision: state.viewRevision + Number(pose.target.some((value, axis) => Math.floor(value / 12) !== Math.floor(state.pose.target[axis] / 12))),
+  })),
   setDetailLevel: (detailLevel) => set({ detailLevel }),
   rememberPrevious: (previousPose, previousMode) => set({ previousPose, previousMode }),
 }))
@@ -168,9 +191,11 @@ export function homePose(homeTarget: Vec3 = worldUnits.homeTarget): CameraPose {
 export function selectionPoint(selection: NonNullable<Selection>, world: NavigationWorld): { position: Vec3; size: Vec3 } | null {
   if (selection.kind === 'reference') {
     const edge = world.references.find((reference) => reference.id === selection.id)
+    if (world.slotIds && edge && (!world.anchors[sceneSourceId(edge.source)] || !world.anchors[edge.targetObjectId])) return null
     return edge ? { position: midpoint(edge.from, edge.to), size: [distance(edge.from, edge.to), 1, 1] } : null
   }
   if (selection.kind === 'slot') {
+    if (world.slotIds && !world.slotIds.has(selection.id)) return null
     // Indexed locations are volumes, with their own identity and focus extent.
     const cell = world.anchors[selection.id]
     if (cell) return { position: cell.position, size: cell.size }
@@ -178,6 +203,8 @@ export function selectionPoint(selection: NonNullable<Selection>, world: Navigat
       const port = anchor.ports[selection.id]
       if (port) return { position: port, size: [1, 1, 1] }
     }
+    const owner = world.slotOwners?.get(selection.id)
+    if (owner) return { position: owner.position, size: owner.size }
     return null
   }
   const anchor = world.anchors[selection.id]

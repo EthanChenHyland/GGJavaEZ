@@ -1,45 +1,33 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { ChevronDown, ChevronRight } from 'lucide-react'
 import type { ProjectEntry } from './contracts'
+import { WorkspaceMenu } from './WorkspaceMenu'
+import { explorerMenuCommands } from './contextMenus'
+import { ideCommandDefinitions, type CommandAvailability, type CommandContext, type IdeCommandId } from './commands'
 import './ProjectExplorer.css'
+export { menuTargetIndex } from './contextMenus'
 
-export type TreeAction = 'class' | 'file' | 'folder' | 'rename' | 'delete' | 'reveal' | 'refresh'
+export type TreeAction = 'class' | 'file' | 'folder' | 'rename' | 'delete' | 'reveal' | 'copy' | 'open' | 'refresh'
 interface VisibleEntry { entry: ProjectEntry; depth: number; parent: string | null }
-
-export function menuTargetIndex(key: string, current: number, count: number): number | null {
-  if (!count) return null
-  if (key === 'Home') return 0
-  if (key === 'End') return count - 1
-  if (current < 0 && key === 'ArrowDown') return 0
-  if (current < 0 && key === 'ArrowUp') return count - 1
-  if (key === 'ArrowDown') return (current + 1 + count) % count
-  if (key === 'ArrowUp') return (current - 1 + count) % count
-  return null
-}
 
 function visibleEntries(tree: ProjectEntry[], collapsed: ReadonlySet<string>, depth = 1, parent: string | null = null): VisibleEntry[] {
   return tree.flatMap((entry) => [{ entry, depth, parent }, ...(entry.kind === 'directory' && !collapsed.has(entry.path) ? visibleEntries(entry.children ?? [], collapsed, depth + 1, entry.path) : [])])
 }
 
-export function ProjectExplorer({ tree, active, collapsed, onToggle, onOpen, onAction }: {
+export function ProjectExplorer({ tree, active, collapsed, onToggle, onOpen, onAction, availability, getCommandContext, onCommand }: {
   tree: ProjectEntry[]; active: string; collapsed: ReadonlySet<string>
+  availability?: (id: IdeCommandId, entry: ProjectEntry | null, context?: CommandContext) => CommandAvailability
+  getCommandContext?: (entry: ProjectEntry | null) => CommandContext
+  onCommand?: (id: IdeCommandId, context: CommandContext) => void
   onToggle: (path: string) => void; onOpen: (path: string) => void; onAction: (action: TreeAction, entry: ProjectEntry | null) => void
 }) {
   const visible = useMemo(() => visibleEntries(tree, collapsed), [tree, collapsed])
   const [focused, setFocused] = useState<string | null>(null)
-  const [menu, setMenu] = useState<{ entry: ProjectEntry | null; x: number; y: number } | null>(null)
+  const [menu, setMenu] = useState<{ entry: ProjectEntry | null; x: number; y: number; context?: CommandContext } | null>(null)
   const rowRefs = useRef(new Map<string, HTMLButtonElement>())
-  const menuRef = useRef<HTMLDivElement>(null)
-  useEffect(() => {
-    if (!menu) return
-    const close = (event: PointerEvent) => { if (!menuRef.current?.contains(event.target as Node)) setMenu(null) }
-    document.addEventListener('pointerdown', close)
-    return () => document.removeEventListener('pointerdown', close)
-  }, [menu])
   const focusPath = (path: string) => { setFocused(path); requestAnimationFrame(() => rowRefs.current.get(path)?.focus()) }
   const menuAt = (entry: ProjectEntry | null, x: number, y: number) => {
-    setMenu({ entry, x: Math.max(0, Math.min(x, window.innerWidth - 194)), y: Math.max(0, Math.min(y, window.innerHeight - 258)) })
-    requestAnimationFrame(() => menuRef.current?.querySelector<HTMLButtonElement>('button')?.focus())
+    setMenu({ entry, x, y, context: getCommandContext?.(entry) })
   }
   const action = (kind: TreeAction, entry: ProjectEntry | null) => { setMenu(null); onAction(kind, entry) }
   const onTreeKey = (event: React.KeyboardEvent<HTMLButtonElement>, row: VisibleEntry) => {
@@ -70,19 +58,22 @@ export function ProjectExplorer({ tree, active, collapsed, onToggle, onOpen, onA
         tabIndex={focused === row.entry.path || !focused && visible[0]?.entry.path === row.entry.path ? 0 : -1} title={row.entry.path}
         onFocus={() => setFocused(row.entry.path)} onKeyDown={(event) => onTreeKey(event, row)}
         onClick={() => row.entry.kind === 'directory' ? onToggle(row.entry.path) : onOpen(row.entry.path)}
-        onContextMenu={(event) => { event.preventDefault(); focusPath(row.entry.path); menuAt(row.entry, event.clientX, event.clientY) }}>
+        onContextMenu={(event) => { event.preventDefault(); event.currentTarget.focus(); setFocused(row.entry.path); menuAt(row.entry, event.clientX, event.clientY) }}>
         {row.entry.kind === 'directory' ? collapsed.has(row.entry.path) ? <ChevronRight size={13}/> : <ChevronDown size={13}/> : <span className="ide-java-icon">{row.entry.name.endsWith('.java') ? 'J' : row.entry.name === 'pom.xml' ? 'M' : row.entry.name.includes('gradle') ? 'G' : '·'}</span>}{row.entry.name}
       </button>
       <button className="ide-entry-more" aria-label={`Actions for ${row.entry.path}`} title="File actions" onClick={(event) => { const rect = event.currentTarget.getBoundingClientRect(); menuAt(row.entry, rect.left, rect.bottom) }}>···</button>
     </div>)}
     {!tree.length && <p className="ide-empty">Create a Java class or open a project.</p>}
-    {menu && <div ref={menuRef} className="ide-tree-menu" role="menu" aria-label={menu.entry ? `Actions for ${menu.entry.path}` : 'Project actions'} style={{ left: menu.x, top: menu.y }} onKeyDown={(event) => {
-      if (event.key === 'Escape') { event.preventDefault(); setMenu(null); if (menu.entry) focusPath(menu.entry.path); return }
-      const items = Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="menuitem"]'))
-      const target = menuTargetIndex(event.key, items.indexOf(document.activeElement as HTMLButtonElement), items.length)
-      if (target !== null) { event.preventDefault(); items[target].focus() }
-    }}>
-      {(['class', 'file', 'folder', ...(menu.entry ? ['rename', 'delete', 'reveal'] : []), 'refresh'] as TreeAction[]).map((kind) => <button type="button" role="menuitem" key={kind} onClick={() => action(kind, menu.entry)}>{kind === 'class' ? 'New Java Class' : kind === 'file' ? 'New File' : kind === 'folder' ? 'New Folder' : kind === 'rename' ? 'Rename' : kind === 'delete' ? 'Delete' : kind === 'reveal' ? 'Reveal in editor' : 'Refresh'}</button>)}
-    </div>}
+    {menu && <WorkspaceMenu label={menu.entry ? `Actions for ${menu.entry.path}` : 'Project actions'} x={menu.x} y={menu.y}
+      items={explorerMenuCommands(menu.entry?.kind ?? null).map((id) => ({ id, label: id === 'resource.rename' ? 'Rename' : ideCommandDefinitions[id].title, ...(availability?.(id, menu.entry, menu.context) ?? { enabled: true }) }))}
+      onClose={() => setMenu(null)} onChoose={(id) => {
+        const kinds: Partial<Record<IdeCommandId, TreeAction>> = { 'file.open': 'open', 'file.new': 'file', 'java.newClass': 'class', 'folder.new': 'folder', 'resource.rename': 'rename', 'resource.delete': 'delete', 'resource.copyPath': 'copy', 'explorer.reveal': 'reveal' }
+        const kind = kinds[id as IdeCommandId]
+        const entry = menu.entry
+        setMenu(null)
+        const context = menu.context
+        if (context && onCommand) requestAnimationFrame(() => onCommand(id as IdeCommandId, context))
+        else if (kind) requestAnimationFrame(() => onAction(kind, entry))
+      }}/>}
   </div>
 }

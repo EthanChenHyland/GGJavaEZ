@@ -69,6 +69,10 @@ describe('canonical command definitions and target enforcement', () => {
       'file.open', 'file.save', 'file.saveAll', 'editor.close', 'editor.closeOthers', 'editor.closeRight', 'editor.closeSaved',
       'file.new', 'java.newClass', 'folder.new', 'resource.rename', 'resource.delete', 'explorer.reveal', 'resource.copyPath', 'java.renameSymbol',
       'debug.startOrContinue', 'debug.pause', 'debug.stepOver', 'debug.stepInto', 'debug.stepOut', 'debug.stop', 'workbench.quickOpen', 'workbench.commandPalette',
+      'execution.run', 'execution.runWithoutVisualization', 'execution.build', 'execution.stop',
+      'workbench.explorer', 'workbench.source', 'workbench.edit', 'workbench.tools', 'workbench.console', 'workbench.problems', 'workbench.debugger',
+      'workbench.inspector', 'workbench.runtimeFocus', 'workbench.returnLive', 'workbench.launch', 'workbench.symbols', 'workbench.jdk',
+      'workbench.restartJava', 'workbench.importProject', 'workbench.newProject',
     ])
     expect(ideCommandDefinitions['java.renameSymbol']).toMatchObject({ scope: 'editor', bindings: [{ code: 'F2' }] })
     expect(ideCommandDefinitions['resource.rename'].bindings).toEqual([])
@@ -307,6 +311,19 @@ describe('resource commands with injected operations and prompts', () => {
     expect(f.operations.reveal).toHaveBeenCalledWith(f.context('b').target, expect.any(Object))
     expect(f.operations.open).not.toHaveBeenCalled()
   })
+  it.each(['a/A.java', 'b'])('Reveal and Copy Path keep the explicit %s target when another editor is active', async (path) => {
+    const f = fixture(), context = f.context(path)
+    f.set({ activePath: 'a/B.java' })
+    expect(f.service.availability('explorer.reveal', context)).toEqual({ enabled: true })
+    expect(f.service.availability('resource.copyPath', context)).toEqual({ enabled: true })
+    await f.service.execute('explorer.reveal', context, {})
+    await f.service.execute('resource.copyPath', context, {})
+    expect(f.operations.reveal).toHaveBeenCalledWith(context.target, context)
+    expect(f.operations.copyText).toHaveBeenCalledWith(path, context)
+    expect(f.operations.open).not.toHaveBeenCalled()
+    expect(f.operations.rename).not.toHaveBeenCalled()
+    expect(f.state.activePath).toBe('a/B.java')
+  })
 })
 
 describe('language, debug and invocation serialization', () => {
@@ -371,5 +388,45 @@ describe('language, debug and invocation serialization', () => {
     expect(f.operations.rename).not.toHaveBeenCalled()
     await f.service.execute('resource.copyPath', f.context('a/B.java'), {})
     expect(f.operations.copyText).toHaveBeenCalledOnce()
+  })
+})
+
+
+describe('Spatial shell registry integration', () => {
+  it('routes shell actions through the same serialized dispatcher', async () => {
+    const f = fixture()
+    const shell = vi.fn<CommandOperations['shell']>(async () => {})
+    f.host.operations.shell = shell
+    await f.service.execute('execution.run', f.context(), {})
+    await f.service.execute('workbench.source', f.context(), {})
+    expect(shell.mock.calls.map(([id]) => id)).toEqual(['execution.run', 'workbench.source'])
+    expect(shell.mock.calls[0][1]).toEqual(f.context())
+  })
+  it('discloses a real disabled reason and rechecks state before dispatch', async () => {
+    const f = fixture()
+    f.host.operations.shell = vi.fn(async () => {})
+    f.set({ shellAvailability: { 'execution.stop': { enabled: false, reason: 'No active execution' } } })
+    expect(f.service.availability('execution.stop', f.context())).toEqual({ enabled: false, reason: 'No active execution' })
+    await expect(f.service.execute('execution.stop', f.context(), {})).rejects.toThrow('No active execution')
+    expect(f.host.operations.shell).not.toHaveBeenCalled()
+    f.set({ shellAvailability: { 'execution.stop': { enabled: true } } })
+    await f.service.execute('execution.stop', f.context(), {})
+    expect(f.host.operations.shell).toHaveBeenCalledOnce()
+  })
+  it('rejects a palette selection captured in an earlier project generation', async () => {
+    const f = fixture(), context = f.context()
+    f.host.operations.shell = vi.fn(async () => {})
+    f.set({ workspaceGeneration: 2 })
+    await expect(f.service.execute('execution.run', context, {})).rejects.toThrow('older workspace')
+    expect(f.host.operations.shell).not.toHaveBeenCalled()
+  })
+  it('makes project creation/import available before a project exists without exposing Run', async () => {
+    const f = fixture()
+    f.set({ projectId: '', tabs: [], resources: [], closedDrafts: [], activePath: null })
+    f.host.operations.shell = vi.fn(async () => {})
+    await f.service.execute('workbench.newProject', f.context(), {})
+    await f.service.execute('workbench.importProject', f.context(), {})
+    await expect(f.service.execute('execution.run', f.context(), {})).rejects.toThrow('Open a project first')
+    expect(f.host.operations.shell).toHaveBeenCalledTimes(2)
   })
 })

@@ -1,0 +1,140 @@
+{
+  "id": "e29e5988-3746-44ba-839c-79bcdb449b6d",
+  "projectId": "59a20dc5-fdc6-40c5-8727-5930ae663f8f",
+  "phase": "COMPLETED",
+  "support": "FULL",
+  "supportReason": null,
+  "terminalStatus": "complete",
+  "diagnostic": null,
+  "exitCode": 0,
+  "stdout": "FIELDS 78 ARRAY 11\n",
+  "stderr": "",
+  "rawEvents": 120,
+  "invocations": 4,
+  "objects": 9,
+  "rawEventKinds": [
+    "array",
+    "enter",
+    "line",
+    "call",
+    "object",
+    "call_return",
+    "receiver_ready",
+    "string_object",
+    "field",
+    "exit",
+    "constructed",
+    "local",
+    "branch",
+    "array_write",
+    "local_end",
+    "field_read",
+    "return",
+    "array_read",
+    "library",
+    "console"
+  ],
+  "capability": {
+    "status": "partial",
+    "coveredClasses": [
+      "Main",
+      "Main$LargeRecord",
+      "Main$TinyRecord"
+    ],
+    "diagnostics": [],
+    "features": {
+      "methods": {
+        "status": "supported",
+        "reason": "Observed project method entry/exit",
+        "observedEvents": 8
+      },
+      "locals": {
+        "status": "supported",
+        "reason": "Debug local stores and parameters available",
+        "observedEvents": 16
+      },
+      "objects": {
+        "status": "supported",
+        "reason": "Observed project constructors",
+        "observedEvents": 7
+      },
+      "fields": {
+        "status": "supported",
+        "reason": "Observed instance field writes",
+        "observedEvents": 13
+      },
+      "references": {
+        "status": "supported",
+        "reason": "Observed reference identities",
+        "observedEvents": 9
+      },
+      "intArrays": {
+        "status": "supported",
+        "reason": "Observed int[] allocations",
+        "observedEvents": 2
+      },
+      "arrayReads": {
+        "status": "supported",
+        "reason": "Observed array reads",
+        "observedEvents": 1
+      },
+      "arrayWrites": {
+        "status": "supported",
+        "reason": "Observed array writes",
+        "observedEvents": 12
+      },
+      "sourceMapping": {
+        "status": "partial",
+        "reason": "Recorder lines require source-manifest resolution",
+        "observedEvents": 12
+      },
+      "branches": {
+        "status": "supported",
+        "reason": "Observed conditional outcomes",
+        "observedEvents": 13
+      },
+      "loops": {
+        "status": "partial",
+        "reason": "Branch probes do not establish source-level loop labels",
+        "observedEvents": 13
+      },
+      "scopes": {
+        "status": "partial",
+        "reason": "Lexical scopes are not completely reconstructed",
+        "observedEvents": 1
+      },
+      "returns": {
+        "status": "supported",
+        "reason": "Observed return operands and exits",
+        "observedEvents": 5
+      },
+      "exceptions": {
+        "status": "partial",
+        "reason": "Library/native exception internals are outside project capture",
+        "observedEvents": 0
+      },
+      "console": {
+        "status": "partial",
+        "reason": "Wrapped writes have recorder order; process pipes do not",
+        "observedEvents": 1
+      }
+    }
+  },
+  "javaProject": {
+    "projectId": "59a20dc5-fdc6-40c5-8727-5930ae663f8f",
+    "revision": "672de73bdc80e108f805339d77d6f7a1efb6d4674fc26386f90d444ff18782ab",
+    "buildSystem": "plain",
+    "status": "ready",
+    "diagnostic": null,
+    "sourceRoots": [
+      "."
+    ],
+    "testSourceRoots": [],
+    "outputRoots": [],
+    "dependencies": [],
+    "runnableTargets": [
+      "Main"
+    ],
+    "elapsedMs": 67
+  }
+}

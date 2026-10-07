@@ -1,0 +1,164 @@
+{
+  "sessionId": "0d135a59-1e0b-4e44-8d9b-1515b9db9360",
+  "rawEvents": 4307,
+  "recording": {
+    "state": "STOPPED_LIMIT",
+    "reason": "Recording budget exceeded: objects",
+    "budget": "objects",
+    "lastRecordedSeq": 4305,
+    "executionContinued": true
+  },
+  "javaExit": 0,
+  "baseline": {
+    "loadMs": 3214,
+    "seeksMs": [
+      741,
+      493,
+      482
+    ]
+  },
+  "samples": [
+    {
+      "mode": "before",
+      "loadMs": 3275.0107080000002,
+      "normalizedEvents": 6474,
+      "seeks": [
+        {
+          "cursor": 3237,
+          "ms": 431.22895800000015
+        },
+        {
+          "cursor": 2158,
+          "ms": 262.96100000000024
+        },
+        {
+          "cursor": 6474,
+          "ms": 114.7158330000002
+        }
+      ],
+      "metrics": {
+        "detailLevel": "macro",
+        "labels": 22,
+        "visibleLabels": 14,
+        "pickTargets": 42,
+        "frameCentersInView": 4,
+        "frames": 4,
+        "objects": 6,
+        "classes": 0,
+        "faceEntities": 1,
+        "references": 9,
+        "flows": 6,
+        "clusters": 2,
+        "quietVolumes": 0,
+        "drawCalls": 144,
+        "triangles": 22428,
+        "geometries": 133,
+        "textures": 4
+      },
+      "memory": {
+        "used": 247658726,
+        "total": 297352334
+      },
+      "overrides": {
+        "client": true,
+        "options": true
+      },
+      "errors": []
+    },
+    {
+      "mode": "after",
+      "loadMs": 2279.873625,
+      "normalizedEvents": 6474,
+      "seeks": [
+        {
+          "cursor": 3237,
+          "ms": 161.64158400000088
+        },
+        {
+          "cursor": 2158,
+          "ms": 130.77279200000157
+        },
+        {
+          "cursor": 6474,
+          "ms": 98.31733299999905
+        }
+      ],
+      "metrics": {
+        "detailLevel": "macro",
+        "labels": 22,
+        "visibleLabels": 14,
+        "pickTargets": 42,
+        "frameCentersInView": 4,
+        "frames": 4,
+        "objects": 6,
+        "classes": 0,
+        "faceEntities": 1,
+        "references": 9,
+        "flows": 6,
+        "clusters": 2,
+        "quietVolumes": 0,
+        "drawCalls": 144,
+        "triangles": 22428,
+        "geometries": 135,
+        "textures": 4
+      },
+      "memory": {
+        "used": 221668373,
+        "total": 283046321
+      },
+      "overrides": {
+        "client": false,
+        "options": false
+      },
+      "errors": []
+    },
+    {
+      "mode": "after",
+      "loadMs": 2284.674667000001,
+      "normalizedEvents": 6474,
+      "seeks": [
+        {
+          "cursor": 3237,
+          "ms": 174.6119579999995
+        },
+        {
+          "cursor": 2158,
+          "ms": 144.31762499999968
+        },
+        {
+          "cursor": 6474,
+          "ms": 99.55558399999973
+        }
+      ],
+      "metrics": {
+        "detailLevel": "macro",
+        "labels": 22,
+        "visibleLabels": 14,
+        "pickTargets": 42,
+        "frameCentersInView": 4,
+        "frames": 4,
+        "objects": 6,
+        "classes": 0,
+        "faceEntities": 1,
+        "references": 9,
+        "flows": 6,
+        "clusters": 2,
+        "quietVolumes": 0,
+        "drawCalls": 144,
+        "triangles": 22428,
+        "geometries": 135,
+        "textures": 4
+      },
+      "memory": {
+        "used": 224740789,
+        "total": 285692753
+      },
+      "overrides": {
+        "client": false,
+        "options": false
+      },
+      "errors": []
+    }
+  ],
+  "metric": "Fresh Chrome process per sample; retained actual session metadata endpoint redirected to its real backend snapshot. One local pre-fix baseline, two post-fix loads. Before overrides only client limit=256 and repeated project-option JSX allocation; same facts and rendering. Load ends at terminal runtime options, not physical GPU presentation. Seeks include Playwright action/UI commit and two animation frames; no cold-load p95 claim. Browser heap is uncollected whole frontend, not isolated semantic or GPU bytes."
+}

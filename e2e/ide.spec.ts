@@ -18,9 +18,17 @@ async function openProject(page: import('@playwright/test').Page, id: string) {
   await expect(page.getByRole('button', { name: 'Run', exact: true })).toBeEnabled()
   await expect(page.locator('.monaco-editor')).toBeVisible()
 }
-async function moreAction(page: import('@playwright/test').Page, name: string) {
-  await page.locator('.ide-more-actions > summary').click()
-  await page.locator('.ide-more-actions').getByRole('button', { name, exact: true }).click()
+// Phase5 replaces the More-actions Save All/Build buttons with canonical palette entries.
+// The tests still verify the actual saved revisions and compiler diagnostics below.
+async function paletteCommand(page: import('@playwright/test').Page, id: 'file.saveAll' | 'execution.build') {
+  await page.keyboard.press('ControlOrMeta+Shift+P')
+  const palette = page.getByRole('dialog', { name: 'Command Palette', exact: true })
+  const search = palette.getByRole('combobox', { name: 'Search commands', exact: true })
+  await search.fill(id)
+  await expect(palette.getByRole('option')).toHaveCount(1)
+  await expect(palette.getByRole('option')).toHaveAttribute('aria-disabled', 'false')
+  await search.press('Enter')
+  await expect(palette).toHaveCount(0)
 }
 async function executionPhase(request: import('@playwright/test').APIRequestContext, projectId: string, phase: ExecutionSession['phase']) {
   await expect.poll(async () => {
@@ -49,7 +57,7 @@ test('real IDE edits and saves Java files across tabs and reload', async ({ page
   await page.keyboard.press('ControlOrMeta+A')
   await page.keyboard.insertText('public class Main { public static void main(String[] args) { System.out.println("After"); } }')
   await expect(page.locator('.ide-dirty')).toBeVisible()
-  await moreAction(page, 'Save All')
+  await paletteCommand(page, 'file.saveAll')
   await expect(page.locator('.ide-dirty')).toHaveCount(0)
   await page.locator('.ide-tree-name').filter({ hasText: 'Helper.java' }).click()
   await expect(page.locator('.ide-tab')).toHaveCount(2)
@@ -63,7 +71,7 @@ test('real IDE edits and saves Java files across tabs and reload', async ({ page
 test('javac Problems navigate to the exact file and Monaco marker', async ({ page, request }) => {
   const id = await imported(request, 'Compiler', [{ path: 'Main.java', content: 'public class Main {\n public static void main(String[] args) {\n  UnknownType x;\n }\n}\n' }])
   await openProject(page, id)
-  await moreAction(page, 'Build')
+  await paletteCommand(page, 'execution.build')
   const problem = page.locator('.ide-problem').filter({ hasText: 'cannot find symbol' }).first()
   await expect(problem).toContainText('cannot find symbol')
   await problem.click()
@@ -192,7 +200,7 @@ test('draft reload does not overwrite a newer server revision', async ({ page, r
   page.on('dialog', (dialog) => dialog.accept())
   await page.reload()
   await expect(page.locator('.monaco-editor')).toContainText('myDraft')
-  await moreAction(page, 'Save All')
+  await paletteCommand(page, 'file.saveAll')
   await expect(page.locator('.ide-status-line')).toContainText('File changed on disk')
   expect((await (await request.get(`/api/projects/${id}/files?path=Main.java`)).json()).content).toContain('externalEdit')
 })

@@ -1,0 +1,156 @@
+{
+  "id": "984de06a-8a3c-461e-ac94-dd84642f7494",
+  "projectId": "f77661c0-018d-442a-a15d-07b814790281",
+  "phase": "FAILED",
+  "support": "PARTIAL",
+  "supportReason": "Some runtime facts are outside verified project coverage",
+  "terminalStatus": "program_crashed",
+  "diagnostic": "JVM exited with code 1",
+  "exitCode": 1,
+  "stdout": "",
+  "stderr": "Exception in thread \"main\" java.lang.IllegalArgumentException: negative deposit\n\tat audit.bank.Account.deposit(Account.java:21)\n\tat audit.bank.LedgerService.post(LedgerService.java:7)\n\tat audit.bank.Main.main(Main.java:19)\n",
+  "rawEvents": 105,
+  "invocations": 6,
+  "objects": 9,
+  "rawEventKinds": [
+    "array",
+    "enter",
+    "line",
+    "library",
+    "call",
+    "call_return",
+    "local",
+    "stdin_wait",
+    "stdin_read",
+    "string_object",
+    "branch",
+    "object",
+    "receiver_ready",
+    "exit",
+    "constructed",
+    "array_read",
+    "field",
+    "field_read",
+    "return",
+    "throw",
+    "unwind",
+    "console"
+  ],
+  "capability": {
+    "status": "partial",
+    "coveredClasses": [
+      "audit.bank.Account",
+      "audit.bank.LedgerService",
+      "audit.bank.Main",
+      "audit.bank.Receipt"
+    ],
+    "diagnostics": [
+      "JVM exited with code 1"
+    ],
+    "features": {
+      "methods": {
+        "status": "supported",
+        "reason": "Observed project method entry/exit",
+        "observedEvents": 9
+      },
+      "locals": {
+        "status": "supported",
+        "reason": "Debug local stores and parameters available",
+        "observedEvents": 5
+      },
+      "objects": {
+        "status": "supported",
+        "reason": "Observed project constructors",
+        "observedEvents": 7
+      },
+      "fields": {
+        "status": "supported",
+        "reason": "Observed instance field writes",
+        "observedEvents": 2
+      },
+      "references": {
+        "status": "supported",
+        "reason": "Observed reference identities",
+        "observedEvents": 9
+      },
+      "intArrays": {
+        "status": "supported",
+        "reason": "Observed int[] allocations",
+        "observedEvents": 2
+      },
+      "arrayReads": {
+        "status": "supported",
+        "reason": "Observed array reads",
+        "observedEvents": 3
+      },
+      "arrayWrites": {
+        "status": "partial",
+        "reason": "No array writes observed in this execution prefix",
+        "observedEvents": 0
+      },
+      "sourceMapping": {
+        "status": "partial",
+        "reason": "Recorder lines require source-manifest resolution",
+        "observedEvents": 18
+      },
+      "branches": {
+        "status": "supported",
+        "reason": "Observed conditional outcomes",
+        "observedEvents": 3
+      },
+      "loops": {
+        "status": "partial",
+        "reason": "Branch probes do not establish source-level loop labels",
+        "observedEvents": 3
+      },
+      "scopes": {
+        "status": "partial",
+        "reason": "Lexical scopes are not completely reconstructed",
+        "observedEvents": 0
+      },
+      "returns": {
+        "status": "supported",
+        "reason": "Observed return operands and exits",
+        "observedEvents": 4
+      },
+      "exceptions": {
+        "status": "partial",
+        "reason": "Library/native exception internals are outside project capture",
+        "observedEvents": 4
+      },
+      "console": {
+        "status": "partial",
+        "reason": "Wrapped writes have recorder order; process pipes do not",
+        "observedEvents": 5
+      }
+    }
+  },
+  "javaProject": {
+    "projectId": "f77661c0-018d-442a-a15d-07b814790281",
+    "revision": "ae35f92538ca514df1bddf0e58870dd9234c7a4e8bd591cb5a341adc7f05522b",
+    "buildSystem": "maven",
+    "status": "ready",
+    "diagnostic": null,
+    "sourceRoots": [
+      "src/main/java"
+    ],
+    "testSourceRoots": [
+      "src/test/java"
+    ],
+    "outputRoots": [
+      "target/classes"
+    ],
+    "dependencies": [
+      {
+        "name": "gson-2.13.2.jar"
+      },
+      {
+        "name": "error_prone_annotations-2.41.0.jar"
+      }
+    ],
+    "runnableTargets": [
+      "audit.bank.Main"
+    ],
+    "elapsedMs": 2652
+  }
+}

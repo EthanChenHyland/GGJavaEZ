@@ -64,6 +64,7 @@ test('object saturation keeps stdin, complete console, natural exit and inspecta
   expect(archivedErr.ok()).toBe(true)
   expect(await archivedErr.text()).toBe(done.stderr)
   await expect(page.locator('.ide-execution-status')).toContainText('COMPLETED')
+  await page.getByRole('button', { name: 'Show Console', exact: true }).click()
   await expect(page.locator('.ide-console-output')).toContainText('DONE 65')
   await expect(page.locator('.ide-console-output')).toContainText('REAL STDERR AFTER RECORDING')
   await expect(page.locator('.vj-timeline__event')).toContainText('Last recorded event')
@@ -91,10 +92,19 @@ test('object saturation keeps stdin, complete console, natural exit and inspecta
   for (const [width, height] of [[1728, 1117], [1440, 900], [1280, 800], [760, 900]]) {
     await page.setViewportSize({ width, height })
     await page.waitForTimeout(600)
+    const firstValue = page.locator('.inspector-row').first()
+    await expect(firstValue).toContainText('number')
+    const visibleValue = await firstValue.evaluate(row => {
+      const body = row.closest('.inspector-body')!.getBoundingClientRect()
+      const value = row.getBoundingClientRect()
+      return value.top >= body.top && value.bottom <= body.bottom
+    })
+    expect(visibleValue, `first observed row is fully visible at ${width}×${height}`).toBe(true)
     await page.screenshot({ path: `${screenshots}/partial-${width}x${height}.png` })
   }
   await page.setViewportSize({ width: 1440, height: 900 })
   await page.reload()
+  await page.getByRole('button', { name: 'Show Console', exact: true }).click()
   await expect(page.locator('.ide-console-output')).toContainText('DONE 65')
   await expect(page.locator('.vj-timeline__event')).toContainText('Last recorded event')
   expect(errors).toEqual([])
@@ -112,6 +122,7 @@ test('unsupported thread leaves a successful run and a truthful recorded prefix'
   expect(done.exitCode).toBe(0)
   expect(done.recording).toMatchObject({ state: 'STOPPED_UNSUPPORTED', budget: null, executionContinued: true })
   expect(new Set(done.rawEvents.filter((event) => event.type !== 'capture_saturated').map((event) => event.threadId)).size).toBe(1)
+  await page.getByRole('button', { name: 'Show Console', exact: true }).click()
   await expect(page.locator('.ide-console-output')).toContainText('WORKER 7')
   await expect(page.locator('.ide-console-output')).toContainText('THREAD DONE')
   await expect(page.locator('.vj-timeline__event')).toContainText('Last recorded event')

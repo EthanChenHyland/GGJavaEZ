@@ -24,8 +24,14 @@ export interface CommandSnapshot {
   debugState: 'inactive' | 'starting' | 'running' | 'paused' | 'stopped'
   languageReady: boolean
   editorPath: string | null
+  shellAvailability?: Partial<Record<ShellCommandId, CommandAvailability>>
 }
-export interface CommandArguments {
+export type ShellCommandId = 'execution.run' | 'execution.runWithoutVisualization' | 'execution.build' | 'execution.stop'
+  | 'workbench.explorer' | 'workbench.source' | 'workbench.edit' | 'workbench.tools' | 'workbench.console'
+  | 'workbench.problems' | 'workbench.debugger' | 'workbench.inspector' | 'workbench.runtimeFocus' | 'workbench.returnLive'
+  | 'workbench.launch' | 'workbench.symbols' | 'workbench.jdk' | 'workbench.restartJava' | 'workbench.importProject' | 'workbench.newProject'
+type ShellCommandArguments = { [K in ShellCommandId]: Record<string, never> }
+export interface CommandArguments extends ShellCommandArguments {
   'file.open': { location?: SourceLocation }
   'file.save': Record<string, never>
   'file.saveAll': Record<string, never>
@@ -97,6 +103,7 @@ export interface CommandOperations {
   debug(command: DebugCommand, context: CommandContext): Promise<void>
   quickOpen(context: CommandContext): Promise<void>
   commandPalette(context: CommandContext): Promise<void>
+  shell(id: ShellCommandId, context: CommandContext): Promise<void>
 }
 export interface IdeCommandHost {
   snapshot(): CommandSnapshot
@@ -129,7 +136,7 @@ export const ideCommandDefinitions: Readonly<Record<IdeCommandId, CommandDefinit
   'explorer.reveal': definition('explorer.reveal', 'Reveal in Explorer', 'File'),
   'resource.copyPath': definition('resource.copyPath', 'Copy Path', 'File'),
   'java.renameSymbol': definition('java.renameSymbol', 'Rename Symbol', 'Java', [{ code: 'F2' }], 'editor'),
-  'debug.startOrContinue': definition('debug.startOrContinue', 'Start/Continue Debug', 'Debug', [{ code: 'F5' }]),
+  'debug.startOrContinue': definition('debug.startOrContinue', 'Start/Continue Debug', 'Debug', [{ code: 'F5' }, { code: 'KeyD', alt: true, shift: true }]),
   'debug.pause': definition('debug.pause', 'Pause Debug', 'Debug'),
   'debug.stepOver': definition('debug.stepOver', 'Step Over', 'Debug', [{ code: 'F10' }]),
   'debug.stepInto': definition('debug.stepInto', 'Step Into', 'Debug', [{ code: 'F11' }]),
@@ -137,6 +144,26 @@ export const ideCommandDefinitions: Readonly<Record<IdeCommandId, CommandDefinit
   'debug.stop': definition('debug.stop', 'Stop Debug', 'Debug', [{ code: 'F5', shift: true }]),
   'workbench.quickOpen': definition('workbench.quickOpen', 'Quick Open', 'Workbench', [{ code: 'KeyP', primary: true }]),
   'workbench.commandPalette': definition('workbench.commandPalette', 'Command Palette', 'Workbench', [{ code: 'KeyP', primary: true, shift: true }]),
+  'execution.run': definition('execution.run', 'Run', 'Java', [{ code: 'KeyR', alt: true, shift: true }]),
+  'execution.runWithoutVisualization': definition('execution.runWithoutVisualization', 'Run Without Visualization', 'Java'),
+  'execution.build': definition('execution.build', 'Build Project', 'Java'),
+  'execution.stop': definition('execution.stop', 'Stop Execution', 'Java', [{ code: 'KeyX', alt: true, shift: true }]),
+  'workbench.explorer': definition('workbench.explorer', 'Toggle Explorer', 'Workbench', [{ code: 'KeyE', alt: true, shift: true }]),
+  'workbench.source': definition('workbench.source', 'Toggle Source', 'Workbench'),
+  'workbench.edit': definition('workbench.edit', 'Expand Source for Editing', 'Workbench'),
+  'workbench.tools': definition('workbench.tools', 'Toggle Tools', 'Workbench', [{ code: 'KeyB', alt: true, shift: true }]),
+  'workbench.console': definition('workbench.console', 'Show Console', 'Workbench', [{ code: 'KeyC', alt: true, shift: true }]),
+  'workbench.problems': definition('workbench.problems', 'Show Problems', 'Workbench', [{ code: 'KeyP', alt: true, shift: true }]),
+  'workbench.debugger': definition('workbench.debugger', 'Show Run & Debug', 'Workbench'),
+  'workbench.inspector': definition('workbench.inspector', 'Toggle Inspector', 'Workbench', [{ code: 'KeyI', alt: true, shift: true }]),
+  'workbench.runtimeFocus': definition('workbench.runtimeFocus', 'Toggle Runtime Focus', 'Workbench', [{ code: 'KeyF', alt: true, shift: true }]),
+  'workbench.returnLive': definition('workbench.returnLive', 'Return to Live', 'Workbench', [{ code: 'KeyL', alt: true, shift: true }]),
+  'workbench.launch': definition('workbench.launch', 'Launch Settings', 'Workbench'),
+  'workbench.symbols': definition('workbench.symbols', 'Find Java Symbol', 'Java', [{ code: 'KeyO', alt: true, shift: true }]),
+  'workbench.jdk': definition('workbench.jdk', 'Configure JDK', 'Java'),
+  'workbench.restartJava': definition('workbench.restartJava', 'Restart Java Language Service', 'Java'),
+  'workbench.importProject': definition('workbench.importProject', 'Import Folder (Copy)', 'File'),
+  'workbench.newProject': definition('workbench.newProject', 'New Project', 'File'),
 })
 
 export class CommandUnavailable extends Error {
@@ -156,7 +183,7 @@ export function createIdeCommandService(host: IdeCommandHost) {
   let queue: Promise<void> = Promise.resolve()
   const guard = (context: CommandContext): CommandSnapshot => {
     const state = host.snapshot()
-    if (!context.projectId || state.projectId !== context.projectId || state.workspaceGeneration !== context.workspaceGeneration) throw new CommandUnavailable('Command belongs to an older workspace')
+    if (state.projectId !== context.projectId || state.workspaceGeneration !== context.workspaceGeneration) throw new CommandUnavailable('Command belongs to an older workspace')
     if (context.target) {
       const target = context.target
       assertWorkspacePath(target.path)
@@ -180,6 +207,7 @@ export function createIdeCommandService(host: IdeCommandHost) {
     return context.target
   }
   const operation = (id: IdeCommandId, state: CommandSnapshot): keyof CommandOperations => {
+    if (isShellCommand(id)) return 'shell'
     if (id.startsWith('editor.')) return 'close'
     if (id.startsWith('debug.')) return id === 'debug.startOrContinue' && state.debugState !== 'paused' ? 'startDebug' : 'debug'
     const names = { 'file.open': 'open', 'file.save': 'save', 'file.saveAll': 'saveAll', 'file.new': 'createFile', 'java.newClass': 'createJavaClass', 'folder.new': 'createFolder', 'resource.rename': 'rename', 'resource.delete': 'delete', 'explorer.reveal': 'reveal', 'resource.copyPath': 'copyText', 'java.renameSymbol': 'renameSymbol', 'workbench.quickOpen': 'quickOpen', 'workbench.commandPalette': 'commandPalette' } as const
@@ -187,6 +215,8 @@ export function createIdeCommandService(host: IdeCommandHost) {
   }
   const requireAvailable = (id: IdeCommandId, context: CommandContext) => {
     const state = guard(context)
+    if (!context.projectId && !['workbench.importProject', 'workbench.newProject', 'workbench.jdk'].includes(id)) throw new CommandUnavailable('Open a project first')
+    if (isShellCommand(id) && state.shellAvailability?.[id]?.enabled === false) throw new CommandUnavailable((state.shellAvailability[id] as { enabled: false; reason: string }).reason)
     if (!host.operations[operation(id, state)]) throw new CommandUnavailable('Command operation is not connected')
     if (id === 'file.open') targetFile(context, state, false)
     if (id === 'file.save' || id.startsWith('editor.') && id !== 'editor.closeSaved') targetTab(context, state)
@@ -245,6 +275,7 @@ export function createIdeCommandService(host: IdeCommandHost) {
   const run = async <K extends IdeCommandId>(id: K, context: CommandContext, args: CommandArguments[K]): Promise<CommandResult> => {
     const live = requireAvailable(id, context), ops = host.operations
     const initial: CommandSnapshot = { ...live, tabs: live.tabs.map((tab) => ({ ...tab })), resources: live.resources.map((entry) => ({ ...entry })), closedDrafts: live.closedDrafts.map((draft) => ({ ...draft })) }
+    if (isShellCommand(id)) { await ops.shell!(id, context); return completed() }
     if (id.startsWith('editor.')) return closeEditors(id, context, initial)
     if (id === 'file.open') {
       const target = targetFile(context, initial, false), location = (args as CommandArguments['file.open']).location
@@ -333,4 +364,8 @@ export function createIdeCommandService(host: IdeCommandHost) {
       } catch (error) { return Promise.reject(error) }
     },
   }
+}
+
+export function isShellCommand(id: IdeCommandId): id is ShellCommandId {
+  return id.startsWith('execution.') || id.startsWith('workbench.') && id !== 'workbench.quickOpen' && id !== 'workbench.commandPalette'
 }

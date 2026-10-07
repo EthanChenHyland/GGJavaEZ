@@ -2,9 +2,11 @@ import { Vector3 } from 'three'
 import type { CameraPose, Selection } from '../contracts/interaction'
 import type { TraceEvent } from '../contracts/runtime'
 import type { SceneModel, SceneReferenceEdge, Vec3, WorldAnchor } from '../contracts/world'
+import { sceneSourceId } from '../contracts/world'
 import { easeOutCubic, motionMs, worldUnits } from '../theme/tokens'
 import { stackHeadingFootprint } from '../world/runtimeHeadings'
 import { distance, homePose, midpoint } from './navigation'
+import { spatial2HomePose } from './cameraSpatial2'
 
 export interface CameraWaypoint {
   pose: CameraPose
@@ -44,10 +46,10 @@ export function sampleCameraMove(move: CameraMove): { pose: CameraPose; done: bo
   return { pose: move.to, done: true }
 }
 
-export function guidedCameraAction(event: TraceEvent | null | undefined, followEnabled: boolean): 'home' | 'event' | null {
+export function guidedCameraAction(event: TraceEvent | null | undefined, followEnabled: boolean, layoutKind?: SceneModel['layoutKind']): 'home' | 'event' | null {
   if (!followEnabled || !event) return null
   if (event.type === 'PROGRAM_END') return 'home'
-  if (event.type === 'ALLOCATE_ARRAY') return 'home'
+  if (event.type === 'ALLOCATE_ARRAY' && layoutKind !== 'spatial2') return 'home'
   return event.importance === 'major' ? 'event' : null
 }
 
@@ -57,6 +59,8 @@ export interface ViewFraming {
 }
 
 export interface InspectorViewport {
+  leftInset?: number
+  rightInset?: number
   topInset?: number
   bottomInset?: number
   width: number
@@ -84,6 +88,7 @@ export function responsiveHomePose(target: Vec3 | undefined, aspect: number): Ca
  * their reserved geometry and attached headings at the same canonical yaw.
  */
 export function sceneHomePose(scene: Pick<SceneModel, 'stackDepth' | 'bounds' | 'layoutKind'>, target: Vec3 | undefined, view: ViewFraming, fitShallow = false): CameraPose {
+  if (scene.layoutKind === 'spatial2') return spatial2HomePose(scene.bounds, view)
   // Curated single-frame scenes retain their established camera pose, even when
   // a caller supplies bounds. A live debugger may explicitly fit its reserved world.
   if (!scene.bounds || (!fitShallow && (scene.stackDepth ?? 0) <= 1 && scene.layoutKind !== 'array' && scene.layoutKind !== 'scoped')) return responsiveHomePose(target, view.aspect)
@@ -142,7 +147,8 @@ export function representationTransition(
 /** Resolve semantic attention after reduction; a return favors its live caller. */
 export function eventFocusAnchor(event: TraceEvent, scene: SceneModel, activeEntityId?: string | null): WorldAnchor | null {
   const anchorFor = (id: string | null | undefined) => scene.frames.find((node) => node.id === id)?.anchor
-    ?? scene.objects.find((node) => node.id === id)?.anchor ?? null
+    ?? scene.objects.find((node) => node.id === id)?.anchor
+    ?? scene.classes?.find((node) => node.id === id)?.anchor ?? null
   if (event.type === 'ALLOCATE_ARRAY' || event.type === 'ARRAY_COMPARE') return anchorFor(event.objectId)
   if (event.type === 'ARRAY_READ' || event.type === 'ARRAY_WRITE') {
     const array = scene.objects.find((node) => node.id === event.objectId)
@@ -221,8 +227,8 @@ export function inspectorFocusPose(
 ): CameraPose {
   const width = Math.max(1, viewport.width)
   const height = Math.max(1, viewport.height)
-  const left = 20
-  const right = 20
+  const left = Math.min(viewport.leftInset ?? 20, width * 0.4)
+  const right = Math.min(viewport.rightInset ?? 20, width * 0.4)
   // Reserve runtime controls above and timeline/quality controls below.
   const top = Math.min(viewport.topInset ?? 64, height * 0.2)
   const bottom = Math.min(viewport.bottomInset ?? 190, height * 0.3)
@@ -326,7 +332,7 @@ export function traceWaypoints(
   view: ViewFraming,
   viewport?: InspectorViewport,
 ): readonly CameraWaypoint[] {
-  const sourceId = edge.source.kind === 'frame' ? edge.source.frameId : edge.source.objectId
+  const sourceId = sceneSourceId(edge.source)
   const context = [anchors[sourceId], anchors[edge.targetObjectId]].filter((anchor) => anchor !== undefined)
   const points = [edge.from, edge.to]
   const frame = (pivot: Vec3) => viewport

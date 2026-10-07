@@ -112,7 +112,7 @@ test('real factorial uses the shared stack visualizer', async ({ page, request }
   await page.getByRole('button', { name: 'Pause history replay' }).click()
 })
 
-test('real int array enters Theater, keeps indexed writes and reverse seeks', async ({ page, request }) => {
+test('real int array uses shared Spatial Focus, keeps indexed writes and reverse seeks', async ({ page, request }) => {
   const id = await project(request, 'RealArrays', [{ path: 'Main.java', content: 'public class Main { public static void main(String[] args) { int[] a={3,1}; if(a[0]>a[1]) { int temp=a[0]; a[0]=a[1]; a[1]=temp; } } }' }])
   await open(page, id)
   await page.getByRole('button', { name: 'Run', exact: true }).click()
@@ -124,12 +124,22 @@ test('real int array enters Theater, keeps indexed writes and reverse seeks', as
   const max = Number(await scrub.getAttribute('max'))
   expect(max).toBeGreaterThan(1)
   await scrub.fill(String(max))
+  // Completed embedded readouts are contextual to the selected array.
+  const picker = page.getByRole('combobox', { name: 'Select runtime entity' })
+  const arrayId = await picker.locator('option').filter({ hasText: /int\[\] #/ }).first().getAttribute('value')
+  expect(arrayId).toBeTruthy()
+  await picker.selectOption(arrayId!)
   await expect(page.locator('.array-status')).toContainText('[1, 3]')
-  await page.getByRole('button', { name: 'Theater', exact: true }).click()
+  // Generic JVM arrays stay in the shared Spatial world; the curated Theater
+  // remains an example mode, never an inferred replacement for a real project.
+  await page.getByRole('complementary', { name: 'Runtime inspector' }).getByRole('button', { name: 'Focus', exact: true }).click()
+  await expect(page.locator('.world-label')).toContainText('ISOLATED')
   await expect(page.getByRole('region', { name: 'Runtime world' }).locator('canvas')).toBeVisible()
   await scrub.fill('1')
   await expect(page.getByRole('combobox', { name: 'Select runtime entity' }).locator('option').filter({ hasText: /int\[\] #/ })).toHaveCount(0)
   await scrub.fill(String(max))
+  await expect(picker.locator(`option[value="${arrayId}"]`)).toHaveCount(1)
+  await picker.selectOption(arrayId!)
   await expect(page.locator('.array-status')).toContainText('[1, 3]')
 })
 
@@ -147,7 +157,7 @@ test('real control flow shows observed branches, source and stdout on the shared
   const max = await scrub.getAttribute('max')
   expect(Number(max)).toBeGreaterThan(1)
   await scrub.fill(max!)
-  await page.getByRole('button', { name: 'CONSOLE', exact: true }).click()
+  await page.getByRole('button', { name: 'Show Console', exact: true }).click()
   const recordedStdout = () => page.locator('.ide-console-output > .ide-console-stdout').allTextContents().then((lines) => lines.join(''))
   await expect.poll(recordedStdout).toContain('2')
   await expect(page.locator('.ide-tab.is-active')).toContainText('Main.java')
@@ -177,7 +187,7 @@ test('real uncaught exception leaves an incomplete, inspectable trace and raw JV
   await expect(explorer).toBeVisible()
   await explorer.getByText('Actual JVM stderr / stack trace', { exact: true }).click()
   await expect(explorer.locator('.error-summary pre')).toContainText('NullPointerException')
-  await page.getByRole('button', { name: 'CONSOLE', exact: true }).click()
+  await page.getByRole('button', { name: 'Show Console', exact: true }).click()
   await page.locator('.ide-console-terminal summary').click()
   await expect(page.locator('.ide-console-full-stderr')).toContainText('NullPointerException')
   await scrub.fill('1')

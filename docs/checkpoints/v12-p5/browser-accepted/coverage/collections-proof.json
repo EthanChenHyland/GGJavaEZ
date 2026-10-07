@@ -1,0 +1,17 @@
+{
+  "fixture": "07-array-list",
+  "exitCode": 0,
+  "recording": {
+    "state": "FULL",
+    "reason": null,
+    "budget": null,
+    "lastRecordedSeq": 91,
+    "executionContinued": true
+  },
+  "semanticEvents": 160,
+  "selected": {
+    "value": "jvm:object:o4",
+    "label": "java.util.ArrayList #4"
+  },
+  "errors": []
+}

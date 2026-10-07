@@ -97,6 +97,8 @@ test('a general nested-package project can be opened, edited, saved, and run', a
 
   // The explorer must handle a real source root and package directory, not
   // only the root-level Main.java used by the demo fixture.
+  const showExplorer = page.getByRole('button', { name: 'Show project explorer', exact: true })
+  if (await showExplorer.isVisible()) await showExplorer.click()
   const sourceRoot = page.getByRole('treeitem', { name: 'src', exact: true })
   await expect(sourceRoot).toBeVisible()
   if (await sourceRoot.getAttribute('aria-expanded') === 'false') await sourceRoot.click()
@@ -112,8 +114,14 @@ test('a general nested-package project can be opened, edited, saved, and run', a
   await page.keyboard.press('ControlOrMeta+A')
   await page.keyboard.insertText('package tools;\n\npublic class Main {\n  public static void main(String[] args) {\n    System.out.println("edited-general-project");\n  }\n}\n')
   await expect(page.locator('.ide-dirty')).toBeVisible()
-  await page.getByLabel('More actions').click()
-  await page.getByRole('button', { name: 'Save All', exact: true }).click()
+  await page.keyboard.press('ControlOrMeta+Shift+P')
+  const palette = page.getByRole('dialog', { name: 'Command Palette', exact: true })
+  const search = palette.getByRole('combobox', { name: 'Search commands', exact: true })
+  await search.fill('file.saveAll')
+  await expect(palette.getByRole('option')).toHaveCount(1)
+  await expect(palette.getByRole('option')).toHaveAttribute('aria-disabled', 'false')
+  await search.press('Enter')
+  await expect(palette).toHaveCount(0)
   await expect(page.locator('.ide-dirty')).toHaveCount(0)
 
   await page.getByRole('button', { name: 'Run', exact: true }).click()

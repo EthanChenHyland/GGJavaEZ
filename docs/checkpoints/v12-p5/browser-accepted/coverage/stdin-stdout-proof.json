@@ -1,0 +1,17 @@
+{
+  "fixture": "25-cross-feature-dispatch",
+  "exitCode": 0,
+  "recording": {
+    "state": "FULL",
+    "reason": null,
+    "budget": null,
+    "lastRecordedSeq": 518,
+    "executionContinued": true
+  },
+  "semanticEvents": 922,
+  "selected": {
+    "value": "jvm:object:o5",
+    "label": "dispatch.service.Dispatch #5"
+  },
+  "errors": []
+}

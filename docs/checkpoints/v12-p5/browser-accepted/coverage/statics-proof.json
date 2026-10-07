@@ -1,0 +1,17 @@
+{
+  "fixture": "01-static-initialization",
+  "exitCode": 0,
+  "recording": {
+    "state": "FULL",
+    "reason": null,
+    "budget": null,
+    "lastRecordedSeq": 51,
+    "executionContinued": true
+  },
+  "semanticEvents": 97,
+  "selected": {
+    "value": "jvm:frame:f2",
+    "label": "<clinit>() · completed · invocation 2"
+  },
+  "errors": []
+}

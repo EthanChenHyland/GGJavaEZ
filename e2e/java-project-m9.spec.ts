@@ -113,15 +113,21 @@ async function waitExecution(request: APIRequestContext, id: string, phase: Exec
   }, { timeout: 45_000, intervals: [100, 250, 500] }).toBe(phase)
   return (await (await request.get('/api/execution/current')).json()) as ExecutionSession
 }
-async function openMoreActions(page: Page) {
-  const menu = page.locator('.ide-more-actions')
-  if (await menu.getAttribute('open') === null) await page.getByLabel('More actions').click()
-  await expect(menu).toHaveAttribute('open', '')
+// Phase5 routes Build and Launch Settings through the canonical workspace palette.
+// Keep the real response, build-model, launch-payload and execution assertions unchanged.
+async function paletteCommand(page: Page, id: 'execution.build' | 'workbench.launch') {
+  await page.keyboard.press('ControlOrMeta+Shift+P')
+  const palette = page.getByRole('dialog', { name: 'Command Palette', exact: true })
+  const search = palette.getByRole('combobox', { name: 'Search commands', exact: true })
+  await search.fill(id)
+  await expect(palette.getByRole('option')).toHaveCount(1)
+  await expect(palette.getByRole('option')).toHaveAttribute('aria-disabled', 'false')
+  await search.press('Enter')
+  await expect(palette).toHaveCount(0)
 }
 async function buildFromUI(page: Page, id: string): Promise<BuildResult> {
   const pending = page.waitForResponse((response) => response.url().endsWith(`/api/projects/${id}/build`) && response.request().method() === 'POST')
-  await openMoreActions(page)
-  await page.getByRole('button', { name: 'Build', exact: true }).click()
+  await paletteCommand(page, 'execution.build')
   const response = await pending
   expect(response.ok(), await response.text()).toBe(true)
   return response.json() as Promise<BuildResult>
@@ -263,7 +269,8 @@ test('Maven people app resolves semantic Java and cross-package execution', asyn
   const hit = await paused(request, { reason: 'breakpoint', className: 'com.example.model.Person', line: breakpointLine }, entry.pause!.rawEventCount)
   await expect(page.locator('.ide-tab.is-active')).toContainText('Person.java')
   await expect(page.locator('.debug-paused-line')).toBeVisible()
-  await page.getByRole('button', { name: 'Out', exact: true }).click()
+  // The same debugger step-out command now has the explicit visible label "Step Out".
+  await page.getByRole('button', { name: 'Step Out', exact: true }).click()
   await paused(request, { className: 'com.example.service.PersonService' }, hit.pause!.rawEventCount)
 })
 
@@ -296,8 +303,7 @@ test('multiple mains and program arguments use one selected launch target', asyn
   expect(build.success, build.rawOutput).toBe(true)
   expect(build.mainClasses.length).toBeGreaterThanOrEqual(2)
   const target = build.mainClasses.at(-1)!
-  await openMoreActions(page)
-  await page.getByRole('button', { name: 'Launch settings' }).click()
+  await paletteCommand(page, 'workbench.launch')
   const dialog = page.getByRole('dialog', { name: 'Launch configuration' })
   await dialog.getByLabel('Main class').selectOption(target)
   await dialog.getByLabel('Program arguments').fill('["M9_TARGET_ARG"]')
@@ -328,6 +334,6 @@ test('broken Maven POM exposes useful build output in Problems', async ({ page, 
   const build = await buildFromUI(page, id)
   expect(build.success).toBe(false)
   expect(build.rawOutput || build.diagnostics.map((entry) => entry.message).join(' ')).toMatch(/pom|xml|Maven|project/i)
-  await expect(page.getByRole('button', { name: 'PROBLEMS' })).toBeVisible()
+  await expect(page.getByRole('button', { name: /^PROBLEMS/ })).toBeVisible()
   await expect(page.locator('.ide-problems')).toContainText(/pom|xml|Maven|project/i)
 })

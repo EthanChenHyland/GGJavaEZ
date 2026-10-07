@@ -7,7 +7,7 @@ import type { DetailLevel, SceneFrameNode } from '../../contracts/world'
 import { colors, motionMs, worldMaterial, worldUnits } from '../../theme/tokens'
 import { RuntimeLabel } from './RuntimeLabel'
 import { RuntimeSlot } from './RuntimeSlot'
-import { SolidBody } from './SolidBody'
+import { SolidBody, SolidFace } from './SolidBody'
 import { useMountSettle, useReducedMotion } from './presentationMotion'
 import { frameLabelDensity, projectedTextPixels, RuntimeLabelPolicy, type FrameLabelPolicy } from './runtimeText'
 import { frameFace, frameTerminalPosition } from './frameFace'
@@ -46,8 +46,16 @@ export function FrameSolid({ node, selected, related, onSelect, onSelectSlot, de
   const textZ = front + 0.018
   // Bound only face plates. Full slots and their ports remain available to
   // Inspector, selection, motion, and reference geometry.
-  const { rows, omitted, terminals } = frameFace(node, { readable, spacious, activeSlotId, selectedSlotId })
+  const face = frameFace(node, { readable, spacious, activeSlotId, selectedSlotId })
+  const hasPort = (slot: SceneFrameNode['slots'][number]) => Object.hasOwn(node.anchor.ports, slot.id)
+  const rows = face.rows.filter(hasPort)
+  const rowIds = new Set(rows.map(slot => slot.id))
+  const omitted = node.slots.filter(slot => !rowIds.has(slot.id))
+  const terminals = face.terminals.filter(hasPort)
+  const visibleTerminals = terminals.filter((slot, index) => index < 6 || slot.id === selectedSlotId || slot.id === activeSlotId)
   const scoped = Boolean(node.scopes?.length)
+  const slotSelected = node.slots.some(slot => slot.id === selectedSlotId)
+  const showDetails = detailLevel !== 'macro' || inspection || selected || slotSelected
   const scopes = node.scopes?.filter((scope) => scope.depth > 0) ?? []
   const innermostScopeDepth = Math.max(0, ...scopes.map((scope) => scope.depth))
   const exceptionCaption = node.exceptionState === 'origin' ? 'THROW'
@@ -63,7 +71,7 @@ export function FrameSolid({ node, selected, related, onSelect, onSelectSlot, de
   // Focus inspection always exposes face text; free exploration retains the
   // existing projected label-density policy.
   const labelPolicy = useRef<FrameLabelPolicy>({ enabled: false, density: 'full', pixelsPerUnit: 0, priority: false })
-  labelPolicy.current.enabled = !inspection && readable && !spacious && !scoped
+  labelPolicy.current.enabled = !inspection && !selected && !slotSelected && readable && !spacious && !scoped
   labelPolicy.current.priority = node.active || selected || node.slots.some(slot => slot.id === selectedSlotId)
   useFrame(({ camera, size: viewport, invalidate }) => {
     const policy = labelPolicy.current
@@ -84,13 +92,11 @@ export function FrameSolid({ node, selected, related, onSelect, onSelectSlot, de
     <group position={[...position]} onClick={select}>
       <group ref={entranceRef}>
       <SolidBody size={size} accent={accent} bodyColor={historical ? worldMaterial.historyBody : worldMaterial.stackBody} selected={selected} related={related} active={node.active} historical={node.historical} />
-      <mesh position={[0, 0, front]}>
-        <boxGeometry args={[width - 0.14, height - 0.14, 0.018]} />
-        <meshBasicMaterial color={historical ? worldMaterial.historyFace : worldMaterial.stackFace} />
-      </mesh>
+      <SolidFace size={size} color={historical ? worldMaterial.historyFace : worldMaterial.stackFace} accent={accent} selected={selected}
+        dividerY={height / 2 - (spacious ? 0.66 : 0.5) - (spacious ? 0.44 : readable ? 0.38 : 0.32) / 2 - 0.025} />
       <RuntimeLabelPolicy.Provider value={omitted.length ? null : labelPolicy}>
         <group name="frame-face-metadata" onClick={select}>
-          <RuntimeLabel role="metadata" text={omitted.length ? `${metadata} · +${omitted.length} values · Inspector` : metadata} position={[-width / 2 + 0.22, height / 2 - (spacious ? 0.25 : 0.21), textZ]} size={spacious ? 0.25 : readable ? 0.22 : 0.16} color={node.exceptionState || node.invocationStatus === 'unwound' || node.invocationStatus === 'failed' ? colors.exception : node.active && readable ? colors.execution : colors.stack} maxWidth={omitted.length || readable || exceptionCaption ? width - 0.6 : 1.7} />
+          <RuntimeLabel role="metadata" text={!showDetails ? `${metadata} · ${node.slots.length} values` : omitted.length ? `${metadata} · +${omitted.length} values · Inspector` : metadata} position={[-width / 2 + 0.22, height / 2 - (spacious ? 0.25 : 0.21), textZ]} size={spacious ? 0.25 : readable ? 0.22 : 0.16} color={node.exceptionState || node.invocationStatus === 'unwound' || node.invocationStatus === 'failed' ? colors.exception : node.active && readable ? colors.execution : historical ? colors.textMuted : colors.stack} maxWidth={width - 0.6} />
         </group>
       </RuntimeLabelPolicy.Provider>
       <RuntimeLabel role="identity" text={node.label} position={[-width / 2 + 0.22, height / 2 - (spacious ? 0.66 : 0.5), textZ]} size={spacious ? 0.44 : readable ? 0.38 : 0.32} maxWidth={width - 0.85} />
@@ -113,25 +119,25 @@ export function FrameSolid({ node, selected, related, onSelect, onSelectSlot, de
             <group scale={[1, 1, plateDepth / worldUnits.frame[2]]}>
               <SolidBody size={[scopeWidth, scopeHeight, worldUnits.frame[2]]} accent={colors.stack} bodyColor={historical ? worldMaterial.historyBody : worldMaterial.stackBody} selected={false} related={selected || related} />
             </group>
-            {detailLevel !== 'macro' && (
+            {showDetails && (
               <RuntimeLabel text={scope.label} position={[-scopeWidth / 2 + worldUnits.scope.inset, scopeHeight / 2 - worldUnits.scope.inset, plateDepth / 2 + 0.014]} size={0.23} color={node.active && scope.depth === innermostScopeDepth ? colors.execution : colors.stack} maxWidth={scopeWidth - worldUnits.scope.inset * 2} />
             )}
           </group>
         )
       })}
-      {rows.map((slot) => (
+      {showDetails && rows.map((slot) => (
         <RuntimeSlot key={slot.id} slot={slot}
           width={width - (scoped ? (slot.scopeDepth ?? 0) * worldUnits.scope.inset * 2 : 0)}
           y={slot.port[1] - position[1]} z={scoped ? slot.port[2] - position[2] : textZ}
-          compact fitText={scoped || inspection} readable={readable || scoped} textScale={inspection ? 1.45 : spacious ? 1.25 : 1}
-          accent={colors.stack} background={historical ? worldMaterial.historySlot : worldMaterial.stackSlot}
+          compact fitText readable={readable || scoped} textScale={inspection ? 1.45 : spacious ? 1.25 : 1}
+          accent={historical ? colors.textMuted : colors.stack} background={historical ? worldMaterial.historySlot : worldMaterial.stackSlot}
           selected={slot.id === selectedSlotId} active={slot.id === activeSlotId}
           onSelect={onSelectSlot ? () => onSelectSlot(slot.id) : undefined} reducedMotion={motionReduced} />
       ))}
       {/* Named terminals stay at the exact reserved ports, including X/Z.
           They carry no replacement plate or reference endpoint. */}
       <RuntimeLabelPolicy.Provider value={null}>
-        {terminals.map((slot) => (
+        {showDetails && visibleTerminals.map((slot) => (
           <group key={slot.id} name={`slot-terminal:${slot.id}`} position={[...frameTerminalPosition(slot, node)]}
             onClick={onSelectSlot ? (event) => { event.stopPropagation(); onSelectSlot(slot.id) } : select}>
             <mesh>

@@ -11,7 +11,7 @@ const rendered = vi.hoisted(() => ({
 }))
 vi.mock('@react-three/fiber', () => ({ useFrame: vi.fn(), useThree: () => vi.fn() }))
 vi.mock('./RuntimeLabel', () => ({ RuntimeLabel: (props: RuntimeLabelProps) => { rendered.labels.push(props); return null } }))
-vi.mock('./SolidBody', () => ({ SolidBody: (props: typeof rendered.bodies[number]) => { rendered.bodies.push(props); return null } }))
+vi.mock('./SolidBody', () => ({ SolidBody: (props: typeof rendered.bodies[number]) => { rendered.bodies.push(props); return null }, SolidFace: () => null }))
 vi.mock('./RuntimeSlot', async () => {
   const actual = await vi.importActual<typeof import('./RuntimeSlot')>('./RuntimeSlot')
   return { ...actual, RuntimeSlot: (props: RuntimeSlotProps) => {
@@ -40,11 +40,12 @@ function slot(id: string, scopeId: string, scopeDepth: number, y: number): Scene
     port: [origin[0] + frameSize[0] / 2 + 0.04, y, front + 0.05 + scopeDepth * worldUnits.scope.depthOffset] }
 }
 function frame(): SceneFrameNode {
+  const slots = [slot('total', 'root', 0, 1.08), slot('i', 'loop', 1, 0.24), slot('raw', 'body', 2, -0.63)]
   return {
     kind: 'frame', id: 'main', label: 'main()', depth: 0, active: true,
-    anchor: { entityId: 'main', region: 'stack', position: origin, size: frameSize, ports: {}, bodyPort: origin },
+    anchor: { entityId: 'main', region: 'stack', position: origin, size: frameSize, ports: Object.fromEntries(slots.map(slot => [slot.id, slot.port])), bodyPort: origin },
     // Nonuniform reserved Y coordinates must survive rendering without compaction.
-    slots: [slot('total', 'root', 0, 1.08), slot('i', 'loop', 1, 0.24), slot('raw', 'body', 2, -0.63)],
+    slots,
     scopes: [scope('root', 0, 0.4, 3.9, ['total']), scope('loop', 1, -0.4, 2.3, ['i']), scope('body', 2, -0.8, 1.2, ['raw', 'ended'])],
   }
 }
@@ -150,11 +151,17 @@ describe('FrameSolid lexical scope geometry', () => {
     expect(rendered.labels.filter((label) => label.text.endsWith(' block')).every((label) => label.color === colors.stack)).toBe(true)
   })
 
-  it('retains scope volumes at macro detail while keeping runtime rows readable', () => {
+  it('retains scope volumes at macro detail and suppresses micro rows', () => {
     render({ detailLevel: 'macro' })
     expect(rendered.bodies).toHaveLength(3)
+    expect(rendered.slots).toHaveLength(0)
+    expect(rendered.labels.map((label) => label.text)).toEqual(['STACK FRAME · 3 values', 'main()'])
+  })
+
+  it.each([{ selected: true }, { selectedSlotId: 'raw' }, { inspection: true }])('preserves fitting scope rows for macro inspection %o', (props) => {
+    render({ detailLevel: 'macro', ...props })
     expect(rendered.slots).toHaveLength(3)
-    expect(rendered.labels.map((label) => label.text)).toEqual(['STACK FRAME', 'main()', 'total', 'int', '42', 'i', 'int', '42', 'raw', 'int', '42'])
+    expect(rendered.labels.map(label => label.text)).toContain('body block')
   })
 
   it('retains scope truth and raised row depths with reduced motion', () => {

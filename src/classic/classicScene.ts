@@ -1,3 +1,4 @@
+import { sceneSourceId } from '../contracts/world'
 import type { Selection } from '../contracts/interaction'
 import type { TraceEvent } from '../contracts/runtime'
 import type { SceneFrameNode, SceneModel, SceneSlot } from '../contracts/world'
@@ -12,6 +13,9 @@ export interface DiagramArray {
   cells: DiagramArrayCell[]
   /** Verified against the current values; completion is decided by the shared event. */
   ascending: boolean
+  observedCount: number
+  omittedCount: number
+  grid: boolean
 }
 export interface DiagramScope {
   id: string
@@ -23,11 +27,12 @@ export interface DiagramScope {
 }
 export interface DiagramEntity {
   id: string
-  kind: 'frame' | 'object'
+  kind: 'frame' | 'object' | 'class'
   label: string
   active: boolean
   invocationStatus?: SceneFrameNode['invocationStatus']
   exceptionState?: SceneFrameNode['exceptionState']
+  initialization?: NonNullable<SceneModel['classes']>[number]['initialization']
   rect: DiagramRect
   slots: DiagramSlot[]
   scopes?: DiagramScope[]
@@ -102,7 +107,7 @@ export function slotValue(slot: SceneSlot): string {
 }
 
 /** Presentation projection only. Fixed depth bands keep callers in place as callees enter/return. */
-export function buildClassicScene(scene: SceneModel, event: TraceEvent | null = null): ClassicScene {
+export function buildClassicScene(scene: SceneModel, event: TraceEvent | null = null, selection: Selection = null): ClassicScene {
   const stackDepth = scene.stackDepth ?? 1
   const deepStack = stackDepth > 1
   const scoped = scene.layoutKind === 'scoped'
@@ -149,21 +154,56 @@ export function buildClassicScene(scene: SceneModel, event: TraceEvent | null = 
     }),
     ...scene.objects.map((object): DiagramEntity => {
       if (object.array) {
-        // Classic cell coordinates encode index, never numeric value or 3D theater staging.
-        const rect = { x: 600, y: 238, width: 330, height: 160 }
-        const sourceReference = scene.references.find((edge) => edge.targetObjectId === object.id && edge.source.kind === 'frame')
-        const name = sourceReference ? scene.frames.flatMap((frame) => frame.slots).find((slot) => slot.id === sourceReference.source.slotId)?.name ?? null : null
-        const cells = [...object.array.cells].sort((a, b) => a.index - b.index).map((cell): DiagramArrayCell => ({
+        const array = object.array
+        // Preserve small curated index bands. Declared length never shrinks a
+        // generic/sparse cell; only actual observed cells enter the bounded grid.
+        const grid = scene.layoutKind === 'spatial2' || array.length > 5
+        const ordered = [...array.cells].sort((a, b) => grid
+          ? b.anchor.position[2] - a.anchor.position[2] || b.anchor.position[1] - a.anchor.position[1] || a.anchor.position[0] - b.anchor.position[0] || a.index - b.index
+          : a.index - b.index)
+        const priority = new Set<string>()
+        if (selection?.kind === 'slot') priority.add(selection.id)
+        if (selection?.kind === 'reference') {
+          const edge = scene.references.find(edge => edge.id === selection.id)
+          if (edge && sceneSourceId(edge.source) === object.id) priority.add(edge.source.slotId)
+        }
+        const activity = scene.arrayActivity
+        if (activity?.objectId === object.id && activity.eventId === scene.activeEventId) {
+          const indices = activity.kind === 'compare' ? activity.indices : [activity.index]
+          for (const cell of ordered) if (indices.includes(cell.index)) priority.add(cell.id)
+        }
+        for (const mutation of scene.arrayMutations ?? []) if (mutation.objectId === object.id && mutation.eventId === scene.activeEventId) {
+          for (const cell of ordered) if (cell.index === mutation.index || mutation.from?.kind === 'element' && cell.index === mutation.from.index) priority.add(cell.id)
+        }
+        // Retain actual outgoing reference sources when capacity allows. Selection
+        // and current activity take precedence over quiet rows.
+        const retained = new Set([...priority].filter(id => ordered.some(cell => cell.id === id)).slice(0, 16))
+        for (const edge of scene.references) if (sceneSourceId(edge.source) === object.id && retained.size < 16
+          && ordered.some(cell => cell.id === edge.source.slotId)) retained.add(edge.source.slotId)
+        for (const cell of ordered) if (retained.size < 16) retained.add(cell.id)
+        const shown = grid ? ordered.filter(cell => retained.has(cell.id)) : ordered
+        const rect = { x: scene.layoutKind === 'spatial2' ? 600 + object.anchor.position[0] * 16 : 600,
+          y: scene.layoutKind === 'spatial2' ? 238 - object.anchor.position[1] * 40 + object.anchor.position[2] * 8 : 238,
+          width: 330, height: grid ? 88 + Math.max(1, Math.ceil(shown.length / 4)) * 80 : 160 }
+        const sourceReference = scene.references.find((edge) => edge.targetObjectId === object.id)
+        const sourceId = sourceReference && sceneSourceId(sourceReference.source)
+        const owner = sourceId && [...scene.frames, ...scene.objects, ...(scene.classes ?? [])].find(node => node.id === sourceId)
+        const sourceSlots = owner ? 'slots' in owner ? owner.slots : [...owner.fields, ...('array' in owner ? owner.array?.cells ?? [] : [])] : []
+        const name = sourceSlots.find(slot => slot.id === sourceReference?.source.slotId)?.name ?? null
+        const cells = shown.map((cell, ordinal): DiagramArrayCell => ({
           slot: cell, index: cell.index, value: slotValue(cell),
-          rect: { x: rect.x + cell.index * rect.width / Math.max(1, object.array!.length), y: rect.y + 64, width: rect.width / Math.max(1, object.array!.length), height: 72 },
+          rect: { x: rect.x + (grid ? ordinal % 4 : cell.index) * rect.width / (grid ? 4 : Math.max(1, array.length)),
+            y: rect.y + 64 + (grid ? Math.floor(ordinal / 4) * 80 : 0), width: rect.width / (grid ? 4 : Math.max(1, array.length)) - (grid ? 8 : 0), height: 72 },
         }))
-        const values = cells.map((cell) => cell.slot.value.kind === 'primitive' && cell.slot.value.javaType === 'int' &&
-          typeof cell.slot.value.value === 'number' && Number.isFinite(cell.slot.value.value) ? cell.slot.value.value : null)
-        const ascending = values.length === object.array.length && values.every((value, index) => {
+        const byIndex = [...array.cells].sort((a, b) => a.index - b.index)
+        const values = byIndex.map(cell => cell.value.kind === 'primitive' && cell.value.javaType === 'int' &&
+          typeof cell.value.value === 'number' && Number.isFinite(cell.value.value) ? cell.value.value : null)
+        const ascending = values.length === array.length && byIndex.every((cell, index) => cell.index === index) && values.every((value, index) => {
           const previous = values[index - 1]
           return value !== null && (index === 0 || (previous !== null && previous <= value))
         })
-        return { id: object.id, kind: 'object', label: object.label, active: false, rect, slots: [], array: { length: object.array.length, name, cells, ascending } }
+        return { id: object.id, kind: 'object', label: object.label, active: false, rect, slots: [],
+          array: { length: array.length, name, cells, ascending, observedCount: array.cells.length, omittedCount: array.cells.length - cells.length, grid } }
       }
       // Project persistent heap anchors, never a live-object count or camera-dependent order.
       const x = 600 + object.anchor.position[0] * 16
@@ -176,22 +216,45 @@ export function buildClassicScene(scene: SceneModel, event: TraceEvent | null = 
         })),
       }
     }),
+    ...(scene.classes ?? []).map((node): DiagramEntity => {
+      // A dedicated class-storage lane uses persistent anchors, never live class
+      // order. Existing stack/heap rectangles are unaffected by static storage.
+      const x = 960 + node.anchor.position[0] * 16
+      const y = 238 - node.anchor.position[1] * 40 + node.anchor.position[2] * 8
+      const reserved = Object.keys(node.anchor.ports)
+      const ranks = new Map(reserved.map((id, index) => [id, index]))
+      let unreserved = reserved.length
+      return { id: node.id, kind: 'class', label: node.label, initialization: node.initialization, active: false,
+        rect: { x, y, width: 330, height: 80 + Math.max(2, reserved.length + node.fields.filter(field => !Object.hasOwn(node.anchor.ports, field.id)).length) * 48 },
+        slots: node.fields.map(slot => ({ slot, value: slotValue(slot),
+          rect: { x, y: y + 64 + (ranks.get(slot.id) ?? unreserved++) * 48, width: 330, height: 48 } })) }
+    }),
   ]
   const references = scene.references.flatMap((edge): DiagramReference[] => {
-    const sourceId = edge.source.kind === 'frame' ? edge.source.frameId : edge.source.objectId
+    const sourceId = sceneSourceId(edge.source)
     const source = entities.find((entity) => entity.id === sourceId)
     const slot = source && [...source.slots, ...(source.array?.cells ?? [])].find((row) => row.slot.id === edge.source.slotId)
     const target = entities.find((entity) => entity.id === edge.targetObjectId)
     if (!source || !slot || !target) return []
-    const from = [slot.rect.x + slot.rect.width, slot.rect.y + slot.rect.height / 2] as const
+    const gridSource = !!source.array?.grid
+    const reverse = (source.kind === 'class' || gridSource) && target.rect.x + target.rect.width <= source.rect.x
+    const from = [reverse ? slot.rect.x : slot.rect.x + slot.rect.width, slot.rect.y + slot.rect.height / 2] as const
     // Separate inbound lanes by semantic stack depth; p and this never cover each other.
     const sourceDepth = scene.frames.find((frame) => frame.id === sourceId)?.depth ?? 0
-    const to = [target.rect.x, target.rect.y + 76 - sourceDepth * 28] as const
+    const to = [reverse ? target.rect.x + target.rect.width : target.rect.x, target.rect.y + 76 - sourceDepth * 28] as const
     const bend = (to[0] - from[0]) * 0.5
+    // Grid gutters let a reference leave its exact cell without running across
+    // neighboring cell values. Curated single-row curves keep their old path.
+    const gutterX = from[0] + (reverse ? -4 : 4)
+    const laneY = slot.rect.y + slot.rect.height + 4
+    const outsideX = reverse ? source.rect.x - 12 : source.rect.x + source.rect.width + 12
+    const path = gridSource
+      ? `M ${from[0]} ${from[1]} L ${gutterX} ${from[1]} L ${gutterX} ${laneY} L ${outsideX} ${laneY} C ${outsideX} ${laneY + 24}, ${to[0] - bend} ${to[1]}, ${to[0]} ${to[1]}`
+      : `M ${from[0]} ${from[1]} C ${from[0] + bend} ${from[1]}, ${to[0] - bend} ${to[1]}, ${to[0]} ${to[1]}`
     return [{
       id: edge.id, sourceEntityId: sourceId, sourceSlotId: slot.slot.id, historical: edge.historical,
       targetObjectId: edge.targetObjectId, label: slot.slot.name, from, to,
-      path: `M ${from[0]} ${from[1]} C ${from[0] + bend} ${from[1]}, ${to[0] - bend} ${to[1]}, ${to[0]} ${to[1]}`,
+      path,
     }]
   })
   const flow = scene.returnFlow
@@ -249,7 +312,11 @@ export function buildClassicScene(scene: SceneModel, event: TraceEvent | null = 
       ? [source.rect.x + source.rect.width / 2, source.rect.y + source.rect.height] as const
       : [source.rect.x + source.rect.width, source.rect.y + source.rect.height / 2] as const
     const to = [receiver.rect.x + receiver.rect.width / 2, receiver.rect.y + receiver.rect.height] as const
-    const path = origin.kind === 'element'
+    const arrayEntity = entities.find(node => node.id === mutation.objectId)!
+    const outsideX = arrayEntity.rect.x + arrayEntity.rect.width + 12
+    const path = origin.kind === 'element' && array.grid
+      ? `M ${from[0]} ${from[1]} L ${from[0]} ${from[1] + 4} L ${outsideX} ${from[1] + 4} L ${outsideX} ${to[1] + 4} L ${to[0]} ${to[1] + 4} L ${to[0]} ${to[1]}`
+      : origin.kind === 'element'
       ? `M ${from[0]} ${from[1]} C ${from[0]} ${from[1] + 48}, ${to[0]} ${to[1] + 48}, ${to[0]} ${to[1]}`
       : `M ${from[0]} ${from[1]} C ${from[0] + 72} ${from[1]}, ${to[0]} ${to[1] + 64}, ${to[0]} ${to[1]}`
     return [{ eventId: mutation.eventId, objectId: mutation.objectId, slotId: receiver.slot.id, sourceSlotId: source.slot.id, before, after,
