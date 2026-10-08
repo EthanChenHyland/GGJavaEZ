@@ -1,0 +1,11 @@
+{
+  "mainClass": "FailureLandscape",
+  "stdout": "STATIC_FAILURE 15 4\n",
+  "expectedExit": "nonzero",
+  "stderrContains": [
+    "CAUGHT 0",
+    "CAUGHT 3",
+    "wrapped cause",
+    "nested root cause"
+  ]
+}

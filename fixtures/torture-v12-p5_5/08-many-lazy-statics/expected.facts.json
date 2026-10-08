@@ -1,0 +1,6 @@
+{
+  "mainClass": "LazyFamilies",
+  "stdout": "LAZY_FAMILIES 300\n",
+  "expectedExit": 0,
+  "stderr": ""
+}

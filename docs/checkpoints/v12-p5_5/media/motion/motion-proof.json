@@ -1,0 +1,66 @@
+{
+  "sessionId": "609fc0ba-9944-4642-96d2-f136fa74137a",
+  "method": "Actual accepted terminal JVM trace; no new Java execution. Exact cursor stills plus recorded camera/replay motion, not GPU timing.",
+  "samples": [
+    {
+      "label": "allocation",
+      "cursor": 15,
+      "eventId": "jvm:event:14",
+      "source": {
+        "fileId": "DebugShape.java",
+        "line": 2
+      },
+      "entity": "jvm:object:o2"
+    },
+    {
+      "label": "constructor",
+      "cursor": 10,
+      "eventId": "jvm:event:9",
+      "source": null,
+      "entity": "jvm:frame:f2"
+    },
+    {
+      "label": "deep-recursion",
+      "cursor": 78,
+      "eventId": "jvm:event:77",
+      "source": null,
+      "entity": "jvm:frame:f7"
+    },
+    {
+      "label": "mutation",
+      "cursor": 92,
+      "eventId": "jvm:event:91",
+      "source": {
+        "fileId": "DebugShape.java",
+        "line": 2
+      },
+      "entity": "jvm:object:o2"
+    },
+    {
+      "label": "return",
+      "cursor": 120,
+      "eventId": "jvm:event:119",
+      "source": {
+        "fileId": "DebugShape.java",
+        "line": 3
+      },
+      "entity": "jvm:frame:f3"
+    },
+    {
+      "label": "stdout",
+      "cursor": 142,
+      "eventId": "jvm:event:141",
+      "source": {
+        "fileId": "DebugShape.java",
+        "line": 8
+      }
+    },
+    {
+      "label": "complete",
+      "cursor": 147,
+      "eventId": "jvm:event:146",
+      "source": null
+    }
+  ],
+  "errors": []
+}

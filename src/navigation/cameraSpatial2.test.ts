@@ -52,6 +52,27 @@ describe('Spatial 2.0 represented Home', () => {
     expect(sceneHomePose({ ...represented, stackDepth: 1000 }, undefined, view)).toEqual(home)
   })
 
+  it('fits occupied corners of sparse worlds and retains the envelope fallback for an empty point list', () => {
+    const bodies = [anchor('low', [-18, -9, -10]), anchor('high', [18, 9, 10])]
+    const points = bodies.flatMap(corners)
+    const box = new Box3().setFromPoints(points.map(point => new Vector3(...point)))
+    const bounds = { center: box.getCenter(new Vector3()).toArray() as unknown as Vec3, size: box.getSize(new Vector3()).toArray() as unknown as Vec3 }
+    const viewport = spatial2Viewport(1440, 900, false)
+    const framing = { ...view, aspect: viewport.width / viewport.height }
+    const occupied = spatial2HomePose({ ...bounds, points }, framing, viewport)
+    const envelope = spatial2HomePose(bounds, framing, viewport)
+    expect(spatial2HomePose({ ...bounds, points: [] }, framing, viewport)).toEqual(envelope)
+    const range = (pose: CameraPose) => new Vector3(...pose.position).distanceTo(new Vector3(...pose.target))
+    expect(range(occupied)).toBeLessThan(range(envelope))
+    for (const point of points) {
+      const p = project(occupied, point, framing.aspect)
+      expect((p.x + 1) * viewport.width / 2).toBeGreaterThan(20)
+      expect((p.x + 1) * viewport.width / 2).toBeLessThan(viewport.width - 20)
+      expect((1 - p.y) * viewport.height / 2).toBeGreaterThan(94)
+      expect((1 - p.y) * viewport.height / 2).toBeLessThan(viewport.height - 100)
+    }
+  })
+
   it('array allocation is entity attention rather than a generic Home command', () => {
     const event = { type: 'ALLOCATE_ARRAY' as const, eventId: 'allocate', seq: 1, source: null, label: 'Allocation', importance: 'major' as const,
       objectId: 'array', displayId: 1, elementType: 'int', elements: [] }

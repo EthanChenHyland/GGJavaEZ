@@ -1,0 +1,12 @@
+
+> visual-java@0.1.0 test:acceptance
+> VJ_SUITE=acceptance vitest run tests/acceptance --maxWorkers=1 --fileParallelism=false
+
+
+ RUN  v5.0.2 /Users/ethius/VSCode/GGJavaEZ
+
+
+ Test Files  1 passed (1)
+      Tests  191 passed | 4 expected fail (195)
+   Start at  18:40:47
+   Duration  165.04s (tests 100%)

@@ -1,12 +1,12 @@
 import { objectFaceRowCount } from './objectFace'
+import { arrayHeaderAnchor } from './arrayGeometry'
+import { consoleIoSummaries, graphIoSummaries } from './ioSummary'
 import { referenceIdForSlot, type RuntimeClass, type RuntimeFrame, type RuntimeObject, type RuntimeState } from '../contracts/runtime'
 import { sceneSourceId, type DetailLevel, type LayoutState, type SceneClassNode, type SceneIoEndpoint, type SceneFrameNode, type SceneModel, type SceneObjectNode, type SceneReferenceEdge, type SceneSlotOwner, type Vec3, type WorldAnchor } from '../contracts/world'
 
 const frameCache = new WeakMap<RuntimeFrame, { anchor: WorldAnchor; signature: string; node: SceneFrameNode }>()
 const objectCache = new WeakMap<RuntimeObject, { anchor: WorldAnchor; anchors: LayoutState['anchors']; node: SceneObjectNode }>()
 const classCache = new WeakMap<RuntimeClass, { anchor: WorldAnchor; node: SceneClassNode }>()
-const ioCache = new WeakMap<NonNullable<RuntimeState['executionGraph']>['io'], Map<string, { observations: number; preview: string }>>()
-const legacyIoCache = new WeakMap<RuntimeState['console'], Map<SceneIoEndpoint['id'], { observations: number; preview: string }>>()
 const legacyIoAnchors = new WeakMap<LayoutState['anchors'], Map<SceneIoEndpoint['id'], WorldAnchor>>()
 const referencesCache = new WeakMap<SceneFrameNode | SceneObjectNode | SceneClassNode, SceneReferenceEdge[]>()
 
@@ -86,9 +86,10 @@ export function buildSceneModel(runtime: RuntimeState, layout: LayoutState, deta
     const sourceAnchor = cell ?? stage.anchors[sourceId], targetAnchor = stage.anchors[targetObjectId]
     const from = sourceAnchor?.ports[source.slotId], to = targetAnchor?.bodyPort
     if (!from || !to || !sourceAnchor || !targetAnchor || !runtime.objects[targetObjectId]) return
+    const targetBody = layout.layoutKind === 'spatial2' && runtime.objects[targetObjectId].array ? arrayHeaderAnchor(targetAnchor) : targetAnchor
     references.push({ id: referenceIdForSlot(source.slotId), source, targetObjectId, from, to,
       fromFace: [from[0], from[1], sourceAnchor.position[2] + sourceAnchor.size[2] / 2 + 0.055],
-      toFace: [to[0], to[1], targetAnchor.position[2] + targetAnchor.size[2] / 2 + 0.055], historical })
+      toFace: targetBody !== targetAnchor ? targetBody.bodyPort : [to[0], to[1], targetAnchor.position[2] + targetAnchor.size[2] / 2 + 0.055], historical })
   }
   // References share immutable projected source records. Target anchor IDs are
   // stable, so unrelated mutations do not regenerate their curves/endpoints.
@@ -111,16 +112,7 @@ export function buildSceneModel(runtime: RuntimeState, layout: LayoutState, deta
   const io: SceneIoEndpoint[] = []
   const channels = runtime.executionGraph?.io
   if (channels) {
-    let summaries = ioCache.get(channels)
-    if (!summaries) {
-      summaries = new Map()
-      for (const observation of Object.values(channels)) {
-        if (observation.channel === 'file' || observation.kind !== 'input-consume' && observation.kind !== 'output') continue
-        const before = summaries.get(observation.channel)
-        summaries.set(observation.channel, { observations: (before?.observations ?? 0) + 1, preview: observation.text.trim().slice(0, 40) })
-      }
-      ioCache.set(channels, summaries)
-    }
+    const summaries = graphIoSummaries(runtime.executionGraph!)
     for (const id of ['stdin', 'stdout', 'stderr'] as const) {
       const summary = summaries.get(id), anchor = stage.anchors[`io:${id}`]
       if (summary && anchor) io.push({ id, ...summary, anchor })
@@ -128,17 +120,7 @@ export function buildSceneModel(runtime: RuntimeState, layout: LayoutState, deta
   } else if (!runtime.executionGraph) {
     // Graphless event traces already reduce consumed input and written output
     // into console facts. Submitted bytes alone have no destination slot.
-    let summaries = legacyIoCache.get(runtime.console)
-    if (!summaries) {
-      summaries = new Map()
-      for (const entry of runtime.console) {
-        if (entry.kind === 'input' && !entry.destinationSlotId) continue
-        const id = entry.kind === 'input' ? 'stdin' : entry.channel ?? 'stdout'
-        const before = summaries.get(id)
-        summaries.set(id, { observations: (before?.observations ?? 0) + 1, preview: entry.text.trim().slice(0, 40) })
-      }
-      legacyIoCache.set(runtime.console, summaries)
-    }
+    const summaries = consoleIoSummaries(runtime.console)
     let anchors = legacyIoAnchors.get(stage.anchors)
     if (!anchors) { anchors = new Map(); legacyIoAnchors.set(stage.anchors, anchors) }
     for (const id of ['stdin', 'stdout', 'stderr'] as const) {

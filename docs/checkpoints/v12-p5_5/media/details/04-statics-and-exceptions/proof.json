@@ -1,0 +1,11 @@
+{
+  "sessionId": "0b1254af-ff0c-4d27-8e1e-09fb17d4d70d",
+  "subjects": [
+    {
+      "label": "wrapped-exception",
+      "id": "jvm:object:o5"
+    }
+  ],
+  "errors": [],
+  "method": "Exact fresh-JVM sessions and production normalization, replay and rendering; no new Java."
+}

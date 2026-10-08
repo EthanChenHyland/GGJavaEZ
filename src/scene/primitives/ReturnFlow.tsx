@@ -1,10 +1,12 @@
-import { Billboard, Line, Text } from '@react-three/drei'
+import { Billboard, Line } from '@react-three/drei'
 import { useFrame, useThree } from '@react-three/fiber'
 import { useEffect, useMemo, useRef } from 'react'
 import { CubicBezierCurve3, Quaternion, Vector3, type Group } from 'three'
 import type { SceneModel } from '../../contracts/world'
-import { colors, easeOutCubic, line, motionMs, runtimeFont } from '../../theme/tokens'
+import { colors, easeOutCubic, line, motionMs } from '../../theme/tokens'
 import { useReducedMotion } from './presentationMotion'
+import { fitFaceValue } from './faceText'
+import { RuntimeLabel } from './RuntimeLabel'
 
 type Flow = NonNullable<SceneModel['returnFlow']>
 
@@ -14,12 +16,16 @@ export function ReturnFlow({ flow, guided, playing }: { flow: Flow; guided: bool
   const marker = useRef<Group>(null)
   const elapsed = useRef<number>(motionMs.deliberate)
   const invalidate = useThree((state) => state.invalidate)
+  const [fromX, fromY, fromZ] = flow.from
+  const [toX, toY, toZ] = flow.to ?? flow.from
   const curve = useMemo(() => {
-    const from = new Vector3(...flow.from)
-    const to = new Vector3(...(flow.to ?? flow.from))
+    const from = new Vector3(fromX, fromY, fromZ)
+    const to = new Vector3(toX, toY, toZ)
     return new CubicBezierCurve3(from, from.clone().add(new Vector3(1.4, 0, 0.45)), to.clone().add(new Vector3(1.4, 0, 0.45)), to)
-  }, [flow.from, flow.to])
+  }, [fromX, fromY, fromZ, toX, toY, toZ])
+  const points = useMemo(() => curve.getPoints(32), [curve])
   const arrow = useMemo(() => ({ position: curve.getPoint(1).addScaledVector(curve.getTangent(1).normalize(), -0.12), rotation: new Quaternion().setFromUnitVectors(new Vector3(0, 1, 0), curve.getTangent(1).normalize()) }), [curve])
+  const captionPosition = useMemo(() => curve.getPoint(0.5).add(new Vector3(0.4, 0, 0)), [curve])
   useEffect(() => {
     elapsed.current = playing && guided && !reduced ? 0 : motionMs.deliberate
     if (marker.current) marker.current.visible = elapsed.current === 0
@@ -34,10 +40,12 @@ export function ReturnFlow({ flow, guided, playing }: { flow: Flow; guided: bool
   })
   if (!flow.to) return null
   const value = flow.value.kind === 'primitive' ? String(flow.value.value) : ''
+  const caption = fitFaceValue(`return ${value}`, 0.23, 2.6)
+  const markerCaption = fitFaceValue(value, 0.28, 2.6)
   return <group>
-    <Line points={curve.getPoints(32)} color={colors.success} lineWidth={line.referenceDefaultPx} transparent opacity={0.8} />
+    <Line points={points} color={colors.success} lineWidth={line.referenceDefaultPx} transparent opacity={0.8} />
     <mesh position={arrow.position} quaternion={arrow.rotation}><coneGeometry args={[0.1, 0.24, 12]}/><meshBasicMaterial color={colors.success}/></mesh>
-    <Billboard position={curve.getPoint(0.5).add(new Vector3(0.4, 0, 0))}><Text font={runtimeFont} fontSize={0.23} color={colors.success} outlineWidth={0.014} outlineColor={colors.canvas}>return {value}</Text></Billboard>
-    <group ref={marker} visible={false}><Billboard><Text font={runtimeFont} fontSize={0.28} color={colors.success} outlineWidth={0.025} outlineColor={colors.canvas}>{value}</Text></Billboard></group>
+    <Billboard position={captionPosition}><RuntimeLabel text={caption.text} position={[0, 0, 0]} size={caption.size} maxWidth={2.6} align="center" color={colors.success} /></Billboard>
+    <group ref={marker} visible={false}><Billboard><RuntimeLabel text={markerCaption.text} position={[0, 0, 0]} size={markerCaption.size} maxWidth={2.6} align="center" color={colors.success} /></Billboard></group>
   </group>
 }

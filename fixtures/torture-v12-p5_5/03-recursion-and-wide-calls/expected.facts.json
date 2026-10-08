@@ -1,0 +1,5 @@
+{
+  "mainClass": "CallLandscape",
+  "stdout": "CALL_LANDSCAPE 160 221\n",
+  "expectedExit": 0
+}

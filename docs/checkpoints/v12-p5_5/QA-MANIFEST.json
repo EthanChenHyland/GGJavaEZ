@@ -1,0 +1,1557 @@
+{
+  "phase": "5.5 — Spatial 2.0 torture audit and hardening",
+  "baseCommit": "b7bbb9a21d1f069d88a13912433131a8be040e60",
+  "branch": "kiro-runtime-audit",
+  "createdAtUtc": "2026-10-08T00:06:35.340675+00:00",
+  "requiredViewports": [
+    [
+      1728,
+      1117
+    ],
+    [
+      1440,
+      900
+    ],
+    [
+      1280,
+      800
+    ],
+    [
+      760,
+      900
+    ],
+    [
+      1440,
+      650
+    ]
+  ],
+  "captureCounts": {
+    "freshNineProgramsOverviewAndFocus": 90,
+    "retainedActualSessionDetails": 14,
+    "actualHistoryInspectionStills": 7,
+    "freshLifecycleStills": 5,
+    "nativeHandsOnStill": 1,
+    "soakAndReloadValidationStills": 4,
+    "newStillTotal": 121,
+    "selectedFinalRegressionStills": 2,
+    "originalExtractedVideoFrames": 11,
+    "retainedImagesTotal": 134,
+    "retainedVideos": 3,
+    "individuallyReviewedFinalImages": 35
+  },
+  "reviewMethod": "Lead inspected the enumerated final images and video samples at original resolution, plus all 18 original direction/reference images. Capturing 121 new stills does not mean each was individually reviewed. No resizing, crop or post-processing was applied to original video frame extraction.",
+  "reviewedFinalOriginals": [
+    {
+      "path": "media/details/02-arrays-cycles-collections/ragged-array-1440x900.png",
+      "bytes": 227827,
+      "sha256": "b9c342cdc6eb3cadee249ab4dc662e702d86f97420a1ac07c7d0b5b8ad297f0c",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "path": "media/details/02-arrays-cycles-collections/cyclic-shared-1440x900.png",
+      "bytes": 221699,
+      "sha256": "8a2588e2cc1902c49ed138fc63cfdc7ef638f5115d99332ad07fe7ab35acf6b7",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "path": "media/details/02-arrays-cycles-collections/sparse-index-10000-1440x900.png",
+      "bytes": 173194,
+      "sha256": "3fa231d51def77d73cc5d1ac49d43a52165a987e57c4386b9e3d3dd615b10aba",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "path": "media/motion/constructor-1440x900.png",
+      "bytes": 138100,
+      "sha256": "755b811657f20bb4d0fcf8ea6671cf118c02a807a1f4cc18157043159a03f74d",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "path": "media/motion/mutation-1440x900.png",
+      "bytes": 172748,
+      "sha256": "34e46b22dc6cbe963ab53d89c33e2eb6fc03bbca2caa9533e73dd086e2c50297",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "path": "media/native-hands-on-focus.jpg",
+      "bytes": 64905,
+      "sha256": "bf259da72a2fa02fb07c0c5e1b4e399c2448691b1e4d3eaf8a9284402d3c45b5",
+      "width": 847,
+      "height": 771
+    },
+    {
+      "path": "media/browser/01-text-and-fields/focus-1728x1117.png",
+      "bytes": 377301,
+      "sha256": "337e45739982e9cb6cf1c10cc24abca364caa55fcb844beeab5922c4f97e5c4a",
+      "width": 1728,
+      "height": 1117
+    },
+    {
+      "path": "media/browser/01-text-and-fields/focus-1280x800.png",
+      "bytes": 227841,
+      "sha256": "4facf087970d734c3be5db036e0a42fc334ba500baef6321d24f587cb83b69c3",
+      "width": 1280,
+      "height": 800
+    },
+    {
+      "path": "media/browser/06-small-debug/focus-1440x650.png",
+      "bytes": 157275,
+      "sha256": "88efac2c0516d85a60df569d25106078958ae941ba6941145a4b424d6ba55eaf",
+      "width": 1440,
+      "height": 650
+    },
+    {
+      "path": "media/browser/06-small-debug/focus-760x900.png",
+      "bytes": 129322,
+      "sha256": "cb9de55954eec146755c79ecccc4803ed9c1218c156547aa26e190ffe1470b5b",
+      "width": 760,
+      "height": 900
+    },
+    {
+      "path": "media/browser/07-observed-wide-and-deep/overview-1440x900.png",
+      "bytes": 157510,
+      "sha256": "762c812bda85535660864bea6b82f05bf720df895e1256b80cad9191bc54be8b",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "path": "media/browser/09-quiet-tiny/focus-1440x900.png",
+      "bytes": 122547,
+      "sha256": "f7cf909b478a0d7ee6f557497e3495e685414097c3047217eb92e982d93dbe85",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "path": "media/details/02-arrays-cycles-collections/large-array-1440x900.png",
+      "bytes": 185657,
+      "sha256": "71019dcae56d2a708292d700ab322ae3331188b1ebbf9dbcaaf2599585b99834",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "path": "media/details/02-arrays-cycles-collections/collection-1000-760x900.png",
+      "bytes": 142939,
+      "sha256": "5ce91fa3a90b3685da23aea8ccbdcc0b4d5ba7907d6c6682c83666e2ad3f8c73",
+      "width": 760,
+      "height": 900
+    },
+    {
+      "path": "media/details/07-observed-wide-and-deep/deepest-observed-1440x900.png",
+      "bytes": 160051,
+      "sha256": "9175f8a73fe732a1f920c3b308e107ab61a3c8fa24bc23474c7de94c9f435bf3",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "path": "media/details/07-observed-wide-and-deep/wide-leaf-1440x900.png",
+      "bytes": 154571,
+      "sha256": "c0c5c3fbb678274f86a1d2aca3fa7dd38a272809caebb78b2e4dc11380a2cfe9",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "path": "media/details/08-many-lazy-statics/last-lazy-static-1440x900.png",
+      "bytes": 227247,
+      "sha256": "68c7c0a031235e58ef08d8b5f7fa76db0b02cbb37c590eb129a524e76a0b2271",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "path": "media/details/04-statics-and-exceptions/wrapped-exception-1440x900.png",
+      "bytes": 192959,
+      "sha256": "e833e706a5144dfed7a8f3c11741ef2cdce7a746158230f7d06078171873c7bd",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "path": "media/regression/banking-focus-completed-1440x900.png",
+      "bytes": 118903,
+      "sha256": "c5cc02f9379e15db65cbf7f2f5d649f645fdd38c18e5e12f078b5497f35d1b9e",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "path": "media/regression/graph-polished-1440x900.png",
+      "bytes": 194241,
+      "sha256": "9133a74e68818cd9dce1dd2d4b85c9c99fc939a3eb3d64552f8582a39357de42",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "path": "soak/dense-overview-1440x900.png",
+      "bytes": 195256,
+      "sha256": "a751eb24c5914a091eff4efad21507152ea012b0223e87d9788086dc6b98261c",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "path": "soak/dense-focus-1440x900.png",
+      "bytes": 179335,
+      "sha256": "826d669f18aa8a41d2d37033e7ffb31e9fd3158aa737bab857262a5bb048955c",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "path": "reload-validation/dense-overview-1440x900.png",
+      "bytes": 194348,
+      "sha256": "ccbe5e8c34b61b26a14ebe335f10520726dfda4cabe80a705ceb3dbf428fddfc",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "path": "reload-validation/dense-focus-1440x900.png",
+      "bytes": 179693,
+      "sha256": "d93c4f0800f756d48fc450ca3541f6f9e2ab330370405d1709dac705074fde38",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "path": "media/video-frames/banking-28s.png",
+      "bytes": 201025,
+      "sha256": "5786cd9b1124973c8e624e3228144e92e5e8f1dc4fc148130abbdf97d8aa0761",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "path": "media/video-frames/banking-34s.png",
+      "bytes": 187357,
+      "sha256": "127494e7bf7ac219514b9185686d61b1c89b96568ad702aed2881c20d3044bd6",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "path": "media/video-frames/banking-39s.png",
+      "bytes": 395950,
+      "sha256": "9d1fb0de5f2594f6c2068609fb0225c4b285879465a6435f040fc8b2cb876f32",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "path": "media/video-frames/debug-2s.png",
+      "bytes": 213991,
+      "sha256": "0a432c582bf282d40e32edaf28b71344f4a188200ccb745effda1bc445d6bc1c",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "path": "media/video-frames/debug-35s.png",
+      "bytes": 349483,
+      "sha256": "f9cac628a22b4776be37a02e9957beb0bc25625ff3e4628171e3b09ddb222f2f",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "path": "media/video-frames/debug-38s.png",
+      "bytes": 338704,
+      "sha256": "472a96cdbb171c2dcdd0bbae12f6a59f8f3be3f83e971fd0ef89961763de5f8f",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "path": "media/video-frames/history-12.8s.png",
+      "bytes": 305493,
+      "sha256": "8b51970c87cf919953ee1880851d71d3ae90ea35e5612be064a34fb966c4fe1b",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "path": "media/video-frames/history-1s.png",
+      "bytes": 156029,
+      "sha256": "b07db41cfe9c203cccc0df168f86608fd0328d56d168ff57d038ac001f04006c",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "path": "media/video-frames/history-3.4s.png",
+      "bytes": 300381,
+      "sha256": "c08e45e28f81decf86ecaff52a37cee687c85b76816a6bafa3e3406d00950859",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "path": "media/video-frames/history-6.2s.png",
+      "bytes": 365279,
+      "sha256": "ca4b49c69a7746b9c63c38153bea662fa1b8133dfe9044945c0332acb4943ed4",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "path": "media/video-frames/history-9.5s.png",
+      "bytes": 449384,
+      "sha256": "999254fec0a6f5d88c590ddda3a07ac9b80cc5306436144ec4fe10e005f1e946",
+      "width": 1440,
+      "height": 900
+    }
+  ],
+  "reviewedReferenceOriginals": [
+    {
+      "path": "docs/visual-java-spec/references/00_REFERENCE_BOARD.png",
+      "bytes": 84180,
+      "sha256": "adda495aefe47bfdef106c45dc3fe3a85ea4095d3a104c263d78e9dc128aa5c8",
+      "width": 1600,
+      "height": 1000
+    },
+    {
+      "path": "docs/visual-java-spec/references/01_world_overview.png",
+      "bytes": 101703,
+      "sha256": "f77f807ba36990c046ff0a57de9c728992a8934845cf43efeb3ec5cf9268bb7e",
+      "width": 1600,
+      "height": 1000
+    },
+    {
+      "path": "docs/visual-java-spec/references/02_navigation_modes.png",
+      "bytes": 69285,
+      "sha256": "8abc2833fef098c8c0a71652f83c094dda70b55e7370f6ff43c5a4304a7d2aa8",
+      "width": 1600,
+      "height": 1000
+    },
+    {
+      "path": "docs/visual-java-spec/references/03_semantic_zoom.png",
+      "bytes": 69986,
+      "sha256": "71feb3dd163c8993c1c5a18f6eb123841a69dac43e23f18ec17363bc4946435d",
+      "width": 1600,
+      "height": 1000
+    },
+    {
+      "path": "docs/visual-java-spec/references/04_person_world_sequence.png",
+      "bytes": 40211,
+      "sha256": "baef0d101d9b554a17f90b653baa61694634e2a32834ffc725a062ec37518ce7",
+      "width": 1600,
+      "height": 1000
+    },
+    {
+      "path": "docs/visual-java-spec/references/05_theater_continuity.png",
+      "bytes": 53977,
+      "sha256": "00028f02057ea3b5c2056b3acc222a613b865cd7497622a0eff60d0aa25a712f",
+      "width": 1600,
+      "height": 1000
+    },
+    {
+      "path": "docs/visual-java-spec/references/06_true3d_person_runtime.png",
+      "bytes": 1768503,
+      "sha256": "c02f4828de30da7ad1011ffa567450bd85eb8f861f56c12cea5a10ef11b120b8",
+      "width": 1672,
+      "height": 941
+    },
+    {
+      "path": "docs/visual-java-spec/references/07_true3d_object_inspector.png",
+      "bytes": 1809862,
+      "sha256": "4b5381054c62bfafac9adb0a6e87ff589e479d4882d018cf047fe7c3b141f965",
+      "width": 1672,
+      "height": 941
+    },
+    {
+      "path": "docs/visual-java-spec/references/08_true3d_recursion.png",
+      "bytes": 1777640,
+      "sha256": "075f32c3156529082aa6206c5e85910d6b2f231568dd59a4f64d284628078c6f",
+      "width": 1672,
+      "height": 941
+    },
+    {
+      "path": "docs/visual-java-spec/references/09_true3d_array_sort.png",
+      "bytes": 1832369,
+      "sha256": "458de84ff8d81f05b55fcd9a41169965fdb10a29cfdf13b5f77ec7c0394ae65d",
+      "width": 1672,
+      "height": 941
+    },
+    {
+      "path": "docs/visual-java-spec/references/10_true3d_reference_sheet.png",
+      "bytes": 2081646,
+      "sha256": "df74c5952fdc0393f8f7def97e229677255afedf06bd0aa2ffeb8e4d031b9810",
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "path": "docs/visual-java-spec/references/11_true3d_scene_language.png",
+      "bytes": 2118233,
+      "sha256": "d217de7f9384f5246b515d548eea73f02de7d834e28b4113b1793b46b1ec8dc4",
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "path": "best.png",
+      "bytes": 1768503,
+      "sha256": "c02f4828de30da7ad1011ffa567450bd85eb8f861f56c12cea5a10ef11b120b8",
+      "width": 1672,
+      "height": 941
+    },
+    {
+      "path": "ChatGPT Image Oct 3, 2026, 02_20_44 PM.png",
+      "bytes": 2118233,
+      "sha256": "d217de7f9384f5246b515d548eea73f02de7d834e28b4113b1793b46b1ec8dc4",
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "path": "ChatGPT Image Oct 3, 2026, 02_21_05 PM.png",
+      "bytes": 2081646,
+      "sha256": "df74c5952fdc0393f8f7def97e229677255afedf06bd0aa2ffeb8e4d031b9810",
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "path": "ChatGPT Image Oct 3, 2026, 02_21_08 PM.png",
+      "bytes": 1832369,
+      "sha256": "458de84ff8d81f05b55fcd9a41169965fdb10a29cfdf13b5f77ec7c0394ae65d",
+      "width": 1672,
+      "height": 941
+    },
+    {
+      "path": "ChatGPT Image Oct 3, 2026, 02_21_12 PM.png",
+      "bytes": 1777640,
+      "sha256": "075f32c3156529082aa6206c5e85910d6b2f231568dd59a4f64d284628078c6f",
+      "width": 1672,
+      "height": 941
+    },
+    {
+      "path": "ChatGPT Image Oct 3, 2026, 02_21_17 PM.png",
+      "bytes": 1809862,
+      "sha256": "4b5381054c62bfafac9adb0a6e87ff589e479d4882d018cf047fe7c3b141f965",
+      "width": 1672,
+      "height": 941
+    }
+  ],
+  "preservation": "The five user root ChatGPT Image PNGs remain untracked/unstaged and match preserved-user-images.json; spec, best.png and prior checkpoints unchanged.",
+  "videos": [
+    {
+      "name": "history",
+      "path": "docs/checkpoints/v12-p5_5/media/motion/fresh-history.webm",
+      "width": 1440,
+      "height": 900,
+      "durationSeconds": 14.32,
+      "sampleSeconds": [
+        1,
+        3.4,
+        6.2,
+        9.5,
+        12.8
+      ],
+      "method": "Original recorded frame extraction; no scaling, crop or post-processing. Review samples only, not every frame.",
+      "bytes": 1600406,
+      "sha256": "7f7a43133826c764d90d6c098a435a790213a899bfd809c1ca246c70e3a0ad53"
+    },
+    {
+      "name": "debug",
+      "path": "docs/checkpoints/v12-p5_5/media/lifecycle/fresh-debug.webm",
+      "width": 1440,
+      "height": 900,
+      "durationSeconds": 40.08,
+      "sampleSeconds": [
+        2,
+        35,
+        38
+      ],
+      "method": "Original recorded frame extraction; no scaling, crop or post-processing. Review samples only, not every frame.",
+      "bytes": 2967338,
+      "sha256": "163ef8b711fac7ac31e4a37b731d052b3b8ff49d0978aea42b6b6a4e9f649860"
+    },
+    {
+      "name": "banking",
+      "path": "docs/checkpoints/v12-p5_5/media/fresh-banking.webm",
+      "width": 1440,
+      "height": 900,
+      "durationSeconds": 74.0,
+      "sampleSeconds": [
+        28,
+        34,
+        39
+      ],
+      "method": "Original recorded frame extraction; no scaling, crop or post-processing. Review samples only, not every frame.",
+      "bytes": 8481076,
+      "sha256": "0f102cb774fea54832bc276f65d20c31d13c21c7d0f04ba6644d280f22b4f71c"
+    }
+  ],
+  "retainedOwnedMedia": [
+    {
+      "path": "media/browser/01-text-and-fields/focus-1280x800.png",
+      "bytes": 227841,
+      "sha256": "4facf087970d734c3be5db036e0a42fc334ba500baef6321d24f587cb83b69c3",
+      "width": 1280,
+      "height": 800
+    },
+    {
+      "path": "media/browser/01-text-and-fields/focus-1440x650.png",
+      "bytes": 193312,
+      "sha256": "ecaa169b06b9f5718ba91ae25fe1a77cd14bcb02d6cecaf116270e0a710ed4b5",
+      "width": 1440,
+      "height": 650
+    },
+    {
+      "path": "media/browser/01-text-and-fields/focus-1440x900.png",
+      "bytes": 291450,
+      "sha256": "3f5fdcb3f863889f13fdc7fe4c7cfe242c0907cc85ba8ac2ee12a4f6aea98cd1",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "path": "media/browser/01-text-and-fields/focus-1728x1117.png",
+      "bytes": 377301,
+      "sha256": "337e45739982e9cb6cf1c10cc24abca364caa55fcb844beeab5922c4f97e5c4a",
+      "width": 1728,
+      "height": 1117
+    },
+    {
+      "path": "media/browser/01-text-and-fields/focus-760x900.png",
+      "bytes": 139849,
+      "sha256": "9c168963ebf8ec979693eb85910f94134a6fe0b805ca7d99b90d34e4b925d9fe",
+      "width": 760,
+      "height": 900
+    },
+    {
+      "path": "media/browser/01-text-and-fields/overview-1280x800.png",
+      "bytes": 222473,
+      "sha256": "c5dd47f65d6527512f8e01f8cf4e069a67f1dd4886bac60b2ca6282a15d1a4e7",
+      "width": 1280,
+      "height": 800
+    },
+    {
+      "path": "media/browser/01-text-and-fields/overview-1440x650.png",
+      "bytes": 190431,
+      "sha256": "393b9cb0b9c067b842d69c35bd13f772566304fc451dafcb9e0b2fb830504aa0",
+      "width": 1440,
+      "height": 650
+    },
+    {
+      "path": "media/browser/01-text-and-fields/overview-1440x900.png",
+      "bytes": 280811,
+      "sha256": "b327c01ba6d5c49ac73cf24b41d295c6035ec56d9778872ad9091d4219dcf517",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "path": "media/browser/01-text-and-fields/overview-1728x1117.png",
+      "bytes": 355087,
+      "sha256": "a221f4ac3ad483c5a5425767cedeefbf478dc3e2e1e8a0a31be164410340b4fc",
+      "width": 1728,
+      "height": 1117
+    },
+    {
+      "path": "media/browser/01-text-and-fields/overview-760x900.png",
+      "bytes": 143842,
+      "sha256": "224baf5f27dade2311a07a817980203eaf5e27b66ffd3dba62fc11cfc17c49e1",
+      "width": 760,
+      "height": 900
+    },
+    {
+      "path": "media/browser/01-text-and-fields/proof.json",
+      "bytes": 5953,
+      "sha256": "7f7d0321672cfd1771e1da68f1514cede5b041238f4b212c09621556224d0133"
+    },
+    {
+      "path": "media/browser/02-arrays-cycles-collections/focus-1280x800.png",
+      "bytes": 161243,
+      "sha256": "8caa73224b7dc8f639d86fc5d94589d76f6e52440917f3292df5df9779c8d7bc",
+      "width": 1280,
+      "height": 800
+    },
+    {
+      "path": "media/browser/02-arrays-cycles-collections/focus-1440x650.png",
+      "bytes": 164592,
+      "sha256": "8960835249db0142f845aeb1a93499ced056dad0172e8848248b49d651342f08",
+      "width": 1440,
+      "height": 650
+    },
+    {
+      "path": "media/browser/02-arrays-cycles-collections/focus-1440x900.png",
+      "bytes": 175383,
+      "sha256": "b7a5044231ca1c4755ef67acc349aedfd5c8116a69afee52048ab4651f2f9fe6",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "path": "media/browser/02-arrays-cycles-collections/focus-1728x1117.png",
+      "bytes": 194521,
+      "sha256": "c65215c372ca494e797b0b0a1183caef17fcc420ea9252fcd88d37a974e359f0",
+      "width": 1728,
+      "height": 1117
+    },
+    {
+      "path": "media/browser/02-arrays-cycles-collections/focus-760x900.png",
+      "bytes": 132961,
+      "sha256": "2b4cb56c874aee639ab4d3b59dcc083506e8bd2b35028ebd69869acf9a77a15f",
+      "width": 760,
+      "height": 900
+    },
+    {
+      "path": "media/browser/02-arrays-cycles-collections/overview-1280x800.png",
+      "bytes": 167723,
+      "sha256": "946466c87fe8956edafc8f49e7f2e06dfc44e1207e694f0a3f969e76ba910909",
+      "width": 1280,
+      "height": 800
+    },
+    {
+      "path": "media/browser/02-arrays-cycles-collections/overview-1440x650.png",
+      "bytes": 165660,
+      "sha256": "d1af1db5ae2d1d7ad03dc8deb29b71477e0939fc7cce2ab9b0dcae8b58382c44",
+      "width": 1440,
+      "height": 650
+    },
+    {
+      "path": "media/browser/02-arrays-cycles-collections/overview-1440x900.png",
+      "bytes": 193834,
+      "sha256": "56075e79c24413c70f5148ad42dd168387ed515d920a6efef4e08ac28bd51f73",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "path": "media/browser/02-arrays-cycles-collections/overview-1728x1117.png",
+      "bytes": 226652,
+      "sha256": "3ffebe984d05a0b51383e70481aeb1c7a65ba80557118662464d39e303b17fb8",
+      "width": 1728,
+      "height": 1117
+    },
+    {
+      "path": "media/browser/02-arrays-cycles-collections/overview-760x900.png",
+      "bytes": 140647,
+      "sha256": "7245c4c060e91768113a5e2f239605db69be1cc6c862681741eb77e5331dd62f",
+      "width": 760,
+      "height": 900
+    },
+    {
+      "path": "media/browser/02-arrays-cycles-collections/proof.json",
+      "bytes": 5816,
+      "sha256": "9de7b922a4995cc3bf07f138757b94bd736cb84263cc63a887136a903f6d6ee0"
+    },
+    {
+      "path": "media/browser/03-recursion-and-wide-calls/focus-1280x800.png",
+      "bytes": 159740,
+      "sha256": "c4618e345b36adb0214f8ed98b29069a9de3772ed4d25f9e219771f6f0677c9e",
+      "width": 1280,
+      "height": 800
+    },
+    {
+      "path": "media/browser/03-recursion-and-wide-calls/focus-1440x650.png",
+      "bytes": 152834,
+      "sha256": "a86a02c5f8ac7ad15f86729f9bfbc46ef0de10088168b196948ffda8e781aba9",
+      "width": 1440,
+      "height": 650
+    },
+    {
+      "path": "media/browser/03-recursion-and-wide-calls/focus-1440x900.png",
+      "bytes": 175972,
+      "sha256": "a53e4d4043ec62570a272e3a796847cee2a4332dc516db3180953f0b50dc9bc5",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "path": "media/browser/03-recursion-and-wide-calls/focus-1728x1117.png",
+      "bytes": 207316,
+      "sha256": "2251c7a8693bb7c7bf8ab7993b24a4caedbf75f44cd12a9d91370cb18f96f775",
+      "width": 1728,
+      "height": 1117
+    },
+    {
+      "path": "media/browser/03-recursion-and-wide-calls/focus-760x900.png",
+      "bytes": 141469,
+      "sha256": "98397f77258ab2d0282635fd3765ce0c3f128ed6dbc75ced92d098627e68d8fb",
+      "width": 760,
+      "height": 900
+    },
+    {
+      "path": "media/browser/03-recursion-and-wide-calls/overview-1280x800.png",
+      "bytes": 126941,
+      "sha256": "33d2af5174e1801f23ae3a947044e5e89f34a26a99e7bc3f593a1c624be6fef1",
+      "width": 1280,
+      "height": 800
+    },
+    {
+      "path": "media/browser/03-recursion-and-wide-calls/overview-1440x650.png",
+      "bytes": 127443,
+      "sha256": "e9c78dab02f7cf8bdaecf9f25d0e1c2f01f4f4bb8a61356ab2e96383285e02bb",
+      "width": 1440,
+      "height": 650
+    },
+    {
+      "path": "media/browser/03-recursion-and-wide-calls/overview-1440x900.png",
+      "bytes": 138960,
+      "sha256": "a3d432d5c94794469c502bca1c218cf125d79ea5d7ee98ad583456a3045c435d",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "path": "media/browser/03-recursion-and-wide-calls/overview-1728x1117.png",
+      "bytes": 155715,
+      "sha256": "aa76b80eca6df59714a4eb933b8f8b5ef3a11858bbb4fbcfddeed99b7ef7d5f2",
+      "width": 1728,
+      "height": 1117
+    },
+    {
+      "path": "media/browser/03-recursion-and-wide-calls/overview-760x900.png",
+      "bytes": 113529,
+      "sha256": "6f55c7faa6bdbc34e674fb3cd05307b5594228504572e7445a5224b363b17f05",
+      "width": 760,
+      "height": 900
+    },
+    {
+      "path": "media/browser/03-recursion-and-wide-calls/proof.json",
+      "bytes": 5892,
+      "sha256": "7ca2605076c489766b86a4f467909b46e6e0e956152373a2bc3d10ebb8bbf892"
+    },
+    {
+      "path": "media/browser/04-statics-and-exceptions/focus-1280x800.png",
+      "bytes": 162356,
+      "sha256": "3126b2de53c3171696aeb67cc39a69c5708aaf0e2c5c85f36f99597b38e76e35",
+      "width": 1280,
+      "height": 800
+    },
+    {
+      "path": "media/browser/04-statics-and-exceptions/focus-1440x650.png",
+      "bytes": 165409,
+      "sha256": "92a1d9b1baa35661dd4cc0d4eadf4d03ba1dd0d5dd33ba555ac766be7639fa33",
+      "width": 1440,
+      "height": 650
+    },
+    {
+      "path": "media/browser/04-statics-and-exceptions/focus-1440x900.png",
+      "bytes": 174788,
+      "sha256": "290902b639f23c8254c80640222bcc6559db1d9b09f99dff15521fd22375a815",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "path": "media/browser/04-statics-and-exceptions/focus-1728x1117.png",
+      "bytes": 192831,
+      "sha256": "cf950ba5712134e403b4ede34d286cf97acf4c55dd7d99960aeab89b58bcec29",
+      "width": 1728,
+      "height": 1117
+    },
+    {
+      "path": "media/browser/04-statics-and-exceptions/focus-760x900.png",
+      "bytes": 133286,
+      "sha256": "4e5c7623d4c1d423596e1cbebf493df7092f6f48021b4bf5db7a9a6495574904",
+      "width": 760,
+      "height": 900
+    },
+    {
+      "path": "media/browser/04-statics-and-exceptions/overview-1280x800.png",
+      "bytes": 165265,
+      "sha256": "b8cdc6e329998aeba6ef6d60b348a198a61d7c78d59e720ded25bd25ba73d2e4",
+      "width": 1280,
+      "height": 800
+    },
+    {
+      "path": "media/browser/04-statics-and-exceptions/overview-1440x650.png",
+      "bytes": 159904,
+      "sha256": "16efeefd84bdbb7ff8de71f3732e1c484e389d028a4eeb4eb73c687d601eaf6e",
+      "width": 1440,
+      "height": 650
+    },
+    {
+      "path": "media/browser/04-statics-and-exceptions/overview-1440x900.png",
+      "bytes": 186055,
+      "sha256": "b798e737abf2b4b868628de4a6e7ce419a56d63dcf21c3d71b20000762a6e894",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "path": "media/browser/04-statics-and-exceptions/overview-1728x1117.png",
+      "bytes": 233014,
+      "sha256": "c86400247b195d479bd705f378a5cf40af46bd8d4afd49cbf6df9ea31d247fba",
+      "width": 1728,
+      "height": 1117
+    },
+    {
+      "path": "media/browser/04-statics-and-exceptions/overview-760x900.png",
+      "bytes": 135678,
+      "sha256": "299de68e23cd9f98531da74fe418488f60e4dd74480f2a64b50ebf8ac98989ac",
+      "width": 760,
+      "height": 900
+    },
+    {
+      "path": "media/browser/04-statics-and-exceptions/proof.json",
+      "bytes": 5836,
+      "sha256": "bf626725ee044c595e5070bb3a844b8724d528c6f5fcfd2c79ed97ed54df8019"
+    },
+    {
+      "path": "media/browser/05-output-and-input/focus-1280x800.png",
+      "bytes": 177679,
+      "sha256": "8a93903c50e11e161cb11070b6cfb34c7c6aa44c8bcb292c94d934f8d342be13",
+      "width": 1280,
+      "height": 800
+    },
+    {
+      "path": "media/browser/05-output-and-input/focus-1440x650.png",
+      "bytes": 166678,
+      "sha256": "ef95f2f005baaf0de5b5eee4624712ee31581d1153597a64d3332471e0356388",
+      "width": 1440,
+      "height": 650
+    },
+    {
+      "path": "media/browser/05-output-and-input/focus-1440x900.png",
+      "bytes": 199164,
+      "sha256": "1b4d0273fb6c618720287087acd3cb90ddfdba4e1c77986ab9e7de5f755b7f7a",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "path": "media/browser/05-output-and-input/focus-1728x1117.png",
+      "bytes": 232690,
+      "sha256": "2349cf02a0271b4e67edd8a5c0de4f894d8f30fe70e24c246731cf99f4490480",
+      "width": 1728,
+      "height": 1117
+    },
+    {
+      "path": "media/browser/05-output-and-input/focus-760x900.png",
+      "bytes": 146701,
+      "sha256": "a702e19a0ba9294b78bcfe97b2f459212f7835d559d38aead1949b5ec0e17733",
+      "width": 760,
+      "height": 900
+    },
+    {
+      "path": "media/browser/05-output-and-input/overview-1280x800.png",
+      "bytes": 138465,
+      "sha256": "256fecd7ce486ceddf47e0f7c05289696e84ef66effad809fefcece969b5d264",
+      "width": 1280,
+      "height": 800
+    },
+    {
+      "path": "media/browser/05-output-and-input/overview-1440x650.png",
+      "bytes": 138993,
+      "sha256": "c667bc98016efeffd60bcc923eb6cf93e4db8e1fe92ccc3f07c230f1257b7b2d",
+      "width": 1440,
+      "height": 650
+    },
+    {
+      "path": "media/browser/05-output-and-input/overview-1440x900.png",
+      "bytes": 156852,
+      "sha256": "84545a862e0321d8781b43867730b202883ae411e222a6cd5304cf11d3697b51",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "path": "media/browser/05-output-and-input/overview-1728x1117.png",
+      "bytes": 172796,
+      "sha256": "5cf98b972ea9e50bbd799e069e84501afda0e31a84e7609412a14b0e2e75a1be",
+      "width": 1728,
+      "height": 1117
+    },
+    {
+      "path": "media/browser/05-output-and-input/overview-760x900.png",
+      "bytes": 118147,
+      "sha256": "ad841e88816059b43aece893b2ba8593292d4d35f19b7dfbd8597d177ea9a040",
+      "width": 760,
+      "height": 900
+    },
+    {
+      "path": "media/browser/05-output-and-input/proof.json",
+      "bytes": 5900,
+      "sha256": "3b68f404e31d63be60368f36b36d129cc0634f8dee91c624c9f0a08fd0193779"
+    },
+    {
+      "path": "media/browser/06-small-debug/focus-1280x800.png",
+      "bytes": 150820,
+      "sha256": "50bc68c39bfea68e0bde8aa7b31a27d7cc274429ccc0800e699497b98c951c5d",
+      "width": 1280,
+      "height": 800
+    },
+    {
+      "path": "media/browser/06-small-debug/focus-1440x650.png",
+      "bytes": 157275,
+      "sha256": "88efac2c0516d85a60df569d25106078958ae941ba6941145a4b424d6ba55eaf",
+      "width": 1440,
+      "height": 650
+    },
+    {
+      "path": "media/browser/06-small-debug/focus-1440x900.png",
+      "bytes": 170995,
+      "sha256": "c4f9ef87ecfe7cbbd5b624a87f1ea647c34bb6fd5f492ca4b163b17a1a214b5f",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "path": "media/browser/06-small-debug/focus-1728x1117.png",
+      "bytes": 206150,
+      "sha256": "738406238bd37f79e725cfd6c56107f97155c28ff22b85804ae1776b81002579",
+      "width": 1728,
+      "height": 1117
+    },
+    {
+      "path": "media/browser/06-small-debug/focus-760x900.png",
+      "bytes": 129322,
+      "sha256": "cb9de55954eec146755c79ecccc4803ed9c1218c156547aa26e190ffe1470b5b",
+      "width": 760,
+      "height": 900
+    },
+    {
+      "path": "media/browser/06-small-debug/overview-1280x800.png",
+      "bytes": 127656,
+      "sha256": "86f15b233b1bb11b4d3c73a1b4cb54b305016793e4684790df75a3118f64308b",
+      "width": 1280,
+      "height": 800
+    },
+    {
+      "path": "media/browser/06-small-debug/overview-1440x650.png",
+      "bytes": 124108,
+      "sha256": "6829bb237185238280dddb41e286234540b5be4a409864a8ed6a1fad1edfcd11",
+      "width": 1440,
+      "height": 650
+    },
+    {
+      "path": "media/browser/06-small-debug/overview-1440x900.png",
+      "bytes": 136111,
+      "sha256": "74b7aa85464cecc0e40027fae65ed887e4125020f173bc3758fd329fa4cc1dd7",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "path": "media/browser/06-small-debug/overview-1728x1117.png",
+      "bytes": 175465,
+      "sha256": "9f87f63db273b6dbde3ed51c102368107bb49a0829b81aae7edcdd3b83b29a90",
+      "width": 1728,
+      "height": 1117
+    },
+    {
+      "path": "media/browser/06-small-debug/overview-760x900.png",
+      "bytes": 110700,
+      "sha256": "f0a1f07a6d4255029738c7a87acac5892f269cf131b90c8ae32178938ff442fc",
+      "width": 760,
+      "height": 900
+    },
+    {
+      "path": "media/browser/06-small-debug/proof.json",
+      "bytes": 5846,
+      "sha256": "db3b72bf3c28178d1cd14af725322a7eabc9e2447ca45de856238474791f254f"
+    },
+    {
+      "path": "media/browser/07-observed-wide-and-deep/focus-1280x800.png",
+      "bytes": 155357,
+      "sha256": "77861e4b5f357bfed96617fe6f922b702585f086b4dda76a9768d9187a674d7f",
+      "width": 1280,
+      "height": 800
+    },
+    {
+      "path": "media/browser/07-observed-wide-and-deep/focus-1440x650.png",
+      "bytes": 147855,
+      "sha256": "7bc867a9afb7f1d9e9cc6030af739e0cee73df85cef7387865f378d50c70905d",
+      "width": 1440,
+      "height": 650
+    },
+    {
+      "path": "media/browser/07-observed-wide-and-deep/focus-1440x900.png",
+      "bytes": 171680,
+      "sha256": "e6c4814000eb327affe063ae878788dd16bad21cd42a5fb3d8af6c4ac2553ee8",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "path": "media/browser/07-observed-wide-and-deep/focus-1728x1117.png",
+      "bytes": 200936,
+      "sha256": "26893c9fa0e4d36b0fc727a488f51413cad9a6a66e3ae780112dde369cd99b57",
+      "width": 1728,
+      "height": 1117
+    },
+    {
+      "path": "media/browser/07-observed-wide-and-deep/focus-760x900.png",
+      "bytes": 129411,
+      "sha256": "915ee587af6ed805c89d98476bf75afa0afab60b8e607db1524352be8db55869",
+      "width": 760,
+      "height": 900
+    },
+    {
+      "path": "media/browser/07-observed-wide-and-deep/overview-1280x800.png",
+      "bytes": 140692,
+      "sha256": "6bac33e5f6118c9dbb69c3414cd9572b6070eef066ea5bbde03ecfda7fe1df27",
+      "width": 1280,
+      "height": 800
+    },
+    {
+      "path": "media/browser/07-observed-wide-and-deep/overview-1440x650.png",
+      "bytes": 123437,
+      "sha256": "a5a1f708d425f439ebd285d5ee30ab5919d97164fe1099b87cdebd31168b9da5",
+      "width": 1440,
+      "height": 650
+    },
+    {
+      "path": "media/browser/07-observed-wide-and-deep/overview-1440x900.png",
+      "bytes": 157510,
+      "sha256": "762c812bda85535660864bea6b82f05bf720df895e1256b80cad9191bc54be8b",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "path": "media/browser/07-observed-wide-and-deep/overview-1728x1117.png",
+      "bytes": 185660,
+      "sha256": "a8386b47d0781455353cdbc6acec0da258905552ad73ba62490bdafc604b7ffc",
+      "width": 1728,
+      "height": 1117
+    },
+    {
+      "path": "media/browser/07-observed-wide-and-deep/overview-760x900.png",
+      "bytes": 103240,
+      "sha256": "c771ef199c1dc3fc515318a2fd54b2b62e9837794a91fd73faa2315fabcde6e4",
+      "width": 760,
+      "height": 900
+    },
+    {
+      "path": "media/browser/07-observed-wide-and-deep/proof.json",
+      "bytes": 5852,
+      "sha256": "9f229b4b8ed92c2f3f335cf58911fbe20c8d22aadf283881bd28c6ad0ecf5ed7"
+    },
+    {
+      "path": "media/browser/08-many-lazy-statics/focus-1280x800.png",
+      "bytes": 195325,
+      "sha256": "0836e8cb1b21544f7523395ec622ab7e2620ece9e3cda0c850c1191f272f01ef",
+      "width": 1280,
+      "height": 800
+    },
+    {
+      "path": "media/browser/08-many-lazy-statics/focus-1440x650.png",
+      "bytes": 175557,
+      "sha256": "dc6d093718b8989e568604ffa84da5e0a6fa48a1172712e973eb44d59264f486",
+      "width": 1440,
+      "height": 650
+    },
+    {
+      "path": "media/browser/08-many-lazy-statics/focus-1440x900.png",
+      "bytes": 227633,
+      "sha256": "793d0ae8383b6d238f3b88026f312348154024296205cb70ccb0707ef32d8b7b",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "path": "media/browser/08-many-lazy-statics/focus-1728x1117.png",
+      "bytes": 255471,
+      "sha256": "23f2b9d9d3bc10310b50a38eff704da4a916a91bdda254613ba022d5c1402e4e",
+      "width": 1728,
+      "height": 1117
+    },
+    {
+      "path": "media/browser/08-many-lazy-statics/focus-760x900.png",
+      "bytes": 112803,
+      "sha256": "d50df87cca89833d0d0e4ea6b21483f45598edabffd69cfe7909fea302d953df",
+      "width": 760,
+      "height": 900
+    },
+    {
+      "path": "media/browser/08-many-lazy-statics/overview-1280x800.png",
+      "bytes": 220357,
+      "sha256": "29853f2fefa075fbd5cf4dfc854c42f7cab9836850e08bf47e2814d9ddf7031e",
+      "width": 1280,
+      "height": 800
+    },
+    {
+      "path": "media/browser/08-many-lazy-statics/overview-1440x650.png",
+      "bytes": 179597,
+      "sha256": "6e93ba882b3089473feeae2d17c33676b66f825ccd2116dd0687aeb92bb86a94",
+      "width": 1440,
+      "height": 650
+    },
+    {
+      "path": "media/browser/08-many-lazy-statics/overview-1440x900.png",
+      "bytes": 254493,
+      "sha256": "84e1d03228bd3041ab34990a0c1481038364d38303532c7064936882c2f71ae5",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "path": "media/browser/08-many-lazy-statics/overview-1728x1117.png",
+      "bytes": 312910,
+      "sha256": "cc8b15eb966d05f2f5f4f966e03549bd56ad6a562f7ed8c5a8542669d400e505",
+      "width": 1728,
+      "height": 1117
+    },
+    {
+      "path": "media/browser/08-many-lazy-statics/overview-760x900.png",
+      "bytes": 120063,
+      "sha256": "36b48aaf28af26f0592a8180f9c7051b57419b4536eb420f6d678ee29f491692",
+      "width": 760,
+      "height": 900
+    },
+    {
+      "path": "media/browser/08-many-lazy-statics/proof.json",
+      "bytes": 5858,
+      "sha256": "5a10662ae13078e91ddf4be9059f75ec94e8c535f1f47f480fc80c7d30766952"
+    },
+    {
+      "path": "media/browser/09-quiet-tiny/focus-1280x800.png",
+      "bytes": 111830,
+      "sha256": "2f203e04a7a8b22cca4dfa0f189ed6961435ac4efa706e5de257a1b64bec35f9",
+      "width": 1280,
+      "height": 800
+    },
+    {
+      "path": "media/browser/09-quiet-tiny/focus-1440x650.png",
+      "bytes": 109314,
+      "sha256": "8d107b2364ec917a8452f93f37925ea8a7c79e7b650ed362e579012145cecf83",
+      "width": 1440,
+      "height": 650
+    },
+    {
+      "path": "media/browser/09-quiet-tiny/focus-1440x900.png",
+      "bytes": 122547,
+      "sha256": "f7cf909b478a0d7ee6f557497e3495e685414097c3047217eb92e982d93dbe85",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "path": "media/browser/09-quiet-tiny/focus-1728x1117.png",
+      "bytes": 141432,
+      "sha256": "fd457068d64003360786404eef3489978176f4ed0a5fce3a3aa775ac390ded45",
+      "width": 1728,
+      "height": 1117
+    },
+    {
+      "path": "media/browser/09-quiet-tiny/focus-760x900.png",
+      "bytes": 100836,
+      "sha256": "fa55efae94057a0faa853085077edd60f3dab7e52597d2969f08e8fa3402e4b5",
+      "width": 760,
+      "height": 900
+    },
+    {
+      "path": "media/browser/09-quiet-tiny/overview-1280x800.png",
+      "bytes": 86690,
+      "sha256": "3789fd015127eb9515d05c89a9f7a29a80eace31d8b99b2e3d099f5e10341a0b",
+      "width": 1280,
+      "height": 800
+    },
+    {
+      "path": "media/browser/09-quiet-tiny/overview-1440x650.png",
+      "bytes": 93506,
+      "sha256": "bbd54d506c3d33eacc2d66a74bc9083e00726646bf45b4fc1e2fbbdb28c947f8",
+      "width": 1440,
+      "height": 650
+    },
+    {
+      "path": "media/browser/09-quiet-tiny/overview-1440x900.png",
+      "bytes": 94328,
+      "sha256": "d725affa08af9b14250e32d1a92a23bdb62afc45cecb442bbfef702383dbef87",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "path": "media/browser/09-quiet-tiny/overview-1728x1117.png",
+      "bytes": 107130,
+      "sha256": "3479ba52320e1ae445f0944e9eea02425746e0a9dc16bcebdd2f64877dd27049",
+      "width": 1728,
+      "height": 1117
+    },
+    {
+      "path": "media/browser/09-quiet-tiny/overview-760x900.png",
+      "bytes": 84509,
+      "sha256": "e40a24a0803d9520e6c723473869a1d04efab4a059485f0c9c6ec5b1acd76fed",
+      "width": 760,
+      "height": 900
+    },
+    {
+      "path": "media/browser/09-quiet-tiny/proof.json",
+      "bytes": 5812,
+      "sha256": "af6e6592da65faade84952a5afe8d6e1e129ac78cbe23df0b9c6d530afcf690c"
+    },
+    {
+      "path": "media/details/02-arrays-cycles-collections/collection-1000-1440x900.png",
+      "bytes": 203196,
+      "sha256": "31808937bff2472925aa470994c232c1f4a4dc03b35b80fb80bff52c1f85be14",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "path": "media/details/02-arrays-cycles-collections/collection-1000-760x900.png",
+      "bytes": 142939,
+      "sha256": "5ce91fa3a90b3685da23aea8ccbdcc0b4d5ba7907d6c6682c83666e2ad3f8c73",
+      "width": 760,
+      "height": 900
+    },
+    {
+      "path": "media/details/02-arrays-cycles-collections/cyclic-shared-1440x900.png",
+      "bytes": 221699,
+      "sha256": "8a2588e2cc1902c49ed138fc63cfdc7ef638f5115d99332ad07fe7ab35acf6b7",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "path": "media/details/02-arrays-cycles-collections/cyclic-shared-760x900.png",
+      "bytes": 145586,
+      "sha256": "17689e824743687e940a9b0481736c8c3d430f7b0f8965275a0cff10e4776e8c",
+      "width": 760,
+      "height": 900
+    },
+    {
+      "path": "media/details/02-arrays-cycles-collections/large-array-1440x900.png",
+      "bytes": 185657,
+      "sha256": "71019dcae56d2a708292d700ab322ae3331188b1ebbf9dbcaaf2599585b99834",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "path": "media/details/02-arrays-cycles-collections/large-array-760x900.png",
+      "bytes": 139812,
+      "sha256": "1401f822ecd5add6821908578e4d5f050eb4283fe714a974b599d841d734964a",
+      "width": 760,
+      "height": 900
+    },
+    {
+      "path": "media/details/02-arrays-cycles-collections/proof.json",
+      "bytes": 660,
+      "sha256": "9532dfec4ed809499b6c8239ab01c6c9b8e98d4a79bf2c61347ca838a479b3ab"
+    },
+    {
+      "path": "media/details/02-arrays-cycles-collections/ragged-array-1440x900.png",
+      "bytes": 227827,
+      "sha256": "b9c342cdc6eb3cadee249ab4dc662e702d86f97420a1ac07c7d0b5b8ad297f0c",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "path": "media/details/02-arrays-cycles-collections/ragged-array-760x900.png",
+      "bytes": 154610,
+      "sha256": "5e1dc185ae5b5eee41ddc4b9bc97bf2bf68c8af510cc7ac73a7752991cf71b29",
+      "width": 760,
+      "height": 900
+    },
+    {
+      "path": "media/details/02-arrays-cycles-collections/sparse-index-10000-1440x900.png",
+      "bytes": 173194,
+      "sha256": "3fa231d51def77d73cc5d1ac49d43a52165a987e57c4386b9e3d3dd615b10aba",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "path": "media/details/02-arrays-cycles-collections/sparse-index-10000-760x900.png",
+      "bytes": 147708,
+      "sha256": "58e2d20d45f040e6091f310bae8387732743af1d6b451dd9b7bfa50cfa2c246e",
+      "width": 760,
+      "height": 900
+    },
+    {
+      "path": "media/details/04-statics-and-exceptions/proof.json",
+      "bytes": 276,
+      "sha256": "e2b03fe2ac3ae5e61f06bf7116d6b8bbdf107d7eb0ade54b170513b84e968693"
+    },
+    {
+      "path": "media/details/04-statics-and-exceptions/wrapped-exception-1440x900.png",
+      "bytes": 192959,
+      "sha256": "e833e706a5144dfed7a8f3c11741ef2cdce7a746158230f7d06078171873c7bd",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "path": "media/details/07-observed-wide-and-deep/deepest-observed-1440x900.png",
+      "bytes": 160051,
+      "sha256": "9175f8a73fe732a1f920c3b308e107ab61a3c8fa24bc23474c7de94c9f435bf3",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "path": "media/details/07-observed-wide-and-deep/proof.json",
+      "bytes": 345,
+      "sha256": "4aaf22842358050a4fe9956d8e486e183764375f3d0b560420698f3776ea7f8d"
+    },
+    {
+      "path": "media/details/07-observed-wide-and-deep/wide-leaf-1440x900.png",
+      "bytes": 154571,
+      "sha256": "c0c5c3fbb678274f86a1d2aca3fa7dd38a272809caebb78b2e4dc11380a2cfe9",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "path": "media/details/08-many-lazy-statics/last-lazy-static-1440x900.png",
+      "bytes": 227247,
+      "sha256": "68c7c0a031235e58ef08d8b5f7fa76db0b02cbb37c590eb129a524e76a0b2271",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "path": "media/details/08-many-lazy-statics/proof.json",
+      "bytes": 293,
+      "sha256": "5fee77679767de80fd16c9132fe03281ec372e205148a5af16acaa460143ff66"
+    },
+    {
+      "path": "media/fresh-banking.webm",
+      "bytes": 8481076,
+      "sha256": "0f102cb774fea54832bc276f65d20c31d13c21c7d0f04ba6644d280f22b4f71c"
+    },
+    {
+      "path": "media/lifecycle/debug-completed-1440x900.png",
+      "bytes": 185237,
+      "sha256": "fa2baaf39ac9514d719ec64c2ebc5fde0b0764ee9f9e7a17f44e2e1d9e52c977",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "path": "media/lifecycle/debug-proof.json",
+      "bytes": 1823,
+      "sha256": "99dc511d49e8d7e0586b44b442c4d17ec74f83e029ccfd5a18135fc429c8ef69"
+    },
+    {
+      "path": "media/lifecycle/fresh-debug.webm",
+      "bytes": 2967338,
+      "sha256": "163ef8b711fac7ac31e4a37b731d052b3b8ff49d0978aea42b6b6a4e9f649860"
+    },
+    {
+      "path": "media/lifecycle/jdt-proof.json",
+      "bytes": 186,
+      "sha256": "4f15a526d5657eb58ff1060f0f16ef6db870663cd35608816dd2bc9e663db4ee"
+    },
+    {
+      "path": "media/lifecycle/jdt-retry-draft-1440x900.png",
+      "bytes": 60225,
+      "sha256": "d43f6f80f963032e23dcc7b5584e61cbf4f28a4d4f14e0dcd438c2f4c558c4ca",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "path": "media/lifecycle/quick-open-1000-1440x900.png",
+      "bytes": 89111,
+      "sha256": "621cef8ca1f17b0a751d0491bd05f87648795428fe8aefa3bd1a4eee9bde46ff",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "path": "media/lifecycle/quick-open-proof.json",
+      "bytes": 139,
+      "sha256": "c27f903c59817204aa69d62f5d553b957d41dd58533dd531b4327aedd20acee0"
+    },
+    {
+      "path": "media/lifecycle/repeated-proof.json",
+      "bytes": 3210,
+      "sha256": "f1e1eca5289e32a5dd4a2339617b7c389f5c4563d1a610b59804b27510edf339"
+    },
+    {
+      "path": "media/lifecycle/repeated-repaired-1440x900.png",
+      "bytes": 105795,
+      "sha256": "9b175a1010416b4176ef47bd9f952ad3b6ca7c32c4d26837022843a945c76aa0",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "path": "media/lifecycle/stdin-completed-1440x900.png",
+      "bytes": 162085,
+      "sha256": "f15758040ecaf53791d165a2cbc3559c2607a798469eb94ca5c7df833a9fb953",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "path": "media/lifecycle/stdin-proof.json",
+      "bytes": 289,
+      "sha256": "018021f2300eb292ffce4bde5c182066e663ec258af9601986c2eb053019961e"
+    },
+    {
+      "path": "media/motion/allocation-1440x900.png",
+      "bytes": 156785,
+      "sha256": "01556820d8cdb277cfbb14d816eff60cfaec7e4e60743eeff86f589c8f2c9a66",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "path": "media/motion/complete-1440x900.png",
+      "bytes": 133701,
+      "sha256": "d63e0a7aa48534d04535e7defad7a466abd703e03e3954edd01138cd02023088",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "path": "media/motion/constructor-1440x900.png",
+      "bytes": 138100,
+      "sha256": "755b811657f20bb4d0fcf8ea6671cf118c02a807a1f4cc18157043159a03f74d",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "path": "media/motion/deep-recursion-1440x900.png",
+      "bytes": 143383,
+      "sha256": "9fc836dfc9ad121d2e000ad3964714152d07ebf423aa0889bf35b891ce9bf1a4",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "path": "media/motion/fresh-history.webm",
+      "bytes": 1600406,
+      "sha256": "7f7a43133826c764d90d6c098a435a790213a899bfd809c1ca246c70e3a0ad53"
+    },
+    {
+      "path": "media/motion/motion-proof.json",
+      "bytes": 1451,
+      "sha256": "c3befa6005c7802287d86c338974a685515364684bffeb057ca64d4ad2438f77"
+    },
+    {
+      "path": "media/motion/mutation-1440x900.png",
+      "bytes": 172748,
+      "sha256": "34e46b22dc6cbe963ab53d89c33e2eb6fc03bbca2caa9533e73dd086e2c50297",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "path": "media/motion/return-1440x900.png",
+      "bytes": 168757,
+      "sha256": "1cc2b5cf4eb147ef87b1946e239d78051dc7af7d35bbc035c5645e77101baa7c",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "path": "media/motion/stdout-1440x900.png",
+      "bytes": 132302,
+      "sha256": "7a0b8798d5593faed6cae57fb9dd4a4ec5bed9d4c6ddf059f6e6085687fc0f6c",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "path": "media/native-hands-on-focus.jpg",
+      "bytes": 64905,
+      "sha256": "bf259da72a2fa02fb07c0c5e1b4e399c2448691b1e4d3eaf8a9284402d3c45b5",
+      "width": 847,
+      "height": 771
+    },
+    {
+      "path": "media/regression/banking-focus-completed-1440x900.png",
+      "bytes": 118903,
+      "sha256": "c5cc02f9379e15db65cbf7f2f5d649f645fdd38c18e5e12f078b5497f35d1b9e",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "path": "media/regression/graph-polished-1440x900.png",
+      "bytes": 194241,
+      "sha256": "9133a74e68818cd9dce1dd2d4b85c9c99fc939a3eb3d64552f8582a39357de42",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "path": "media/video-frames/banking-28s.png",
+      "bytes": 201025,
+      "sha256": "5786cd9b1124973c8e624e3228144e92e5e8f1dc4fc148130abbdf97d8aa0761",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "path": "media/video-frames/banking-34s.png",
+      "bytes": 187357,
+      "sha256": "127494e7bf7ac219514b9185686d61b1c89b96568ad702aed2881c20d3044bd6",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "path": "media/video-frames/banking-39s.png",
+      "bytes": 395950,
+      "sha256": "9d1fb0de5f2594f6c2068609fb0225c4b285879465a6435f040fc8b2cb876f32",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "path": "media/video-frames/debug-2s.png",
+      "bytes": 213991,
+      "sha256": "0a432c582bf282d40e32edaf28b71344f4a188200ccb745effda1bc445d6bc1c",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "path": "media/video-frames/debug-35s.png",
+      "bytes": 349483,
+      "sha256": "f9cac628a22b4776be37a02e9957beb0bc25625ff3e4628171e3b09ddb222f2f",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "path": "media/video-frames/debug-38s.png",
+      "bytes": 338704,
+      "sha256": "472a96cdbb171c2dcdd0bbae12f6a59f8f3be3f83e971fd0ef89961763de5f8f",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "path": "media/video-frames/history-12.8s.png",
+      "bytes": 305493,
+      "sha256": "8b51970c87cf919953ee1880851d71d3ae90ea35e5612be064a34fb966c4fe1b",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "path": "media/video-frames/history-1s.png",
+      "bytes": 156029,
+      "sha256": "b07db41cfe9c203cccc0df168f86608fd0328d56d168ff57d038ac001f04006c",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "path": "media/video-frames/history-3.4s.png",
+      "bytes": 300381,
+      "sha256": "c08e45e28f81decf86ecaff52a37cee687c85b76816a6bafa3e3406d00950859",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "path": "media/video-frames/history-6.2s.png",
+      "bytes": 365279,
+      "sha256": "ca4b49c69a7746b9c63c38153bea662fa1b8133dfe9044945c0332acb4943ed4",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "path": "media/video-frames/history-9.5s.png",
+      "bytes": 449384,
+      "sha256": "999254fec0a6f5d88c590ddda3a07ac9b80cc5306436144ec4fe10e005f1e946",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "path": "media/video-samples.json",
+      "bytes": 1094,
+      "sha256": "50a31b876d1d28c305bea4747beece13462d5e0b32697c1bd92c096629668b7d"
+    },
+    {
+      "path": "reload-validation/dense-focus-1440x900.png",
+      "bytes": 179693,
+      "sha256": "d93c4f0800f756d48fc450ca3541f6f9e2ab330370405d1709dac705074fde38",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "path": "reload-validation/dense-overview-1440x900.png",
+      "bytes": 194348,
+      "sha256": "ccbe5e8c34b61b26a14ebe335f10520726dfda4cabe80a705ceb3dbf428fddfc",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "path": "reload-validation/performance.json",
+      "bytes": 8186,
+      "sha256": "08baf43ee22377489400b7d40752c69f56ba8aa8778a3600c78ef05f1762dd88"
+    },
+    {
+      "path": "soak/dense-focus-1440x900.png",
+      "bytes": 179335,
+      "sha256": "826d669f18aa8a41d2d37033e7ffb31e9fd3158aa737bab857262a5bb048955c",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "path": "soak/dense-overview-1440x900.png",
+      "bytes": 195256,
+      "sha256": "a751eb24c5914a091eff4efad21507152ea012b0223e87d9788086dc6b98261c",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "path": "soak/performance.json",
+      "bytes": 13642,
+      "sha256": "d722071e5eceb24b63e9cf7d36cdffdfd4a0ddb3c9d4c9c57faeb8a8b770ce9b"
+    }
+  ],
+  "proofMethod": "Default fresh IDE corpus, opt-in actual retained sessions, lifecycle tests and native hands-on run are distinct accepted executions. Proof JSON records each real session identity and cursor/source ownership. No fake backend trace is used. Details and history use actual retained terminal recordings, not a newly replayed JVM. History clip includes inspected cursors, camera choreography and then playback/manual orbit, not uninterrupted execution playback.",
+  "additionalFullSuiteCaptures": {
+    "pngFilesOnDisk": 114,
+    "policy": "Ignored full-suite PNG duplicates and incidental videos stay outside this commit. Canonical selected captures are retained under media; full-suite JSON/logs preserve checks."
+  },
+  "measurementEvidence": [
+    "gates/results.json",
+    "jvm/*.json",
+    "rich/performance.json",
+    "rich/phase5-comparison.json",
+    "soak/performance.json",
+    "reload-validation/performance.json",
+    "media/lifecycle/repeated-proof.json"
+  ],
+  "limits": [
+    "Bounded local path routing cannot prevent every projected crossing during arbitrary orbit or transient motion.",
+    "Macro labels/cells/collection previews are deliberately bounded; exact supported state requires Focus/Inspector/expand.",
+    "Banking video has gray padding during recorded viewport changes in a fixed video canvas; preserved without alteration.",
+    "Some retained-session screenshots show JDT starting/displaced; actual explicit Retry recovery is verified independently; bridge remains single-project.",
+    "GPU query commands, CPU render submission and JS heap are distinct domains, not physical frame latency, FPS, VRAM or cross-GPU certification.",
+    "Three-minute soak and five Runs do not prove universal leak freedom.",
+    "Observer limits and unsupported/native/library boundaries remain explicit; canonical Java I/O continues beyond partial visualization.",
+    "Materials/lighting remain simpler than cinematic references; no Phase 6 effects included."
+  ]
+}

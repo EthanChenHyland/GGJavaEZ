@@ -11,7 +11,7 @@ export function formatValue(value: RuntimeValue, objects?: RuntimeState['objects
     case 'uninitialized': return 'not observed'
     case 'null': return 'null'
     case 'primitive': return value.javaType === 'char' ? JSON.stringify(value.value) : String(value.value)
-    case 'stringSummary': return `"${value.value}"`
+    case 'stringSummary': return JSON.stringify(value.value)
     case 'reference': {
       const object = objects?.[value.objectId]
       return object ? `→ ${object.className} #${object.displayId}` : `→ ${value.objectId}`

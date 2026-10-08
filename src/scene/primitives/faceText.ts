@@ -4,10 +4,24 @@ export function fitFaceTextHeight(preferredSize: number, rowHeight: number): num
 }
 
 /** Display-only summary. Runtime truth and Inspector values remain untouched. */
+export function singleLineFaceText(value: string): string {
+  // Control characters are deliberately detected to escape recorded text.
+  // eslint-disable-next-line no-control-regex
+  return value.replace(/[\u0000-\u001f\u007f\u0085\u2028\u2029]/g, character => {
+    switch (character) {
+      case '\n': return '\\n'
+      case '\r': return '\\r'
+      case '\t': return '\\t'
+      default: return `\\u${character.charCodeAt(0).toString(16).padStart(4, '0')}`
+    }
+  })
+}
+
 export function summarizeFaceValue(value: string, characters: number): string {
-  const points = Array.from(value)
+  const line = singleLineFaceText(value)
+  const points = Array.from(line)
   const limit = Math.max(2, Math.floor(characters))
-  return points.length > limit ? `${points.slice(0, limit - 1).join('')}…` : value
+  return points.length > limit ? `${points.slice(0, limit - 1).join('')}…` : line
 }
 
 /** Three bounded columns shared by local, instance-field and static-field rows. */

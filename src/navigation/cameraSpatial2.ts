@@ -10,7 +10,12 @@ export function spatial2HomePose(bounds: WorldBounds | undefined, view: ViewFram
   const pivot = bounds?.center ?? [0, 0, 0]
   const direction: Vec3 = [0.3, 0.24, 1]
   const viewing: CameraPose = { target: pivot, position: [pivot[0] + direction[0], pivot[1] + direction[1], pivot[2] + direction[2]] }
-  if (bounds && viewport) return inspectorFocusPose(pivot, bounds.size, viewing, [], view, viewport, pivot, 2.4, [0.6, 1.2, 0.4])
+  if (bounds && viewport) {
+    const points = bounds.points?.length ? bounds.points.flatMap(point => [-1, 1].flatMap(x => [-1, 1].flatMap(y => [-1, 1].map(z => [
+      point[0] + x * 0.3, point[1] + 0.4 + y * 0.6, point[2] + z * 0.2,
+    ] as Vec3)))) : undefined
+    return inspectorFocusPose(pivot, bounds.size, viewing, [], view, viewport, pivot, 2.4, [0.6, 1.2, 0.4], points)
+  }
   const envelope: WorldAnchor[] = bounds && !bounds.points?.length ? [{
     entityId: 'navigation:represented-world', region: 'stack', position: bounds.center,
     size: bounds.size, ports: {}, bodyPort: bounds.center,

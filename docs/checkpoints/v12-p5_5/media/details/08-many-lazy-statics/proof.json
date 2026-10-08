@@ -1,0 +1,11 @@
+{
+  "sessionId": "89618a97-def4-4e90-ba7c-ed461addd5af",
+  "subjects": [
+    {
+      "label": "last-lazy-static",
+      "id": "jvm:class:LazyFamilies$Family24"
+    }
+  ],
+  "errors": [],
+  "method": "Exact fresh-JVM sessions and production normalization, replay and rendering; no new Java."
+}

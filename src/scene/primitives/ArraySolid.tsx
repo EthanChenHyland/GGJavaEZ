@@ -12,6 +12,7 @@ import { formatRuntimeValue } from './RuntimeSlot'
 import { SolidBody, SolidFace } from './SolidBody'
 import { useReducedMotion } from './presentationMotion'
 import { fitFaceValue } from './faceText'
+import { arrayHeaderAnchor } from '../../world/arrayGeometry'
 
 export interface ArraySolidProps {
   node: SceneObjectNode
@@ -145,9 +146,10 @@ export function ArraySolid({ node, selection, onSelect, guided, playing, activit
   const [width, height, depth] = node.anchor.size
   const top = y + height / 2
   // The identity stays attached to its originating heap boundary in both representations.
-  const headerWidth = Math.min(width, worldUnits.arrayHeader.maxWidth)
-  const headerY = top - worldUnits.arrayHeader.topInset
-  const headerDepth = Math.min(depth, worldUnits.arrayHeader.depth)
+  const header = arrayHeaderAnchor(node.anchor)
+  const headerWidth = header.size[0]
+  const headerY = header.position[1]
+  const headerDepth = header.size[2]
   const headerFront = headerDepth / 2 + 0.03
   const cellAt = (index: number) => cells.find((cell) => cell.index === index)
   const compare = current?.kind === 'compare' ? current : null

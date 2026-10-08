@@ -1,0 +1,356 @@
+{
+  "recordedAt": "2026-10-07T23:13:58.363Z",
+  "sessionId": "585281fa-b6f8-471f-8651-1f5345ab4cfe",
+  "projectId": "2ce3296c-dfb2-46f2-aa0c-bfc963b731f7",
+  "rawEvents": 7492,
+  "normalizedEvents": 9852,
+  "recording": {
+    "state": "FULL",
+    "reason": null,
+    "budget": null,
+    "lastRecordedSeq": 7491,
+    "executionContinued": true
+  },
+  "viewport": {
+    "width": 1440,
+    "height": 900,
+    "dpr": 1
+  },
+  "loadMs": 4764.109708,
+  "measuredMs": 0.00225000000136788,
+  "actions": 0,
+  "seek": {
+    "samples": 30,
+    "p50Ms": 51.71483400000034,
+    "p95Ms": 92.67108299999927,
+    "minMs": 47.88929199999984,
+    "maxMs": 106.25970899999993
+  },
+  "seekSamples": [
+    {
+      "cursor": 8144,
+      "ms": 106.25970899999993
+    },
+    {
+      "cursor": 36,
+      "ms": 84.1308340000005
+    },
+    {
+      "cursor": 3685,
+      "ms": 92.67108299999927
+    },
+    {
+      "cursor": 9017,
+      "ms": 77.72379199999978
+    },
+    {
+      "cursor": 8502,
+      "ms": 65.22870899999998
+    },
+    {
+      "cursor": 5336,
+      "ms": 65.75595900000008
+    },
+    {
+      "cursor": 4018,
+      "ms": 49.13154100000065
+    },
+    {
+      "cursor": 1862,
+      "ms": 50.906457999999475
+    },
+    {
+      "cursor": 7297,
+      "ms": 67.15708399999949
+    },
+    {
+      "cursor": 713,
+      "ms": 49.20366699999977
+    },
+    {
+      "cursor": 4799,
+      "ms": 50.284583999999995
+    },
+    {
+      "cursor": 4691,
+      "ms": 48.365875000000415
+    },
+    {
+      "cursor": 6007,
+      "ms": 49.930624999999964
+    },
+    {
+      "cursor": 3938,
+      "ms": 50.7006250000004
+    },
+    {
+      "cursor": 8942,
+      "ms": 49.324249999999665
+    },
+    {
+      "cursor": 8434,
+      "ms": 51.71483400000034
+    },
+    {
+      "cursor": 415,
+      "ms": 85.60291700000016
+    },
+    {
+      "cursor": 9044,
+      "ms": 71.86424999999963
+    },
+    {
+      "cursor": 7872,
+      "ms": 76.57154200000059
+    },
+    {
+      "cursor": 1146,
+      "ms": 68.16854200000034
+    },
+    {
+      "cursor": 2722,
+      "ms": 63.58583399999952
+    },
+    {
+      "cursor": 7170,
+      "ms": 49.665624999999636
+    },
+    {
+      "cursor": 2560,
+      "ms": 50.197000000000116
+    },
+    {
+      "cursor": 330,
+      "ms": 67.99670799999967
+    },
+    {
+      "cursor": 388,
+      "ms": 48.462125000000015
+    },
+    {
+      "cursor": 5815,
+      "ms": 51.79675000000043
+    },
+    {
+      "cursor": 1603,
+      "ms": 47.88929199999984
+    },
+    {
+      "cursor": 7165,
+      "ms": 51.319249999999556
+    },
+    {
+      "cursor": 9636,
+      "ms": 65.12283299999945
+    },
+    {
+      "cursor": 3876,
+      "ms": 49.99912500000028
+    }
+  ],
+  "focus": {
+    "samples": 0,
+    "p50Ms": null,
+    "p95Ms": null,
+    "minMs": null,
+    "maxMs": null
+  },
+  "home": {
+    "samples": 0,
+    "p50Ms": null,
+    "p95Ms": null,
+    "minMs": null,
+    "maxMs": null
+  },
+  "frame": null,
+  "snapshots": [],
+  "memoryBefore": {
+    "Documents": 2,
+    "JSEventListeners": 510,
+    "Nodes": 16026,
+    "TaskDuration": 0.043201,
+    "JSHeapUsedSize": 101767356,
+    "JSHeapTotalSize": 105824256
+  },
+  "memoryAfter": {
+    "Documents": 2,
+    "JSEventListeners": 507,
+    "Nodes": 16035,
+    "TaskDuration": 1.640041,
+    "JSHeapUsedSize": 103446248,
+    "JSHeapTotalSize": 107888640
+  },
+  "resources": [
+    {
+      "iteration": 1,
+      "heap": {
+        "Documents": 2,
+        "JSEventListeners": 608,
+        "Nodes": 16665,
+        "TaskDuration": 1.29212,
+        "JSHeapUsedSize": 102003112,
+        "JSHeapTotalSize": 107036672
+      },
+      "renderer": {
+        "detailLevel": "meso",
+        "labels": 33,
+        "visibleLabels": 33,
+        "pickTargets": 16,
+        "frameCentersInView": 0,
+        "frames": 2,
+        "objects": 4,
+        "classes": 0,
+        "faceEntities": 1,
+        "references": 6,
+        "flows": 0,
+        "clusters": 0,
+        "quietVolumes": 0,
+        "drawCalls": 85,
+        "triangles": 13958,
+        "geometries": 97,
+        "textures": 4
+      }
+    },
+    {
+      "iteration": 2,
+      "heap": {
+        "Documents": 2,
+        "JSEventListeners": 502,
+        "Nodes": 16135,
+        "TaskDuration": 1.130148,
+        "JSHeapUsedSize": 101601920,
+        "JSHeapTotalSize": 106512384
+      },
+      "renderer": {
+        "detailLevel": "meso",
+        "labels": 33,
+        "visibleLabels": 33,
+        "pickTargets": 21,
+        "frameCentersInView": 0,
+        "frames": 2,
+        "objects": 4,
+        "classes": 0,
+        "faceEntities": 1,
+        "references": 6,
+        "flows": 5,
+        "clusters": 0,
+        "quietVolumes": 0,
+        "drawCalls": 87,
+        "triangles": 12980,
+        "geometries": 107,
+        "textures": 4
+      }
+    },
+    {
+      "iteration": 3,
+      "heap": {
+        "Documents": 2,
+        "JSEventListeners": 501,
+        "Nodes": 16130,
+        "TaskDuration": 1.076239,
+        "JSHeapUsedSize": 101414916,
+        "JSHeapTotalSize": 105463808
+      },
+      "renderer": {
+        "detailLevel": "meso",
+        "labels": 31,
+        "visibleLabels": 31,
+        "pickTargets": 21,
+        "frameCentersInView": 0,
+        "frames": 2,
+        "objects": 3,
+        "classes": 0,
+        "faceEntities": 1,
+        "references": 6,
+        "flows": 6,
+        "clusters": 0,
+        "quietVolumes": 0,
+        "drawCalls": 81,
+        "triangles": 11674,
+        "geometries": 107,
+        "textures": 4
+      }
+    },
+    {
+      "iteration": 4,
+      "heap": {
+        "Documents": 2,
+        "JSEventListeners": 487,
+        "Nodes": 16101,
+        "TaskDuration": 1.060952,
+        "JSHeapUsedSize": 97858280,
+        "JSHeapTotalSize": 102055936
+      },
+      "renderer": {
+        "detailLevel": "meso",
+        "labels": 8,
+        "visibleLabels": 8,
+        "pickTargets": 4,
+        "frameCentersInView": 0,
+        "frames": 1,
+        "objects": 1,
+        "classes": 0,
+        "faceEntities": 1,
+        "references": 1,
+        "flows": 1,
+        "clusters": 0,
+        "quietVolumes": 0,
+        "drawCalls": 15,
+        "triangles": 3628,
+        "geometries": 25,
+        "textures": 4
+      }
+    },
+    {
+      "iteration": 5,
+      "heap": {
+        "Documents": 2,
+        "JSEventListeners": 487,
+        "Nodes": 16107,
+        "TaskDuration": 1.06132,
+        "JSHeapUsedSize": 98271148,
+        "JSHeapTotalSize": 102580224
+      },
+      "renderer": {
+        "detailLevel": "meso",
+        "labels": 10,
+        "visibleLabels": 10,
+        "pickTargets": 5,
+        "frameCentersInView": 0,
+        "frames": 1,
+        "objects": 1,
+        "classes": 0,
+        "faceEntities": 1,
+        "references": 1,
+        "flows": 1,
+        "clusters": 0,
+        "quietVolumes": 0,
+        "drawCalls": 22,
+        "triangles": 5734,
+        "geometries": 31,
+        "textures": 4
+      }
+    }
+  ],
+  "renderer": {
+    "detailLevel": "macro",
+    "labels": 22,
+    "visibleLabels": 16,
+    "pickTargets": 32,
+    "frameCentersInView": 4,
+    "frames": 4,
+    "objects": 6,
+    "classes": 0,
+    "faceEntities": 0,
+    "references": 12,
+    "flows": 0,
+    "clusters": 0,
+    "quietVolumes": 0,
+    "drawCalls": 134,
+    "triangles": 27290,
+    "geometries": 125,
+    "textures": 4
+  },
+  "errors": [],
+  "method": "Actual accepted terminal backend session, redirected only current-session discovery. No new Java or build. JDT excluded. 30 seeded action/UI/two-rAF seek samples; Focus/Home action timings exclude deliberate choreography settling. Continuous repeated orbit/dolly, Focus/Home and seeks for measuredMs. RendererMetrics traversal disabled during timing. Development render probe uses bounded 4096-entry rings and at most eight asynchronous GPU timer queries; no synchronous GPU waits. Render CPU is WebGL submission only, GPU query is elapsed GPU commands, neither measures physical presentation. Demand-render intervals include UI automation, intentional choreography and idle gaps and are not FPS. Explicit CDP GC reports whole frontend heap, not GPU bytes or isolated semantic retention. Five reloads exercise reload cleanup, not same-document session replacement. Resource counts are actual allocated objects, not texture-memory byte estimates."
+}

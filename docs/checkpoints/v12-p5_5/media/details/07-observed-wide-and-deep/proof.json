@@ -1,0 +1,15 @@
+{
+  "sessionId": "5b7d51c0-b0e2-4634-a0c2-88250d4f2566",
+  "subjects": [
+    {
+      "label": "deepest-observed",
+      "id": "jvm:frame:f72"
+    },
+    {
+      "label": "wide-leaf",
+      "id": "jvm:frame:f162"
+    }
+  ],
+  "errors": [],
+  "method": "Exact fresh-JVM sessions and production normalization, replay and rendering; no new Java."
+}

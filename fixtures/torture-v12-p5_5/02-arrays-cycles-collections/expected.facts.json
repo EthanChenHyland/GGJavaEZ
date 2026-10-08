@@ -1,0 +1,5 @@
+{
+  "mainClass": "Topology",
+  "stdout": "TOPOLOGY 73 100 1000 3 true\n",
+  "expectedExit": 0
+}

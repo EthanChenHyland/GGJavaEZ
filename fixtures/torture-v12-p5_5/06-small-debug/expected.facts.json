@@ -1,0 +1,5 @@
+{
+  "mainClass": "DebugShape",
+  "stdout": "DEBUG_SHAPE 18 true\n",
+  "expectedExit": 0
+}

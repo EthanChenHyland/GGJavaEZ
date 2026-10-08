@@ -10,6 +10,8 @@ import { NavigationController, navigationActions, useNavigationStore } from '../
 import { ArraySolid } from './primitives/ArraySolid'
 import { ClassSolid } from './primitives/ClassSolid'
 import { RendererMetrics } from './RendererMetrics'
+import { FrameProfiler } from './FrameProfiler'
+import { ConnectorCaptionLayer } from './primitives/ConnectorCaptions'
 import { RuntimeFaceLabels } from './primitives/RuntimeLabel'
 import { WorldOverviewLabels } from './primitives/WorldOverviewLabels'
 import { ClusterSolid, IdentitySolid } from './primitives/ClusterSolid'
@@ -19,6 +21,7 @@ import { HistoricalFlow, IoEndpoint, SemanticFlowMotion } from './primitives/Sem
 import { colors, renderQuality, runtimeFont, worldMaterial, worldUnits } from '../theme/tokens'
 import { callEdgesForScene, connectorBackPlane } from '../world/callStructure'
 import { ArchiveSolids } from './primitives/ArchiveSolids'
+import { arrayHeaderAnchor } from '../world/arrayGeometry'
 import { planSpatialPresentation, presentationBounds, spatialBudgets, type FlowDisplay } from '../world/spatialPresentation'
 
 interface RuntimeCanvasProps {
@@ -136,16 +139,29 @@ export function RuntimeCanvas({ visible, fitShallow = false, guided, playing, qu
     const stage = scene.presentation === 'theater' && layout.theater ? layout.theater : layout
     for (const node of [...scene.frames, ...scene.objects, ...(scene.classes ?? [])]) {
       const anchor = stage.anchors[node.id] ?? node.anchor
-      positions.set(node.id, anchor.bodyPort)
+      positions.set(node.id, fullScene.layoutKind === 'spatial2' && node.kind === 'object' && node.array ? arrayHeaderAnchor(anchor).bodyPort : anchor.bodyPort)
       const visibleCells = node.kind === 'object' && node.array ? new Set((plan.cellWindows.get(node.id) ?? []).map(cell => cell.id)) : null
       for (const [id, position] of Object.entries(anchor.ports)) if (!visibleCells || visibleCells.has(id) || node.kind === 'object' && node.fields.some(field => field.id === id)) positions.set(id, position)
       if (node.kind === 'object' && node.array) for (const cell of plan.cellWindows.get(node.id) ?? []) positions.set(cell.id, cell.port)
     }
     return positions
-  }, [scene, layout, plan.cellWindows])
+  }, [scene, layout, plan.cellWindows, fullScene.layoutKind])
+  const surfaceAnchors = useMemo(() => {
+    const result = new Map<string, WorldAnchor>()
+    for (const node of [...fullScene.frames, ...fullScene.objects, ...(fullScene.classes ?? [])]) {
+      result.set(node.id, node.kind === 'object' && node.array ? arrayHeaderAnchor(node.anchor) : node.anchor)
+      for (const id of Object.keys(node.anchor.ports)) result.set(id, node.anchor)
+      if (node.kind === 'object') for (const cell of node.array?.cells ?? []) result.set(cell.id, cell.anchor)
+    }
+    return result
+  }, [fullScene])
+  const referenceObstacles = useMemo(() => [...scene.frames.map(node => node.anchor), ...(scene.classes ?? []).map(node => node.anchor),
+    ...scene.objects.flatMap(node => node.array ? [arrayHeaderAnchor(node.anchor), ...(plan.cellWindows.get(node.id) ?? []).map(cell => cell.anchor)] : [node.anchor])], [scene, plan.cellWindows])
   const surfaceAnchor = (point: FlowEndpoint | undefined) => {
     if (!point) return undefined
     if (point.kind === 'io') return scene.io?.find(item => item.id === point.id)?.anchor
+    const body = surfaceAnchors.get(point.id)
+    if (body) return body
     if (layout.anchors[point.id]) return layout.anchors[point.id]
     for (const node of [...scene.frames, ...scene.objects, ...(scene.classes ?? [])]) if (node.anchor.ports[point.id]) return node.anchor
     return undefined
@@ -197,6 +213,7 @@ export function RuntimeCanvas({ visible, fitShallow = false, guided, playing, qu
       gl={{ antialias: true, powerPreference: 'high-performance' }}
     >
       {import.meta.env.DEV && <RendererMetrics plan={plan} />}
+      {import.meta.env.DEV && <FrameProfiler />}
       <color attach="background" args={[colors.canvas]} />
       <fog attach="fog" args={[colors.canvas, worldRange * 4, worldRange * 10]} />
       <ambientLight intensity={1.5} color={colors.textSecondary} />
@@ -222,22 +239,25 @@ export function RuntimeCanvas({ visible, fitShallow = false, guided, playing, qu
         {environment.classHeading && !isolatedSelection && detailLevel !== 'macro' && <Text font={runtimeFont} position={[...environment.classHeading]} fontSize={0.31} color={colors.textSecondary} anchorX="left" anchorY="middle" letterSpacing={0.08}>CLASS STATE</Text>}
         {callEdges.map((edge) => <Line key={edge.id} points={edge.points} color={colors.stack} lineWidth={1.4} transparent opacity={0.46} />)}
         {scene.returnFlow && scene.frames.length > 0 && (!scopedWorld || event?.type === 'RETURN_VALUE' || event?.type === 'EXIT_METHOD') && <ReturnFlow flow={scene.returnFlow} guided={guided} playing={playing} />}
+        <ConnectorCaptionLayer inspectorVisible={inspectorVisible}>
         {scene.references.map((edge) => <ReferenceCurve key={edge.id} edge={edge}
           label={slotNames.get(edge.source.slotId) ?? ''}
           detailLevel={detailLevel}
           sourceAnchor={fullScene.layoutKind === 'spatial2' ? surfaceAnchor({kind:'slot',id:edge.source.slotId}) : undefined}
-          targetAnchor={fullScene.layoutKind === 'spatial2' ? layout.anchors[edge.targetObjectId] : undefined}
+          targetAnchor={fullScene.layoutKind === 'spatial2' ? surfaceAnchors.get(edge.targetObjectId) : undefined}
+          obstacles={fullScene.layoutKind === 'spatial2' ? referenceObstacles : undefined}
           selected={selection?.kind === 'reference' && selection.id === edge.id}
           related={selection?.kind === 'object' && edge.targetObjectId === selection.id}
           labelSize={arrayWorld ? 0.28 : undefined}
           onSelect={(id) => select({ kind: 'reference', id })} />)}
+        </ConnectorCaptionLayer>
         {plan.flows.map((item) => {
           const from = endpoint(item.from)
           const to = endpoint(item.to)
-          return from && to ? <HistoricalFlow key={item.id} transition={item} from={from} to={to} behindZ={connectorBackZ} sourceAnchor={fullScene.layoutKind === 'spatial2' ? surfaceAnchor(item.from) : undefined} targetAnchor={fullScene.layoutKind === 'spatial2' ? surfaceAnchor(item.to) : undefined} selected={selectedFlowId === item.id} onSelect={onSelectFlow} /> : null
+          return from && to ? <HistoricalFlow key={item.id} transition={item} from={from} to={to} behindZ={connectorBackZ} sourceAnchor={fullScene.layoutKind === 'spatial2' ? surfaceAnchor(item.from) : undefined} targetAnchor={fullScene.layoutKind === 'spatial2' ? surfaceAnchor(item.to) : undefined} obstacles={fullScene.layoutKind === 'spatial2' ? referenceObstacles : undefined} selected={selectedFlowId === item.id} onSelect={onSelectFlow} /> : null
         })}
         {(scene.io ?? []).map(item => <IoEndpoint key={item.id} id={item.id} position={item.anchor.position} preview={item.preview} observations={item.observations} />)}
-        {guided && !motionCancelled && transition && motionTo && <SemanticFlowMotion key={transition.id} transition={transition} from={motionFrom} to={motionTo} behindZ={connectorBackZ} quality={quality} sourceAnchor={fullScene.layoutKind === 'spatial2' ? surfaceAnchor(transition.from) : undefined} targetAnchor={fullScene.layoutKind === 'spatial2' ? surfaceAnchor(transition.to) : undefined} />}
+        {guided && !motionCancelled && transition && motionTo && <SemanticFlowMotion key={transition.id} transition={transition} from={motionFrom} to={motionTo} behindZ={connectorBackZ} quality={quality} sourceAnchor={fullScene.layoutKind === 'spatial2' ? surfaceAnchor(transition.from) : undefined} targetAnchor={fullScene.layoutKind === 'spatial2' ? surfaceAnchor(transition.to) : undefined} obstacles={fullScene.layoutKind === 'spatial2' ? referenceObstacles : undefined} />}
         <RuntimeFaceLabels.Provider value={fullScene.layoutKind !== 'spatial2' || detailLevel !== 'macro' || Boolean(isolatedSelection)}>
         {scene.frames.map((node) => !fullFace(node.id) ? <IdentitySolid key={node.id} node={node} onSelect={select} showLabels={detailLevel !== 'macro'} /> : <FrameSolid key={node.id} node={node}
           inspection={Boolean(isolatedSelection)}

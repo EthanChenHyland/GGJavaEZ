@@ -1,0 +1,173 @@
+{
+  "name": "07-observed-wide-and-deep",
+  "recording": {
+    "state": "FULL",
+    "reason": null,
+    "budget": null,
+    "lastRecordedSeq": 1146,
+    "executionContinued": true
+  },
+  "exitCode": 0,
+  "stdoutBytes": 26,
+  "stderrBytes": 0,
+  "stdoutSha256": "37f620907911b1905c6f832a79b7789a6c38c789b0166c70c5497b0ff5a7b23f",
+  "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "rawEvents": 1147,
+  "semanticEvents": 1866,
+  "frames": 162,
+  "objects": 3,
+  "references": 1,
+  "anchors": 166,
+  "timings": {
+    "buildMs": 197.9600419999988,
+    "executionMs": 765.9960829999982,
+    "normalizationMs": 18.808580999990227
+  },
+  "probe": {
+    "domain": "Node semantic seek only; no browser, rendering or GPU measurement",
+    "sampleCount": 30,
+    "seed": "0x4c0ffee",
+    "samples": [
+      {
+        "cursor": 0,
+        "milliseconds": 0.0014999999984866008
+      },
+      {
+        "cursor": 1866,
+        "milliseconds": 0.0005000000019208528
+      },
+      {
+        "cursor": 1303,
+        "milliseconds": 0.14829099999769824
+      },
+      {
+        "cursor": 635,
+        "milliseconds": 0.6187079999945126
+      },
+      {
+        "cursor": 944,
+        "milliseconds": 1.0641659999964759
+      },
+      {
+        "cursor": 539,
+        "milliseconds": 0.13770900000235997
+      },
+      {
+        "cursor": 854,
+        "milliseconds": 0.43575000000419095
+      },
+      {
+        "cursor": 124,
+        "milliseconds": 0.6625419999982114
+      },
+      {
+        "cursor": 551,
+        "milliseconds": 0.19537499999569263
+      },
+      {
+        "cursor": 424,
+        "milliseconds": 0.9493749999965075
+      },
+      {
+        "cursor": 77,
+        "milliseconds": 0.36700000000564614
+      },
+      {
+        "cursor": 1226,
+        "milliseconds": 1.1954170000026352
+      },
+      {
+        "cursor": 1702,
+        "milliseconds": 1.0320419999989099
+      },
+      {
+        "cursor": 1534,
+        "milliseconds": 1.5535840000011376
+      },
+      {
+        "cursor": 8,
+        "milliseconds": 0.03400000000692671
+      },
+      {
+        "cursor": 54,
+        "milliseconds": 0.6193750000020373
+      },
+      {
+        "cursor": 33,
+        "milliseconds": 0.21237500000279397
+      },
+      {
+        "cursor": 760,
+        "milliseconds": 1.3746249999967404
+      },
+      {
+        "cursor": 16,
+        "milliseconds": 0.09304100000008475
+      },
+      {
+        "cursor": 835,
+        "milliseconds": 0.3587499999994179
+      },
+      {
+        "cursor": 462,
+        "milliseconds": 1.0624160000006668
+      },
+      {
+        "cursor": 360,
+        "milliseconds": 0.4906669999982114
+      },
+      {
+        "cursor": 176,
+        "milliseconds": 0.8135829999955604
+      },
+      {
+        "cursor": 827,
+        "milliseconds": 0.2742089999956079
+      },
+      {
+        "cursor": 282,
+        "milliseconds": 0.12533400000393158
+      },
+      {
+        "cursor": 147,
+        "milliseconds": 0.6959580000038841
+      },
+      {
+        "cursor": 1525,
+        "milliseconds": 1.3401250000024447
+      },
+      {
+        "cursor": 688,
+        "milliseconds": 0.846624999998312
+      },
+      {
+        "cursor": 1688,
+        "milliseconds": 0.861124999995809
+      },
+      {
+        "cursor": 598,
+        "milliseconds": 0.5155829999930575
+      }
+    ],
+    "medianScrubMs": 0.567145499993785,
+    "maximumScrubMs": 1.5535840000011376,
+    "explicitGc": true,
+    "heapBeforeMiB": 19.69377899169922,
+    "heapAfterMiB": 24.236343383789062,
+    "retainedMiB": 4.542564392089844,
+    "heapScope": "Per-case process heap delta retaining raw events, semantic trace, graph, bounded history, source manifest and test harness; not isolated graph bytes",
+    "caveat": "One ordered-suite sample per case; GC/JIT/cache noise and prior-case retention can affect deltas. Negative deltas are reported unchanged.",
+    "history": {
+      "length": 1866,
+      "checkpointCount": 8,
+      "checkpointInterval": 256,
+      "maxCheckpoints": 256,
+      "cachedMaterializationCount": 1,
+      "cachedMaterializationCursor": 598,
+      "retainedStateRoots": 10,
+      "replayedEvents": 3938
+    }
+  },
+  "jdkVersion": "26.0.2.1",
+  "status": "ended"
+}

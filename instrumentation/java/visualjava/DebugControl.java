@@ -125,6 +125,16 @@ public final class DebugControl {
     checkpoint(frameId, owner, method, line, depth, rawCount, true);
   }
 
+  /** An inline caller may return without another line checkpoint. Stop in that
+   * caller before its exit rather than skipping it. Ordinary next-line stepping
+   * and Continue/breakpoints are unchanged. No runtime facts are synthesized. */
+  public static void returnBoundary(String frameId, String owner, String method, int line, int depth, long rawCount) {
+    synchronized (MONITOR) {
+      if (!enabled || paused || !mode.equals("stepOut") || Thread.currentThread().threadId() != stepThread || depth >= stepDepth) return;
+      checkpoint(frameId, owner, method, line, depth, rawCount, false);
+    }
+  }
+
   private static void checkpoint(String frameId, String owner, String method, int line, int depth, long rawCount, boolean exception) {
     synchronized (MONITOR) {
       initialize();

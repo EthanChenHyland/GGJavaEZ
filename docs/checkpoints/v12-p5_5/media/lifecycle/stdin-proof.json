@@ -1,0 +1,15 @@
+{
+  "sessionId": "01693523-c1ab-42e9-a0f6-6f653ec2fe5a",
+  "stdout": "FIRST\nSECOND\nDONE 0 🟣中文\n",
+  "recording": {
+    "state": "FULL",
+    "reason": null,
+    "budget": null,
+    "lastRecordedSeq": 43,
+    "executionContinued": true
+  },
+  "delaysMs": [
+    1000,
+    1000
+  ]
+}

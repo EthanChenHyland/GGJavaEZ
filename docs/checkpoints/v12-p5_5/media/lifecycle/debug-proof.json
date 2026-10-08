@@ -1,0 +1,86 @@
+{
+  "sessionId": "85a3b9ff-36a0-445e-9a80-90771199bc0a",
+  "pausedMs": 35000,
+  "steps": [
+    {
+      "command": "Step Into",
+      "pause": {
+        "reason": "step",
+        "threadId": "3",
+        "frameId": "f2",
+        "className": "DebugShape$Cell",
+        "methodName": "<init>",
+        "line": 2,
+        "rawEventCount": 6
+      }
+    },
+    {
+      "command": "Step Out",
+      "pause": {
+        "reason": "step",
+        "threadId": "3",
+        "frameId": "f1",
+        "className": "DebugShape",
+        "methodName": "main",
+        "line": 6,
+        "rawEventCount": 18
+      }
+    },
+    {
+      "command": "Step Over",
+      "pause": {
+        "reason": "step",
+        "threadId": "3",
+        "frameId": "f1",
+        "className": "DebugShape",
+        "methodName": "main",
+        "line": 7,
+        "rawEventCount": 23
+      }
+    },
+    {
+      "command": "Step Into",
+      "pause": {
+        "reason": "step",
+        "threadId": "3",
+        "frameId": "f3",
+        "className": "DebugShape",
+        "methodName": "descend",
+        "line": 3,
+        "rawEventCount": 26
+      }
+    },
+    {
+      "command": "Step Into",
+      "pause": {
+        "reason": "step",
+        "threadId": "3",
+        "frameId": "f4",
+        "className": "DebugShape",
+        "methodName": "descend",
+        "line": 3,
+        "rawEventCount": 30
+      }
+    },
+    {
+      "command": "Step Out",
+      "pause": {
+        "reason": "step",
+        "threadId": "3",
+        "frameId": "f3",
+        "className": "DebugShape",
+        "methodName": "descend",
+        "line": 3,
+        "rawEventCount": 64
+      }
+    }
+  ],
+  "recording": {
+    "state": "FULL",
+    "reason": null,
+    "budget": null,
+    "lastRecordedSeq": 79,
+    "executionContinued": true
+  },
+  "stdout": "DEBUG_SHAPE 18 true\n"
+}

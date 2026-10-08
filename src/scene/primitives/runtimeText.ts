@@ -29,9 +29,8 @@ export function frameLabelDensity(rowPixels: number, previous: FrameLabelPolicy[
 }
 
 export function identityLabelScale(size: number, pixelsPerUnit: number, contentWidth: number, availableWidth: number, priority: boolean): number {
-  if (pixelsPerUnit <= 0) return 1
-  const desired = (typography.runtimeMicroPx + (priority ? 2 : 0)) / (size * pixelsPerUnit)
+  const desired = pixelsPerUnit > 0 ? (typography.runtimeMicroPx + (priority ? 2 : 0)) / (size * pixelsPerUnit) : 1
   // Only identity headings grow. Rows remain their original world size. Keep
   // the heading on its information face, including long JVM method names.
-  return Math.max(1, Math.min(desired, 0.9 / size, availableWidth / Math.max(contentWidth, 0.001)))
+  return Math.min(Math.max(1, desired), 0.9 / size, availableWidth / Math.max(contentWidth, 0.001))
 }

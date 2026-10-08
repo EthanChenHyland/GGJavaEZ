@@ -1,0 +1,37 @@
+{
+  "method": "Four exact prior Phase 5 graph digests, counts and unchanged inputs; separately collected explicit-GC process deltas, not a renderer-memory benchmark or paired same-process timing comparison.",
+  "samples": [
+    {
+      "semanticEvents": 462,
+      "graphDigest": "d816db945975223b28cb44e207d6e0f75a9b916e454d43e8bbf925d00fdbda85",
+      "equalGraph": true,
+      "phase5RetainedMiB": 0.9856109619140625,
+      "phase5_5RetainedMiB": 0.9928131103515625,
+      "deltaMiB": 0.0072021484375
+    },
+    {
+      "semanticEvents": 9788,
+      "graphDigest": "8a162be5315a772d60ef5a6d404cf49a120f19cf39da34bf011a31941b6b87f5",
+      "equalGraph": true,
+      "phase5RetainedMiB": 17.828125,
+      "phase5_5RetainedMiB": 17.826095581054688,
+      "deltaMiB": -0.0020294189453125
+    },
+    {
+      "semanticEvents": 38302,
+      "graphDigest": "a30e0762ef281ed5dbf7e20652062020bc8f300f350caec731732e53d0372343",
+      "equalGraph": true,
+      "phase5RetainedMiB": 73.063720703125,
+      "phase5_5RetainedMiB": 65.8655776977539,
+      "deltaMiB": -7.198143005371094
+    },
+    {
+      "semanticEvents": 190031,
+      "graphDigest": "2a7ec98d455de8e43f4fe5c0a495e312b832459a0540065b2969439ff8ae9dac",
+      "equalGraph": true,
+      "phase5RetainedMiB": 353.32948303222656,
+      "phase5_5RetainedMiB": 354.55847930908203,
+      "deltaMiB": 1.2289962768554688
+    }
+  ]
+}

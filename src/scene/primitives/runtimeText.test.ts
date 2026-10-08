@@ -37,4 +37,8 @@ describe('projected runtime label policy', () => {
     expect(runtimeCharacters).toContain('0123456789')
     expect(runtimeCharacters).toContain('·→—×')
   })
+
+  it.each([0, 3, 20, 100])('contains an oversized identity even at %s pixels per unit', pixels => {
+    expect(identityLabelScale(0.38, pixels, 12, 4.25, true) * 12).toBeLessThanOrEqual(4.25)
+  })
 })

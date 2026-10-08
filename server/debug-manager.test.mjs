@@ -105,6 +105,12 @@ test('actual step Into/Over/Out follows project thread and multi-file stack dept
     await f.manager.command(sessionId, 'stepOver'); await paused(f.manager, 4, 'Helper');
     await f.manager.command(sessionId, 'stepInto'); await paused(f.manager, 7, 'Helper');
     await f.manager.command(sessionId, 'stepOut');
+    // The immediate caller returns on this same line. Step Out must retain
+    // that frame instead of skipping it on the way to Main's next line.
+    const inlineCaller = await paused(f.manager, 4, 'Helper');
+    expect(inlineCaller.pause.frameId).toBe(work.pause.frameId);
+    expect(inlineCaller.rawEvents.filter((event) => event.type === 'return').map((event) => event.value.value)).toEqual([5, 5]);
+    await f.manager.command(sessionId, 'stepOut');
     const caller = await paused(f.manager, 5);
     expect(caller.pause.frameId).toBe(entry.pause.frameId);
     expect(caller.rawEvents.filter((event) => event.type === 'return').map((event) => event.value.value)).toEqual([5, 5]);
@@ -125,6 +131,34 @@ test('step Over skips deeper project calls and step Out from callee returns to c
     await paused(f.manager, 3); await f.manager.command(sessionId, 'stepOver'); await paused(f.manager, 4);
     await f.manager.command(sessionId, 'stepInto'); await paused(f.manager, 3, 'Helper');
     await f.manager.command(sessionId, 'stepOut'); await paused(f.manager, 5);
+  } finally { await f.cleanup(); }
+}, 15000);
+
+test('step Out retains an inline void caller before exit without inventing a return value', async () => {
+  const f = await fixture({ 'Main.java': `public class Main {
+  public static void main(String[] args) {
+    outer();
+    System.out.println("DONE");
+  }
+  static void outer() { inner(); }
+  static void inner() { System.out.println("INNER"); }
+}` });
+  try {
+    const { sessionId } = await f.manager.start(f.request);
+    const entry = await paused(f.manager, 3);
+    await f.manager.command(sessionId, 'stepInto');
+    const outer = await paused(f.manager, 6);
+    expect(outer.pause.methodName).toBe('outer');
+    await f.manager.command(sessionId, 'stepInto');
+    expect((await paused(f.manager, 7)).pause.methodName).toBe('inner');
+    await f.manager.command(sessionId, 'stepOut');
+    const retained = await paused(f.manager, 6);
+    expect(retained.pause.frameId).toBe(outer.pause.frameId);
+    expect(retained.rawEvents.filter(event => event.type === 'return')).toEqual([]);
+    await f.manager.command(sessionId, 'stepOut');
+    expect((await paused(f.manager, 4)).pause.frameId).toBe(entry.pause.frameId);
+    await f.manager.command(sessionId, 'continue');
+    expect(await ended(f.manager)).toMatchObject({ stdout: 'INNER\nDONE\n', terminalStatus: 'complete', exitCode: 0 });
   } finally { await f.cleanup(); }
 }, 15000);
 

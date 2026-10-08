@@ -9,6 +9,45 @@ const deferred = <T>() => { let resolve!: (value: T) => void; const promise = ne
 afterEach(() => { vi.useRealTimers() })
 
 describe('language document lifecycle', () => {
+  it('explicit retry reopens a displaced project and resends its current unsaved draft', async () => {
+    const notifications: unknown[] = []
+    let opens = 0
+    const fetcher = vi.fn(async (url: string | URL | Request, init?: RequestInit) => {
+      if (String(url).endsWith('/restart')) return { ok: false, status: 409, json: async () => ({ error: 'Language project is not open' }) } as Response
+      if (String(url).endsWith('/open')) return response(status(++opens))
+      if (String(url).endsWith('/notify')) notifications.push(JSON.parse(String(init?.body)))
+      return response({ ok: true })
+    }) as unknown as typeof fetch
+    const client = new LanguageClient({ fetch: fetcher, pollMs: 0 })
+    await client.open('p1')
+    client.openDocument('Main.java', 'class Main { int unsaved = 42; }')
+    await client.flush()
+    await client.restart()
+    await client.flush()
+    expect(opens).toBe(2)
+    expect(client.getSnapshot()).toMatchObject({ projectId: 'p1', generation: 2, status: 'ready' })
+    expect(notifications.at(-1)).toMatchObject({ method: 'textDocument/didOpen', params: { textDocument: {
+      uri: documentUri('p1', 'Main.java'), version: 1, text: 'class Main { int unsaved = 42; }',
+    } } })
+    expect(client.getDocumentText('Main.java')).toContain('unsaved = 42')
+    client.dispose()
+  })
+
+  it('does not reclaim the language workspace for other restart failures', async () => {
+    let opens = 0
+    const fetcher = vi.fn(async (url: string | URL | Request) => {
+      if (String(url).endsWith('/restart')) return { ok: false, status: 409, json: async () => ({ error: 'Stale language document version' }) } as Response
+      if (String(url).endsWith('/open')) { opens++; return response(status()) }
+      return response({ ok: true })
+    }) as unknown as typeof fetch
+    const client = new LanguageClient({ fetch: fetcher, pollMs: 0 })
+    await client.open('p1')
+    await client.restart()
+    expect(opens).toBe(1)
+    expect(client.getSnapshot()).toMatchObject({ status: 'unavailable', message: 'Stale language document version' })
+    client.dispose()
+  })
+
   it('sends a document opened while project initialization is pending', async () => {
     const opened = deferred<Response>()
     const notifications: unknown[] = []

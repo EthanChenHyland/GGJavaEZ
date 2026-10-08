@@ -224,6 +224,7 @@ export function inspectorFocusPose(
   selectedPosition: Vec3 = pivot,
   minimumDistance = 8.5,
   selectedPadding: Vec3 = [1, 2, 0.6],
+  framingPoints?: readonly Vec3[],
 ): CameraPose {
   const width = Math.max(1, viewport.width)
   const height = Math.max(1, viewport.height)
@@ -255,23 +256,25 @@ export function inspectorFocusPose(
     { position: [selectedPosition[0], selectedPosition[1] + 0.4, selectedPosition[2]] as Vec3,
       size: [extent[0] + selectedPadding[0], extent[1] + selectedPadding[1], extent[2] + selectedPadding[2]] as Vec3 },
   ]
-  for (const body of bodies) {
-    for (const x of [-1, 1]) for (const y of [-1, 1]) for (const z of [-1, 1]) {
-      const relative = new Vector3(
-        body.position[0] + x * body.size[0] / 2 - pivot[0],
-        body.position[1] + y * body.size[1] / 2 - pivot[1],
-        body.position[2] + z * body.size[2] / 2 - pivot[2],
-      )
-      const depth = relative.dot(direction)
-      const horizontal = relative.dot(rightAxis) / tanX
-      const vertical = relative.dot(upAxis) / tanY
-      range = Math.max(range, depth + 0.5,
-        (horizontal + xMax * depth) / Math.max(0.05, xMax - centerX),
-        (-horizontal - xMin * depth) / Math.max(0.05, centerX - xMin),
-        (vertical + yMax * depth) / Math.max(0.05, yMax - centerY),
-        (-vertical - yMin * depth) / Math.max(0.05, centerY - yMin),
-      )
-    }
+  // A landscape's occupied corners need not fill its axis-aligned envelope.
+  // Focus still fits the selected body and context; Home can fit real corners
+  // without inventing geometry at the empty corners of a sparse world.
+  const points = framingPoints ?? bodies.flatMap(body => [-1, 1].flatMap(x => [-1, 1].flatMap(y => [-1, 1].map(z => [
+    body.position[0] + x * body.size[0] / 2,
+    body.position[1] + y * body.size[1] / 2,
+    body.position[2] + z * body.size[2] / 2,
+  ] as Vec3))))
+  for (const point of points) {
+    const relative = new Vector3(...point).sub(new Vector3(...pivot))
+    const depth = relative.dot(direction)
+    const horizontal = relative.dot(rightAxis) / tanX
+    const vertical = relative.dot(upAxis) / tanY
+    range = Math.max(range, depth + 0.5,
+      (horizontal + xMax * depth) / Math.max(0.05, xMax - centerX),
+      (-horizontal - xMin * depth) / Math.max(0.05, centerX - xMin),
+      (vertical + yMax * depth) / Math.max(0.05, yMax - centerY),
+      (-vertical - yMin * depth) / Math.max(0.05, centerY - yMin),
+    )
   }
   range *= 1.05
   const target = new Vector3(...pivot)

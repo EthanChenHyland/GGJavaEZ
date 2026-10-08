@@ -1,0 +1,94 @@
+[
+  {
+    "gate": "typecheck",
+    "command": [
+      "npm",
+      "run",
+      "typecheck"
+    ],
+    "environmentOverrides": {},
+    "startedAt": "2026-10-07T23:38:10Z",
+    "durationSeconds": 3.632936954498291,
+    "exitCode": 0,
+    "log": "typecheck.log"
+  },
+  {
+    "gate": "lint",
+    "command": [
+      "npm",
+      "run",
+      "lint"
+    ],
+    "environmentOverrides": {},
+    "startedAt": "2026-10-07T23:38:14Z",
+    "durationSeconds": 1.8698759078979492,
+    "exitCode": 0,
+    "log": "lint.log"
+  },
+  {
+    "gate": "build",
+    "command": [
+      "npm",
+      "run",
+      "build"
+    ],
+    "environmentOverrides": {},
+    "startedAt": "2026-10-07T23:38:16Z",
+    "durationSeconds": 4.070069074630737,
+    "exitCode": 0,
+    "log": "build.log"
+  },
+  {
+    "gate": "unit",
+    "command": [
+      "npm",
+      "test"
+    ],
+    "environmentOverrides": {},
+    "startedAt": "2026-10-07T23:38:20Z",
+    "durationSeconds": 147.13413190841675,
+    "exitCode": 0,
+    "log": "unit.log"
+  },
+  {
+    "gate": "acceptance",
+    "command": [
+      "npm",
+      "run",
+      "test:acceptance"
+    ],
+    "environmentOverrides": {
+      "GGJAVA_MAVEN_PATH": "/Users/ethius/VSCode/GGJavaEZ/.ggjavaez/tools/maven/bin/mvn",
+      "GGJAVA_GRADLE_PATH": "/Users/ethius/VSCode/GGJavaEZ/.ggjavaez/tools/gradle/bin/gradle"
+    },
+    "startedAt": "2026-10-07T23:40:47Z",
+    "durationSeconds": 165.32866883277893,
+    "exitCode": 0,
+    "log": "acceptance.log"
+  },
+  {
+    "gate": "prior-jvm",
+    "command": [
+      "npx",
+      "vitest",
+      "run",
+      "tests/coverage-v12-p4",
+      "tests/provenance/real-jvm.test.mjs",
+      "tests/provenance/performance-jvm.test.mjs",
+      "--execArgv=--expose-gc",
+      "--maxWorkers=1",
+      "--fileParallelism=false"
+    ],
+    "environmentOverrides": {
+      "VJ_PHASE4_JVM": "1",
+      "VJ_PHASE3_JVM": "1",
+      "VJ_PHASE4_PROBE": "1",
+      "VJ_PHASE4_OUTPUT_ROOT": ".ggjavaez/qa/v12-p5_5/prior-jvm",
+      "VJ_PERF_OUTPUT_ROOT": "docs/checkpoints/v12-p5_5/prior-jvm"
+    },
+    "startedAt": "2026-10-07T23:43:32Z",
+    "durationSeconds": 50.52485918998718,
+    "exitCode": 1,
+    "log": "prior-jvm.log"
+  }
+]

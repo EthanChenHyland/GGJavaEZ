@@ -1,0 +1,30 @@
+{
+  "method": "Read-only inventory of existing untracked root references; these files are excluded from the Phase 5.5 commit.",
+  "files": [
+    {
+      "name": "ChatGPT Image Oct 3, 2026, 02_20_44 PM.png",
+      "bytes": 2118233,
+      "sha256": "d217de7f9384f5246b515d548eea73f02de7d834e28b4113b1793b46b1ec8dc4"
+    },
+    {
+      "name": "ChatGPT Image Oct 3, 2026, 02_21_05 PM.png",
+      "bytes": 2081646,
+      "sha256": "df74c5952fdc0393f8f7def97e229677255afedf06bd0aa2ffeb8e4d031b9810"
+    },
+    {
+      "name": "ChatGPT Image Oct 3, 2026, 02_21_08 PM.png",
+      "bytes": 1832369,
+      "sha256": "458de84ff8d81f05b55fcd9a41169965fdb10a29cfdf13b5f77ec7c0394ae65d"
+    },
+    {
+      "name": "ChatGPT Image Oct 3, 2026, 02_21_12 PM.png",
+      "bytes": 1777640,
+      "sha256": "075f32c3156529082aa6206c5e85910d6b2f231568dd59a4f64d284628078c6f"
+    },
+    {
+      "name": "ChatGPT Image Oct 3, 2026, 02_21_17 PM.png",
+      "bytes": 1809862,
+      "sha256": "4b5381054c62bfafac9adb0a6e87ff589e479d4882d018cf047fe7c3b141f965"
+    }
+  ]
+}

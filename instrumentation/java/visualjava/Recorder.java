@@ -769,6 +769,14 @@ public final class Recorder {
     capture(() -> { Frame f=current();if(f!=null)emit("return",f,f.line,site,"\"value\":"+raw(value,descriptor,true)+takeOrigin()); });
   }
   public static void exit(int site) {
+    // Preserve ordinary next-line stepping. If an inline caller has no further
+    // line, Step Out still stops in that caller before its own normal exit.
+    // Never wait while holding the recorder lock; no new fact is emitted.
+    if (DEBUG) {
+      Frame frame; int depth; long watermark;
+      synchronized (LOCK) { frame=checkpointFrame(-1,site); depth=CONTROL.get().depth; watermark=seq; }
+      if (frame!=null && frame.line>0) DebugControl.returnBoundary(frame.id,frame.owner,frame.method,frame.line,depth,watermark);
+    }
     if (!stopped) capture(() -> { Frame f=current();if(f!=null)emit("exit",f,f.line,site,""); });
     leaveControl();
   }

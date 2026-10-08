@@ -1,6 +1,9 @@
 import { documentPath, documentUri, type LanguageSnapshot } from './protocol'
 
 export class StaleLanguageResponse extends Error { constructor() { super('Language response belongs to an older project or document'); this.name = 'StaleLanguageResponse' } }
+class LanguageHttpError extends Error {
+  constructor(message: string, readonly status: number) { super(message) }
+}
 interface DocumentState { text: string; version: number; sentVersion: number; timer?: ReturnType<typeof setTimeout> }
 interface RequestOptions { signal?: AbortSignal; path?: string }
 interface ClientOptions { fetch?: typeof fetch; debounceMs?: number; pollMs?: number; timeoutMs?: number }
@@ -67,7 +70,15 @@ export class LanguageClient {
   }
   private async connect(action: string, epoch: number) {
     try {
-      const status = await this.http<LanguageSnapshot>(action, 'POST', {}, epoch)
+      let status: LanguageSnapshot
+      try { status = await this.http<LanguageSnapshot>(action, 'POST', {}, epoch) }
+      catch (error) {
+        // The bridge owns one language project. Another window may have
+        // replaced it. An explicit retry reopens this client's actual project
+        // before its retained documents are flushed to the new generation.
+        if (action !== 'restart' || !(error instanceof LanguageHttpError) || error.status !== 409 || error.message !== 'Language project is not open') throw error
+        status = await this.http<LanguageSnapshot>('open', 'POST', {}, epoch)
+      }
       this.acceptStatus(status, epoch)
     } catch (error) { this.unavailable(error, epoch) }
     if (epoch === this.epoch) this.schedulePoll(epoch)
@@ -115,7 +126,7 @@ export class LanguageClient {
       })
       const payload = await response.json()
       if (epoch !== this.epoch) throw new StaleLanguageResponse()
-      if (!response.ok) throw new Error(payload.error ?? `Language service unavailable (${response.status})`)
+      if (!response.ok) throw new LanguageHttpError(payload.error ?? `Language service unavailable (${response.status})`, response.status)
       return payload as T
     } finally { clearTimeout(timeout); signal?.removeEventListener('abort', abort); this.controllers.delete(controller) }
   }

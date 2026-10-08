@@ -15,7 +15,7 @@ export function formatRuntimeValue(value: RuntimeValue): string {
     case 'uninitialized': return '—'
     case 'null': return 'null'
     case 'primitive': return value.javaType === 'char' ? JSON.stringify(value.value) : String(value.value)
-    case 'stringSummary': return `"${value.value}"`
+    case 'stringSummary': return JSON.stringify(value.value)
     case 'reference': return `→ ${value.objectId}`
   }
 }
@@ -50,6 +50,8 @@ export function RuntimeSlot({ slot, width, y, z, compact = false, accent, backgr
   const textZ = z + 0.014
   const value = slot.displayValue ?? formatRuntimeValue(slot.value)
   const preferredValueSize = fitFaceTextHeight((readable ? 0.29 : compact ? 0.22 : 0.24) * textScale, height)
+  const fittedName = fitFaceValue(slot.role === 'operand' ? 'call result' : slot.name, preferredValueSize, nameWidth)
+  const fittedType = fitFaceValue(typeLabel, fitFaceTextHeight((readable ? 0.24 : compact ? 0.18 : 0.2) * textScale, height), typeWidth)
   // A marked summary stays legible; full observed data remains in Inspector.
   const fittedValue = fitText ? fitFaceValue(value, preferredValueSize, valueWidth - 0.1) : { text: value, size: preferredValueSize }
   const valueColor = active ? colors.mutation : slot.value.kind === 'null' || slot.value.kind === 'uninitialized'
@@ -98,8 +100,8 @@ export function RuntimeSlot({ slot, width, y, z, compact = false, accent, backgr
           <meshBasicMaterial color={selected ? colors.execution : colors.mutation} />
         </mesh>
       )}
-      <RuntimeLabel text={slot.role === 'operand' ? 'call result' : slot.name} position={[left, 0, textZ]} size={preferredValueSize} color={colors.text} maxWidth={nameWidth} />
-      <RuntimeLabel text={typeLabel} position={[typeX, 0, textZ]} size={fitFaceTextHeight((readable ? 0.24 : compact ? 0.18 : 0.2) * textScale, height)} color={colors.textSecondary} maxWidth={typeWidth} />
+      <RuntimeLabel text={fittedName.text} position={[left, 0, textZ]} size={fittedName.size} color={colors.text} maxWidth={nameWidth} />
+      <RuntimeLabel text={fittedType.text} position={[typeX, 0, textZ]} size={fittedType.size} color={colors.textSecondary} maxWidth={typeWidth} />
       <group ref={valueRef} position={[valueX + valueWidth / 2, 0, 0]}>
         <RuntimeLabel text={fittedValue.text} position={[-valueWidth / 2 + 0.05, 0, textZ]} size={fittedValue.size} color={valueColor} maxWidth={valueWidth - 0.1} />
       </group>

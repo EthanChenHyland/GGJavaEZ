@@ -1,0 +1,6 @@
+{
+  "mainClass": "ObservedLandscape",
+  "stdout": "OBSERVED_LANDSCAPE 900 70\n",
+  "expectedExit": 0,
+  "stderr": ""
+}

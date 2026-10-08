@@ -7,8 +7,8 @@ const rendered = vi.hoisted(() => ({ labels: [] as string[], points: [] as Vecto
 vi.mock('@react-three/drei', () => ({
   Line: ({ points }: { points: Vector3[] }) => { rendered.points.push(points); return null },
   Billboard: ({ children }: { children: React.ReactNode }) => children,
-  Text: ({ children }: { children: string }) => { rendered.labels.push(children); return null },
 }))
+vi.mock('./RuntimeLabel', () => ({ RuntimeLabel: ({ text }: { text: string }) => { rendered.labels.push(text); return null } }))
 vi.mock('./presentationMotion', () => ({ useReducedMotion: () => true, useMountSettle: vi.fn() }))
 
 import { ReferenceCurve, referenceFaceCurve } from './ReferenceCurve'

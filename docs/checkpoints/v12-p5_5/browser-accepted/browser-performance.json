@@ -1,0 +1,23 @@
+{
+  "rawEvents": 100017,
+  "semanticEvents": 122139,
+  "totalMs": 614,
+  "sliceMs": {
+    "p50": 4,
+    "p95": 7,
+    "max": 18.300000000745058,
+    "count": 119
+  },
+  "scrubMs": {
+    "p50": 0.6000000014901161,
+    "p95": 1.4000000022351742,
+    "max": 4.899999998509884
+  },
+  "concurrentFrameMs": {
+    "p50": 16.699999999999932,
+    "p95": 16.700000000000045,
+    "max": 16.800000000000068,
+    "count": 37
+  },
+  "note": "Algorithm ingestion in Chrome with existing Person WebGL scene mounted. This is not a rendered 122k-event world or a physical GPU presentation metric."
+}

@@ -1,0 +1,275 @@
+{
+  "sessionId": "bbf24db4-9b3d-4f37-b2dd-644988b1209c",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "loadMs": 1988,
+  "normalizedEvents": 6474,
+  "baseline": {
+    "loadMs": 3214,
+    "seeksMs": [
+      741,
+      493,
+      482
+    ]
+  },
+  "seek": {
+    "samples": 30,
+    "p50Ms": 67.34966700000223,
+    "p95Ms": 107.41395800000464,
+    "minMs": 49.40708299999824,
+    "maxMs": 117.15237500000512
+  },
+  "seekSamples": [
+    {
+      "cursor": 4343,
+      "ms": 97.4097080000065
+    },
+    {
+      "cursor": 6063,
+      "ms": 66.83979199999885
+    },
+    {
+      "cursor": 4044,
+      "ms": 65.41645800000697
+    },
+    {
+      "cursor": 1397,
+      "ms": 70.5257500000007
+    },
+    {
+      "cursor": 5618,
+      "ms": 117.15237500000512
+    },
+    {
+      "cursor": 5630,
+      "ms": 98.92933400000038
+    },
+    {
+      "cursor": 101,
+      "ms": 97.93829199999163
+    },
+    {
+      "cursor": 1036,
+      "ms": 99.74183299999277
+    },
+    {
+      "cursor": 1383,
+      "ms": 66.5907920000027
+    },
+    {
+      "cursor": 2097,
+      "ms": 66.91083299998718
+    },
+    {
+      "cursor": 4553,
+      "ms": 65.48620800000208
+    },
+    {
+      "cursor": 2352,
+      "ms": 67.34966700000223
+    },
+    {
+      "cursor": 3632,
+      "ms": 49.40708299999824
+    },
+    {
+      "cursor": 2613,
+      "ms": 51.10775000001013
+    },
+    {
+      "cursor": 3315,
+      "ms": 66.37799999999697
+    },
+    {
+      "cursor": 3345,
+      "ms": 66.33933300001081
+    },
+    {
+      "cursor": 4810,
+      "ms": 95.37599999998929
+    },
+    {
+      "cursor": 113,
+      "ms": 70.54145800000697
+    },
+    {
+      "cursor": 1508,
+      "ms": 86.46575000000303
+    },
+    {
+      "cursor": 3400,
+      "ms": 107.41395800000464
+    },
+    {
+      "cursor": 333,
+      "ms": 75.74141600000439
+    },
+    {
+      "cursor": 3683,
+      "ms": 83.32712499999616
+    },
+    {
+      "cursor": 598,
+      "ms": 64.83641699999862
+    },
+    {
+      "cursor": 4714,
+      "ms": 66.44466599999578
+    },
+    {
+      "cursor": 3952,
+      "ms": 66.34270899998955
+    },
+    {
+      "cursor": 515,
+      "ms": 83.89983299998858
+    },
+    {
+      "cursor": 3525,
+      "ms": 83.51470800000243
+    },
+    {
+      "cursor": 4185,
+      "ms": 65.83729200001108
+    },
+    {
+      "cursor": 100,
+      "ms": 67.19954200000211
+    },
+    {
+      "cursor": 6082,
+      "ms": 71.24424999998882
+    }
+  ],
+  "orbit": {
+    "samples": 30,
+    "p50Ms": 66.51941700000316,
+    "p95Ms": 78.65279200000805,
+    "minMs": 64.40941700000258,
+    "maxMs": 83.89291700000467
+  },
+  "orbitSamples": [
+    83.89291700000467,
+    66.42058399999223,
+    66.83049999999639,
+    66.28287500000442,
+    66.98599999998987,
+    66.52170800000022,
+    75.45470899999782,
+    66.57637500000419,
+    66.54108299998916,
+    66.95408400001179,
+    67.22987499998999,
+    66.59225000000151,
+    66.75458300000173,
+    66.15099999999802,
+    66.36720800001058,
+    66.47229200000584,
+    66.41458399999829,
+    66.49224999999569,
+    78.65279200000805,
+    66.51466700001038,
+    66.58700000001409,
+    64.40941700000258,
+    65.64908399998967,
+    66.56979200000933,
+    66.33762500000012,
+    66.19525000000431,
+    66.75625000000582,
+    66.49845800000185,
+    65.87370899999223,
+    66.51941700000316
+  ],
+  "focus": {
+    "samples": 5,
+    "p50Ms": 81.4696249999979,
+    "p95Ms": 125.30029100000684,
+    "minMs": 64.42654200000106,
+    "maxMs": 125.30029100000684
+  },
+  "home": {
+    "samples": 5,
+    "p50Ms": 165.2645419999899,
+    "p95Ms": 181.03229100001045,
+    "minMs": 164.43258399999468,
+    "maxMs": 181.03229100001045
+  },
+  "commands": [
+    {
+      "kind": "focus",
+      "commitAndTwoFramesMs": 125.30029100000684,
+      "settledMs": 927.0550829999993
+    },
+    {
+      "kind": "home",
+      "commitAndTwoFramesMs": 165.2645419999899,
+      "settledMs": 966.9838749999908
+    },
+    {
+      "kind": "focus",
+      "commitAndTwoFramesMs": 64.42654200000106,
+      "settledMs": 866.8427499999962
+    },
+    {
+      "kind": "home",
+      "commitAndTwoFramesMs": 164.43258399999468,
+      "settledMs": 966.1340419999906
+    },
+    {
+      "kind": "focus",
+      "commitAndTwoFramesMs": 81.4696249999979,
+      "settledMs": 883.7945409999957
+    },
+    {
+      "kind": "home",
+      "commitAndTwoFramesMs": 181.03229100001045,
+      "settledMs": 982.9061660000007
+    },
+    {
+      "kind": "focus",
+      "commitAndTwoFramesMs": 113.91720799999894,
+      "settledMs": 916.4727079999866
+    },
+    {
+      "kind": "home",
+      "commitAndTwoFramesMs": 165.16045799999847,
+      "settledMs": 967.4357500000042
+    },
+    {
+      "kind": "focus",
+      "commitAndTwoFramesMs": 80.67520899999363,
+      "settledMs": 881.7984169999982
+    },
+    {
+      "kind": "home",
+      "commitAndTwoFramesMs": 166.3380829999951,
+      "settledMs": 968.8640829999931
+    }
+  ],
+  "renderer": {
+    "detailLevel": "macro",
+    "labels": 17,
+    "visibleLabels": 2,
+    "pickTargets": 28,
+    "frameCentersInView": 1,
+    "frames": 1,
+    "objects": 2,
+    "classes": 0,
+    "faceEntities": 2,
+    "references": 2,
+    "flows": 3,
+    "clusters": 5,
+    "quietVolumes": 0,
+    "drawCalls": 75,
+    "triangles": 14696,
+    "geometries": 81,
+    "textures": 4
+  },
+  "heap": {
+    "usedJSHeapSize": 454854500,
+    "totalJSHeapSize": 502281908
+  },
+  "metric": "Playwright action/UI commit plus two animation frames; not physical GPU presentation. Command settledMs includes a fixed 800 ms choreography wait, not detected GPU completion. Browser heap includes transport, accepted recording, Monaco and renderer. One cold load; 30 seeded seeks and 30 drag samples; five Focus and five Home samples. No population-wide cold-load percentile claim."
+}

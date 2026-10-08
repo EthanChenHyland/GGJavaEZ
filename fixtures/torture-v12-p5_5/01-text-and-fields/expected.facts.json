@@ -1,0 +1,5 @@
+{
+  "mainClass": "audit.spatial.boundaries.identifiers.deeply.nested.TextAndFields",
+  "stdout": "TEXT_AND_FIELDS 5131\n",
+  "expectedExit": 0
+}

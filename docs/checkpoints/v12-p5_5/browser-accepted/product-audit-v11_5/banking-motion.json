@@ -1,0 +1,57 @@
+{
+  "sessionId": "02e268fe-1635-4977-a306-75def830fed2",
+  "approximateVideoStartMs": 25721,
+  "approximateVideoEndMs": 42103,
+  "samples": [
+    {
+      "cursor": 30,
+      "type": "CONSOLE_INPUT",
+      "label": "Input consumed"
+    },
+    {
+      "cursor": 97,
+      "type": "ENTER_METHOD",
+      "label": "post entered"
+    },
+    {
+      "cursor": 114,
+      "type": "ALLOCATE_OBJECT",
+      "label": "audit.bank.Account observed"
+    },
+    {
+      "cursor": 160,
+      "type": "DECLARE_LOCAL",
+      "label": "amount observed"
+    },
+    {
+      "cursor": 168,
+      "type": "SET_FIELD",
+      "label": "balance: 100 → 125"
+    },
+    {
+      "cursor": 146,
+      "type": "RETURN_VALUE",
+      "label": "Value returned"
+    },
+    {
+      "cursor": 171,
+      "type": "EXIT_METHOD",
+      "label": "Method exited"
+    },
+    {
+      "cursor": 436,
+      "type": "CONSOLE_WRITE",
+      "label": "stdout write"
+    },
+    {
+      "cursor": 455,
+      "type": "EXIT_METHOD",
+      "label": "Method exited"
+    },
+    {
+      "cursor": 457,
+      "type": "PROGRAM_END",
+      "label": "Program completed"
+    }
+  ]
+}

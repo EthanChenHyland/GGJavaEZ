@@ -4,6 +4,7 @@ import { useFrame } from '@react-three/fiber'
 import type { Mesh } from 'three'
 import { colors, runtimeFont } from '../../theme/tokens'
 import { identityLabelScale, preloadRuntimeText, RuntimeLabelPolicy, runtimeCharacters } from './runtimeText'
+import { fitFaceValue, singleLineFaceText } from './faceText'
 
 preloadRuntimeText()
 
@@ -36,6 +37,9 @@ export function RuntimeLabel({
   const policy = useContext(RuntimeLabelPolicy)
   const faceLabelsVisible = useContext(RuntimeFaceLabels)
   const meshRef = useRef<Mesh & { textRenderInfo?: { visibleBounds: number[] } }>(null)
+  const fittedIdentity = role === 'identity' && maxWidth ? fitFaceValue(text, size, maxWidth) : undefined
+  const displayText = fittedIdentity?.text ?? singleLineFaceText(text)
+  const displaySize = fittedIdentity?.size ?? size
   useFrame(() => {
     const mesh = meshRef.current
     if (!mesh) return
@@ -46,7 +50,7 @@ export function RuntimeLabel({
     const { density, pixelsPerUnit, priority } = policy.current
     mesh.visible = role === 'identity' || density === 'full'
     if (role === 'identity') {
-      mesh.scale.setScalar(identityLabelScale(size, pixelsPerUnit, width, maxWidth ?? width, priority))
+      mesh.scale.setScalar(identityLabelScale(displaySize, pixelsPerUnit, width, maxWidth ?? width, priority))
     } else mesh.scale.setScalar(fit)
   })
   if (!faceLabelsVisible) return null
@@ -57,7 +61,7 @@ export function RuntimeLabel({
         font={runtimeFont}
         characters={runtimeCharacters}
         color={color}
-        fontSize={size}
+        fontSize={displaySize}
         anchorX={align}
         anchorY="middle"
         maxWidth={maxWidth}
@@ -65,7 +69,7 @@ export function RuntimeLabel({
         overflowWrap="normal"
         renderOrder={3}
       >
-        {text}
+        {displayText}
         <meshBasicMaterial color={color} toneMapped={false} depthTest={depthTest} depthWrite={false} />
       </Text>
     </group>

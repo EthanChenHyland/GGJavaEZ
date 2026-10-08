@@ -1,0 +1,491 @@
+{
+  "recordedAt": "2026-10-07T22:52:56.627Z",
+  "sessionId": "585281fa-b6f8-471f-8651-1f5345ab4cfe",
+  "projectId": "2ce3296c-dfb2-46f2-aa0c-bfc963b731f7",
+  "rawEvents": 7492,
+  "normalizedEvents": 9852,
+  "recording": {
+    "state": "FULL",
+    "reason": null,
+    "budget": null,
+    "lastRecordedSeq": 7491,
+    "executionContinued": true
+  },
+  "viewport": {
+    "width": 1440,
+    "height": 900,
+    "dpr": 1
+  },
+  "loadMs": 4294.364917,
+  "measuredMs": 181084.180792,
+  "actions": 643,
+  "seek": {
+    "samples": 30,
+    "p50Ms": 50.23291700000027,
+    "p95Ms": 101.74687499999982,
+    "minMs": 46.478250000000116,
+    "maxMs": 112.56683299999986
+  },
+  "seekSamples": [
+    {
+      "cursor": 8144,
+      "ms": 112.56683299999986
+    },
+    {
+      "cursor": 36,
+      "ms": 80.9082499999995
+    },
+    {
+      "cursor": 3685,
+      "ms": 101.74687499999982
+    },
+    {
+      "cursor": 9017,
+      "ms": 81.11266700000033
+    },
+    {
+      "cursor": 8502,
+      "ms": 84.05804100000023
+    },
+    {
+      "cursor": 5336,
+      "ms": 66.10579200000029
+    },
+    {
+      "cursor": 4018,
+      "ms": 67.24133400000028
+    },
+    {
+      "cursor": 1862,
+      "ms": 49.28037500000028
+    },
+    {
+      "cursor": 7297,
+      "ms": 52.29174999999941
+    },
+    {
+      "cursor": 713,
+      "ms": 50.23291700000027
+    },
+    {
+      "cursor": 4799,
+      "ms": 48.2061249999997
+    },
+    {
+      "cursor": 4691,
+      "ms": 49.35649999999987
+    },
+    {
+      "cursor": 6007,
+      "ms": 49.76274999999987
+    },
+    {
+      "cursor": 3938,
+      "ms": 49.99066599999969
+    },
+    {
+      "cursor": 8942,
+      "ms": 50.08729200000016
+    },
+    {
+      "cursor": 8434,
+      "ms": 66.75133299999925
+    },
+    {
+      "cursor": 415,
+      "ms": 85.32704199999989
+    },
+    {
+      "cursor": 9044,
+      "ms": 83.38908300000003
+    },
+    {
+      "cursor": 7872,
+      "ms": 83.32095799999934
+    },
+    {
+      "cursor": 1146,
+      "ms": 67.91966599999978
+    },
+    {
+      "cursor": 2722,
+      "ms": 46.478250000000116
+    },
+    {
+      "cursor": 7170,
+      "ms": 50.0689169999996
+    },
+    {
+      "cursor": 2560,
+      "ms": 50.03333400000065
+    },
+    {
+      "cursor": 330,
+      "ms": 67.13766599999963
+    },
+    {
+      "cursor": 388,
+      "ms": 50.16033299999981
+    },
+    {
+      "cursor": 5815,
+      "ms": 50.04512499999964
+    },
+    {
+      "cursor": 1603,
+      "ms": 49.807166999999936
+    },
+    {
+      "cursor": 7165,
+      "ms": 49.48737500000061
+    },
+    {
+      "cursor": 9636,
+      "ms": 66.62570800000049
+    },
+    {
+      "cursor": 3876,
+      "ms": 49.953125
+    }
+  ],
+  "focus": {
+    "samples": 54,
+    "p50Ms": 75.93762499999139,
+    "p95Ms": 107.43779100000029,
+    "minMs": 66.42987500000163,
+    "maxMs": 169.79004199999963
+  },
+  "home": {
+    "samples": 54,
+    "p50Ms": 86.89279199999874,
+    "p95Ms": 137.63029199999983,
+    "minMs": 66.26399999999558,
+    "maxMs": 204.03262500002165
+  },
+  "frame": {
+    "renders": 6468,
+    "cpu": {
+      "samples": 4096,
+      "p50Ms": 0.599999999627471,
+      "p95Ms": 3.599999999627471,
+      "minMs": 0.09999999962747097,
+      "maxMs": 31
+    },
+    "demandIntervals": {
+      "samples": 4096,
+      "p50Ms": 16.699999999254942,
+      "p95Ms": 75.20000000111759,
+      "minMs": 1.599999999627471,
+      "maxMs": 491.09999999962747
+    },
+    "gpuTimer": "available",
+    "gpu": {
+      "samples": 4096,
+      "p50Ms": 0.7095,
+      "p95Ms": 1.334499,
+      "minMs": 0.228,
+      "maxMs": 4.200833
+    },
+    "gpuDisjointDrops": 0,
+    "renderer": {
+      "drawCalls": 134,
+      "triangles": 27290,
+      "geometries": 132,
+      "textures": 4,
+      "programs": 10,
+      "pixelRatio": 1,
+      "shadows": true,
+      "toneMapping": 4,
+      "outputColorSpace": "srgb",
+      "pendingQueries": 1,
+      "gpuSamples": 6467,
+      "ringCapacity": 4096
+    }
+  },
+  "snapshots": [
+    {
+      "elapsedMs": 15693.887041999998,
+      "actions": 60,
+      "renders": 598,
+      "renderer": {
+        "drawCalls": 124,
+        "triangles": 24978,
+        "geometries": 114,
+        "textures": 4,
+        "programs": 10,
+        "pixelRatio": 1,
+        "shadows": true,
+        "toneMapping": 4,
+        "outputColorSpace": "srgb",
+        "pendingQueries": 1,
+        "gpuSamples": 597,
+        "ringCapacity": 4096
+      }
+    },
+    {
+      "elapsedMs": 31398.460167,
+      "actions": 120,
+      "renders": 1198,
+      "renderer": {
+        "drawCalls": 124,
+        "triangles": 24978,
+        "geometries": 114,
+        "textures": 4,
+        "programs": 10,
+        "pixelRatio": 1,
+        "shadows": true,
+        "toneMapping": 4,
+        "outputColorSpace": "srgb",
+        "pendingQueries": 1,
+        "gpuSamples": 1197,
+        "ringCapacity": 4096
+      }
+    },
+    {
+      "elapsedMs": 48385.603709,
+      "actions": 180,
+      "renders": 1798,
+      "renderer": {
+        "drawCalls": 124,
+        "triangles": 24978,
+        "geometries": 114,
+        "textures": 4,
+        "programs": 10,
+        "pixelRatio": 1,
+        "shadows": true,
+        "toneMapping": 4,
+        "outputColorSpace": "srgb",
+        "pendingQueries": 1,
+        "gpuSamples": 1797,
+        "ringCapacity": 4096
+      }
+    },
+    {
+      "elapsedMs": 65554.300084,
+      "actions": 240,
+      "renders": 2402,
+      "renderer": {
+        "drawCalls": 124,
+        "triangles": 24978,
+        "geometries": 114,
+        "textures": 4,
+        "programs": 10,
+        "pixelRatio": 1,
+        "shadows": true,
+        "toneMapping": 4,
+        "outputColorSpace": "srgb",
+        "pendingQueries": 1,
+        "gpuSamples": 2401,
+        "ringCapacity": 4096
+      }
+    },
+    {
+      "elapsedMs": 82724.14991699999,
+      "actions": 300,
+      "renders": 3002,
+      "renderer": {
+        "drawCalls": 124,
+        "triangles": 24978,
+        "geometries": 114,
+        "textures": 4,
+        "programs": 10,
+        "pixelRatio": 1,
+        "shadows": true,
+        "toneMapping": 4,
+        "outputColorSpace": "srgb",
+        "pendingQueries": 1,
+        "gpuSamples": 3001,
+        "ringCapacity": 4096
+      }
+    },
+    {
+      "elapsedMs": 99836.724875,
+      "actions": 360,
+      "renders": 3604,
+      "renderer": {
+        "drawCalls": 124,
+        "triangles": 24978,
+        "geometries": 114,
+        "textures": 4,
+        "programs": 10,
+        "pixelRatio": 1,
+        "shadows": true,
+        "toneMapping": 4,
+        "outputColorSpace": "srgb",
+        "pendingQueries": 1,
+        "gpuSamples": 3603,
+        "ringCapacity": 4096
+      }
+    },
+    {
+      "elapsedMs": 116879.02799999999,
+      "actions": 420,
+      "renders": 4210,
+      "renderer": {
+        "drawCalls": 115,
+        "triangles": 23442,
+        "geometries": 106,
+        "textures": 4,
+        "programs": 10,
+        "pixelRatio": 1,
+        "shadows": true,
+        "toneMapping": 4,
+        "outputColorSpace": "srgb",
+        "pendingQueries": 1,
+        "gpuSamples": 4209,
+        "ringCapacity": 4096
+      }
+    },
+    {
+      "elapsedMs": 134128.883959,
+      "actions": 480,
+      "renders": 4816,
+      "renderer": {
+        "drawCalls": 124,
+        "triangles": 24978,
+        "geometries": 114,
+        "textures": 4,
+        "programs": 10,
+        "pixelRatio": 1,
+        "shadows": true,
+        "toneMapping": 4,
+        "outputColorSpace": "srgb",
+        "pendingQueries": 1,
+        "gpuSamples": 4815,
+        "ringCapacity": 4096
+      }
+    },
+    {
+      "elapsedMs": 151177.72024999998,
+      "actions": 540,
+      "renders": 5429,
+      "renderer": {
+        "drawCalls": 124,
+        "triangles": 24978,
+        "geometries": 114,
+        "textures": 4,
+        "programs": 10,
+        "pixelRatio": 1,
+        "shadows": true,
+        "toneMapping": 4,
+        "outputColorSpace": "srgb",
+        "pendingQueries": 1,
+        "gpuSamples": 5428,
+        "ringCapacity": 4096
+      }
+    },
+    {
+      "elapsedMs": 168342.206959,
+      "actions": 600,
+      "renders": 6022,
+      "renderer": {
+        "drawCalls": 124,
+        "triangles": 24978,
+        "geometries": 114,
+        "textures": 4,
+        "programs": 10,
+        "pixelRatio": 1,
+        "shadows": true,
+        "toneMapping": 4,
+        "outputColorSpace": "srgb",
+        "pendingQueries": 1,
+        "gpuSamples": 6021,
+        "ringCapacity": 4096
+      }
+    }
+  ],
+  "memoryBefore": {
+    "Documents": 2,
+    "JSEventListeners": 510,
+    "Nodes": 15948,
+    "TaskDuration": 0.048572,
+    "JSHeapUsedSize": 102112516,
+    "JSHeapTotalSize": 107626496
+  },
+  "memoryAfter": {
+    "Documents": 2,
+    "JSEventListeners": 507,
+    "Nodes": 15961,
+    "TaskDuration": 63.439404,
+    "JSHeapUsedSize": 109705120,
+    "JSHeapTotalSize": 115261440
+  },
+  "resources": [
+    {
+      "iteration": 1,
+      "heap": {
+        "Documents": 2,
+        "JSEventListeners": 608,
+        "Nodes": 16587,
+        "TaskDuration": 1.272532,
+        "JSHeapUsedSize": 102006524,
+        "JSHeapTotalSize": 106774528
+      }
+    },
+    {
+      "iteration": 2,
+      "heap": {
+        "Documents": 2,
+        "JSEventListeners": 502,
+        "Nodes": 16057,
+        "TaskDuration": 1.115106,
+        "JSHeapUsedSize": 101080400,
+        "JSHeapTotalSize": 105070592
+      }
+    },
+    {
+      "iteration": 3,
+      "heap": {
+        "Documents": 2,
+        "JSEventListeners": 501,
+        "Nodes": 16052,
+        "TaskDuration": 1.110703,
+        "JSHeapUsedSize": 101242236,
+        "JSHeapTotalSize": 105988096
+      }
+    },
+    {
+      "iteration": 4,
+      "heap": {
+        "Documents": 2,
+        "JSEventListeners": 487,
+        "Nodes": 16023,
+        "TaskDuration": 1.052704,
+        "JSHeapUsedSize": 97966140,
+        "JSHeapTotalSize": 103366656
+      }
+    },
+    {
+      "iteration": 5,
+      "heap": {
+        "Documents": 2,
+        "JSEventListeners": 487,
+        "Nodes": 16029,
+        "TaskDuration": 1.049436,
+        "JSHeapUsedSize": 97918780,
+        "JSHeapTotalSize": 102055936
+      }
+    }
+  ],
+  "renderer": {
+    "detailLevel": "macro",
+    "labels": 22,
+    "visibleLabels": 16,
+    "pickTargets": 32,
+    "frameCentersInView": 4,
+    "frames": 4,
+    "objects": 6,
+    "classes": 0,
+    "faceEntities": 0,
+    "references": 12,
+    "flows": 0,
+    "clusters": 0,
+    "quietVolumes": 0,
+    "drawCalls": 134,
+    "triangles": 27290,
+    "geometries": 132,
+    "textures": 4
+  },
+  "errors": [],
+  "method": "Actual accepted terminal backend session, redirected only current-session discovery. No new Java or build. JDT excluded. 30 seeded action/UI/two-rAF seek samples; Focus/Home action timings exclude deliberate choreography settling. Continuous repeated orbit/dolly, Focus/Home and seeks for measuredMs. RendererMetrics traversal disabled during timing. Development render probe uses bounded 4096-entry rings and at most eight asynchronous GPU timer queries; no synchronous GPU waits. Render CPU is WebGL submission only, GPU query is elapsed GPU commands, neither measures physical presentation. Demand-render intervals include UI automation, intentional choreography and idle gaps and are not FPS. Explicit CDP GC reports whole frontend heap, not GPU bytes or isolated semantic retention. Five reloads exercise reload cleanup, not same-document session replacement. Resource counts are actual allocated objects, not texture-memory byte estimates."
+}

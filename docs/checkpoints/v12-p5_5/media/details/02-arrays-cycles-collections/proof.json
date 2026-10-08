@@ -1,0 +1,30 @@
+{
+  "sessionId": "585281fa-b6f8-471f-8651-1f5345ab4cfe",
+  "subjects": [
+    {
+      "label": "large-array",
+      "id": "jvm:object:o9",
+      "text": "10001"
+    },
+    {
+      "label": "sparse-index-10000",
+      "id": "jvm:object:o9:element:10000",
+      "text": "73"
+    },
+    {
+      "label": "ragged-array",
+      "id": "jvm:object:o11"
+    },
+    {
+      "label": "collection-1000",
+      "id": "jvm:object:o21",
+      "text": "bounded preview"
+    },
+    {
+      "label": "cyclic-shared",
+      "id": "jvm:object:o2"
+    }
+  ],
+  "errors": [],
+  "method": "Exact fresh-JVM sessions and production normalization, replay and rendering; no new Java."
+}
