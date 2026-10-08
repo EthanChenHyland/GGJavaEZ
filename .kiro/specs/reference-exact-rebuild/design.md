@@ -12,7 +12,7 @@ The semantic substrate (audit §5) is unchanged. Everything from `SceneModel` up
 2. **One world, many states.** `AppState` is a pure derivation of semantic and interaction inputs. State changes recompose the same Shell and World. There is one canvas element, one route per mode (`/` and `/examples`) and one SceneModel per Recording.
 3. **Stable space.** Every anchor is assigned once, append-only, from generic semantics (call tree, runtime type, ownership, allocation order). Cursor, Lens, Detail_Level, Selection, Focus and Quality_Tier never move an anchor.
 4. **User input always wins.** The Camera_Rig owns the pose. Guided_Moves are cancellable intents; any manual orbit/pan/zoom cancels them within one frame and turns Follow off.
-5. **Bounded presentation.** Every presentation query is budgeted (Label_Budgets, ≤ 8 pending transitions, ≤ 48 routing obstacles, ≤ 200 rendered list rows, ≤ 12 labelled milestones). Unbounded truth stays in the substrate; bounded views are derived from it.
+5. **Bounded presentation.** Nominal targets permit reported mandatory-target overflow. Background queries/transitions/lists stay bounded. Recorded truth stays in the substrate; missing content stays unavailable.
 6. **Commit before animate.** Semantic state for a new Cursor commits synchronously. Motion is a presentation overlay that can be skipped, coalesced or cut without changing what is true.
 7. **Same SceneModel, two pipelines.** INTERACTIVE and CINEMATIC render the identical SceneModel and PresentationPlan; only materials and post-processing differ.
 
@@ -33,7 +33,7 @@ The semantic substrate (audit §5) is unchanged. Everything from `SceneModel` up
 
 | # | Decision | Rationale |
 | --- | --- | --- |
-| D1 | `AppState` is a pure function `deriveAppState(inputs)` over session, recording, debugger, Cursor/Lens and Focus inputs, with a fixed precedence table | Requirement 1.22 (identical inputs → identical state) and 1.23 (commit within 100 ms independent of animation) |
+| D1 | AppState displays orthogonal process/build, recording, debugger, input and Cursor/Lens dimensions; commands use underlying facts | Partial recording never implies process death |
 | D2 | Shell geometry is a pure function `computeShellLayout(viewport, appState, flags)` returning rectangles, the Safe_Frame and the Viewport_Class | One source of truth for CSS, camera fitting and QA rectangle measurement (Requirements 2, 3, 30, 34.5) |
 | D3 | The Stack is a single X column: callee below caller (gap 0.10 u) recessed 1.25 u in −Z; later siblings form a +Z History_Deck. Frame slab height is fixed at entry from the method signature | Requirements 8.5–8.8 require positions that depend only on the call tree and never move; a signature-derived height is the only height that keeps both the 0.10 u gap and call-tree determinism (see "Requirements clarifications") |
 | D4 | Heap project objects form one column per runtime type (pitch = column width + 2.4 u), three tiers per page, pages advancing in +Z; library/JDK objects sit in a summary sub-region behind page 0 | Requirements 11.1–11.8: library region stays behind every project column forever because project pages only grow toward the camera |
@@ -41,7 +41,7 @@ The semantic substrate (audit §5) is unchanged. Everything from `SceneModel` up
 | D6 | Flows are queried from a `FlowCatalog` over ExecutionGraph edges with append-only bundle indices instead of being materialized per Cursor | Requirement 17 (one Flow per edge, exact counts) at million-edge scale without O(E) work per seek |
 | D7 | The renderer is React Three Fiber with demand rendering, instanced bodies, troika `BatchedText` and merged screen-space line batches | Draw calls ≤ 250 and submission ≤ 6 ms p95 (Requirement 32.3–32.4) with cinematic materials |
 | D8 | Post-processing uses only `three/examples/jsm` passes already shipped with three 0.186.1; CINEMATIC passes load in a lazy chunk | No new runtime dependency; Requirement 32.7–32.8 |
-| D9 | Bloom is emissive-only by HDR threshold: emissive strips render with radiance > 1.0 on a half-float target; faces and text are capped below 1.0 | Requirement 29.6 without a second selective-bloom render pass |
+| D9 | Emissive-only bloom uses explicit mask/layers and depth-aware composition, not threshold alone | Faces/text/grid/reflections excluded |
 | D10 | Environment lighting is generated locally from drei `Lightformer`s into a cube map; no HDR preset is fetched | Local, offline product; no outbound network requests |
 | D11 | Monaco stays a flat DOM overlay inside the floating Source_Panel (no 3D tilt) | Monaco hit-testing breaks under CSS 3D transforms (audit §8); Requirement 3.19 |
 | D12 | One stylesheet (`src/shell/shell.css`) generated from design tokens v4 CSS variables | "No three overlapping CSS systems" |
@@ -62,6 +62,94 @@ All findings were verified against the installed packages in `node_modules` rath
 - The current code already provides strong foundations: persistent radix storage (`src/runtime/storage.ts`), bounded checkpointed history (`src/runtime/history.ts`), incremental ingest with prefix publication (`src/execution/ingest.ts`), graph-only flow derivation (`src/motion/semanticTransition.ts#graphTransition`), budgeted planning (`src/world/spatialPresentation.ts#spatialBudgets`), bounded connector routing (`src/world/connectorRouting.ts`), demand rendering and frame profiling (`src/scene/FrameProfiler.tsx`). The design keeps these mechanisms and replaces their presentation.
 
 Content from the cited documentation was rephrased for compliance with licensing restrictions.
+
+## Corrected shared contracts
+
+This section specifies the implementation boundary for the numbered components/properties. It preserves the full product/reference mandate, not the old visible architecture. No new semantic facts or visualization fields enter RuntimeState, ExecutionGraph or server DTOs. Presentation adapters may relocate operational responsibilities and expose indexes over preserved facts.
+
+### Sequencing adapter and history ownership
+
+Three coordinates remain distinct:
+
+- Raw seq is Recorder/transport order. `lastRecordedSeq` is the inclusive last accepted RAW seq, null when none; derive end-exclusive raw acceptance R using the preserved transport convention, not a guessed semantic count.
+- Normalized seq s is zero-based order in the accepted TraceDocument. One raw Event may emit multiple normalized Events; deferred dependency emissions can depend on several raw Events.
+- Cursor c is the number of applied normalized Events; seek(c) applies [0,c). Live_Head N is the published accepted semantic-prefix length. Event at Cursor is Events[c−1] only if c > 0.
+
+The normalization adapter maintains a sidecar mapping keyed by `(sessionId, recordingId, prefixRevision)`: `{acceptedRawEndExclusive, normalizedPrefixEnd}` at completed normalization/publication boundaries. R→N(R) includes all emissions validated from that fully accepted raw prefix and no emissions requiring raw evidence outside it. If a raw normalization group is incomplete, withhold its publication rather than expose a partly applied group. Deferred emissions extend N only after prerequisites are accepted. Stop metadata remains unchanged; a CAPTURE_STOP sentinel is not a fabricated program-end Event. The preserved normalizer may append CAPTURE_STOP, PROGRAM_END or PROGRAM_ABORT from real stop/terminal metadata during finish(), without a new accepted Java probe. Therefore the mapping is keyed by raw boundary AND normalizer publication/terminal revision: N(R, revision), abbreviated N(R) at the current revision. Include those actual normalized control Events when published; never invent them or drop them to make N equal a raw count. A control Event updates recording/termination status, not observations of later Java execution.
+
+Timeline bounds are [0,N(R)] for FULL and stopped recordings alike. LIVE follows N, HISTORY holds c including 0. Partial markers and Return to Live use N, never raw lastRecordedSeq. At c = 0 show empty runtime and "Before execution"; normalized sequence readout is absent. Map a visible Event ordinal as c, not raw seq. Replay starts at 0. Indexes use seq < c; timestamps remain timestamps.
+
+Each `WorldSource` retains its session/Recording identity, prefix revision, trace, history handle, cursor/liveHead/lens, layout anchors, detail level, selection, valid Focus, navigation snapshot, historical source bindings and Console association. New attempt identity/build diagnostics are separate. Source panels explicitly identify historical source versus new editable source. Subscription keys include session/Recording/prefix revision, and stale callbacks cannot mutate another context. `RetainedHistoryHandle` and source/navigation aliases wrap the existing history/binding representations; they do not duplicate reduction. Do not dispose retained history when creating a pending attempt; retire it only after committed replacement or explicit disposal.
+
+### Orthogonal execution inputs and command service
+
+```ts
+interface ExecutionDimensions {
+  attemptId: string | null
+  build: 'idle' | 'building' | 'launching' | 'failed' | 'ready'
+  instrumentation: 'pending' | 'recording' | 'stopped' | 'run-only' | 'failed'
+  process: 'unknown' | 'starting' | 'alive' | 'ended' | 'none'
+  recording: RecordingStatus | null
+  debugger: 'inactive' | 'running' | 'paused' | 'ended'
+  input: { available: boolean; wait: 'waiting' | 'not-waiting' | 'unknown' }
+  view: { recordingId: string | null; cursor: number; liveHead: number; lens: TimelineLens }
+}
+```
+
+These inputs are reconciled from the bridge, session and debugger, never inferred from first normalized Event or a friendly label. Unknown liveness disables new starts until reconciled. Pause beats input wait; both beat zero-event/partial labels. Partial recording is always retained as metadata/badge while process-alive/wait/pause remains explicit. Session terminal failures/user stop keep termination facts plus partial status; stderr alone changes neither lifecycle nor forensic state. Input availability is a real capability, not proof of waiting or consumption.
+
+`runCommandAvailability(dimensions, debug)` distinguishes Run/Debug-start, Continue, Step, Stop, Restart and input. No active build/launch or alive/unknown process permits a second start. All entry points share this logic. The command dispatcher explicitly routes navigation/view/workbench, file/editor and debugger commands; breakpoint toggle is not a tab-close action. Projectless actions are not blocked by file-project predicates. Use separate synchronous presentation dispatch from serialized asynchronous filesystem/launch transactions; retain workspace-generation guards and at-most-once action execution.
+
+### Operational IDE adapters
+
+| Responsibility | Owner after extraction | Preserved safeguard |
+| --- | --- | --- |
+| Source-proof generations and main/launch reconciliation | workspace execution/source coordinator | Build-manifest/source revisions checked before binding/launch; explicit runnable target validation |
+| Dirty drafts, saved/closed draft decisions | project/draft coordinator | Per-file revision conflicts, concurrent edits retained; dirty transition must complete before Run |
+| Rename receipts/recovery | filesystem transition coordinator | Same operation nonce replay, journal recovery, atomic tab/draft/source mapping, failed/uncertain receipt handling |
+| Historical source bindings | source-binding coordinator retained by WorldSource | Recording source proof stays associated with its execution; edits never rewrite history |
+| Monaco lifecycle | editor model registry | Keep models/view state across surface moves; retire only after all owners release |
+| JDT documents | language/document coordinator | Open/change/close ordering and request generation checks survive shell deletion |
+| Breakpoints/source mapping | debug/source coordinator | Reconcile resolved locations and renamed paths against actual source generations |
+
+Current Save All aborts on the first thrown save error. Requirement 5.8 deliberately improves the UI operation to attempt remaining selected files and return per-file successes/failures; failed drafts remain dirty. This is not unchanged reuse. Save All and Run requires every required save successful and the source-proof/launch barrier revalidated. Never turn partial Save All success into authorization to launch stale sources.
+
+### Observation, evidence, identity and endpoints
+
+`ValueText` exact content means all captured content, not original unrecorded suffixes. Add presentation-only `observation: OBSERVED | TRUNCATED | UNAVAILABLE | PARTIALLY_OBSERVED`, optional captured length/preview count and reason. It interprets existing String truncation, sparse arrays, unavailable RuntimeValues and bounded library summaries without altering those contracts. Java defaults require captured initialization/allocation evidence; first post-constructor observation is not allocation-time proof. Snapshot changes show observed differences; do not infer intervening collection operations.
+
+`Evidence` distinguishes observed Event/graph IDs, documented derived summaries over captured inputs, and unavailable metadata. `introducedSeq`/`changedSeq` are nullable; a projected item does not automatically have a recorded source-changing Event. Missing source location/cause/stack text stays unavailable. Cause completeness and exception-path completeness are separate. Process stderr stack text is identified as process text, not upgraded into graph provenance.
+
+Canonical identity preserves JVM binary names/descriptors including literal `$`. Display labels may use source spelling when metadata establishes nesting; otherwise keep unambiguous binary spelling. Display is not a reversible identity codec. All lookup/selection/cluster/provenance keys use canonical identity.
+
+Query the preserved graph snapshot at applied-prefix c (or an equivalent proven prefix index), and resolve edge Event IDs through the actual trace/fact index, never by parsing numeric IDs as raw/normalized seq. `RecordedProvenance` contains original edge ID/kind, graph endpoints, captured evidence IDs/sequences and observed/derived/unavailable endpoint status. `recordedProvenanceOf` traverses all supported graph kinds at prefix c, including COMPUTE/OBSERVE/file evidence even without a curve. `drawableFlowsOf` separately resolves presentation geometry. Endpoint resolver indexes preserved RuntimeState/graph IDs, not labels:
+
+| Endpoint | Identity/mapping |
+| --- | --- |
+| local/parameter/receiver | invocation + stable slot ID, with current lexical presence/row mapping |
+| instance field | object + declaring owner + field slot ID |
+| static field | canonical class ID + static slot ID |
+| array cell | object + semantic index/slot ID → current windowRevision map |
+| collection entry | recorded semantic summary slot ID; snapshots retire removed slots, never identify by equal value |
+| I/O | actual console/input graph endpoint and stream; submitted text alone does not prove consumption |
+| exception | captured Throwable/throw/unwind/catch graph IDs, not parsed nearby stderr |
+| return destination | exact graph-proven destination storage/value ID; absent destination has no curve |
+
+Hidden or unavailable Ports return a reason and optional Reveal action. Never attach hidden array flows to ellipsis. General reference aggregation may use a truthful labelled cluster bundle; provenance Flows never substitute a cluster for an absent endpoint. Inspector/Trace exposes non-drawable evidence structurally. Empty drawable list cannot justify "No recorded provenance".
+
+### Layout, text, cinematic resources and QA readiness
+
+Fixed world proportions specify local solids/canonical comparison states, not a bound on arbitrary world size. Stable layout may grow or page spatial regions; append-only anchors never relayout on Home. Viewport-aware region headings follow chosen representatives using presentation-only placement; distant extrema do not determine global heading visibility. I/O/class headers avoid the visible region bounds. Home limits representatives to readable fits and uses truthful coarser region summaries for remaining topology. Focus reveals any real target, including by array-window remapping.
+
+Array mapping is `(recordingId, objectId, semanticIndex, slotId) → (windowRevision, presentedSlot, anchor, port)`. Picks reject stale revisions. Selected/focused/active indices are mandatory; grow the temporary window under overflow rules if needed. Small-array coordinates remain fixed. A window revision may change virtualized cell positions, but no values or provenance are reordered by display slot.
+
+Inspector: ≤ 200 mounted summary rows TOTAL, ≤ 20 overscan and every entry reachable; Console: visible rows plus ≤ 200 OFFSCREEN rows. Full recorded wrapped text opens in a separate variable-height/detail region, preserving copyable characters. Missing array positions are lazy unavailable rows, never eagerly materialized for a huge length. Shell/Monaco minimum 12 CSS px; world title/row text visibility cutoff 11 CSS px, visible Cluster labels/headings minimum 12. Optional world labels are culled rather than reduced below cutoff; selected detail is available in Focus/Inspector. Identity weight is 500, titles/values 600, rows 500, types 400.
+
+`textSystem` groups batches by font URL, weight, material role, opacity policy and mask/layer. If per-instance opacity is unsupported, rebuild bounded shared opacity buckets; child material overrides in BatchedText are not assumed. Prewarm exact font-only and characters/glyph cache keys for every used font/weight/consumer with one finite tracked promise per key, and include newly required glyph sync in readiness. Avoid endless suspense/invalidation loops. Retired batches release children/buffers/material references; dispose shared fonts/atlases only when their owner ends, with ref counting and no double disposal.
+
+A renderer readiness barrier keyed to scene/window/plan/pose/resource revision waits for asset promises, glyph layout/GPU upload, environment/reflection/masks and stable animation/quality state. It has a finite timeout that fails capture with a reason, not a partial screenshot presented as success. QA captures only after the barrier and verifies tilted Focus face/text sharpness, no face/grid/reflection bloom, line opacity, picking and truthful port attachments.
+
+Selective bloom uses explicit emissive mask/layers with occlusion depth so glow does not paint over unrelated opaque faces. Varying curve alpha uses a tested shader attribute or curve-parameter uniform lookup multiplied by global emphasis; stock LineMaterial alone is not sufficient. DOF uses sharp target-face/text compositing with correct depth and transparent-edge treatment, or a validated target-aware focus strategy; disable DOF if it harms readability. Unsupported effects report capability/fallback, never hide runtime content. Measure added passes/uploads against budgets; keep cinematic transmission, lighting and reflection ambition.
 
 ## Architecture
 
@@ -277,6 +365,7 @@ export interface AppStateInputs {
     | 'terminalStatus' | 'recording' | 'build' | 'diagnostic' | 'startedAt'> | null
   /** Normalized events ingested for `session` (0 until the first Event). */
   sessionEventCount: number
+  dimensions: ExecutionDimensions // reconciled bridge/session facts, not display label
   /** Recorded at stop time by executionStore; ExecutionPhase 'STOPPED' is only produced by a user stop. */
   endedAt: string | null
   debug: { status: DebugSession['status']; pause: DebugPause | null } | null
@@ -293,6 +382,8 @@ export interface AppState {
   termination: Termination | null
   partial: Pick<RecordingStatus, 'state' | 'reason' | 'budget' | 'lastRecordedSeq'> | null
   worldOrigin: WorldOrigin
+  dimensions: ExecutionDimensions
+  badges: readonly string[] // recording completeness and uncertain liveness
   /** e.g. "Running · History · Focus", "Partial recording · <reason>", "Build failed · 3 errors" */
   label: string
   icon: AppStateIcon // one distinct glyph per Execution_State
@@ -306,17 +397,18 @@ Precedence table for `execution` (first matching row wins):
 | --- | --- | --- | --- |
 | 1 | `session === null` and `recordingViewer` | `COMPLETED` or `PARTIAL_RECORDING` | from the curated Recording's status |
 | 2 | `session === null` or `phase === 'IDLE'` | `EDIT` | |
-| 3 | `phase ∈ {BUILDING, STARTING}` | `BUILDING` | |
+| 3 | build/launch starting without actual pause/input wait | `BUILDING` | display only |
 | 4 | `phase === 'FAILED'` | `FAILED` | `failureKind` build → `compile` when `build.diagnostics` has ≥ 1 compiler error, else `build`; launch → `launch`; capture → `instrumentation`; runtime → `uncaught-exception` |
 | 5 | terminal phase and `terminalStatus === 'program_crashed'` | `FAILED` | `uncaught-exception` |
 | 6 | `phase === 'STOPPED'` | `COMPLETED` | `termination = user-stop` ("Stopped by user") |
 | 7 | `phase === 'COMPLETED'` and `recording.state !== 'FULL'` | `PARTIAL_RECORDING` | Requirement 1.14 |
 | 8 | `phase === 'COMPLETED'` | `COMPLETED` | `termination = exit` with exit code (any value) |
-| 9 | live phase and `sessionEventCount === 0` and `support !== 'RUN_ONLY'` | `BUILDING` | build succeeded, first Event not yet ingested (1.6) |
-| 10 | live and (`debug.status === 'paused'` or `phase === 'PAUSED'`) | `DEBUG_PAUSED` | |
-| 11 | live and `recording.state !== 'FULL'` | `PARTIAL_RECORDING` | Console input stays available |
-| 12 | `phase === 'WAITING_FOR_INPUT'` | `WAITING_INPUT` | only recorded stdin reads (FULL recording) |
+| 9 | actual debugger pause | `DEBUG_PAUSED` | before first Event too; retain partial badge |
+| 10 | live input-capable process and real wait evidence | `WAITING_INPUT` | recording may be partial |
+| 11 | live and recording not FULL | `PARTIAL_RECORDING` | retain process-alive badge/input capability |
+| 12 | live and zero normalized Events | `RUNNING` | "Waiting for recording" unless RUN_ONLY |
 | 13 | live | `RUNNING` | includes RUN_ONLY / Run Without Visualization |
+
 
 Overlays: `HISTORY` when `world.eventCount > 0 && world.cursor < world.eventCount` (Cursor below Live_Head); `FOCUS` when `focusTargetId !== null`. Both survive Execution_State changes because they are computed from Cursor/Lens and Focus, not from transitions (1.19). Overlay order in the label is fixed (HISTORY, FOCUS).
 
@@ -329,7 +421,7 @@ stateDiagram-v2
   COMPLETED --> BUILDING: Run / Debug
   FAILED --> BUILDING: Run / Debug
   PARTIAL_RECORDING --> BUILDING: Run / Debug (after process end)
-  BUILDING --> RUNNING: first Event ingested
+  BUILDING --> RUNNING: process alive (first Event gates visual transition only)
   BUILDING --> FAILED: compile / build / launch / instrumentation
   RUNNING --> WAITING_INPUT: recorded stdin read blocks
   WAITING_INPUT --> RUNNING: input consumed
@@ -345,7 +437,7 @@ stateDiagram-v2
   end note
 ```
 
-**Command availability.** `runCommandAvailability(appState)` feeds `CommandSnapshot.shellAvailability`. `execution.run` and `debug.startOrContinue` (when not paused) are disabled in BUILDING/RUNNING/WAITING_INPUT/DEBUG_PAUSED with the reason "A session is already active" (1.5). A separate `execution.restart` command implements the confirm-stop-restart flow of 6.11 (see "Requirements clarifications").
+**Command availability.** `runCommandAvailability(inputs.dimensions, debug)` feeds all command surfaces. New Run/Debug-start is disabled for active build/start or alive/unknown process, including partial recording. Continue/Step requires actual pause; Stop targets active attempt/process; stdin requires a live input-capable process. Restart stops/reaps before launch. Navigation/time/view commands execute outside filesystem queues.
 
 ### 2. Shell composition
 
@@ -464,7 +556,7 @@ Rules:
 
 ### 4. Explorer, tabs, picker and commands
 
-The IDE behavior is preserved by keeping `createIdeCommandService` as the single command executor. The shell only changes presentation.
+The IDE operational guarantees survive extracted adapters and one registry. `createIdeCommandService` may adapt shell/navigation/view/breakpoint routing and underlying-state availability; source-proof/filesystem transactions remain authoritative. Projectless shell actions work without a project; camera/time cannot wait behind file I/O.
 
 - **Explorer drawer** (`ExplorerDrawer.tsx`) wraps `ProjectExplorer`'s tree, anchored to the Source_Panel's left edge, width clamp(0.16 W, 0.22 W). It overlays the World (no canvas resize). It closes on Run/Debug start and restores the last EDIT-time state when the Execution_State returns to EDIT (4.3–4.4); `shellStore.explorerOpenInEdit` stores that memory.
 - **Context menus** (`contextMenus.ts`): Explorer items show Open, New File, New Java Class, New Folder, Rename, Delete, Reveal in Explorer, Copy Path; tabs show Close, Close Others, Close to the Right, Close Saved, Rename, Reveal in Explorer, Copy Path. Filesystem rename is titled "Rename" (`resource.rename` title change); "Rename Symbol" (`java.renameSymbol`, F2 in the editor) never appears in these menus (4.11).
@@ -503,6 +595,13 @@ New `ShellCommandId`s (all with title, category, binding, availability):
 interface WorldSource {
   origin: 'session' | 'prior' | 'recording'
   sessionId: string | null
+  recordingId: string; prefixRevision: number
+  history: RetainedHistoryHandle
+  cursor: number; liveHead: number; lens: TimelineLens; detailLevel: DetailLevel
+  selection: Selection; focusTargetId: EntityId | null
+  navigationSnapshot: RetainedNavigationSnapshot
+  sourceBindings: HistoricalSourceBindings
+  consoleAssociation: { sessionId: string | null; recordingId: string }
   trace: TraceDocument          // published prefix (ExecutionIngest.publishTrace) or curated trace
   layout: LayoutEngine
   recording: RecordingStatus
@@ -525,7 +624,7 @@ Run flow (Requirement 6):
 4. Build failure → FAILED; diagnostics go to the Problems_Panel (opened); the Prior_World stays with label "Previous run · source changed"; Source_Panel size, Explorer state and camera pose are unchanged (6.5, 27.6–27.7).
 5. First Event ingested → `pendingWorld` replaces `world` in one commit; the Run transition runs: Source_Panel to RUN size, Explorer closes, CameraRig Guided_Move to Hero_Pose, all within 300–600 ms (6.6). The Selection, Focus and Trace state of the Prior_World are cleared because they belong to another Recording; the Forensic_State is cleared (25.14).
 6. Live batches: `ExecutionIngest` appends in sliced tasks (`yieldTraceWork`); publication happens at most once per animation frame. LIVE Lens moves the Cursor to the Live_Head; HISTORY holds it (1.19, 23.7).
-7. RUN_ONLY / Run Without Visualization: Console gets full I/O; the World shows "Console execution · <supportReason>" (6.10).
+7. RUN_ONLY / Run Without Visualization: Console keeps captured I/O with channel-order/archive qualifications; the World shows "Console execution · <supportReason>" (6.10).
 8. Stop (`execution.stop` or `debug.stop`) terminates within 2 s via the preserved server stop; frames without a recorded return get status "terminated" (6.12–6.13).
 
 `execution.restart` asks for confirmation, performs Stop, waits for the terminal phase and then starts Run (6.11).
@@ -612,7 +711,7 @@ Because project pages only advance in +Z from page 0, the library sub-region is 
 
 #### 7.3 Arrays and collections (Requirements 14, 15)
 
-- **Array_Tray**: title plate 0.9 high (`<component>[]`, `#id`, `length = n`), glass backplate 0.12 deep, cells 1.55³ with 0.08 gaps, index labels 0.5 above each cell. Cells per row `C(c) = clamp(firstLength(c), 4, 16)` for the column, so trays of one column share a width; rows `= ⌈n / C⌉`. Cell `i` sits at row `⌊i / C⌋`, column `i mod C` — a fixed position per index (14.3). For `n > 128` the tray reserves 8 rows; windowed presentation (14.7) maps visible cells and ellipsis cells into those display slots without moving the tray anchor.
+- **Array_Tray**: retain title/backplate/cell dimensions and fixed parent anchor. For length ≤ 128, cell i uses row floor(i/C), column i mod C. For larger arrays reserve 8 presented rows and map semantic index/slot IDs to temporary Presented_Slots per windowRevision. Focus/reveal establishes the mapping before attachment; hidden indices have no spatial Port but remain available structurally. Virtualized indices have no permanent unique physical coordinate.
 - **Nested and ragged arrays**: inner arrays are ordinary Heap_Objects in their own type column with their own recorded length; outer cells hold reference chips with Ports (14.6). An inner array referenced by several outer cells is one tray with several Connectors.
 - **CollectionBlock**: width 5.2, header 1.5 (runtime type + `#id`), size row 0.7 (`size = n`), entry grid reserved as 12 rows × 2 columns at pitch 0.56 plus one "+M more" row, padding 0.45. MEDIUM shows up to 8 entries in the first column; CLOSE shows up to 24 entries across both columns (15.4). JDK internals (backing arrays, nodes, entries) are never laid out in project columns and are hidden by the planner (15.5).
 
@@ -630,11 +729,11 @@ Curated recordings with `ENTER_SCOPE` render through the same engine. Scopes do 
 
 #### 7.7 Headings
 
-`STACK` above the topmost frame (bottom edge 0.35 u above the root top), `HEAP` above the heap top centred on the heap's projected extent, `CLASS STATE` above the band, `RETURNS` (amber) beside the stack's right edge while return Flows are visible. Heading text is Structural_UI (uppercase, tracking 0.18 em, cap height 0.45 u ≈ 0.029 H at Hero).
+Canonical hero headings use the reference offsets: STACK above chosen root representation, HEAP above the visible heap representatives, CLASS STATE above its visible band, RETURNS beside visible return Flows. For huge worlds, viewport-aware presentation placement follows chosen representatives rather than global extrema. Keep each visible heading inside Safe_Frame at ≥12 CSS px, using uppercase/tracking 0.18 em; optional headings may cull, no canonical entity anchor moves.
 
 ### 8. SceneModel and projection
 
-`SceneModel` is the immutable presentation projection of `RuntimeState` and `ExecutionGraph` at the Cursor (types in Data Models). It references semantic ids, holds only presentation-relevant fields, and every entity records `introducedSeq` and `changedSeq` (33.2). It contains no camera, Detail_Level, Selection, Trace, colour or animation state.
+`SceneModel` is the immutable presentation projection of `RuntimeState` and `ExecutionGraph` at the Cursor (types in Data Models). It references semantic ids, holds only presentation-relevant fields, and every entity has observed/derived/unavailable Evidence with nullable introducedSeq/changedSeq (33.2). It contains no camera, Detail_Level, Selection, Trace, colour or animation state.
 
 ```ts
 // src/world/sceneProjector.ts
@@ -655,7 +754,7 @@ export function createSceneProjector(trace: TraceDocument): SceneProjector
 
 Projection rules (all derived from recorded evidence):
 
-- **Frames**: one node per `RuntimeFrame`; rows ordered `this`, parameters (declaration order), locals (first recorded assignment order) (9.4); a local row exists only once its first assignment Event is ≤ Cursor (9.5); values from `frame.locals` at the Cursor (9.6). Status via `frameStatus.ts` (9.11): `running | paused | returning | returned | threw | unwound | terminated`, using `frame.status`, `exitedAt`, the Cursor Event, `RuntimeState.exceptions` and the `ProjectionContext`. Status text adds the line (`line N` from the latest `currentSource` recorded in that Invocation ≤ Cursor) or the exception simple name.
+- **Frames**: one node per `RuntimeFrame`; rows ordered `this`, parameters (declaration order), locals (first recorded assignment order) (9.4); a local row exists only once its first assignment normalized seq is < applied-prefix Cursor c (9.5); values from `frame.locals` at the Cursor (9.6). Status via `frameStatus.ts` (9.11): `running | paused | returning | returned | threw | unwound | terminated`, using `frame.status`, `exitedAt`, the Cursor Event, `RuntimeState.exceptions` and the `ProjectionContext`. Status text adds the line (`line N` from the latest `currentSource` recorded in that Invocation ≤ Cursor) or the exception simple name.
 - **Objects**: runtime class title in Java source form (`displayType.ts`: nested `Outer.Inner`, arrays `int[][]`, generics only when recorded) (12.2, 33.9); field rows grouped by declaring class from most distant superclass (12.11); values via `valueText.ts`. Arrays become `SceneArrayNode` (cells with stable index ids `arrayElementSlotId`), summarized collections become `SceneCollectionNode` from `RuntimeLibrarySummary` (`collectionSummary.ts`, 15.1–15.3, 15.9), non-summarizable collections keep fields with `summaryUnavailable: true` (15.8).
 - **Class shelves**: from `RuntimeState.classes`; rows for statics written at or before the Cursor (13.3, 13.6).
 - **References**: one `SceneReference` per non-null reference slot (frame row, field, cell, static, collection entry) whose target exists (16.11); kind-derived colour role (`frame-object`, `object-object`, `class-object`, plus `exception`/`return` overrides) and per-node caching as today.
@@ -663,7 +762,7 @@ Projection rules (all derived from recorded evidence):
 - **Return flows** (`returnFlows.ts`): bounded list (≤ 20, newest first) of returns with a proven destination from graph `RETURN` edges / `RuntimeState.returns[].destination`, each with `returnSeq`, value text and optional operand line from recorded `expression` operands (10.4–10.7). Returns without a proven destination set the frame face text `returned <value>` (10.8).
 - **Exception path** (`exceptionPath.ts`): for the latest exception relevant at the Cursor — throwing frame, unwound frames in recorded order, catching frame or uncaught endpoint, Throwable object, recorded cause chain, `complete` flag (25.1–25.8).
 - **I/O**: stdout/stdin/stderr summaries from `graphIoSummaries` (graph) or `consoleIoSummaries` (graphless), counts of lines at the Cursor, last-line preview (≤ 60 chars), consumed text of the current stdin edge (26.9–26.13).
-- **Partial recording**: projection never reads beyond `RuntimeState` at the Cursor, and the Cursor is clamped to `lastRecordedSeq` (27.13, 33.5).
+- **Partial recording**: clamp applied-prefix c to [0, semanticPrefixEnd], mapped from accepted raw boundary. lastRecordedSeq remains raw metadata only; normalized evidence must have seq < c.
 
 Incrementality (32.10): `advance` computes the touched entity set from the events in range (`frameId`, `objectId`, `classId`, `sourceSlot` owners, storage owners of the new graph edges, previous and new top frames) and replaces only those nodes in persistent records; ordered id lists are persistent append-only arrays. `project` (seeks) iterates RuntimeState with WeakMap caches keyed by immutable `RuntimeFrame`/`RuntimeObject`/`RuntimeClass` records, as the current `buildSceneModel` does. Secondary indexes (inbound references, one-hop neighbours) are built lazily per query and memoized per SceneModel revision.
 
@@ -672,12 +771,19 @@ Incrementality (32.10): `advance` computes the touched entity set from the event
 `src/world/flowCatalog.ts` turns ExecutionGraph edges into Flows without materializing all of them per Cursor.
 
 ```ts
+export interface RecordedProvenance {
+  edgeId: GraphEdge['id']; edgeIndex: number; kind: GraphEdge['kind']
+  from: GraphEdge['from']; to: GraphEdge['to']; eventId: GraphEdge['eventId']
+  graphEvidence: GraphEdge['evidence'] // preserve observed/bytecode-derived/unknown
+  evidence: Evidence                 // presentation coordinate availability
+  spatial: { drawable: boolean; reason: string | null }
+}
 export interface SceneFlow {
-  id: string                 // `${edgeEventId}:${edgeId}` — stable per Recording (17.1)
+  id: string                 // source graph edgeId; stable per Recording
   edgeIndex: number
   kind: FlowKind             // argument | receiver | local-field | assignment | reference | array-read | array-write | return | input | output | throw | unwind | catch
   from: FlowEndpoint | null; to: FlowEndpoint
-  evidenceSeqs: readonly number[]
+  evidenceSeqs: readonly number[] // normalized zero-based seq, visible iff < c
   valueText: string | null
 }
 export interface FlowCatalog {
@@ -688,15 +794,16 @@ export interface FlowCatalog {
   /** Exact counts of eligible flows per bundle key at the Cursor (21.4). */
   bundles(input: { cursor: number; scene: SceneModel; exclude: ReadonlySet<string> }): FlowBundle[]
   /** Flows whose evidence includes the Event at the Cursor (21.3, 26.11–26.12). */
-  atEvent(cursor: number, scene: SceneModel): SceneFlow[]
-  provenanceOf(valueOrSlotId: string, cursor: number): SceneFlow[]   // Inspector "No recorded provenance" (17.6)
+  atEvent(cursor: number, scene: SceneModel): SceneFlow[] // Events[c−1] only if c > 0
+  recordedProvenanceOf(valueOrSlotId: string, cursor: number): readonly RecordedProvenance[] // independent of drawability
+  drawableFlowsOf(valueOrSlotId: string, cursor: number, scene: SceneModel): readonly SceneFlow[]
 }
 ```
 
-- Edge → Flow mapping reuses `graphTransition` from `semanticTransition.ts` (exported) so endpoint resolution stays graph-only: no names, no proximity, no adjacency (17.3, 17.5). `COMPUTE`, `OBSERVE` and file edges produce no Flow.
-- Eligibility at Cursor N: all evidence Events ≤ N and both endpoints present in the SceneModel at N; an absent endpoint yields no Flow and no substitute attachment (17.4, 17.7).
+- Edge → Flow mapping adapts `graphTransition` from `semanticTransition.ts` with preserved RuntimeState/storage identity indexes so endpoint resolution stays evidence-only: no names, no proximity, no adjacency (17.3, 17.5). `COMPUTE`, `OBSERVE` and file edges produce no Flow.
+- Eligibility at applied-prefix c: evidence normalized seq < c. Drawing additionally requires actual currently presented semantic Ports; non-drawable evidence remains in recordedProvenanceOf. c = 0 has no evidence.
 - `query` walks `graph.incoming`/`graph.outgoing` of priority entities (Selection, Focus, Event at Cursor) with the existing 128-edge tail bound, then the global tail, filling tiers in the Requirement 17.9 order.
-- Bundle counts: each eligible edge is assigned at ingest to a bundle key `(sourceClusterKey, targetClusterKey, kind)` and appended to that key's sorted edge-index list; the count at Cursor N is an upper-bound binary search. Endpoint presence is monotone for entity owners; the rare absent-slot correction subtracts edges of slots whose lifetime ended ≤ N (from `variableLifetimes`), so bundle labels stay exact.
+- Bundle counts use prefix indexes plus current endpoint/window/lifetime/role indexes. A first-seen binary search alone cannot handle REMOVE_LOCAL, collection replacement or window retirement. Count each eligible edge once after excluding individual curves; non-drawable provenance has separate counts/reasons, never substitute geometry.
 
 ### 10. Presentation planner, semantic zoom, clustering and budgets
 
@@ -733,42 +840,28 @@ export function planPresentation(input: PlanInput, previous?: PresentationPlan):
 | Array_Cells | 8 | 48 | 128 |
 | Quiet volumes | 0 | 512 | 256 |
 
-Budgets live in design tokens v4 (`world.budgets`) and in `src/world/budgets.ts` as a frozen typed object.
+Budgets live in design tokens v4 (`budgets`) and in `src/world/budgets.ts` as a frozen typed object.
 
 #### 10.2 Pinned set, clusters and accounting
 
-Clusters are presentation entities only (Requirement 22.10, 33.3). Membership must be stable under camera and Detail_Level changes (22.13), so the planner separates three ideas:
+Canonical cluster-key hierarchy uses recorded class/type/package/ownership, invocation branch and execution-age keys, with stable coarser region roots. Identity/anchor persists; prefix/lifetime/live-history roles determine current membership. FirstSeq append-only indexes alone cannot account for retirement.
 
-1. **Cluster hierarchy** (stable). The Layout_Engine assigns every entity a `clusterPath` at first record, from generic keys only:
+Mandatory set Π includes real breakpoint/error targets, Selection/Focus, Cursor Event subjects, outermost/innermost live Frames and three nearest live ancestors, and direct current-frame references. Priority: correctness-required > selected/focused > current/direct relevance > representatives > background, with evidence/ID ties. For category target B use effective limit max(B, |Π_category|). Render/pick all mandatory identities, report overflow IDs/reasons, admit optional detail only in remaining nominal capacity, and coarsen optional context first. For curves only explicitly targeted/current-evidence curves are mandatory; direct relevance does not recursively pin every reachable edge.
 
-   | Entity | Path (fine → coarse) |
-   | --- | --- |
-   | Project Heap_Object, array | `type` → `package` → `ownership` |
-   | Summarized collection | `collection` (user-level kind: List/Set/Map/Queue/Deque) → `ownership` |
-   | Library/JDK Heap_Object | `type` → `ownership` |
-   | Class_State shelf | `package` |
-   | Historical Frame with a caller | `invocation-branch` (caller invocation id + method) |
-   | Historical root Frame | `execution-age` (entry sequence bucket of 4,096 Events) |
-   | Live intermediate Frame | `invocation-branch` (the live chain segment) |
-   | Library/JDK Frame | `class` (declaring class) |
+A hierarchy cut partitions all prefix-present entities once into detailed, quiet or one residual cluster. Subtract individual entities from cluster counts and coarsen optional clusters to region roots as needed. Empty clusters keep identity/anchor but render nothing. Library/JDK follows the same relevance rule. Canonical membership at fixed prefix/roles is camera-independent; presented residual membership follows individual presentation choices.
 
-2. **Pinned set Π** (depends on Selection, Focus and Cursor only — never on camera or Detail_Level). Π always contains, within the FAR budgets: the Selection, the Focus target, the subjects of the Event at the Cursor, the outermost live Frame, the innermost live Frame and its 3 nearest live ancestors, and the Heap_Objects referenced by a receiver, parameter or local of the current Frame (in the Requirement 11.10 priority order, earliest first record first). Pinned entities are always presented individually with detailed faces.
-3. **Cut through the hierarchy** (may depend on camera and Detail_Level). Each Detail_Level presents a cut: every cluster on the cut is either *collapsed* (one ClusterVolume labelled `<key value> ×<members>`, where members are its present, unpinned entities) or *expanded* into its children or into individual entities. A cluster is expanded only if all its unpinned members fit in the remaining detailed + quiet budgets (all-or-nothing). Clusters are ranked by: contains a one-hop neighbour of Π, then project before external, then distance from the view target (coarse tile). When collapsed clusters exceed the Cluster budget, the lowest-ranked clusters are coarsened to their parent key (type → package → ownership).
-
-This guarantees: every SceneModel entity is counted exactly once — detailed, quiet volume, or in one collapsed cluster's count (22.9); counts are exact and taken at the Cursor (22.10, 22.12); membership of any cluster is unaffected by camera or Detail_Level (22.13); Requirement 8.14 holds because the live depth cluster is the expanded-or-collapsed segment between Π's outermost and innermost-plus-ancestors frames (at most 5 live frames are pinned, within every Frame budget), with the label showing the exact count and the most frequent method (ties → innermost). Library/JDK entities collapse into ownership clusters at FAR and MEDIUM unless pinned or directly referenced by a pinned Frame row or pinned project field (22.15). A cluster with zero members at the Cursor renders nothing but keeps identity and anchor (22.14). Cluster count lookups are binary searches over each cluster's append-only `firstSeq` member list.
-
-Detailed faces among individually presented entities are assigned in the Requirement 11.10 order (Selection, Focus target, current-frame references, one-hop links, then earliest first record), up to the level's Heap_Object/Frame/shelf budgets; the remaining individually presented entities are quiet volumes up to the quiet budget (11.11).
+Adversarial tests include historical Selection/Focus plus deep live stack, many direct references, collection entry retirement, array-window changes and backward replay. Nominal FAR targets never hide required targets.
 
 #### 10.3 Detail_Level (Requirement 22.1–22.2, 22.7)
 
 `src/world/detailLevel.ts`:
 
 ```ts
-export function representativeFaceHeight(plan: PresentationPlan, camera: ProjectionCamera, viewport: Size): number | null
+export function representativeFaceHeight(scene: SceneModel, camera: ProjectionCamera, viewport: Size): number | null
 export function nextDetailLevel(current: DetailLevel, faceHeightPx: number | null, viewportHeight: number): DetailLevel
 ```
 
-Representative height = median projected front-face height (CSS px) of up to 5 presented Frames/Heap_Objects/shelves/Clusters whose projected anchors lie inside the viewport nearest to the centre. Thresholds: CLOSE ≥ 0.16 H, FAR ≤ 0.05 H; hysteresis: CLOSE→MEDIUM only below 0.136 H, FAR→MEDIUM only above 0.0575 H. With no candidate, the level is unchanged. The CameraRig evaluates it at most once per rendered frame while the pose changes. A level change triggers a 300 ms crossfade (opacity only, no anchor or camera change); the outgoing and incoming plans are both kept and each respects its own budget (22.7–22.8). Reduced motion swaps instantly.
+Representative height = median canonical face height of up to 5 prefix-present Frames/Heap_Objects/shelves nearest viewport centre, stable ID ties, from full canonical catalog. Never measure planner output/clusters. CLOSE ≥ 0.16 H, FAR ≤ 0.05 H, CLOSE exit < 0.136 H, FAR exit > 0.0575 H. Evaluate once per pose/prefix revision independent of quality/outgoing plan; fixed inputs converge without toggling. No candidate keeps level. Crossfade opacity over 300 ms with mandatory overflow accounting; reduced motion swaps instantly.
 
 #### 10.4 Emphasis composition
 
@@ -787,7 +880,7 @@ Candidate Connectors = SceneModel references whose endpoints are individually pr
 
 #### 10.6 Arrays in the plan
 
-`cellWindows` per detailed array (14.7): if `length ≤ cellBudget(level)` all cells at fixed positions; otherwise windows around the most recently accessed index (index 0 if none) and the selected index, with ellipsis cells stating exact hidden counts, total visible + ellipsis ≤ the remaining cell budget. Read/write emphasis comes from `RuntimeState.arrayActivity` at the Cursor (14.8–14.9); array-to-array Flows attach to ellipsis cells when an endpoint index is hidden (14.10). Out-of-bounds indications come from recorded exception facts identifying the index (14.11).
+`cellWindows` map semantic indices to temporary Presented_Slots per windowRevision, with active/selected/focused indices mandatory. Optional ascending-index windows and truthful ellipses fill remaining nominal capacity; required overflow is reported. Array anchor is fixed, mapped Port/geometry may change with window revision. Hidden indices have no geometric endpoint until Reveal Index; never route a Flow to ellipsis.
 
 ### 11. Selection and Focus (Requirement 19)
 
@@ -909,7 +1002,7 @@ export interface TimelineState {
   cursor: number; liveHead: number; lens: TimelineLens
   playing: boolean; direction: 'forward' | 'reverse'; speed: 0.25 | 0.5 | 1 | 2 | 4
   scrubbing: boolean
-  boundary: number | null            // lastRecordedSeq-derived max cursor for PARTIAL_RECORDING (23.12)
+  boundary: number | null            // mapped accepted normalized-prefix end N(R), never raw lastRecordedSeq
 }
 export interface MilestoneIndex {
   extend(events: readonly TraceEvent[], from: number): void
@@ -918,11 +1011,11 @@ export interface MilestoneIndex {
 }
 ```
 
-- Controls left to right: Play/Pause (⌀ 0.062 H, ring glow), Step back, Step forward, caption `n / N` (execution blue) + `Executing: <event.label>`, Milestone track (0.15–0.81 W), Lens indicator (LIVE or HISTORY badge + Return to Live), `t = <event.seq>`, speed selector (0.25–4.0x, default 1.0x), settings (Replay, Reverse play, reduced motion, quality). Positions come from `computeShellLayout` tokens (23.1–23.2).
+- Controls left to right: Play/Pause (⌀ 0.062 H, ring glow), Step back, Step forward, caption `c / N` (applied prefix, execution blue) + `Executing: <Events[c−1].label>` or `Before execution` at c = 0, Milestone track (0.15–0.81 W), Lens indicator (LIVE or HISTORY badge + Return to Live), `t = <normalized event.seq>` only for c > 0, speed selector (0.25–4.0x, default 1.0x), settings (Replay, Reverse play, reduced motion, quality). Positions come from `computeShellLayout` tokens (23.1–23.2).
 - Milestones are entry, return, allocation, exception, input and output Events. Labelled set: split the track into `k = min(maxLabels, ⌊width / 110 px⌋)` equal bins; in each bin choose the milestone with the highest importance, then the earliest sequence; then put the current milestone (at or before the Cursor) in place of its bin's choice. The result depends only on Cursor and width (23.3). Unlabelled Events render as density ticks on a canvas; future nodes/ticks render at 50 % opacity.
 - All texts derive from the Recording (event labels, sequence numbers) — no placeholders (23.4).
-- Keyboard: track is a `role="slider"` with `aria-valuemin=1`, `aria-valuemax=N`, `aria-valuenow=n`, `aria-valuetext` = the caption summary; Space play/pause, arrows step, Home first Event, End Return to Live (23.10–23.11).
-- Boundaries: commands that would leave `[1, liveHead]` (or `[1, boundary]` in PARTIAL_RECORDING) clamp and stop playback; direction controls at a boundary are disabled; zero Events disables everything (23.13–23.14). PARTIAL_RECORDING shows a labelled boundary marker with Recording_Status and reason (23.12).
+- Keyboard: track is role=slider, aria-valuemin=0, aria-valuemax=N, aria-valuenow=c. At c = 0 announce Before execution; otherwise normalized Event seq and summary. Space play/pause, arrows step, Home c = 0, End Return to Live. Raw seq is diagnostic only.
+- Boundaries: clamp/stop requests outside [0,N(R)] or [0,liveHead]; c = 0 is a valid empty prefix even when N > 0. Disable direction only at its reached endpoint. Partial marker uses mapped semantic end with raw reason/budget metadata separate. No first-Event lower bound.
 - HISTORY with live ingestion grows N and the track while Cursor and World stay put (23.7); debug sessions show the count of Events after the Cursor (7.14) and a paused marker at the Live_Head (7.12).
 
 ### 16. Exception presentation and Forensic_State (Requirement 25)
@@ -936,13 +1029,13 @@ export interface MilestoneIndex {
 
 ### 17. Runtime I/O and Console (Requirement 26)
 
-- `ConsoleDrawer` renders the preserved Console truth (recorder console writes plus process-pipe output, in delivered order, stdin lines marked) through a fixed-row virtual list (`VirtualList.tsx`, overscan ≤ 200 rows, `Uint32Array` line offsets built incrementally). A truncation notice with an archive download control is inserted where output was omitted (26.1–26.3).
+- `ConsoleDrawer` preserves captured channel text and known ordered streams. Combined order requires recorder/runEvents evidence; otherwise named channel groups say "cross-channel order not recorded". Input submission order is not output/consumption order. Deduplicate only proven source coverage, not repeated equal text. Summary rows use incremental offsets and ≤ 200 offscreen overscan; separate expansion wraps/scrolls text. Preserve cap/archive notices and world/session Console association.
 - WAITING_INPUT opens the Console drawer and focuses the input within 200 ms and shows "Program is waiting for input" (26.4–26.5). Submit sends text + `\n` (empty → `\n`), appends a stdin line and clears the field; after process exit or stdin close it sends nothing and shows "Program is not accepting input" (26.6–26.7).
 - World I/O: at most three `IoPort`s, never per-line cards (26.8). stdout shows the exact line count at the Cursor and a 60-char preview, throttled to ≤ 10 updates/s with a 100 ms settle (26.10). value → stdout and stdin → consumed value Flows come only from graph edges at the Cursor Event (26.11–26.13). stderr uses `#FF8A5B` with a "⚠" glyph and never changes AppState or Forensic_State (26.14–26.15).
 
 ### 18. Inspector (Requirement 28)
 
-`inspectorModel.ts` is a pure builder: `buildInspector(target, runtime, scene, graph, flows, cursor) → InspectorModel` with sections per target kind (Heap_Object, Frame, Class_State shelf, array, Array_Cell, collection, Connector, Flow, Cluster), all values via `valueText.ts` in exact mode (no truncation; Java escapes; NaN/Infinity/−0.0; not-recorded marker "⟨not recorded⟩" distinct from `null`) (28.2–28.5, 28.9). It shows the introducing and latest-changing evidence sequence numbers (33.2) and "No recorded provenance" when `FlowCatalog.provenanceOf` is empty (17.6).
+`inspectorModel.ts` is a pure builder: `buildInspector(target, runtime, scene, graph, flows, cursor)`. Exact mode exposes captured content with observation/truncation/unavailable metadata. Summary rows preview; expanded detail preserves captured characters. Evidence coordinates are nullable observed/derived/unavailable. "No recorded provenance" depends on recordedProvenanceOf, not drawableFlowsOf. Inspector mounts ≤ 200 summary rows total, ≤ 20 overscan; missing array indices are lazy. Expanded text avoids fixed-height wrapping conflicts.
 
 - Card geometry from `computeShellLayout` (width max(0.20 W, 300), top 0.34 H, max-height 0.52 H, scrolling). The side is chosen when the card opens or its target changes: the half that does not contain the target's projected centre; it never flips during camera motion (28.1). NARROW uses a bottom sheet (30.7).
 - Actions: Focus / Return to World, Reveal Source, Copy Value (exact text) with disabled reasons from the Command_Registry (28.6).
@@ -996,7 +1089,7 @@ export function createMaterialSet(tier: QualityTier, tokens: MaterialTokens): Ma
 | Face plates | opaque `MeshBasicMaterial` in pre-composited face colour (stack `#0D235F`, heap `#28135F`, class `#0B3A3A`) | same (text never behind transmission, 29.3) |
 | Chips | opaque `#081538` / `#170B3C` | same |
 | Edge strips, halo, Ports | `MeshBasicMaterial`, `toneMapped: false`, radiance 1.4–2.2 × edge colour (above bloom threshold) | same |
-| Connectors | `LineMaterial` in pixel width, depth-tested (occluded segments hidden, 16.2) | same |
+| Connectors | pixel-width depth-tested LineMaterial with tested curve-alpha shader attribute/uniform sampling; uniform-opacity fallback | same |
 | Floor | `MeshReflectorMaterial` 256 px, no blur, mirror 0.35 | 1024 px, blur [300, 100], mirror 0.5 |
 
 Palette (design tokens v4 `color.world`): stack core `#1F6BFF` / edge `#5CC8FF` / tint `rgba(18,52,140,0.62)` / chip `#081538`; heap core `#7A3CF0` / edge `#C58BFF` / tint `rgba(62,26,140,0.62)` / chip `#170B3C`; class core `#14B8A6` / edge `#5EEAD4`; execution `#3FD8FF`; return `#FFB23E`; mutation `#FFC857`; exception `#FF4A5E`; stdout `#5BE3A8`; stdin `#3FD8FF`; stderr `#FF8A5B`; text `#EEF4FF` / `#A9B8DA` / `#6E7FA6`.
@@ -1020,13 +1113,13 @@ Palette (design tokens v4 `color.world`): stack core `#1F6BFF` / edge `#5CC8FF` 
 | --- | --- | --- |
 | 1 | `RenderPass` into half-float target | `RenderPass` |
 | 2 | — | `GTAOPass` (half resolution, radius 0.6 u, intensity 0.8) |
-| 3 | `UnrealBloomPass` (threshold 1.0, strength 0.55, radius 0.35, half resolution) | same, strength 0.65 |
+| 3 | emissive mask/layer + UnrealBloomPass, threshold 1.0, strength 0.55, half resolution, depth-aware composition | same, strength 0.65 |
 | 4 | corner fog `ShaderPass` | same |
-| 5 | — | `BokehPass` only with FOCUS (focus = target face distance; Shell is DOM and never blurred) |
+| 5 | — | sharp target-face/text mask over optional blur; depth-only BokehPass insufficient; disable DOF if unreadable |
 | 6 | `OutputPass` (ACES Filmic tone mapping, sRGB) | same |
 | 7 | `SMAAPass` | same |
 
-Bloom is emissive-only because only edge strips, Ports, Connectors and the halo exceed radiance 1.0; faces, text and grid are capped below it (29.6).
+Bloom is emissive-only through explicit role mask/layers and depth-aware composition. Faces/text/grid/reflection highlights are excluded, not merely below threshold. DOF composites a sharp target/text pass over blur. Disable/report unsupported or harmful effects individually; retain readable Focus and cinematic geometry/lighting.
 
 #### 19.7 Quality tiers and pipeline governor
 
@@ -1104,7 +1197,7 @@ Targets (QA_Machine, INTERACTIVE, Dense_Sample): seek ≤ 55 / 112 ms p50/p95; F
 | Cross-state flows | `e2e/reference/flows.spec.ts`: flows (a), (b), (c) of 34.8, asserting AppState/Lens/Shell at every step |
 | Torture and debug | existing `tests/torture-v12-p5_5`, `e2e/torture-*`, `e2e/debugger-errors.spec.ts` rerun; regressions reported by name |
 | Performance | `perf-e2e` probes extended (`FrameProfiler`, `RendererMetrics`, seek/Focus/Home timers, heap snapshots); `scripts/reference/perf-report.mjs` writes `docs/checkpoints/reference-exact/PERFORMANCE.md` with value, budget, Phase 5.5 baseline, semantic vs rendering split, "not measured" reasons |
-| Reference integrity | `scripts/reference/check-references.mjs`: R1–R6 root images exist, are untracked (`git ls-files --error-unmatch` fails) and match their twins' checksums |
+| Reference integrity | tracked unchanged best.png; five root ChatGPT Image*.png untracked and checksum-identical; all six match tracked twins. Never stage user PNGs |
 | Demo-name scan | `scripts/reference/scan-generic.mjs` implements the 33.6 scan (case/space/underscore/hyphen-insensitive, comments ignored) over `src/`, `server/`, `instrumentation/` excluding tests and `src/examples/` |
 
 
@@ -1125,15 +1218,17 @@ export interface WorldAnchor {
   region: Region
   position: Vec3                         // box centre
   size: Vec3
-  ports: Readonly<Record<SlotId, Vec3>>  // stable per slot id
+  ports: Readonly<Record<SlotId, Vec3>>  // canonical local-solid Ports; virtualized cells use ArrayWindow.mapping
   bodyPort: Vec3
 }
-export interface Evidence { introducedSeq: number; changedSeq: number }
+export interface Evidence { kind: 'observed' | 'derived' | 'unavailable'; introducedSeq: number | null; changedSeq: number | null; eventIds: readonly EventId[]; derivation?: string; unavailableReason?: string }
 
-export type ValueText =
+export type ValueText = ValueObservation & (
   | { kind: 'primitive' | 'string' | 'null'; text: string; exact: string }
   | { kind: 'reference'; text: string; exact: string; targetId: ObjectId; targetType: string }
   | { kind: 'not-recorded'; text: '⟨not recorded⟩'; exact: '⟨not recorded⟩' }
+)
+export interface ValueObservation { observation: 'OBSERVED' | 'TRUNCATED' | 'UNAVAILABLE' | 'PARTIALLY_OBSERVED'; recordedLength?: number; reason?: string }
 
 export interface SceneRow {
   slotId: SlotId; name: string; type: string; value: ValueText
@@ -1172,7 +1267,7 @@ export interface SceneObject {
 export interface SceneArray {
   kind: 'array'; id: ObjectId; displayId: number; title: string
   componentType: string; length: number
-  cells: readonly { index: number; slotId: SlotId; value: ValueText; port: Vec3 | null; anchor: WorldAnchor }[]
+  cells: readonly { index: number; slotId: SlotId; value: ValueText; evidence: Evidence }[] // observed/sparse cells, not length-sized geometry
   activity: { kind: 'read' | 'write'; index: number } | null
   outOfBounds: { index: number } | null
   anchor: WorldAnchor; ownership: Ownership; evidence: Evidence
@@ -1181,7 +1276,7 @@ export interface SceneCollection {
   kind: 'collection'; id: ObjectId; displayId: number; title: string
   collectionKind: 'List' | 'Set' | 'Map' | 'Queue' | 'Deque'
   size: number; recordedEntries: number  // size − recordedEntries = not recorded (15.9)
-  entries: readonly ({ key?: ValueText; value: ValueText; port: Vec3 | null; slotId: SlotId })[]
+  entries: readonly ({ key?: ValueText; value: ValueText; port: Vec3 | null; slotId: SlotId; evidence: Evidence })[]
   mutation: { kind: 'add' | 'remove' | 'put' | 'poll'; entryIndex: number | null } | null
   anchor: WorldAnchor; ownership: Ownership; evidence: Evidence
 }
@@ -1202,12 +1297,13 @@ export interface SceneReference {
 export interface SceneCallLink { id: string; callerId: FrameId; calleeId: FrameId; callSeq: number }
 export interface SceneReturnFlow { id: string; frameId: FrameId; destination: { entityId: EntityId; slotId: SlotId }; value: ValueText; operands: string | null; returnSeq: number }
 export interface SceneExceptionPath {
-  exceptionId: ObjectId; className: string; simpleName: string; message: string | null
-  throwFrameId: FrameId; unwound: readonly FrameId[]; catchFrameId: FrameId | null
+  exceptionId: ObjectId | null; className: string; simpleName: string; message: string | null
+  throwFrameId: FrameId | null; unwound: readonly FrameId[]; catchFrameId: FrameId | null
   uncaught: boolean; causes: readonly ObjectId[]; complete: boolean; throwLine: SourceLocation | null
-  stack: readonly string[]               // recorded stack-trace lines
+  stack: readonly string[]               // captured only, possibly empty
+  causeEvidence: Evidence; stackEvidence: Evidence; evidence: Evidence
 }
-export interface SceneIo { id: 'stdin' | 'stdout' | 'stderr'; lines: number; preview: string; consumedText: string | null; anchor: WorldAnchor }
+export interface SceneIo { evidence: Evidence; id: 'stdin' | 'stdout' | 'stderr'; lines: number; preview: string; consumedText: string | null; anchor: WorldAnchor }
 
 export interface SceneModel {
   revision: number                       // increments per projection
@@ -1216,7 +1312,7 @@ export interface SceneModel {
   order: { frames: readonly FrameId[]; objects: readonly ObjectId[]; classes: readonly string[] }
   references: readonly SceneReference[]
   callLinks: readonly SceneCallLink[]
-  returnFlows: readonly SceneReturnFlow[] // ≤ 20, newest first
+  returnFlows: readonly SceneReturnFlow[] // canonical candidates; planner applies mandatory overflow
   exception: SceneExceptionPath | null
   io: readonly SceneIo[]
   cursorEvent: { id: EventId; seq: number; summary: string; subjects: readonly EntityId[] } | null
@@ -1235,9 +1331,10 @@ export interface PresentedEntity { id: EntityId; mode: 'detailed' | 'quiet'; det
 export interface PresentedCluster { id: string; key: ClusterKey; label: string; members: number; anchor: WorldAnchor; opacity: number; pickable: boolean }
 export interface PresentedCurve { id: string; kind: 'connector' | 'call' | 'flow' | 'return' | 'exception' | 'binding-history'; points: readonly Vec3[]; colorRole: MaterialRole; opacity: number; widthPx: 2.5 | 3.5; arrow: boolean; label?: string }
 export interface PresentedBundle { id: string; kind: 'connector' | 'flow'; from: string; to: string; count: number; points: readonly Vec3[] }
-export interface ArrayWindow { visible: readonly number[]; ellipses: readonly { afterIndex: number; hidden: number }[] }
+export interface ArrayWindow { windowRevision: number; visible: readonly number[]; mapping: ReadonlyMap<SlotId, { index: number; presentedSlot: number; anchor: WorldAnchor; port: Vec3 }>; ellipses: readonly { afterIndex: number; hidden: number }[] }
 export interface PresentationPlan {
   revision: number; sceneRevision: number; detailLevel: DetailLevel
+  budgetOverflow: readonly { category: string; nominal: number; actual: number; mandatoryIds: readonly string[]; reasons: readonly string[] }[]
   entities: ReadonlyMap<EntityId, PresentedEntity>
   clusters: readonly PresentedCluster[]
   curves: readonly PresentedCurve[]; bundles: readonly PresentedBundle[]
@@ -1261,7 +1358,7 @@ export interface PresentationPlan {
 | Value | Face text | Exact (Inspector, Copy Value) |
 | --- | --- | --- |
 | primitive | Java literal form as recorded: `NaN`, `Infinity`, `-Infinity`, `-0.0`, chars as `'a'` / `'\n'` / `'\u0000'` | same |
-| String | `"…"`, ≤ 48 chars full, longer → first 48 + `…` + ` (n chars)`; empty `""`; control chars as Java escapes | full escaped value |
+| String | bounded escaped captured preview, known length and recorder truncation distinct from face truncation | all captured characters plus length/truncation metadata, never reconstructed original suffix |
 | null | `null` (no chip, no Port) | `null` |
 | reference | `<RuntimeType> #id` chip with Port; collections `List · size 3 #id`; arrays `int[5] #id` | type and id |
 | unrecorded | `⟨not recorded⟩` (italic, muted, dashed chip) | same marker |
@@ -1348,13 +1445,13 @@ Each property is implemented by a single fast-check property test (≥ 100 runs)
 
 ### Property 4: Session command availability
 
-*For any* AppState and debugger status, Run and Debug-start are disabled with the reason "A session is already active" exactly when the Execution_State is BUILDING, RUNNING, WAITING_INPUT or DEBUG_PAUSED, and Step Over/Into/Out are enabled exactly when the debugger is paused, otherwise reporting "Stepping requires a paused debugger".
+*For any* orthogonal input dimensions, new Run/Debug-start is disabled for active build/launch or alive/unknown process even with stopped recording. Actual pause enables Continue/Step even before first Event; stdin capability/wait is independent. Stop/Restart addresses the current attempt; historical Lens/selection never changes JVM availability. Every command entry point agrees.
 
 **Validates: Requirements 1.5, 7.6**
 
 ### Property 5: Timeline reducer invariants
 
-*For any* sequence of timeline actions (append, step, reverse, play ticks, scrub, click, replay, Return to Live, debug commands) the Cursor stays within [1, Live_Head] (or [1, boundary] while PARTIAL_RECORDING, and at 0 with no Events); appends in HISTORY change only N; LIVE keeps Cursor = Live_Head; Return to Live sets Cursor = Live_Head and Lens LIVE; a step moves by exactly one or clamps and stops playback at a boundary; Replay starts at the first Event without modifying the Recording; debug commands leave Cursor and Lens unchanged; and the "Events after Cursor" count equals Live_Head − Cursor.
+*For any* timeline action sequence, applied-prefix c stays in [0,N], including nonempty recordings at c = 0. Append in HISTORY holds c; LIVE follows N; Replay starts at 0; Return to Live targets N. Raw R maps to completed emitted/validated N(R), never raw seq as Cursor. Test multiple/zero/deferred emissions, both step directions, empty traces and partial stop boundaries; debug commands never seek unless explicitly requested.
 
 **Validates: Requirements 1.16, 7.13, 7.14, 23.2, 23.7, 23.8, 23.9, 23.12, 23.13, 24.7**
 
@@ -1456,7 +1553,7 @@ Each property is implemented by a single fast-check property test (≥ 100 runs)
 
 ### Property 22: Anchors are append-only
 
-*For any* Recording and prefix length, every anchor (Frame, Heap_Object, Array_Cell, shelf, I/O port, cluster) present in the prefix layout is identical in the full layout; laying out the same Events twice yields identical anchors; and anchors are independent of Cursor, Lens, Detail_Level, Selection, Focus and AppState.
+*For any* prefix/full layout, canonical Frame/Heap_Object/shelf/I/O/cluster anchors are identical and deterministic. Small unvirtualized cells keep fixed index geometry; large-array identity/parent anchor is stable while temporary slots change only with an explicit window revision. No semantic identity derives from display position.
 
 **Validates: Requirements 8.8, 11.4, 11.5, 11.7, 14.3, 22.7, 22.12, 23.5, 24.1**
 
@@ -1474,7 +1571,7 @@ Each property is implemented by a single fast-check property test (≥ 100 runs)
 
 ### Property 25: Projection agrees with RuntimeState
 
-*For any* Recording and Cursor, the SceneModel's Frame rows (order `this`, parameters, locals by first assignment; locals present iff first assignment ≤ Cursor), field rows, static rows (latest write ≤ Cursor), Array_Cell values (Java defaults at allocation), collection entries (kind order, real size, unrecorded remainder) and final values equal the corresponding `RuntimeState` values formatted by `valueText`.
+*For any* Recording and c, projected frame/object/static rows, sparse array cells, bounded collection entries and values agree with RuntimeState after [0,c). Defaults appear only with captured initialization evidence; unknown cells/strings/collection omissions remain unavailable/truncated. Status, source, references and local lifetimes agree with the committed prefix; no animation invents values.
 
 **Validates: Requirements 9.4, 9.5, 9.6, 13.3, 13.6, 14.3, 14.4, 15.1, 15.2, 15.6, 15.9, 24.3, 25.6**
 
@@ -1486,7 +1583,7 @@ Each property is implemented by a single fast-check property test (≥ 100 runs)
 
 ### Property 27: Evidence traceability and recording boundary
 
-*For any* Recording and Cursor, every SceneModel element (entity, row, cell, entry, Connector, call link, return Flow, exception element, I/O activity) has `introducedSeq ≤ Cursor` and `changedSeq` equal to its latest change ≤ Cursor; a Recording with zero Events yields no elements; Heap_Objects present are exactly those first recorded ≤ Cursor; and when Recording_Status is not FULL no element is derived beyond the last recorded sequence.
+*For any* projected item at c, observed evidence seq lies in [0,c); unavailable introducing/changing evidence is nullable with reason, not guessed. Derived evidence cites captured inputs. c = 0 has no runtime entities. Partial projection stays inside mapped N(R), including deferred dependencies, never raw lastRecordedSeq-as-cursor.
 
 **Validates: Requirements 11.9, 27.13, 27.18, 33.1, 33.2, 33.5**
 
@@ -1504,7 +1601,7 @@ Each property is implemented by a single fast-check property test (≥ 100 runs)
 
 ### Property 30: Value text is exact and unambiguous
 
-*For any* runtime value, face text and exact text follow the value table: primitives match Java's representation character for character (including NaN, ±Infinity, −0.0 and escaped chars) and parse back to the same value; Strings ≤ 48 chars are shown quoted and escaped in full, longer ones as the first 48 chars + "…" + "(n chars)" with n the Java length; `null` has no chip or Port; references show runtime type and `#id` with a Port; and the not-recorded marker is never equal to any Java value text, including `null`.
+*For any* captured value, Java literal formatting preserves recorded primitive distinctions, signed zero, escaping, null versus unavailable, reference identity and every captured String character. Recording truncation and face truncation are separate; full original unobserved suffixes are never fabricated. Expanded detail/Copy exposes exact captured content with observation metadata.
 
 **Validates: Requirements 9.9, 9.10, 12.7, 12.8, 12.9, 12.10, 28.9**
 
@@ -1514,9 +1611,9 @@ Each property is implemented by a single fast-check property test (≥ 100 runs)
 
 **Validates: Requirements 9.14, 12.3**
 
-### Property 32: Java source type names
+### Property 32: Canonical JVM identity and separate display type labels
 
-*For any* JVM type descriptor or binary name, the displayed type uses `.` for nested types and bracket form for arrays, converting back yields the original descriptor, and generic arguments appear iff they are recorded.
+*For any* JVM binary name/descriptor, canonical ID/lookup key remains byte-identical. Display may use confirmed nested source spelling and array brackets; no destructive $→. canonical transform or reversible display-codec assumption. Test literal $ identifiers, nested/anonymous classes and arrays; generics appear only if recorded.
 
 **Validates: Requirements 12.2, 33.9**
 
@@ -1540,25 +1637,25 @@ Each property is implemented by a single fast-check property test (≥ 100 runs)
 
 ### Property 36: Call links require call evidence
 
-*For any* Recording and Cursor, the call links are exactly one per caller–callee pair with recorded call evidence whose callee entered at or before the Cursor (truncated to the call-link budget), and no call link exists for pairs related only by observed ancestry.
+*For any* prefix c, call links require recorded caller/callee evidence in normalized [0,c); no inferred adjacency or future call evidence. Actual drawable Ports and mandatory-overflow accounting determine presentation; non-drawable call evidence remains accessible structurally.
 
 **Validates: Requirements 8.11**
 
 ### Property 37: Return propagation
 
-*For any* Recording and Cursor, a return Flow exists iff the return Event is at or before the Cursor and the ExecutionGraph proves its destination, it ends at that destination Port with label "return <value>" (plus an operand line only when operands are recorded), at most the Flow budget of the newest returns are shown; returns without a proven destination show "returned <value>" on the Frame; void returns show "returned" without value or Flow; Invocations without a return Event show neither; and the RETURNS heading is present iff a return Flow is visible.
+*For any* recorded return Event in [0,c), show its graph-proven destination only if the real semantic Port is presented; otherwise expose recorded return/provenance structurally and no substituted curve. Selected/current mandatory return Flows may exceed nominal target with reported overflow; optional newest returns fill remaining capacity. Missing/void returns invent no Flow; RETURNS heading exists iff a return Flow is drawn.
 
 **Validates: Requirements 10.4, 10.5, 10.6, 10.7, 10.8, 10.9, 10.10, 10.11**
 
 ### Property 38: Exception path and panel
 
-*For any* Recording with exceptions and Cursor, the exception path contains the throwing Frame, the Frames unwound at or before the Cursor in recorded order and the catching Frame or uncaught endpoint once recorded; a catch in the throwing Frame yields no exception Flow; the path is cleared at the Event after a catch; missing throw/unwind Events mark the path incomplete and no exception Flow passes through an unrecorded Frame; one red Connector exists per recorded cause link; and the panel shows the first 8 stack lines plus "n more" exactly when more than 8 exist.
+*For any* recorded exception path, show captured origin/unwind/catch facts in prefix order; same-frame catch needs no unwind Flow. Missing path/cause/stack evidence is explicit unavailable/incomplete, never parsed into graph facts. Cause completeness is independent of path completeness. First eight captured stack lines and remaining count are correct when stack text exists. Reveal Source/Select does not seek; explicit Go to Event does not implicitly alter selection unless requested.
 
 **Validates: Requirements 25.1, 25.2, 25.3, 25.5, 25.7, 25.8**
 
 ### Property 39: Array structure and windows
 
-*For any* nested or ragged array structure, each inner array is one tray with its own recorded length and one Connector per referencing outer cell; and *for any* array longer than the cell budget, the window contains the most recently accessed index (0 if none) and the selected index, visible cells are in ascending index order, visible cells plus ellipsis hidden counts equal the length, visible plus ellipsis cells do not exceed the budget, the tray anchor is unchanged, and array Flows whose endpoint is hidden attach to the covering ellipsis cell.
+*For any* array window, semantic array/index IDs survive window changes while only Presented_Slot mappings may change. Include selected/focused/active indices with reported mandatory overflow, ascend visible semantic indices, and account visible/hidden indices exactly. Picking rejects stale window revisions. Hidden endpoints have no curve to ellipsis; Reveal Index establishes a true Port. Sparse unknown values remain unavailable; no eager length-sized array allocation.
 
 **Validates: Requirements 14.6, 14.7, 14.10**
 
@@ -1570,37 +1667,37 @@ Each property is implemented by a single fast-check property test (≥ 100 runs)
 
 ### Property 41: Flows are ExecutionGraph edges
 
-*For any* Recording and Cursor, every Flow corresponds to exactly one ExecutionGraph edge with a stable id across Cursors, every evidence Event is at or before the Cursor, both endpoints are present in the SceneModel (otherwise no Flow), endpoints are unchanged by renaming variables or moving anchors, and stdin/stdout Flows and the stdin endpoint's consumed text come only from consumed-input and output edges, so unconsumed input changes nothing.
+*For any* drawable Flow, exactly one preserved graph edge supplies stable edge ID and evidence seq < c; endpoints resolve by semantic IDs and actual presented Ports. No endpoints are inferred by variable name/proximity. Non-drawable graph edges remain structured provenance. Input consumption/output curves require captured evidence; unconsumed submission changes no World fact.
 
 **Validates: Requirements 17.1, 17.3, 17.4, 17.5, 17.7, 26.11, 26.12, 26.13**
 
 ### Property 42: Flow priority under budget
 
-*For any* eligible Flow set, Selection, Focus target and Cursor Event, the presented Flows are the first `budget` Flows in tier order (selected/attached to Selection, attached to Focus target, evidence includes Cursor Event, others), each tier ordered by latest evidence sequence descending.
+*For any* drawable Flow set, mandatory correctness/Selection/Focus/current-evidence Flows outrank optional context. Effective limit is max(nominal B, mandatory M), with deterministic overflow reasons. Optional latest-evidence/edge-ID order fills remaining nominal capacity; residual bundle and non-drawable counts are distinct and exact.
 
 **Validates: Requirements 17.9**
 
 ### Property 43: No recorded provenance
 
-*For any* selected value, the Inspector states "No recorded provenance" iff no ExecutionGraph edge with all evidence at or before the Cursor has that value as source or destination.
+*For any* value/slot, "No recorded provenance" holds iff the complete prefix-filtered graph query has no supported evidence for it. Empty drawableFlowsOf is insufficient. Include non-drawable COMPUTE/OBSERVE/file and retired/hidden endpoint evidence structurally with captured IDs and reasons, without a forced spatial attachment.
 
 **Validates: Requirements 17.6**
 
 ### Property 44: Budgets and exactly-once accounting
 
-*For any* SceneModel, Selection, Focus, Trace scope and Detail_Level, every plan category count is at most its Label_Budget; detailed + quiet + clustered equals the number of SceneModel entities; detailed faces follow the 11.10 priority order; individually drawn Connectors and Flows plus the counts of all bundles equal the candidate counts exactly (including Trace All and FAR inter-cluster Connectors); the live depth cluster label shows the exact count and the most frequent method (ties → innermost); and cluster labels read `<key value> ×<count>`.
+*For any* plan and mandatory set, detailed count ≤ max(nominal B, mandatory M); M > B admits no optional detail and reports overflow. Every semantic entity is counted once as detailed/quiet/residual cluster member; drawable individual/bundle counts equal eligible candidates exactly. Test deep stack with distinct historical Selection/Focus, many direct references and endpoint retirement.
 
 **Validates: Requirements 8.14, 11.10, 11.11, 13.7, 16.10, 21.4, 22.3, 22.4, 22.8, 22.9**
 
 ### Property 45: Cluster stability
 
-*For any* SceneModel, interaction state and two camera poses or Detail_Levels, every cluster's member set is identical; each cluster uses exactly one key and its count equals its present unpinned members exactly; cluster identity and anchor are the same at every Cursor and a zero-member cluster yields no rendered element; library/JDK entities are collapsed at FAR and MEDIUM unless pinned or referenced by a pinned Frame row or pinned project field; and planning never changes RuntimeState or ExecutionGraph.
+*For any* fixed prefix/role state, canonical cluster-key identity/anchor/membership is camera-independent. Residual members exclude individually presented entities. Prefix, lifetime, scope, replacement and live/history changes truthfully update membership in both directions; empty clusters keep identity/anchor but render no geometry.
 
 **Validates: Requirements 22.10, 22.12, 22.13, 22.14, 22.15**
 
 ### Property 46: Detail_Level thresholds and hysteresis
 
-*For any* current level and representative height, `nextDetailLevel` returns CLOSE at ≥ 0.16 H, FAR at ≤ 0.05 H, MEDIUM between, leaves CLOSE only below 0.136 H and FAR only above 0.0575 H, keeps the level when no representative exists, and any oscillation inside a hysteresis band produces zero level changes.
+*For any* fixed canonical catalog/pose/prefix revision, representative measurement is independent of planner output, quality and prior Detail_Level. Existing thresholds and 15% hysteresis apply; fixed inputs converge without toggling, and oscillation inside a hysteresis band causes zero changes.
 
 **Validates: Requirements 22.1, 22.2**
 
@@ -1624,7 +1721,7 @@ Each property is implemented by a single fast-check property test (≥ 100 runs)
 
 ### Property 50: Inspector completeness
 
-*For any* selectable item and Cursor, the Inspector model lists every field, parameter, local, static, cell, element, evidence Event or member with exact values, its inbound-reference count equals its entry count, unavailable actions are disabled with a reason, an absent item yields "Not present at this point in time", and the chosen side is the viewport half not containing the item's projected centre and does not change under camera-only changes.
+*For any* selected entity, Inspector exposes all captured values/references with observation and nullable evidence metadata. Missing large-array indices are lazy unavailable rows; collection previews stay partial. "No recorded provenance" uses complete graph query, not drawable flows. Full captured text is reachable in expanded detail; no complete original unrecorded value is claimed.
 
 **Validates: Requirements 28.1, 28.2, 28.3, 28.4, 28.5, 28.6, 28.10**
 
@@ -1666,19 +1763,19 @@ Each property is implemented by a single fast-check property test (≥ 100 runs)
 
 ### Property 57: Milestone labelling and timeline text
 
-*For any* Recording, Cursor and track width, the labelled milestones number at most 12 (6 in SHORT), always include the current milestone, are identical for the same Cursor and width, and are drawn from milestone Events only; the caption, `t =` readout and slider `aria-valuenow`/`aria-valuemax`/`aria-valuetext` equal the Cursor ordinal, Event count, Event sequence and Event label.
+*For any* Recording/c, timeline shows c/N, slider [0,N], normalized seq of Events[c−1] only when c > 0. c = 0 says Before execution without seq. Milestones are recorded-only, bounded and deterministic. Partial boundary/Return to Live uses semantic N(R), not raw lastRecordedSeq.
 
 **Validates: Requirements 23.3, 23.4, 23.11, 30.3**
 
 ### Property 58: Console truth and input
 
-*For any* stdout/stderr/stdin sequence, the Console line list concatenates to exactly the recorded text in delivered order with stdin lines marked; submitting text sends exactly that text plus one newline (only a newline when empty); and the stdout endpoint's count equals the number of lines at the Cursor (a final unterminated line counts once) with a preview of the first 60 characters of the last line.
+*For any* captured channel/input streams, preserve exact text and known within-stream order; combined order requires real ordered event evidence, otherwise cross-channel order is labelled unknown. Equal repeated text is not a dedup key. Submit exact text plus newline; consumption requires captured evidence. Test alive partial recording with input available and post-stop pipe output.
 
 **Validates: Requirements 26.1, 26.6, 26.10**
 
 ### Property 59: Virtualized lists
 
-*For any* list length, row height, viewport and scroll offset, the virtual list renders at most the visible rows plus 200 overscan rows, in source order, and every index is reachable by some scroll offset with the heading showing the total count.
+*For any* list/viewport, Inspector mounts ≤ 200 summary rows TOTAL with ≤ 20 overscan; Console mounts visible rows plus ≤ 200 offscreen rows. Every entry is reachable. Expanded wrapping uses separate variable-height/detail view, not fixed-row assumptions. Total semantic size and observed count stay distinct.
 
 **Validates: Requirements 26.3, 28.8**
 
@@ -1735,7 +1832,7 @@ Errors never fabricate runtime truth. Each failure keeps the last valid committe
 | Launch failure / missing main | `failureKind: 'launch'` or server diagnostic | FAILED(launch); "No runnable main method · <class>" (or "No main class is configured") with an action opening the launch configuration (27.9) |
 | Instrumentation failure | `failureKind: 'capture'` / `terminalStatus: 'instrumentation_failed'` | FAILED(instrumentation); Header shows the reason; "Run Without Visualization" action (27.8) |
 | Uncaught exception | `terminalStatus: 'program_crashed'` | FAILED(uncaught-exception); Forensic_State at the final Event; Errors drawer populated (25) |
-| Partial recording / unsupported thread | `RecordingStatus.state !== 'FULL'` | PARTIAL_RECORDING; Header "Partial recording · <reason>"; Time_Dock boundary marker; Cursor clamped; Console stays complete; process keeps running (27.11–27.13) |
+| Partial recording / unsupported thread | `RecordingStatus.state !== 'FULL'` | PARTIAL_RECORDING; Header "Partial recording · <reason>"; Time_Dock boundary marker; Cursor clamped; Console preserves captured text/order/archive qualifications; process keeps running (27.11–27.13) |
 | Trace gap or invalid event | `TraceGapError`, validator rejection in `ExecutionHistory.append` | Preserved behaviour: the valid prefix is kept and the session reports a capture failure; projection never reads past the accepted prefix |
 | Projection invariant violation (bug) | assertion in `sceneProjector`/`presentationPlanner` (dev and QA builds throw; production logs once) | Render the last good plan; surface "World presentation error · details in console" in the Dock status; never patch data |
 | Filesystem error | bridge rejection | Error toast naming operation, path and OS reason; tree, tabs and drafts unchanged; failed saves keep the dirty dot (4.14, 5.8, 27.14) |
@@ -1806,9 +1903,9 @@ The rebuild proceeds behind the preserved substrate and command contracts, repla
 | Text legibility through glass | text always on opaque face plates in front of bodies; SDF text; 11 px cull; QA contrast sampling in both tiers |
 | Signature-based Frame heights leave unused rows or overflow | allowance of 3 local rows, "+N more" overflow, full rows in the Inspector; see C1 |
 | Draw-call growth from per-entity meshes | instancing per material role, `BatchedText`, merged line batches; QA asserts ≤ 250 |
-| Seek budget with richer projection | WeakMap leaf caches, lazy secondary indexes, binary-search cluster counts, FlowCatalog prefix indexes; perf gate per slice |
+| Seek budget with richer projection | WeakMap leaf caches, lazy secondary indexes, prefix- and lifetime-aware cluster counts, FlowCatalog prefix indexes; perf gate per slice |
 | Monaco under the floating panel | flat DOM panel, `layout()` per animation frame, view-state restore |
-| IdeWorkspace decomposition regressions | command service unchanged; existing 27 Playwright specs and command tests run per slice |
+| IdeWorkspace decomposition regressions | operational adapters preserve transaction/source-proof behavior while routing is adapted; affected command/browser regressions run at integration boundaries |
 | Presentation goldens tied to old layouts | deliberate regeneration with review records; Semantic_Goldens byte-identical gate |
 | Visual convergence stalls | harness with measured rectangles and one largest-discrepancy fix per iteration; deviations documented with reasons |
 | Hidden demo-specific logic | 33.6 scan in CI; curated fixtures confined to `src/examples/` |
@@ -1819,12 +1916,12 @@ The design resolves the following tensions in `requirements.md`. Each resolution
 
 | # | Requirements | Tension | Design resolution |
 | --- | --- | --- | --- |
-| C1 | 8.5, 8.7, 8.8 vs 9.13 | A fixed 0.10 u caller–callee gap with call-tree-only, never-moving anchors requires a Frame height fixed at entry, but locals arrive later and 9.13 asks for up to 10 visible rows | Height = header + padding + 0.72 × clamp(receiver + parameters + 3, 2, 11). CLOSE shows up to min(10, reserved rows) with "+N more" for the rest; the Inspector shows every row. Recommended amendment to 9.13: "up to 10 rows or the Frame's reserved row capacity, whichever is smaller" |
+| C1 | 8.5, 8.7, 8.8 vs 9.13 | Fixed frame height versus later locals | Reserve entry capacity; CLOSE presents min(10, reserved capacity) with one overflow summary replacing the last available row when needed. Inspector exposes every recorded row; never increase frame height |
 | C2 | 19.5 | 25–35 % W and 38–52 % H cannot both hold for faces whose aspect falls outside the ratio of those ranges (tall objects, NARROW viewports) | The solver meets both when feasible; otherwise it meets the height range and brings width as close to its range as possible. QA checks 19.5 only for feasible targets |
 | C3 | 1.5 vs 6.11 | Run must be disabled during a live session, yet invoking Run during a live session must offer a confirmed restart | `execution.run` is disabled with "A session is already active"; a separate Restart command (Header, palette) implements the confirmation and stop-then-run flow |
 | C4 | 18.7 vs 18.8–18.9 | Treating every live batch as an interruption would prevent any queued transition | User-initiated Cursor changes interrupt; LIVE batches enqueue under the 8-pending and 750 ms rules |
-| C5 | 1.10 vs 1.14 | Resuming the debugger while Recording_Status is not FULL | The pure derivation returns PARTIAL_RECORDING (1.14 retention) rather than RUNNING |
-| C6 | 8.14, 22.9, 22.13, 22.15 | Budget-dependent clusters conflict with membership that must not change with Detail_Level | Stable cluster hierarchy, a camera-independent pinned set and all-or-nothing expansion (component 10.2); the 22.15 exception set uses pinned entities |
+| C5 | 1.10 vs 1.14 | Pause/input wait and recording status coexist | Resume recomputes orthogonal process/wait display; partial metadata/badge persists and never enables a second Run |
+| C6 | 8.14, 22.9, 22.13, 22.15 | Canonical membership versus residual presentation | Stable canonical keys/anchors; current prefix/lifetimes update membership; residual counts exclude detailed/quiet identities. Mandatory overflow is explicit |
 | C7 | 2.11 vs 30.9 | The bottom band is 16–24 px but targets must be ≥ 24 px | Toggle hit areas are 24 px tall and extend into the Time_Dock's control-free bottom padding |
 | C8 | 26.9 | "At the World edge" | The I/O rail sits on the top edge of the corridor between Stack and Heap, outside every region's bounds |
 | C9 | 8.6 | "X and Y position" of the previous sibling when sibling heights differ | Siblings share x and top edge |

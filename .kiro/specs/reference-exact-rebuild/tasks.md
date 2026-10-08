@@ -2,17 +2,65 @@
 
 ## Overview
 
-This plan rebuilds GGJavaEZ as one production application, a persistent full-bleed 3D runtime World with a complete Java IDE floating over it. It implements `requirements.md` using the architecture in `design.md` and the evidence in `audit.md`. The plan is organised as thirteen internal stages, R0 to R12. Each stage ends with a checkpoint. The lead runs those checkpoints and makes the intermediate commits. They are not approval gates.
+This plan rebuilds GGJavaEZ as one production application, a persistent full-bleed 3D runtime World with a complete Java IDE floating over it. It implements `requirements.md` using the architecture in `design.md` and the evidence in `audit.md`. The implementation uses seven coherent milestones A–G below. The thirteen legacy R0–R12 parent groups remain as an acceptance checklist, feature inventory and dependency reference; their task IDs and completed states are preserved. They are not a runner schedule. The lead owns shared contracts, integration and milestone acceptance.
 
 Ground rules for every task:
 
 - The semantic substrate stays as it is (audit §5): ExecutionSession, the server, instrumentation, normalization and validation, RuntimeState, ExecutionGraph, history and seek, LIVE/HISTORY, partial recording, debug semantics, JDT, the filesystem and build model, and Console truth. Only narrow bug fixes are allowed there. Semantic_Goldens must stay byte-identical (33.7).
 - Renderer, layout, camera and animation data never enter `RuntimeState` or `ExecutionGraph` (33.8).
-- The app must typecheck and build after every task. Old and new code may coexist only until the explicit R2 switch-over and deletion task (3.13) and the explicit R12 deletion tasks (13.1–13.2). The interim adapters created in R2 have named replacement tasks.
+- Validation uses the local, integration, milestone and final gates below; a full build or browser run is not required after every small task. Old and new code may coexist only until the explicit R2 switch-over and deletion task (3.13) and the explicit R12 deletion tasks (13.1–13.2). The interim adapters created in R2 have named replacement tasks.
 - Tests are never weakened. Weakening means relaxing a tolerance, broadening an expected value, or skipping or disabling an assertion. When a deleted surface forces an assertion to move, the move goes into the migration ledger with the old locator, the new locator and the unchanged expected value. When a Presentation_Golden is regenerated, it gets a review record (34.12).
 - Real-JVM and browser validation always use real Java programs: fixtures under `fixtures/` (including `fixtures/torture-v12-p5_5`), `tests/torture-v12-p5_5`, and the new generic programs in `fixtures/reference-exact/`. Generic code must never branch on demo or fixture names (33.6).
 - Implementation language: TypeScript/React (R3F, three 0.186.1, drei, zustand, Monaco), with Node `.mjs` for server-side and QA scripts and Java for fixture programs.
 - Property tests use `fast-check` 4.10.2 with at least 100 runs each. Each test carries the tag `// Feature: reference-exact-rebuild, Property <n>: <title>` and lives next to its module as `*.property.test.ts`.
+
+Normalization boundary tests must cover existing finish() control emissions: CAPTURE_STOP, PROGRAM_END and PROGRAM_ABORT can extend the normalized prefix at an unchanged Java-probe raw boundary. Key the map by raw boundary plus publication/terminal revision, include real control Events, and do not invent later Java facts.
+
+## Implementation milestones and ownership
+
+| Milestone | Owned checklist groups/tasks | Deliverable and dependency boundary |
+| --- | --- | --- |
+| A — Shell and application behavior | 1–3; command ownership in 10.4; initial 11.1/11.2 QA scaffolding | Runtime-first shell, source integration, operational workspace ownership, orthogonal command inputs and retained-world identity. Establish QA bridge, helpers, capture/readiness protocol, test migration ledger and initial generic hero program before shell cutover. |
+| B — Stack/Heap/world reconstruction | 4; world capture/projection extensions of 11.2 | Stable genuine XYZ solids, anchors, semantic projection, evidence, drawable flows and shared primitives. Extend early QA with projected bounds, plan accounting, deterministic state/pose capture and reference comparison; prove and polish the hero before later structures. Depends on A contracts and shell host. |
+| C — Focus/Home/Trace/time/debug/I/O | 5; 6 except 6.7 and exception-specific portions of 6.9 | User-owned camera, selection/Inspector, semantic prefix playback, source synchronization, live debugger and truthful Console/input. Depends on B world identity; complete hero interaction proof before D. |
+| D — Arrays/collections/recursion/exceptions | 7; 6.7 and exception-specific portions of 6.9 | Extend the proven shared world with canonical-index/presented-slot mapping, bounded observations, returns, recursion and evidence-qualified Error Explorer. Depends on B/C. |
+| E — Cinematic rendering | 8 | Shared materials, lighting/environment, selective bloom, readable Focus, custom line alpha and text readiness/disposal. Depends on B–D primitives and C camera ownership. |
+| F — Zoom/scaling/responsive/performance | 9–10 except A-owned 10.4 | Stable semantic zoom over the full canonical population, mandatory overflow, truthful clusters, scalable layout/text, responsive/accessibility behavior and measured costs. Depends on B–E; resolve concrete hot paths during earlier milestones too. |
+| G — Convergence/torture/cleanup/final validation | 11–13, completing the A/B-owned scaffolding | All Comparable_States, evidence-driven visual polish, torture/regression/performance, deletion of proven superseded UI, documentation and final exhaustive gate. Depends on A–F. Task 13.8 remains a future lead release action. |
+
+Early QA work in 3.1, 3.8, 4.11, 4.14 and the scaffolding portions of 11.1–11.2 belongs explicitly to A/B. Do not defer observation, capture or comparison until G. Keep 11.1/11.2 unchecked until their full program/state matrix is complete. A owns the command registry foundation in 10.4; complete its later-feature enablement/binding coverage alongside C–F and leave 10.4 unchecked until that coverage passes. Review each milestone's overview, event and inspected captures at original resolution and fix visible drift before advancing.
+
+The current Phase 5/5.5 visible architecture is not sacred: reconstruct the whole application and behaviors implied by the reference suite, which is the production visual target. Source, Stack/Heap, navigation, time, Debug, I/O, specialized structures and cinematic rendering must converge as one product. Remove superseded visible UI once its replacement is proven. Arbitrary Java facts remain truthful; reference imagery is never fake runtime content.
+
+### Serialization and handoff safeguards
+
+- The lead locks the corrected requirements/design contracts before implementation fan-out. These tasks apply the sixteen authorized corrections without changing the runtime schema, recorder semantics, reducer or ExecutionGraph contracts.
+- Assign explicit module/file ownership. Parallel work is allowed only after dependencies are available and owned files are disjoint. Serialize writers to `Shell.tsx`, shared stores/contracts/tokens, `sceneProjector.ts`, `presentationPlanner.ts`, `CameraRig.tsx`, command registry, QA bridge and common browser helpers; the lead integrates shared files. Helpers may evolve through this owner, with consumer reconciliation.
+- Use one lead-reserved dev pair/bridge and serialize real-JVM, debugger, browser, soak and performance workloads. Neither shared hardware nor the same local server is a parallel test boundary.
+- Each handoff reports changed files, decisions, assumptions, checks, limitations and reconciliation needs. The lead reviews the diff and evidence before integration. Shared contract changes require lead reconciliation across consumers.
+
+### Validation cadence
+
+- **Local fast checks:** relevant module unit/property checks, changed-source lint/type diagnostics and static/import checks. Preserve all detailed test inventory below, but batch checks for a coherent change; named browser checks run at the next relevant integration boundary. Local verification never replaces a required later gate.
+- **Integration gates:** when stores, shell routes, source adapters, world projection, camera, timeline/debug/I/O or renderer pipelines connect, run targeted integration checks and affected browser scenarios plus typecheck/build when imports or bundling change. Run real JVM only for a concrete bridge/semantic risk, in the serialized slot with the flags and count gate in 12.2.
+- **Milestone full gates:** once each A–F milestone is integrated, run typecheck, lint, build, the full configured unit/property/regression suite, all browser scenarios affected by that milestone, and its required visual, motion, semantic or performance gates. Opt-in suites must report real execution separately; `npm test` alone does not prove them. A single full gate can satisfy the legacy checkpoints within that milestone; broaden only for failures, new changes or unresolved risk.
+- **Final exhaustive gate:** 13.7 runs on the final cleaned tree and includes every static, unit, acceptance, real-JVM, torture, full-browser, visual-convergence, performance and integrity gate. Record commands, durations, exit codes, expected/actual executed counts and skips. No skipped real-JVM suite counts as passing.
+- Convergence is evidence-driven: capture and measure the initial state; if it meets the target, accept that evidence. Otherwise fix the largest discrepancy and recapture until it meets acceptance or a necessary deviation is explicitly reviewed. There is no minimum cycle count. Recheck impacted states after shared changes and the full state/viewport matrix at G.
+
+### Corrected task contract interpretation
+
+Apply these rules to all task descriptions, examples, property claims and linked requirement/design references; the lead integrates the corresponding documents.
+
+1. **Raw versus semantic sequencing (2.1, 2.3, 3.1, 4.5, 6.1–6.4, 6.8):** raw recorder `seq`, normalized event ordinal/ID and history cursor are distinct. Cursor `c` is the applied prefix `events[0:c]`, with `c ∈ [0,N]` and current Event `events[c−1]` only for `c>0`. Normalized Event seq is zero-based: an Event at ordinal `i` is included iff `i<c`. One-based display ordinals are presentation labels only and must not replace normalized evidence seq. Convert evidence explicitly; never compare raw `seq` directly to `c`. For accepted raw exclusive boundary `r`, map to the count of completed semantic emissions from the preserved normalizer for that accepted prefix and its prefix revision (including validated terminal emissions when published). One raw event may emit zero, one or many semantic events. Publish the mapping only after normalization completes; buffered/incomplete emissions do not advance it. Partial bounds, LIVE head, replay, seek, timeline labels and Return to Live use that semantic prefix, including 0. Keep raw boundary metadata for diagnostics only: preserved `lastRecordedSeq` is an inclusive last accepted raw seq (or null), translated by the adapter to the corresponding accepted exclusive boundary before normalization-prefix lookup, never copied into c.
+2. **Orthogonal inputs (2.3, 2.5, 2.7, 6.5, 6.6, 6.8, 12.5):** process liveness, recording status/completeness, debugger pause, input wait/availability, build/instrumentation state and visualization Lens/Cursor are independent. Friendly labels/overlays compose these facts; command availability uses the actual dimensions. An alive JVM may have stopped recording and await input simultaneously. Disable second Run/Debug-start while build/start is active or process liveness is alive/unknown pending bridge reconciliation; Stop/input/debug controls follow their own state. A pause is visible before the first semantic Event; partial recording never implies process death.
+3. **Retained execution identity (2.7, 2.9, 4.14, 6.8, 12.5):** Prior_World retains session/execution identity, trace/history and prefix revision, semantic Cursor, layout/anchors, Lens/semantic zoom, Selection, valid Focus, source bindings and Console association as one coherent world. Failed-build diagnostics belong to the new attempt. Key history subscriptions, projection caches and incremental publication by execution/session identity and prefix revision; ignore stale callbacks and retire old subscriptions at replacement.
+4. **Observation and exception evidence (4.3–4.5, 5.5–5.6, 6.7, 7.1–7.2):** distinguish OBSERVED, TRUNCATED, UNAVAILABLE and PARTIALLY OBSERVED content. Exact mode means exact recorded content, with recording bounds and omission markers. Late object observations do not prove allocation defaults; unobserved cells are unknown; truncated Strings and collection previews do not recover unrecorded originals/history. Distinguish observed, derived and unavailable provenance/exception evidence. Complete cause chains, stack text and mutation origins are shown only when recorded. Selection-only Error Explorer actions preserve Cursor; separate explicit timeline actions seek to a semantic prefix.
+5. **Canonical identity and presented geometry (4.1, 4.3–4.4, 4.11, 7.1, 9.2):** preserve binary names/descriptors (including `$`) as canonical Java/JVM identity, with separate display labels; do not derive identity by reversing formatted text. Arrays keep semantic array/index IDs while large arrays map them into temporary presented slots. Picking, Focus, connectors, provenance and Inspector resolve the mapping to the canonical index. Stable tray/entity anchors do not promise a unique permanent world coordinate for every virtualized cell.
+6. **Budgets and zoom (4.9, 5.3, 7.1–7.3, 9.1–9.4):** nominal budgets are presentation targets. Deduplicate mandatory entities, ordered correctness-required (including breakpoint/error and required direct-reference endpoints) > selected/focused > current/relevant > cluster representatives > background; break ties with stable canonical IDs/first-record order. Retain mandatory entities even when they alone exceed a target. For target `B` and mandatory count `M`, optional capacity is `max(0,B−M)` and mandatory overflow is `max(0,M−B)`; report both and suppress optional work first. Never drop required current/selected information to hit a target. Derive zoom representatives from the full canonical population/bounds and camera, independent of planner output, use separate entry/exit thresholds and stable membership, and update cluster counts by current role/lifetime/prefix rather than historical append count alone.
+7. **Provenance versus SceneFlow (4.6, 4.8, 5.5, 6.3, 7.1–7.3):** provenance queries index recorded graph evidence independently of drawable-flow filtering. `recordedProvenanceOf` returns evidence in the applied semantic prefix even if a SceneFlow has no drawable endpoint. Index locals/parameters by frame+slot, fields by object+declaring field, static fields by canonical class+field, array cells by array+index, collection semantic entries by recorded entry identity/order at the prefix, I/O by recorded stream/operation, exceptions by recorded target/frame and returns by proven destination. Resolve through preserved graph IDs; absent evidence is explicitly unavailable, never invented from matching values. Drawable queries require valid presented endpoint mappings; omitted/undrawable evidence remains visible structurally/textually in Inspector/Trace. “No recorded provenance” means no recorded evidence, not no drawable line.
+8. **Rendering/text guarantees (4.12–4.13, 8.1–8.7, 11.2):** curve-varying opacity requires custom alpha attributes/shader or bounded opacity batches, not ordinary line material assumptions. Emissive-only bloom uses selective layers/masks and composition; a threshold alone does not guarantee exclusion. Protect the whole tilted Focus face/text with target-aware depth/plane or masking/compositing, or disable DOF if readability suffers. Group batched text by compatible font/weight/material/opacity (or supported custom instance opacity), prewarm needed fonts/glyphs, await glyph/layout/shader/effect readiness before captures, and dispose batch members, cache references, passes, targets and materials on replacement/context recovery. Effects fall back gracefully while semantic geometry/text remain readable.
+9. **Scalable layout and content (4.1, 4.9, 5.5, 8.3, 10.1):** region bands and dimensions are hero/default composition targets, not universal limits on arbitrarily wide/tall worlds. Reserve scalable non-overlapping regions and viewport-aware headings without moving established entity anchors. Fixed-height virtual rows contain bounded previews; expansion/detail mode holds longer recorded text. Inspector mounts at most 200 summary rows TOTAL including at most 20 overscan; Console mounts visible rows plus at most 200 offscreen overscan total, not per side. Expanded wrapped text uses a separate detail view. Shell text is ≥12 CSS px; world text follows its recorded token/visibility threshold, with required labels available through close detail/Inspector when too small. Never wrap unlimited text into a fixed row or shrink mandatory text indefinitely.
+10. **References (13.3, 13.6, 13.8):** `best.png` is tracked and preserved unchanged; exactly five root `ChatGPT Image*.png` files are untracked user-owned references, preserved byte-for-byte and never added. Preserve tracked twins too. This checklist describes future product implementation; the current spec-only correction pass does not authorize executing these implementation tasks. Its explicit documentation commit/push is separate.
 
 ## Tasks
 
@@ -37,7 +85,7 @@ Ground rules for every task:
       - `javaValue`, including NaN, ±Infinity, −0.0, and surrogate and control chars;
       - `timelineActions`, `orbitPose`, `callTree`, `allocationSequence`;
       - `recording`: raw Recorder streams from `traceGen.ts`, normalized through the preserved normalizer;
-      - `cursorIn(recording)` and `selectionIn(scene)`.
+      - `cursorIn(recording)` including every applied-prefix boundary 0 through N, and `selectionIn(scene)`. Include raw events with multiple normalized emissions and incomplete emissions in boundary examples.
     - Extend `src/testing/traceGen.ts` with optional shapes, using generic names only and no fixture or demo names:
       - primitive, reference, nested and ragged arrays;
       - summarized collections;
@@ -46,7 +94,7 @@ Ground rules for every task:
       - consumed stdin;
       - partial stops (STOPPED_LIMIT, STOPPED_UNSUPPORTED, STOPPED_ERROR).
     - Add `src/testing/arbitraries.test.ts`: every generated Recording must pass the preserved normalizer and validators (`valueValidation`, `executionFactValidation`).
-    - Done when `npm run typecheck`, `npm run lint` and `npm test` pass and no existing test changed.
+    - Done when relevant local checks pass and no existing test changed.
     - _Requirements: 33.7, 34.12_
     - _Design: Key decisions D13; Testing Strategy › Property-based tests_
 
@@ -65,22 +113,22 @@ Ground rules for every task:
       - `tokens.ts` equals the JSON;
       - every UI text and glass token pair has contrast ≥ 4.5:1 composited over both background extremes;
       - the budgets equal design §10.1.
-    - Done when typecheck, lint, build and `npm test` pass and `src/contracts/runtime.ts` and `executionGraph.ts` are unchanged.
+    - Done when relevant local checks and the next affected integration gate pass and `src/contracts/runtime.ts` and `executionGraph.ts` are unchanged.
     - _Requirements: 2.19, 29.1, 29.2, 29.16, 31.10, 33.8_
     - _Design: Design tokens v4; SceneModel v2; Interaction and camera models; Migration and Deletion Plan step 1_
 
   - [ ] 2.3 Implement `deriveAppState` and command availability
     - Create `src/state/appState.ts` with the types `ExecutionState`, `Overlay`, `FailureKind`, `Termination`, `WorldOrigin`, `AppStateInputs` and `AppState`, plus a pure `deriveAppState`. It must implement:
-      - the 13-row precedence table;
+      - the corrected display-state composition over independent process, recording, debugger, input, build/instrumentation and Lens/Cursor inputs; the legacy precedence table controls labels only;
       - HISTORY and FOCUS overlays, derived only from Cursor/Live_Head and the Focus target, in HISTORY-then-FOCUS order;
       - the failure-kind mapping (`compile` when there is at least 1 compiler error);
       - termination as either an exit with any code or "Stopped by user";
-      - partial retention of reason, budget and lastRecordedSeq;
+      - partial retention of reason, budget and raw boundary metadata separately from the mapped accepted semantic prefix;
       - `worldOrigin`;
       - labels: "Running · History · Focus", "Completed" with the duration to 2 decimals and the exit code or "Stopped by user", "Build failed · n errors", and "Partial recording · <reason>";
       - one distinct icon per Execution_State.
-    - Add `runCommandAvailability(appState, debug)`. While a session is active, Run and Debug-start are disabled with the reason "A session is already active". Step commands are disabled with "Stepping requires a paused debugger" unless paused.
-    - Add `src/state/appState.test.ts` with one example per precedence row and for clarifications C3 and C5.
+    - Add `runCommandAvailability` consuming the orthogonal operational inputs rather than a single display label. While a session is active, Run and Debug-start are disabled with the reason "A session is already active". Step commands are disabled with "Stepping requires a paused debugger" unless paused.
+    - Add `src/state/appState.test.ts` with one example per display row plus simultaneous alive-process/stopped-recording/input-wait, pause-before-first-Event and HISTORY/debug cases; reconcile clarifications C3/C5 with these independent inputs.
     - Done when the module imports no store or view code and the tests pass.
     - _Requirements: 1.1–1.14, 1.19, 1.22, 7.6, 24.4, 27.6, 27.12_
     - _Design: Components §1 Application state; Requirements Clarifications C3, C5_
@@ -109,8 +157,8 @@ Ground rules for every task:
     - _Design: Components §2 Shell composition; §20 Responsive system; Clarification C7_
 
   - [ ] 2.5 Write property tests for AppState and shell geometry
-    - In `src/state/appState.property.test.ts`, use a model-based reference implementation of the precedence table written in the test:
-      - **Property 1: AppState is a well-formed pure function matching the precedence table** — **Validates: Requirements 1.1, 1.4, 1.6–1.14, 1.22, 26.15**
+    - In `src/state/appState.property.test.ts`, use a reference model of independent operational inputs and display composition written in the test:
+      - **Property 1: AppState is a well-formed pure function composing orthogonal inputs** — **Validates: Requirements 1.1, 1.4, 1.6–1.14, 1.22, 26.15**
       - **Property 2: Overlays derive only from Cursor, Lens and Focus** — **Validates: Requirements 1.15, 1.17, 1.18, 1.19, 19.11, 23.6, 24.6**
       - **Property 3: Header label formatting** — **Validates: Requirements 1.3, 24.4, 27.6, 27.12**
       - **Property 4: Session command availability** — **Validates: Requirements 1.5, 7.6**
@@ -123,9 +171,10 @@ Ground rules for every task:
   - [ ] 2.6 Extract the workspace, editor and language stores from IdeWorkspace
     - `src/workspace/workspaceStore.ts`: projects, active project id, workspace generation, file tree, JDK status and the Java project model.
     - `src/workspace/editorStore.ts`: tabs, drafts, closed-draft index, active path, caret and scroll memory, and the recorded-source view. It keeps the preserved draft persistence keys.
-    - `src/workspace/languageStore.ts`: the LanguageClient snapshot and diagnostics.
+    - `src/workspace/languageStore.ts`: the LanguageClient snapshot, diagnostics and JDT document coordination.
+    - Preserve explicit operational owners before deleting IdeWorkspace: workspaceStore/operations own source-proof generations and rename receipts/recovery; editorStore owns dirty draft transitions, historical source bindings and Monaco model lifecycle/retirement; languageStore owns JDT document coordination; debugStore owns breakpoint/source mapping reconciliation; executionStore/launch operations own main and launch target reconciliation. Serialize their transitions through the command host and preserve existing stale-generation guards.
     - `src/ide/IdeWorkspace.tsx` reads and writes these stores instead of its local `useState` hooks, with no behavior change. This is Migration step 2.
-    - Done when typecheck, lint, build and `npm test` pass and these specs pass unchanged: `e2e/ide.spec.ts`, `e2e/workspace-m8.spec.ts`, `e2e/explorer-usability.spec.ts`, `e2e/m11-persistence.spec.ts`.
+    - Done when relevant local checks and the next affected integration gate pass and these specs pass unchanged: `e2e/ide.spec.ts`, `e2e/workspace-m8.spec.ts`, `e2e/explorer-usability.spec.ts`, `e2e/m11-persistence.spec.ts`.
     - _Requirements: 4.12, 4.15, 5.7, 27.15_
     - _Design: Architecture › Store topology; Migration and Deletion Plan step 2_
 
@@ -133,14 +182,14 @@ Ground rules for every task:
     - `src/workspace/executionStore.ts` holds `session`, `ingest`, `world`, `pendingWorld`, the launch configuration and `endedAt`.
       - `WorldSource` origin is one of session, prior or recording.
       - The launch configuration (main class, arguments, working directory) persists under `ggjavaez:launch:<project>`.
-      - It implements Run flow steps 1–8 of design §5: the dirty-file decision through a prompt port, BUILDING, keeping the Prior_World, the swap on the first Event, RUN_ONLY "Console execution", Stop within 2 s, and the user-stop marker.
+      - It implements Run flow steps 1–8 of design §5: the dirty-file decision through a prompt port, build/instrumentation state distinct from process/recording status, keeping the full Prior_World identity, the coherent swap on the first accepted semantic prefix, RUN_ONLY "Console execution", Stop within 2 s, and the user-stop marker.
       - It provides the restart helper: confirm, stop, wait for the terminal phase, then run.
     - `src/workspace/debugStore.ts` holds:
       - the desired Breakpoints per project, under the preserved key `ggjavaez:breakpoints:<project>`;
       - the resolved projection through `projectSessionBreakpoints`;
       - session status, pause and toggle.
     - `IdeWorkspace.tsx` consumes both stores.
-    - Done when typecheck, lint, build and `npm test` pass and these specs pass unchanged: `e2e/real-visualize.spec.ts`, `e2e/debugger-errors.spec.ts`, `e2e/java-project-m9.spec.ts`.
+    - Done when relevant local checks and the next affected integration gate pass and these specs pass unchanged: `e2e/real-visualize.spec.ts`, `e2e/debugger-errors.spec.ts`, `e2e/java-project-m9.spec.ts`.
     - _Requirements: 1.4–1.6, 1.21, 6.1–6.5, 6.10–6.14, 7.1–7.3, 27.7_
     - _Design: Components §5 Execution, Run and Prior_World; §6 Debug presentation; Store topology_
 
@@ -148,7 +197,7 @@ Ground rules for every task:
     - `src/workspace/commandHost.ts` builds the `IdeCommandHost` from the stores: `snapshot()`, `operations`, and `prompts` that resolve through shellStore dialogs. Add `src/workspace/operations/{files,tabs,run,debug,language}.ts`.
     - The `createIdeCommandService` contract is unchanged. `IdeWorkspace.tsx` drops its inline host.
     - Preserve these semantics:
-      - Save All continues past a failing file;
+      - Current Save All in `IdeWorkspace.tsx` sequentially saves open tabs, then persisted closed drafts, and aborts at the first failure. Implement the deliberate improvement required by corrected Requirement 5.8: attempt the remaining selected files and report per-file outcomes, preserving revision conflicts, successful saves, failing drafts and source-proof barriers. Save All and Run starts nothing unless every required save succeeds;
       - filesystem errors name the operation, the path and the OS reason, and leave the tree, tabs and drafts unchanged;
       - renames use the preserved `pathChanges.ts` transitions;
       - the delete dialog lists the affected dirty files.
@@ -160,20 +209,20 @@ Ground rules for every task:
     - `src/workspace/editorStore.property.test.ts`: **Property 13: Tabs are unique and dirty dots are exact** — **Validates: Requirements 4.7, 4.15, 5.2**
     - `src/workspace/operations/files.property.test.ts`:
       - **Property 14: Workspace path transitions** — **Validates: Requirements 4.9, 4.12**
-      - **Property 17: Save All with partial failure** — **Validates: Requirements 5.8**
+      - **Property 17: Save All deliberate partial-failure improvement and draft retention** — **Validates: Requirements 5.8**. Assert remaining selected files are attempted, every outcome is reported, failing drafts/revisions survive and Save All and Run launches only when every required save succeeds; characterize first-failure abort as the prior behavior, not the rebuilt target.
     - `src/workspace/debugStore.property.test.ts`: **Property 18: Breakpoint toggle is an involution** — **Validates: Requirements 5.11, 7.3**
     - `src/workspace/executionStore.property.test.ts`: **Property 19: Launch configuration round trip** — **Validates: Requirements 6.14**
     - Add example tests in `src/workspace/executionStore.test.ts` with mocked bridges:
       - dirty-run Cancel and save failure start nothing;
-      - BUILDING lasts until the first Event;
-      - a failed build keeps the Prior_World labelled "Previous run · source changed";
+      - build/instrumentation progress and waiting-for-first-observation remain distinct from actual debugger/process/input state;
+      - a failed build keeps the full Prior_World identity described above, labelled "Previous run · source changed", including source/Console association and session-keyed subscriptions;
       - RUN_ONLY execution;
       - Stop produces "Stopped by user";
       - Restart, both declined and accepted.
     - _Requirements: 1.21, 6.1, 6.2, 6.4, 6.5, 6.11, 6.12_
 
   - [ ] 2.10 Checkpoint — R1
-    - Ensure that `npm run typecheck`, `npm run lint`, `npm run build`, `npm test` and the IDE Playwright specs named in 2.6–2.8 all pass. Resolve open questions from the spec and the repository. Ask the user only if a blocker cannot be resolved that way.
+    - Integration A: check generators, tokens, stores, operational ownership and command/state behavior locally; run the affected IDE integration scenarios from 2.6–2.8 at the store boundary. The full A gate is 3.14.
 
 - [ ] 3. R2 — Source and runtime composition
   - [ ] 3.1 Build the Shell root, layer stack, stylesheet, interim World host, timeline store and QA bridge core
@@ -186,7 +235,7 @@ Ground rules for every task:
     - `src/shell/world/InterimWorld.tsx` lifts the legacy runtime pipeline out of `src/app/App.tsx`: legacy layout, `buildSceneModel`, Spatial `RuntimeCanvas`, legacy navigation, and the legacy Inspector content in a glass card at Inspector geometry.
       - It renders full-bleed at layer 0, without App chrome: no topbar, example picker, Classic/Spatial selector, `world-controls`, `world-access`, Guided toggle or event chips.
       - It is temporary and replaced in 5.7.
-    - `src/timeline/timelineStore.ts` is minimal for now. It holds cursor, liveHead, lens, playing and speed over the existing pure `src/playback/playbackState.ts`. It is the single cursor source shared by Shell surfaces and the interim World, and is completed in 6.1.
+    - `src/timeline/timelineStore.ts` is minimal for now. It holds cursor, liveHead, lens, playing and speed over the existing pure `src/playback/playbackState.ts`. It is the single semantic applied-prefix cursor source shared by Shell surfaces and the interim World, including valid cursor 0; raw accepted boundaries map through completed normalizer emissions. It is completed in 6.1.
     - `src/qa/qaBridge.ts` sets `window.__ggjavaezQA` only with `?qa=1` in dev or preview builds, or with `VITE_QA=1`. It exposes `appState()`, `cursor()`, `shellRects()`, `cameraPose()`, `select(id)` and `scene()`.
       - `scene()` returns semantic facts of the presented World (frames, objects, classes, cells, references), keyed by semantic frame, object, slot and `ref:<slotId>` ids, with status, values and selection.
       - It is compiled out of production otherwise.
@@ -281,7 +330,7 @@ Ground rules for every task:
       - the caption "n / N" plus "Executing: <Event summary>", taken from the Recording;
       - a track region at 0.15–0.81 W, with the Milestone track arriving in 6.2;
       - the Lens indicator with Return to Live;
-      - `t = <seq>`;
+      - `t = <semantic prefix c>`; raw recorder sequences, if shown as diagnostic metadata, are labelled separately;
       - the speed selector (0.25x–4.0x, default 1.0x);
       - a settings button.
     - Add the `src/shell/styles/time.css` partial.
@@ -304,7 +353,7 @@ Ground rules for every task:
       - Monaco and the World load lazily.
     - World Structural_UI labels from `worldOrigin` are shown in the DOM overlay at layer 1: "Building…", "Previous run · source changed" and "Console execution · <support reason>".
     - The Shell part of the Run transition: the Source_Panel reaches RUN size and the Explorer closes 300–600 ms after the first Event. The camera part comes in 5.7.
-    - Create the shared browser helpers `e2e/helpers/shell.ts` (Run, Debug, Stop, drawers, tabs, Explorer, palette, Quick_Open, Time_Dock) and `e2e/helpers/world.ts` (World observation through the QA bridge `scene()`, selection, Inspector reading). Later batches must not edit these shared helpers. Batch-specific helpers go in their own files.
+    - Create the shared browser helpers `e2e/helpers/shell.ts` (Run, Debug, Stop, drawers, tabs, Explorer, palette, Quick_Open, Time_Dock) and `e2e/helpers/world.ts` (World observation through the QA bridge `scene()`, selection, Inspector reading). The lead serializes changes to these shared helpers and reconciles consumers. Feature-specific helpers go in their own files.
     - Done when build passes and a smoke spec opens `/` and `/examples` in the Shell.
     - _Requirements: 1.2, 1.20, 1.21, 2.17, 6.4–6.6, 6.10, 34.11_
     - _Design: Changed modules (`src/main.tsx`); Components §2, §5_
@@ -344,12 +393,12 @@ Ground rules for every task:
     - Done when:
       - a repository grep finds no `ide-activity-rail`, `ide-project-panel`, `ide-bottom-panel`, `ide-status-line`, `ide-runtime-ready`, `world-controls`, `world-access`, `world-hint`, `event-chip` or `representation-bar` in `src/`;
       - exactly one Shell is routed;
-      - typecheck, lint, build, `npm test` and the full Playwright suite pass.
+      - the affected integration checks pass; the milestone full gate runs at its boundary.
     - _Requirements: 2.17, 34.10_
     - _Design: Deleted modules; Migration and Deletion Plan step 3_
 
   - [ ] 3.14 Checkpoint — R2
-    - Ensure that typecheck, lint, build, `npm test` and the full `npx playwright test` suite pass against one dev pair (`npm run dev -- --port 5173 --strictPort`). Resolve open questions from the spec and the repository. Ask the user only if a blocker cannot be resolved that way.
+    - Milestone A full gate: typecheck, lint, build, full configured unit/property suite and affected migrated IDE/shell browser scenarios. Review shell/source captures through early A QA scaffolding before cutover/deletion.
 
 - [ ] 4. R3 — Stack, Heap and world reconstruction
   - [ ] 4.1 Implement the LayoutEngine and its occupancy index
@@ -360,18 +409,18 @@ Ground rules for every task:
       - Root Frames form a deck with fronts stepping by 1.45.
       - A first callee goes 0.10 below its caller's bottom and 1.25 back in −Z.
       - Later siblings form a +Z History_Deck. Collisions advance by 1.45.
-      - The stack stays within x ∈ [−2.4, 2.4] and top ≤ 0.
+      - The hero stack band targets x ∈ [−2.4, 2.4] and top ≤ 0; scalable reservation/preview rules handle wider signatures and deeper worlds without overlapping semantic regions or moving established anchors.
       - Call-site and entry Ports sit on the left; return Ports on the right.
     - §7.2 Heap:
       - Ownership is decided at first record only.
       - Each type gets a column, with column pitch = width + 2.4.
       - Each column has 3 tiers per page; pages advance in +Z.
       - Library and JDK summary blocks (4.2 u) sit behind every project back face.
-    - §7.3 Arrays: tray cell positions use C(c) = clamp(first length, 4, 16), with an 8-row reservation when n > 128. Collection blocks reserve 12 × 2 entries.
-    - §7.4 Class_State: a shelf band above both headings.
+    - §7.3 Arrays: presented tray slots use C(c) = clamp(first length, 4, 16), with an 8-row reservation when n > 128. Keep canonical array/index identity separate from reusable presented slots; do not reserve a permanent physical coordinate for every virtualized index. Collection blocks reserve 12 × 2 entries.
+    - §7.4 Class_State: a scalable non-overlapping shelf region, above both headings in the hero composition.
     - §7.5 I/O: rail anchors in the corridor between Stack and Heap.
     - §7.6 Scopes: lexical scopes are row annotations only and create no anchors.
-    - §7.7: heading positions.
+    - §7.7: scalable region heading anchors plus viewport-aware presentation/framing; headings never require fitting the whole unbounded world at readable size.
     - Every entity gets a `clusterPath` from the §10.2 table.
     - The engine never reads source text, the camera, the Cursor or the plan. It serves JVM and curated Recordings alike.
     - Add `src/world/layoutEngine.test.ts` with examples: a constructor called from main, a recursion chain, siblings, two heap types, a library object, a ragged array, statics and I/O.
@@ -392,12 +441,12 @@ Ground rules for every task:
   - [ ] 4.3 Implement value text, Java type display, frame titles and frame status
     - `src/world/valueText.ts` implements the design value table:
       - primitives exactly as recorded, including NaN, ±Infinity, −0.0 and escaped chars;
-      - Strings quoted with Java escapes, the first 48 chars + "…" + " (n chars)" when longer, and `""` when empty;
+      - Strings quoted with Java escapes, bounded face previews of the first 48 recorded chars + "…" when longer, with " (n chars)" only when total length is recorded; distinguish display truncation from recorder truncation and show `""` only for observed empty content;
       - `null` with no chip;
       - reference chips `<Type> #id`, collections `List · size n #id`, arrays `int[n] #id`;
       - the `⟨not recorded⟩` marker;
       - the 28-char middle ellipsis for Frame text, with face and exact forms.
-    - `src/world/displayType.ts`: descriptors and binary names to Java source form (`Outer.Inner`, `int[][]`), with generics only when recorded and a reversible mapping.
+    - `src/world/displayType.ts`: retain the canonical binary name/descriptor unchanged, including `$`, and separately format display labels such as `Outer.Inner` and `int[][]`, with generics only when recorded. Display text is not a reversible canonical identifier.
     - `src/world/frameTitle.ts`: `Type.method(T1, T2)`, constructors named after their type, and static initializers identified.
     - `src/world/frameStatus.ts`: running, paused, returning, returned, threw, unwound, caught and terminated, with "line N" and exception simple names, from RuntimeState, the Cursor Event and `ProjectionContext`.
     - Add `src/world/valueText.test.ts` with edge-case examples.
@@ -410,7 +459,7 @@ Ground rules for every task:
     - `src/world/valueText.property.test.ts`:
       - **Property 30: Value text is exact and unambiguous** — **Validates: Requirements 9.9, 9.10, 12.7, 12.8, 12.9, 12.10, 28.9**
       - **Property 31: Truncation preserves identity** — **Validates: Requirements 9.14, 12.3**
-    - `src/world/displayType.property.test.ts`: **Property 32: Java source type names** — **Validates: Requirements 12.2, 33.9**
+    - `src/world/displayType.property.test.ts`: **Property 32: Canonical JVM identity and separate display type labels** — **Validates: Requirements 12.2, 33.9**
 
   - [ ] 4.5 Implement the incremental SceneProjector (SceneModel v2)
     - `src/world/sceneProjector.ts` provides `createSceneProjector(trace)`.
@@ -419,13 +468,13 @@ Ground rules for every task:
     - Projection rules:
       - Frame rows are ordered `this`, parameters, then locals by first assignment. A local row exists only when its first assignment is at or before the Cursor. Each Frame carries its status and `sourceLine`.
       - Object titles use Java source form. Field groups are ordered from the most distant superclass. Field writes at the Cursor set the mutation marker.
-      - `SceneArray` cells use `arrayElementSlotId` and Java default values at allocation.
+      - `SceneArray` cells use `arrayElementSlotId` and exact recorded observations; explicit observed allocation defaults may be shown, but late or unobserved cells remain unavailable/partially observed, never guessed as Java defaults.
       - Class shelves show statics written at or before the Cursor.
       - There is one `SceneReference` per non-null reference slot whose target exists.
       - Call links require graph call evidence, or `callerFrameId` for graphless curated Recordings.
       - I/O summaries come from `graphIoSummaries` or `consoleIoSummaries`.
-      - The projector also produces `cursorEvent`, `liveStack` and the `introducedSeq`/`changedSeq` evidence.
-      - The Cursor is clamped to `lastRecordedSeq`.
+      - The projector also produces `cursorEvent`, `liveStack` and introducing/changing evidence using the corrected semantic ordinal-to-prefix mapping; retain raw sequence provenance separately.
+      - The Cursor stays in [0,N] and is clamped to the accepted semantic prefix mapped from completed normalizer emissions; `lastRecordedSeq` is raw metadata, never a history cursor.
     - Collections are projected as plain objects until 7.2. Return flows come in 7.3 and the exception path in 6.7.
     - Secondary indexes (inbound references, one-hop neighbours) are lazy and memoized per revision.
     - The legacy `src/world/sceneModel.ts` stays untouched for the interim World.
@@ -434,11 +483,11 @@ Ground rules for every task:
     - _Design: Components §8 SceneModel and projection; Data Models › SceneModel v2_
 
   - [ ] 4.6 Implement the FlowCatalog
-    - `src/world/flowCatalog.ts` provides `extend`, `query`, `bundles`, `atEvent` and `provenanceOf`.
+    - `src/world/flowCatalog.ts` provides `extend`, drawable `query`/`bundles`/`atEvent`, and independent recorded-evidence `recordedProvenanceOf`, plus `drawableFlowsOf` as named in the corrected design. Implement all semantic owner/endpoint indexes in the corrected task interpretation above.
       - Flow ids are stable: `${edgeEventId}:${edgeId}`.
       - Edge kinds map to argument, receiver, local-field, assignment, reference, array-read, array-write, return, input, output, throw, unwind and catch. `COMPUTE`, `OBSERVE` and file edges produce no Flow.
-      - A Flow is eligible only when all its evidence is at or before the Cursor and both endpoints are present. There are no substitute endpoints.
-      - The tiered priority uses the 128-edge tail bound.
+      - A drawable SceneFlow is eligible only when evidence is in the applied semantic prefix and both presented endpoint mappings are valid. No substitute endpoints are invented. Provenance remains queryable without a drawable SceneFlow, including COMPUTE/OBSERVE/file evidence where recorded.
+      - Optional tiered candidate retrieval uses the 128-edge tail bound; indexed retrieval of mandatory selected/focused/current evidence bypasses that tail, retaining priority/overflow guarantees and all recorded provenance.
       - Bundle keys are assigned at ingest, and counts are found by binary search, with the `variableLifetimes` correction.
     - Export `graphTransition` from `src/motion/semanticTransition.ts`. This is an export only; the derivation is unchanged.
     - Add `src/world/flowCatalog.test.ts` covering the edge-to-flow kind table.
@@ -458,16 +507,16 @@ Ground rules for every task:
     - `src/world/flowCatalog.property.test.ts`:
       - **Property 41: Flows are ExecutionGraph edges** — **Validates: Requirements 17.1, 17.3, 17.4, 17.5, 17.7, 26.11, 26.12, 26.13**
       - **Property 42: Flow priority under budget** — **Validates: Requirements 17.9**
-      - **Property 43: No recorded provenance** — **Validates: Requirements 17.6**
+      - **Property 43: Recorded provenance survives absent drawable flows** — **Validates: Requirements 17.6**
 
   - [ ] 4.9 Implement the presentation planner v1 and connector routing
     - `src/world/budgets.ts` is a frozen typed copy of `tokens.world.budgets`.
     - `src/world/presentationPlanner.ts` provides `planPresentation(input, previous)`:
       - the pinned set Π of §10.2, item 2;
-      - detailed faces in the 11.10 priority order, within the Frame, Heap_Object and shelf budgets;
+      - detailed faces in corrected priority order, reserving mandatory entities first; optional capacity max(0,B−M), reported mandatory overflow max(0,M−B), for Frame, Heap_Object and shelf targets;
       - quiet volumes up to the quiet budget;
-      - overflow counted in `accounting.clustered`, pending the cluster cut in 9.2;
-      - Connectors and call links within budget, by priority;
+      - optional overflow counted in `accounting.clustered`, pending the cluster cut in 9.2; mandatory overflow stays presented and is reported separately, never falsely counted as hidden/clustered;
+      - Connectors and call links by corrected priority/mandatory-overflow rules, with optional context reduced first;
       - base emphasis opacities (§10.4 base row; historical Frames 0.45; unattached Connectors ≤ 0.35; attached ones at 3.5 px);
       - exactly one execution halo;
       - the STACK, HEAP and CLASS STATE headings, with CLASS STATE present iff a shelf is presented;
@@ -521,14 +570,14 @@ Ground rules for every task:
       - the mutation highlight `#FFC857` with "✎".
     - `ClassShelf.tsx`: a teal shelf with the class name and static rows.
     - `Port.tsx`: instanced 0.16 u glowing dots.
-    - `src/render/text/FaceText.tsx`: troika `BatchedText`, one per weight, with token sizes. The full typography system comes in 8.3.
+    - `src/render/text/FaceText.tsx`: troika `BatchedText` grouped by compatible font/weight/material/opacity, with token sizes and explicit readiness/disposal hooks. Complete cache prewarming and lifecycle in 8.3. The full typography system comes in 8.3.
     - Bodies, faces, chips and edges are instanced per material role.
     - _Requirements: 8.9, 8.12, 9.1–9.8, 9.12, 9.13, 12.1, 12.3–12.7, 12.11, 12.12, 13.2, 13.3, 29.2, 29.3_
     - _Design: Components §19.2 Primitive set_
 
   - [ ] 4.13 Build the ConnectorBatch, RegionHeading, StructuralText, IoPort and base Floor/Environment primitives
     - `src/render/primitives/ConnectorBatch.tsx`:
-      - two merged `LineSegments2` batches: an 8 px halo and a core of 2.5 or 3.5 px, in pixel width, with per-vertex colour and opacity;
+      - two merged `LineSegments2` batches: an 8 px halo and a core of 2.5 or 3.5 px, in pixel width, with per-vertex colour and custom alpha attributes/shader (or bounded opacity batches), since ordinary line material does not guarantee curve-varying alpha;
       - depth-tested, so occluded segments are hidden;
       - instanced end dots, with arrowheads only on object-object, return and exception curves;
       - kind colours: cyan, violet, teal, amber, and red, with exception red taking precedence over return amber;
@@ -551,14 +600,14 @@ Ground rules for every task:
     - A `?qa=1&world=v2` preview in `Shell.tsx` mounts WorldCanvas in place of InterimWorld for in-browser checks. It is removed in 5.7.
     - Extend the Property 11 test: draft edits leave the SceneModel and plan revisions unchanged.
     - Done when:
-      - the full Playwright suite passes;
+      - affected integration/browser checks pass;
       - the preview renders every curated Recording and a real run of `fixtures/torture-v12-p5_5/01-text-and-fields`;
-      - `tests/perf/world-projection.test.mjs` passes.
+      - `tests/perf/world-projection.test.mjs` passes with `VJ_SUITE=perf` explicitly set so configuration cannot exclude it.
     - _Requirements: 1.20, 3.15, 6.8, 23.5, 32.10_
     - _Design: Data flow ExecutionSession → World; Components §5, §8; Migration and Deletion Plan step 4_
 
   - [ ] 4.15 Checkpoint — R3
-    - Ensure that typecheck, lint, build, `npm test` (including every property test so far and the layout goldens), `npm run perf:baseline` and the full Playwright suite pass. Resolve open questions from the spec and the repository. Ask the user only if a blocker cannot be resolved that way.
+    - Milestone B full gate: static/build/unit/property/layout-golden checks, affected world/browser scenarios, world-projection performance checks and hero overview/event/inspection comparison through B QA. Prove genuine depth, stable identity and recorded-value bounds before C/D.
 
 - [ ] 5. R4 — Selection, Focus, Home, Trace and camera
   - [ ] 5.1 Implement the camera math: store, poses, Safe_Frame fitting, constraints and Home framing
@@ -588,7 +637,7 @@ Ground rules for every task:
       - Any user input cancels a Guided_Move within one frame, continuing from the interpolated pose.
       - User input turns Follow off until it is re-enabled.
       - Follow moves happen on entry, allocation, throw and major-mutation Events, only when the subject lies outside the Safe_Frame.
-      - While RUNNING, the executing Frame is kept inside the Safe_Frame.
+      - While process execution is active and Follow remains explicitly enabled, the executing Frame is kept inside the Safe_Frame; Free Explore/user input always overrides framing, including partial recording and debugger contexts.
       - The Run transition camera move lasts exactly 600 ms and ends at the Hero_Pose (C10).
       - On a debug pause, the rig frames the paused Frame.
       - Reduced motion applies the destination pose in one frame.
@@ -602,11 +651,11 @@ Ground rules for every task:
     - `src/interaction/interactionStore.ts` holds the Selection, the Focus target, a `preFocus` pose and mode stored once, Trace active and scope, and hover.
     - Focus presentation in `src/world/presentationPlanner.ts`:
       - the target is shown at CLOSE;
-      - at most 6 deterministic neighbours are kept, ordered by Connector kind priority then first record;
+      - mandatory correctness/selection/current neighbours are retained first with reported overflow; up to 6 optional deterministic neighbours are kept, ordered by Connector kind priority then first record;
       - everything else drops to ≤ 0.25 opacity;
       - an absent target shows "Not present at this point in time" at its anchor.
     - `src/world/traceEmphasis.ts`:
-      - Relevant, Current and All scopes, within budgets;
+      - Relevant, Current and All scopes, using mandatory priority/overflow rules and keeping recorded provenance visible structurally when no drawable flow exists;
       - All uses `FlowCatalog.bundles`;
       - non-endpoints drop to ≤ 0.40;
       - emphasis is part of the plan, so it appears in the same frame as the state change.
@@ -630,23 +679,23 @@ Ground rules for every task:
       - Frame: signature, caller, status, receiver, parameters, locals and return;
       - Class_State shelf, array, Array_Cell and collection;
       - Connector, Flow (kind, endpoints, evidence sequence numbers) and Cluster.
-      - Values use the exact `valueText` mode.
+      - Values use exact recorded-content `valueText` mode, preserving OBSERVED/TRUNCATED/UNAVAILABLE/PARTIALLY OBSERVED markers and bounds; never restore unrecorded originals.
       - It shows the introducing and latest-changing evidence sequence numbers.
-      - It shows "No recorded provenance" when `provenanceOf` is empty.
+      - It shows "No recorded provenance" only when the independent recorded-evidence `recordedProvenanceOf` query is empty. When evidence exists without drawable endpoints, show it textually/structurally and label the unavailable spatial mapping.
     - `src/shell/inspector/InspectorCard.tsx`:
       - geometry from `computeShellLayout`;
       - the side is chosen only when the card opens or its target changes;
-      - actions are Focus (Return to World while FOCUS is active), Reveal Source and Copy Value with exact text, each with Command_Registry disabled reasons;
+      - actions are Focus (Return to World while FOCUS is active), Reveal Source and Copy Value with exact recorded text and visible recording-bound metadata, each with Command_Registry disabled reasons;
       - Escape closes only the card;
       - in FOCUS, clearing the Selection keeps the card on the Focus target;
       - values refresh within 100 ms of a Cursor change, and an absent item shows "Not present at this point in time".
-    - `src/shell/VirtualList.tsx` renders fixed-height rows with overscan ≤ 200, in order, with a total-count heading.
+    - `src/shell/VirtualList.tsx` renders bounded-preview summary rows with total-count headings. Inspector mounts ≤200 rows TOTAL including ≤20 overscan; Console mounts viewport-visible rows plus ≤200 offscreen rows total. Every entry stays reachable; expanded wrapped recorded text uses a separate variable-height/detail view.
     - Add the `src/shell/styles/inspector.css` partial.
     - _Requirements: 17.6, 17.8, 22.11, 28.1–28.10, 33.2_
     - _Design: Components §18 Inspector; §17 (VirtualList)_
 
   - [ ] 5.6 Write property tests for the Inspector and virtualized lists
-    - `src/shell/inspector/inspectorModel.property.test.ts`: **Property 50: Inspector completeness** — **Validates: Requirements 28.1, 28.2, 28.3, 28.4, 28.5, 28.6, 28.10**
+    - `src/shell/inspector/inspectorModel.property.test.ts`: **Property 50: Inspector completeness within recorded evidence bounds** — **Validates: Requirements 28.1, 28.2, 28.3, 28.4, 28.5, 28.6, 28.10**
     - `src/shell/VirtualList.property.test.ts`: **Property 59: Virtualized lists** — **Validates: Requirements 26.3, 28.8**
 
   - [ ] 5.7 Swap the Shell World layer to WorldCanvas, CameraRig and InspectorCard
@@ -656,17 +705,17 @@ Ground rules for every task:
     - Delete `src/shell/world/InterimWorld.tsx` and the `world=v2` preview flag.
     - Update only the Inspector and selection internals of `e2e/helpers/world.ts`.
     - Re-point `e2e/camera-controls.spec.ts` and `e2e/spatial-shell-v12-p5.spec.ts` to the CameraRig and Mode_Bar, keeping the same expected behaviour. Record the ledger in `docs/checkpoints/reference-exact/migration/e2e-world-swap.md`.
-    - Done when the full Playwright suite passes and the legacy `src/scene/**` and `src/navigation/**` are no longer imported by any routed module.
+    - Done when affected integration/browser checks pass and the legacy `src/scene/**` and `src/navigation/**` are no longer imported by any routed module.
     - _Requirements: 1.20, 2.1, 6.6, 6.9, 19.1–19.3, 20.2, 28.1_
     - _Design: Migration and Deletion Plan step 5_
 
   - [ ] 5.8 Checkpoint — R4
-    - Ensure that typecheck, lint, build, `npm test` and the full Playwright suite pass. Resolve open questions from the spec and the repository. Ask the user only if a blocker cannot be resolved that way.
+    - Integration C: verify selection/Inspector/Focus/Home/Trace, free orbit/pan/dolly, user override and the World host swap with targeted camera/world browser scenarios. Full C gate is 6.10.
 
 - [ ] 6. R5 — Time, I/O, debug and error behavior
   - [ ] 6.1 Complete the timelineStore and the commit-order pipeline
     - Move the pure `src/playback/playbackState.ts` to `src/timeline/playbackState.ts`. Legacy imports re-export it until 13.2.
-    - `src/timeline/timelineStore.ts` adds `direction`, reverse play, `scrubbing`, `boundary` (the clamp for PARTIAL_RECORDING), Replay, click-to-nearest, debug-command separation (Cursor and Lens unchanged) and the "Events after Cursor" count.
+    - `src/timeline/timelineStore.ts` adds `direction`, reverse play, `scrubbing`, `boundary` (accepted semantic-prefix clamp mapped from completed normalizer emissions for PARTIAL_RECORDING), Replay from empty prefix 0, click-to-nearest semantic prefix in [0,N], debug-command separation (Cursor and Lens unchanged) and the "Events after Cursor" count.
     - Commit order is: cursor → RuntimeState → SceneModel → plan → AppState, Shell, Inspector and Console → first frame → overlays. It is implemented in `src/world/useWorldPlan.ts` and `src/state/useAppState.ts`.
     - Register `workbench.returnLive` (Alt+Shift+L, available while HISTORY is active) in `src/ide/commands.ts`.
     - _Requirements: 1.15, 1.16, 1.19, 1.23, 7.11, 7.13, 7.14, 18.6, 23.2, 23.7–23.9, 23.12–23.14, 24.6, 24.7, 31.14_
@@ -719,10 +768,10 @@ Ground rules for every task:
 
   - [ ] 6.5 Rebuild the Console drawer and the World I/O endpoints
     - `src/ui/ConsolePane.tsx` and `src/shell/dock/ConsoleDrawer.tsx`:
-      - render the preserved Console truth (recorder writes and process pipes, in delivered order) through `VirtualList`, with `Uint32Array` line offsets built incrementally;
+      - render exact recorded channel text and known within-stream order; use an ordered combined list only where actual `runEvents` or equivalent recorded ordering exists. Separate stdout/stderr snapshots have unknown cross-channel order and must not fabricate one. Recorder facts and process output are not blindly merged/deduplicated through `VirtualList`, with `Uint32Array` line offsets built incrementally;
       - mark stdin lines;
       - insert a truncation notice with an archive-download control where output was omitted;
-      - on WAITING_INPUT, open the drawer and focus the input within 200 ms, and show "Program is waiting for input";
+      - when the independent input-wait dimension is active, including while recording has stopped, open the drawer and focus the input within 200 ms, and show "Program is waiting for input";
       - on submit, send the text plus exactly one `\n` (just `\n` when empty), then append and clear;
       - after process exit or stdin close, send nothing and show "Program is not accepting input".
     - SceneProjector I/O, `IoPort.tsx` and `presentationPlanner.ts`:
@@ -758,9 +807,9 @@ Ground rules for every task:
       - the throwing Frame;
       - the unwound Frames in recorded order;
       - the catching Frame or the uncaught endpoint;
-      - the Throwable and its cause chain;
-      - the recorded stack lines;
-      - a `complete` flag.
+      - the observed Throwable and recorded cause links, distinguishing derived and unavailable evidence;
+      - the recorded stack lines and explicit bounds/unavailable evidence;
+      - a `complete` flag only for evidence actually proven complete, never inferred from a truncated preview.
       - Reference overlays use exception > return precedence.
     - Planner:
       - "throws", "unwound" and "caught" status texts, with no Flow when the catch is in the throwing Frame;
@@ -768,12 +817,12 @@ Ground rules for every task:
       - Forensic_State at the final Event of an uncaught failure: the path at 100 %, everything else ≤ 0.40;
       - Frames on the path show values recorded at the throw;
       - an incomplete path is labelled and never drawn through unrecorded Frames;
-      - one red Connector per cause link;
+      - one red Connector per recorded cause link with valid drawable endpoints; retain nondrawable cause evidence in textual inspection;
       - red `#FF4A5E` is exposed only through the `exception` material role.
-    - `src/render/primitives/ExceptionPanel.tsx` is a red glass panel placed beside the throwing Frame without overlapping it. It shows the qualified class, the message or "message: null", the first 8 stack lines and "n more".
+    - `src/render/primitives/ExceptionPanel.tsx` is a red glass panel placed beside the throwing Frame without overlapping it. It shows the observed qualified class, recorded message ("message: null" only for recorded null, otherwise unavailable), up to the first 8 recorded stack lines and a truthful recorded remainder/bounds marker.
     - The Source_Panel shows a red marker on the throw line.
     - With Follow active, one move frames the throw site and the uncaught endpoint.
-    - `ErrorsDrawer.tsx`: activating a frame entry selects that Frame without moving the camera and opens the source, or marks which target is unavailable.
+    - `ErrorsDrawer.tsx`: selection-only frame activation selects without changing Cursor/camera and reveals source, or marks the target unavailable. A separately labelled timeline navigation action explicitly seeks the recorded event’s semantic prefix; it never happens implicitly through selection.
     - A new session's first Event clears the Forensic_State.
     - _Requirements: 14.11, 25.1–25.14_
     - _Design: Components §16 Exception presentation and Forensic_State_
@@ -786,16 +835,16 @@ Ground rules for every task:
       - With HISTORY active, the Cursor is kept.
     - PARTIAL_RECORDING:
       - the Header shows "Partial recording · <reason>";
-      - the Cursor is clamped to the last recorded sequence;
-      - the Console stays complete, including output after the boundary;
-      - with an unsupported thread, the process keeps running.
+      - the Cursor is clamped to the accepted semantic prefix mapped from completed normalizer emissions, retaining valid empty prefix 0;
+      - the Console continues to expose exact recorded channel content, including output recorded after the semantic boundary, with truncation and unknown cross-channel order disclosed;
+      - recording limits/unsupported capture do not kill the JVM; Run stays disabled while it is alive, and Stop, input availability and debugger pause controls follow actual independent state.
     - Failure states:
       - compile: FAILED within 500 ms, the Problems drawer opens, and the Header shows "Build failed · n errors";
       - build: Maven and Gradle messages appear verbatim as Error rows and in the Console;
       - instrumentation: the reason is shown, with a Run Without Visualization action;
       - launch: "No runnable main method · <class>" (or "No main class is configured"), with an action that opens the launch configuration;
       - debugger launch failure: no Debug_Bar.
-    - Prior_World after a failed build: labelled "Previous run · source changed", Cursor still movable, drafts untouched.
+    - Prior_World after a failed build: retain its full execution identity, trace/history/prefix revision, Cursor, anchors/layout, Lens/zoom, Selection, valid Focus, source bindings and Console association; label "Previous run · source changed", with movable Cursor and untouched drafts. Failed-build state stays associated with the new attempt, and session/prefix keys reject stale publications.
     - Diagnostics never become World content.
     - Safety text: Java runs locally and unsandboxed, and Maven and Gradle can run build logic.
     - Touches `src/workspace/executionStore.ts`, `src/state/appState.ts`, `src/shell/Header.tsx`, `src/shell/dock/ProblemsDrawer.tsx`, `src/world/presentationPlanner.ts` and `src/render/primitives/StructuralText.tsx`.
@@ -812,7 +861,7 @@ Ground rules for every task:
     - _Requirements: 23.14, 24.7, 27.6–27.10_
 
   - [ ] 6.10 Checkpoint — R5
-    - Ensure that typecheck, lint, build, `npm test`, the full Playwright suite (including `e2e/debugger-errors.spec.ts` against real debug sessions) and the torture browser specs pass. Resolve open questions from the spec and the repository. Ask the user only if a blocker cannot be resolved that way.
+    - Milestone C full gate: static/build/full configured unit/property checks and affected time/source/debug/I/O/completion/retention browser scenarios, including real debugger tests in the serialized slot. Exercise semantic cursor 0, mapped partial boundaries and simultaneous operational dimensions. Exception-specific acceptance waits for D.
 
 - [ ] 7. R6 — Arrays, collections and recursion visual system
   - [ ] 7.1 Complete array projection and windowing and build the ArrayTray
@@ -821,8 +870,8 @@ Ground rules for every task:
       - out-of-bounds indications only from recorded exception facts naming the index;
       - each nested or ragged inner array is its own tray with one Connector per referencing outer cell.
     - `src/world/presentationPlanner.ts` `cellWindows`:
-      - when the length is within the Detail_Level cell budget, every cell is shown at its fixed position;
-      - otherwise, windows around the last accessed index (0 if none) and the selected index, plus ellipsis cells with exact hidden counts, totalling no more than the budget;
+      - when the length fits the nominal Detail_Level cell target, show all indices in stable presented slots; canonical array/index IDs always remain independent of slots;
+      - otherwise, map windows around current/last accessed, selected and focused indices into reusable presented slots; use index 0 only as a presentation fallback when no access is recorded. Reserve all mandatory endpoints first and apply optional-capacity/overflow rules, then ellipsis summaries with exact hidden counts. Every pick/focus/connector/provenance lookup resolves back to canonical index IDs;
       - the tray anchor never changes.
     - `src/render/primitives/ArrayTray.tsx`:
       - a backplate of 0.12, a title plate of 0.9 showing `<component>[]`, `#id` and `length = n`;
@@ -830,17 +879,17 @@ Ground rules for every task:
       - read emphasis in execution blue and write emphasis in amber;
       - ellipsis cells and the out-of-bounds marker before index 0 or after the last index.
     - Mount it in `WorldScene.tsx`.
-    - Array-to-array Flows in `FlowBatch.tsx` attach to the covering ellipsis cell when an endpoint index is hidden.
+    - Array-to-array Flows in `FlowBatch.tsx` use canonical-index-to-presented-slot mappings and actual mapped cell Ports, never ellipsis endpoints. When an endpoint is hidden/unmapped, omit that drawable flow, retain recorded provenance and expose an Inspector/Trace reveal action for its canonical index.
     - _Requirements: 14.1–14.11, 22.6_
     - _Design: Components §7.3; §10.6; §19.2 (ArrayTray)_
 
   - [ ] 7.2 Implement collection summaries and the CollectionBlock
     - `src/world/collectionSummary.ts` builds `SceneCollection` from `RuntimeLibrarySummary` for List, Set, Map, Queue and Deque:
-      - the real size;
-      - user-level order;
+      - the recorded size, or explicit unavailable size;
+      - recorded user-level order where the collection provides one, never invented order;
       - `key → value` entries for maps;
       - recorded entries plus a "not recorded" remainder;
-      - mutation (add, remove, put, poll) at the Cursor;
+      - mutation (add, remove, put, poll) only when recorded in the applied semantic prefix, with unavailable origins disclosed;
       - `summaryUnavailable` when summarization is not possible.
     - `sceneProjector.ts` integrates it. The planner hides JDK internals (backing arrays, nodes, entries) and their Connectors, keeps the referenced objects, and applies the Connector budget to entry chips.
     - `src/render/primitives/CollectionBlock.tsx`:
@@ -861,7 +910,7 @@ Ground rules for every task:
     - Return Flows are drawn by `FlowBatch.tsx`:
       - amber `#FFB23E` arcs from the Frame's right edge, with an arrowhead;
       - labelled "return <value>", with an operand sub-line at 0.6–0.7× height;
-      - limited to the newest within the Flow budget.
+      - ranked under mandatory-flow/overflow rules, then newest optional flows within capacity; all recorded return evidence remains queryable beyond the bounded drawable list.
     - The planner shows the amber "RETURNS" heading iff a return Flow is visible.
     - `src/camera/CameraRig.tsx` recursion framing:
       - at live depth ≥ 4 with Follow, pitch −16° and yaw +18°, keeping the deepest Frame and 3 ancestors inside the Safe_Frame with monotone screen centres;
@@ -880,7 +929,7 @@ Ground rules for every task:
       - **Property 51: Safe_Frame fitting**, adding the recursion-framing clauses (Requirements 10.2, 10.3).
 
   - [ ] 7.5 Checkpoint — R6
-    - Ensure that typecheck, lint, build, `npm test` and the full Playwright suite pass. `e2e/arrays.spec.ts`, `recursion.spec.ts` and the torture specs over `fixtures/acceptance-v12-p4/02-primitive-arrays` through `13-queue-deque` must stay green. Resolve open questions from the spec and the repository. Ask the user only if a blocker cannot be resolved that way.
+    - Milestone D full gate: static/build/full configured unit/property checks; affected array, collection, recursion and exception browser/JVM cases with explicit opt-in/count checks. Review structure/exception captures; preserve recorded truth and canonical-index mappings.
 
 - [ ] 8. R7 — Cinematic material and lighting renderer
   - [ ] 8.1 Complete the material factory for both quality tiers
@@ -913,10 +962,11 @@ Ground rules for every task:
   - [ ] 8.3 Build the typography system
     - `src/render/text/textSystem.ts` and `FaceText.tsx`:
       - Inter weights 400, 500 and 600 as local static files in `public/fonts/`;
-      - troika `BatchedText` per weight on face plates, 0.002 u proud, with `depthWrite: false` and a polygon offset;
+      - troika `BatchedText` per compatible font/weight/material/opacity group on face plates, 0.002 u proud, with `depthWrite: false` and a polygon offset;
       - world sizes from tokens (title 0.40/600, identity 0.28/500, row 0.32/500, value 0.34/600, type 0.27/400 muted, headings 0.45 cap height);
       - text projecting below 11 CSS px is not rendered, evaluated per entity group on Detail_Level or coarse pose changes.
     - `scripts/reference/generate-inter-metrics.mjs` produces `src/render/text/interMetrics.json` (advance widths) at build time. `valueText.ts` and `textSystem.ts` use it for synchronous title-before-identity truncation and String fitting.
+    - Prewarm required local font/glyph caches and expose a readiness barrier covering glyph generation/layout, batch upload, shader compilation and active effects for screenshot/cinematic QA. Dispose text members and release owned cache/resource references on session replacement, unmount and context recovery; do not dispose shared caches still in use.
     - Add a local JetBrains Mono `@font-face` for Monaco in `src/shell/styles/source.css`.
     - _Requirements: 3.12, 12.3, 29.16, 29.17, 29.18_
     - _Design: Components §19.4 Typography_
@@ -925,11 +975,11 @@ Ground rules for every task:
     - `src/render/post/PostPipeline.tsx` takes over rendering with `useFrame(render, 1)`.
     - `interactivePipeline.ts` (main chunk), in order:
       - `RenderPass` into a half-float target;
-      - `UnrealBloomPass` (threshold 1.0, strength 0.55, radius 0.35, half resolution);
+      - `UnrealBloomPass` (threshold 1.0, strength 0.55, radius 0.35, half resolution) on selective emissive layers/masks composited with the base scene; threshold alone does not exclude reflective faces/text;
       - a corner-fog `ShaderPass` masked to the lower corners;
       - `OutputPass` with ACES Filmic tone mapping and sRGB;
       - `SMAAPass`.
-    - `cinematicPasses.ts` is a dynamically imported chunk adding `GTAOPass` (half resolution, radius 0.6, intensity 0.8), bloom strength 0.65, and `BokehPass` only with FOCUS. The Shell is DOM and is never blurred.
+    - `cinematicPasses.ts` is a dynamically imported chunk adding `GTAOPass` (half resolution, radius 0.6, intensity 0.8), bloom strength 0.65, and optional DOF only with FOCUS, protecting the entire tilted target face/text through target-aware focus depth/plane or a sharp mask/composite. Generic depth-only `BokehPass` is not a sharpness guarantee; disable DOF when readability suffers. The Shell is DOM and never blurred. Unsupported effects fall back to readable INTERACTIVE geometry/text; dispose passes/targets/materials on replacement and context recovery.
     - All passes come from three 0.186.1 `examples/jsm`. No new dependency.
     - Update `src/render/WorldCanvas.tsx`.
     - _Requirements: 29.6, 29.7, 29.8, 29.9, 32.7, 32.8_
@@ -959,29 +1009,29 @@ Ground rules for every task:
     - _Requirements: 29.2, 29.6, 29.7, 29.9_
 
   - [ ] 8.8 Checkpoint — R7
-    - Ensure that typecheck, lint, build, `npm test` and the full Playwright suite pass. The production build must keep the main entry chunk ≤ 500 kB gzip, with Monaco and `cinematicPasses` in separate chunks, and a browser check must confirm the CINEMATIC chunk is not requested while the tier stays INTERACTIVE. Resolve open questions from the spec and the repository. Ask the user only if a blocker cannot be resolved that way.
+    - Milestone E full gate: static/build/full configured unit/property checks and affected renderer/quality browser scenarios. Review ready text, selective bloom and readable tilted Focus captures, effect fallback/context recovery and disposal. Main entry ≤500 kB gzip with Monaco/cinematic chunks split; confirm no CINEMATIC request while INTERACTIVE.
 
 - [ ] 9. R8 — Semantic zoom and large-world behavior
   - [ ] 9.1 Implement Detail_Level from projected face height, with hysteresis and crossfade
     - `src/world/detailLevel.ts`:
-      - `representativeFaceHeight` is the median projected front-face height of up to 5 presented Frames, Heap_Objects, shelves and Clusters whose anchors lie inside the viewport nearest its centre;
+      - `representativeFaceHeight` is the median projected front-face height of up to 5 stable canonical Frames, Heap_Objects and shelves from the full scene population/bounds, independent of the presented plan or clusters whose anchors lie inside the viewport nearest its centre;
       - `nextDetailLevel` returns CLOSE at ≥ 0.16 H and FAR at ≤ 0.05 H;
       - it leaves CLOSE only below 0.136 H and FAR only above 0.0575 H;
-      - with no representative, the level is unchanged.
+      - with no representative, the level is unchanged. Freeze representatives for a stable semantic population/camera tile and retain separate entry/exit thresholds so planner output cannot cause oscillation.
     - `src/camera/CameraRig.tsx` evaluates the level at most once per rendered frame while the pose changes, and writes `cameraStore.detailLevel` and `viewTile`.
-    - `src/render/WorldScene.tsx` keeps the outgoing and incoming plans and crossfades opacity over 300 ms (200–400 ms), with no anchor or camera change. Each plan stays within its own budget. Reduced motion swaps instantly.
+    - `src/render/WorldScene.tsx` keeps the outgoing and incoming plans and crossfades opacity over 300 ms (200–400 ms), with no anchor or camera change. Each plan applies the same mandatory-overflow rule; crossfade deduplicates mandatory IDs and accounts for combined transient draw cost separately from canonical population. Reduced motion swaps instantly.
     - _Requirements: 22.1, 22.2, 22.7, 22.8_
     - _Design: Components §10.3 Detail_Level_
 
   - [ ] 9.2 Implement the cluster hierarchy, the pinned cut and library/JDK collapsing
     - `src/world/clusters.ts` builds the stable cluster hierarchy from layout `clusterPath`s:
       - keys: type, package, ownership, collection, invocation-branch, execution-age (buckets of 4,096) and class;
-      - each cluster's member list is append-only by `firstSeq`, with counts found by binary search;
+      - stable ingest identity/order is append-only, but active membership/counts are indexed by semantic prefix, role and lifetime; selection/current-role changes truthfully move entities out of aggregate membership. Historical append counts are not current-member counts;
       - identity and anchor are kept while a cluster has zero members.
     - `src/world/presentationPlanner.ts` computes the cut:
-      - all-or-nothing expansion;
+      - all-or-nothing optional cluster expansion after mandatory entities are removed from aggregate membership and presented independently;
       - ranking: one-hop neighbour of Π, then project before external, then distance by coarse tile;
-      - coarsening type → package → ownership when the Cluster budget is exceeded;
+      - coarsening optional type → package → ownership when the nominal Cluster target is exceeded; preserve mandatory representatives/targets and report unavoidable overflow;
       - every entity counted exactly once (detailed + quiet + clustered = total);
       - the live depth Cluster is labelled with the exact count and the most frequent method (ties to the innermost);
       - Class_State package Clusters;
@@ -994,7 +1044,7 @@ Ground rules for every task:
   - [ ] 9.3 Implement bundles, inter-cluster Connectors, cluster volumes and cluster interaction
     - Planner bundles:
       - Connectors beyond the budget aggregate per (source, target) cluster or entity, each labelled with an exact count;
-      - at FAR, one inter-cluster Connector per Cluster pair, labelled with the exact reference count;
+      - at FAR, one optional inter-cluster Connector per Cluster pair, labelled with the exact reference count; semantically required endpoints/flows obey mandatory priority/overflow;
       - Trace All Flow bundles come from `FlowCatalog.bundles`;
       - historical bindings in Trace All are shown at ≤ 0.25 opacity.
     - `src/render/primitives/ClusterVolumes.tsx` draws instanced stacked silhouettes with labels at ≥ 12 px. `QuietVolumes.tsx` draws instanced untextured bodies in 1–3 draw calls and respects the pickable-quiet budget. Mount both in `WorldScene.tsx`.
@@ -1015,12 +1065,12 @@ Ground rules for every task:
       - the retained size of SceneModel plus presentation state is ≤ 25 % of semantic retention, measured on the rich-graph sizes with `--expose-gc`;
       - the plan is memoized per view tile, so an orbit with no tile change produces no re-plan.
     - Remove any O(n) per-event or per-frame work these tests expose in `sceneProjector.ts`, `presentationPlanner.ts` or `clusters.ts`.
-    - Run it as `npx vitest run tests/perf/world-scaling.test.mjs --execArgv=--expose-gc --maxWorkers=1 --fileParallelism=false`.
+    - Run it as `VJ_SUITE=perf npx vitest run tests/perf/world-scaling.test.mjs --execArgv=--expose-gc --maxWorkers=1 --fileParallelism=false`.
     - _Requirements: 32.10, 32.11_
     - _Design: Components §22 Rendering-performance strategy_
 
   - [ ] 9.6 Checkpoint — R8
-    - Ensure that typecheck, lint, build, `npm test`, `npm run perf:baseline`, the scaling guard and the full Playwright suite pass, including the dense torture cases (`fixtures/torture-v12-p5_5/07-observed-wide-and-deep`, `08-many-lazy-statics`). Resolve open questions from the spec and the repository. Ask the user only if a blocker cannot be resolved that way.
+    - Integration F: run targeted planner/cluster/zoom properties, world-scaling guard and dense-world browser/performance scenarios. Verify mandatory overflow, truthful current membership and zoom independent of planner output. Full F gate is 10.6.
 
 - [ ] 10. R9 — IDE, responsive and accessibility convergence
   - [ ] 10.1 Implement the SHORT and NARROW compositions
@@ -1105,7 +1155,7 @@ Ground rules for every task:
     - _Requirements: 30.9–30.11, 31.1–31.15_
 
   - [ ] 10.6 Checkpoint — R9
-    - Ensure that typecheck, lint, build, `npm test` and the full Playwright suite (including the new responsive and accessibility specs) pass. Resolve open questions from the spec and the repository. Ask the user only if a blocker cannot be resolved that way.
+    - Milestone F full gate: static/build/full configured unit/property checks, affected responsive/accessibility/scaling browser scenarios and required performance measurements. Review all five viewports; verify camera ownership, geometry/text constraints and no semantic loss under presentation budgets.
 
 - [ ] 11. R10 — Reference-versus-browser iteration
   - [ ] 11.1 Write the reference-state Java programs
@@ -1118,12 +1168,14 @@ Ground rules for every task:
       - a breakpoint-friendly program for Debug pause;
       - a dense world with many types, packages, collections and a library/JDK share, for semantic zoom FAR, MEDIUM and CLOSE and free navigation.
     - Each program has a README line naming the Comparable_States it drives.
-    - Verify each one through the production BuildService and a real JVM in `tests/reference/programs.jvm.test.mjs`: exact output, exit status, and SceneModel counts at the final Event.
+    - Start the generic hero program and fixture manifest in A/B for early QA; complete the full program set in G. Verify each one through the production BuildService and a real JVM in `tests/reference/programs.jvm.test.mjs`: exact output, exit status, and SceneModel counts at the final Event.
     - _Requirements: 33.4, 33.6, 34.1_
 
   - [ ] 11.2 Build the reference convergence harness and the Comparable_State spec
-    - Extend `src/qa/qaBridge.ts` with `worldProjection()` (projected stack and heap bands and entity bounds), `planStats()`, `clock.step(ms)` and `setCameraPose()`.
+    - Establish capture/readiness/report scaffolding in A and projection comparison in B, then complete this full matrix in G. Extend `src/qa/qaBridge.ts` with `worldProjection()` (projected stack and heap bands and entity bounds), `planStats()`, `clock.step(ms)` and `setCameraPose()`.
     - `e2e/reference/harness.ts`:
+      - waits for the finite text/material/effect readiness barrier before capture and records session/prefix identity; timeout fails capture or selects a documented ready fallback, never silently capturing unresolved text;
+      - rejects validation reports when expected/actual executed counts differ, required skips occur, or the actual real-JVM count is zero; the command/gate exit status must be nonzero, not just a warning;
       - captures at the twin resolution (1672×941 for R1–R4 twins, 1536×1024 for R5/R6 panels, with sheet panels cropped by rectangle);
       - composites side-by-side and absolute-difference assets in the browser with `OffscreenCanvas` (no image dependency);
       - writes them to `docs/checkpoints/reference-exact/{captures,side-by-side,diff}/`, which is gitignored media;
@@ -1155,7 +1207,7 @@ Ground rules for every task:
     - _Design: Components §23 QA harness_
 
   - [ ] 11.3 Converge the runtime hero view, completed execution and I/O states
-    - For each state, iterate capture → compare at original resolution against the twin and diff → fix the single largest discrepancy → capture again, at least twice.
+    - For each state, iterate capture → compare at original resolution against the twin and diff → fix the single largest discrepancy → capture again only if evidence shows a discrepancy or the fix needs verification. Accept an initially conforming state without redundant cycles.
     - Log every iteration in REVIEW.md with a category: composition, camera, lighting, material, proportion, typography, contrast or control placement.
     - Fixes go into tokens, shell geometry, primitives, materials, camera poses or the planner. They never use content-specific branches.
     - The I/O rail is recorded as a documented necessary addition.
@@ -1163,50 +1215,50 @@ Ground rules for every task:
     - _Requirements: 34.2–34.5_
 
   - [ ] 11.4 Converge the close object inspection and Focus states
-    - Iterate capture → compare → fix at least twice per state, against R2 and R5 panel 2: Focus travel framing, the 38–52 % H face, neighbours, dimming and Inspector card proportions.
+    - Capture → compare → fix and recapture only where acceptance evidence requires it, against R2 and R5 panel 2: Focus travel framing, the 38–52 % H face, neighbours, dimming and Inspector card proportions.
     - Log every iteration in REVIEW.md.
     - Done when `convergence.mjs` reports both states converged or documented.
     - _Requirements: 19.5, 19.6, 28.1, 34.2–34.5_
 
   - [ ] 11.5 Converge the recursion and deep invocation and return propagation states
-    - Iterate capture → compare → fix at least twice per state, against R3 and R5 panel 3: the descending staircase, call links on the left, amber returns on the right, the RETURNS heading and recursion framing.
+    - Capture → compare → fix and recapture only where acceptance evidence requires it, against R3 and R5 panel 3: the descending staircase, call links on the left, amber returns on the right, the RETURNS heading and recursion framing.
     - Log every iteration in REVIEW.md.
     - Done when `convergence.mjs` reports both states converged or documented.
     - _Requirements: 10.1–10.11, 34.2–34.5_
 
   - [ ] 11.6 Converge the array visualization and array operation states
-    - Iterate capture → compare → fix at least twice per state, against R5 panel 4 and R4: tray, title plate, cell proportions and numerals, read and write emphasis, and recorded-only array Flows.
+    - Capture → compare → fix and recapture only where acceptance evidence requires it, against R5 panel 4 and R4: tray, title plate, cell proportions and numerals, read and write emphasis, and recorded-only array Flows.
     - Log every iteration in REVIEW.md.
     - Done when `convergence.mjs` reports both states converged or documented.
     - _Requirements: 14.1–14.10, 34.2–34.5_
 
   - [ ] 11.7 Converge the exception propagation and Debug pause states
-    - Iterate capture → compare → fix at least twice per state, against R6 panel 5 and R6 panel 1: the red path through Frames, ExceptionPanel placement and text, Forensic dimming, the Debug_Bar and the "Paused · line N" halo.
+    - Capture → compare → fix and recapture only where acceptance evidence requires it, against R6 panel 5 and R6 panel 1: the red path through Frames, ExceptionPanel placement and text, Forensic dimming, the Debug_Bar and the "Paused · line N" halo.
     - Log every iteration in REVIEW.md.
     - Done when `convergence.mjs` reports both states converged or documented.
     - _Requirements: 7.5, 7.7, 25.1–25.5, 34.2–34.5_
 
   - [ ] 11.8 Converge the free navigation and time travel states
-    - Iterate capture → compare → fix at least twice per state, against R6 panels 7 and 6: orbit, pan and zoom across both regions, and the same World at three Cursors with stable anchors and the Time_Dock milestones.
+    - Capture → compare → fix and recapture only where acceptance evidence requires it, against R6 panels 7 and 6: orbit, pan and zoom across both regions, and the same World at three Cursors with stable anchors and the Time_Dock milestones.
     - Log every iteration in REVIEW.md.
     - Done when `convergence.mjs` reports both states converged or documented.
     - _Requirements: 20.2, 23.1–23.5, 34.2–34.5_
 
   - [ ] 11.9 Converge the Semantic_Zoom FAR, MEDIUM and CLOSE states
-    - Iterate capture → compare → fix at least twice per state, against R5 panel 6 and R6 panel 8: Cluster silhouettes and `Key ×N` labels at FAR, compact rows at MEDIUM, and the full grid at CLOSE, as one continuous World without threshold flicker.
+    - Capture → compare → fix and recapture only where acceptance evidence requires it, against R5 panel 6 and R6 panel 8: Cluster silhouettes and `Key ×N` labels at FAR, compact rows at MEDIUM, and the full grid at CLOSE, as one continuous World without threshold flicker.
     - Log every iteration in REVIEW.md.
     - Done when `convergence.mjs` reports all three states converged or documented.
     - _Requirements: 22.1–22.8, 22.16, 34.2–34.5_
 
   - [ ] 11.10 Run a cross-state convergence pass
     - Re-capture all 16 states in all five QA viewports after 11.3–11.9, because a fix for one state can regress another.
-    - Fix any regression, with at least one further capture → compare → fix iteration for each affected state.
+    - Fix any regression, then recapture affected states to verify the change; do not require another fix when the captured state already passes.
     - Inspect the final captures at original resolution.
     - Done when `npm run qa:reference` reports every Comparable_State converged or documented, with passing rectangle measurements.
     - _Requirements: 34.2–34.6_
 
   - [ ] 11.11 Checkpoint — R10
-    - Ensure that typecheck, lint, build, `npm test`, the full Playwright suite and `npm run test:reference` pass. Resolve open questions from the spec and the repository. Ask the user only if a blocker cannot be resolved that way.
+    - Convergence boundary G: validate all sixteen Comparable_States across all five viewports with readiness and rectangle measurements, reviewed necessary deviations and no arbitrary iteration count. Run affected regression checks after shared visual fixes; exhaustive acceptance is 13.7.
 
 - [ ] 12. R11 — Torture, regression and performance audit
   - [ ] 12.1 Run the static and unit/integration gates and fix regressions
@@ -1216,11 +1268,14 @@ Ground rules for every task:
     - _Requirements: 34.12_
 
   - [ ] 12.2 Run the real-JVM suites and verify Semantic_Golden byte identity
-    - Run the acceptance suite: `GGJAVA_MAVEN_PATH="$PWD/.ggjavaez/tools/maven/bin/mvn" GGJAVA_GRADLE_PATH="$PWD/.ggjavaez/tools/gradle/bin/gradle" npm run test:acceptance`.
-    - Run the prior real-JVM suites: `npx vitest run tests/coverage-v12-p4 tests/provenance/real-jvm.test.mjs tests/provenance/performance-jvm.test.mjs --execArgv=--expose-gc --maxWorkers=1 --fileParallelism=false`, with the build-tool environment set.
-    - Run the torture JVM suite: `npx vitest run tests/torture-v12-p5_5/torture.jvm.test.mjs --execArgv=--expose-gc --maxWorkers=1 --fileParallelism=false`.
-    - Run the rich graph suite: `npx vitest run tests/perf/provenance.test.mjs --execArgv=--expose-gc --maxWorkers=1 --fileParallelism=false`.
-    - Run `tests/reference/programs.jvm.test.mjs`.
+    - Run all workloads serially. Supply Maven/Gradle paths to every build-tool corpus command; clear `VJ_PHASE4_CASE` and `VJ_TORTURE_CASE` for full gates so ambient filters cannot narrow coverage. Use JSON reports with the count-checking gate in 11.2; a successful Vitest exit alone is insufficient.
+    - Acceptance: `GGJAVA_MAVEN_PATH="$PWD/.ggjavaez/tools/maven/bin/mvn" GGJAVA_GRADLE_PATH="$PWD/.ggjavaez/tools/gradle/bin/gradle" npm run test:acceptance -- --reporter=json --outputFile=docs/checkpoints/reference-exact/gates/acceptance.json`. The package script supplies `VJ_SUITE=acceptance`.
+    - Prior suites: `VJ_PHASE3_JVM=1 VJ_PHASE4_JVM=1 VJ_PHASE4_CASE= GGJAVA_MAVEN_PATH="$PWD/.ggjavaez/tools/maven/bin/mvn" GGJAVA_GRADLE_PATH="$PWD/.ggjavaez/tools/gradle/bin/gradle" npx vitest run tests/coverage-v12-p4 tests/provenance/real-jvm.test.mjs tests/provenance/performance-jvm.test.mjs --execArgv=--expose-gc --maxWorkers=1 --fileParallelism=false --reporter=json --outputFile=docs/checkpoints/reference-exact/gates/prior-jvm.json`.
+    - Torture: `VJ_PHASE5_5_JVM=1 VJ_PHASE4_JVM=1 VJ_PHASE4_CASE= VJ_TORTURE_CASE= GGJAVA_MAVEN_PATH="$PWD/.ggjavaez/tools/maven/bin/mvn" GGJAVA_GRADLE_PATH="$PWD/.ggjavaez/tools/gradle/bin/gradle" npx vitest run tests/torture-v12-p5_5/torture.jvm.test.mjs --execArgv=--expose-gc --maxWorkers=1 --fileParallelism=false --reporter=json --outputFile=docs/checkpoints/reference-exact/gates/torture-jvm.json`. Both Phase 5.5 and Phase 4 flags are required by this harness.
+    - Rich graph performance (not a real-JVM suite): `VJ_SUITE=perf npx vitest run tests/perf/provenance.test.mjs --execArgv=--expose-gc --maxWorkers=1 --fileParallelism=false --reporter=json --outputFile=docs/checkpoints/reference-exact/gates/rich-graph.json`. Without `VJ_SUITE`, `vite.config.ts` excludes `tests/perf/**`.
+    - Reference programs: `VJ_PHASE4_JVM=1 VJ_PHASE4_CASE= GGJAVA_MAVEN_PATH="$PWD/.ggjavaez/tools/maven/bin/mvn" GGJAVA_GRADLE_PATH="$PWD/.ggjavaez/tools/gradle/bin/gradle" npx vitest run tests/reference/programs.jvm.test.mjs --maxWorkers=1 --fileParallelism=false --reporter=json --outputFile=docs/checkpoints/reference-exact/gates/reference-jvm.json`. Task 11.1 must declare its opt-in contract and expected per-program test manifest before execution; Phase 4 is required when using the existing `recordProject` harness.
+    - Static inventory at correction time (recompute from definitions/fixture manifests if implementation legitimately adds cases): acceptance 195 cases = 42 corpus/invariance checks + 153 facts (149 current, 4 existing `test.fails` targets); prior command 85 cases = 33 non-JVM corpus checks + 30 Phase 4 coverage + 4 Phase 4 invariance + 17 Phase 3 provenance + 1 Phase 3 JVM performance; torture 9; rich graph 1. Thus prior real-JVM executed count is 52, not 85. Report existing expected-failure targets separately and reconcile their status through the lead's preserved test discipline; an expected failure is not proof of successful reconstructed behavior.
+    - For every command report expected cases, actual executed cases, actual successful required cases, failed cases, skips/todos and actual real-JVM cases separately. Require actual executed = expected, actual real-JVM = expected real-JVM and >0 for each real-JVM suite, zero skipped required cases and no failures. The count-checking gate/wrapper must exit nonzero for mismatch, missing reports or all-skipped runs; non-JVM corpus passes cannot mask skipped JVM tests. New reference-program counts must be explicit and nonzero, never inferred from a successful command.
     - Regenerate every retained Semantic_Golden and diff it against the stored file. Zero modified, replaced or deleted files are allowed.
     - Check plain, Maven and Gradle parity at the final Event on `fixtures/projects-m9/people-{plain,maven,gradle}` and the `acc*` Maven and Gradle fixtures: equal counts of Frames, Heap_Objects, shelves, cells and entries, with the same type names and values.
     - Report any assertion that passed in Phase 5.5 and now fails, by name, and fix it.
@@ -1263,8 +1318,8 @@ Ground rules for every task:
       - Two runs must match in frame count and in the Cursor sequence at every frame.
       - Inspect the frames and fix motion defects.
     - `e2e/reference/flows.spec.ts` asserts AppState, Lens and Shell state at every step of:
-      - (a) EDIT → RUNNING → WAITING_INPUT → RUNNING → HISTORY → LIVE → DEBUG_PAUSED → COMPLETED;
-      - (b) COMPLETED → source edit → failed build → Prior_World retained, with equal World, Recording, Cursor and Selection;
+      - (a) exercise process running, input-wait and resumed input, HISTORY/LIVE Lens and debugger pause independently through completion; also alive process + stopped recording + input wait, and pause before any semantic Event;
+      - (b) completed execution → source edit → failed build, asserting retained session/execution ID, trace/history/prefix revision, semantic Cursor, layout/anchors, Lens/zoom, Selection, valid Focus, source bindings and Console association; stale/new-attempt subscriptions must not leak;
       - (c) RUNNING → uncaught exception → Error_Explorer showing the recorded class and message → successful rerun → COMPLETED.
       - On failure it reports the first divergent step.
     - _Requirements: 34.7, 34.8_
@@ -1284,7 +1339,7 @@ Ground rules for every task:
     - _Requirements: 34.6, 34.8_
 
   - [ ] 12.7 Checkpoint — R11
-    - Ensure that every gate from 12.1 to 12.6 passes, with zero failing suites and zero weakened assertions, and that the logs are recorded. Resolve open questions from the spec and the repository. Ask the user only if a blocker cannot be resolved that way.
+    - Audit boundary G: every gate/evidence item in 12.1–12.6 must pass with expected/actual counts and skips recorded and no weakened assertions. Reuse valid evidence only if the relevant tree is unchanged; cleanup changes are covered by final 13.7.
 
 - [ ] 13. R12 — Cleanup, documentation and final push
   - [ ] 13.1 Delete the superseded runtime presentation modules
@@ -1300,7 +1355,7 @@ Ground rules for every task:
       - `src/playback/usePlayback.ts`;
       - `tests/golden/layoutGolden.*`, superseded by `layoutEngineGolden` with a review record.
     - Semantic tests stay untouched.
-    - Done when typecheck, lint, build and `npm test` pass and no import of a deleted module remains.
+    - Done when relevant local checks and the next affected integration gate pass and no import of a deleted module remains.
     - _Requirements: 34.10_
     - _Design: Deleted modules; Migration and Deletion Plan steps 4–7_
 
@@ -1320,7 +1375,7 @@ Ground rules for every task:
       - Fix every leak in generic code.
     - `scripts/reference/check-references.mjs` with `tests/guardrails/references.test.mjs`:
       - `best.png` and the five `ChatGPT Image*.png` root images (R1–R6) exist;
-      - they are untracked (`git ls-files --error-unmatch` fails);
+      - `best.png` is tracked (`git ls-files --error-unmatch best.png` succeeds); each of the five `ChatGPT Image*.png` root references remains untracked (the corresponding lookup fails), user-owned and never added;
       - their md5 equals that of their tracked twins.
       - Failures name the image. The root images are never added, moved or modified.
     - _Requirements: 33.6, 34.13_
@@ -1348,7 +1403,7 @@ Ground rules for every task:
     - `VISUAL-QA.md`: captures per state and viewport, side-by-side and diff assets, REVIEW.md iterations, remaining reference differences and documented deviations.
     - `BEHAVIOR-QA.md`: motion sequences, cross-state flows, debug scenarios, the hands-on audit and the accessibility and reduced-motion results.
     - `PERFORMANCE.md`: every Requirement 32 metric with value, budget and Phase 5.5 baseline, the semantic and rendering split, and mitigations.
-    - `VALIDATION.md`: gate results with commands and logs, unit, acceptance, real-JVM and browser counts, Semantic_Golden identity, the consolidated test migration ledger and Presentation_Golden review records from `migration/`, and the known limitations.
+    - `VALIDATION.md`: gate results with commands/logs, flags, expected/actual executed and successful counts, skips/todos and real-JVM counts separately from non-JVM inventory checks, unit, acceptance and browser counts, Semantic_Golden identity, the consolidated test migration ledger and Presentation_Golden review records from `migration/`, and the known limitations.
     - All of these go under `docs/checkpoints/reference-exact/`. Bulk media stays gitignored.
     - _Requirements: 32.13, 34.3, 34.12_
 
@@ -1366,12 +1421,12 @@ Ground rules for every task:
     - _Requirements: 33.8, 34.10, 34.13_
 
   - [ ] 13.7 Final checkpoint — R12
-    - Ensure that every gate passes once more on the final tree: typecheck, lint, build, `npm test`, acceptance, real-JVM, torture, the full browser suite, `npm run qa:reference` and the guardrail scans. Resolve open questions from the spec and the repository. Ask the user only if a blocker cannot be resolved that way.
+    - Final exhaustive gate G: on the final cleaned tree, run typecheck, lint, build, full unit/property/regression suite, acceptance, all explicit-flag/count real-JVM suites from 12.2, torture/debugger/soak, full browser suite, reference convergence, performance and guardrail/integrity scans. Record all evidence and fail nonzero for missing execution, unexpected skips/count mismatch or any unresolved acceptance failure. Review final original-resolution captures and complete the polish pass.
 
   - [ ] 13.8 Push the branch and verify the remote tip
     - Run `git push origin reference-exact-rebuild` as a normal push, with no force, rebase or squash and no merge into main.
     - Verify that `git rev-parse HEAD` equals `git rev-parse origin/reference-exact-rebuild` and that the tracked working tree is clean.
-    - Verify that the root `best.png` and the five `ChatGPT Image*.png` files are still untracked and unchanged.
+    - Verify that root `best.png` remains tracked and unchanged, and exactly five root `ChatGPT Image*.png` references remain untracked and byte-identical; never add them.
     - _Requirements: 34.13_
 
 ## Notes
@@ -1387,79 +1442,13 @@ Ground rules for every task:
   - 62–64 in R7;
   - 44–46 in R8;
   - 65, 66 in R9.
-- Stage checkpoints (2.10, 3.14, 4.15, 5.8, 6.10, 7.5, 8.8, 9.6, 10.6, 11.11, 12.7, 13.7) are not in the dependency graph. Each runs after the last wave of its stage and before the first wave of the next. Task 13.8 runs after checkpoint 13.7.
+- Legacy checkpoints map to the integration/milestone/final cadence above; there are no execution waves. Task 13.8 follows accepted final 13.7 and is a future lead release action, not authorization to mutate Git during this correction pass.
 - Interim code, with its named removal:
   - `InterimWorld` and the `world=v2` preview are removed in 5.7.
   - The legacy re-exports for `src/scene` metrics, `src/navigation/cameraConstraints` and `src/playback/playbackState`, and the v3 token aliases and `worldV2.ts` naming, are removed in 13.1–13.2.
-- Browser, JVM and performance tasks that share a wave should be run serially by the lead against one dev pair and one bridge, because these workloads contend for the same local server.
+- Browser, JVM, debugger, soak and performance workloads run serially in the lead-reserved slot against one dev pair/bridge; independent code ownership does not imply independent test infrastructure.
 - The lead makes the intermediate commits. The only git-push task is 13.8.
 
-## Task Dependency Graph
+## Implementation dependency reference
 
-```json
-{
-  "waves": [
-    { "id": 0, "tasks": ["2.1", "2.2"] },
-    { "id": 1, "tasks": ["2.3", "2.4", "2.6"] },
-    { "id": 2, "tasks": ["2.5", "2.7"] },
-    { "id": 3, "tasks": ["2.8"] },
-    { "id": 4, "tasks": ["2.9"] },
-    { "id": 5, "tasks": ["3.1"] },
-    { "id": 6, "tasks": ["3.2", "3.3", "3.4", "3.6"] },
-    { "id": 7, "tasks": ["3.5"] },
-    { "id": 8, "tasks": ["3.7", "3.8"] },
-    { "id": 9, "tasks": ["3.9", "3.10", "3.11", "3.12"] },
-    { "id": 10, "tasks": ["3.13"] },
-    { "id": 11, "tasks": ["4.1", "4.3", "4.6"] },
-    { "id": 12, "tasks": ["4.2", "4.4", "4.5"] },
-    { "id": 13, "tasks": ["4.7", "4.9"] },
-    { "id": 14, "tasks": ["4.8", "4.10", "4.11"] },
-    { "id": 15, "tasks": ["4.12", "4.13"] },
-    { "id": 16, "tasks": ["4.14"] },
-    { "id": 17, "tasks": ["5.1", "5.5"] },
-    { "id": 18, "tasks": ["5.2", "5.3", "5.6"] },
-    { "id": 19, "tasks": ["5.4"] },
-    { "id": 20, "tasks": ["5.7"] },
-    { "id": 21, "tasks": ["6.1", "6.3", "6.6"] },
-    { "id": 22, "tasks": ["6.2", "6.5"] },
-    { "id": 23, "tasks": ["6.4", "6.7"] },
-    { "id": 24, "tasks": ["6.8"] },
-    { "id": 25, "tasks": ["6.9"] },
-    { "id": 26, "tasks": ["7.1"] },
-    { "id": 27, "tasks": ["7.2"] },
-    { "id": 28, "tasks": ["7.3"] },
-    { "id": 29, "tasks": ["7.4"] },
-    { "id": 30, "tasks": ["8.1", "8.3", "8.4"] },
-    { "id": 31, "tasks": ["8.2", "8.5"] },
-    { "id": 32, "tasks": ["8.6", "8.7"] },
-    { "id": 33, "tasks": ["9.1", "9.2"] },
-    { "id": 34, "tasks": ["9.3"] },
-    { "id": 35, "tasks": ["9.4", "9.5"] },
-    { "id": 36, "tasks": ["10.1", "10.3"] },
-    { "id": 37, "tasks": ["10.2", "10.4"] },
-    { "id": 38, "tasks": ["10.5"] },
-    { "id": 39, "tasks": ["11.1"] },
-    { "id": 40, "tasks": ["11.2"] },
-    { "id": 41, "tasks": ["11.3"] },
-    { "id": 42, "tasks": ["11.4"] },
-    { "id": 43, "tasks": ["11.5"] },
-    { "id": 44, "tasks": ["11.6"] },
-    { "id": 45, "tasks": ["11.7"] },
-    { "id": 46, "tasks": ["11.8"] },
-    { "id": 47, "tasks": ["11.9"] },
-    { "id": 48, "tasks": ["11.10"] },
-    { "id": 49, "tasks": ["12.1"] },
-    { "id": 50, "tasks": ["12.2"] },
-    { "id": 51, "tasks": ["12.3"] },
-    { "id": 52, "tasks": ["12.4"] },
-    { "id": 53, "tasks": ["12.5"] },
-    { "id": 54, "tasks": ["12.6"] },
-    { "id": 55, "tasks": ["13.1"] },
-    { "id": 56, "tasks": ["13.2"] },
-    { "id": 57, "tasks": ["13.3", "13.4"] },
-    { "id": 58, "tasks": ["13.5"] },
-    { "id": 59, "tasks": ["13.6"] },
-    { "id": 60, "tasks": ["13.8"] }
-  ]
-}
-```
+A → B → C → D → E → F → G is the main product progression. The milestone ownership table is the execution guide; parent R0–R12 groups and preserved item IDs locate acceptance details. A/B QA scaffolding and targeted correctness/performance checks precede their consumers. C needs B's stable IDs/ports; D extends B/C projection/navigation; E reuses their primitives; F plans over the full canonical world independently of its output; G converges the complete application and validates the cleaned final tree. Disjoint implementation may proceed in parallel only after the lead locks shared inputs and serializes common-file integration. No task-runner wave graph is prescribed.

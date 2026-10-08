@@ -21,7 +21,7 @@ Method: every reference image was opened at original resolution with the image r
 | B4 | — | `references/04_person_world_sequence.png` | 1600×1000 | T0–T3: same identity through time | Stable identity |
 | B5 | — | `references/05_theater_continuity.png` | 1600×1000 | Array expands in place; recursion collapses back to spine | Theater = transformation, not mini-app |
 
-Checksums (md5) confirm each root image is byte-identical to its tracked twin. Root images stay untracked and unmodified; QA comparison assets use the tracked twins.
+Checksums (md5) confirm each root image is byte-identical to its tracked twin. Root best.png stays tracked and unchanged; the five ChatGPT Image*.png user references stay untracked and byte-for-byte unchanged. QA comparison assets use the tracked twins.
 
 ## 2. Per-reference analysis
 
@@ -362,4 +362,4 @@ Phase 5.5 retains keyboard tools, visible focus, `prefers-reduced-motion` (Navig
 - Text legibility through glass: faces keep an opaque-tinted inner panel; text is never rendered behind transmission.
 - Monaco under 3D transforms breaks hit-testing: the source panel stays a flat DOM overlay (documented deviation from the implied tilt).
 - Golden/presentation tests tied to old layouts: regenerate presentation goldens deliberately; semantic goldens, graph digests and JVM facts must stay byte-identical.
-- IdeWorkspace refactor risk: behavior covered by 27 Playwright specs and command/unit tests; refactor behind unchanged command host/operations contracts.
+- IdeWorkspace refactor risk: behavior covered by 27 Playwright specs and command/unit tests; refactor behind preserved operations guarantees and explicitly adapted command routing/availability.
