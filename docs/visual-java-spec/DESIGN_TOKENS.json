@@ -1,69 +1,371 @@
 {
-  "version": "3.0",
+  "version": 4,
   "color": {
-    "canvas": "#06080D",
-    "canvasRaised": "#090D14",
-    "panel": "#0B1018",
-    "panelRaised": "#111824",
-    "panelHover": "#151E2B",
-    "border": "#223044",
-    "borderStrong": "#354A64",
-    "text": "#F3F6FA",
-    "textSecondary": "#A7B1BF",
-    "textMuted": "#6F7B8B",
-    "execution": "#63E6FF",
-    "stack": "#6F8CFF",
-    "heap": "#B77CFF",
-    "mutation": "#FFC857",
-    "success": "#70E0B2",
-    "exception": "#FF5D6C",
-    "null": "#7A8492"
-  },
-  "radiusPx": {
-    "shell": 8,
-    "control": 6
-  },
-  "spacingPx": [
-    4,
-    8,
-    12,
-    16,
-    24,
-    32,
-    48
-  ],
-  "line": {
-    "uiBorderPx": 1,
-    "referenceDefaultPx": 2,
-    "referenceMinPx": 1.5,
-    "referenceMaxPx": 2.5
-  },
-  "worldMaterial": {
-    "stackBody": "#16395B",
-    "stackFace": "#0E223A",
-    "stackSlot": "#18304D",
-    "heapBody": "#352353",
-    "heapFace": "#211431",
-    "heapSlot": "#302041",
-    "floor": "#0A111B",
-    "historyBody": "#303A47",
-    "historyFace": "#202B36",
-    "historySlot": "#2A3542"
+    "ui": {
+      "text": "#EEF4FF",
+      "textSecondary": "#A9B8DA",
+      "textMuted": "#6E7FA6",
+      "glassFill": "rgba(8,14,34,0.72)",
+      "glassBorder": "rgba(160,190,255,0.18)",
+      "focusRing": "#FFFFFF",
+      "focusHalo": "#0A1230",
+      "modeActiveFill": "rgba(63,140,255,0.18)",
+      "modeActiveBorder": "#5CC8FF"
+    },
+    "background": {
+      "top": "#080C20",
+      "bottom": "#03050C",
+      "hazeStack": "#0A2463",
+      "hazeHeap": "#24104F"
+    },
+    "stack": {
+      "core": "#1F6BFF",
+      "edge": "#5CC8FF",
+      "faceTint": "rgba(18,52,140,0.62)",
+      "face": "#0D235F",
+      "chip": "#081538"
+    },
+    "heap": {
+      "core": "#7A3CF0",
+      "edge": "#C58BFF",
+      "faceTint": "rgba(62,26,140,0.62)",
+      "face": "#28135F",
+      "chip": "#170B3C"
+    },
+    "class": {
+      "core": "#14B8A6",
+      "edge": "#5EEAD4",
+      "face": "#0B3A3A"
+    },
+    "semantic": {
+      "execution": "#3FD8FF",
+      "return": "#FFB23E",
+      "mutation": "#FFC857",
+      "exception": "#FF4A5E",
+      "stdout": "#5BE3A8",
+      "stdin": "#3FD8FF",
+      "stderr": "#FF8A5B"
+    },
+    "syntax": {
+      "keyword": "#5C9DFF",
+      "type": "#FFB23E",
+      "identifier": "#EEF4FF",
+      "lineNumber": "#6E7FA6",
+      "executionLine": "#3FD8FF"
+    }
   },
   "typography": {
-    "ui": "Inter, Geist, ui-sans-serif, system-ui, sans-serif",
-    "code": "JetBrains Mono, SFMono-Regular, Consolas, monospace",
-    "runtimeMicroPx": 12,
-    "secondaryUiPx": 13,
-    "primaryUiPx": 14,
-    "inspectorValuePx": 15
+    "ui": {
+      "family": "Inter",
+      "brandTitleH": 0.024,
+      "brandSubtitleH": 0.015,
+      "minPx": 12
+    },
+    "code": {
+      "family": "JetBrains Mono",
+      "sizeH": 0.016,
+      "lineH": 0.029
+    },
+    "world": {
+      "family": "Inter",
+      "title": [
+        0.4,
+        600
+      ],
+      "identity": [
+        0.28,
+        500
+      ],
+      "row": [
+        0.32,
+        500
+      ],
+      "value": [
+        0.34,
+        600
+      ],
+      "type": [
+        0.27,
+        400
+      ],
+      "heading": {
+        "capHeight": 0.45,
+        "tracking": 0.18,
+        "weight": 600
+      },
+      "minProjectedPx": 11
+    }
   },
-  "semantic": {
-    "execution": "active instruction and causal pulse only",
-    "stack": "stack identity accents",
-    "heap": "heap object identity accents",
-    "mutation": "value currently changing",
-    "exception": "actual error state only",
-    "null": "absence or disconnected reference"
+  "shell": {
+    "header": {
+      "h": 0.08,
+      "minPx": 56,
+      "maxPx": 76
+    },
+    "modeButton": {
+      "h": 0.041,
+      "minPx": 34,
+      "maxPx": 40,
+      "wMinPx": 98,
+      "wMaxPx": 112,
+      "radiusPx": 8,
+      "gapPx": 14
+    },
+    "source": {
+      "x": 0.006,
+      "y": 0.1,
+      "edit": [
+        0.48,
+        0.76
+      ],
+      "run": {
+        "w": 0.25,
+        "minPx": 340,
+        "maxPx": 470,
+        "h": 0.56
+      },
+      "debug": [
+        0.34,
+        0.66
+      ],
+      "focus": {
+        "w": 0.22
+      },
+      "resizeMs": 400
+    },
+    "explorer": {
+      "wMin": 0.16,
+      "wMax": 0.22
+    },
+    "timeDock": {
+      "inset": 0.009,
+      "bottom": 0.025,
+      "h": 0.106,
+      "minPx": 84,
+      "maxPx": 112,
+      "radiusPx": 12,
+      "play": 0.062,
+      "track": [
+        0.15,
+        0.81
+      ],
+      "nodePx": 10,
+      "currentRingPx": 20,
+      "labelH": 0.015,
+      "maxLabels": 12,
+      "maxLabelsShort": 6
+    },
+    "dock": {
+      "stripMaxPx": 24,
+      "drawer": {
+        "default": 0.3,
+        "min": 0.2,
+        "max": 0.45
+      }
+    },
+    "inspector": {
+      "w": 0.2,
+      "minPx": 300,
+      "top": 0.34,
+      "maxH": 0.52,
+      "rightEdge": 0.99,
+      "sheetMaxH": 0.45
+    },
+    "safeFrame": {
+      "x": [
+        0.27,
+        0.985
+      ],
+      "y": [
+        0.1,
+        0.85
+      ],
+      "minShortH": 0.55
+    },
+    "viewport": {
+      "wideW": 1600,
+      "standardW": 1024,
+      "tallH": 760
+    }
+  },
+  "world": {
+    "frame": {
+      "w": 4.8,
+      "header": 1.0,
+      "row": 0.72,
+      "pad": 0.3,
+      "depth": 1.1,
+      "bevel": 0.1,
+      "rowAllowance": 3,
+      "rowsMin": 2,
+      "rowsMax": 11,
+      "stackGap": 0.1,
+      "depthStepZ": 1.25,
+      "deckGapZ": 0.35
+    },
+    "object": {
+      "w": 5.2,
+      "header": 1.5,
+      "row": 1.05,
+      "pad": 0.45,
+      "depth": 2.3,
+      "libraryW": 4.2,
+      "columnGap": 2.4,
+      "tiers": 3,
+      "tierGap": 0.8,
+      "pageStepZ": 3.7
+    },
+    "array": {
+      "cell": 1.55,
+      "gap": 0.08,
+      "indexLabel": 0.5,
+      "backplate": 0.12,
+      "titlePlate": 0.9,
+      "cellsPerRowMin": 4,
+      "cellsPerRowMax": 16
+    },
+    "collection": {
+      "rows": 12,
+      "columns": 2,
+      "pitch": 0.56,
+      "sizeRow": 0.7
+    },
+    "classShelf": {
+      "w": 5.2,
+      "header": 1.0,
+      "row": 0.72,
+      "depth": 1.1,
+      "pitchX": 6.2,
+      "bandGap": 1.2,
+      "rowsMax": 8
+    },
+    "regions": {
+      "stackHeapGap": 3.4,
+      "heapTopY": -0.6,
+      "libraryGapZ": 2.0
+    },
+    "io": {
+      "size": [
+        1.8,
+        0.6,
+        0.3
+      ],
+      "x": 4.1,
+      "z": 0.9,
+      "y": [
+        0.6,
+        -0.2,
+        -1.0
+      ]
+    },
+    "connector": {
+      "corePx": 2.5,
+      "haloPx": 8,
+      "selectedPx": 3.5,
+      "dimOpacity": 0.35,
+      "historyOpacity": 0.25,
+      "port": 0.16,
+      "maxObstacles": 48
+    },
+    "opacity": {
+      "historicalFrame": 0.45,
+      "focusDim": 0.25,
+      "traceDim": 0.4,
+      "forensicDim": 0.4,
+      "quiet": 0.55,
+      "emptyWorld": 0.45
+    }
+  },
+  "camera": {
+    "fov": 36,
+    "hero": {
+      "yaw": 8,
+      "pitch": -13
+    },
+    "focus": {
+      "yaw": 21,
+      "pitch": -8,
+      "faceW": 0.3,
+      "faceH": 0.45
+    },
+    "recursion": {
+      "yaw": 18,
+      "pitch": -16,
+      "depth": 4
+    },
+    "pitchClamp": [
+      -80,
+      -2
+    ],
+    "minDistance": 1.5,
+    "maxDistanceDiagonals": 3,
+    "home": {
+      "groups": 12,
+      "external": 2,
+      "minRepH": 0.04
+    }
+  },
+  "motion": {
+    "guidedMs": [
+      600,
+      1200
+    ],
+    "runMs": 600,
+    "focusMs": 900,
+    "exitFocusMs": 800,
+    "homeMs": 900,
+    "crossfadeMs": 300,
+    "settleMs": 250,
+    "transitionMs": [
+      250,
+      700
+    ],
+    "maxPending": 8,
+    "liveLagMs": 750,
+    "cinematicRestoreMs": 500
+  },
+  "budgets": {
+    "FAR": {
+      "frames": 6,
+      "objects": 6,
+      "classes": 2,
+      "clusters": 20,
+      "connectors": 12,
+      "calls": 8,
+      "flows": 6,
+      "pickable": 16,
+      "cells": 8,
+      "quiet": 0
+    },
+    "MEDIUM": {
+      "frames": 12,
+      "objects": 16,
+      "classes": 4,
+      "clusters": 12,
+      "connectors": 32,
+      "calls": 20,
+      "flows": 12,
+      "pickable": 40,
+      "cells": 48,
+      "quiet": 512
+    },
+    "CLOSE": {
+      "frames": 24,
+      "objects": 32,
+      "classes": 8,
+      "clusters": 4,
+      "connectors": 64,
+      "calls": 40,
+      "flows": 20,
+      "pickable": 64,
+      "cells": 128,
+      "quiet": 256
+    }
+  },
+  "detailLevel": {
+    "closeH": 0.16,
+    "farH": 0.05,
+    "hysteresis": 0.15,
+    "representatives": 5
   }
 }

@@ -79,7 +79,7 @@ export function Timeline({ trace, playback, execution }: TimelineProps) {
   const currentEvent = trace.events[cursor - 1]
   const recordingStopped = trace.events[eventCount - 1]?.type === 'CAPTURE_STOP'
   const currentLabel = currentEvent?.type === 'CAPTURE_STOP'
-    ? `Last recorded event · ${currentEvent.recording.reason}` : currentEvent?.label ?? 'Ready to run'
+    ? `Last recorded event · ${currentEvent.recording.reason}` : currentEvent?.label ?? 'Before execution'
   const markers = useMemo(() => markerIndices(hasExecution ? trace.events.slice(0, eventCount) : trace.events, markerLimit), [trace.events, eventCount, hasExecution, markerLimit])
   const theme = {
     '--timeline-panel': colors.panel,
@@ -125,7 +125,7 @@ export function Timeline({ trace, playback, execution }: TimelineProps) {
           <input className="vj-timeline__range" type="range" min={0} max={eventCount} step={1} value={cursor}
             onChange={(event) => seekTo(Number(event.currentTarget.value))}
             disabled={eventCount === 0} aria-label="Scrub execution"
-            aria-valuetext={`Event ${cursor} of ${eventCount}: ${currentLabel}`}
+            aria-valuetext={cursor === 0 ? 'Before execution' : currentLabel}
             style={{ background: `linear-gradient(to right, ${colors.execution} ${progress}%, ${colors.borderStrong} ${progress}%)` }} />
           <div className="vj-timeline__markers" aria-label="Events">
             {markers.map((index) => { const event = trace.events[index]; return (

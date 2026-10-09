@@ -5,12 +5,43 @@ export { runtimeFont } from './runtimeFont'
 preloadRuntimeText()
 
 /** The spec JSON remains the sole color, typography, and spacing source. */
-export const colors = design.color
-export const spacingPx = design.spacingPx
-export const radiusPx = design.radiusPx
-export const typography = design.typography
-export const line = design.line
-export const worldMaterial = design.worldMaterial
+/** Frozen v4 contract. Compatibility aliases below serve the interim renderer only. */
+function freeze<T>(value: T): Readonly<T> {
+  if (value && typeof value === 'object') {
+    Object.values(value).forEach(freeze)
+    Object.freeze(value)
+  }
+  return value
+}
+export const tokens = freeze(design)
+export const color = tokens.color
+export const shell = tokens.shell
+export const world = tokens.world
+export const camera = tokens.camera
+export const motion = tokens.motion
+export const budgets = tokens.budgets
+export const detailLevel = tokens.detailLevel
+/** @deprecated Interim v3 consumer aliases; remove with legacy renderer. */
+export const colors = {
+  canvas: color.background.bottom, canvasRaised: color.background.top,
+  panel: '#0B1018', panelRaised: '#111824', panelHover: '#151E2B', border: '#223044', borderStrong: '#354A64',
+  text: color.ui.text, textSecondary: color.ui.textSecondary, textMuted: color.ui.textMuted,
+  execution: color.semantic.execution, stack: color.stack.edge, heap: color.heap.edge,
+  mutation: color.semantic.mutation, success: color.semantic.stdout, exception: color.semantic.exception, null: color.ui.textMuted,
+} as const
+export const spacingPx = [4, 8, 12, 16, 24, 32, 48] as const
+export const radiusPx = { shell: shell.timeDock.radiusPx, control: shell.modeButton.radiusPx } as const
+export const typography = {
+  ui: 'Inter, ui-sans-serif, system-ui, sans-serif', code: 'JetBrains Mono, SFMono-Regular, Consolas, monospace',
+  runtimeMicroPx: 12, secondaryUiPx: 13, primaryUiPx: 14, inspectorValuePx: 15,
+} as const
+export const typographyV4 = tokens.typography
+export const line = { uiBorderPx: 1, referenceDefaultPx: world.connector.corePx, referenceMinPx: 1.5, referenceMaxPx: world.connector.selectedPx } as const
+export const worldMaterial = {
+  stackBody: color.stack.core, stackFace: color.stack.face, stackSlot: color.stack.chip,
+  heapBody: color.heap.core, heapFace: color.heap.face, heapSlot: color.heap.chip,
+  floor: color.background.bottom, historyBody: '#303A47', historyFace: '#202B36', historySlot: '#2A3542',
+} as const
 
 export const motionMs = {
   instant: 90,
@@ -48,4 +79,4 @@ export const renderQuality = {
   low: { dpr: 1, shadows: false, shadowSize: 512 },
 } as const
 
-export const shellLayers = { source: 1, overlay: 2, controls: 3, inspector: 4, header: 5 } as const
+export const shellLayers = { world: 0, source: 2, overlay: 3, controls: 2, inspector: 3, header: 4, dialog: 5 } as const

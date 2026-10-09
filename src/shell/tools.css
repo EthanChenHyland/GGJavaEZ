@@ -1,0 +1,40 @@
+.ide-tool-tabs{display:flex;align-items:center;flex:none;height:32px;gap:2px;padding-right:8px;overflow-x:auto;border-top:1px solid var(--color-border);border-bottom:1px solid var(--color-border);scrollbar-width:none}
+.ide-tool-tabs button{height:100%;padding:0 11px;border:0;border-bottom:2px solid transparent;background:none;color:var(--color-textMuted);font-size:10px!important;font-weight:600;letter-spacing:.04em;white-space:nowrap}
+.ide-tool-tabs button.is-active{border-bottom-color:var(--color-execution);color:var(--color-text)}
+.ide-tool-tabs .ide-bottom-toggle{display:grid;place-items:center;width:32px;padding:0}
+.ide-status-spacer{flex:1;min-width:0}
+.ide-problems,.ide-console-output{min-height:0;flex:1;overflow:auto}
+.ide-empty{margin:16px;color:var(--color-textMuted);font-size:12px}
+.ide-problem{display:flex;gap:11px;width:100%;text-align:left;padding:10px 15px;border:0;border-bottom:1px solid var(--color-border);background:transparent;color:var(--color-text);align-items:flex-start}
+.ide-problem:hover{background:var(--color-panelRaised)}
+.ide-problem-icon{font-size:18px;color:var(--color-mutation);line-height:1}
+.ide-problem strong{display:block;font-weight:500;font-size:12px}
+.ide-problem small{display:block;margin-top:3px;color:var(--color-textMuted)}
+.ide-problem code{display:block;margin-top:5px;white-space:pre-wrap;color:var(--color-textSecondary);font-size:10px}
+.ide-console{display:flex;flex:1;min-height:0;flex-direction:column}
+.ide-console-output{padding:9px 14px;font:12px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace}
+.ide-console-output pre{margin:0;white-space:pre-wrap;overflow-wrap:anywhere;font:inherit}
+.ide-console-stdin{color:var(--color-execution)}
+.ide-console-exit{margin-top:7px!important;color:var(--color-textMuted)}
+.ide-console-input{height:33px;min-height:33px;display:flex;align-items:center;gap:8px;border-top:1px solid var(--color-border);padding:0 12px;color:var(--color-execution)}
+.ide-console-input input{flex:1;min-width:0;border:0;outline:0;background:none;color:var(--color-text);font:12px ui-monospace,SFMono-Regular,Menlo,monospace}
+.ide-console-input button{background:none;border:0;color:var(--color-textSecondary);font-size:11px!important}
+.ide-stack{margin:10px 0;padding:10px;border-left:2px solid var(--color-mutation);background:var(--color-panel)}
+.ide-stack strong{display:block;margin-bottom:6px}
+.ide-stack button{display:block;width:100%;text-align:left;background:none;border:0;color:var(--color-textSecondary);font:inherit;padding:1px 0}
+.ide-stack button:not(:disabled):hover{text-decoration:underline;color:var(--color-text)}
+.ide-stack details{margin:5px 0 8px;color:var(--color-textMuted)}
+.ide-stack summary{cursor:pointer}
+.ide-stack details pre{padding-top:6px;color:var(--color-textSecondary)}
+.ide-problem-entry{border-bottom:1px solid var(--color-border)}
+.ide-problem-entry .ide-problem{border-bottom:0;padding-bottom:5px}
+.ide-problem-entry>details{padding:0 15px 9px 44px;color:var(--color-textMuted);font-size:10px}
+.ide-problem-entry summary{cursor:pointer;width:max-content}
+.ide-problem-entry pre{white-space:pre-wrap;font:11px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--color-textSecondary);margin:8px 0 0}
+.ide-stack{border-left-color:var(--color-exception)}
+.ide-badge{background:var(--color-exception)}
+.ide-problem--warning .ide-problem-icon{color:var(--color-mutation)}
+.ide-badge{display:inline-block;min-width:17px;padding:1px 4px;margin-left:6px;border-radius:6px;background:var(--color-exception);color:var(--color-canvas)}
+.ide-console-output .ide-console-stdout,.ide-console-output .ide-console-stderr{display:inline}
+.ide-console-output .ide-console-exit{display:block}
+.ide-console-input:focus-within{box-shadow:inset 0 1px var(--color-execution)}

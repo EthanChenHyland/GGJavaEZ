@@ -215,7 +215,7 @@ export function createIdeCommandService(host: IdeCommandHost) {
   }
   const requireAvailable = (id: IdeCommandId, context: CommandContext) => {
     const state = guard(context)
-    if (!context.projectId && !['workbench.importProject', 'workbench.newProject', 'workbench.jdk'].includes(id)) throw new CommandUnavailable('Open a project first')
+    if (!context.projectId && !id.startsWith('workbench.')) throw new CommandUnavailable('Open a project first')
     if (isShellCommand(id) && state.shellAvailability?.[id]?.enabled === false) throw new CommandUnavailable((state.shellAvailability[id] as { enabled: false; reason: string }).reason)
     if (!host.operations[operation(id, state)]) throw new CommandUnavailable('Command operation is not connected')
     if (id === 'file.open') targetFile(context, state, false)
@@ -358,6 +358,8 @@ export function createIdeCommandService(host: IdeCommandHost) {
         const target = context.target ?? fallback
         const capturedContext = { ...context, ...(target ? { target: { ...target } } : {}) }
         const capturedArgs = structuredClone(args)
+        const immediate = id.startsWith('workbench.') && id !== 'workbench.newProject' && id !== 'workbench.importProject' && id !== 'workbench.restartJava'
+        if (immediate) return run(id, capturedContext, capturedArgs)
         const result = queue.then(() => run(id, capturedContext, capturedArgs))
         queue = result.then(() => {}, () => {})
         return result
