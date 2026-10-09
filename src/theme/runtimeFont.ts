@@ -1,6 +1,7 @@
 import { preload } from 'suspend-react'
 
 export const runtimeFont = '/fonts/Inter.ttf'
+export const runtimeFonts={400:runtimeFont,500:'/fonts/Inter-Medium.ttf',600:'/fonts/Inter-SemiBold.ttf'} as const
 // A finite shared alphabet. Other observed glyphs still load on demand.
 export const runtimeCharacters = Array.from({ length: 95 }, (_, index) => String.fromCharCode(32 + index)).join('') + '·→—×'
 let preloadPromise: Promise<void> | undefined

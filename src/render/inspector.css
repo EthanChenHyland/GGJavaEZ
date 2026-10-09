@@ -1,0 +1,31 @@
+.gg-inspector { box-sizing:border-box;padding:16px;display:flex;flex-direction:column;gap:8px;overflow:auto;color:var(--text-primary,#EEF4FF);font:400 13px/1.4 Inter,system-ui,sans-serif }
+.gg-inspector p { margin:0;color:#A9B8DA;font-size:12px }
+.gg-inspector .inspector-heading { display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:16px }
+.gg-inspector .inspector-heading strong { overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600 }
+.gg-inspector button { min-width:24px;min-height:24px;display:inline-flex;align-items:center;gap:4px;border:1px solid rgba(160,190,255,.18);border-radius:6px;background:rgba(31,107,255,.08);color:#EEF4FF;font:inherit;cursor:pointer;padding:4px 6px }
+.gg-inspector button:focus-visible,.gg-inspector summary:focus-visible { outline:2px solid #FFF;outline-offset:3px }
+.gg-inspector button[aria-disabled=true] { opacity:.45;cursor:default }
+.gg-inspector .inspector-actions { display:flex;gap:6px;flex-wrap:wrap }
+.gg-inspector .virtual-list { display:flex;flex-direction:column;min-height:0 }
+.gg-inspector .virtual-list-scroll { overflow:auto;min-height:0;max-height:26vh;flex:1; }
+.gg-inspector .inspector-values { flex:1 1 156px;min-height:52px;max-height:45vh }
+.gg-inspector .inspector-values .virtual-list-scroll { height:260px }
+.gg-inspector .inspector-value { height:52px }
+.gg-inspector .virtual-list-paging { display:flex;flex-wrap:wrap;gap:4px;align-items:center;font-size:12px }
+.gg-inspector .virtual-list-paging input { width:90px;min-height:24px;background:#080E22;border:1px solid rgba(160,190,255,.18);color:#EEF4FF;font:inherit }
+.gg-inspector .gg-inspector-provenance .virtual-list-scroll { max-height:240px }
+.gg-inspector .gg-inspector-inbound .virtual-list-scroll { max-height:156px }
+.gg-inspector .gg-inspector-events .virtual-list-scroll { max-height:96px }
+.gg-inspector .inspector-value { display:flex;align-items:center;justify-content:space-between;gap:10px;border-bottom:1px solid rgba(160,190,255,.12) }
+.gg-inspector .inspector-value>span { min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap }
+.gg-inspector .inspector-value small { display:block;color:#64759A;font-size:12px }
+.gg-inspector .inspector-value button { max-width:60%;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;display:block;font-family:'JetBrains Mono',monospace;font-size:12px;color:#5CC8FF }
+.gg-inspector-id { overflow-wrap:anywhere;font-family:'JetBrains Mono',monospace }
+.gg-inspector details { border-top:1px solid rgba(160,190,255,.12);padding-top:8px;font-size:12px }
+.gg-inspector summary { cursor:pointer;min-height:24px }
+.gg-inspector-provenance { max-height:240px;overflow:auto }
+.gg-inspector-record { position:absolute;left:0;right:0;height:76px;display:flex;flex-direction:column;justify-content:center;gap:3px;border-bottom:1px solid rgba(160,190,255,.12) }
+.gg-inspector-record :is(span,small) { overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#A9B8DA;font-size:12px }
+
+.gg-inspector-expanded { padding:8px;border:1px solid rgba(160,190,255,.18);border-radius:6px;font-size:12px;max-height:240px;overflow:auto;flex:none }
+.gg-inspector-expanded pre { white-space:pre-wrap;overflow-wrap:anywhere;font:400 12px/1.5 "JetBrains Mono",monospace }

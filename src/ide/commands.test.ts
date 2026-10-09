@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { createIdeCommandService, ideCommandDefinitions, type CommandContext, type CommandOperations, type CommandSnapshot, type CommandTab, type DirtyDecision, type IdeCommandHost, type ResourceTarget } from './commands'
+import { createIdeCommandService, hasPresentedCommandFlow, ideCommandDefinitions, isPresentationCommand, isShellCommand, registerWorldCommandSurface, worldCommandAvailability, type CommandContext, type CommandOperations, type CommandSnapshot, type CommandTab, type DirtyDecision, type IdeCommandHost, type ResourceTarget, type ShellCommandId } from './commands'
 
 const tab = (path: string, changed = false): CommandTab => ({ path, content: `${path}:saved`, draft: `${path}:${changed ? 'draft' : 'saved'}`, revision: `${path}:revision` })
 function deferred<T>() {
@@ -71,14 +71,21 @@ describe('canonical command definitions and target enforcement', () => {
       'debug.startOrContinue', 'debug.pause', 'debug.stepOver', 'debug.stepInto', 'debug.stepOut', 'debug.stop', 'workbench.quickOpen', 'workbench.commandPalette',
       'execution.run', 'execution.runWithoutVisualization', 'execution.build', 'execution.stop',
       'workbench.explorer', 'workbench.source', 'workbench.edit', 'workbench.tools', 'workbench.console', 'workbench.problems', 'workbench.debugger',
-      'workbench.inspector', 'workbench.runtimeFocus', 'workbench.returnLive', 'workbench.launch', 'workbench.symbols', 'workbench.jdk',
+      'workbench.inspector', 'workbench.returnLive', 'workbench.launch', 'workbench.symbols', 'workbench.jdk',
       'workbench.restartJava', 'workbench.importProject', 'workbench.newProject',
+      'navigation.explore', 'navigation.follow', 'navigation.focusSelection', 'navigation.exitFocus',
+      'navigation.traceRelevant', 'navigation.traceCurrent', 'navigation.traceAll', 'navigation.followPath', 'navigation.home',
+      'view.qualityInteractive', 'view.qualityCinematic', 'view.reducedMotion',
     ])
     expect(ideCommandDefinitions['java.renameSymbol']).toMatchObject({ scope: 'editor', bindings: [{ code: 'F2' }] })
     expect(ideCommandDefinitions['resource.rename'].bindings).toEqual([])
     expect(ideCommandDefinitions['debug.stepOut'].bindings).toEqual([{ code: 'F11', shift: true }])
     expect(ideCommandDefinitions['workbench.quickOpen'].bindings).toEqual([{ code: 'KeyP', primary: true }])
-    expect(ideCommandDefinitions['workbench.commandPalette'].bindings).toEqual([{ code: 'KeyP', primary: true, shift: true }])
+    expect(ideCommandDefinitions['workbench.commandPalette'].bindings).toEqual([{ code: 'KeyP', primary: true, shift: true }, { code: 'F1' }])
+    expect(ideCommandDefinitions['navigation.focusSelection']).toMatchObject({ category: 'Navigation', scope: 'workspace', bindings: [{ code: 'KeyF', alt: true, shift: true }] })
+    expect(ideCommandDefinitions['navigation.home']).toMatchObject({ category: 'Navigation', scope: 'world', bindings: [{ code: 'KeyH' }] })
+    for (const id of ['navigation.traceRelevant', 'navigation.traceCurrent', 'navigation.traceAll', 'navigation.followPath', 'navigation.follow', 'navigation.exitFocus', 'navigation.explore'] as const)
+      expect(ideCommandDefinitions[id].bindings).toEqual([])
     expect(Object.isFrozen(ideCommandDefinitions)).toBe(true)
   })
   it('saves the explicit inactive tab rather than the active editor', async () => {
@@ -393,6 +400,42 @@ describe('language, debug and invocation serialization', () => {
 
 
 describe('Spatial shell registry integration', () => {
+  it('dispatches every presentation command in the viewer without a workspace project', async () => {
+    const f = fixture(), shell = vi.fn<CommandOperations['shell']>(async () => {})
+    f.set({ projectId: '', tabs: [], resources: [], closedDrafts: [], activePath: null, editorPath: null })
+    f.host.operations.shell = shell
+    const ids = Object.values(ideCommandDefinitions).filter(definition => isPresentationCommand(definition.id)).map(definition => definition.id)
+    expect(ids).toHaveLength(12)
+    for (const id of ids) {
+      expect(isShellCommand(id)).toBe(true)
+      expect(f.service.availability(id, f.context())).toEqual({ enabled: true })
+      await f.service.execute(id, f.context(), {})
+    }
+    expect(shell.mock.calls.map(([id]) => id)).toEqual(ids)
+    expect(f.service.availability('file.save', f.context())).toEqual({ enabled: false, reason: 'Open a project first' })
+    expect(f.service.availability('execution.run', f.context())).toEqual({ enabled: false, reason: 'Open a project first' })
+  })
+  it('does not queue camera input behind a pending filesystem operation', async () => {
+    const f = fixture(), started = deferred<void>(), finish = deferred<void>()
+    f.operations.open.mockImplementation(async () => { started.resolve(); await finish.promise })
+    const shell = vi.fn<CommandOperations['shell']>(async () => {})
+    f.host.operations.shell = shell
+    const opening = f.service.execute('file.open', f.context('a/A.java'), {})
+    await started.promise
+    await f.service.execute('navigation.home', f.context(), {})
+    expect(shell).toHaveBeenCalledExactlyOnceWith('navigation.home', f.context())
+    finish.resolve(); await opening
+  })
+  it('retains generation checks and disabled reasons for viewer navigation', async () => {
+    const f = fixture(), shell = vi.fn<CommandOperations['shell']>(async () => {})
+    f.set({ projectId: '', resources: [], shellAvailability: { 'navigation.focusSelection': { enabled: false, reason: 'No focusable entity is selected' } } })
+    f.host.operations.shell = shell
+    expect(f.service.availability('navigation.focusSelection', f.context())).toEqual({ enabled: false, reason: 'No focusable entity is selected' })
+    await expect(f.service.execute('navigation.focusSelection', f.context(), {})).rejects.toThrow('No focusable entity is selected')
+    const context = f.context(); f.set({ workspaceGeneration: 2 })
+    await expect(f.service.execute('navigation.home', context, {})).rejects.toThrow('older workspace')
+    expect(shell).not.toHaveBeenCalled()
+  })
   it('routes shell actions through the same serialized dispatcher', async () => {
     const f = fixture()
     const shell = vi.fn<CommandOperations['shell']>(async () => {})
@@ -428,5 +471,51 @@ describe('Spatial shell registry integration', () => {
     await f.service.execute('workbench.importProject', f.context(), {})
     await expect(f.service.execute('execution.run', f.context(), {})).rejects.toThrow('Open a project first')
     expect(f.host.operations.shell).toHaveBeenCalledTimes(2)
+  })
+})
+
+describe('canonical World command enablement', () => {
+  const state = { worldPresent: true, selection: null, focusActive: false, presentedFlow: false, cinematic: { enabled: true } as const, contextLost: false }
+  it('keeps Inspector available on the Focus target after Selection is cleared', () => {
+    expect(worldCommandAvailability('workbench.inspector', state)).toEqual({ enabled: false, reason: 'Select or Focus a runtime entity first' })
+    expect(worldCommandAvailability('workbench.inspector', { ...state, focusActive: true, selection: null })).toEqual({ enabled: true })
+    expect(worldCommandAvailability('workbench.inspector', { ...state, selection: { kind: 'flow', id: 'flow' } })).toEqual({ enabled: true })
+  })
+  it('rejects empty, reference and Flow focus while admitting every focusable entity kind', () => {
+    for (const selection of [null, { kind: 'reference', id: 'ref' }, { kind: 'flow', id: 'flow' }] as const)
+      expect(worldCommandAvailability('navigation.focusSelection', { ...state, selection })).toEqual({ enabled: false, reason: 'No focusable entity is selected' })
+    for (const kind of ['frame', 'object', 'class', 'slot', 'cluster'] as const)
+      expect(worldCommandAvailability('navigation.focusSelection', { ...state, selection: { kind, id: 'entity' } })).toEqual({ enabled: true })
+    expect(worldCommandAvailability('navigation.exitFocus', state)).toEqual({ enabled: false, reason: 'Focus is not active' })
+    expect(worldCommandAvailability('navigation.exitFocus', { ...state, focusActive: true, selection: null })).toEqual({ enabled: true })
+  })
+  it('requires a current presented Flow, rather than a historical graph edge or Connector', () => {
+    const id = 'navigation.followPath'
+    expect(worldCommandAvailability(id, { ...state, selection: { kind: 'flow', id: 'past' } })).toEqual({ enabled: false, reason: 'Select a Flow presented at this point in time' })
+    expect(worldCommandAvailability(id, { ...state, selection: { kind: 'reference', id: 'ref' }, presentedFlow: true }).enabled).toBe(false)
+    expect(worldCommandAvailability(id, { ...state, selection: { kind: 'flow', id: 'current' }, presentedFlow: true })).toEqual({ enabled: true })
+  })
+  it('allows Home and Explore in the empty shell and uses actual World/GPU availability', () => {
+    for (const id of ['navigation.explore', 'navigation.home'] as const)
+      expect(worldCommandAvailability(id, { ...state, worldPresent: false })).toEqual({ enabled: true })
+    for (const id of ['navigation.follow', 'navigation.traceRelevant', 'navigation.traceCurrent', 'navigation.traceAll'] as const)
+      expect(worldCommandAvailability(id, { ...state, worldPresent: false })).toEqual({ enabled: false, reason: 'No runtime World is present' })
+    const cinematic = { enabled: false, reason: 'GPU does not support floating-point render targets' } as const
+    expect(worldCommandAvailability('view.qualityCinematic', { ...state, cinematic })).toEqual(cinematic)
+    expect(worldCommandAvailability('view.qualityCinematic', { ...state, contextLost: true })).toEqual({ enabled: false, reason: 'The World graphics context is being restored' })
+    for (const id of ['view.qualityInteractive', 'view.reducedMotion'] as ShellCommandId[])
+      expect(worldCommandAvailability(id, { ...state, cinematic })).toEqual({ enabled: true })
+  })
+  it('reads the current mounted presentation adapter and ignores cleanup from a replaced surface', () => {
+    const first = registerWorldCommandSurface({ hasPresentedFlow: id => id === 'first' })
+    expect(hasPresentedCommandFlow('first')).toBe(true)
+    const visible = new Set(['second']), second = registerWorldCommandSurface({ hasPresentedFlow: id => visible.has(id) })
+    first()
+    expect(hasPresentedCommandFlow('first')).toBe(false)
+    expect(hasPresentedCommandFlow('second')).toBe(true)
+    visible.clear()
+    expect(hasPresentedCommandFlow('second')).toBe(false)
+    second()
+    expect(hasPresentedCommandFlow('second')).toBe(false)
   })
 })

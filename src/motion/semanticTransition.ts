@@ -89,7 +89,7 @@ const edgeKinds: Partial<Record<GraphEdgeKind, SemanticTransitionKind>> = {
   THROW: 'exception', UNWIND: 'exception', CATCH: 'exception', CONSTRUCT: 'allocation',
 }
 
-function graphTransition(event: TraceEvent, edge: GraphEdge, state: RuntimeState, graph: ExecutionGraph): SemanticTransition | null {
+export function graphTransition(event: TraceEvent, edge: GraphEdge, state: RuntimeState, graph: ExecutionGraph, includeStructural = false): SemanticTransition | null {
   const kind = edgeKinds[edge.kind]
   if (!kind) return null // COMPUTE has no physical value geometry yet.
   let to = graphEndpoint(edge.to, state, graph)
@@ -114,7 +114,7 @@ function graphTransition(event: TraceEvent, edge: GraphEdge, state: RuntimeState
     // A read into an evaluation operand emphasizes its actual source subdivision.
     if (!to) { to = from; from = undefined }
   }
-  if (!to) return null
+  if (!to && !includeStructural) return null
   const valueId = graph.storage[edge.from]?.valueId
   const value = graph.values[edge.from] ?? graph.values[edge.to] ?? (valueId ? graph.values[valueId] : undefined)
   return { id: `${event.eventId}:${edge.id}`, seq: event.seq, kind, label: event.label,

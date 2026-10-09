@@ -1,6 +1,30 @@
 export type Platform = 'mac' | 'windows' | 'linux'
 export interface Shortcut { code: string; primary?: boolean; alt?: boolean; shift?: boolean; ctrl?: boolean; meta?: boolean }
 export type KeyEventLike = Pick<KeyboardEvent, 'code' | 'key' | 'ctrlKey' | 'metaKey' | 'altKey' | 'shiftKey'>
+export interface ShortcutFocus { world: boolean; editor: boolean; textInput: boolean; shellSurface: boolean }
+export interface ScopedShortcutCommand {
+  id: string; scope: 'workspace' | 'editor' | 'world'; bindings: readonly Shortcut[]
+}
+
+/** Focus gates run before chord matching, so typing never consumes a World shortcut. */
+export function commandForShortcut<T extends ScopedShortcutCommand>(
+  event: KeyEventLike, definitions: readonly T[], platform: Platform, focus: ShortcutFocus,
+): T | undefined {
+  return definitions.find(command => {
+    if (command.scope === 'editor' && !focus.editor) return false
+    if (command.scope === 'world' && (!focus.world || focus.textInput || focus.editor || focus.shellSurface)) return false
+    if (command.id.startsWith('navigation.') && (focus.textInput || focus.editor)) return false
+    return command.bindings.some(binding => matchesShortcut(event, binding, platform))
+  })
+}
+/** Escape belongs to source/inspector chrome and widgets before it belongs to navigation. */
+export function worldEscapeCommand(event: KeyEventLike, focus: ShortcutFocus, state: { inspectorOpen: boolean; focusActive: boolean; traceActive: boolean }): 'workbench.inspector' | 'navigation.exitFocus' | 'navigation.explore' | null {
+  if (!matchesShortcut(event, { code: 'Escape' }, 'linux') || focus.textInput || focus.editor) return null
+  if (state.inspectorOpen) return 'workbench.inspector'
+  if (focus.shellSurface) return null
+  if (state.focusActive) return 'navigation.exitFocus'
+  return state.traceActive ? 'navigation.explore' : null
+}
 
 export function detectPlatform(userAgent: string): Platform {
   if (/Macintosh|Mac OS X|MacIntel/i.test(userAgent)) return 'mac'
@@ -44,6 +68,7 @@ export const ideShortcuts = {
   debug: { code: 'KeyD', alt: true, shift: true },
   stop: { code: 'KeyX', alt: true, shift: true },
   focus: { code: 'KeyF', alt: true, shift: true },
+  home: { code: 'KeyH' },
   explorer: { code: 'KeyE', alt: true, shift: true },
   tools: { code: 'KeyB', alt: true, shift: true },
   inspector: { code: 'KeyI', alt: true, shift: true },

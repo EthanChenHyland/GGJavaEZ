@@ -1,0 +1,172 @@
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { ContactShadows, Environment, Grid, Lightformer, MeshReflectorMaterial } from '@react-three/drei';
+import type { Selection } from '../contracts/interaction';
+import type { LayoutState, PresentationPlan, SceneModel } from '../contracts/worldV2';
+import type { Rect } from '../shell/shellLayout';
+import { CameraRig, cameraReadiness, type CameraInput } from '../camera/CameraRig';
+import { color } from '../theme/tokens';
+import { useCameraStore } from '../camera/cameraStore';
+import { useInteractionStore } from '../interaction/interactionStore';
+import { RuntimeSolid, WorldText } from './RuntimeSolid';
+import { roleColor } from './RuntimeMaterials';
+import { FaceTextBatch, textReadiness } from './FaceText';
+import { ACESFilmicToneMapping, Color, DataTexture, RGBAFormat, SRGBColorSpace, UnsignedByteType, Vector3 } from 'three';
+import type {} from '../qa/worldObservation';
+import { SolidBatch } from './SolidBatch';
+import { ConnectorBatch } from './ConnectorBatch';
+import {accessibleEntities,type AccessibleEntity} from '../interaction/accessibleEntities';
+import { QualityRuntime } from './quality/QualityRuntime';
+import { useQualityStore } from './quality/qualityStore';
+import {MotionLayer,motionReadiness} from './MotionLayer';
+import type {TraceDocument} from '../contracts/runtime';
+import type {TimelineStore} from '../timeline/timelineStore';
+
+function GradientBackground() {
+    const texture = useMemo(() => {
+        const height = 256, data = new Uint8Array(height * 4);
+        const bottom = new Color(color.background.bottom), top = new Color(color.background.top), sample = new Color();
+        for (let row = 0; row < height; row++) {
+            sample.copy(bottom).lerp(top, row / (height - 1)).convertLinearToSRGB();
+            data.set([Math.round(sample.r * 255), Math.round(sample.g * 255), Math.round(sample.b * 255), 255], row * 4);
+        }
+        const texture = new DataTexture(data, 1, height, RGBAFormat, UnsignedByteType);
+        texture.colorSpace = SRGBColorSpace; texture.needsUpdate = true;
+        return texture;
+    }, []);
+    useEffect(() => () => texture.dispose(), [texture]);
+    return <primitive object={texture} attach="background"/>;
+}
+function Metrics({ scene, plan, selection }: {
+    scene: SceneModel;
+    plan: PresentationPlan;
+    selection:Selection;
+}) {
+    const { gl, camera, scene:world, size } = useThree();
+    const latest=useRef({scene,plan,size});latest.current={scene,plan,size};
+    const displayFrame=useRef(0);
+    useFrame(() => {
+        displayFrame.current++;
+        if (import.meta.env.DEV||import.meta.env.VITE_QA==='1')
+            window.__ggjavaezWorld={ scene: () => scene, plan: () => plan, selection:()=>selection,
+                projectedPoint:(id)=>{
+                    const position=scene.entities[id]?.anchor.position??[...plan.cellWindows.values()].flatMap(window=>[...window.mapping.values()]).find(cell=>cell.anchor.entityId===id)?.anchor.position;
+                    if(!position)return null;
+                    const p=new Vector3(...position).project(camera);
+                    return{x:(p.x+1)*size.width/2,y:(1-p.y)*size.height/2,visible:Math.abs(p.x)<=1&&Math.abs(p.y)<=1&&p.z>=-1&&p.z<=1};
+                },
+                renderer: () => ({ calls: gl.info.render.calls, triangles: gl.info.render.triangles, geometries: gl.info.memory.geometries, textures: gl.info.memory.textures, frame: gl.info.render.frame }),
+                quality:()=>{const state=useQualityStore.getState();return{setting:state.setting,active:state.active,compiled:state.compiled,cinematicStatus:state.cinematicStatus,availability:state.cinematicAvailable,capabilities:state.capabilities,contextLost:state.contextLost,notice:state.notice}},
+                ready:()=>new Promise<void>((resolve,reject)=>{
+                    const started=performance.now();let eligibleFrame:number|null=null,stableKey='';
+                    const check=()=>{
+                        const quality=useQualityStore.getState(),busy=quality.activity.scrubbing||quality.activity.liveTrailing||quality.activity.cameraMoving;
+                        const qualityReady=!quality.contextLost&&quality.cinematicStatus!=='loading'&&(quality.setting!=='CINEMATIC'||busy||quality.active==='CINEMATIC'&&quality.compiled);
+                        if(performance.now()-started>10000){reject(new Error(`World readiness timed out: ${textReadiness.pending.size} glyph layouts pending; environment ${!!world.environment}; camera moving ${cameraReadiness.moving}; motion ${motionReadiness.animating}; quality ${quality.setting}/${quality.active}/${quality.cinematicStatus}`));return}
+                        const current=latest.current;
+                        const key=JSON.stringify([current.scene.recordingId,current.scene.revision,current.plan.revision,
+                            [...current.plan.cellWindows].map(([id,window])=>[id,window.windowRevision]),current.size.width,current.size.height,
+                            ...camera.position.toArray().map(value=>Math.round(value*1e7)),...camera.quaternion.toArray().map(value=>Math.round(value*1e7)),
+                            quality.active,quality.compiled,quality.cinematicStatus,textReadiness.lastSync]);
+                        if(key!==stableKey){stableKey=key;eligibleFrame=null}
+                        const eligible=textReadiness.mounted&&textReadiness.pending.size===0&&!!world.environment&&!cameraReadiness.moving&&!motionReadiness.animating&&qualityReady;
+                        if(eligible){eligibleFrame??=displayFrame.current;if(displayFrame.current>=eligibleFrame+2){resolve();return}}else eligibleFrame=null;
+                        requestAnimationFrame(check);
+                    };
+                    void document.fonts.ready.then(check,reject);
+                }),
+            };
+    });
+    return null;
+}
+function AccessibleCatalog({scene,plan,publish}:{scene:SceneModel;plan:PresentationPlan;publish(items:AccessibleEntity[]):void}) {
+ const{camera,size}=useThree(),last=useRef(0),revision=useRef(-1),ids=useRef('')
+ useFrame(()=>{const now=performance.now();if(now-last.current<100&&revision.current===scene.revision)return;last.current=now;revision.current=scene.revision
+  const items=accessibleEntities(scene,plan,point=>{const p=new Vector3(...point).project(camera);return{x:(p.x+1)*size.width/2,y:(1-p.y)*size.height/2,visible:Math.abs(p.x)<=1&&Math.abs(p.y)<=1&&p.z>=-1&&p.z<=1}}),key=items.map(item=>item.id).join('\n')
+  if(key!==ids.current){ids.current=key;publish(items)}
+ })
+ return null
+}
+export function RuntimeCanvas({ scene, plan, layout, safeFrame, selection, onSelect, onFocus,trace,timeline }: {
+    scene: SceneModel;
+    plan: PresentationPlan;
+    layout: LayoutState;
+    safeFrame: Rect;
+    selection: Selection;
+    onSelect(selection: Selection): void;
+    onFocus(selection: NonNullable<Selection>): void;
+    trace:TraceDocument;timeline:TimelineStore;
+}) {
+    const quality = useQualityStore(state => state.active);
+    const [accessible,setAccessible]=useState<AccessibleEntity[]>([]),list=useRef<HTMLDivElement>(null);
+    const activeIndex=accessible.findIndex(item=>item.id===selection?.id);
+    const input = useRef<CameraInput | null>(null), pointer = useRef<{
+        x: number;
+        y: number;
+    } | null>(null), moved = useRef(false);
+    const floor = layout.bounds ? layout.bounds.center[1] - layout.bounds.size[1] / 2 - .35 : -6;
+    const lightTarget = useMemo(() => ({ x: 4, y: -3, z: 0 }), []);
+    const select = (next: Selection) => { if (!moved.current)
+        onSelect(next); };
+    return <div className="world-canvas" role="application" tabIndex={0} aria-label="Three-dimensional Java runtime world" onContextMenu={event => event.preventDefault()} onPointerDownCapture={event => { event.currentTarget.focus(); pointer.current = { x: event.clientX, y: event.clientY }; moved.current = false; input.current?.shift(event.shiftKey); input.current?.cancel(); }} onPointerMoveCapture={event => { if (pointer.current && Math.hypot(event.clientX - pointer.current.x, event.clientY - pointer.current.y) > 4)
+        moved.current = true; }} onPointerUpCapture={() => { pointer.current = null; }} onWheelCapture={event => { event.preventDefault(); event.stopPropagation(); input.current?.wheel(event.deltaX, event.deltaY, event.deltaMode === 0 && !event.ctrlKey && Math.abs(event.deltaY) < 50); }} onKeyDown={event => {
+            if(event.key==='Tab'&&accessible.length){const index=activeIndex+(event.shiftKey?-1:1),next=accessible[index];if(next){event.preventDefault();onSelect(next.selection);list.current?.focus()}return}
+            if(event.target===list.current&&event.key.startsWith('Arrow')){event.preventDefault();const index=Math.min(accessible.length-1,Math.max(0,activeIndex+(event.key==='ArrowUp'||event.key==='ArrowLeft'?-1:1)));if(accessible[index])onSelect(accessible[index].selection);return}
+            if (event.key === 'Escape') {
+                event.preventDefault();
+                if(useInteractionStore.getState().trace.active)useCameraStore.getState().explore(); else if (useInteractionStore.getState().focus)
+                    useCameraStore.getState().exitFocus();
+                else
+                    onSelect(null);
+            }
+            else if (event.key === 'Enter' && selection) {
+                event.preventDefault();
+                onFocus(selection);
+            }
+            else if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', '+', '=', '-'].includes(event.key)) {
+                event.preventDefault();
+                input.current?.key(event.key, event.shiftKey);
+            }
+        }}>
+    <Canvas shadows dpr={[1, 1.5]} camera={{ fov: 36, position: [7, 5, 24], near: .05, far: 10000 }} gl={{ antialias: true, alpha: false, powerPreference: 'high-performance', toneMapping: ACESFilmicToneMapping }} onPointerMissed={() => { if (!moved.current)
+        onSelect(null); }}>
+      <GradientBackground/>
+      <hemisphereLight args={['#A8C8FF', '#090B22', .25]}/>
+      <directionalLight position={[-10, 12, 9]} intensity={2.2} color="#9CC8FF" castShadow shadow-mapSize={quality === 'CINEMATIC' ? [2048, 2048] : [1024, 1024]} shadow-camera-left={-35} shadow-camera-right={35} shadow-camera-top={20} shadow-camera-bottom={-35}/>
+      <directionalLight position={[14, 4, -9]} intensity={1.8} color="#B57BFF"/>
+      <directionalLight position={[lightTarget.x, lightTarget.y + 10, 8]} intensity={.6} color="#C9D6FF"/>
+      <Suspense fallback={null}>
+        <Environment resolution={256} frames={1}>
+          <Lightformer form="rect" position={[-6, 10, 8]} rotation={[Math.PI / 4, 0, 0]} scale={[12, 4, 1]} color="#65ACFF" intensity={2.2}/>
+          <Lightformer form="rect" position={[14, 7, -8]} rotation={[0, Math.PI, 0]} scale={[8, 12, 1]} color="#B777FF" intensity={1.8}/>
+          <Lightformer form="rect" position={[2, 14, 0]} rotation={[Math.PI / 2, 0, 0]} scale={[14, 2, 1]} color="#EEF4FF" intensity={1}/>
+          <Lightformer form="rect" position={[2, -12, 0]} rotation={[-Math.PI / 2, 0, 0]} scale={[18, 18, 1]} color="#0A1230" intensity={.15}/>
+        </Environment>
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, floor, 0]} receiveShadow>
+          <planeGeometry args={[180, 180]}/><MeshReflectorMaterial resolution={quality === 'CINEMATIC' ? 1024 : 256} blur={quality === 'CINEMATIC' ? [300, 100] : [0, 0]} mixBlur={quality === 'CINEMATIC' ? .8 : 0} mixStrength={.6} mirror={quality === 'CINEMATIC' ? .5 : .35} depthScale={.3} minDepthThreshold={.7} maxDepthThreshold={1.2} color="#050B19" metalness={.65} roughness={.4}/>
+        </mesh>
+        <Grid position={[0, floor + .025, 0]} args={[180, 180]} cellSize={1} sectionSize={4} cellThickness={.5} sectionThickness={.8} cellColor="#16325A" sectionColor="#24497C" fadeDistance={75} fadeStrength={1} infiniteGrid/>
+        <ContactShadows key={`${quality}:${scene.revision}`} position={[4, floor + .015, 0]} opacity={.35} scale={70} blur={2} far={40} resolution={quality === 'CINEMATIC' ? 512 : 256} frames={1}/>
+        <SolidBatch scene={scene} plan={plan} onSelect={select} onFocus={onFocus}/>
+        <FaceTextBatch>
+        {[...plan.entities].map(([id, presented]) => <RuntimeSolid key={id} node={scene.entities[id]} presented={presented} plan={plan}/>)}
+        {plan.clusters.map(cluster => <group key={cluster.id} onClick={event=>{if(cluster.pickable){event.stopPropagation();select({kind:'cluster',id:cluster.id})}}} onDoubleClick={event=>{if(cluster.pickable){event.stopPropagation();onFocus({kind:'cluster',id:cluster.id})}}} position={[...cluster.anchor.position]}><mesh><boxGeometry args={[2.4, 1.2, .8]}/><meshStandardMaterial color={color.heap.core} transparent opacity={cluster.opacity}/></mesh><WorldText position={[-1, .1, .45]} size={.3} width={2}>{`${cluster.label} · ${cluster.members}`}</WorldText></group>)}
+        <ConnectorBatch curves={[...plan.curves,...plan.bundles.map(bundle=>({id:bundle.id,kind:'flow' as const,points:bundle.points,colorRole:'reference' as const,opacity:.35,widthPx:2.5 as const,arrow:false}))]} onSelect={id => { if (scene.references.some(ref => ref.id === id))
+        select({ kind: 'reference', id }); else if(plan.curves.some(curve=>curve.id===id)) select({kind:'flow',id}); }}/>
+        {plan.bundles.map(bundle=><WorldText key={bundle.id} position={bundle.points[Math.floor(bundle.points.length/2)]} size={.23} width={2} tint={color.ui.textSecondary}>{`${bundle.count} recorded flows`}</WorldText>)}
+        {plan.headings.map(heading => <WorldText key={heading.id} position={heading.position} size={.6} weight={600} tracking={.18} width={5} tint={heading.id === 'STACK' ? color.stack.edge : heading.id === 'HEAP' ? color.heap.edge : color.class.edge}>{heading.id}</WorldText>)}
+        {plan.structural.map(item => <WorldText key={item.id} position={item.position} size={.3} width={5} tint={color.ui.textSecondary}>{item.text}</WorldText>)}
+        {scene.io.map(io => <group key={io.id} position={[...io.anchor.position]}><mesh><boxGeometry args={[...io.anchor.size]}/><meshStandardMaterial color={roleColor[io.id]} emissive={roleColor[io.id]} emissiveIntensity={.2}/></mesh><WorldText position={[-.75, .02, .17]} size={.2} width={1.5}>{`${io.id} · ${io.lines}`}</WorldText></group>)}
+        </FaceTextBatch>
+      </Suspense>
+      <CameraRig scene={scene} plan={plan} layout={layout} safeFrame={safeFrame} input={input}/>
+      <QualityRuntime guidedMoving={() => cameraReadiness.moving}/>
+      <MotionLayer trace={trace} timeline={timeline} scene={scene} plan={plan}/>
+      <AccessibleCatalog scene={scene} plan={plan} publish={setAccessible}/>
+      <Metrics scene={scene} plan={plan} selection={selection}/>
+    </Canvas>
+    <div ref={list} className="gg-world-entities" role="listbox" tabIndex={-1} aria-label="Runtime entities" aria-activedescendant={selection&&activeIndex>=0?`world-entity-${encodeURIComponent(selection.id)}`:undefined}>
+      {accessible.slice(Math.max(0,activeIndex-20),Math.max(40,activeIndex+21)).map((item,index)=><div key={item.id} id={`world-entity-${encodeURIComponent(item.id)}`} role="option" aria-selected={selection?.id===item.id} aria-posinset={Math.max(0,activeIndex-20)+index+1} aria-setsize={accessible.length}>{item.label}</div>)}
+    </div>
+  </div>;
+}

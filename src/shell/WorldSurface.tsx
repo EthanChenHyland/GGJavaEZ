@@ -1,178 +1,99 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-import type { RuntimeState, SourceLocation, TraceDocument, TraceEvent } from '../contracts/runtime'
-import type { Selection } from '../contracts/interaction'
-import type { EmbeddedExecution, RuntimeNavigation } from '../shell/runtimeContracts'
-import { renderQuality } from '../theme/tokens'
-import { RuntimeCanvas } from '../scene/RuntimeCanvas'
-import { Inspector } from '../ui/Inspector'
-import { Timeline, resolveTimelinePosition } from '../ui/timeline/Timeline'
-import { navigationActions, useNavigationStore } from '../navigation'
-import { usePlayback } from '../playback'
-import { seek } from '../runtime'
-import { layoutForTrace } from '../app/layoutForTrace'
-import { buildSceneModel } from '../world/sceneModel'
-import { deriveSemanticTransition, recentFlowTransitions, type SemanticTransition } from '../motion/semanticTransition'
-import { transitionIsFlow } from '../motion/flowPresentation'
-function eventDescribesSelection(event: TraceEvent, selection: NonNullable<Selection>): boolean {
-  const id = selection.kind === 'reference' ? selection.id.replace(/^ref:/, '') : selection.id
-  if (selection.kind === 'class') return 'classId' in event && event.classId === id
-  if (selection.kind === 'frame') return 'frameId' in event && event.frameId === id
-  // Passive boundary snapshots have the caller's source, not the object's
-  // defining/writing source. Keep selection navigation on actual operations.
-  if (selection.kind === 'object') return event.type !== 'OBJECT_OBSERVE' && 'objectId' in event && event.objectId === id
-  if (selection.kind === 'slot' || selection.kind === 'reference') {
-    if (event.type === 'DECLARE_LOCAL') return event.slot.id === id
-    if (event.type === 'ENTER_METHOD') return event.locals.some((slot) => slot.id === id)
-    if (event.type === 'ASSIGN_LOCAL' || event.type === 'SET_FIELD') return event.slotId === id
-    if (event.type === 'CREATE_REFERENCE' || event.type === 'CLEAR_REFERENCE') return event.sourceSlot.slotId === id
-    if (event.type === 'ALLOCATE_OBJECT') return event.fields.some((slot) => slot.id === id)
-  }
-  return false
-}
-
-export function WorldSurface({ trace, onSourceChange, onRuntimeChange, navigation, suppressInspector = false, execution }: {
-  trace: TraceDocument
-  onSourceChange?: (location: SourceLocation | null) => void
-  onRuntimeChange?: (runtime: RuntimeState, selection: Selection) => void
-  navigation?: RuntimeNavigation | null
-  suppressInspector?: boolean
-  execution?: EmbeddedExecution
+import { useEffect, useMemo, useRef } from 'react';
+import type { RuntimeState, SourceLocation, TraceDocument } from '../contracts/runtime';
+import type { Selection } from '../contracts/interaction';
+import type { EmbeddedExecution, RuntimeNavigation } from './runtimeContracts';
+import type { Rect } from './shellLayout';
+import type { SceneModel, PresentationPlan } from '../contracts/worldV2';
+import type { ArrayWindow } from '../world/arrayWindow';
+import { RuntimeCanvas } from '../render/RuntimeCanvas';
+import { Inspector } from '../render/Inspector';
+import { TimeDock } from './time/TimeDock';
+import { useTimelinePlayback } from '../timeline/useTimelinePlayback';
+import { createFlowCatalog } from '../world/flowCatalog';
+import { useCameraStore } from '../camera/cameraStore';
+import { useInteractionStore } from '../interaction/interactionStore';
+import { seek } from '../runtime';
+import { createLayoutEngine } from '../world/layoutEngine';
+import { createSceneProjector } from '../world/sceneProjector';
+import { planPresentation } from '../world/presentationPlanner';
+import { focusSourceLocation } from './source/sourceSync';
+import {useQualityStore} from '../render/quality/qualityStore';
+import { shellStore } from '../workspace/shellStore';
+import { registerWorldCommandSurface } from '../ide/commands';
+const fullRecording = { state: 'FULL', reason: null, budget: null, lastRecordedSeq: null, executionContinued: false } as const;
+export function WorldSurface({ trace, onSourceChange, onRuntimeChange, navigation, suppressInspector = false, execution, safeFrame }: {
+    trace: TraceDocument;
+    onSourceChange?: (location: SourceLocation | null) => void;
+    onRuntimeChange?: (runtime: RuntimeState, selection: Selection) => void;
+    navigation?: RuntimeNavigation | null;
+    suppressInspector?: boolean;
+    execution?: EmbeddedExecution;
+    safeFrame: Rect;
 }) {
-  const eventCount = trace.events.length
-  const layout = useMemo(() => layoutForTrace(trace), [trace, eventCount])
-  const presentation = 'spatial' as const
-  const [flowDisplay, setFlowDisplay] = useState<'relevant' | 'current' | 'all'>('relevant')
-  const [activeMotion, setActiveMotion] = useState<SemanticTransition | null>(null)
-  const motionIntent = useRef<'step' | 'scrub' | null>(null)
-  const guided = true
-  const playback = usePlayback(trace)
-  const { cursor, liveCursor } = resolveTimelinePosition(trace.events.length, playback.state.cursor, execution)
-  const playing = execution?.lens === 'LIVE' ? execution.phase === 'RUNNING' : playback.state.playing
-  const lastReportedHistoryCursor = useRef<number | null>(null)
-  const seekHistory = (next: number, intent: 'step' | 'scrub' = 'scrub') => {
-    motionIntent.current = intent
-    const target = Math.min(Math.max(0, Math.round(next)), liveCursor)
-    playback.seekTo(target)
-    if (execution) {
-      lastReportedHistoryCursor.current = target
-      execution.onLensChange('HISTORY', target)
-    }
-  }
-  const replayHistory = () => {
-    if (!execution) { playback.playPause(); return }
-    if (execution.lens === 'LIVE' || (!playback.state.playing && cursor === liveCursor)) seekHistory(0)
-    playback.playPause()
-  }
-  const returnToLive = () => {
-    if (!execution) return
-    playback.seekTo(liveCursor)
-    lastReportedHistoryCursor.current = liveCursor
-    execution.onLensChange('LIVE', liveCursor)
-  }
-  useEffect(() => {
-    if (execution?.lens !== 'HISTORY' || lastReportedHistoryCursor.current === playback.state.cursor) return
-    lastReportedHistoryCursor.current = playback.state.cursor
-    execution.onLensChange('HISTORY', playback.state.cursor)
-  }, [execution, playback.state.cursor])
-  const timelinePlayback = execution ? {
-    ...playback,
-    state: { ...playback.state, cursor, playing: execution.lens === 'HISTORY' && playback.state.playing },
-    playPause: replayHistory,
-    stepForward: () => seekHistory(cursor + 1, 'step'),
-    stepBack: () => seekHistory(cursor - 1),
-    seekTo: seekHistory,
-    reset: () => seekHistory(0),
-  } : { ...playback,
-    stepForward: () => { motionIntent.current = 'step'; playback.stepForward() },
-    stepBack: () => { motionIntent.current = 'scrub'; playback.stepBack() },
-    seekTo: (next: number) => { motionIntent.current = 'scrub'; playback.seekTo(next) },
-  }
-  const runtime = useMemo(() => seek(trace, cursor), [trace, cursor])
-  const previousMotionCursor = useRef({ demoId: trace.demoId, cursor, playing })
-  useEffect(() => {
-    const previous = previousMotionCursor.current
-    previousMotionCursor.current = { demoId: trace.demoId, cursor, playing }
-    const intent = motionIntent.current
-    motionIntent.current = null
-    if (previous.demoId !== trace.demoId || cursor !== previous.cursor + 1 || (!playing && !previous.playing && intent !== 'step')) {
-      setActiveMotion(null)
-      return
-    }
-    const current = trace.events[cursor - 1]
-    if (!current || current.importance === 'quiet') { setActiveMotion(null); return }
-    setActiveMotion(deriveSemanticTransition(seek(trace, cursor - 1), current, runtime))
-  }, [trace, cursor, playing, runtime])
-  useEffect(() => {
-    if (!activeMotion) return
-    const timer = window.setTimeout(() => setActiveMotion(null), 650)
-    return () => window.clearTimeout(timer)
-  }, [activeMotion])
-  useEffect(() => { onSourceChange?.(runtime.currentSource) }, [runtime.currentSource, onSourceChange])
-  const event = trace.events[cursor - 1] ?? null
-  const detailLevel = useNavigationStore((state) => state.detailLevel)
-  const [quality, setQuality] = useState<keyof typeof renderQuality>(() => 'balanced')
-  const [selection, setSelection] = useState<Selection>(null)
-  const [selectedFlowId, setSelectedFlowId] = useState<string | null>(null)
-  const lastNavigation = useRef(-1)
-  useEffect(() => {
-    if (!navigation || navigation.revision === lastNavigation.current) return
-    lastNavigation.current = navigation.revision
-    seekHistory(navigation.cursor)
-    if (navigation.selection !== undefined) setSelection(navigation.selection)
-  }, [navigation, playback])
-  useEffect(() => { onRuntimeChange?.(runtime, selection) }, [runtime, selection, onRuntimeChange])
-  const scene = useMemo(() => buildSceneModel(runtime, layout, detailLevel, presentation), [runtime, layout, detailLevel, presentation])
-  const transitions = useMemo(() => {
-    const ids = new Set<string>(selection ? [selection.id] : [])
-    if (selection?.kind === 'object') {
-      const node = scene.objects.find(item => item.id === selection.id)
-      for (const item of [...(node?.fields ?? []).slice(0, 6), ...(node?.array?.cells ?? []).slice(0, 32)]) ids.add(item.id)
-    }
-    if (selection?.kind === 'frame') scene.frames.find(item => item.id === selection.id)?.slots.forEach(item => ids.add(item.id))
-    if (selection?.kind === 'class') scene.classes?.find(item => item.id === selection.id)?.fields.forEach(item => ids.add(item.id))
-    return recentFlowTransitions(trace, runtime, flowDisplay === 'all' ? new Set() : ids, flowDisplay === 'all' ? 24 : 6)
-  }, [trace, runtime, selection, flowDisplay, scene])
-  const flowHistory = flowDisplay === 'current' || runtime.status === 'running' && !selection && flowDisplay === 'relevant'
-    ? [] : transitions.filter(transitionIsFlow)
-  const selectEntity = (next: Selection) => {
-    setActiveMotion(null)
-    setSelectedFlowId(null)
-    setSelection(next)
-    if (!next || !onSourceChange) return
-    for (let index = cursor - 1; index >= 0; index--) {
-      const item = trace.events[index]
-      if (item.source && eventDescribesSelection(item, next)) { onSourceChange(item.source); break }
-    }
-  }
-  const selectFlow = (id: string) => {
-    const flow = transitions.find((item) => item.id === id)
-    if (!flow) return
-    const endpoint = flow.to?.kind !== 'io' ? flow.to : flow.from?.kind !== 'io' ? flow.from : undefined
-    if (endpoint) selectEntity({ kind: endpoint.kind, id: endpoint.id })
-    setSelectedFlowId(id)
-    if (flow.source) onSourceChange?.(flow.source)
-  }
-
-  useEffect(() => {
-    setSelection(null)
-    setActiveMotion(null)
-    navigationActions.resetView()
-  }, [trace.demoId])
-
-
-  const selectionLive = !!selection && (scene.frames.some(node => node.id === selection.id || node.slots.some(slot => slot.id === selection.id)) || scene.objects.some(node => node.id === selection.id || node.fields.some(slot => slot.id === selection.id) || node.array?.cells.some(slot => slot.id === selection.id)) || scene.classes?.some(node => node.id === selection.id || node.fields.some(slot => slot.id === selection.id)) || scene.references.some(edge => edge.id === selection.id))
-  const focusSelection = () => { if (selection && selectionLive) navigationActions.focus(selection) }
-  const traceSelection = (referenceId?: string) => {
-    const reference = scene.references.find(edge => edge.id === referenceId || edge.targetObjectId === selection?.id || edge.source.slotId === selection?.id)
-    if (reference) navigationActions.tracePath(reference.id)
-  }
-  return <section className="world-panel" aria-label="Runtime world">
-    <RuntimeCanvas visible fitShallow={trace.capture?.origin === 'jvm'} guided={guided} playing={playing} quality={quality} scene={scene} layout={layout} event={event} transition={activeMotion} flowHistory={flowHistory} flowDisplay={flowDisplay} selection={selection} selectedFlowId={selectedFlowId} onSelectFlow={selectFlow} inspectorVisible={selectionLive && !suppressInspector} onSelect={selectEntity} onFocusSelected={navigationActions.focus}/>
-    {!suppressInspector && <Inspector selection={selection} flow={transitions.find(item => item.id === selectedFlowId && item.seq < cursor)} runtime={runtime} scene={scene} onClose={() => { setSelection(null); setSelectedFlowId(null) }} onReturn={navigationActions.returnToPrevious} onFocus={focusSelection} onTrace={traceSelection}/>}
-    <div className="world-timeline"><Timeline trace={trace} playback={timelinePlayback} execution={execution ? { phase: execution.phase, lens: execution.lens, liveCursor, onReturnToLive: returnToLive } : undefined}/></div>
-    <div className="world-settings glass">
-      <label>Trace <select aria-label="Flow history" value={flowDisplay} onChange={event => setFlowDisplay(event.target.value as typeof flowDisplay)}><option value="relevant">Relevant</option><option value="current">Current</option><option value="all">All</option></select></label>
-      <label>Motion <select aria-label="Rendering quality" value={quality} onChange={event => setQuality(event.target.value as keyof typeof renderQuality)}><option value="high">High</option><option value="balanced">Balanced</option><option value="low">Low</option></select></label>
-    </div>
-  </section>
+    const playback = useTimelinePlayback(trace, execution);
+    const { cursor, liveHead: liveCursor } = playback.state;
+    const seekHistory = playback.seekTo;
+    const runtime = useMemo(() => seek(trace, cursor), [trace, cursor]);
+    const selection = useInteractionStore(state=>state.selection), setSelection=useInteractionStore(state=>state.select);
+    const traceState=useInteractionStore(state=>state.trace), focus=useInteractionStore(state=>state.focus);
+    const scope=traceState.scope, setScope=useInteractionStore(state=>state.setTraceScope);
+    const inspectorSelection=selection??(focus?{kind:focus.kind==='arrayCell'?'slot':focus.kind==='cluster'?'cluster':focus.kind,id:focus.targetId} as NonNullable<Selection>:null);
+    useEffect(()=>{if(inspectorSelection)shellStore.setState({inspectorHidden:false})},[inspectorSelection?.id]);
+    const detail = useCameraStore(state => state.detailLevel);
+    const motionPreference=useQualityStore(state=>state.reducedMotion),quality=useQualityStore(state=>state.setting),cinematic=useQualityStore(state=>state.cinematicAvailable),qualityNotice=useQualityStore(state=>state.notice);
+    const reducedMotion=motionPreference.os||motionPreference.inApp;
+    useEffect(()=>{useCameraStore.getState().setReducedMotion(reducedMotion)},[reducedMotion]);
+    useEffect(()=>{useQualityStore.getState().setActivity({scrubbing:playback.state.scrubbing,liveTrailing:playback.state.lens==='LIVE'&&execution?.phase==='RUNNING'})},[playback.state.scrubbing,playback.state.lens,execution?.phase]);
+    const compiler = useMemo(() => ({ layout: createLayoutEngine(), projector: createSceneProjector(trace), flows: createFlowCatalog(), previous: null as SceneModel | null, previousPlan: null as PresentationPlan | null, windows: new Map<string,ArrayWindow>() }), [trace.demoId]);
+    const layout = useMemo(() => { compiler.layout.append(trace.events); return compiler.layout.state; }, [compiler, trace.events, trace.events.length]);
+    const flows = useMemo(() => { const graph = seek(trace, liveCursor).executionGraph; if (graph) compiler.flows.extend(graph, trace); return graph ? compiler.flows : undefined; }, [compiler, trace, liveCursor]);
+    const ended = execution ? ['COMPLETED', 'FAILED', 'STOPPED'].includes(execution.phase) : trace.events.length > 0;
+    const recording = useMemo(() => {
+        for (let i = trace.events.length - 1; i >= 0; i--) {
+            const event = trace.events[i];
+            if (event.type === 'CAPTURE_STOP')
+                return event.recording;
+        }
+        return fullRecording;
+    }, [trace.events, trace.events.length]);
+    const scene = useMemo(() => {
+        const context = { sessionEnded: ended, pausedAtLiveHead: execution?.phase === 'PAUSED' && execution.lens === 'LIVE', liveHead: liveCursor, recording };
+        const projected = compiler.projector.advance(runtime, layout, trace.events, compiler.previous?.cursor ?? 0, cursor, context);
+        compiler.previous = projected;
+        return projected;
+    }, [compiler, runtime, layout, trace.events, cursor, liveCursor, ended, execution?.phase, execution?.lens, recording]);
+    const plan = useMemo(() => {
+        const previous=compiler.previousPlan?{...compiler.previousPlan,cellWindows:compiler.windows}:undefined;
+        const next=planPresentation({ scene, flows, layout, detailLevel: detail, selection, focusTargetId: focus?.targetId ?? null, trace: traceState },previous);
+        compiler.previousPlan=next;
+        for(const[id,window]of next.cellWindows)compiler.windows.set(id,window);
+        return next;
+    }, [compiler,scene, flows, layout, detail, selection, focus, traceState]);
+    const commandWorld=useRef({plan,recorded:trace.events.length>0});commandWorld.current={plan,recorded:trace.events.length>0};
+    useEffect(()=>registerWorldCommandSurface({hasRecording:()=>commandWorld.current.recorded,hasPresentedFlow:id=>commandWorld.current.plan.curves.some(curve=>curve.id===id&&['flow','return','exception','binding-history'].includes(curve.kind))}),[]);
+    const lastNavigation = useRef(-1);
+    useEffect(() => {
+        if (!navigation || navigation.revision === lastNavigation.current)
+            return;
+        lastNavigation.current = navigation.revision;
+        seekHistory(navigation.cursor);
+        if (navigation.selection !== undefined)
+            setSelection(navigation.selection);
+    }, [navigation]);
+    useEffect(() => { onRuntimeChange?.(runtime, selection); }, [runtime, selection, onRuntimeChange]);
+    const sourceLocation=focus?focusSourceLocation(scene,focus.targetId,trace):runtime.currentSource;
+    useEffect(() => { onSourceChange?.(sourceLocation); }, [sourceLocation, onSourceChange]);
+    useEffect(() => { useCameraStore.getState().resetRecording(!!execution&&trace.events.length>0); }, [trace.demoId]);
+    const select = (next: Selection) => {
+        setSelection(next);
+    };
+    const focusSelection = () => { if (inspectorSelection && ['frame', 'object', 'class', 'slot','cluster'].includes(inspectorSelection.kind))
+        useCameraStore.getState().focus(inspectorSelection); };
+    return <section className="world-panel" aria-label="Runtime world">
+    <RuntimeCanvas trace={trace} timeline={playback.store} scene={scene} plan={plan} layout={layout} safeFrame={safeFrame} selection={selection} onSelect={select} onFocus={selection=>useCameraStore.getState().focus(selection)}/>
+    {!suppressInspector && <Inspector selection={inspectorSelection} scene={scene} runtime={runtime} flows={flows} plan={plan} onClose={() => shellStore.setState({inspectorHidden:true})} onFocus={focusSelection} onSelectRow={id=>setSelection({kind:'slot',id})} onReturn={()=>useCameraStore.getState().exitFocus()}/>}
+    <div className="world-timeline"><TimeDock trace={trace} playback={playback} execution={execution} settings={{reducedMotion,onReducedMotionChange:useQualityStore.getState().setReducedMotion,quality,onQualityChange:tier=>{void useQualityStore.getState().selectQuality(tier)},cinematicAvailable:cinematic.enabled,cinematicReason:cinematic.enabled?undefined:cinematic.reason}}/></div>
+    {qualityNotice&&<div className="world-quality-notice glass" role="status">{qualityNotice}<button onClick={()=>useQualityStore.getState().clearNotice()} aria-label="Dismiss rendering notice">×</button></div>}
+    {traceState.active && <div className="world-settings glass" role="group" aria-label="Trace scope">{(['relevant', 'current', 'all'] as const).map(item => <button key={item} aria-pressed={scope === item} onClick={() => setScope(item)}>{item[0].toUpperCase() + item.slice(1)}</button>)}</div>}
+  </section>;
 }

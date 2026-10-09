@@ -2,6 +2,7 @@ import type { DebugCommand } from '../debugger/contracts'
 import type { ProjectFile, SourceLocation } from './contracts'
 import { assertWorkspacePath, pathIsWithin } from './pathChanges'
 import type { Shortcut } from './shortcuts'
+import type { Selection } from '../contracts/interaction'
 
 export interface ResourceTarget { projectId: string; path: string; kind: 'file' | 'directory' }
 export interface CommandContext {
@@ -28,8 +29,11 @@ export interface CommandSnapshot {
 }
 export type ShellCommandId = 'execution.run' | 'execution.runWithoutVisualization' | 'execution.build' | 'execution.stop'
   | 'workbench.explorer' | 'workbench.source' | 'workbench.edit' | 'workbench.tools' | 'workbench.console'
-  | 'workbench.problems' | 'workbench.debugger' | 'workbench.inspector' | 'workbench.runtimeFocus' | 'workbench.returnLive'
+  | 'workbench.problems' | 'workbench.debugger' | 'workbench.inspector' | 'workbench.returnLive'
   | 'workbench.launch' | 'workbench.symbols' | 'workbench.jdk' | 'workbench.restartJava' | 'workbench.importProject' | 'workbench.newProject'
+  | 'navigation.explore' | 'navigation.follow' | 'navigation.focusSelection' | 'navigation.exitFocus'
+  | 'navigation.traceRelevant' | 'navigation.traceCurrent' | 'navigation.traceAll' | 'navigation.followPath' | 'navigation.home'
+  | 'view.qualityInteractive' | 'view.qualityCinematic' | 'view.reducedMotion'
 type ShellCommandArguments = { [K in ShellCommandId]: Record<string, never> }
 export interface CommandArguments extends ShellCommandArguments {
   'file.open': { location?: SourceLocation }
@@ -60,8 +64,8 @@ export type IdeCommandId = keyof CommandArguments
 export interface CommandDefinition {
   id: IdeCommandId
   title: string
-  category: 'File' | 'Editor' | 'Java' | 'Debug' | 'Workbench'
-  scope: 'workspace' | 'editor'
+  category: 'File' | 'Editor' | 'Java' | 'Debug' | 'Workbench' | 'Navigation' | 'View'
+  scope: 'workspace' | 'editor' | 'world'
   bindings: readonly Shortcut[]
 }
 export type CommandAvailability = { enabled: true } | { enabled: false; reason: string }
@@ -143,7 +147,7 @@ export const ideCommandDefinitions: Readonly<Record<IdeCommandId, CommandDefinit
   'debug.stepOut': definition('debug.stepOut', 'Step Out', 'Debug', [{ code: 'F11', shift: true }]),
   'debug.stop': definition('debug.stop', 'Stop Debug', 'Debug', [{ code: 'F5', shift: true }]),
   'workbench.quickOpen': definition('workbench.quickOpen', 'Quick Open', 'Workbench', [{ code: 'KeyP', primary: true }]),
-  'workbench.commandPalette': definition('workbench.commandPalette', 'Command Palette', 'Workbench', [{ code: 'KeyP', primary: true, shift: true }]),
+  'workbench.commandPalette': definition('workbench.commandPalette', 'Command Palette', 'Workbench', [{ code: 'KeyP', primary: true, shift: true }, { code: 'F1' }]),
   'execution.run': definition('execution.run', 'Run', 'Java', [{ code: 'KeyR', alt: true, shift: true }]),
   'execution.runWithoutVisualization': definition('execution.runWithoutVisualization', 'Run Without Visualization', 'Java'),
   'execution.build': definition('execution.build', 'Build Project', 'Java'),
@@ -156,7 +160,6 @@ export const ideCommandDefinitions: Readonly<Record<IdeCommandId, CommandDefinit
   'workbench.problems': definition('workbench.problems', 'Show Problems', 'Workbench', [{ code: 'KeyP', alt: true, shift: true }]),
   'workbench.debugger': definition('workbench.debugger', 'Show Run & Debug', 'Workbench'),
   'workbench.inspector': definition('workbench.inspector', 'Toggle Inspector', 'Workbench', [{ code: 'KeyI', alt: true, shift: true }]),
-  'workbench.runtimeFocus': definition('workbench.runtimeFocus', 'Toggle Runtime Focus', 'Workbench', [{ code: 'KeyF', alt: true, shift: true }]),
   'workbench.returnLive': definition('workbench.returnLive', 'Return to Live', 'Workbench', [{ code: 'KeyL', alt: true, shift: true }]),
   'workbench.launch': definition('workbench.launch', 'Launch Settings', 'Workbench'),
   'workbench.symbols': definition('workbench.symbols', 'Find Java Symbol', 'Java', [{ code: 'KeyO', alt: true, shift: true }]),
@@ -164,7 +167,50 @@ export const ideCommandDefinitions: Readonly<Record<IdeCommandId, CommandDefinit
   'workbench.restartJava': definition('workbench.restartJava', 'Restart Java Language Service', 'Java'),
   'workbench.importProject': definition('workbench.importProject', 'Import Folder (Copy)', 'File'),
   'workbench.newProject': definition('workbench.newProject', 'New Project', 'File'),
+  'navigation.explore': definition('navigation.explore', 'Explore', 'Navigation'),
+  'navigation.follow': definition('navigation.follow', 'Follow', 'Navigation'),
+  'navigation.focusSelection': definition('navigation.focusSelection', 'Focus Selection', 'Navigation', [{ code: 'KeyF', alt: true, shift: true }]),
+  'navigation.exitFocus': definition('navigation.exitFocus', 'Exit Focus', 'Navigation'),
+  'navigation.traceRelevant': definition('navigation.traceRelevant', 'Trace: Relevant', 'Navigation'),
+  'navigation.traceCurrent': definition('navigation.traceCurrent', 'Trace: Current', 'Navigation'),
+  'navigation.traceAll': definition('navigation.traceAll', 'Trace: All', 'Navigation'),
+  'navigation.followPath': definition('navigation.followPath', 'Follow Path', 'Navigation'),
+  'navigation.home': definition('navigation.home', 'Home', 'Navigation', [{ code: 'KeyH' }], 'world'),
+  'view.qualityInteractive': definition('view.qualityInteractive', 'Quality: Interactive', 'View'),
+  'view.qualityCinematic': definition('view.qualityCinematic', 'Quality: Cinematic', 'View'),
+  'view.reducedMotion': definition('view.reducedMotion', 'Toggle Reduced Motion', 'View'),
 })
+
+/** The mounted World supplies its current plan, rather than a QA global or a historical graph. */
+export interface WorldCommandSurface { hasPresentedFlow(id: string): boolean; hasRecording?():boolean }
+let worldCommandSurface: WorldCommandSurface | null = null
+export function registerWorldCommandSurface(surface: WorldCommandSurface): () => void {
+  worldCommandSurface = surface
+  return () => { if (worldCommandSurface === surface) worldCommandSurface = null }
+}
+export function hasPresentedCommandFlow(id: string): boolean {
+  return worldCommandSurface?.hasPresentedFlow(id) ?? false
+}
+export function hasMountedRecording():boolean { return worldCommandSurface?.hasRecording?.()??false }
+export function isPresentationCommand(id: IdeCommandId): boolean {
+  return id.startsWith('navigation.') || id.startsWith('view.')
+}
+export function worldCommandAvailability(id: ShellCommandId, state: {
+  worldPresent: boolean; selection: Selection; focusActive: boolean; presentedFlow: boolean
+  cinematic: CommandAvailability; contextLost: boolean
+}): CommandAvailability {
+  if (id === 'workbench.inspector' && !state.selection && !state.focusActive)
+    return { enabled: false, reason: 'Select or Focus a runtime entity first' }
+  if (id === 'navigation.focusSelection' && (!state.selection || !['frame', 'object', 'class', 'slot', 'cluster'].includes(state.selection.kind)))
+    return { enabled: false, reason: 'No focusable entity is selected' }
+  if (id === 'navigation.exitFocus' && !state.focusActive) return { enabled: false, reason: 'Focus is not active' }
+  if (id === 'navigation.followPath' && (state.selection?.kind !== 'flow' || !state.presentedFlow))
+    return { enabled: false, reason: 'Select a Flow presented at this point in time' }
+  if (id.startsWith('navigation.') && !['navigation.explore', 'navigation.home', 'navigation.exitFocus'].includes(id) && !state.worldPresent)
+    return { enabled: false, reason: 'No runtime World is present' }
+  if (id === 'view.qualityCinematic') return state.contextLost ? { enabled: false, reason: 'The World graphics context is being restored' } : state.cinematic
+  return { enabled: true }
+}
 
 export class CommandUnavailable extends Error {
   constructor(message: string) { super(message); this.name = 'CommandUnavailable' }
@@ -215,7 +261,7 @@ export function createIdeCommandService(host: IdeCommandHost) {
   }
   const requireAvailable = (id: IdeCommandId, context: CommandContext) => {
     const state = guard(context)
-    if (!context.projectId && !id.startsWith('workbench.')) throw new CommandUnavailable('Open a project first')
+    if (!context.projectId && !id.startsWith('workbench.') && !isPresentationCommand(id)) throw new CommandUnavailable('Open a project first')
     if (isShellCommand(id) && state.shellAvailability?.[id]?.enabled === false) throw new CommandUnavailable((state.shellAvailability[id] as { enabled: false; reason: string }).reason)
     if (!host.operations[operation(id, state)]) throw new CommandUnavailable('Command operation is not connected')
     if (id === 'file.open') targetFile(context, state, false)
@@ -358,7 +404,7 @@ export function createIdeCommandService(host: IdeCommandHost) {
         const target = context.target ?? fallback
         const capturedContext = { ...context, ...(target ? { target: { ...target } } : {}) }
         const capturedArgs = structuredClone(args)
-        const immediate = id.startsWith('workbench.') && id !== 'workbench.newProject' && id !== 'workbench.importProject' && id !== 'workbench.restartJava'
+        const immediate = isPresentationCommand(id) || id.startsWith('workbench.') && id !== 'workbench.newProject' && id !== 'workbench.importProject' && id !== 'workbench.restartJava'
         if (immediate) return run(id, capturedContext, capturedArgs)
         const result = queue.then(() => run(id, capturedContext, capturedArgs))
         queue = result.then(() => {}, () => {})
@@ -369,5 +415,5 @@ export function createIdeCommandService(host: IdeCommandHost) {
 }
 
 export function isShellCommand(id: IdeCommandId): id is ShellCommandId {
-  return id.startsWith('execution.') || id.startsWith('workbench.') && id !== 'workbench.quickOpen' && id !== 'workbench.commandPalette'
+  return isPresentationCommand(id) || id.startsWith('execution.') || id.startsWith('workbench.') && id !== 'workbench.quickOpen' && id !== 'workbench.commandPalette'
 }

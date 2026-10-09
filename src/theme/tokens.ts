@@ -1,6 +1,6 @@
 import design from '../../docs/visual-java-spec/DESIGN_TOKENS.json'
 import { preloadRuntimeText } from './runtimeFont'
-export { runtimeFont } from './runtimeFont'
+export { runtimeFont, runtimeFonts } from './runtimeFont'
 
 preloadRuntimeText()
 

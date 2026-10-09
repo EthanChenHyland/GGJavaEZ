@@ -1,4 +1,3 @@
-import * as monacoApi from 'monaco-editor/editor/editor.api.js'
 import { useCallback,useEffect,useMemo,useRef,useState } from 'react'
 import type { Selection } from '../contracts/interaction'
 import type { SourceLocation as RuntimeSourceLocation,RuntimeState } from '../contracts/runtime'
@@ -10,17 +9,21 @@ import { bridge,draftStorageKey,persistProjectPathChange,readProjectDrafts,renam
 import { defaultClassFolder,javaClassContent,javaClassPath } from '../ide/classCreation'
 import type { ExecutionStream } from '../ide/client'
 import type { ShellCommandId } from '../ide/commands'
-import { createIdeCommandService,ideCommandDefinitions,type CommandArguments,type CommandContext,type IdeCommandHost,type IdeCommandId } from '../ide/commands'
+import { createIdeCommandService,hasMountedRecording,hasPresentedCommandFlow,ideCommandDefinitions,isPresentationCommand,isShellCommand,worldCommandAvailability,type CommandArguments,type CommandContext,type IdeCommandHost,type IdeCommandId } from '../ide/commands'
 import type { CompileDiagnostic,ProjectEntry,ProjectFile,SourceLocation } from '../ide/contracts'
 import { defaultLaunch } from '../ide/javaProject'
 import { pathIsWithin,transitionWorkspacePaths,type WorkspacePathChange } from '../ide/pathChanges'
 import { mergeProblems } from '../ide/problems'
 import { type TreeAction } from '../ide/ProjectExplorer'
-import { currentPlatform,formatShortcut,matchesShortcut } from '../ide/shortcuts'
+import { commandForShortcut,currentPlatform,formatShortcut,worldEscapeCommand,type ShortcutFocus } from '../ide/shortcuts'
+import { useCameraStore } from '../camera/cameraStore'
+import { useInteractionStore as useWorldInteractionStore } from '../interaction/interactionStore'
+import { useQualityStore } from '../render/quality/qualityStore'
 import { bindRenamedSources,projectSessionBreakpoints,recordedBreakpointPath,restoreSourceBindings,unbindDeletedSources,verifiedWorkspaceSource,type SourceBindings } from '../ide/sourceBindings'
 import { type WorkspacePickerItem } from '../ide/WorkspacePicker'
 import { LanguageClient } from '../language/client'
-import { registerJavaIntelligence } from '../language/monaco'
+import { getLoadedJavaEditorRuntime,loadJavaEditorRuntime,onJavaEditorRuntimeLoaded } from '../language/editorRuntime'
+import type { JavaIntelligenceRegistration } from '../language/monaco'
 import { documentPath,documentUri,type LanguageSnapshot,type LspWorkspaceEdit } from '../language/protocol'
 import { applyWorkspaceEdit,type WorkspaceEditHost } from '../language/workspaceEdit'
 import { runCommandAvailability } from '../state/appState'
@@ -344,13 +347,16 @@ export function useWorkspace(recordingViewer = false) {
       },
     }
     languageEditHost.current = host
-    const registered = registerJavaIntelligence(monacoApi, {
-      client: languageClient,
-      onOpen: (location) => commands.execute('file.open', commandContext(location.path), { location }).then(() => {}),
-      applyEdit: (edit: LspWorkspaceEdit) => applyWorkspaceEdit(monacoApi, languageClient, edit, host),
-      onError: setNotice,
+    let registered: JavaIntelligenceRegistration | undefined
+    const unsubscribe = onJavaEditorRuntimeLoaded(({ monaco, registerJavaIntelligence }) => {
+      registered = registerJavaIntelligence(monaco, {
+        client: languageClient,
+        onOpen: (location) => commands.execute('file.open', commandContext(location.path), { location }).then(() => {}),
+        applyEdit: (edit: LspWorkspaceEdit) => applyWorkspaceEdit(monaco, languageClient, edit, host),
+        onError: setNotice,
+      })
     })
-    return () => { registered.dispose(); if (languageEditHost.current === host) languageEditHost.current = null }
+    return () => { unsubscribe(); registered?.dispose(); if (languageEditHost.current === host) languageEditHost.current = null }
   }, [languageClient, openFile])
 
   const switchProject = useCallback(async (nextId: string, stopExisting = true) => {
@@ -790,6 +796,8 @@ export function useWorkspace(recordingViewer = false) {
     acceptExecution(await bridge.executionBreakpoints(session.id, translated))
   }
   function retireModels(id: string, path: string) {
+    const monacoApi = getLoadedJavaEditorRuntime()?.monaco
+    if (!monacoApi) return
     for (const model of monacoApi.editor.getModels()) {
       const relative = documentPath(model.uri.toString(), id)
       if (!relative || !pathIsWithin(relative, path)) continue
@@ -976,7 +984,8 @@ export function useWorkspace(recordingViewer = false) {
       for (const tab of tabsRef.current) if (pathIsWithin(tab.path, plan.target.path) && tab.draft !== tab.content && approved.get(tab.path) !== tab.draft) throw new Error(`New dirty editor before Delete: ${tab.path}`)
       for (const [path, draft] of Object.entries(currentDrafts)) if (pathIsWithin(path, plan.target.path) && approved.get(path) !== draft.draft) throw new Error(`New closed draft before Delete: ${path}`)
       // Destructive commits protect editor input; retained text also covers closed drafts.
-      const locked = monacoApi.editor.getEditors().filter((editor) => {
+      const monacoApi = getLoadedJavaEditorRuntime()?.monaco
+      const locked = (monacoApi?.editor.getEditors() ?? []).filter((editor) => {
         const model = editor.getModel(), path = model ? documentPath(model.uri.toString(), plan.context.projectId) : null
         return path !== null && pathIsWithin(path, plan.target.path)
       }).map((editor) => ({ editor, readOnly: editor.getRawOptions().readOnly ?? false }))
@@ -989,12 +998,14 @@ export function useWorkspace(recordingViewer = false) {
         await reconcileFileChange(plan.context.projectId, { kind: 'delete', path: plan.target.path })
       } finally {
         deletingPath.current = null
-        for (const { editor, readOnly } of locked) if (monacoApi.editor.getEditors().includes(editor)) editor.updateOptions({ readOnly })
+        for (const { editor, readOnly } of locked) if (monacoApi?.editor.getEditors().includes(editor)) editor.updateOptions({ readOnly })
       }
     }),
     reveal: async (target, context) => { checkContext(context); revealEntry(target.path) },
     copyText: async (text, context) => { checkContext(context); await navigator.clipboard.writeText(text) },
     renameSymbol: async (target, newName, context) => {
+      checkContext(context)
+      const { monaco: monacoApi } = await loadJavaEditorRuntime()
       checkContext(context)
       const editor = monacoApi.editor.getEditors().find((editor) => { const model = editor.getModel(); return model && documentPath(model.uri.toString(), context.projectId) === target.path })
       if (!editor) throw new Error('The Java editor target changed')
@@ -1018,7 +1029,19 @@ export function useWorkspace(recordingViewer = false) {
     commandPalette: async (context) => { checkContext(context); setPicker({ mode: 'commands', context: { ...context } }) },
     shell: async (id, context) => {
       checkContext(context)
-      if (id === 'execution.run' || id === 'execution.runWithoutVisualization') await commandIO(() => performExecution('run', id === 'execution.runWithoutVisualization', context))
+      if (id === 'navigation.explore') useCameraStore.getState().explore()
+      else if (id === 'navigation.follow') useCameraStore.getState().enableFollow()
+      else if (id === 'navigation.home') useCameraStore.getState().home()
+      else if (id === 'navigation.focusSelection') { const selection = useWorldInteractionStore.getState().selection; if (selection) useCameraStore.getState().focus(selection) }
+      else if (id === 'navigation.exitFocus') useCameraStore.getState().exitFocus()
+      else if (id === 'navigation.traceRelevant' || id === 'navigation.traceCurrent' || id === 'navigation.traceAll') {
+        useCameraStore.getState().enterTrace()
+        useWorldInteractionStore.getState().setTraceScope(id === 'navigation.traceCurrent' ? 'current' : id === 'navigation.traceAll' ? 'all' : 'relevant')
+      }
+      else if (id === 'navigation.followPath') { const selection = useWorldInteractionStore.getState().selection; if (selection?.kind === 'flow' && hasPresentedCommandFlow(selection.id)) useCameraStore.getState().followPath(selection.id) }
+      else if (id === 'view.qualityInteractive' || id === 'view.qualityCinematic') await useQualityStore.getState().selectQuality(id === 'view.qualityInteractive' ? 'INTERACTIVE' : 'CINEMATIC')
+      else if (id === 'view.reducedMotion') { const quality = useQualityStore.getState(); quality.setReducedMotion(!quality.reducedMotion.inApp) }
+      else if (id === 'execution.run' || id === 'execution.runWithoutVisualization') await commandIO(() => performExecution('run', id === 'execution.runWithoutVisualization', context))
       else if (id === 'execution.build') await buildProject()
       else if (id === 'execution.stop') await commandIO(async () => { const session = executionRef.current; if (session) { const next = await bridge.executionStop(session.id); checkContext(context); acceptExecution(next) } })
       else if (id === 'workbench.explorer') toggleExplorer()
@@ -1027,7 +1050,6 @@ export function useWorkspace(recordingViewer = false) {
       else if (id === 'workbench.tools') { bottomPinned.current = !bottomOpen; setBottomOpen(!bottomOpen) }
       else if (id === 'workbench.console' || id === 'workbench.problems' || id === 'workbench.debugger') { bottomPinned.current = true; setTool(id === 'workbench.console' ? 'console' : id === 'workbench.problems' ? 'problems' : 'debugger'); setBottomOpen(true) }
       else if (id === 'workbench.inspector') setInspectorHidden((value) => !value)
-      else if (id === 'workbench.runtimeFocus') toggleRuntimeFocus()
       else if (id === 'workbench.returnLive') setTimelineLens('LIVE')
       else if (id === 'workbench.launch') setShowLaunch(true)
       else if (id === 'workbench.symbols') setShowSymbols(true)
@@ -1037,20 +1059,29 @@ export function useWorkspace(recordingViewer = false) {
       else if (id === 'workbench.newProject') setProjectDialog({ kind: 'project', path: '', value: 'New Java Project' })
     },
   }
+  // Palette enablement follows the same canonical stores as Mode_Bar and Inspector.
+  useWorldInteractionStore(state => state.selection)
+  useWorldInteractionStore(state => state.focus)
+  useQualityStore(state => state.cinematicAvailable)
+  useQualityStore(state => state.contextLost)
   const shellAvailability = (id: ShellCommandId) => {
+    const interaction = useWorldInteractionStore.getState(), quality = useQualityStore.getState()
+    if (isPresentationCommand(id) || id === 'workbench.inspector') return worldCommandAvailability(id, {
+      worldPresent: hasMountedRecording(), selection: interaction.selection, focusActive: !!interaction.focus,
+      presentedFlow: interaction.selection?.kind === 'flow' && hasPresentedCommandFlow(interaction.selection.id),
+      cinematic: quality.cinematicAvailable, contextLost: quality.contextLost,
+    })
     const lifecycle = runCommandAvailability(executionDimensions({ execution: executionRef.current, visualization: visualizationRef.current, runtime, timelineLens }), debugSession)
     if (id.startsWith('execution.') && busy) return { enabled: false as const, reason: 'Wait for the current operation' }
     if (['execution.run', 'execution.runWithoutVisualization'].includes(id) && !jdk?.available) return { enabled: false as const, reason: 'Configure a JDK first' }
     if (['execution.run', 'execution.runWithoutVisualization'].includes(id) && !lifecycle.run.enabled) return lifecycle.run
     if (id === 'execution.stop' && !lifecycle.stop.enabled) return { enabled: false as const, reason: 'No active execution' }
-    if (['workbench.inspector', 'workbench.runtimeFocus', 'workbench.returnLive'].includes(id) && !visualization) return { enabled: false as const, reason: 'Run Java to record a runtime world' }
-    if (id === 'workbench.inspector' && !runtimeSelection) return { enabled: false as const, reason: 'Select a runtime entity first' }
+    if (id === 'workbench.returnLive' && !visualization) return { enabled: false as const, reason: 'Run Java to record a runtime world' }
     if (id === 'workbench.symbols' && languageSnapshot.status !== 'ready') return { enabled: false as const, reason: 'Java language service is not ready' }
     return { enabled: true as const }
   }
   const commandSnapshot = commandHost.current.snapshot
-  const shellAvailabilitySnapshot = Object.fromEntries(Object.keys(ideCommandDefinitions).filter((id) => id.startsWith('execution.') || id.startsWith('workbench.') && !['workbench.quickOpen', 'workbench.commandPalette'].includes(id)).map((id) => [id, shellAvailability(id as ShellCommandId)]))
-  commandHost.current.snapshot = () => ({ ...commandSnapshot(), shellAvailability: shellAvailabilitySnapshot })
+  commandHost.current.snapshot = () => ({ ...commandSnapshot(), shellAvailability: Object.fromEntries(Object.values(ideCommandDefinitions).filter(definition => isShellCommand(definition.id)).map(definition => [definition.id, shellAvailability(definition.id as ShellCommandId)])) })
   if (!jdk?.available) delete commandHost.current.operations.startDebug
   const newEntry = (kind: 'file' | 'folder' | 'class', parent = '') => {
     const id = kind === 'class' ? 'java.newClass' : kind === 'folder' ? 'folder.new' : 'file.new'
@@ -1131,13 +1162,6 @@ export function useWorkspace(recordingViewer = false) {
     onPointerDown: (event: React.PointerEvent<HTMLDivElement>) => event.currentTarget.setPointerCapture(event.pointerId),
     onPointerMove: (event: React.PointerEvent<HTMLDivElement>) => { if (event.currentTarget.hasPointerCapture(event.pointerId)) setDivider(kind, event.clientX, event.clientY) },
   })
-  const toggleRuntimeFocus = () => {
-    setRuntimeExpanded(!runtimeExpanded)
-    setFocusSourceOpen(false)
-    // Immersive inspection reserves the viewport for geometry. Pending input
-    // and failure/debug inspection stay reachable; Console can always reopen.
-    if (!runtimeExpanded && tool === 'console' && execution?.phase !== 'WAITING_FOR_INPUT') setBottomOpen(false)
-  }
   const toggleTreeEntry = (path: string) => setCollapsed((previous) => { const next = new Set(previous); if (next.has(path)) next.delete(path); else next.add(path); return next })
   const revealEntry = (path: string) => {
     setRuntimeExpanded(false); setFocusSourceOpen(false); setExplorerOpen(true)
@@ -1157,15 +1181,22 @@ export function useWorkspace(recordingViewer = false) {
 
   useEffect(() => {
     const shortcuts = (event: KeyboardEvent) => {
-      if (projectDialog || picker || tabMenu || showLaunch || showSymbols || event.target instanceof HTMLElement && event.target.closest('.ide-workspace-menu')) return
-      if (event.key === 'Escape' && runtimeExpanded && !pending && !(event.target instanceof HTMLElement && event.target.closest('.monaco-editor'))) { setRuntimeExpanded(false); setFocusSourceOpen(false); return }
-      if (pending) return
+      if (projectDialog || picker || tabMenu || showLaunch || showSymbols || pending || event.isComposing || event.target instanceof HTMLElement && event.target.closest('.ide-workspace-menu')) return
       if (!event.defaultPrevented) {
-        const editorFocused = event.target instanceof HTMLElement && !!event.target.closest('.monaco-editor')
-        const canonical = Object.values(ideCommandDefinitions).find((definition) => (definition.scope !== 'editor' || editorFocused) && definition.bindings.some((binding) => matchesShortcut(event, binding, platform)))
+        const target = event.target instanceof HTMLElement ? event.target : null
+        const focus: ShortcutFocus = {
+          editor: !!target?.closest('.monaco-editor'),
+          textInput: !!target?.closest('input, textarea, select, [contenteditable]:not([contenteditable="false"]), [role="textbox"]'),
+          world: !!target?.closest('.world-canvas'),
+          shellSurface: !!target?.closest('.shell-source, .ide-source-pane, .ide-editor-panel, .shell-source-peek, .ide-jdk, .gg-inspector, .world-timeline, .world-settings, [role="dialog"], [role="menu"]'),
+        }
+        const interaction = useWorldInteractionStore.getState()
+        const escape = worldEscapeCommand(event, focus, { inspectorOpen: !shellStore.getState().inspectorHidden && !!(interaction.selection || interaction.focus), focusActive: !!interaction.focus, traceActive: interaction.trace.active })
+        if (escape) { event.preventDefault(); event.stopPropagation(); invoke(escape, {}); return }
+        const canonical = commandForShortcut(event, Object.values(ideCommandDefinitions), platform, focus)
         if (canonical) {
           event.preventDefault(); event.stopPropagation()
-          if ((!busy || canonical.id === 'workbench.quickOpen' || canonical.id === 'workbench.commandPalette') && commands.availability(canonical.id, commandContext()).enabled) invoke(canonical.id, {})
+          if ((!busy || isPresentationCommand(canonical.id) || canonical.id === 'workbench.quickOpen' || canonical.id === 'workbench.commandPalette') && commands.availability(canonical.id, commandContext()).enabled) invoke(canonical.id, {})
           return
         }
       }

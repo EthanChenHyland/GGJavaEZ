@@ -1,6 +1,6 @@
 import type * as Monaco from 'monaco-editor'
 import type { SourceLocation } from '../ide/contracts'
-import { LanguageClient } from './client'
+import type { LanguageClient } from './client'
 import { documentPath, documentUri, type LspCodeAction, type LspCommand, type LspCompletionItem, type LspDiagnostic, type LspDocumentSymbol, type LspLocation, type LspLocationLink, type LspMarkup, type LspRange, type LspSymbolInformation, type LspWorkspaceEdit, type LspWorkspaceSymbol } from './protocol'
 import { monacoRange } from './workspaceEdit'
 

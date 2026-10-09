@@ -7,6 +7,8 @@ export type Selection =
   | { kind: 'class'; id: string }
   | { kind: 'slot'; id: SlotId }
   | { kind: 'reference'; id: ReferenceId }
+  | { kind: 'flow'; id: string }
+  | { kind: 'cluster'; id: string }
   | null
 
 export type CameraMode = 'HOME' | 'GUIDED_FOLLOW' | 'FREE_EXPLORE' | 'FOCUS_ENTITY' | 'TRACE_PATH' | 'THEATER'

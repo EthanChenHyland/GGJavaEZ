@@ -19,6 +19,8 @@ export interface TraceShape {
   /** Probability a call allocates a new project object (receiver). */
   allocateRate?: number
   linesPerFile?: number
+  /** Emit recorded provenance recipes as well as the legacy observer stream. */
+  provenance?: boolean
 }
 
 export interface GeneratedTrace {
@@ -33,17 +35,17 @@ function rng(seed: number) {
 }
 
 export function generateRawTrace(shape: TraceShape): GeneratedTrace {
-  const { rawEvents: target, seed = 7, classes = 12, fieldsPerObject = 4, maxDepth = 12, callRate = 0.18, allocateRate = 0.25, linesPerFile = 400 } = shape
+  const { rawEvents: target, seed = 7, classes = 12, fieldsPerObject = 4, maxDepth = 12, callRate = 0.18, allocateRate = 0.25, linesPerFile = 400, provenance = false } = shape
   const random = rng(seed)
   const pick = (n: number) => Math.floor(random() * n)
   const events: RawRuntimeEvent[] = []
   const classNames = Array.from({ length: classes }, (_, i) => `gen.G${i}`)
   const objectsByClass: string[][] = classNames.map(() => [])
   let objectSeq = 0, frameSeq = 0, invocations = 0, deepest = 0
-  type Frame = { id: string; className: string; method: string; line: number; locals: Map<number, string>; receiver: string | null }
+  type Frame = { id: string; className: string; method: string; line: number; locals: Map<number, RawValue>; receiver: string | null }
   const stack: Frame[] = []
   const base = (type: string, frame: Frame | null, extra: object, className?: string | null): RawRuntimeEvent => ({
-    v: 1, seq: events.length, threadId: '1', type, frameId: frame?.id ?? null,
+    v: 1, ...(provenance ? { provenanceVersion: 1 } : {}), seq: events.length, threadId: '1', type, frameId: frame?.id ?? null,
     className: className !== undefined ? className : frame?.className ?? null, methodName: frame?.method ?? null,
     descriptor: frame ? '(I)I' : null, line: frame ? frame.line : null, site: 0, ...extra,
   } as unknown as RawRuntimeEvent)
@@ -63,14 +65,18 @@ export function generateRawTrace(shape: TraceShape): GeneratedTrace {
     const receiver = random() < allocateRate || !objectsByClass[classIndex].length
       ? allocate(classIndex) : objectsByClass[classIndex][pick(objectsByClass[classIndex].length)]
     const frame: Frame = { id: `f${++frameSeq}`, className, method: `m${pick(8)}`, line: 1 + pick(linesPerFile), locals: new Map(), receiver }
+    const parameter = int(pick(100))
+    frame.locals.set(1, parameter)
     events.push(base('enter', frame, { callerFrameId: caller?.id ?? null,
       receiver: { kind: 'ref', objectId: receiver, className },
-      parameters: [{ slot: 1, name: 'p', descriptor: 'I', liveRange: '1:0:999', value: int(pick(100)) }] }))
+      parameters: [{ slot: 1, name: 'p', descriptor: 'I', liveRange: '1:0:999', value: parameter }] }))
     stack.push(frame); invocations++; deepest = Math.max(deepest, stack.length - 1)
   }
   const exit = () => {
     const frame = stack.at(-1)!
-    events.push(base('return', frame, { value: int(pick(1000)) }))
+    const source = provenance ? [...frame.locals.entries()].at(-1) : undefined
+    const value = source?.[1] ?? int(pick(1000))
+    events.push(base('return', frame, { value, ...(provenance ? { origin: source ? { kind: 'local', slot: source[0] } : { kind: 'constant', value } } : {}) }))
     events.push(base('exit', frame, {}))
     stack.pop()
   }
@@ -88,9 +94,17 @@ export function generateRawTrace(shape: TraceShape): GeneratedTrace {
     if (roll < 0.62 || !frame.receiver) {
       const slot = 2 + pick(4)
       // As in Recorder.local, the payload descriptor (the local's type) overrides the frame context's.
-      events.push(base('local', frame, { slot, name: `v${slot}`, descriptor: 'I', liveRange: `${slot}:0:999`, value: int(pick(10000)) }))
+      const source = provenance ? [...frame.locals.entries()].at(-1) : undefined
+      const value = source?.[1] ?? int(pick(10000))
+      events.push(base('local', frame, { slot, name: `v${slot}`, descriptor: 'I', liveRange: `${slot}:0:999`, value,
+        ...(provenance ? { origin: source ? { kind: 'local', slot: source[0] } : { kind: 'constant', value } } : {}) }))
+      frame.locals.set(slot, value)
     } else {
-      events.push(base('field', frame, { objectId: frame.receiver, owner: frame.className, name: `f${pick(fieldsPerObject)}`, value: int(pick(10000)) }, null) as RawRuntimeEvent)
+      const fieldIndex=pick(fieldsPerObject)
+      const source = provenance ? [...frame.locals.entries()].at(-1) : undefined
+      const value = source?.[1] ?? int(pick(10000))
+      events.push(base('field', frame, { objectId: frame.receiver, owner: frame.className, name: `f${fieldIndex}`, value,
+        ...(provenance ? { origin: source ? { kind: 'local', slot: source[0] } : { kind: 'constant', value } } : {}) }, null) as RawRuntimeEvent)
       ;(events.at(-1) as { descriptor: string }).descriptor = 'I'
     }
   }

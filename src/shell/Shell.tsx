@@ -1,13 +1,12 @@
-import { useLayoutEffect } from 'react'
+import { lazy, Suspense, useLayoutEffect, useState } from 'react'
 import { exposeQaBridge } from '../qa/qaBridge'
 import { ChevronLeft,FolderOpen,Maximize2,PanelBottom,Plus,Save,Upload,X } from 'lucide-react'
-import type { TraceDocument } from '../contracts/runtime'
+import type { SourceLocation, TraceDocument } from '../contracts/runtime'
 import { DebugPanel } from '../debugger/DebugPanel'
 import { ErrorExplorer } from '../debugger/ErrorExplorer'
 import { bridge } from '../ide/bridge'
 import { ideCommandDefinitions,type IdeCommandId } from '../ide/commands'
 import { tabMenuCommands } from '../ide/contextMenus'
-import { EditableJavaEditor } from '../ide/EditableJavaEditor'
 import { LaunchDialog } from '../ide/LaunchDialog'
 import { ProblemsPanel } from '../ide/ProblemsPanel'
 import { ProjectExplorer } from '../ide/ProjectExplorer'
@@ -15,14 +14,17 @@ import { formatShortcut,ideShortcuts } from '../ide/shortcuts'
 import { SymbolSearch } from '../ide/SymbolSearch'
 import { WorkspaceMenu } from '../ide/WorkspaceMenu'
 import { WorkspacePicker } from '../ide/WorkspacePicker'
-import { useNavigationStore } from '../navigation'
+import { useInteractionStore } from '../interaction/interactionStore'
 import { useAppState } from '../state/useAppState'
-import SourceEditor from '../ui/SourceEditor'
+import { RecordedSourceView } from './source/RecordedSourceView'
+import { recordedFileFor } from './source/sourceSync'
+import { loadJavaEditorRuntime } from '../language/editorRuntime'
 import { Header } from './Header'
 import { computeShellLayout } from './shellLayout'
 import { useViewport } from './useViewport'
 import { WorldSurface } from './WorldSurface'
 const idleTrace: TraceDocument = { schemaVersion: 2, demoId: 'ide:ready', sourceFiles: [], events: [] }
+const EditableJavaEditor=lazy(async()=>{await loadJavaEditorRuntime();const module=await import('../ide/EditableJavaEditor');return{default:module.EditableJavaEditor}})
 
 
 import { filename,trapDialogTab,useWorkspace } from '../workspace/useWorkspace'
@@ -30,10 +32,13 @@ import './shell.css'
 export interface ShellProps { recording?: TraceDocument; recordingChoices?: React.ReactNode }
 export function Shell({ recording, recordingChoices }: ShellProps) {
   const workspace = useWorkspace(!!recording)
+  const [recordedLocation,setRecordedLocation]=useState<SourceLocation|null>(null)
+  const recordedFile=recording?recordedFileFor(recording,recordedLocation):workspace.recordedView?.file
   const viewport = useViewport()
-  const focusTargetId = useNavigationStore(state => state.isolatedSelection?.id ?? null)
+  const focusTargetId = useInteractionStore(state => state.focus?.targetId ?? null)
+  const worldSelection = useInteractionStore(state => state.selection)
   const appState = useAppState(workspace, focusTargetId, recording)
-  const layout = computeShellLayout({ viewport, appState, hasRuntimeWorld: !!recording || !!workspace.visualization, sourceExpanded: !recording && workspace.workspaceMode === 'code', narrowDrawerOpen: workspace.focusSourceOpen, explorerOpen: workspace.explorerOpen, inspector: { open: !!workspace.runtimeSelection && !workspace.inspectorHidden, side: 'right' }, dockDrawer: { open: workspace.bottomOpen, heightRatio: workspace.bottomHeight / 100 }, debugActive: workspace.execution?.kind === 'debug' && workspace.activeExecution })
+  const layout = computeShellLayout({ viewport, appState, hasRuntimeWorld: !!recording || !!workspace.visualization, sourceExpanded: !recording && workspace.workspaceMode === 'code', narrowDrawerOpen: workspace.focusSourceOpen, explorerOpen: workspace.explorerOpen, inspector: { open: !!(worldSelection||focusTargetId) && !workspace.inspectorHidden, side: 'right' }, dockDrawer: { open: workspace.bottomOpen, heightRatio: workspace.bottomHeight / 100 }, debugActive: workspace.execution?.kind === 'debug' && workspace.activeExecution })
   useLayoutEffect(() => exposeQaBridge({ appState, layout, cursor: workspace.runtime?.cursor ?? 0, liveHead: recording?.events.length ?? workspace.visualization?.trace.events.length ?? 0 }))
   const rectangle = (prefix: string, rect: { x: number; y: number; width: number; height: number } | null) => rect ? Object.fromEntries(Object.entries(rect).filter(([key]) => ['x','y','width','height'].includes(key)).map(([key, value]) => ['--'+prefix+'-'+key, value+'px'])) : {}
   const geometry = { ...rectangle('header', layout.header), ...rectangle('source', layout.source), ...rectangle('timeline', layout.timeDock), ...rectangle('drawer', layout.dockDrawer), ...rectangle('inspector', layout.inspector), ...rectangle('explorer', layout.explorer), ...rectangle('debug', layout.debugBar) }
@@ -42,7 +47,7 @@ const { projects, projectId, tree, tabs, active, setActive, jdk, setJdk, jdkInpu
 return <div className={`shell ide-shell ${workspace.explorerOpen ? 'shell--explorer-open' : ''} ${workspace.bottomOpen ? 'shell--drawer-open' : ''} ${layout.viewportClass === 'NARROW' ? 'shell--narrow' : ''} ${layout.source.size === 'DRAWER_COLLAPSED' ? 'shell--source-peek' : ''}`} data-viewport={layout.viewportClass} ref={shellRef} style={geometry as React.CSSProperties}>
     <section className="ide-runtime-panel" aria-label="Runtime visualization area">
             <div className={`ide-runtime-live${visualization ? '' : ' ide-runtime-live--idle'}`}>
-              <WorldSurface trace={recording ?? visualization?.trace ?? idleTrace} onSourceChange={recording ? undefined : recordingIsCurrent ? handleExecutingSource : undefined} onRuntimeChange={handleRuntimeChange} navigation={runtimeNavigation} suppressInspector={tool === 'errors' && bottomOpen || inspectorHidden} execution={visualization ? { phase: recordingIsCurrent ? execution!.phase : recordedPhase, lens: timelineLens, liveCursor: visualization.trace.events.length, onLensChange: (lens) => setTimelineLens(lens) } : undefined}/>
+              <WorldSurface safeFrame={layout.safeFrame} trace={recording ?? visualization?.trace ?? idleTrace} onSourceChange={recording ? setRecordedLocation : recordingIsCurrent ? handleExecutingSource : undefined} onRuntimeChange={handleRuntimeChange} navigation={runtimeNavigation} suppressInspector={tool === 'errors' && bottomOpen || inspectorHidden} execution={visualization ? { phase: recordingIsCurrent ? execution!.phase : recordedPhase, lens: timelineLens, liveCursor: visualization.trace.events.length, onLensChange: (lens) => setTimelineLens(lens) } : undefined}/>
               {workspace.previousRecording && <div className="shell-prior-world glass" role="status">Previous run · {workspace.traceStale ? 'source changed' : 'retained recording'}</div>}
 {!recording && !visualization && <div className="ide-runtime-ready" aria-label="Runtime ready"><span>RUNTIME</span><strong>{execution?.phase === 'BUILDING' ? 'Building Java…' : execution?.phase === 'STARTING' ? 'Starting Java…' : 'Ready'}</strong><p>{execution?.support === 'RUN_ONLY' ? execution.supportReason ?? 'Console execution' : 'Run your Java program to enter the world.'}</p></div>}
             </div>
@@ -80,9 +85,9 @@ return <div className={`shell ide-shell ${workspace.explorerOpen ? 'shell--explo
         <div className="ide-upper" ref={upperRef}>
           <div className="ide-editor-panel">
             <div className="ide-source-heading"><button className="shell-source-files" aria-label="Show project explorer" title="Explorer" onClick={() => invoke('workbench.explorer', {})}>Files</button><span>SOURCE</span><span className="ide-panel-actions"><button onClick={() => invoke('file.save', {})} disabled={!activeTab || activeTab.draft === activeTab.content || busy} title="Save active file" aria-label="Save active file"><Save size={13}/></button><button onClick={() => invoke('workbench.edit', {})} aria-label="Expand source for editing" title="Expand source for editing"><Maximize2 size={13}/></button><button onClick={() => invoke('workbench.source', {})} aria-label={runtimeExpanded ? 'Close source drawer' : 'Collapse source'} title="Collapse source"><ChevronLeft size={15}/></button></span></div>
-            <div className="ide-tabs" role="tablist">{tabs.map((tab) => <div key={tab.path} className={`ide-tab ${active === tab.path ? 'is-active' : ''}`} onContextMenu={(event) => { event.preventDefault(); const button = event.currentTarget.querySelector<HTMLButtonElement>('button'); button?.focus(); showTabMenu(tab.path, event.clientX, event.clientY) }} onKeyDown={(event) => { if (event.key === 'ContextMenu' || event.key === 'F10' && event.shiftKey) { event.preventDefault(); const rect = event.currentTarget.getBoundingClientRect(); showTabMenu(tab.path, rect.left, rect.bottom) } }} role="tab" aria-selected={active === tab.path}><button onClick={() => { activeRef.current = tab.path; setActive(tab.path); setRecordedView(null) }} title={tab.path}><span className="ide-java-icon">J</span>{filename(tab.path)}{tab.draft !== tab.content && <span className="ide-dirty"/>}</button><button aria-label={`Close ${tab.path}`} onClick={() => closeTab(tab.path)}><X size={13}/></button></div>)}</div>
-            <div className="ide-editor-body">{recording ? <SourceEditor file={recording.sourceFiles.find(file => file.fileId === runtime?.currentSource?.fileId) ?? recording.sourceFiles[0]} location={runtime?.currentSource ?? null} onChooseLine={() => {}}/> : recordedView ? <SourceEditor file={recordedView.file} location={recordedView.location} onChooseLine={() => {}}/> : activeTab ? <EditableJavaEditor key={`${projectId}:${activeTab.path}`} projectId={projectId} path={activeTab.path} value={activeTab.draft} onChange={(value) => edit(activeTab.path, value)} diagnostics={diagnostics} navigate={nav} executingLine={activeTab.path === mappedExecutingSource?.path ? mappedExecutingSource.line : null} pausedLine={debugSession?.status === 'paused' && runtime?.cursor === visualization?.trace.events.length && activeTab.path === mappedExecutingSource?.path ? mappedExecutingSource.line : null} breakpoints={displayedBreakpoints} onToggleBreakpoint={(line) => toggleBreakpoint(activeTab.path, line)} onSave={() => invoke('file.save', {}, activeTab.path)}/> : <div className="ide-editor-empty"><span>JAVA SOURCE</span><h2>Choose a file to edit</h2><p>Open a Java file from the project explorer, or create a new one.</p></div>}</div>
-            <div className="ide-editor-foot"><span>{recordedView ? `Recorded source · ${recordedView.file.fileId}` : active || 'No file selected'}</span><span>Java · UTF-8 · {activeTab?.draft.split('\n').length ?? 0} lines</span></div>
+            <div className="ide-tabs" role="tablist">{recording&&recordedFile&&<div className="ide-tab is-active" role="tab" aria-selected="true"><span>{recordedFile.name} · Recorded source</span></div>}{tabs.map((tab) => <div key={tab.path} className={`ide-tab ${active === tab.path ? 'is-active' : ''}`} onContextMenu={(event) => { event.preventDefault(); const button = event.currentTarget.querySelector<HTMLButtonElement>('button'); button?.focus(); showTabMenu(tab.path, event.clientX, event.clientY) }} onKeyDown={(event) => { if (event.key === 'ContextMenu' || event.key === 'F10' && event.shiftKey) { event.preventDefault(); const rect = event.currentTarget.getBoundingClientRect(); showTabMenu(tab.path, rect.left, rect.bottom) } }} role="tab" aria-selected={active === tab.path}><button onClick={() => { activeRef.current = tab.path; setActive(tab.path); setRecordedView(null) }} title={tab.path}><span className="ide-java-icon">J</span>{filename(tab.path)}{tab.draft !== tab.content && <span className="ide-dirty"/>}</button><button aria-label={`Close ${tab.path}`} onClick={() => closeTab(tab.path)}><X size={13}/></button></div>)}</div>
+            <div className="ide-editor-body">{recording ? <RecordedSourceView file={recordedFile} location={recordedLocation} mark={focusTargetId?'focus':'history'} viewportHeight={viewport.height}/> : recordedView ? <RecordedSourceView file={recordedView.file} location={recordedView.location} mark={focusTargetId?'focus':'history'} viewportHeight={viewport.height}/> : activeTab ? <Suspense fallback={<div role="status">Loading Java editor…</div>}><EditableJavaEditor key={`${projectId}:${activeTab.path}`} projectId={projectId} path={activeTab.path} value={activeTab.draft} onChange={(value) => edit(activeTab.path, value)} diagnostics={diagnostics} navigate={nav} executingLine={activeTab.path === mappedExecutingSource?.path ? mappedExecutingSource.line : null} pausedLine={debugSession?.status === 'paused' && runtime?.cursor === visualization?.trace.events.length && activeTab.path === mappedExecutingSource?.path ? mappedExecutingSource.line : null} breakpoints={displayedBreakpoints} onToggleBreakpoint={(line) => toggleBreakpoint(activeTab.path, line)} onSave={() => invoke('file.save', {}, activeTab.path)}/></Suspense> : <div className="ide-editor-empty"><span>JAVA SOURCE</span><h2>Choose a file to edit</h2><p>Open a Java file from the project explorer, or create a new one.</p></div>}</div>
+            <div className="ide-editor-foot"><span>{recordedFile ? `Recorded source · ${recordedFile.name}` : recording ? 'No recorded project source' : active || 'No file selected'}</span><span>Java · UTF-8 · {(recordedFile?.content ?? activeTab?.draft)?.split('\n').length ?? 0} lines</span></div>
           </div>
           <div className="ide-divider ide-divider--vertical" role="separator" aria-label="Resize runtime pane" tabIndex={0} {...divider('runtime')}/>
           
