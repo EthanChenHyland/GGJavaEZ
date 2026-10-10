@@ -126,6 +126,7 @@ function Edges({ items }: {
             for (let i = 0; i < source.count; i++) {
                 point.fromBufferAttribute(source, i); normal.fromBufferAttribute(normals, i);
                 expandRoundedBoxVertex(point, normal, item.anchor.size, expanded);
+                expanded.addScaledVector(normal,.008);
                 positions.push(expanded.x + item.anchor.position[0], expanded.y + item.anchor.position[1], expanded.z + item.anchor.position[2]);
                 colors.push(tint.r, tint.g, tint.b);
             }
@@ -136,7 +137,7 @@ function Edges({ items }: {
         return geometry;
     }, [items]);
     useEffect(() => () => geometry.dispose(), [geometry]);
-    return <lineSegments geometry={geometry} userData={{runtimeBloomRole:'emitter'}} raycast={noRaycast}><lineBasicMaterial vertexColors transparent opacity={items[0].opacity} toneMapped={false}/></lineSegments>;
+    return <lineSegments geometry={geometry} userData={{runtimeBloomRole:'emitter'}} raycast={noRaycast}><lineBasicMaterial vertexColors transparent depthWrite={false} opacity={items[0].opacity} toneMapped={false}/></lineSegments>;
 }
 export function SolidBatch({ scene, plan, onSelect, onFocus }: {
     scene: SceneModel;

@@ -25,6 +25,9 @@ class RuntimeGTAO extends GTAOPass {
       renderer.setClearColor(0x7777ff, 1); renderer.setRenderTarget(target); renderer.clear(); renderer.render(this.scene, this.camera)
     } finally {
       for (const [mesh, material, visible] of replaced) { mesh.material = material; mesh.visible = visible }
+      // Three's normal pass hides lines before invoking this override. Its
+      // normal-path restore is skipped if a context interruption throws here.
+      Reflect.get(GTAOPass.prototype, '_restoreVisibility').call(this)
       this.scene.background = originalBackground; this.scene.overrideMaterial = originalOverride
       renderer.setClearColor(clear, alpha); renderer.setRenderTarget(originalTarget)
     }

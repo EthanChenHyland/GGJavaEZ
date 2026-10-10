@@ -61,3 +61,18 @@ Current verification:
 - Latest actual Java captures completed at cursor 70 without browser or shader errors in both tiers. Interactive reported 78 total draw calls, 43,611 triangles, 32 geometries and 29 textures; hardware-enabled Cinematic reported 115 calls, 56,843 triangles, 34 geometries and 43 textures, with compiled physical materials and ready lazy effects. These are small-program observations, not dense-scene performance results.
 
 The current original-size comparison shows recovered floor depth and reflections, but remains **unapproved** for reference convergence. Connector routing, synchronous typography fitting/visibility, edge depth polish, composition, haze, focus readability captures, large-world profiling and long-lived resource measurements still need work. This foundation does not close milestone E or the whole A–G reconstruction.
+
+## Typography and routing increment — 2026-10-09
+
+Face typography now fits synchronously against generated advances from the exact static local font assets. Titles reserve identity space; field/local faces have name, type and value columns. World previews preserve whole Unicode code points/escapes and cull text below 11 CSS pixels at its actual projected depth. Three bounded weight atlases prewarm together, including locally supplied availability brackets. Original fonts and captured Inspector values remain unchanged. The exact readiness-test migration is recorded in `migration/typography.md`.
+
+Clear connectors retain smooth cubic paths. Obstructed connectors use canonical ports and a bounded exterior visibility grid, then clearance-checked fillets. Actual array headers and presented cells replace the empty reserved envelope as routing obstacles. Shared endpoint routes reuse a plan-local cache; the search queue is a binary heap. An interrupted Cinematic normal draw now restores the lines Three temporarily hid as well as materials and renderer state.
+
+Verification on this increment:
+
+- Build/typecheck and lint passed. Bootstrap is 72.53 kB gzip, AppRoot 328.77 kB gzip, shared Troika 230.28 kB gzip. The generated font metrics contribute 48.45 kB gzip; the aggregate startup graph exceeds the 500 kB target and remains an open optimization gate. Cinematic and Monaco remain separate lazy chunks.
+- Full default unit gate: 1,682 passed, 63 opt-in skipped, 1,745 total across 165 files (159 passed, six skipped), in 150.74 seconds. No semantic golden was changed. Added focused tests include 100 Unicode fits, 100 projected visibility cases, 100 rounded-route clearance cases and injected normal-pass failure restoration.
+- All eleven reconstruction browser checks passed in 28.2 seconds, preserving their existing assertions.
+- Actual Java completed at prefix 70 with no page/shader errors. Interactive reported 78 total calls, 47,227 triangles, 32 geometries and 29 textures. Compiled hardware-enabled Cinematic reported 115 calls, 61,363 triangles, 34 geometries and 43 textures, with ready effects and no failure. These remain small-program measurements.
+
+Original-size review against the hero and reference-sheet overview shows clearer rows and identities and fewer face crossings, but overlapping historical flows, edge aliasing, material hierarchy and camera composition remain visibly weaker. These captures are **not approved** as formal Comparable_State convergence. Per-entity/coarse-pose text scheduling, complete routing/bundle properties, generic real-Java fixtures and the full 16-state/five-viewport harness remain required, along with the previously listed subsystem/performance/final gates. This increment does not close E or A–G.

@@ -5,6 +5,7 @@ import { computeArrayWindow, type ArrayWindow } from './arrayWindow';
 import type { FlowCatalog, SceneFlow } from './flowCatalog';
 import type { FlowEndpoint } from '../motion/semanticTransition';
 import { arrayCellTarget } from './arrayCellTarget';
+import { connectorClearsFaces, roundedConnectorPoints, surfaceConnectorPoints } from './connectorRouting';
 export interface PlanInput {
     scene: SceneModel;
     flows?: FlowCatalog;
@@ -163,15 +164,41 @@ export function planPresentation(input: PlanInput, previous?: PresentationPlan):
       if (node.kind === 'collection') { const entry = node.entries.find(entry=>entry.slotId === slot || entry.keySlotId === slot); return entry?.keySlotId === slot ? entry.keyPort ?? null : entry?.port ?? null; }
       return node.anchor.ports[slot] ?? null;
     };
-    const endpoint = (point: FlowEndpoint | null): Vec3 | null => point?.kind === 'io' ? scene.io.find(io=>io.id===point.id)?.anchor.bodyPort ?? null : point ? point.kind === 'slot' ? owners.has(point.id) ? port(owners.get(point.id)!, point.id) : null : port(point.id) : null;
+    const bodyAnchors = new Map<string, WorldAnchor>();
+    for (const id of entities.keys()) {
+      const node = scene.entities[id], anchor = node.anchor;
+      // An array's reserved envelope is not a visible face. Route around the
+      // actual header and the current cell mapping, never future/hidden cells.
+      bodyAnchors.set(id, node.kind === 'array' ? { ...anchor, position: [anchor.position[0], anchor.position[1] + anchor.size[1] / 2 - .45, anchor.position[2]], size: [anchor.size[0], .9, .12] } : anchor);
+    }
+    const cellAnchors = new Map([...cellWindows.values()].flatMap(window => [...window.mapping].map(([id, cell]) => [id, cell.anchor] as const)));
+    const routeBodies = [...bodyAnchors.values(), ...cellAnchors.values(), ...scene.io.map(io => io.anchor), ...clusters.map(cluster => cluster.anchor)];
+    const portAnchor = (id: string, slot?: string) => slot && scene.entities[id]?.kind === 'array' ? cellAnchors.get(slot) : bodyAnchors.get(id);
+    const endpointAnchor = (point: FlowEndpoint | null): WorldAnchor | undefined => point?.kind === 'io' ? scene.io.find(io => io.id === point.id)?.anchor : point?.kind === 'slot' ? portAnchor(owner(point.id) ?? '', point.id) : point ? portAnchor(point.id) : undefined;
+    const endpoint = (point: FlowEndpoint | null): Vec3 | null => point?.kind === 'io' ? scene.io.find(io=>io.id===point.id)?.anchor.bodyPort ?? null : point ? point.kind === 'slot' ? owner(point.id) ? port(owner(point.id)!, point.id) : null : port(point.id) : null;
+    const routes = new Map<string, Vec3[]>();
+    const route = (from: Vec3, to: Vec3, source?: WorldAnchor, target?: WorldAnchor, left = false) => {
+      const key = `${from.join(',')}/${to.join(',')}/${source?.entityId}/${target?.entityId}/${left}`, cached = routes.get(key);
+      if (cached) return cached;
+      let points = curvedPath(from, to, left);
+      if (source && target && !connectorClearsFaces(points, source, target, routeBodies)) {
+        const corridor = surfaceConnectorPoints(from, to, source, target, routeBodies);
+        points = roundedConnectorPoints(corridor);
+        for (const radius of [.35, .18, .08]) {
+          const rounded = roundedConnectorPoints(corridor, radius);
+          if (connectorClearsFaces(rounded, source, target, routeBodies)) { points = rounded; break; }
+        }
+      }
+      routes.set(key, points); return points;
+    };
     const relevantEntities=new Set([selected,focused,...(scene.cursorEvent?.subjects??[]).map(owner)].filter((id):id is string=>!!id));
     const traceParticipants=new Set<string>();
     const participate=(...ids:(string|undefined)[])=>{for(const id of ids){const resolved=owner(id);if(resolved)traceParticipants.add(resolved)}};
     const curves: PresentedCurve[] = [];
-    const curve = (id: string, kind: PresentedCurve['kind'], from: Vec3 | null, to: Vec3 | null, role: MaterialRole, relevant: boolean, left = false, arrow = false, label?: string) => {
+    const curve = (id: string, kind: PresentedCurve['kind'], from: Vec3 | null, to: Vec3 | null, role: MaterialRole, relevant: boolean, left = false, arrow = false, label?: string, source?: WorldAnchor, target?: WorldAnchor) => {
         if (!from || !to)
             return;
-        curves.push({ id, kind, points: curvedPath(from, to, left), colorRole: role, opacity: focused && !relevant ? .25 : relevant ? 1 : .35, widthPx: relevant ? 3.5 : 2.5, arrow, label });
+        curves.push({ id, kind, points: route(from, to, source, target, left), colorRole: role, opacity: focused && !relevant ? .25 : relevant ? 1 : .35, widthPx: relevant ? 3.5 : 2.5, arrow, label });
     };
     const refs = scene.references.filter(r => entities.has(r.sourceId) && entities.has(r.targetId)).sort((a, b) => Number(b.id === selection?.id) - Number(a.id === selection?.id) || Number(mandatory.has(b.sourceId) || mandatory.has(b.targetId)) - Number(mandatory.has(a.sourceId) || mandatory.has(a.targetId)) || (b.evidence.changedSeq ?? 0) - (a.evidence.changedSeq ?? 0));
     const requiredRefs = refs.filter(r => r.id === selection?.id || r.evidence.changedSeq === scene.cursorEvent?.seq);
@@ -181,13 +208,13 @@ export function planPresentation(input: PlanInput, previous?: PresentationPlan):
     if (!trace.active || trace.scope !== 'current')
         for (const ref of admittedRefs){
             const relevant=trace.active&&trace.scope==='all'||ref.id===selection?.id||relevantEntities.has(ref.sourceId)||relevantEntities.has(ref.targetId),count=curves.length;
-            curve(ref.id, 'connector', port(ref.sourceId, ref.sourceSlotId), port(ref.targetId), 'reference', relevant, false, ref.role === 'object-object');
+            curve(ref.id, 'connector', port(ref.sourceId, ref.sourceSlotId), port(ref.targetId), 'reference', relevant, false, ref.role === 'object-object', undefined, portAnchor(ref.sourceId, ref.sourceSlotId), portAnchor(ref.targetId));
             if(relevant&&curves.length>count)participate(ref.sourceId,ref.targetId);
         }
     for (const call of (trace.active&&trace.scope==='current'?[]:scene.callLinks.filter(c => entities.has(c.callerId) && entities.has(c.calleeId)).slice(-budget.calls))) {
         const from = scene.entities[call.callerId].anchor, to = scene.entities[call.calleeId].anchor;
         const relevant=trace.active&&trace.scope==='all'||relevantEntities.has(call.callerId)||relevantEntities.has(call.calleeId);
-        curve(call.id, 'call', [from.position[0] - from.size[0] / 2, from.position[1] + from.size[1] / 2 - .7, from.position[2] + from.size[2] / 2], [to.position[0] - to.size[0] / 2, to.position[1] + to.size[1] / 2 - .7, to.position[2] + to.size[2] / 2], 'call', relevant, true);
+        curve(call.id, 'call', [from.position[0] - from.size[0] / 2, from.position[1] + from.size[1] / 2 - .7, from.position[2] + from.size[2] / 2], [to.position[0] - to.size[0] / 2, to.position[1] + to.size[1] / 2 - .7, to.position[2] + to.size[2] / 2], 'call', relevant, true, false, undefined, from, to);
         if(relevant)participate(call.callerId,call.calleeId);
     }
     const drawnFlowIds = new Set<string>();
@@ -196,16 +223,16 @@ export function planPresentation(input: PlanInput, previous?: PresentationPlan):
       const from = flow.kind==='return'&&source?.kind==='frame'?[source.anchor.position[0]+source.anchor.size[0]/2,source.anchor.position[1]+source.anchor.size[1]/2-.85,source.anchor.position[2]+source.anchor.size[2]/2] as Vec3:endpoint(flow.from), to = endpoint(flow.to); if (!from || !to) continue;
       const exception = ['throw','unwind','catch'].includes(flow.kind), returned = flow.kind === 'return';
       const relevant=trace.active&&trace.scope==='all'||flowRelevant(flow)||requiredFlows.includes(flow);
-      curve(flow.id, exception ? 'exception' : returned ? 'return' : 'flow', from, to, exception ? 'exception' : returned ? 'return' : flow.kind === 'input' ? 'stdin' : flow.kind === 'output' ? flow.to.kind==='io'&&flow.to.id==='stderr'?'stderr':'stdout' : 'reference', relevant, false, exception || returned, flow.valueText ?? undefined);
+      curve(flow.id, exception ? 'exception' : returned ? 'return' : 'flow', from, to, exception ? 'exception' : returned ? 'return' : flow.kind === 'input' ? 'stdin' : flow.kind === 'output' ? flow.to.kind==='io'&&flow.to.id==='stderr'?'stderr':'stdout' : 'reference', relevant, false, exception || returned, flow.valueText ?? undefined, endpointAnchor(flow.from), endpointAnchor(flow.to));
       if(relevant)participate(flow.from?.id,flow.to.id);
       drawnFlowIds.add(flow.id);
     }
     if (!input.flows) for (const flow of scene.returnFlows.slice(0, budget.flows))
-      if (entities.has(flow.frameId) && entities.has(flow.destination.entityId)) curve(flow.id, 'return', port(flow.frameId), port(flow.destination.entityId, flow.destination.slotId), 'return', scene.cursorEvent?.seq === flow.returnSeq, false, true, flow.value.text);
+      if (entities.has(flow.frameId) && entities.has(flow.destination.entityId)) curve(flow.id, 'return', port(flow.frameId), port(flow.destination.entityId, flow.destination.slotId), 'return', scene.cursorEvent?.seq === flow.returnSeq, false, true, flow.value.text, portAnchor(flow.frameId), portAnchor(flow.destination.entityId, flow.destination.slotId));
     const bundles: PresentationPlan['bundles'][number][] = [];
     if (trace.active && trace.scope === 'all') for (const bundle of input.flows?.bundles({cursor:scene.cursor,scene,exclude:drawnFlowIds}) ?? []) {
       const from = endpoint(bundle.from), to = endpoint(bundle.to); if (!bundle.drawable || !from || !to) continue;
-      bundles.push({id:bundle.id,kind:'flow',from:bundle.from.id,to:bundle.to.id,count:bundle.count,points:curvedPath(from,to)});
+      bundles.push({id:bundle.id,kind:'flow',from:bundle.from.id,to:bundle.to.id,count:bundle.count,points:route(from,to,endpointAnchor(bundle.from),endpointAnchor(bundle.to))});
       participate(bundle.from.id,bundle.to.id);
     }
     if(trace.active)for(const[id,presented]of entities)if(!traceParticipants.has(id))entities.set(id,{...presented,opacity:Math.min(presented.opacity,world.opacity.traceDim)});

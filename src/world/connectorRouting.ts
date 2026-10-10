@@ -1,4 +1,46 @@
-import type { Vec3, WorldAnchor } from '../contracts/world'
+import type { Vec3, WorldAnchor } from '../contracts/worldV2'
+
+/** Short quadratic fillets retain the exterior corridor instead of bowing a
+ * cubic spline back through labels. Endpoints stay exact canonical ports. */
+export function roundedConnectorPoints(points: readonly Vec3[], radius = .025): Vec3[] {
+  const unique = points.filter((point, i) => !i || point.some((value, axis) => value !== points[i - 1][axis]))
+  if (unique.length < 3) return [...unique]
+  const distance = (a: Vec3, b: Vec3) => Math.hypot(...a.map((value, axis) => value - b[axis]))
+  const result: Vec3[] = [unique[0]]
+  for (let i = 1; i < unique.length - 1; i++) {
+    const prior = unique[i - 1], point = unique[i], next = unique[i + 1]
+    const incoming = distance(prior, point), outgoing = distance(point, next), inset = Math.min(radius, incoming / 3, outgoing / 3)
+    const a = point.map((value, axis) => value + (prior[axis] - value) * inset / incoming) as unknown as Vec3
+    const b = point.map((value, axis) => value + (next[axis] - value) * inset / outgoing) as unknown as Vec3
+    result.push(a)
+    for (let step = 1; step <= 4; step++) {
+      const t = step / 4, u = 1 - t
+      result.push(point.map((value, axis) => u * u * a[axis] + 2 * u * t * value + t * t * b[axis]) as unknown as Vec3)
+    }
+  }
+  result.push(unique.at(-1)!)
+  return result
+}
+
+/** Face clearance admits only the departure and arrival inside their own
+ * terminals. A path that returns through an intervening face is rejected. */
+export function connectorClearsFaces(points: readonly Vec3[], source: WorldAnchor, target: WorldAnchor, bodies: readonly WorldAnchor[]): boolean {
+  const rectangle = (body: WorldAnchor) => ({ left: body.position[0] - body.size[0] / 2 - .035, right: body.position[0] + body.size[0] / 2 + .035, bottom: body.position[1] - body.size[1] / 2 - .14, top: body.position[1] + body.size[1] / 2 + .14 })
+  const inside = (point: Vec3, body: WorldAnchor) => { const rect = rectangle(body); return point[0] > rect.left && point[0] < rect.right && point[1] > rect.bottom && point[1] < rect.top }
+  let departure = 1, arrival = points.length - 1
+  while (departure < points.length - 1 && inside(points[departure], source)) departure++
+  while (arrival > 1 && inside(points[arrival - 1], target)) arrival--
+  for (const body of bodies) {
+    const rect = rectangle(body)
+    for (let i = 1; i < points.length; i++) {
+      if (body.entityId === source.entityId && i <= departure || body.entityId === target.entityId && i >= arrival) continue
+      const a = points[i - 1], b = points[i]
+      if (body.position[2] + body.size[2] / 2 + .75 < Math.min(a[2], b[2]) || body.position[2] - body.size[2] / 2 - .75 > Math.max(a[2], b[2])) continue
+      if (Math.min(a[0], b[0]) < rect.right && Math.max(a[0], b[0]) > rect.left && Math.min(a[1], b[1]) < rect.top && Math.max(a[1], b[1]) > rect.bottom) return false
+    }
+  }
+  return true
+}
 
 /** Connect real ports through exterior side/roof channels. Geometry, IDs and
  * values are untouched; the detour protects information faces from crossings. */
@@ -38,13 +80,35 @@ function faceClearPath(start: Vec3, end: Vec3, bodies: readonly WorldAnchor[], r
   const index = (x: number, y: number) => y * xs.length + x
   const first = index(xs.indexOf(start[0]), ys.indexOf(start[1])), last = index(xs.indexOf(end[0]), ys.indexOf(end[1]))
   const cost = new Float64Array(xs.length * ys.length).fill(Infinity), previous = new Int32Array(cost.length).fill(-1), closed = new Uint8Array(cost.length)
-  const pending = [first]; cost[first] = 0
-  const score = (id: number) => cost[id] + Math.abs(xs[id % xs.length] - end[0]) + Math.abs(ys[Math.floor(id / xs.length)] - end[1])
+  const pending: Array<{ id: number; cost: number; score: number }> = []
+  const push = (id: number) => {
+    const item = { id, cost: cost[id], score: cost[id] + Math.abs(xs[id % xs.length] - end[0]) + Math.abs(ys[Math.floor(id / xs.length)] - end[1]) }
+    let index = pending.length; pending.push(item)
+    while (index > 0) {
+      const parent = (index - 1) >> 1
+      if (pending[parent].score <= item.score) break
+      pending[index] = pending[parent]; index = parent
+    }
+    pending[index] = item
+  }
+  const pop = () => {
+    const best = pending[0], tail = pending.pop()!
+    if (pending.length) {
+      let index = 0
+      while (index * 2 + 1 < pending.length) {
+        let child = index * 2 + 1
+        if (child + 1 < pending.length && pending[child + 1].score < pending[child].score) child++
+        if (tail.score <= pending[child].score) break
+        pending[index] = pending[child]; index = child
+      }
+      pending[index] = tail
+    }
+    return best
+  }
+  cost[first] = 0; push(first)
   while (pending.length) {
-    let best = 0
-    for (let i = 1; i < pending.length; i++) if (score(pending[i]) < score(pending[best])) best = i
-    const current = pending.splice(best, 1)[0]
-    if (closed[current]) continue
+    const best = pop(), current = best.id
+    if (closed[current] || best.cost !== cost[current]) continue
     if (current === last) {
       const points: Vec3[] = []
       for (let id = last; id !== -1; id = previous[id]) points.unshift([xs[id % xs.length], ys[Math.floor(id / xs.length)], start[2]])
@@ -61,7 +125,7 @@ function faceClearPath(start: Vec3, end: Vec3, bodies: readonly WorldAnchor[], r
       if (rects.some(rect => left < rect.right && right > rect.left && bottom < rect.top && top > rect.bottom)) continue
       const distance = cost[current] + right - left + top - bottom
       if (distance >= cost[next]) continue
-      cost[next] = distance; previous[next] = current; pending.push(next)
+      cost[next] = distance; previous[next] = current; push(next)
     }
   }
   return null

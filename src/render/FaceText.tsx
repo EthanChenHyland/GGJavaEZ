@@ -1,10 +1,10 @@
 import { createContext, useContext, useEffect, useId, useLayoutEffect, useMemo, useRef, type ReactNode } from 'react';
 import { useFrame,useThree } from '@react-three/fiber';
 import { BatchedText, Text } from 'troika-three-text';
-import { Group, MeshBasicMaterial } from 'three';
+import { Group, MeshBasicMaterial,Vector3 } from 'three';
 import type { Vec3 } from '../contracts/worldV2';
 import { color, runtimeFonts } from '../theme/tokens';
-import { truncateFrameText } from '../world/valueText';
+import {fitWorldText,projectedFontPixels,worldTextVisible} from './text/textSystem';
 const Context = createContext<BatchedText | null>(null);
 export const textReadiness = { pending: new Set<string>(), lastSync: 0, lastUploadFrame: 0, mounted:false };
 export function FaceTextBatch({ children }: {
@@ -37,8 +37,9 @@ export function WorldText({ children, position, size = .25, tint = color.ui.text
 }) {
     const batch = useContext(Context), anchor = useRef<Group>(null), id = useId(), text = useMemo(() => new Text(), []),lastLayout=useRef(''),syncGeneration=useRef(0);
     const invalidate=useThree(state=>state.invalidate);
+    const {camera,size:viewport}=useThree(),projection=useMemo(()=>({point:new Vector3(),scratch:new Vector3()}),[]);
     useLayoutEffect(() => {
-        const content=truncateFrameText(children, Math.max(3, Math.floor(width / (size * .55))));
+        const content=fitWorldText(children,width,size,weight,tracking);
         const key=JSON.stringify([content,runtimeFonts[weight],tracking,size,width,align]);
         if(lastLayout.current===key)return;
         lastLayout.current=key;
@@ -60,6 +61,8 @@ export function WorldText({ children, position, size = .25, tint = color.ui.text
     useFrame(() => { if (anchor.current) {
         anchor.current.updateWorldMatrix(true, false);
         text.matrix.copy(anchor.current.matrixWorld);
+        projection.point.setFromMatrixPosition(anchor.current.matrixWorld);
+        text.fillOpacity=worldTextVisible(projectedFontPixels(size,projection.point,camera,viewport.height,projection.scratch))?opacity:0;
     } });
     return <group ref={anchor} position={[...position]}/>;
 }

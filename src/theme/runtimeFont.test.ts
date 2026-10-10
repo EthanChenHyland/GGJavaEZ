@@ -1,13 +1,11 @@
 import { afterEach, expect, it, vi } from 'vitest'
 import { clear, suspend } from 'suspend-react'
-import { preloadRuntimeText, runtimeCharacters, runtimeFont } from './runtimeFont'
+import { preloadRuntimeText, runtimeCharacters, runtimeFont, runtimeFonts } from './runtimeFont'
 
-const font = vi.hoisted(() => ({ finish: undefined as (() => void) | undefined, jobs: 0, characters: '' }))
+const font = vi.hoisted(() => ({ jobs: [] as Array<{ font: string; characters: string; finish: () => void }> }))
 vi.mock('troika-three-text', () => ({
-  preloadFont: (options: { characters: string }, finish: () => void) => {
-    font.jobs++
-    font.characters = options.characters
-    font.finish = finish
+  preloadFont: (options: { font: string; characters: string }, finish: () => void) => {
+    font.jobs.push({ ...options, finish })
   },
 }))
 
@@ -17,17 +15,29 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
-it('makes both primitive and region labels ready through one bounded font job', async () => {
+it('warms all three weights once and publishes readiness only after every bounded job finishes', async () => {
   vi.stubGlobal('window', {})
   preloadRuntimeText()
   preloadRuntimeText()
-  await vi.waitFor(() => expect(font.finish).toBeTypeOf('function'))
-  expect(font.characters).toBe(runtimeCharacters)
-  expect(font.jobs).toBe(1)
-  font.finish!()
+  await vi.waitFor(() => expect(font.jobs).toHaveLength(3))
+  expect(font.jobs.map(job => job.font)).toEqual(Object.values(runtimeFonts))
+  for (const job of font.jobs) expect(job.characters).toBe(runtimeCharacters)
+  const ready = vi.fn()
+  let pending: unknown
+  try { suspend(() => { throw new Error('Missing font prewarm') }, ['troika-text', runtimeFont, runtimeCharacters]) } catch (promise) { pending = promise }
+  expect(pending).toBeInstanceOf(Promise)
+  ;(pending as Promise<void>).then(ready)
+  font.jobs[0].finish()
+  font.jobs[1].finish()
+  await Promise.resolve()
+  expect(ready).not.toHaveBeenCalled()
+  font.jobs[2].finish()
   await vi.waitFor(() => {
     for (const characters of [runtimeCharacters, undefined]) {
       expect(suspend(() => { throw new Error('Unwarmed label would suspend') }, ['troika-text', runtimeFont, characters])).toBeUndefined()
     }
   })
+  expect(ready).toHaveBeenCalledOnce()
+  preloadRuntimeText()
+  expect(font.jobs).toHaveLength(3)
 })
