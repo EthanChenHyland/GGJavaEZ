@@ -5,10 +5,12 @@ import { disposeRuntimeMaterials, glassMaterial, unitBox } from '../RuntimeMater
 import { detectGpuCapabilities } from './gpuCapabilities'
 import { qualityStore, useQualityStore } from './qualityStore'
 import type { BodyRole } from './materialTypes'
+import {renderActivity,requestAnimationFrameRender} from '../renderActivity'
+import {graphicsRecovery} from '../graphicsRecovery'
 
 /** Owns only material preparation and quality decisions, never the camera or scene model. */
 export function QualityRuntime({ guidedMoving }: { guidedMoving(): boolean }) {
-  const { gl, scene, camera, setDpr } = useThree()
+  const { gl, scene, camera, setDpr,invalidate } = useThree()
   const module = useQualityStore(state => state.cinematicModule)
   const status = useQualityStore(state => state.cinematicStatus)
   const contextLost = useQualityStore(state => state.contextLost)
@@ -16,14 +18,24 @@ export function QualityRuntime({ guidedMoving }: { guidedMoving(): boolean }) {
   const previousPose = useRef<number[]>([])
   useEffect(() => {
     qualityStore.getState().initialize(detectGpuCapabilities(gl.getContext()))
-    const lost = (event: Event) => { event.preventDefault(); qualityStore.getState().setContextLost(true) }
-    const restored = () => qualityStore.getState().initialize(detectGpuCapabilities(gl.getContext()))
+    let recoveryTimer:ReturnType<typeof setTimeout>|null=null
+    const recoveryExtension=gl.getContext().getExtension('WEBGL_lose_context')
+    const retry=()=>{recoveryExtension?.restoreContext()}
+    graphicsRecovery.retry=retry
+    const lost = (event: Event) => {
+      event.preventDefault(); qualityStore.getState().setContextLost(true)
+      if(recoveryTimer)clearTimeout(recoveryTimer)
+      recoveryTimer=setTimeout(()=>{if(qualityStore.getState().contextLost)qualityStore.setState({notice:'The World could not be restored'})},2000)
+    }
+    const restored = () => {if(recoveryTimer)clearTimeout(recoveryTimer);qualityStore.getState().initialize(detectGpuCapabilities(gl.getContext()));invalidate()}
     gl.domElement.addEventListener('webglcontextlost', lost)
     gl.domElement.addEventListener('webglcontextrestored', restored)
     const media = window.matchMedia('(prefers-reduced-motion: reduce)')
     const changed = () => qualityStore.getState().setOsReducedMotion(media.matches)
     changed(); media.addEventListener('change', changed)
     return () => {
+      if(recoveryTimer)clearTimeout(recoveryTimer)
+      if(graphicsRecovery.retry===retry)graphicsRecovery.retry=null
       gl.domElement.removeEventListener('webglcontextlost', lost)
       gl.domElement.removeEventListener('webglcontextrestored', restored)
       media.removeEventListener('change', changed)
@@ -57,7 +69,9 @@ export function QualityRuntime({ guidedMoving }: { guidedMoving(): boolean }) {
     const prior = previousPose.current
     const changed = prior.length > 0 && pose.some((value, index) => Math.abs(value - prior[index]) > 1e-7)
     previousPose.current = pose
-    qualityStore.getState().frame(performance.now(), delta * 1000, changed || guidedMoving())
+    qualityStore.getState().frame(performance.now(), renderActivity.continuous?delta * 1000:0, changed || guidedMoving())
+    const state=qualityStore.getState()
+    if(state.setting==='CINEMATIC'&&state.active==='INTERACTIVE'&&state.compiled&&!state.contextLost)requestAnimationFrameRender(invalidate)
   })
   return null
 }

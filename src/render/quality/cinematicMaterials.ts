@@ -1,6 +1,7 @@
 import { MeshPhysicalMaterial } from 'three'
 import { color } from '../../theme/tokens'
 import type { BodyRole } from './materialTypes'
+import { applyRoundedBoxMaterial } from '../geometry/roundedBox'
 
 /** This module is requested only after an explicit Cinematic selection. */
 export function createCinematicBody(role: BodyRole, emphasis: number): MeshPhysicalMaterial {
@@ -13,5 +14,5 @@ export function createCinematicBody(role: BodyRole, emphasis: number): MeshPhysi
     transparent: emphasis < 1, opacity: emphasis, depthWrite: true,
   })
   material.name = `runtime:CINEMATIC:${role}`
-  return material
+  return applyRoundedBoxMaterial(material)
 }

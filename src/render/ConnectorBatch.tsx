@@ -7,6 +7,7 @@ import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
 import type { PresentedCurve } from '../contracts/worldV2';
 import { roleColor } from './RuntimeMaterials';
 import { curveAlphaShaders } from './curveAlpha';
+import {instanceAlphaMaterial} from './instanceAlpha';
 function Curves({ curves, halo, onSelect }: {
     curves: readonly PresentedCurve[];
     halo: boolean;
@@ -16,7 +17,7 @@ function Curves({ curves, halo, onSelect }: {
     const data = useMemo(() => {
         const positions: number[] = [], colors: number[] = [], opacity: number[] = [], ids: string[] = [], color = new Color();
         for (const curve of curves) {
-            color.set(roleColor[curve.colorRole]);
+            color.set(roleColor[curve.colorRole]).multiplyScalar(1.8);
             for (let i = 1; i < curve.points.length; i++) {
                 positions.push(...curve.points[i - 1], ...curve.points[i]);
                 colors.push(color.r, color.g, color.b, color.r, color.g, color.b);
@@ -33,6 +34,7 @@ function Curves({ curves, halo, onSelect }: {
         const line = new LineSegments2(geometry, material);
         line.computeLineDistances();
         line.frustumCulled = false;
+        line.userData.runtimeBloomRole = 'emitter';
         return { line, ids, geometry, material };
     }, [curves, halo]);
     useLayoutEffect(() => { data.material.resolution.set(size.width, size.height); }, [data, size.width, size.height]);
@@ -49,12 +51,15 @@ function Endpoints({ curves }: {
     curves: readonly PresentedCurve[];
 }) {
     const ref = useRef<InstancedMesh>(null);
+    const material=useMemo(instanceAlphaMaterial,[]);
+    const alpha=useMemo(()=>new InstancedBufferAttribute(new Float32Array(curves.flatMap(curve=>[curve.opacity,curve.opacity])),1),[curves]);
+    useEffect(()=>()=>material.dispose(),[material]);
     useLayoutEffect(() => {
         const mesh = ref.current;
         if (!mesh)
             return;
         const transform = new Object3D(), color = new Color();
-        curves.forEach((curve, index) => { color.set(roleColor[curve.colorRole]); for (const [side, point] of [curve.points[0], curve.points.at(-1)!].entries()) {
+        curves.forEach((curve, index) => { color.set(roleColor[curve.colorRole]).multiplyScalar(1.8); for (const [side, point] of [curve.points[0], curve.points.at(-1)!].entries()) {
             transform.position.set(...point);
             transform.updateMatrix();
             mesh.setMatrixAt(index * 2 + side, transform.matrix);
@@ -65,18 +70,21 @@ function Endpoints({ curves }: {
             mesh.instanceColor.needsUpdate = true;
         mesh.computeBoundingSphere();
     }, [curves]);
-    return <instancedMesh ref={ref} args={[undefined, undefined, curves.length * 2]} raycast={() => undefined}><sphereGeometry args={[.08, 8, 6]}/><meshBasicMaterial color="white" toneMapped={false}/></instancedMesh>;
+    return <instancedMesh userData={{runtimeBloomRole:'emitter'}} ref={ref} material={material} args={[undefined, undefined, curves.length * 2]} raycast={() => undefined}><sphereGeometry args={[.08, 8, 6]}><primitive object={alpha} attach="attributes-runtimeAlpha"/></sphereGeometry></instancedMesh>;
 }
 function Arrows({ curves }: {
     curves: readonly PresentedCurve[];
 }) {
     const ref = useRef<InstancedMesh>(null), items = curves.filter(c => c.arrow);
+    const material=useMemo(instanceAlphaMaterial,[]);
+    const alpha=useMemo(()=>new InstancedBufferAttribute(new Float32Array(items.map(curve=>curve.opacity)),1),[curves]);
+    useEffect(()=>()=>material.dispose(),[material]);
     useLayoutEffect(() => {
         const mesh = ref.current;
         if (!mesh)
             return;
         const transform = new Object3D(), up = new Vector3(0, 1, 0), color = new Color();
-        items.forEach((curve, index) => { const to = new Vector3(...curve.points.at(-1)!), direction = to.clone().sub(new Vector3(...curve.points.at(-2)!)).normalize(); transform.position.copy(to).addScaledVector(direction, -.12); transform.quaternion.setFromUnitVectors(up, direction); transform.updateMatrix(); mesh.setMatrixAt(index, transform.matrix); mesh.setColorAt(index, color.set(roleColor[curve.colorRole])); });
+        items.forEach((curve, index) => { const to = new Vector3(...curve.points.at(-1)!), direction = to.clone().sub(new Vector3(...curve.points.at(-2)!)).normalize(); transform.position.copy(to).addScaledVector(direction, -.12); transform.quaternion.setFromUnitVectors(up, direction); transform.updateMatrix(); mesh.setMatrixAt(index, transform.matrix); mesh.setColorAt(index, color.set(roleColor[curve.colorRole]).multiplyScalar(1.8)); });
         mesh.instanceMatrix.needsUpdate = true;
         if (mesh.instanceColor)
             mesh.instanceColor.needsUpdate = true;
@@ -84,7 +92,7 @@ function Arrows({ curves }: {
     }, [items]);
     if (!items.length)
         return null;
-    return <instancedMesh ref={ref} args={[undefined, undefined, items.length]} raycast={() => undefined}><coneGeometry args={[.08, .24, 6]}/><meshBasicMaterial color="white" toneMapped={false}/></instancedMesh>;
+    return <instancedMesh userData={{runtimeBloomRole:'emitter'}} ref={ref} material={material} args={[undefined, undefined, items.length]} raycast={() => undefined}><coneGeometry args={[.08, .24, 6]}><primitive object={alpha} attach="attributes-runtimeAlpha"/></coneGeometry></instancedMesh>;
 }
 /** Pixel-width cores and halos are merged by three bounded emphasis bands. */
 export function ConnectorBatch({ curves, onSelect }: {

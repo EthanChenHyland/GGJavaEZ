@@ -2,7 +2,7 @@ import {expect,test} from '@playwright/test'
 test('the real GPU gates quality, Interactive never requests Cinematic, and tier switches retain the canvas',async({page})=>{
  const errors:string[]=[],requests:string[]=[]
  page.on('pageerror',error=>errors.push(error.message));page.on('console',message=>{if(message.type()==='error')errors.push(message.text())})
- page.on('request',request=>{if(/cinematicMaterials/.test(request.url()))requests.push(request.url())})
+ page.on('request',request=>{if(/cinematicMaterials|cinematicPasses/.test(request.url()))requests.push(request.url())})
  await page.goto('/examples?qa=1')
  const slider=page.getByRole('slider',{name:'Recorded execution position'});await slider.focus();await page.keyboard.press('End')
  await page.getByRole('button',{name:'Home',exact:true}).click()
@@ -20,7 +20,9 @@ test('the real GPU gates quality, Interactive never requests Cinematic, and tier
   await quality.click();await page.evaluate(()=>window.__ggjavaezWorld!.ready())
   const cinematic=await page.evaluate(()=>window.__ggjavaezWorld!.quality())
   expect(cinematic).toMatchObject({setting:'CINEMATIC',active:'CINEMATIC',compiled:true,cinematicStatus:'ready'})
-  expect(requests.length).toBe(1)
+  expect(requests.filter(url=>/cinematicMaterials/.test(url)).length).toBe(1)
+  expect(requests.filter(url=>/cinematicPasses/.test(url)).length).toBe(1)
+  expect(await page.evaluate(()=>window.__ggjavaezWorld!.effects())).toMatchObject({ready:true,cinematic:true,failure:''})
   await page.getByRole('button',{name:'Rendering quality: CINEMATIC',exact:true}).click()
   await expect.poll(()=>page.evaluate(()=>window.__ggjavaezWorld!.quality().active)).toBe('INTERACTIVE')
  }

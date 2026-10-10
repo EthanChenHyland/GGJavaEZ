@@ -1,6 +1,6 @@
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { ContactShadows, Environment, Grid, Lightformer, MeshReflectorMaterial } from '@react-three/drei';
+import { Environment, Lightformer } from '@react-three/drei';
 import type { Selection } from '../contracts/interaction';
 import type { LayoutState, PresentationPlan, SceneModel } from '../contracts/worldV2';
 import type { Rect } from '../shell/shellLayout';
@@ -21,6 +21,9 @@ import { useQualityStore } from './quality/qualityStore';
 import {MotionLayer,motionReadiness} from './MotionLayer';
 import type {TraceDocument} from '../contracts/runtime';
 import type {TimelineStore} from '../timeline/timelineStore';
+import {PostPipeline,postReadiness} from './post/PostPipeline';
+import {Floor} from './Floor';
+import {supportsRuntimeWebGL,graphicsRecovery} from './graphicsRecovery';
 
 function GradientBackground() {
     const texture = useMemo(() => {
@@ -42,7 +45,7 @@ function Metrics({ scene, plan, selection }: {
     plan: PresentationPlan;
     selection:Selection;
 }) {
-    const { gl, camera, scene:world, size } = useThree();
+    const { gl, camera, scene:world, size,invalidate } = useThree();
     const latest=useRef({scene,plan,size});latest.current={scene,plan,size};
     const displayFrame=useRef(0);
     useFrame(() => {
@@ -56,6 +59,7 @@ function Metrics({ scene, plan, selection }: {
                     return{x:(p.x+1)*size.width/2,y:(1-p.y)*size.height/2,visible:Math.abs(p.x)<=1&&Math.abs(p.y)<=1&&p.z>=-1&&p.z<=1};
                 },
                 renderer: () => ({ calls: gl.info.render.calls, triangles: gl.info.render.triangles, geometries: gl.info.memory.geometries, textures: gl.info.memory.textures, frame: gl.info.render.frame }),
+                effects:()=>({...postReadiness}),
                 quality:()=>{const state=useQualityStore.getState();return{setting:state.setting,active:state.active,compiled:state.compiled,cinematicStatus:state.cinematicStatus,availability:state.cinematicAvailable,capabilities:state.capabilities,contextLost:state.contextLost,notice:state.notice}},
                 ready:()=>new Promise<void>((resolve,reject)=>{
                     const started=performance.now();let eligibleFrame:number|null=null,stableKey='';
@@ -67,11 +71,11 @@ function Metrics({ scene, plan, selection }: {
                         const key=JSON.stringify([current.scene.recordingId,current.scene.revision,current.plan.revision,
                             [...current.plan.cellWindows].map(([id,window])=>[id,window.windowRevision]),current.size.width,current.size.height,
                             ...camera.position.toArray().map(value=>Math.round(value*1e7)),...camera.quaternion.toArray().map(value=>Math.round(value*1e7)),
-                            quality.active,quality.compiled,quality.cinematicStatus,textReadiness.lastSync]);
+                            quality.active,quality.compiled,quality.cinematicStatus,textReadiness.lastSync,postReadiness.revision]);
                         if(key!==stableKey){stableKey=key;eligibleFrame=null}
-                        const eligible=textReadiness.mounted&&textReadiness.pending.size===0&&!!world.environment&&!cameraReadiness.moving&&!motionReadiness.animating&&qualityReady;
+                        const eligible=textReadiness.mounted&&textReadiness.pending.size===0&&!!world.environment&&!cameraReadiness.moving&&!motionReadiness.animating&&qualityReady&&postReadiness.ready&&postReadiness.frames>=2;
                         if(eligible){eligibleFrame??=displayFrame.current;if(displayFrame.current>=eligibleFrame+2){resolve();return}}else eligibleFrame=null;
-                        requestAnimationFrame(check);
+                        invalidate();requestAnimationFrame(check);
                     };
                     void document.fonts.ready.then(check,reject);
                 }),
@@ -98,13 +102,14 @@ export function RuntimeCanvas({ scene, plan, layout, safeFrame, selection, onSel
     trace:TraceDocument;timeline:TimelineStore;
 }) {
     const quality = useQualityStore(state => state.active);
+    const contextLost=useQualityStore(state=>state.contextLost),notice=useQualityStore(state=>state.notice);
+    const supportsWebGL=useMemo(supportsRuntimeWebGL,[]);
     const [accessible,setAccessible]=useState<AccessibleEntity[]>([]),list=useRef<HTMLDivElement>(null);
     const activeIndex=accessible.findIndex(item=>item.id===selection?.id);
     const input = useRef<CameraInput | null>(null), pointer = useRef<{
         x: number;
         y: number;
     } | null>(null), moved = useRef(false);
-    const floor = layout.bounds ? layout.bounds.center[1] - layout.bounds.size[1] / 2 - .35 : -6;
     const lightTarget = useMemo(() => ({ x: 4, y: -3, z: 0 }), []);
     const select = (next: Selection) => { if (!moved.current)
         onSelect(next); };
@@ -128,7 +133,7 @@ export function RuntimeCanvas({ scene, plan, layout, safeFrame, selection, onSel
                 input.current?.key(event.key, event.shiftKey);
             }
         }}>
-    <Canvas shadows dpr={[1, 1.5]} camera={{ fov: 36, position: [7, 5, 24], near: .05, far: 10000 }} gl={{ antialias: true, alpha: false, powerPreference: 'high-performance', toneMapping: ACESFilmicToneMapping }} onPointerMissed={() => { if (!moved.current)
+    {!supportsWebGL?<div className="world-graphics-status glass" role="status">The 3D World requires WebGL</div>:<Canvas frameloop="demand" shadows dpr={[1, 1.5]} camera={{ fov: 36, position: [7, 5, 24], near: .05, far: 10000 }} gl={{ antialias: false, alpha: false, powerPreference: 'high-performance', toneMapping: ACESFilmicToneMapping }} onPointerMissed={() => { if (!moved.current)
         onSelect(null); }}>
       <GradientBackground/>
       <hemisphereLight args={['#A8C8FF', '#090B22', .25]}/>
@@ -136,17 +141,13 @@ export function RuntimeCanvas({ scene, plan, layout, safeFrame, selection, onSel
       <directionalLight position={[14, 4, -9]} intensity={1.8} color="#B57BFF"/>
       <directionalLight position={[lightTarget.x, lightTarget.y + 10, 8]} intensity={.6} color="#C9D6FF"/>
       <Suspense fallback={null}>
-        <Environment resolution={256} frames={1}>
+        {!contextLost&&<Environment resolution={256} frames={1}>
           <Lightformer form="rect" position={[-6, 10, 8]} rotation={[Math.PI / 4, 0, 0]} scale={[12, 4, 1]} color="#65ACFF" intensity={2.2}/>
           <Lightformer form="rect" position={[14, 7, -8]} rotation={[0, Math.PI, 0]} scale={[8, 12, 1]} color="#B777FF" intensity={1.8}/>
           <Lightformer form="rect" position={[2, 14, 0]} rotation={[Math.PI / 2, 0, 0]} scale={[14, 2, 1]} color="#EEF4FF" intensity={1}/>
           <Lightformer form="rect" position={[2, -12, 0]} rotation={[-Math.PI / 2, 0, 0]} scale={[18, 18, 1]} color="#0A1230" intensity={.15}/>
-        </Environment>
-        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, floor, 0]} receiveShadow>
-          <planeGeometry args={[180, 180]}/><MeshReflectorMaterial resolution={quality === 'CINEMATIC' ? 1024 : 256} blur={quality === 'CINEMATIC' ? [300, 100] : [0, 0]} mixBlur={quality === 'CINEMATIC' ? .8 : 0} mixStrength={.6} mirror={quality === 'CINEMATIC' ? .5 : .35} depthScale={.3} minDepthThreshold={.7} maxDepthThreshold={1.2} color="#050B19" metalness={.65} roughness={.4}/>
-        </mesh>
-        <Grid position={[0, floor + .025, 0]} args={[180, 180]} cellSize={1} sectionSize={4} cellThickness={.5} sectionThickness={.8} cellColor="#16325A" sectionColor="#24497C" fadeDistance={75} fadeStrength={1} infiniteGrid/>
-        <ContactShadows key={`${quality}:${scene.revision}`} position={[4, floor + .015, 0]} opacity={.35} scale={70} blur={2} far={40} resolution={quality === 'CINEMATIC' ? 512 : 256} frames={1}/>
+        </Environment>}
+        <Floor layout={layout} plan={plan} scene={scene} quality={quality}/>
         <SolidBatch scene={scene} plan={plan} onSelect={select} onFocus={onFocus}/>
         <FaceTextBatch>
         {[...plan.entities].map(([id, presented]) => <RuntimeSolid key={id} node={scene.entities[id]} presented={presented} plan={plan}/>)}
@@ -164,7 +165,9 @@ export function RuntimeCanvas({ scene, plan, layout, safeFrame, selection, onSel
       <MotionLayer trace={trace} timeline={timeline} scene={scene} plan={plan}/>
       <AccessibleCatalog scene={scene} plan={plan} publish={setAccessible}/>
       <Metrics scene={scene} plan={plan} selection={selection}/>
-    </Canvas>
+      <PostPipeline/>
+    </Canvas>}
+    {contextLost&&<div className="world-graphics-status glass" role="alert">{notice??'Restoring the World…'}{notice==='The World could not be restored'&&<button onClick={()=>graphicsRecovery.retry?.()}>Retry</button>}</div>}
     <div ref={list} className="gg-world-entities" role="listbox" tabIndex={-1} aria-label="Runtime entities" aria-activedescendant={selection&&activeIndex>=0?`world-entity-${encodeURIComponent(selection.id)}`:undefined}>
       {accessible.slice(Math.max(0,activeIndex-20),Math.max(40,activeIndex+21)).map((item,index)=><div key={item.id} id={`world-entity-${encodeURIComponent(item.id)}`} role="option" aria-selected={selection?.id===item.id} aria-posinset={Math.max(0,activeIndex-20)+index+1} aria-setsize={accessible.length}>{item.label}</div>)}
     </div>

@@ -53,3 +53,9 @@ it('keeps the selected tier through context recovery but waits for actual shader
   store.getState().setCompiled(true); store.getState().frame(32, 16, false)
   expect(store.getState().active).toBe('CINEMATIC')
 })
+it('does not treat demand-rendering idle gaps as slow Cinematic frames',async()=>{
+ const store=createQualityStore(async()=>materialModule)
+ store.getState().initialize(capable);await store.getState().selectQuality('CINEMATIC');store.getState().setCompiled(true)
+ for(let time=0;time<=5000;time+=1100)store.getState().frame(time,0,false)
+ expect(store.getState()).toMatchObject({setting:'CINEMATIC',active:'CINEMATIC',notice:null})
+})

@@ -39,7 +39,7 @@ export function createQualityStore(loadCinematic: () => Promise<CinematicMateria
     notice: null, reducedMotion: { os: false, inApp: false }, activity: { ...idleActivity },
     initialize(capabilities) {
       governor.reset(); watchdog.reset()
-      set({ capabilities, cinematicAvailable: cinematicAvailability(capabilities), active: 'INTERACTIVE', compiled: false, contextLost: false })
+      set({ capabilities, cinematicAvailable: cinematicAvailability(capabilities), active: 'INTERACTIVE', compiled: false, contextLost: false,...(get().contextLost?{notice:null}:{}) })
       if (!get().cinematicAvailable.enabled) set({ setting: 'INTERACTIVE' })
     },
     async selectQuality(tier) {
@@ -64,6 +64,7 @@ export function createQualityStore(loadCinematic: () => Promise<CinematicMateria
     setActivity(activity) { set(state => ({ activity: { ...state.activity, ...activity } })) },
     setCompiled(compiled) { set({ compiled }) },
     frame(now, frameMs, cameraMoving) {
+      if(frameMs===0)watchdog.reset()
       const state = get()
       const active = governor.update(state.setting,
         state.compiled && state.cinematicStatus === 'ready' && state.cinematicAvailable.enabled && !state.contextLost,

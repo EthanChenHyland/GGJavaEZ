@@ -13,6 +13,7 @@ import {cameraCollisionBoxes,collisionSafeRoute,constrainCameraPose,type EyePose
 import {anchorCorners} from '../world/presentationPlanner'
 import {homeFraming} from './homeFraming'
 import {followFraming} from './followFraming'
+import {requestAnimationFrameRender} from '../render/renderActivity'
 export interface CameraInput {cancel():void;key(key:string,shift:boolean):void;wheel(dx:number,dy:number,pixelPan:boolean):void;shift(value:boolean):void}
 export const cameraReadiness={moving:false}
 const tuple=(v:Vector3):Vec3=>[v.x,v.y,v.z]
@@ -23,7 +24,7 @@ export function orbitPoseFromEye(eye:EyePose):OrbitPose {
 }
 /** One owner commits semantic poses, then applies optional visual travel. Camera input cancels synchronously. */
 export function CameraRig({scene,plan,layout,safeFrame,input}:{scene:SceneModel;plan:PresentationPlan;layout:LayoutState;safeFrame:Rect;input:RefObject<CameraInput|null>}) {
- const {camera,size}=useThree(),controls=useRef<Controls>(null),intentRevision=useCameraStore(state=>state.intentRevision)
+ const {camera,size,invalidate}=useThree(),controls=useRef<Controls>(null),intentRevision=useCameraStore(state=>state.intentRevision)
  const move=useRef<{start:number;duration:number;path:EyePose[];lengths:number[];total:number;home:boolean}|null>(null)
  const initialized=useRef(false),recordingId=useRef(scene.recordingId),lastDetail=useRef(-Infinity),lastCursor=useRef(-1),lastFollow=useRef(-1)
  const diagonal=layout.bounds?Math.hypot(...layout.bounds.size):24
@@ -37,6 +38,7 @@ export function CameraRig({scene,plan,layout,safeFrame,input}:{scene:SceneModel;
   const from=eye(),destination={position:cameraPosition(pose),target:pose.target},path=[from,...collisionSafeRoute(from,destination,latest.current.boxes,layout.bounds?.center,latest.current.limits)]
   const lengths=path.slice(1).map((point,i)=>new Vector3(...point.position).distanceTo(new Vector3(...path[i].position))),total=lengths.reduce((sum,n)=>sum+n,0)
   move.current={start:performance.now(),duration:reduced()?0:duration,path,lengths,total,home}
+  invalidate()
  }
  const homeCache=useRef<{scene:SceneModel;key:string;pose:OrbitPose}|null>(null)
  const home=()=>{const current=latest.current,key=JSON.stringify([current.safeFrame,size.width,size.height]);if(homeCache.current?.scene===current.scene&&homeCache.current.key===key)return homeCache.current.pose;const pose=homeFraming(current.scene,current.plan,current.safeFrame,size).pose;homeCache.current={scene:current.scene,key,pose};return pose}
@@ -48,6 +50,7 @@ export function CameraRig({scene,plan,layout,safeFrame,input}:{scene:SceneModel;
  useEffect(()=>{
   const state=useCameraStore.getState(),intent=state.intent
   if(!intent){move.current=null;return}
+  invalidate()
   if(intent.kind==='pose'){move.current=null;camera.position.set(...cameraPosition(intent.pose));controls.current?.target.set(...intent.pose.target);previous.current=eye();return}
   if(intent.kind==='home')begin(home(),motion.homeMs,true)
   if(intent.kind==='recording')begin(home(),scene.cursor?600:0)
@@ -68,7 +71,7 @@ export function CameraRig({scene,plan,layout,safeFrame,input}:{scene:SceneModel;
   }
  },[intentRevision])
  useEffect(()=>{
-  const cancel=()=>{move.current=null;lastFollow.current=-1;useCameraStore.getState().setPose(orbitPoseFromEye(eye()));useCameraStore.getState().userInput()}
+  const cancel=()=>{move.current=null;lastFollow.current=-1;useCameraStore.getState().setPose(orbitPoseFromEye(eye()));useCameraStore.getState().userInput();invalidate()}
   input.current={cancel,shift(value){if(controls.current)controls.current.mouseButtons.LEFT=value?MOUSE.PAN:MOUSE.ROTATE},
    key(key,shift){cancel();const pivot=controls.current?.target;if(!pivot)return;const offset=camera.position.clone().sub(pivot)
     if(['+','=','-'].includes(key))offset.multiplyScalar(key==='-'?1.1:.9)
@@ -88,6 +91,8 @@ export function CameraRig({scene,plan,layout,safeFrame,input}:{scene:SceneModel;
   const state=useCameraStore.getState(),focus=useInteractionStore.getState().focus
   if(state.follow&&!move.current&&!focus&&scene.cursor===scene.liveHead&&lastFollow.current!==scene.cursor){lastFollow.current=scene.cursor;const id=scene.liveStack.at(-1),node=id?scene.entities[id]:null;if(node?.kind==='frame'&&node.live){const pose=followFraming(anchorCorners(node.anchor),state.pose,safeFrame,size);if(pose)begin(pose,600)}}
   if(now-lastDetail.current>=200||lastCursor.current!==scene.cursor){lastDetail.current=now;lastCursor.current=scene.cursor;const next=nextDetailLevel(state.detailLevel,representativeFaceHeight(scene,camera,size),size.height);if(state.detailLevel!==next)state.setDetailLevel(next)}
+  if(move.current)requestAnimationFrameRender(invalidate)
+  cameraReadiness.moving=!!move.current
  })
  return <OrbitControls ref={controls} makeDefault enableDamping={false} minDistance={tokens.minDistance} maxDistance={Math.max(tokens.minDistance,3*diagonal)} minPolarAngle={10*Math.PI/180} maxPolarAngle={88*Math.PI/180} mouseButtons={{LEFT:MOUSE.ROTATE,MIDDLE:MOUSE.DOLLY,RIGHT:MOUSE.PAN}} onStart={()=>input.current?.cancel()}/>
 }

@@ -11,6 +11,7 @@ import { createTimelineMotionBinding } from '../motion/timelineMotion'
 import { motionSubjects, motionCurve, motionRole, overlayEmphasis, type MotionSubject } from '../motion/overlayGeometry'
 import { productionClock } from '../motion/clock'
 import { roleColor, unitEdges } from './RuntimeMaterials'
+import {requestAnimationFrameRender} from './renderActivity'
 export const motionReadiness = { animating: false }
 const noRaycast = () => undefined
 
@@ -48,7 +49,7 @@ function tokenBatch(capacity: number) {
 
 /** Transient cuboid emphasis and tokens; canonical solids, faces and camera stay untouched. */
 export function MotionLayer({ trace, timeline, scene, plan }: { trace: TraceDocument; timeline: TimelineStore; scene: SceneModel; plan: PresentationPlan }) {
-  const tokens = useRef<InstancedMesh>(null), { camera } = useThree()
+  const tokens = useRef<InstancedMesh>(null), { camera,invalidate } = useThree()
   const preference = useQualityStore(state => state.reducedMotion), reduced = preference.inApp || preference.os
   const latestReduced = useRef(reduced)
   const motion = useMemo(() => {
@@ -87,6 +88,7 @@ export function MotionLayer({ trace, timeline, scene, plan }: { trace: TraceDocu
       // React may not yet have published the new scene to R3F. Never consume or
       // cull the new steps against the old prefix, or draw before truth commits.
       mesh.count = 0; batch.geometry.instanceCount = 0; motionReadiness.animating = true
+      requestAnimationFrameRender(invalidate)
       return
     }
     scratch.viewProjection.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse)
@@ -99,6 +101,7 @@ export function MotionLayer({ trace, timeline, scene, plan }: { trace: TraceDocu
     }
     const sample = motion.player.sample(productionClock.now(), ids => ids.some(id => { const subject = subjects.get(id); return !!subject && visible(subject) }))
     motionReadiness.animating = sample.animating
+    if(sample.animating)requestAnimationFrameRender(invalidate)
     let outlineCount = 0, tokenCount = 0
     const outlined = new Set<string>(), markedCurves = new Set<string>()
     const outline = (id: string, scale: number, alpha: number, color: string) => {
@@ -141,7 +144,7 @@ export function MotionLayer({ trace, timeline, scene, plan }: { trace: TraceDocu
     if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true
   })
   return <>
-    <lineSegments geometry={batch.geometry} material={batch.material} dispose={null} frustumCulled={false} raycast={noRaycast}/>
-    <instancedMesh ref={tokens} args={[undefined, undefined, tokenCapacity]} geometry={token.geometry} material={token.material} dispose={null} frustumCulled={false} raycast={noRaycast}/>
+    <lineSegments userData={{runtimeBloomRole:'emitter'}} geometry={batch.geometry} material={batch.material} dispose={null} frustumCulled={false} raycast={noRaycast}/>
+    <instancedMesh userData={{runtimeBloomRole:'emitter'}} ref={tokens} args={[undefined, undefined, tokenCapacity]} geometry={token.geometry} material={token.material} dispose={null} frustumCulled={false} raycast={noRaycast}/>
   </>
 }

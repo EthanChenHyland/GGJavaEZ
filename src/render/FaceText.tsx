@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useId, useLayoutEffect, useMemo, useRef, type ReactNode } from 'react';
-import { useFrame } from '@react-three/fiber';
+import { useFrame,useThree } from '@react-three/fiber';
 import { BatchedText, Text } from 'troika-three-text';
 import { Group, MeshBasicMaterial } from 'three';
 import type { Vec3 } from '../contracts/worldV2';
@@ -15,6 +15,8 @@ export function FaceTextBatch({ children }: {
         object.material = new MeshBasicMaterial({ color: 'white', transparent: true, depthWrite: false, toneMapped: false });
         object.frustumCulled = false;
         object.renderOrder = 3;
+        object.userData.runtimeBloomRole = 'protected';
+        object.userData.runtimeText = true;
         return object;
     }, []);
     useLayoutEffect(()=>{textReadiness.mounted=true;return()=>{textReadiness.mounted=false}},[]);
@@ -34,6 +36,7 @@ export function WorldText({ children, position, size = .25, tint = color.ui.text
     tracking?:number;
 }) {
     const batch = useContext(Context), anchor = useRef<Group>(null), id = useId(), text = useMemo(() => new Text(), []),lastLayout=useRef(''),syncGeneration=useRef(0);
+    const invalidate=useThree(state=>state.invalidate);
     useLayoutEffect(() => {
         const content=truncateFrameText(children, Math.max(3, Math.floor(width / (size * .55))));
         const key=JSON.stringify([content,runtimeFonts[weight],tracking,size,width,align]);
@@ -50,8 +53,8 @@ export function WorldText({ children, position, size = .25, tint = color.ui.text
         text.anchorY = 'middle';
         text.matrixAutoUpdate = false;
         textReadiness.pending.add(id);
-        text.sync(() => { if(generation===syncGeneration.current)textReadiness.pending.delete(id); textReadiness.lastSync = performance.now(); });
-    }, [text, children, size, width, align, id, weight, tracking]);
+        text.sync(() => { if(generation===syncGeneration.current)textReadiness.pending.delete(id); textReadiness.lastSync = performance.now(); invalidate(); });
+    }, [text, children, size, width, align, id, weight, tracking,invalidate]);
     useLayoutEffect(()=>{text.color=tint;text.fillOpacity=opacity},[text,tint,opacity]);
     useLayoutEffect(() => { batch?.addText(text); return () => { batch?.removeText(text); textReadiness.pending.delete(id); text.dispose(); }; }, [batch, text, id]);
     useFrame(() => { if (anchor.current) {

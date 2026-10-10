@@ -1,9 +1,11 @@
 import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
-import { BufferGeometry, Float32BufferAttribute, InstancedMesh, Object3D, Color } from 'three';
+import { BufferGeometry, Float32BufferAttribute, InstancedMesh, Object3D, Color, Vector3 } from 'three';
+import type { Intersection, Raycaster } from 'three';
 import type { Selection } from '../contracts/interaction';
 import type { PresentationPlan, SceneEntity, SceneModel, Vec3, WorldAnchor } from '../contracts/worldV2';
 import { color, world } from '../theme/tokens';
-import { glassMaterial, unitBox, unitEdges } from './RuntimeMaterials';
+import { glassMaterial, unitBox, roundedDepthMaterial, roundedDistanceMaterial } from './RuntimeMaterials';
+import { expandRoundedBoxVertex, unitRoundedBox, unitRoundedOutline } from './geometry/roundedBox';
 import { faceRows } from './faceModel';
 import { useQualityStore, type QualityTier } from './quality/qualityStore';
 import { resolveArrayWindowPick, type ArrayWindowPick } from '../world/arrayWindow';
@@ -65,6 +67,13 @@ export function buildSolidBatch(scene: SceneModel, plan: PresentationPlan): Soli
     return solids;
 }
 const noRaycast = () => undefined;
+/** Preserve the canonical cuboid pick envelope; GPU bevels never remap a hit. */
+function canonicalSolidRaycast(this: InstancedMesh, raycaster: Raycaster, intersects: Intersection[]) {
+    const geometry = this.geometry;
+    this.geometry = unitBox;
+    try { InstancedMesh.prototype.raycast.call(this, raycaster, intersects); }
+    finally { this.geometry = geometry; }
+}
 function Instances({ items, onSelect, onFocus, tier, plan, recordingId }: {
     items: Solid[];
     onSelect(selection: Pick): void;
@@ -96,7 +105,7 @@ function Instances({ items, onSelect, onFocus, tier, plan, recordingId }: {
             mesh.instanceColor.needsUpdate = true;
         mesh.computeBoundingSphere();
     }, [items, role]);
-    return <instancedMesh ref={ref} args={[undefined, undefined, capacity]} geometry={unitBox} material={role === 'face' ? undefined : glassMaterial(role, opacity, tier)} dispose={null} castShadow={role !== 'face'} receiveShadow raycast={items.some(item => item.pickable) ? undefined : noRaycast} onPointerDown={event=>{const item=items[event.instanceId??-1];press.current=item?.pickable?{pick:item.pick,arrayPick:item.arrayPick,recordingId}:null}} onClick={event => { const item = items[event.instanceId ?? -1]; if (validPress(item)) {
+    return <instancedMesh ref={ref} args={[undefined, undefined, capacity]} geometry={role === 'face' ? unitBox : unitRoundedBox} material={role === 'face' ? undefined : glassMaterial(role, opacity, tier)} userData={{runtimeBloomRole:'protected'}} customDepthMaterial={role === 'face' ? undefined : roundedDepthMaterial()} customDistanceMaterial={role === 'face' ? undefined : roundedDistanceMaterial()} dispose={null} castShadow={role !== 'face'} receiveShadow raycast={items.some(item => item.pickable) ? canonicalSolidRaycast : noRaycast} onPointerDown={event=>{const item=items[event.instanceId??-1];press.current=item?.pickable?{pick:item.pick,arrayPick:item.arrayPick,recordingId}:null}} onClick={event => { const item = items[event.instanceId ?? -1]; if (validPress(item)) {
         event.stopPropagation();
         onSelect(item!.pick);
     } }} onDoubleClick={event => { const item = items[event.instanceId ?? -1]; if (validPress(item)) {
@@ -110,11 +119,14 @@ function Edges({ items }: {
     items: Solid[];
 }) {
     const geometry = useMemo(() => {
-        const positions: number[] = [], colors: number[] = [], source = unitEdges.getAttribute('position'), tint = new Color();
+        const positions: number[] = [], colors: number[] = [], source = unitRoundedOutline.getAttribute('position'), normals = unitRoundedOutline.getAttribute('normal'), tint = new Color();
+        const point = new Vector3(), normal = new Vector3(), expanded = new Vector3();
         for (const item of items) {
             tint.set(item.edge!).multiplyScalar(1.65);
             for (let i = 0; i < source.count; i++) {
-                positions.push(source.getX(i) * item.anchor.size[0] + item.anchor.position[0], source.getY(i) * item.anchor.size[1] + item.anchor.position[1], source.getZ(i) * item.anchor.size[2] + item.anchor.position[2]);
+                point.fromBufferAttribute(source, i); normal.fromBufferAttribute(normals, i);
+                expandRoundedBoxVertex(point, normal, item.anchor.size, expanded);
+                positions.push(expanded.x + item.anchor.position[0], expanded.y + item.anchor.position[1], expanded.z + item.anchor.position[2]);
                 colors.push(tint.r, tint.g, tint.b);
             }
         }
@@ -124,7 +136,7 @@ function Edges({ items }: {
         return geometry;
     }, [items]);
     useEffect(() => () => geometry.dispose(), [geometry]);
-    return <lineSegments geometry={geometry} raycast={noRaycast}><lineBasicMaterial vertexColors transparent opacity={items[0].opacity} toneMapped={false}/></lineSegments>;
+    return <lineSegments geometry={geometry} userData={{runtimeBloomRole:'emitter'}} raycast={noRaycast}><lineBasicMaterial vertexColors transparent opacity={items[0].opacity} toneMapped={false}/></lineSegments>;
 }
 export function SolidBatch({ scene, plan, onSelect, onFocus }: {
     scene: SceneModel;
