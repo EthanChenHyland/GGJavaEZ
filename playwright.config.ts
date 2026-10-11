@@ -2,6 +2,8 @@ import { defineConfig } from '@playwright/test'
 
 export default defineConfig({
   testDir: './e2e',
+  // Exhaustive real-JVM reference matrix has its own count-enforcing gate.
+  testIgnore: '**/reference/comparable-states.spec.ts',
   timeout: 30_000,
   retries: 0,
   // The bridge owns one current JVM run/debug session. Parallel IDE pages can

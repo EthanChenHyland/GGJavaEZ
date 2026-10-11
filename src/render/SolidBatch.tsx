@@ -92,6 +92,8 @@ function Instances({ items, onSelect, onFocus, tier, plan, recordingId }: {
         return !!window&&!!resolveArrayWindowPick(window,started.arrayPick);
     };
     const capacity = Math.max(32, 2 ** Math.ceil(Math.log2(items.length || 1)));
+    // Instance buffers belong to this mesh, while geometry/materials are shared.
+    useLayoutEffect(() => { const mesh=ref.current;return()=>mesh?.dispose(); }, [capacity]);
     useLayoutEffect(() => {
         const mesh = ref.current;
         if (!mesh)
@@ -99,7 +101,7 @@ function Instances({ items, onSelect, onFocus, tier, plan, recordingId }: {
         const transform = new Object3D(), tint = new Color();
         mesh.count = items.length;
         items.forEach((item, index) => { transform.position.set(...item.anchor.position); transform.scale.set(...item.anchor.size); transform.updateMatrix(); mesh.setMatrixAt(index, transform.matrix); if (role === 'face')
-            mesh.setColorAt(index, tint.set(item.tint).multiplyScalar(item.opacity)); });
+            mesh.setColorAt(index, tint.set(item.tint)); });
         mesh.instanceMatrix.needsUpdate = true;
         if (mesh.instanceColor)
             mesh.instanceColor.needsUpdate = true;
@@ -112,7 +114,7 @@ function Instances({ items, onSelect, onFocus, tier, plan, recordingId }: {
         event.stopPropagation();
         onFocus(item!.pick);
     } }}>
-    {role === 'face' && <meshBasicMaterial color="white" transparent={false} opacity={1} toneMapped={false}/>}
+    {role === 'face' && <meshBasicMaterial color="white" transparent={opacity<1} opacity={opacity} depthWrite={opacity>=1} toneMapped={false}/>}
   </instancedMesh>;
 }
 function Edges({ items }: {

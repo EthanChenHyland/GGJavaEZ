@@ -1,0 +1,21 @@
+{
+  "viewports": [{"width":1728,"height":1117},{"width":1440,"height":900},{"width":1280,"height":800},{"width":760,"height":900},{"width":1440,"height":650}],
+  "states": [
+    {"id":"runtime-hero","name":"Runtime hero view","fixture":"domain","twin":"06_true3d_person_runtime.png","native":{"width":1672,"height":941}},
+    {"id":"io","name":"I/O","fixture":"io","twin":"06_true3d_person_runtime.png","native":{"width":1672,"height":941}},
+    {"id":"object-inspection","name":"Close object inspection","fixture":"domain","twin":"07_true3d_object_inspector.png","native":{"width":1672,"height":941}},
+    {"id":"recursion","name":"Recursion and deep invocation","fixture":"recursion","twin":"08_true3d_recursion.png","native":{"width":1672,"height":941}},
+    {"id":"array-operation","name":"Array operation","fixture":"array","twin":"09_true3d_array_sort.png","native":{"width":1672,"height":941}},
+    {"id":"completed","name":"Completed execution","fixture":"domain","twin":"10_true3d_reference_sheet.png","native":{"width":1536,"height":1024},"crop":{"x":0,"y":0,"width":857,"height":428}},
+    {"id":"focus","name":"Focus","fixture":"domain","twin":"10_true3d_reference_sheet.png","native":{"width":1536,"height":1024},"crop":{"x":861,"y":0,"width":675,"height":428}},
+    {"id":"return","name":"Return propagation","fixture":"recursion","twin":"10_true3d_reference_sheet.png","native":{"width":1536,"height":1024},"crop":{"x":0,"y":431,"width":493,"height":321}},
+    {"id":"array","name":"Array visualization","fixture":"array","twin":"10_true3d_reference_sheet.png","native":{"width":1536,"height":1024},"crop":{"x":497,"y":431,"width":539,"height":321}},
+    {"id":"far","name":"Semantic_Zoom FAR","fixture":"dense","twin":"10_true3d_reference_sheet.png","native":{"width":1536,"height":1024},"crop":{"x":0,"y":756,"width":612,"height":268}},
+    {"id":"debug","name":"Debug pause","fixture":"debug","twin":"11_true3d_scene_language.png","native":{"width":1536,"height":1024},"crop":{"x":0,"y":0,"width":960,"height":438}},
+    {"id":"exception","name":"Exception propagation","fixture":"exception","twin":"11_true3d_scene_language.png","native":{"width":1536,"height":1024},"crop":{"x":1026,"y":442,"width":510,"height":327}},
+    {"id":"history","name":"Time travel","fixture":"domain","twin":"11_true3d_scene_language.png","native":{"width":1536,"height":1024},"crop":{"x":0,"y":773,"width":510,"height":251}},
+    {"id":"free","name":"Free navigation","fixture":"dense","twin":"11_true3d_scene_language.png","native":{"width":1536,"height":1024},"crop":{"x":514,"y":773,"width":555,"height":251}},
+    {"id":"medium","name":"Semantic_Zoom MEDIUM","fixture":"dense","twin":"11_true3d_scene_language.png","native":{"width":1536,"height":1024},"crop":{"x":1247,"y":827,"width":134,"height":142}},
+    {"id":"close","name":"Semantic_Zoom CLOSE","fixture":"dense","twin":"11_true3d_scene_language.png","native":{"width":1536,"height":1024},"crop":{"x":1394,"y":827,"width":129,"height":142}}
+  ]
+}

@@ -50,6 +50,7 @@ function tokenBatch(capacity: number) {
 /** Transient cuboid emphasis and tokens; canonical solids, faces and camera stay untouched. */
 export function MotionLayer({ trace, timeline, scene, plan }: { trace: TraceDocument; timeline: TimelineStore; scene: SceneModel; plan: PresentationPlan }) {
   const tokens = useRef<InstancedMesh>(null), { camera,invalidate } = useThree()
+  useEffect(()=>productionClock.subscribe(invalidate),[invalidate])
   const preference = useQualityStore(state => state.reducedMotion), reduced = preference.inApp || preference.os
   const latestReduced = useRef(reduced)
   const motion = useMemo(() => {

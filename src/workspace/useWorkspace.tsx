@@ -610,7 +610,10 @@ export function useWorkspace(recordingViewer = false) {
     }
     if (session.phase === 'PAUSED' && session.pause?.reason === 'exception') { setTool('errors'); setBottomOpen(true); setBottomHeight(35) }
     if (session.phase === 'FAILED' && normalized.trace.events.some(event => event.type === 'THROW_EXCEPTION') && !shownFailure.current) {
-      shownFailure.current = true; setTool('errors'); setBottomOpen(true); setBottomHeight(35)
+      // The World owns the default forensic view. Keep Errors ready in the
+      // Dock; preserve an explicitly pinned drawer instead of covering the
+      // throwing frame and its evidence panel with automatic console output.
+      shownFailure.current = true; setTool('errors'); setBottomOpen(bottomPinned.current); setBottomHeight(35)
     }
   }, [])
   useEffect(() => {

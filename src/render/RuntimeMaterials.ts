@@ -2,6 +2,7 @@ import { BoxGeometry, Color, EdgesGeometry, MeshDepthMaterial, MeshDistanceMater
 import type { MaterialRole } from '../contracts/worldV2';
 import { color } from '../theme/tokens';
 import { qualityStore, type QualityTier } from './quality/qualityStore';
+import {bodyPalette} from './quality/bodyPalette';
 import type { BodyRole } from './quality/materialTypes';
 import { applyRoundedBoxMaterial } from './geometry/roundedBox';
 export const unitBox = new BoxGeometry(1, 1, 1);
@@ -22,7 +23,7 @@ export function glassMaterial(role: BodyRole, opacity = 1, tier: QualityTier = '
     const key = `${actualTier}:${role}:${opacity}`, existing = materials.get(key);
     if (existing)
         return existing;
-    const palette = color[role];
+    const palette = bodyPalette(role);
     if (cinematic) {
         const material = cinematic.createCinematicBody(role, opacity);
         materials.set(key, material);

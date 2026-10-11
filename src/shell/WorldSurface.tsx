@@ -21,7 +21,7 @@ import {useQualityStore} from '../render/quality/qualityStore';
 import { shellStore } from '../workspace/shellStore';
 import { registerWorldCommandSurface } from '../ide/commands';
 const fullRecording = { state: 'FULL', reason: null, budget: null, lastRecordedSeq: null, executionContinued: false } as const;
-export function WorldSurface({ trace, onSourceChange, onRuntimeChange, navigation, suppressInspector = false, execution, safeFrame }: {
+export function WorldSurface({ trace, onSourceChange, onRuntimeChange, navigation, suppressInspector = false, execution, safeFrame,inspectorRect }: {
     trace: TraceDocument;
     onSourceChange?: (location: SourceLocation | null) => void;
     onRuntimeChange?: (runtime: RuntimeState, selection: Selection) => void;
@@ -29,6 +29,7 @@ export function WorldSurface({ trace, onSourceChange, onRuntimeChange, navigatio
     suppressInspector?: boolean;
     execution?: EmbeddedExecution;
     safeFrame: Rect;
+    inspectorRect?:Rect|null;
 }) {
     const playback = useTimelinePlayback(trace, execution);
     const { cursor, liveHead: liveCursor } = playback.state;
@@ -90,7 +91,7 @@ export function WorldSurface({ trace, onSourceChange, onRuntimeChange, navigatio
     const focusSelection = () => { if (inspectorSelection && ['frame', 'object', 'class', 'slot','cluster'].includes(inspectorSelection.kind))
         useCameraStore.getState().focus(inspectorSelection); };
     return <section className="world-panel" aria-label="Runtime world">
-    <RuntimeCanvas trace={trace} timeline={playback.store} scene={scene} plan={plan} layout={layout} safeFrame={safeFrame} selection={selection} onSelect={select} onFocus={selection=>useCameraStore.getState().focus(selection)}/>
+    <RuntimeCanvas trace={trace} timeline={playback.store} scene={scene} plan={plan} layout={layout} safeFrame={safeFrame} inspectorRect={suppressInspector?null:inspectorRect} selection={selection} onSelect={select} onFocus={selection=>useCameraStore.getState().focus(selection)}/>
     {!suppressInspector && <Inspector selection={inspectorSelection} scene={scene} runtime={runtime} flows={flows} plan={plan} onClose={() => shellStore.setState({inspectorHidden:true})} onFocus={focusSelection} onSelectRow={id=>setSelection({kind:'slot',id})} onReturn={()=>useCameraStore.getState().exitFocus()}/>}
     <div className="world-timeline"><TimeDock trace={trace} playback={playback} execution={execution} settings={{reducedMotion,onReducedMotionChange:useQualityStore.getState().setReducedMotion,quality,onQualityChange:tier=>{void useQualityStore.getState().selectQuality(tier)},cinematicAvailable:cinematic.enabled,cinematicReason:cinematic.enabled?undefined:cinematic.reason}}/></div>
     {qualityNotice&&<div className="world-quality-notice glass" role="status">{qualityNotice}<button onClick={()=>useQualityStore.getState().clearNotice()} aria-label="Dismiss rendering notice">×</button></div>}

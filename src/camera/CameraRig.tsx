@@ -8,12 +8,15 @@ import type {Rect} from '../shell/shellLayout'
 import {useCameraStore} from './cameraStore'
 import {useInteractionStore} from '../interaction/interactionStore'
 import {camera as tokens,motion} from '../theme/tokens'
-import {cameraPosition,fitToSafeFrame,frontFace,nextDetailLevel,representativeFaceHeight,type OrbitPose} from './projection'
+import {cameraPosition,fitToSafeFrame,nextDetailLevel,representativeFaceHeight,type OrbitPose} from './projection'
 import {cameraCollisionBoxes,collisionSafeRoute,constrainCameraPose,type EyePose} from './cameraConstraints'
 import {anchorCorners} from '../world/presentationPlanner'
 import {homeFraming} from './homeFraming'
+import {heroFraming} from './heroFraming'
 import {followFraming} from './followFraming'
+import {focusFraming} from './focusFraming'
 import {requestAnimationFrameRender} from '../render/renderActivity'
+import {productionClock} from '../motion/clock'
 export interface CameraInput {cancel():void;key(key:string,shift:boolean):void;wheel(dx:number,dy:number,pixelPan:boolean):void;shift(value:boolean):void}
 export const cameraReadiness={moving:false}
 const tuple=(v:Vector3):Vec3=>[v.x,v.y,v.z]
@@ -23,8 +26,9 @@ export function orbitPoseFromEye(eye:EyePose):OrbitPose {
  return{target:eye.target,distance,yawDeg:Math.atan2(delta.x,delta.z)*180/Math.PI,pitchDeg:-Math.asin(Math.max(-1,Math.min(1,delta.y/Math.max(distance,1e-9))))*180/Math.PI}
 }
 /** One owner commits semantic poses, then applies optional visual travel. Camera input cancels synchronously. */
-export function CameraRig({scene,plan,layout,safeFrame,input}:{scene:SceneModel;plan:PresentationPlan;layout:LayoutState;safeFrame:Rect;input:RefObject<CameraInput|null>}) {
+export function CameraRig({scene,plan,layout,safeFrame,inspectorRect,input}:{scene:SceneModel;plan:PresentationPlan;layout:LayoutState;safeFrame:Rect;inspectorRect?:Rect|null;input:RefObject<CameraInput|null>}) {
  const {camera,size,invalidate}=useThree(),controls=useRef<Controls>(null),intentRevision=useCameraStore(state=>state.intentRevision)
+ useEffect(()=>productionClock.subscribe(invalidate),[invalidate])
  const move=useRef<{start:number;duration:number;path:EyePose[];lengths:number[];total:number;home:boolean}|null>(null)
  const initialized=useRef(false),recordingId=useRef(scene.recordingId),lastDetail=useRef(-Infinity),lastCursor=useRef(-1),lastFollow=useRef(-1)
  const diagonal=layout.bounds?Math.hypot(...layout.bounds.size):24
@@ -37,15 +41,15 @@ export function CameraRig({scene,plan,layout,safeFrame,input}:{scene:SceneModel;
  const begin=(pose:OrbitPose,duration:number,home=false)=>{
   const from=eye(),destination={position:cameraPosition(pose),target:pose.target},path=[from,...collisionSafeRoute(from,destination,latest.current.boxes,layout.bounds?.center,latest.current.limits)]
   const lengths=path.slice(1).map((point,i)=>new Vector3(...point.position).distanceTo(new Vector3(...path[i].position))),total=lengths.reduce((sum,n)=>sum+n,0)
-  move.current={start:performance.now(),duration:reduced()?0:duration,path,lengths,total,home}
+  move.current={start:productionClock.now(),duration:reduced()?0:duration,path,lengths,total,home}
   invalidate()
  }
  const homeCache=useRef<{scene:SceneModel;key:string;pose:OrbitPose}|null>(null)
- const home=()=>{const current=latest.current,key=JSON.stringify([current.safeFrame,size.width,size.height]);if(homeCache.current?.scene===current.scene&&homeCache.current.key===key)return homeCache.current.pose;const pose=homeFraming(current.scene,current.plan,current.safeFrame,size).pose;homeCache.current={scene:current.scene,key,pose};return pose}
+ const home=()=>{const current=latest.current,key=JSON.stringify([current.safeFrame,size.width,size.height]);if(homeCache.current?.scene===current.scene&&homeCache.current.key===key)return homeCache.current.pose;const pose=homeFraming(current.scene,current.plan,current.safeFrame,size,layout).pose;homeCache.current={scene:current.scene,key,pose};return pose}
  useEffect(()=>{
   if(!(camera instanceof PerspectiveCamera))return
   camera.fov=tokens.fov;camera.near=.05;camera.far=10000;camera.updateProjectionMatrix()
-  if(!initialized.current||recordingId.current!==scene.recordingId){initialized.current=true;recordingId.current=scene.recordingId;begin(home(),scene.cursor?600:0);useCameraStore.setState({follow:scene.cursor>0})}
+  if(!initialized.current||recordingId.current!==scene.recordingId){initialized.current=true;recordingId.current=scene.recordingId;begin(heroFraming(scene,plan,safeFrame,size),scene.cursor?600:0);useCameraStore.setState({follow:scene.cursor>0})}
  },[scene.recordingId,camera])
  useEffect(()=>{
   const state=useCameraStore.getState(),intent=state.intent
@@ -53,15 +57,16 @@ export function CameraRig({scene,plan,layout,safeFrame,input}:{scene:SceneModel;
   invalidate()
   if(intent.kind==='pose'){move.current=null;camera.position.set(...cameraPosition(intent.pose));controls.current?.target.set(...intent.pose.target);previous.current=eye();return}
   if(intent.kind==='home')begin(home(),motion.homeMs,true)
-  if(intent.kind==='recording')begin(home(),scene.cursor?600:0)
+  if(intent.kind==='recording'||intent.kind==='hero')begin(heroFraming(scene,plan,safeFrame,size),scene.cursor?600:0)
   if(intent.kind==='focus'){
    const owner=plan.framing.focus?.targetId??intent.targetId,node=scene.entities[owner],cell=[...plan.cellWindows.values()].flatMap(window=>[...window.mapping.values()]).find(cell=>cell.anchor.entityId===intent.targetId)
    const anchor=cell?.anchor??node?.anchor??plan.clusters.find(cluster=>cluster.id===intent.targetId)?.anchor
    if(!anchor)return
-   const height=Math.min(safeFrame.height,size.height*tokens.focus.faceH),width=Math.min(safeFrame.width,size.width*tokens.focus.faceW)
-   const area={x:safeFrame.x+(safeFrame.width-width)/2,y:safeFrame.y+(safeFrame.height-height)/2,width,height}
+   // Opening a narrow sheet never moves the camera by itself. An explicit
+   // Focus request uses the free rectangle above that actual visible sheet.
+   const area=size.width<1024&&inspectorRect?{...safeFrame,height:Math.max(0,Math.min(safeFrame.y+safeFrame.height,inspectorRect.y-size.height*.01)-safeFrame.y)}:safeFrame
    const neighbours=plan.framing.focus?.neighbours??[],left=neighbours.filter(id=>scene.entities[id]?.anchor.position[0]<anchor.position[0]).length,right=neighbours.length-left
-   begin(fitToSafeFrame(frontFace(anchor),{yaw:left>=right?Math.abs(tokens.focus.yaw):-Math.abs(tokens.focus.yaw),pitch:tokens.focus.pitch},area,size),motion.focusMs)
+   begin(focusFraming(anchor,{yaw:left>=right?Math.abs(tokens.focus.yaw):-Math.abs(tokens.focus.yaw),pitch:tokens.focus.pitch},area,size),motion.focusMs)
   }
   if(intent.kind==='exitFocus')begin(intent.pose,motion.exitFocusMs)
   if(intent.kind==='zoom'){move.current=null;const pivot=controls.current?.target??new Vector3();camera.position.sub(pivot).multiplyScalar(intent.factor).add(pivot)}
@@ -82,7 +87,7 @@ export function CameraRig({scene,plan,layout,safeFrame,input}:{scene:SceneModel;
  },[camera,size.width,size.height])
  useFrame(()=>{
   const control=controls.current;if(!control||!(camera instanceof PerspectiveCamera))return
-  const now=performance.now(),travel=move.current
+  const now=productionClock.now(),travel=move.current
   cameraReadiness.moving=!!travel
   if(travel){const t=travel.duration?Math.min(1,(now-travel.start)/travel.duration):1;let distance=ease(t)*travel.total,index=0;while(index<travel.lengths.length-1&&distance>travel.lengths[index]){distance-=travel.lengths[index];index++}const fraction=travel.lengths[index]?distance/travel.lengths[index]:1,from=travel.path[index],to=travel.path[index+1];camera.position.lerpVectors(new Vector3(...from.position),new Vector3(...to.position),fraction);control.target.lerpVectors(new Vector3(...from.target),new Vector3(...to.target),fraction);if(t===1){move.current=null;if(travel.home)useCameraStore.setState({mode:'EXPLORE',intent:null})}}
   control.update()

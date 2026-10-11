@@ -1,3 +1,4 @@
+import {exceptionPanelFor,exceptionPanelAnchor} from './exceptionPanelPlacement'
 import type { Selection } from '../contracts/interaction';
 import type { DetailLevel, EntityId, LayoutState, MaterialRole, PresentationPlan, PresentedCluster, PresentedCurve, PresentedEntity, SceneEntity, SceneModel, TraceScope, Vec3, WorldAnchor } from '../contracts/worldV2';
 import { budgets, world } from '../theme/tokens';
@@ -35,6 +36,7 @@ const rowIds = (node: SceneEntity): readonly string[] => node.kind === 'frame' |
 /** Complete catalog in, one accounted hierarchy cut out. Required identities cannot be budgeted away. */
 export function planPresentation(input: PlanInput, previous?: PresentationPlan): PresentationPlan {
     const { scene, layout, detailLevel, selection, focusTargetId, trace } = input, budget = budgets[detailLevel];
+    const exceptionPanel=exceptionPanelFor(scene),forensicState=!!exceptionPanel;
     const ids = [...scene.order.frames, ...scene.order.objects, ...scene.order.classes];
     const owners = new Map<string, string>();
     for (const id of ids)
@@ -81,7 +83,7 @@ export function planPresentation(input: PlanInput, previous?: PresentationPlan):
     for (const id of neighbours)
         pin(id, 'focus neighbour');
     if (scene.exception)
-        for (const id of [scene.exception.throwFrameId, ...scene.exception.unwound, scene.exception.catchFrameId, scene.exception.exceptionId])
+        for (const id of [scene.exception.throwFrameId, ...scene.exception.unwound, scene.exception.catchFrameId, scene.exception.exceptionId,...scene.exception.causes])
             pin(id, 'exception evidence');
     const entities = new Map<string, PresentedEntity>(), overflow: PresentationPlan['budgetOverflow'][number][] = [];
     if (requiredFlows.length > budget.flows) overflow.push({category:'flows', nominal:budget.flows, actual:requiredFlows.length, mandatoryIds:requiredFlows.map(flow=>flow.id), reasons:['selected flow or current evidence']});
@@ -93,8 +95,7 @@ export function planPresentation(input: PlanInput, previous?: PresentationPlan):
         let opacity = node.kind === 'frame' && !node.live ? world.opacity.historicalFrame : mode === 'quiet' ? world.opacity.quiet : 1;
         if (focused && !isFocused)
             opacity = Math.min(opacity, world.opacity.focusDim);
-        if (scene.exception && !forensic)
-            opacity = Math.min(opacity, world.opacity.forensicDim);
+        if (forensicState)opacity=forensic?1:Math.min(opacity,world.opacity.forensicDim);
         const canPick = pinned || pickable < budget.pickable;
         if (canPick)
             pickable++;
@@ -172,7 +173,7 @@ export function planPresentation(input: PlanInput, previous?: PresentationPlan):
       bodyAnchors.set(id, node.kind === 'array' ? { ...anchor, position: [anchor.position[0], anchor.position[1] + anchor.size[1] / 2 - .45, anchor.position[2]], size: [anchor.size[0], .9, .12] } : anchor);
     }
     const cellAnchors = new Map([...cellWindows.values()].flatMap(window => [...window.mapping].map(([id, cell]) => [id, cell.anchor] as const)));
-    const routeBodies = [...bodyAnchors.values(), ...cellAnchors.values(), ...scene.io.map(io => io.anchor), ...clusters.map(cluster => cluster.anchor)];
+    const routeBodies = [...bodyAnchors.values(), ...cellAnchors.values(), ...scene.io.map(io => io.anchor), ...clusters.map(cluster => cluster.anchor),...(exceptionPanel?[exceptionPanelAnchor(exceptionPanel,scene.recording)]:[])];
     const portAnchor = (id: string, slot?: string) => slot && scene.entities[id]?.kind === 'array' ? cellAnchors.get(slot) : bodyAnchors.get(id);
     const endpointAnchor = (point: FlowEndpoint | null): WorldAnchor | undefined => point?.kind === 'io' ? scene.io.find(io => io.id === point.id)?.anchor : point?.kind === 'slot' ? portAnchor(owner(point.id) ?? '', point.id) : point ? portAnchor(point.id) : undefined;
     const endpoint = (point: FlowEndpoint | null): Vec3 | null => point?.kind === 'io' ? scene.io.find(io=>io.id===point.id)?.anchor.bodyPort ?? null : point ? point.kind === 'slot' ? owner(point.id) ? port(owner(point.id)!, point.id) : null : port(point.id) : null;
@@ -195,10 +196,11 @@ export function planPresentation(input: PlanInput, previous?: PresentationPlan):
     const traceParticipants=new Set<string>();
     const participate=(...ids:(string|undefined)[])=>{for(const id of ids){const resolved=owner(id);if(resolved)traceParticipants.add(resolved)}};
     const curves: PresentedCurve[] = [];
-    const curve = (id: string, kind: PresentedCurve['kind'], from: Vec3 | null, to: Vec3 | null, role: MaterialRole, relevant: boolean, left = false, arrow = false, label?: string, source?: WorldAnchor, target?: WorldAnchor) => {
+    const curve = (id: string, kind: PresentedCurve['kind'], from: Vec3 | null, to: Vec3 | null, role: MaterialRole, relevant: boolean, left = false, arrow = false, label?: string, source?: WorldAnchor, target?: WorldAnchor, forensicPath = false) => {
         if (!from || !to)
             return;
-        curves.push({ id, kind, points: route(from, to, source, target, left), colorRole: role, opacity: focused && !relevant ? .25 : relevant ? 1 : .35, widthPx: relevant ? 3.5 : 2.5, arrow, label });
+        const opacity=forensicState?(forensicPath?1:Math.min(world.opacity.forensicDim,focused&&!relevant?.25:relevant?1:.35)):focused&&!relevant?.25:relevant?1:.35;
+        curves.push({ id, kind, points: route(from, to, source, target, left), colorRole: role, opacity, widthPx: relevant ? 3.5 : 2.5, arrow, label });
     };
     const refs = scene.references.filter(r => entities.has(r.sourceId) && entities.has(r.targetId)).sort((a, b) => Number(b.id === selection?.id) - Number(a.id === selection?.id) || Number(mandatory.has(b.sourceId) || mandatory.has(b.targetId)) - Number(mandatory.has(a.sourceId) || mandatory.has(a.targetId)) || (b.evidence.changedSeq ?? 0) - (a.evidence.changedSeq ?? 0));
     const requiredRefs = refs.filter(r => r.id === selection?.id || r.evidence.changedSeq === scene.cursorEvent?.seq);
@@ -223,7 +225,8 @@ export function planPresentation(input: PlanInput, previous?: PresentationPlan):
       const from = flow.kind==='return'&&source?.kind==='frame'?[source.anchor.position[0]+source.anchor.size[0]/2,source.anchor.position[1]+source.anchor.size[1]/2-.85,source.anchor.position[2]+source.anchor.size[2]/2] as Vec3:endpoint(flow.from), to = endpoint(flow.to); if (!from || !to) continue;
       const exception = ['throw','unwind','catch'].includes(flow.kind), returned = flow.kind === 'return';
       const relevant=trace.active&&trace.scope==='all'||flowRelevant(flow)||requiredFlows.includes(flow);
-      curve(flow.id, exception ? 'exception' : returned ? 'return' : 'flow', from, to, exception ? 'exception' : returned ? 'return' : flow.kind === 'input' ? 'stdin' : flow.kind === 'output' ? flow.to.kind==='io'&&flow.to.id==='stderr'?'stderr':'stdout' : 'reference', relevant, false, exception || returned, flow.valueText ?? undefined, endpointAnchor(flow.from), endpointAnchor(flow.to));
+      const forensicPath=exception&&flow.evidenceEventIds.some(id=>scene.exception?.evidence.eventIds.includes(id));
+      curve(flow.id, exception ? 'exception' : returned ? 'return' : 'flow', from, to, exception ? 'exception' : returned ? 'return' : flow.kind === 'input' ? 'stdin' : flow.kind === 'output' ? flow.to.kind==='io'&&flow.to.id==='stderr'?'stderr':'stdout' : 'reference', relevant, false, exception || returned, flow.valueText ?? undefined, endpointAnchor(flow.from), endpointAnchor(flow.to),forensicPath);
       if(relevant)participate(flow.from?.id,flow.to.id);
       drawnFlowIds.add(flow.id);
     }
@@ -235,14 +238,14 @@ export function planPresentation(input: PlanInput, previous?: PresentationPlan):
       bundles.push({id:bundle.id,kind:'flow',from:bundle.from.id,to:bundle.to.id,count:bundle.count,points:route(from,to,endpointAnchor(bundle.from),endpointAnchor(bundle.to))});
       participate(bundle.from.id,bundle.to.id);
     }
-    if(trace.active)for(const[id,presented]of entities)if(!traceParticipants.has(id))entities.set(id,{...presented,opacity:Math.min(presented.opacity,world.opacity.traceDim)});
+    if(trace.active)for(const[id,presented]of entities)if(!traceParticipants.has(id)&&!(forensicState&&mandatory.get(id)?.has('exception evidence')))entities.set(id,{...presented,opacity:Math.min(presented.opacity,world.opacity.traceDim)});
     const headings: PresentationPlan['headings'][number][] = [{ id: 'STACK', position: layout.headings.stack, opacity: 1 }, { id: 'HEAP', position: layout.headings.heap, opacity: 1 }, ...(layout.headings.classState ? [{ id: 'CLASS STATE' as const, position: layout.headings.classState, opacity: 1 }] : [])];
     if (curves.some(curve=>curve.kind === 'return')) headings.push({id:'RETURNS', position:layout.headings.returns, opacity:1});
     const homeIds = [...new Set([live.at(-1) ?? scene.order.frames.at(-1), ...live.slice(-4), scene.order.frames[0], ...scene.order.objects.filter(id => layout.anchors[id].region === 'heap').slice(0, 12)])].filter((id): id is string => !!id);
     const hero = [...headings.slice(0, 2).flatMap(h => [h.position, [h.position[0] + 2.4, h.position[1] + .4, h.position[2]] as Vec3]), ...homeIds.flatMap(id => anchorCorners(scene.entities[id].anchor))];
-    return { revision: (previous?.revision ?? 0) + 1, sceneRevision: scene.revision, detailLevel, budgetOverflow: overflow, entities, clusters, curves, bundles, cellWindows, headings,
+    return { revision: (previous?.revision ?? 0) + 1, sceneRevision: scene.revision, detailLevel, budgetOverflow: overflow, entities, clusters:forensicState?clusters.map(cluster=>({...cluster,opacity:Math.min(cluster.opacity,world.opacity.forensicDim)})):clusters, curves, bundles, cellWindows, headings,
         structural: focusTargetId && !focused && layout.anchors[focusTargetId] ? [{ id: focusTargetId, text: 'Not present at this point in time', position: layout.anchors[focusTargetId].position }] : [],
-        exceptionPanel: null, io: scene.io.map(io => ({ id: io.id, opacity: 1 })), pinned: new Set(mandatory.keys()),
+        exceptionPanel, io: scene.io.map(io => ({ id: io.id, opacity: 1 })), pinned: new Set(mandatory.keys()),
         accounting: { detailed: [...entities.values()].filter(e => e.mode === 'detailed').length, quiet: [...entities.values()].filter(e => e.mode === 'quiet').length, clustered: residual.length, total: ids.length },
         framing: { hero, home: { ids: homeIds, headings: headings.slice(0, 2).map(h => h.position) }, focus: focused ? { targetId: focused, neighbours } : null } };
 }

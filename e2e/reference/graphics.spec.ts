@@ -38,7 +38,7 @@ test('an actual lost graphics context restores the same canvas, recording, selec
 test('without WebGL the recording source and timeline remain usable',async({page})=>{
  await page.addInitScript(()=>{
   const getContext=HTMLCanvasElement.prototype.getContext
-  HTMLCanvasElement.prototype.getContext=function(type:string,...args:unknown[]){if(type==='webgl'||type==='webgl2')return null;return Reflect.apply(getContext,this,[type,...args])} as typeof getContext
+  HTMLCanvasElement.prototype.getContext=function(this:HTMLCanvasElement,type:string,...args:unknown[]){if(type==='webgl'||type==='webgl2')return null;return Reflect.apply(getContext,this,[type,...args])} as typeof getContext
  })
  await page.goto('/examples?qa=1')
  await expect(page.getByRole('status').filter({hasText:'The 3D World requires WebGL'})).toBeVisible()
@@ -52,7 +52,7 @@ test('without WebGL the IDE still runs actual Java and retains its process outpu
  await page.addInitScript(id=>localStorage.setItem('ggjavaez:project',id),id)
  await page.addInitScript(()=>{
   const getContext=HTMLCanvasElement.prototype.getContext
-  HTMLCanvasElement.prototype.getContext=function(type:string,...args:unknown[]){if(type==='webgl'||type==='webgl2')return null;return Reflect.apply(getContext,this,[type,...args])} as typeof getContext
+  HTMLCanvasElement.prototype.getContext=function(this:HTMLCanvasElement,type:string,...args:unknown[]){if(type==='webgl'||type==='webgl2')return null;return Reflect.apply(getContext,this,[type,...args])} as typeof getContext
  })
  await page.goto('/?qa=1');await expect(page.locator('.monaco-editor')).toBeVisible()
  await expect(page.getByRole('status').filter({hasText:'The 3D World requires WebGL'})).toBeVisible()

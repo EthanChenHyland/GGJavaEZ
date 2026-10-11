@@ -34,7 +34,7 @@ it('flow queries are bounded, current-only evidence is exact and bundle counts s
   const flows=catalog.query({cursor,scene,priority:priorities,limit:6})
   expect(flows.length).toBeLessThanOrEqual(6)
   expect(new Set(flows.map(flow=>flow.id)).size).toBe(flows.length)
-  for(const flow of flows)for(const seq of flow.evidenceSeqs)expect(seq).toBeLessThan(cursor)
+  for(const flow of flows){expect(flow.evidenceEventIds).toEqual([seek(trace,cursor).executionGraph!.edges[flow.edgeIndex].eventId]);for(const seq of flow.evidenceSeqs)expect(seq).toBeLessThan(cursor)}
   for(const flow of catalog.atEvent(cursor,scene))expect(flow.evidenceSeqs).toEqual([cursor-1])
   const total=catalog.bundles({cursor,scene,exclude:new Set()}).reduce((sum,bundle)=>sum+bundle.count,0)
   const excluded=catalog.bundles({cursor,scene,exclude:new Set(flows.map(flow=>flow.id))}).reduce((sum,bundle)=>sum+bundle.count,0)

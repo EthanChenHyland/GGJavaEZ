@@ -1,0 +1,34 @@
+import {expect,test} from '@playwright/test'
+import {browserErrors,currentSession,ready,runFixture,stopOwnedSession} from './harness'
+test.afterEach(async({request})=>stopOwnedSession(request))
+test('uncaught failure keeps forensic evidence visible, opens Errors explicitly, and clears on a successful rerun',async({page,request})=>{
+ test.setTimeout(60000)
+ const errors=browserErrors(page),failure=await runFixture(page,request,'exception')
+ await expect.poll(()=>page.evaluate(()=>window.__ggjavaezQA!.appState().failure)).toBe('uncaught-exception')
+ expect(await page.evaluate(()=>window.__ggjavaezWorld!.plan().exceptionPanel?.content.className)).toBe('java.lang.IllegalStateException')
+ await expect(page.getByRole('region',{name:'Error Explorer',exact:true})).not.toBeVisible()
+ await page.getByRole('button',{name:'ERROR EXPLORER',exact:true}).click()
+ const explorer=page.getByRole('region',{name:'Error Explorer',exact:true})
+ await expect(explorer).toBeVisible()
+ await expect(explorer.getByRole('heading',{name:'IllegalStateException',exact:true})).toBeVisible()
+ await expect(explorer.getByText('failed shipment',{exact:true})).toBeVisible()
+ // Edit ordinary Java through the production Monaco/Save-All/Run path. This
+ // modifies only this test's managed project and preserves the failed world
+ // until accepted events from the new JVM replace it.
+ await page.getByRole('button',{name:'Expand source for editing',exact:true}).click()
+ await page.getByRole('textbox',{name:'Editor content',exact:true}).focus()
+ await page.keyboard.press('ControlOrMeta+A')
+ await page.keyboard.insertText('public class FailureApp { public static void main(String[] args) { System.out.println("RECOVERED"); } }')
+ const started=page.waitForResponse(response=>response.request().method()==='POST'&&new URL(response.url()).pathname===`/api/projects/${failure.projectId}/execution`)
+ await page.getByRole('button',{name:'Run',exact:true}).click()
+ expect((await started).ok()).toBe(true)
+ await expect.poll(async()=>{const session=await currentSession(request);return session?.id!==failure.id?session?.phase:null},{timeout:30000}).toBe('COMPLETED')
+ const recovered=(await currentSession(request))!
+ expect(recovered.build?.success).toBe(true);expect(recovered.stdout).toBe('RECOVERED\n');expect(recovered.exitCode).toBe(0);expect(recovered.rawEvents.length).toBeGreaterThan(0)
+ await expect.poll(()=>page.evaluate(()=>window.__ggjavaezWorld?.scene().recordingId)).toBe(`execution:${recovered.id}`)
+ await expect.poll(()=>page.evaluate(()=>window.__ggjavaezQA!.appState().execution)).toBe('COMPLETED')
+ await ready(page)
+ const clean=await page.evaluate(()=>({exception:window.__ggjavaezWorld!.scene().exception,panel:window.__ggjavaezWorld!.plan().exceptionPanel,red:[...window.__ggjavaezWorld!.plan().entities.values()].filter(entity=>entity.highlight==='exception').length,flows:window.__ggjavaezWorld!.plan().curves.filter(curve=>curve.colorRole==='exception').length}))
+ expect(clean).toEqual({exception:null,panel:null,red:0,flows:0})
+ expect(errors).toEqual([])
+})

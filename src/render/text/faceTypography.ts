@@ -1,15 +1,11 @@
 import type {SceneRow} from '../../contracts/worldV2'
-/** Captured literal/identity goes in the value chip; its recorded Java type has
- * a separate column. Full observation metadata remains in the Inspector. */
+/** Preserve the bounded captured preview, including runtime reference type,
+ * identity and known summary lengths. The type column is the declared type. */
 export function rowValueLabel(value:SceneRow['value']):string{
- if(value.kind==='string')return value.exact
- if(value.kind==='reference'){
-  if(value.targetType==='java.lang.String'&&value.exact.startsWith('"'))return value.exact.slice(0,value.exact.lastIndexOf(' · '))
-  return value.text.match(/#\d+$/u)?.[0]??value.text
- }
  return value.text
 }
-export function faceColumns(width:number){
+export function faceColumns(width:number,detail:'FAR'|'MEDIUM'|'CLOSE'='CLOSE'){
  const available=Math.max(.2,width-.56)
+ if(detail==='MEDIUM')return{name:available*.4-.1,type:0,value:available*.6-.1,typeOffset:0,valueOffset:available*.4}
  return{name:available*.27-.1,type:available*.29-.1,value:available*.44-.1,typeOffset:available*.27,valueOffset:available*.56}
 }

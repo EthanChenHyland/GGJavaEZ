@@ -1158,7 +1158,7 @@ Apply these rules to all task descriptions, examples, property claims and linked
     - Milestone F full gate: static/build/full configured unit/property checks, affected responsive/accessibility/scaling browser scenarios and required performance measurements. Review all five viewports; verify camera ownership, geometry/text constraints and no semantic loss under presentation budgets.
 
 - [ ] 11. R10 — Reference-versus-browser iteration
-  - [ ] 11.1 Write the reference-state Java programs
+  - [x] 11.1 Write the reference-state Java programs
     - Add generic, ordinary Java projects under `fixtures/reference-exact/`. None may use the names Person, Factorial, SortDemo or any other Reference_Suite label. They cover:
       - a domain object graph (constructor, setter, String and List fields) for the hero, close-inspection, Focus and completed states;
       - a deep recursion with returned values for the recursion and return-propagation states;
@@ -1171,7 +1171,7 @@ Apply these rules to all task descriptions, examples, property claims and linked
     - Start the generic hero program and fixture manifest in A/B for early QA; complete the full program set in G. Verify each one through the production BuildService and a real JVM in `tests/reference/programs.jvm.test.mjs`: exact output, exit status, and SceneModel counts at the final Event.
     - _Requirements: 33.4, 33.6, 34.1_
 
-  - [ ] 11.2 Build the reference convergence harness and the Comparable_State spec
+  - [x] 11.2 Build the reference convergence harness and the Comparable_State spec
     - Establish capture/readiness/report scaffolding in A and projection comparison in B, then complete this full matrix in G. Extend `src/qa/qaBridge.ts` with `worldProjection()` (projected stack and heap bands and entity bounds), `planStats()`, `clock.step(ms)` and `setCameraPose()`.
     - `e2e/reference/harness.ts`:
       - waits for the finite text/material/effect readiness barrier before capture and records session/prefix identity; timeout fails capture or selects a documented ready fallback, never silently capturing unresolved text;

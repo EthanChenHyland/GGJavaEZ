@@ -1,11 +1,11 @@
 import { MeshPhysicalMaterial } from 'three'
-import { color } from '../../theme/tokens'
+import {bodyPalette} from './bodyPalette'
 import type { BodyRole } from './materialTypes'
 import { applyRoundedBoxMaterial } from '../geometry/roundedBox'
 
 /** This module is requested only after an explicit Cinematic selection. */
 export function createCinematicBody(role: BodyRole, emphasis: number): MeshPhysicalMaterial {
-  const palette = color[role]
+  const palette = bodyPalette(role)
   const material = new MeshPhysicalMaterial({
     color: palette.core, attenuationColor: palette.core, attenuationDistance: 4,
     transmission: .75, thickness: 1, ior: 1.45, roughness: .22,

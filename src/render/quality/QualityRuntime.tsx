@@ -52,7 +52,7 @@ export function QualityRuntime({ guidedMoving }: { guidedMoving(): boolean }) {
     const preview = new Group()
     // Compile the actual instancing and transparent/opaque shader variants, with the live light rig.
     for (const tier of ['INTERACTIVE', 'CINEMATIC'] as const)
-      for (const role of ['stack', 'heap', 'class'] as BodyRole[])
+      for (const role of ['stack', 'heap', 'class', 'exception'] as BodyRole[])
         for (const emphasis of [1, .25]) {
           const mesh = new InstancedMesh(unitBox, glassMaterial(role, emphasis, tier), 1)
           mesh.receiveShadow = true; mesh.castShadow = true; preview.add(mesh)

@@ -11,9 +11,9 @@ import { useInteractionStore } from '../interaction/interactionStore';
 import { RuntimeSolid, WorldText } from './RuntimeSolid';
 import { roleColor } from './RuntimeMaterials';
 import { FaceTextBatch, textReadiness } from './FaceText';
-import { ACESFilmicToneMapping, Color, DataTexture, RGBAFormat, SRGBColorSpace, UnsignedByteType, Vector3 } from 'three';
+import { ACESFilmicToneMapping, Color, DataTexture, InstancedMesh, RGBAFormat, SRGBColorSpace, UnsignedByteType, Vector3 } from 'three';
 import type {} from '../qa/worldObservation';
-import { SolidBatch } from './SolidBatch';
+import { SolidBatch,buildSolidBatch } from './SolidBatch';
 import { ConnectorBatch } from './ConnectorBatch';
 import {accessibleEntities,type AccessibleEntity} from '../interaction/accessibleEntities';
 import { QualityRuntime } from './quality/QualityRuntime';
@@ -24,6 +24,9 @@ import type {TimelineStore} from '../timeline/timelineStore';
 import {PostPipeline,postReadiness} from './post/PostPipeline';
 import {Floor} from './Floor';
 import {supportsRuntimeWebGL,graphicsRecovery} from './graphicsRecovery';
+import {ExceptionPanel} from './ExceptionPanel';
+import {projectBodies,projectInstancedBody,projectRect} from '../qa/worldProjection';
+import {anchorCorners} from '../world/presentationPlanner';
 
 function GradientBackground() {
     const texture = useMemo(() => {
@@ -40,10 +43,11 @@ function GradientBackground() {
     useEffect(() => () => texture.dispose(), [texture]);
     return <primitive object={texture} attach="background"/>;
 }
-function Metrics({ scene, plan, selection }: {
+function Metrics({ scene, plan, selection,trace }: {
     scene: SceneModel;
     plan: PresentationPlan;
     selection:Selection;
+    trace:TraceDocument;
 }) {
     const { gl, camera, scene:world, size,invalidate } = useThree();
     const latest=useRef({scene,plan,size});latest.current={scene,plan,size};
@@ -52,6 +56,15 @@ function Metrics({ scene, plan, selection }: {
         displayFrame.current++;
         if (import.meta.env.DEV||import.meta.env.VITE_QA==='1')
             window.__ggjavaezWorld={ scene: () => scene, plan: () => plan, selection:()=>selection,
+                recordedEvents:()=>trace.events,
+                worldProjection:()=>{const projection=projectBodies([
+                    ...buildSolidBatch(scene,plan).filter(solid=>solid.role!=='face').map(solid=>({anchor:solid.anchor,live:scene.entities[solid.anchor.entityId]?.kind==='frame'&&(scene.entities[solid.anchor.entityId] as {live:boolean}).live})),
+                    ...plan.clusters.map(cluster=>({anchor:{...cluster.anchor,size:[2.4,1.2,.8] as const},live:false})),
+                ],camera,size);
+                 const panel=plan.exceptionPanel,frame=panel?.content.throwFrameId?scene.entities[panel.content.throwFrameId]:null;
+                 const panelBody=world.getObjectByName('exception-panel-body');
+                 return{...projection,exception:panel?{bounds:panelBody instanceof InstancedMesh?projectInstancedBody(panelBody,0,camera,size):null,throwFrame:frame?projectRect(anchorCorners(frame.anchor),camera,size):null}:null};
+                },
                 projectedPoint:(id)=>{
                     const position=scene.entities[id]?.anchor.position??[...plan.cellWindows.values()].flatMap(window=>[...window.mapping.values()]).find(cell=>cell.anchor.entityId===id)?.anchor.position;
                     if(!position)return null;
@@ -91,11 +104,12 @@ function AccessibleCatalog({scene,plan,publish}:{scene:SceneModel;plan:Presentat
  })
  return null
 }
-export function RuntimeCanvas({ scene, plan, layout, safeFrame, selection, onSelect, onFocus,trace,timeline }: {
+export function RuntimeCanvas({ scene, plan, layout, safeFrame,inspectorRect, selection, onSelect, onFocus,trace,timeline }: {
     scene: SceneModel;
     plan: PresentationPlan;
     layout: LayoutState;
     safeFrame: Rect;
+    inspectorRect?:Rect|null;
     selection: Selection;
     onSelect(selection: Selection): void;
     onFocus(selection: NonNullable<Selection>): void;
@@ -157,14 +171,15 @@ export function RuntimeCanvas({ scene, plan, layout, safeFrame, selection, onSel
         {plan.bundles.map(bundle=><WorldText key={bundle.id} position={bundle.points[Math.floor(bundle.points.length/2)]} size={.23} width={2} tint={color.ui.textSecondary}>{`${bundle.count} recorded flows`}</WorldText>)}
         {plan.headings.map(heading => <WorldText key={heading.id} position={heading.position} size={.6} weight={600} tracking={.18} width={5} tint={heading.id === 'STACK' ? color.stack.edge : heading.id === 'HEAP' ? color.heap.edge : color.class.edge}>{heading.id}</WorldText>)}
         {plan.structural.map(item => <WorldText key={item.id} position={item.position} size={.3} width={5} tint={color.ui.textSecondary}>{item.text}</WorldText>)}
+        <ExceptionPanel panel={plan.exceptionPanel} recordingState={scene.recording.state}/>
         {scene.io.map(io => <group key={io.id} position={[...io.anchor.position]}><mesh><boxGeometry args={[...io.anchor.size]}/><meshStandardMaterial color={roleColor[io.id]} emissive={roleColor[io.id]} emissiveIntensity={.2}/></mesh><WorldText position={[-.75, .02, .17]} size={.2} width={1.5}>{`${io.id} · ${io.lines}`}</WorldText></group>)}
         </FaceTextBatch>
       </Suspense>
-      <CameraRig scene={scene} plan={plan} layout={layout} safeFrame={safeFrame} input={input}/>
+      <CameraRig scene={scene} plan={plan} layout={layout} safeFrame={safeFrame} inspectorRect={inspectorRect} input={input}/>
       <QualityRuntime guidedMoving={() => cameraReadiness.moving}/>
       <MotionLayer trace={trace} timeline={timeline} scene={scene} plan={plan}/>
       <AccessibleCatalog scene={scene} plan={plan} publish={setAccessible}/>
-      <Metrics scene={scene} plan={plan} selection={selection}/>
+      <Metrics scene={scene} plan={plan} selection={selection} trace={trace}/>
       <PostPipeline/>
     </Canvas>}
     {contextLost&&<div className="world-graphics-status glass" role="alert">{notice??'Restoring the World…'}{notice==='The World could not be restored'&&<button onClick={()=>graphicsRecovery.retry?.()}>Retry</button>}</div>}

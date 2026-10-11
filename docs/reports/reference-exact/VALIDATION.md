@@ -70,9 +70,116 @@ Clear connectors retain smooth cubic paths. Obstructed connectors use canonical 
 
 Verification on this increment:
 
-- Build/typecheck and lint passed. Bootstrap is 72.53 kB gzip, AppRoot 328.77 kB gzip, shared Troika 230.28 kB gzip. The generated font metrics contribute 48.45 kB gzip; the aggregate startup graph exceeds the 500 kB target and remains an open optimization gate. Cinematic and Monaco remain separate lazy chunks.
+- Build/typecheck and lint passed. Bootstrap is 72.53 kB gzip, AppRoot 328.77 kB gzip, shared Troika 230.28 kB gzip. The generated font metrics contribute 48.45 kB gzip. AppRoot is below the specified 500 kB gzip main-entry limit; the aggregate startup graph and measured cold-load/retention budgets remain open performance work. Cinematic and Monaco remain separate lazy chunks.
 - Full default unit gate: 1,682 passed, 63 opt-in skipped, 1,745 total across 165 files (159 passed, six skipped), in 150.74 seconds. No semantic golden was changed. Added focused tests include 100 Unicode fits, 100 projected visibility cases, 100 rounded-route clearance cases and injected normal-pass failure restoration.
 - All eleven reconstruction browser checks passed in 28.2 seconds, preserving their existing assertions.
 - Actual Java completed at prefix 70 with no page/shader errors. Interactive reported 78 total calls, 47,227 triangles, 32 geometries and 29 textures. Compiled hardware-enabled Cinematic reported 115 calls, 61,363 triangles, 34 geometries and 43 textures, with ready effects and no failure. These remain small-program measurements.
 
 Original-size review against the hero and reference-sheet overview shows clearer rows and identities and fewer face crossings, but overlapping historical flows, edge aliasing, material hierarchy and camera composition remain visibly weaker. These captures are **not approved** as formal Comparable_State convergence. Per-entity/coarse-pose text scheduling, complete routing/bundle properties, generic real-Java fixtures and the full 16-state/five-viewport harness remain required, along with the previously listed subsystem/performance/final gates. This increment does not close E or A–G.
+
+## Real-JVM capture harness and forensic integration — 2026-10-10
+
+Seven ordinary Java projects now cover domain objects, recursion, array writes,
+uncaught exceptions, input/output, a real breakpoint and a moderately dense
+world. Their explicit opt-in test uses the existing instrumented JVM pipeline;
+all seven passed with actual build, output, exit and normalized inventory
+evidence. This fixture observation is not the final JVM corpus or performance
+gate. No normalizer, reducer, trace/graph contract or semantic golden changed.
+
+The capture harness drives all sixteen reference states at the five frozen QA
+viewports and takes sixteen additional full-viewport native-size captures.
+Each ready capture retains its JVM/recording identity, prefix, camera, actual
+projected geometry, renderer/effects readiness, screenshot hash, reference crop
+and comparison scale. The reporter rejects filtered runs, skips and missing
+instrumented JVM sessions. Convergence additionally requires 96 current lead
+reviews; open reviews cannot be approved by pixel similarity or browser success.
+
+Run Hero and Home now have independent camera solvers. Hero fits the live tower,
+mandatory evidence and headings into Safe Frame before solving its screen
+bands. Home admits one readable representative per actual layout group. Neither
+changes canonical anchors. The QA clock advances the production presentation
+clock without changing execution, cursor or selection. Focus dimming now uses
+actual face opacity; MEDIUM labels show name/value previews while CLOSE retains
+type columns, and exact captured values remain available in the Inspector.
+
+The final uncaught prefix presents a shared red acrylic forensic panel beside
+the actual throwing frame. Class/message wrapping preserves captured text and
+explicitly reports unavailable stack/cause evidence. Recorded path entities and
+curves retain exception emphasis while unrelated entities dim. The automatic
+Errors selection leaves an unpinned drawer closed so it cannot cover the world;
+the explicit Error Explorer action remains functional and a user-pinned drawer
+is preserved. A browser flow executes the exception, reads its class/message in
+Error Explorer, edits Java through Monaco and reaches a successful new JVM run
+with the old panel and exception emphasis cleared.
+
+Verification on this tree:
+
+- `npm run build`, `npm run lint` and `npm run typecheck:reference`: passed.
+  Bootstrap is 72.53 kB gzip, AppRoot 331.15 kB gzip and shared Troika 230.28 kB
+  gzip; Cinematic passes are 8.58 kB gzip. The main-entry size is below 500 kB;
+  cold-load and long-lived memory/resource limits are not yet measured.
+- `npm test`: 1,704 passed, 70 opt-in skipped, 1,774 total; 166 passed files and
+  seven skipped files, in 154.75 seconds. The skips comprise the pre-existing
+  63 opt-in cases plus the seven fixture JVM cases and do not satisfy final
+  explicit-flag gates.
+- `VJ_REFERENCE_JVM=1 VJ_PHASE4_JVM=1 npm test -- tests/reference/programs.jvm.test.mjs`:
+  seven real-JVM tests passed in 7.10 seconds, using JDK 26.0.2.1.
+- `npx playwright test e2e/reference`: all thirteen reconstruction checks passed
+  in 39.1 seconds. The initial rerun-flow failure came from a textarea locator
+  incompatible with Monaco's accessible EditContext textbox. Correcting that
+  locator preserved the complete actual-JVM and forensic-clearing assertions.
+- The first exhaustive capture run executed 80 cases without skips: 57 passed,
+  23 failed in 7.9 minutes; 64 cases launched instrumented JVMs. Its failed report
+  is preserved separately. Narrow-source readiness, proven return-destination
+  selection and separate Hero framing were corrected without widening frozen
+  tolerances. Five focused exception captures also passed stricter Safe Frame,
+  shell-occlusion and throwing-frame overlap checks.
+
+Original-size Hero, Completed, Focus, Debug, I/O and Exception comparisons remain
+**unapproved**. Opaque face hierarchy, overlapping cyan routes, camera composition
+and reference lighting still require polish. First-known collection reservation,
+source scroll policy, exception throw-time values, operational adapter extraction,
+the complete 66-property inventory, final JVM/acceptance/torture/debug/soak/browser
+gates, performance measurements and legacy cleanup remain outstanding. This
+integration does not close a milestone or the A–G reconstruction.
+
+## Focus and forensic regression validation — 2026-10-10
+
+The second exhaustive matrix executed 80 distinct instrumented JVM sessions
+without skips and produced all 96 captures: 78 passed, two failed in 7.9 minutes.
+Both failures were narrow Focus states at 0.344 viewport height. The corrected
+solver observes perspective face extrema, gives the unchanged 0.38–0.52 height
+band priority over width, and uses the free area above a visible narrow Inspector
+only for an explicit Focus command. Opening a sheet alone does not move the
+camera. Two narrow Focus diagnostics and the corrected post-initialization array
+operation capture passed their measured gates.
+
+Forensic bodies retain their actual instance transform across hardware-enabled
+quality changes, with owner disposal for retired instance buffers. QA reads the
+rendered panel instance rather than planned dimensions. Final-path opacity uses
+captured event IDs, preventing an earlier caught exception on identical endpoints
+from being promoted. Null messages are labelled `unavailable or null` because the
+preserved recorder cannot distinguish null from an unsafe message read.
+
+Fresh validation after these corrections:
+
+- Build, lint and reference-harness typecheck passed. AppRoot is 331.91 kB gzip;
+  bootstrap and shared Troika remain 72.53 and 230.28 kB gzip respectively.
+- Full default unit gate: 1,718 passed, 70 opt-in skipped, 1,788 total across 174
+  files (167 passed, seven skipped), in 155.08 seconds. Required explicit JVM
+  gates remain separate; semantic goldens were not changed.
+- All fourteen reconstruction browser checks passed in 43.8 seconds, including
+  actual panel geometry through Cinematic and back, with exact recording/camera
+  state. The first new run exposed a recovery test's edited cached Java project;
+  exception tests now import fresh source. A subsequent equality failure was
+  floating-point projection rounding at 1e-13 pixels; geometry equality remains
+  required to ten decimal places and semantic/camera equality remains exact.
+
+The third unfiltered matrix passed all 80 cases in 7.9 minutes, with 80 distinct
+instrumented JVM sessions, zero skips and all 96 captures from the same run
+(`ddf00fd3-2b28-4b0e-a3a1-31e97966c377`) reporting zero geometry misses. The
+complete report is preserved separately. The convergence command still returns
+nonzero for missing/open/stale visual reviews; geometry success does not approve
+reference fidelity. Task 11.2's harness is complete. Visual convergence,
+recursive Follow/Home reconciliation, source scrolling, first-known collection
+reservation and the remaining final gates are still open.

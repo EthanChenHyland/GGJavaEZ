@@ -1,9 +1,13 @@
 import type { Selection } from '../contracts/interaction'
 import type { SceneModel, PresentationPlan } from '../contracts/worldV2'
+import type {TraceEvent} from '../contracts/runtime'
+import type {WorldProjection} from './worldProjection'
 export interface WorldObservation {
   scene(): SceneModel
   plan(): PresentationPlan
   selection(): Selection
+  recordedEvents():readonly TraceEvent[]
+  worldProjection():WorldProjection
   projectedPoint(id: string): { x:number; y:number; visible:boolean } | null
   renderer(): {calls:number;triangles:number;geometries:number;textures:number;frame:number}
   effects():{ready:boolean;frames:number;revision:number;failure:string;cinematic:boolean}

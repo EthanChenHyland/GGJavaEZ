@@ -21,7 +21,7 @@ export function RuntimeSolid({ node, presented, plan }: {
     const identity=node.kind==='frame'?`#${node.invocationNumber}`:node.kind==='class'?'':`#${node.displayId}`;
     const identityWidth=identity?textAdvance(identity,500)*.28+.04:0,titleSize=node.anchor.region==='library'?.3:.4;
     const titleWidth=Math.max(.1,w-.56-identityWidth-(identity?.2:0)),title=fitWorldText(truncateFrameText(node.title),titleWidth,titleSize,600,0,28);
-    const columns=faceColumns(w);
+    const columns=faceColumns(w,presented.detail);
     const emphasis = presented.highlight === 'exception' ? color.semantic.exception : presented.highlight === 'mutation' ? color.semantic.mutation : color.ui.textSecondary;
     const string = node.kind === 'object' ? node.groups.flatMap(g => g.rows).find(row => row.slotId.endsWith(':captured-string')) : null;
     return <group>
@@ -38,8 +38,8 @@ export function RuntimeSolid({ node, presented, plan }: {
     {model.visible.map((row, index) => {
             const ry = anchor.ports[row.slotId]?.[1] ?? top - model.header - model.pitch * (index + .5), value = row.value, mutation = node.kind === 'object' && node.mutation?.slotId === row.slotId;
             return <group key={row.slotId}>
-        <WorldText position={[left, ry, face + .015]} weight={500} size={node.anchor.region==='library'?.23:.32} width={columns.name} tint={color.ui.textSecondary} opacity={opacity}>{row.name}</WorldText>
-        <WorldText position={[left+columns.typeOffset,ry,face+.015]} size={node.anchor.region==='library'?.20:.27} width={columns.type} tint={color.ui.textMuted} opacity={opacity}>{displayType(row.type)}</WorldText>
+        <WorldText position={[left, ry, face + .015]} weight={500} size={node.anchor.region==='library'?.23:.32} width={columns.name} tint={color.ui.textSecondary} opacity={opacity}>{presented.detail==='MEDIUM'?`${row.name} →`:row.name}</WorldText>
+        {presented.detail!=='MEDIUM'&&<WorldText position={[left+columns.typeOffset,ry,face+.015]} size={node.anchor.region==='library'?.20:.27} width={columns.type} tint={color.ui.textMuted} opacity={opacity}>{displayType(row.type)}</WorldText>}
         <WorldText position={[x + w / 2 - .28, ry, face + .015]} weight={600} size={node.anchor.region==='library'?.25:.34} width={columns.value} align="right" tint={mutation ? color.semantic.mutation : value.kind === 'reference' ? color.semantic.execution : value.kind === 'not-recorded' ? color.ui.textMuted : color.ui.text} opacity={opacity}>{rowValueLabel(value)}</WorldText>
       </group>;
         })}

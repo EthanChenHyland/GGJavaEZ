@@ -5,7 +5,7 @@ import { graphTransition, type FlowEndpoint } from '../motion/semanticTransition
 import { seek } from '../runtime'
 import { valueText } from './valueText'
 export type FlowKind='argument'|'receiver'|'local-field'|'field-read'|'assignment'|'reference'|'array-read'|'array-write'|'return'|'input'|'output'|'throw'|'unwind'|'catch'
-export interface SceneFlow {id:string;edgeIndex:number;kind:FlowKind;from:FlowEndpoint|null;to:FlowEndpoint;evidenceSeqs:readonly number[];valueText:string|null}
+export interface SceneFlow {id:string;edgeIndex:number;kind:FlowKind;from:FlowEndpoint|null;to:FlowEndpoint;evidenceEventIds:readonly string[];evidenceSeqs:readonly number[];valueText:string|null}
 export interface RecordedProvenance {edgeId:string;edgeIndex:number;kind:GraphEdge['kind'];from:string;to:string;originSlotId:string|null;eventId:string;graphEvidence:GraphEdge['evidence'];evidence:Evidence;spatial:{drawable:boolean;reason:string|null}}
 export interface FlowPriorityInput {selectedIds:ReadonlySet<string>;focusedIds:ReadonlySet<string>;currentIds:ReadonlySet<string>}
 export interface FlowBundle {id:string;from:FlowEndpoint;to:FlowEndpoint;count:number;drawable:boolean;reason:string|null}
@@ -49,7 +49,7 @@ export function createFlowCatalog():FlowCatalog {
   const value=candidate.value
   const target=value?.kind==='reference'?scene.entities[value.objectId]:null
   const text=value?.kind==='reference'?target?`${target.title} #${'displayId'in target?target.displayId:'?'}`:'⟨not recorded⟩':value?valueText(value).text:null
-  return{id:candidate.edge.id,edgeIndex:candidate.edgeIndex,kind:candidate.kind,from:points.from,to:points.to,evidenceSeqs:[candidate.seq],valueText:text}
+  return{id:candidate.edge.id,edgeIndex:candidate.edgeIndex,kind:candidate.kind,from:points.from,to:points.to,evidenceEventIds:[candidate.edge.eventId],evidenceSeqs:[candidate.seq],valueText:text}
  }
  const resolve=(candidate:Candidate,cursor:number):{from:FlowEndpoint|null;to:FlowEndpoint|null}=>{
   if(!acceptedTrace)return{from:null,to:null}
