@@ -108,3 +108,19 @@ recorded throw line is marked while the footer and current source target remain
 unavailable. This is a diagnostic, not a replacement for the formal 96-capture
 visual review. Model registry retirement and wider workspace cleanup remain
 open; task 3.3 and the A–G milestones remain incomplete.
+
+## Settled pause viewport reconciliation
+
+The later camera integration run exposed one narrow pause-centering failure.
+Centering now waits until the panel reaches its final CSS dimensions, Monaco's
+layout agrees with its displayed height, and a pending model-view restore has
+finished. It then uses the actual editor layout once. The previous calculation
+mixed a final panel height with an interim Monaco height; a late ResizeObserver
+could consume the pause against that mismatched viewport. The existing finite
+one-second frame retry owns cancellation, and hidden drawers cannot consume the
+pause. Subsequent resize or manual scroll still does not recenter it.
+
+Three consecutive actual narrow debugger runs passed in 26.5 seconds. The
+middle-third bounds, font/pitch bounds, exact tab/resize/caret preservation and
+later manual-scroll assertions are unchanged. The test also attaches the actual
+owning editor's pause observation for future diagnosis.

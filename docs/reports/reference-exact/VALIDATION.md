@@ -338,3 +338,30 @@ the red throw marker and unavailable current-source footer coexist correctly.
 This diagnostic does not replace a fresh unfiltered matrix or formal visual
 approval. Model-registry retirement, route overlap and A–G convergence remain
 open.
+
+## Ordered Follow Path and settled Source — 2026-10-11
+
+Follow Path uses proven presented endpoint anchors, visits equal-distance samples
+of the actual rendered curve, and fits the whole destination in the available
+Safe Frame. The single 1,000 ms move preserves Trace scope, selection, runtime
+prefix and canonical anchors. Collision detours retain semantic waypoint order;
+manual input and obsolete recording/prefix/selection cancel travel. Reduced
+motion reaches the final pose and refreshes semantic detail in one frame.
+
+Build, lint and strict reference TypeScript passed; AppRoot is 335.09 kB gzip.
+All 27 reconstruction browser checks passed in 2.1 minutes, including six new
+real-JVM Follow Path cases across all five QA viewports and reduced motion. The
+full default suite passed 1,745 tests with 70 opt-in skips (1,815 total), across
+180 files (173 passed, seven skipped), in 158.07 seconds. Semantic goldens are
+unchanged. All six path diagnostics received original-size lead inspection.
+
+Earlier integration runs exposed React's passive wheel prevention error and a
+narrow Source pause-centering race; the final run includes their fixes. An
+additional three consecutive narrow Source checks passed in 26.5 seconds with
+the original middle-third and manual-scroll assertions. One frozen-clock test
+initially waited for semantic settling before advancing time; it now performs
+the real slider seek and advances the clock before waiting for readiness.
+These diagnostics do not replace the fresh unfiltered 80-case/96-capture matrix
+or formal visual approval. Cluster presentation, route/label overlap and A–G
+convergence remain open. Implementation details are in `migration/camera.md`
+and `migration/source-debug.md`.

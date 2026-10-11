@@ -78,6 +78,7 @@ for(const viewport of [{width:1728,height:1117},{width:1440,height:900},{width:1
  if(viewport.width<1024&&await page.locator('.monaco-editor').isHidden())await page.getByRole('button',{name:'Show source drawer',exact:true}).click()
  await ready(page);await sourceSettled(page)
  await expect.poll(async()=>(await editorView(page))?.target).toEqual({mark:'paused',line:91})
+ await test.info().attach('source-pause-observation',{body:JSON.stringify(await editorView(page)),contentType:'application/json'})
  try{await expect.poll(async()=>{const position=await pausePosition(page);return !!position&&position.fraction>=1/3&&position.fraction<=2/3}).toBe(true)}catch(error){await test.info().attach('source-pause-failure',{body:JSON.stringify(await editorView(page)),contentType:'application/json'});throw error}
  const first=(await pausePosition(page))!
  expect(first.fraction).toBeGreaterThanOrEqual(1/3);expect(first.fraction).toBeLessThanOrEqual(2/3)

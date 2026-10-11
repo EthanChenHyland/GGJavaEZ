@@ -200,7 +200,7 @@ export function planPresentation(input: PlanInput, previous?: PresentationPlan):
         if (!from || !to)
             return;
         const opacity=forensicState?(forensicPath?1:Math.min(world.opacity.forensicDim,focused&&!relevant?.25:relevant?1:.35)):focused&&!relevant?.25:relevant?1:.35;
-        curves.push({ id, kind, points: route(from, to, source, target, left), colorRole: role, opacity, widthPx: relevant ? 3.5 : 2.5, arrow, label });
+        curves.push({ id, kind, points: route(from, to, source, target, left), sourceAnchor:source, destinationAnchor:target, colorRole: role, opacity, widthPx: relevant ? 3.5 : 2.5, arrow, label });
     };
     const refs = scene.references.filter(r => entities.has(r.sourceId) && entities.has(r.targetId)).sort((a, b) => Number(b.id === selection?.id) - Number(a.id === selection?.id) || Number(mandatory.has(b.sourceId) || mandatory.has(b.targetId)) - Number(mandatory.has(a.sourceId) || mandatory.has(a.targetId)) || (b.evidence.changedSeq ?? 0) - (a.evidence.changedSeq ?? 0));
     const requiredRefs = refs.filter(r => r.id === selection?.id || r.evidence.changedSeq === scene.cursorEvent?.seq);

@@ -9,12 +9,14 @@ import type {Rect} from '../shell/shellLayout'
 import {useCameraStore} from './cameraStore'
 import {useInteractionStore} from '../interaction/interactionStore'
 import {camera as tokens,motion} from '../theme/tokens'
-import {cameraPosition,fitToSafeFrame,nextDetailLevel,representativeFaceHeight,type OrbitPose} from './projection'
-import {cameraCollisionBoxes,collisionSafeRoute,constrainCameraPose,type EyePose} from './cameraConstraints'
+import {cameraPosition,nextDetailLevel,representativeFaceHeight,type OrbitPose} from './projection'
+import {cameraCollisionBoxes,constrainCameraPose,type EyePose} from './cameraConstraints'
 import {homeFraming} from './homeFraming'
 import {heroFraming} from './heroFraming'
 import {guidedFollow} from './guidedFollow'
 import {focusFraming} from './focusFraming'
+import {followPathFraming} from './followPathFraming'
+import {guidedTravel,travelPose,type GuidedTravel} from './guidedTravel'
 import {requestAnimationFrameRender} from '../render/renderActivity'
 import {productionClock} from '../motion/clock'
 export interface CameraInput {cancel():void;key(key:string,shift:boolean):void;wheel(dx:number,dy:number,pixelPan:boolean):void;shift(value:boolean):void}
@@ -29,7 +31,7 @@ export function orbitPoseFromEye(eye:EyePose):OrbitPose {
 export function CameraRig({scene,plan,event,layout,safeFrame,inspectorRect,input}:{scene:SceneModel;plan:PresentationPlan;event:TraceEvent|null;layout:LayoutState;safeFrame:Rect;inspectorRect?:Rect|null;input:RefObject<CameraInput|null>}) {
  const {camera,size,invalidate}=useThree(),controls=useRef<Controls>(null),intentRevision=useCameraStore(state=>state.intentRevision)
  useEffect(()=>productionClock.subscribe(invalidate),[invalidate])
- const move=useRef<{start:number;duration:number;path:EyePose[];lengths:number[];total:number;home:boolean}|null>(null)
+ const move=useRef<(GuidedTravel&{start:number;duration:number;home:boolean;flowId?:string;flowPrefix?:{recordingId:string;cursor:number}})|null>(null)
  const initialized=useRef(false),recordingId=useRef(scene.recordingId),lastDetail=useRef(-Infinity),lastCursor=useRef(-1),lastFollow=useRef(-1)
  const followEnabled=useCameraStore(state=>state.follow),followRecursion=useRef<boolean|null>(null),followForensic=useRef(false)
  useEffect(()=>{lastFollow.current=-1;followRecursion.current=null;invalidate()},[followEnabled,invalidate])
@@ -40,14 +42,16 @@ export function CameraRig({scene,plan,event,layout,safeFrame,inspectorRect,input
  const previous=useRef<EyePose>(eye()),latest=useRef({scene,plan,safeFrame,boxes,limits})
  latest.current={scene,plan,safeFrame,boxes,limits}
  const reduced=()=>useCameraStore.getState().reducedMotion||matchMedia('(prefers-reduced-motion: reduce)').matches
- const begin=(pose:OrbitPose,duration:number,home=false)=>{
-  const from=eye(),destination={position:cameraPosition(pose),target:pose.target},path=[from,...collisionSafeRoute(from,destination,latest.current.boxes,layout.bounds?.center,latest.current.limits)]
-  const lengths=path.slice(1).map((point,i)=>new Vector3(...point.position).distanceTo(new Vector3(...path[i].position))),total=lengths.reduce((sum,n)=>sum+n,0)
-  move.current={start:productionClock.now(),duration:reduced()?0:duration,path,lengths,total,home}
+ const beginWaypoints=(poses:readonly OrbitPose[],duration:number,home=false,flowId?:string)=>{
+  if(!poses.length)return
+  const travel=guidedTravel(eye(),poses,latest.current.boxes,layout.bounds?.center,latest.current.limits)
+  move.current={...travel,start:productionClock.now(),duration:reduced()?0:duration,home,flowId,flowPrefix:flowId?{recordingId:scene.recordingId,cursor:scene.cursor}:undefined}
   invalidate()
  }
+ const begin=(pose:OrbitPose,duration:number,home=false)=>beginWaypoints([pose],duration,home)
  const homeCache=useRef<{scene:SceneModel;key:string;pose:OrbitPose}|null>(null)
  const home=()=>{const current=latest.current,key=JSON.stringify([current.safeFrame,size.width,size.height]);if(homeCache.current?.scene===current.scene&&homeCache.current.key===key)return homeCache.current.pose;const pose=homeFraming(current.scene,current.plan,current.safeFrame,size,layout).pose;homeCache.current={scene:current.scene,key,pose};return pose}
+ const commandArea=()=>size.width<1024&&inspectorRect?{...safeFrame,height:Math.max(0,Math.min(safeFrame.y+safeFrame.height,inspectorRect.y-size.height*.01)-safeFrame.y)}:safeFrame
  useEffect(()=>{
   if(!(camera instanceof PerspectiveCamera))return
   camera.fov=tokens.fov;camera.near=.05;camera.far=10000;camera.updateProjectionMatrix()
@@ -66,15 +70,15 @@ export function CameraRig({scene,plan,event,layout,safeFrame,inspectorRect,input
    if(!anchor)return
    // Opening a narrow sheet never moves the camera by itself. An explicit
    // Focus request uses the free rectangle above that actual visible sheet.
-   const area=size.width<1024&&inspectorRect?{...safeFrame,height:Math.max(0,Math.min(safeFrame.y+safeFrame.height,inspectorRect.y-size.height*.01)-safeFrame.y)}:safeFrame
+   const area=commandArea()
    const neighbours=plan.framing.focus?.neighbours??[],left=neighbours.filter(id=>scene.entities[id]?.anchor.position[0]<anchor.position[0]).length,right=neighbours.length-left
    begin(focusFraming(anchor,{yaw:left>=right?Math.abs(tokens.focus.yaw):-Math.abs(tokens.focus.yaw),pitch:tokens.focus.pitch},area,size),motion.focusMs)
   }
   if(intent.kind==='exitFocus')begin(intent.pose,motion.exitFocusMs)
   if(intent.kind==='zoom'){move.current=null;const pivot=controls.current?.target??new Vector3();camera.position.sub(pivot).multiplyScalar(intent.factor).add(pivot)}
   if(intent.kind==='followPath'){
-   const curve=plan.curves.find(curve=>curve.id===intent.flowId);if(!curve)return
-   const pose=fitToSafeFrame(curve.points,tokens.focus,safeFrame,size);begin(pose,1000)
+   const curve=plan.curves.find(curve=>curve.id===intent.flowId)
+   beginWaypoints(followPathFraming(curve,commandArea(),size),1000,false,intent.flowId)
   }
  },[intentRevision])
  useEffect(()=>{
@@ -89,9 +93,12 @@ export function CameraRig({scene,plan,event,layout,safeFrame,inspectorRect,input
  },[camera,size.width,size.height])
  useFrame(()=>{
   const control=controls.current;if(!control||!(camera instanceof PerspectiveCamera))return
+  const selected=useInteractionStore.getState().selection
+  const flowMove=move.current
+  if(flowMove?.flowId&&(selected?.kind!=='flow'||selected.id!==flowMove.flowId||flowMove.flowPrefix?.recordingId!==scene.recordingId||flowMove.flowPrefix?.cursor!==scene.cursor||!plan.curves.some(curve=>curve.id===flowMove.flowId)))move.current=null
   const now=productionClock.now(),travel=move.current
   cameraReadiness.moving=!!travel
-  if(travel){const t=travel.duration?Math.min(1,(now-travel.start)/travel.duration):1;let distance=ease(t)*travel.total,index=0;while(index<travel.lengths.length-1&&distance>travel.lengths[index]){distance-=travel.lengths[index];index++}const fraction=travel.lengths[index]?distance/travel.lengths[index]:1,from=travel.path[index],to=travel.path[index+1];camera.position.lerpVectors(new Vector3(...from.position),new Vector3(...to.position),fraction);control.target.lerpVectors(new Vector3(...from.target),new Vector3(...to.target),fraction);if(t===1){move.current=null;if(travel.home)useCameraStore.setState({mode:'EXPLORE',intent:null})}}
+  if(travel){const t=travel.duration?Math.min(1,(now-travel.start)/travel.duration):1,pose=travelPose(travel,ease(t));camera.position.set(...pose.position);control.target.set(...pose.target);if(t===1){move.current=null;lastDetail.current=-Infinity;if(travel.home)useCameraStore.setState({mode:'EXPLORE',intent:null})}}
   control.update()
   const safe=constrainCameraPose(eye(),previous.current,latest.current.boxes,layout.bounds?.center,latest.current.limits);camera.position.set(...safe.position);control.target.set(...safe.target);camera.lookAt(control.target);camera.updateMatrixWorld();previous.current=safe
   useCameraStore.getState().setPose(orbitPoseFromEye(safe))

@@ -45,21 +45,24 @@ export function bindMonacoSourceScroll(instance:editor.IStandaloneCodeEditor,mon
   const ranges=instance.getVisibleRanges(),shown=!!dom&&getComputedStyle(dom).visibility!=='hidden'&&dom.getBoundingClientRect().height>0
   const visible=shown&&ranges.length?{first:ranges[0].startLineNumber,last:ranges.at(-1)!.endLineNumber}:null
   const valid=!!model&&!model.isDisposed()&&line!==null&&line>=1&&line<=model.getLineCount()
+  const layout=instance.getLayoutInfo(),domHeight=dom?.getBoundingClientRect().height??0
+  const finalPanelHeight=panel?Number.parseFloat(getComputedStyle(panel).getPropertyValue('--source-height')):NaN
+  const settled=(!panel||!Number.isFinite(finalPanelHeight)||Math.abs(panel.getBoundingClientRect().height-finalPanelHeight)<1)
+   &&Math.abs(domHeight-layout.height)<1
+  // A new pause must not spend its one centering action on an animated panel
+  // or a pre-restore model viewport. Resize after that action never recenters.
+  const pendingView=target.mark==='paused'&&(!settled||viewFrame!==null)
   // setModel/restoreViewState finishes before Monaco publishes visible ranges.
   // Do not consume a pause while that view is still mounting.
-  if(valid&&shown&&!visible&&now()<viewDeadline)afterModelReady()
-  const action=policy.decide(valid?target:{...target,line:null},visible,pauseId,now())
+  if(valid&&shown&&(!visible||pendingView)&&now()<viewDeadline)afterModelReady()
+  const action=policy.decide(valid?target:{...target,line:null},pendingView?null:visible,pauseId,now())
   view={height:dom?.getBoundingClientRect().height??0,visibility:dom?getComputedStyle(dom).visibility:'absent',connected:!!dom?.isConnected,lastDecision:action,valid,rangeCount:ranges.length}
   if(!valid||line===null||!model)return
   programmatic++
   try{
    if(action==='middle-third'){
-    const layout=instance.getLayoutInfo(),padding=instance.getOption(monaco.editor.EditorOption.padding),pitch=instance.getOption(monaco.editor.EditorOption.lineHeight)
-    // Shell CSS variables contain the final panel dimensions during its 400 ms
-    // animation. Center once for that destination, rather than an interim height.
-    const finalPanelHeight=panel?Number.parseFloat(getComputedStyle(panel).getPropertyValue('--source-height')):NaN
-    const height=panel&&Number.isFinite(finalPanelHeight)?finalPanelHeight-(panel.clientHeight-layout.height):layout.height
-    const count=Math.max(1,Math.floor((height-layout.horizontalScrollbarHeight-padding.top-padding.bottom)/pitch))
+    const padding=instance.getOption(monaco.editor.EditorOption.padding),pitch=instance.getOption(monaco.editor.EditorOption.lineHeight)
+    const count=Math.max(1,Math.floor((layout.height-layout.horizontalScrollbarHeight-padding.top-padding.bottom)/pitch))
     const first=firstVisibleLineForMiddleThird(line,count,model.getLineCount())
     instance.setScrollTop(Math.max(0,instance.getTopForLineNumber(first)-padding.top),monaco.editor.ScrollType.Immediate)
    }else if(action==='reveal')instance.revealLineInCenterIfOutsideViewport(line,monaco.editor.ScrollType.Immediate)

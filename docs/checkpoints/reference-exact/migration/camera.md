@@ -30,3 +30,39 @@ The graphics idle/recovery checks wait for the mounted world's existing QA API
 before requesting readiness. A visible timeline can precede lazy WebGL mount.
 The zero-idle-redraw, actual context recovery and state invariance assertions
 remain intact. These changes do not approve visual reference convergence.
+
+## Follow Path implementation contract
+
+The presentation planner already resolves both endpoint solids for routing.
+Presented curves now retain those proven source/destination anchors for camera
+framing, including currently mapped array cells and IO endpoints. This metadata
+belongs to the presentation plan; it does not add runtime events, graph edges or
+inferred storage identities. Camera code never guesses an endpoint from an ID
+or reconstructs another flow catalog.
+
+Follow Path uses one 1,000 ms travel from the source Port through equal-distance
+samples of the actual presented curve, then frames every corner of the actual
+destination body. It respects the free area above a narrow Inspector sheet.
+The camera's existing collision route protects the lens, while detour targets
+advance in order along each semantic leg. The shared travel metric includes
+both eye and target movement so a target-only leg cannot be discarded. Reduced
+motion uses the final pose in one frame; ordinary user input retains the same
+synchronous cancellation path. A changed selection or no-longer-presented flow
+cancels stale path travel. Trace mode/scope, selection, prefix and anchors are
+never changed by Follow Path.
+
+Actual orbit, secondary-button pan, wheel zoom and keyboard interruption use the
+same cancellation owner. Wheel capture now uses an owned native, non-passive
+listener; React's passive wheel handler previously produced a Chrome console
+error when preventing default scrolling. The listener is removed on unmount.
+Completing a move refreshes semantic detail immediately, including a one-frame
+reduced-motion move. Prefix/recording changes also cancel obsolete path travel.
+
+Release validation: build, lint and reference TypeScript passed; all 27 actual
+reconstruction browser checks passed in 2.1 minutes. The full default suite
+passed 1,745 tests with 70 opt-in skips in 158.07 seconds. Six Follow Path cases
+exercise the five QA viewports plus reduced motion, exact destination bounds,
+unchanged runtime/Trace/selection/anchors, and real orbit, pan, wheel, keyboard
+and prefix-change cancellation. All six diagnostic captures received
+original-size lead inspection. This does not approve the full reference matrix
+or close cluster travel and broader visual convergence.

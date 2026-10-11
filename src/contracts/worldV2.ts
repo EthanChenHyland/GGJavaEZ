@@ -314,6 +314,8 @@ export interface PresentedCurve {
     id: string;
     kind: 'connector' | 'call' | 'flow' | 'return' | 'exception' | 'binding-history';
     points: readonly Vec3[];
+    sourceAnchor?: WorldAnchor; // proven presented endpoint geometry, including virtualized cells
+    destinationAnchor?: WorldAnchor;
     colorRole: MaterialRole;
     opacity: number;
     widthPx: 2.5 | 3.5;

@@ -120,15 +120,22 @@ export function RuntimeCanvas({ scene, plan, layout, safeFrame,inspectorRect, se
     const supportsWebGL=useMemo(supportsRuntimeWebGL,[]);
     const [accessible,setAccessible]=useState<AccessibleEntity[]>([]),list=useRef<HTMLDivElement>(null);
     const activeIndex=accessible.findIndex(item=>item.id===selection?.id);
+    const worldElement=useRef<HTMLDivElement>(null)
     const input = useRef<CameraInput | null>(null), pointer = useRef<{
         x: number;
         y: number;
     } | null>(null), moved = useRef(false);
     const lightTarget = useMemo(() => ({ x: 4, y: -3, z: 0 }), []);
+    useEffect(()=>{
+        const element=worldElement.current;if(!element)return
+        const wheel=(event:WheelEvent)=>{event.preventDefault();event.stopPropagation();input.current?.wheel(event.deltaX,event.deltaY,event.deltaMode===0&&!event.ctrlKey&&Math.abs(event.deltaY)<50)}
+        element.addEventListener('wheel',wheel,{capture:true,passive:false})
+        return()=>element.removeEventListener('wheel',wheel,true)
+    },[])
     const select = (next: Selection) => { if (!moved.current)
         onSelect(next); };
-    return <div className="world-canvas" role="application" tabIndex={0} aria-label="Three-dimensional Java runtime world" onContextMenu={event => event.preventDefault()} onPointerDownCapture={event => { event.currentTarget.focus(); pointer.current = { x: event.clientX, y: event.clientY }; moved.current = false; input.current?.shift(event.shiftKey); input.current?.cancel(); }} onPointerMoveCapture={event => { if (pointer.current && Math.hypot(event.clientX - pointer.current.x, event.clientY - pointer.current.y) > 4)
-        moved.current = true; }} onPointerUpCapture={() => { pointer.current = null; }} onWheelCapture={event => { event.preventDefault(); event.stopPropagation(); input.current?.wheel(event.deltaX, event.deltaY, event.deltaMode === 0 && !event.ctrlKey && Math.abs(event.deltaY) < 50); }} onKeyDown={event => {
+    return <div ref={worldElement} className="world-canvas" role="application" tabIndex={0} aria-label="Three-dimensional Java runtime world" onContextMenu={event => event.preventDefault()} onPointerDownCapture={event => { event.currentTarget.focus(); pointer.current = { x: event.clientX, y: event.clientY }; moved.current = false; input.current?.shift(event.shiftKey); input.current?.cancel(); }} onPointerMoveCapture={event => { if (pointer.current && Math.hypot(event.clientX - pointer.current.x, event.clientY - pointer.current.y) > 4)
+        moved.current = true; }} onPointerUpCapture={() => { pointer.current = null; }} onKeyDown={event => {
             if(event.key==='Tab'&&accessible.length){const index=activeIndex+(event.shiftKey?-1:1),next=accessible[index];if(next){event.preventDefault();onSelect(next.selection);list.current?.focus()}return}
             if(event.target===list.current&&event.key.startsWith('Arrow')){event.preventDefault();const index=Math.min(accessible.length-1,Math.max(0,activeIndex+(event.key==='ArrowUp'||event.key==='ArrowLeft'?-1:1)));if(accessible[index])onSelect(accessible[index].selection);return}
             if (event.key === 'Escape') {
