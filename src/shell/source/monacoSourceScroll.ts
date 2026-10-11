@@ -30,7 +30,7 @@ export function bindMonacoSourceScroll(instance:editor.IStandaloneCodeEditor,mon
   if(disposed)return null
   const model=instance.getModel(),ranges=instance.getVisibleRanges()
   if(!model||model.isDisposed()||!ranges.length)return null
-  return{modelUri:model.uri.toString(),lineCount:model.getLineCount(),first:ranges[0].startLineNumber,last:ranges.at(-1)!.endLineNumber,scrollTop:instance.getScrollTop(),position:instance.getPosition(),selection:instance.getSelections(),fontSize:instance.getOption(monaco.editor.EditorOption.fontSize),lineHeight:instance.getOption(monaco.editor.EditorOption.lineHeight),target:target?{mark:target.mark,line:target.line}:null,pauseId,scrollAction,view}
+  return{modelUri:model.uri.toString(),lineCount:model.getLineCount(),first:ranges[0].startLineNumber,last:ranges.at(-1)!.endLineNumber,scrollTop:instance.getScrollTop(),position:instance.getPosition(),selection:instance.getSelections(),fontSize:instance.getOption(monaco.editor.EditorOption.fontSize),lineHeight:instance.getOption(monaco.editor.EditorOption.lineHeight),readOnly:instance.getOption(monaco.editor.EditorOption.readOnly),target:target?{mark:target.mark,line:target.line}:null,pauseId,scrollAction,view}
  })
  const clearRetry=()=>{clearTimeout(retry);retry=undefined}
  const afterModelReady=()=>{

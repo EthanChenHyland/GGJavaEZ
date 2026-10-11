@@ -41,9 +41,11 @@ export async function openFixture(page:Page,request:APIRequestContext,name:Fixtu
   localStorage.setItem('ggjavaez:project',id)
   if('breakpoint' in definition)localStorage.setItem(`ggjavaez:breakpoints:${id}`,JSON.stringify([{fileId:definition.breakpoint.path,line:definition.breakpoint.line}]))
  },{id,definition})
- await page.goto('/?qa=1');await expect(page.locator('.monaco-editor')).toBeAttached()
- if(page.viewportSize()!.width<1024)await expect(page.getByRole('button',{name:'Show source drawer',exact:true})).toBeVisible()
- else await expect(page.locator('.monaco-editor')).toBeVisible()
+ await page.goto('/?qa=1')
+ if(page.viewportSize()!.width<1024){
+  const peek=page.getByRole('button',{name:'Show source drawer',exact:true})
+  await expect(peek).toBeVisible();await expect(peek).toContainText('.java')
+ }else await expect(page.locator('.monaco-editor')).toBeVisible()
  await expect(page.getByRole('button',{name:'Run',exact:true})).toBeEnabled()
  return id
 }

@@ -274,3 +274,20 @@ adjustment. Main AppRoot remains below 500 kB gzip. Bright broad body surfaces,
 tray stacking occlusion and small return-tower rows remain open. These partial
 diagnostics replace some capture files but do not constitute a new unfiltered
 80-case matrix, 96 current visual reviews or convergence approval.
+
+## First Source display — 2026-10-10
+
+Collapsed narrow Source defers mounting Monaco until its first actual editor
+display, then retains the mounted editor through close/reopen. Both editable
+Source and recorded `/examples` source pass real request checks: no editor
+module requests before opening, positive requests after opening, retained
+model/view state on reopen, and unchanged world cursor/selection/camera.
+Recorded Source also reports its actual read-only option.
+
+Build, lint and strict reference TypeScript passed; 68 existing source, layout
+and loader tests passed across five files in 321 ms. The focused narrow debugger
+case passed in 9.4 seconds, then all 21 reconstruction browser checks passed in
+1.5 minutes. AppRoot is 333.73 kB gzip. Narrow fixture readiness now observes its
+hydrated file peek instead of requiring a hidden Monaco mount. Semantic and
+geometry assertions remain unchanged. Exception markers, model-registry
+retirement, final performance and visual convergence remain open.

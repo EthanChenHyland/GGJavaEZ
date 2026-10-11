@@ -8,6 +8,32 @@ test.afterEach(async({request})=>{
  }
  ownedProject=null
 })
+
+test('recorded Source loads on its first narrow display and retains its read-only view',async({page})=>{
+ await page.setViewportSize({width:760,height:900})
+ const requests:string[]=[],errors=browserErrors(page)
+ page.on('request',request=>{if(/monaco|EditableJavaEditor|RecordedSourceEditor/i.test(request.url()))requests.push(request.url())})
+ await page.goto('/examples?qa=1')
+ await page.waitForFunction(()=>!!window.__ggjavaezWorld?.ready)
+ await page.getByRole('slider',{name:'Recorded execution position'}).focus();await page.keyboard.press('End')
+ await ready(page)
+ await expect(page.getByRole('button',{name:'Show source drawer',exact:true})).toContainText('.java')
+ await expect(page.locator('.monaco-editor')).toHaveCount(0);expect(requests).toEqual([])
+ const before=await page.evaluate(()=>({cursor:window.__ggjavaezQA!.cursor(),pose:window.__ggjavaezQA!.cameraPose(),selection:window.__ggjavaezQA!.selection()}))
+ await page.getByRole('button',{name:'Show source drawer',exact:true}).click()
+ await expect(page.locator('.monaco-editor')).toBeVisible();await sourceSettled(page)
+ await expect.poll(async()=>(await editorView(page))?.readOnly).toBe(true)
+ const view=(await editorView(page))!;expect(requests.length).toBeGreaterThan(0)
+ await page.getByRole('button',{name:/^(Collapse source|Close source drawer)$/}).click()
+ await expect(page.locator('.monaco-editor')).toBeAttached();await expect(page.locator('.monaco-editor')).toBeHidden()
+ await page.getByRole('button',{name:'Show source drawer',exact:true}).click();await sourceSettled(page)
+ await expect(page.locator('.monaco-editor')).toBeVisible()
+ const reopened=(await editorView(page))!
+ expect(reopened.readOnly).toBe(true);expect(reopened.modelUri).toBe(view.modelUri)
+ expect(reopened.first).toBe(view.first);expect(reopened.position).toEqual(view.position);expect(reopened.selection).toEqual(view.selection)
+ expect(await page.evaluate(()=>({cursor:window.__ggjavaezQA!.cursor(),pose:window.__ggjavaezQA!.cameraPose(),selection:window.__ggjavaezQA!.selection()}))).toEqual(before)
+ expect(errors).toEqual([])
+})
 async function pausePosition(page:Page){
  return page.locator('.monaco-editor').evaluate(editor=>{
   const area=editor.getBoundingClientRect(),line=editor.querySelector('.debug-paused-line')?.getBoundingClientRect()
@@ -23,6 +49,8 @@ async function sourceSettled(page:Page){
 for(const viewport of [{width:1728,height:1117},{width:1440,height:900},{width:1280,height:800},{width:760,height:900},{width:1440,height:650}])test(`real debugger source scrolling and compact controls ${viewport.width}x${viewport.height}`,async({page,request})=>{
  await page.setViewportSize(viewport)
  test.setTimeout(60000)
+ const editorRequests:string[]=[]
+ page.on('request',request=>{if(/monaco|EditableJavaEditor|RecordedSourceEditor/i.test(request.url()))editorRequests.push(request.url())})
  const errors=browserErrors(page),lines=Array.from({length:240},(_,i)=>`    // source ${i+1}`)
  lines[0]='public class ScrollApp {';lines[1]='    public static void main(String[] args) {'
  lines[89]='        int quantity = 1;';lines[90]='        quantity += 2;'
@@ -36,6 +64,10 @@ for(const viewport of [{width:1728,height:1117},{width:1440,height:900},{width:1
  await page.goto('/?qa=1')
  if(viewport.width<1024){
   await expect(page.getByRole('button',{name:'Show source drawer',exact:true})).toContainText('Aux.java')
+  await expect(page.getByRole('button',{name:'Run',exact:true})).toBeEnabled()
+  await page.waitForFunction(()=>!!window.__ggjavaezWorld?.ready);await ready(page)
+  await expect(page.locator('.monaco-editor')).toHaveCount(0)
+  expect(editorRequests).toEqual([])
   await page.getByRole('button',{name:'Show source drawer',exact:true}).click()
  }
  await expect(page.locator('.monaco-editor')).toBeVisible()
@@ -95,6 +127,16 @@ for(const viewport of [{width:1728,height:1117},{width:1440,height:900},{width:1
  await expect.poll(async()=>(await editorView(page))?.modelUri.endsWith('/ScrollApp.java')).toBe(true)
  const restored=(await editorView(page))!
  expect(restored.first).toBe(top.first);expect(restored.position).toEqual(top.position);expect(restored.selection).toEqual(top.selection)
+ if(viewport.width<1024){
+  expect(editorRequests.length).toBeGreaterThan(0)
+  await page.getByRole('button',{name:/^(Collapse source|Close source drawer)$/}).click()
+  await expect(page.locator('.monaco-editor')).toBeAttached();await expect(page.locator('.monaco-editor')).toBeHidden()
+  await page.getByRole('button',{name:'Show source drawer',exact:true}).click();await sourceSettled(page)
+  await expect(page.locator('.monaco-editor')).toBeVisible()
+  const reopened=(await editorView(page))!
+  expect(reopened.modelUri).toBe(restored.modelUri);expect(reopened.first).toBe(top.first)
+  expect(reopened.position).toEqual(top.position);expect(reopened.selection).toEqual(top.selection)
+ }
  expect(await page.evaluate(()=>({cursor:window.__ggjavaezQA!.cursor(),pose:window.__ggjavaezQA!.cameraPose(),selection:window.__ggjavaezQA!.selection()}))).toEqual(before)
  await page.getByRole('button',{name:'Step Over',exact:true}).click()
  await expect.poll(async()=>{const session=await currentSession(request);return session&&session.projectId===id&&session.phase==='PAUSED'?session.pause?.line:null},{timeout:15000}).toBe(100)

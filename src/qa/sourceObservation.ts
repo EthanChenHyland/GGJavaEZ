@@ -9,6 +9,7 @@ export interface SourceObservation {
  selection:readonly {startLineNumber:number;startColumn:number;endLineNumber:number;endColumn:number}[]|null
  fontSize:number
  lineHeight:number
+ readOnly:boolean
   target:{mark:string;line:number|null}|null
   pauseId:string|null
   scrollAction:{action:string;line:number;modelUri:string;scrollTop:number}|null

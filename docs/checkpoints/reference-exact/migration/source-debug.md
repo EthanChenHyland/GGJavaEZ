@@ -59,4 +59,24 @@ reference. Controls and paused glyph are readable; array header overlap and
 flat bright body caps remain open. These diagnostic screenshots do not replace
 the formal 80-case/96-capture matrix or its visual convergence reviews. Source
 lazy mounting, exception source markers and the wider workspace cleanup remain
-open; task 3.3 and the A–G milestones are not marked complete.
+open at that checkpoint; task 3.3 and the A–G milestones are not marked complete.
+
+## First editor display
+
+A collapsed narrow drawer now has no mounted editor and does not request the
+Monaco/editor modules. The first actual source display initiates the lazy load;
+an empty panel alone does not consume that boundary. Later collapse retains the
+editor and its view. This applies to editable and recorded Source. The fixture
+harness waits for the hydrated file peek at narrow widths, without demanding
+a hidden editor before Run.
+
+The focused real-debugger narrow check passed in 9.4 seconds. The broader run
+passed all 21 reconstruction browser checks in 1.5 minutes, including a new
+recorded-viewer request/retention check and all five actual-JVM source cases.
+Both narrow routes assert zero editor requests before display, a real module
+load on opening, retained mounted models on collapse, and exact view/world
+state on reopen. Recorded Source's actual Monaco read-only option is observed
+through the owning editor. Build, lint and reference TypeScript passed; 68
+existing source/layout/loader checks passed across five files in 321 ms.
+AppRoot is 333.73 kB gzip. Exception markers, model-registry cleanup and broader
+source/workspace migration remain open.
