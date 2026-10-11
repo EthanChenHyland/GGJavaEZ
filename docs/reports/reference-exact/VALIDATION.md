@@ -183,3 +183,39 @@ nonzero for missing/open/stale visual reviews; geometry success does not approve
 reference fidelity. Task 11.2's harness is complete. Visual convergence,
 recursive Follow/Home reconciliation, source scrolling, first-known collection
 reservation and the remaining final gates are still open.
+
+## Recursive Follow and Home reconciliation — 2026-10-10
+
+Home now always uses Hero orientation. Recursive Follow fits the innermost
+invocation and three actual callers independently, restores Hero angles at
+depth three, and yields synchronously to manual camera input. Explicit Follow
+also works on a History prefix. Important captured allocation, throw and
+field/array-write subjects use minimal inclusion; an uncaught terminal prefix
+includes the throwing frame, Throwable and structural panel after unwinding.
+All changes are presentation-only. The comparison command and strengthened
+geometry checks are recorded in `migration/camera.md`.
+
+- Build, lint and strict reference TypeScript passed on the camera implementation.
+- Full default unit gate: 1,722 passed, 70 opt-in skipped, 1,792 total across 175
+  files (168 passed, seven skipped), in 161.68 seconds. The four added camera
+  tests include 100 viewport cases and terminal forensic inclusion. No semantic
+  golden changed; required explicit JVM gates remain separate.
+- All five diagnostic recursion cases passed in 35.7 seconds, including the
+  additional native capture. Actual nearest-four bounds, monotone face centres
+  and recursion angles pass at every frozen QA viewport.
+- The first broader browser rerun passed fourteen and failed one in 51.0
+  seconds: the graphics idle test called the QA world API before lazy canvas
+  mount. It now waits for that API; idle rendering and seek assertions are
+  unchanged. The fresh full rerun passed all fifteen checks in 53.2 seconds.
+  The fourth unfiltered exhaustive matrix passed all 80 cases in 8.1 minutes,
+  with 80 distinct actual-JVM sessions, zero skips and 96 current captures from
+  run `ba01fae5-51d3-433c-8dde-324bc626ec94`. All measured geometry gates pass.
+
+The diagnostic native capture is more readable, but overlapping frame headers,
+strong cyan edges and missing visible structural headings remain open polish.
+The fresh exhaustive run replaces the diagnostic captures with one run ID. All
+sixteen native captures and the critical short Hero/narrow inspection captures
+have original-size lead reviews, recorded as open with current screenshot hashes.
+The convergence command still exits 1 for open/missing reviews. Additional
+findings include unreadable FAR cluster labels, wrapped Debug controls and
+crowded return/array headings. This is not completion of a milestone or A–G.

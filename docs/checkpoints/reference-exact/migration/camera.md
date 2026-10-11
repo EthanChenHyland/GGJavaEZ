@@ -1,0 +1,32 @@
+# Home and recursive Follow reconciliation
+
+Home uses the fixed Hero orientation (yaw 8°, pitch −13°) at every captured
+depth. Recursive Follow is a separate presentation operation: at depth four or
+greater it fits the innermost invocation and its three actual callers, using
+yaw 18° and pitch −16°. Returning to depth three restores Hero orientation.
+The caller chain comes from prefix-visible live frame identities; no layout,
+execution, selection or trace contract changes.
+
+Explicit Follow requests invalidate the demand-rendered world and reconsider
+the current prefix, including History. Later qualifying entry, allocation,
+throw and major field/array-write events include their captured subjects only
+when they leave Safe Frame. A completed uncaught path also includes its actual
+throwing frame, Throwable and structural panel. User input cancels travel and
+disables Follow synchronously; stepping does not enable it again.
+
+The recursion comparison now invokes the actual `Navigation: Follow` command
+after Home. Its five viewport captures require the four nearest body bounds to
+fit Safe Frame, monotone projected face centres and the frozen recursion angle
+bounds. Native captures repeat those actual commands after resizing. No QA
+camera setter or cursor setter is used. Off-centre perspective may reverse the
+horizontal direction; monotonicity accepts either consistent direction, as
+requirement 10.2 specifies no left-to-right direction.
+
+Focus captures additionally prove the closest permitted height endpoint when
+the desired width is incompatible with the target's aspect ratio. The existing
+height and width bands are unchanged.
+
+The graphics idle/recovery checks wait for the mounted world's existing QA API
+before requesting readiness. A visible timeline can precede lazy WebGL mount.
+The zero-idle-redraw, actual context recovery and state invariance assertions
+remain intact. These changes do not approve visual reference convergence.

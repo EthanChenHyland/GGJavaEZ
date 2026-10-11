@@ -1,6 +1,7 @@
 import {expect,test} from '@playwright/test'
 test('the settled world uses demand rendering and redraws after a timeline seek',async({page})=>{
  await page.goto('/examples?qa=1')
+ await page.waitForFunction(()=>!!window.__ggjavaezWorld?.ready)
  await page.getByRole('slider',{name:'Recorded execution position'}).focus();await page.keyboard.press('End')
  await page.getByRole('button',{name:'Home',exact:true}).click();await page.evaluate(()=>window.__ggjavaezWorld!.ready())
  const idle=await page.evaluate(async()=>{
@@ -19,6 +20,7 @@ test('the settled world uses demand rendering and redraws after a timeline seek'
 test('an actual lost graphics context restores the same canvas, recording, selection and camera',async({page})=>{
  const errors:string[]=[];page.on('pageerror',error=>errors.push(error.message))
  await page.goto('/examples?qa=1')
+ await page.waitForFunction(()=>!!window.__ggjavaezWorld?.ready)
  await page.getByRole('slider',{name:'Recorded execution position'}).focus();await page.keyboard.press('End')
  await page.getByRole('button',{name:'Home',exact:true}).click();await page.evaluate(()=>window.__ggjavaezWorld!.ready())
  const world=page.locator('.world-canvas');await world.focus();await page.keyboard.press('Tab')

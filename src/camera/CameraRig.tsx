@@ -4,16 +4,16 @@ import {OrbitControls} from '@react-three/drei'
 import {PerspectiveCamera,Vector3,MOUSE} from 'three'
 import type {OrbitControls as Controls} from 'three-stdlib'
 import type {LayoutState,PresentationPlan,SceneModel,Vec3} from '../contracts/worldV2'
+import type {TraceEvent} from '../contracts/runtime'
 import type {Rect} from '../shell/shellLayout'
 import {useCameraStore} from './cameraStore'
 import {useInteractionStore} from '../interaction/interactionStore'
 import {camera as tokens,motion} from '../theme/tokens'
 import {cameraPosition,fitToSafeFrame,nextDetailLevel,representativeFaceHeight,type OrbitPose} from './projection'
 import {cameraCollisionBoxes,collisionSafeRoute,constrainCameraPose,type EyePose} from './cameraConstraints'
-import {anchorCorners} from '../world/presentationPlanner'
 import {homeFraming} from './homeFraming'
 import {heroFraming} from './heroFraming'
-import {followFraming} from './followFraming'
+import {guidedFollow} from './guidedFollow'
 import {focusFraming} from './focusFraming'
 import {requestAnimationFrameRender} from '../render/renderActivity'
 import {productionClock} from '../motion/clock'
@@ -26,11 +26,13 @@ export function orbitPoseFromEye(eye:EyePose):OrbitPose {
  return{target:eye.target,distance,yawDeg:Math.atan2(delta.x,delta.z)*180/Math.PI,pitchDeg:-Math.asin(Math.max(-1,Math.min(1,delta.y/Math.max(distance,1e-9))))*180/Math.PI}
 }
 /** One owner commits semantic poses, then applies optional visual travel. Camera input cancels synchronously. */
-export function CameraRig({scene,plan,layout,safeFrame,inspectorRect,input}:{scene:SceneModel;plan:PresentationPlan;layout:LayoutState;safeFrame:Rect;inspectorRect?:Rect|null;input:RefObject<CameraInput|null>}) {
+export function CameraRig({scene,plan,event,layout,safeFrame,inspectorRect,input}:{scene:SceneModel;plan:PresentationPlan;event:TraceEvent|null;layout:LayoutState;safeFrame:Rect;inspectorRect?:Rect|null;input:RefObject<CameraInput|null>}) {
  const {camera,size,invalidate}=useThree(),controls=useRef<Controls>(null),intentRevision=useCameraStore(state=>state.intentRevision)
  useEffect(()=>productionClock.subscribe(invalidate),[invalidate])
  const move=useRef<{start:number;duration:number;path:EyePose[];lengths:number[];total:number;home:boolean}|null>(null)
  const initialized=useRef(false),recordingId=useRef(scene.recordingId),lastDetail=useRef(-Infinity),lastCursor=useRef(-1),lastFollow=useRef(-1)
+ const followEnabled=useCameraStore(state=>state.follow),followRecursion=useRef<boolean|null>(null),followForensic=useRef(false)
+ useEffect(()=>{lastFollow.current=-1;followRecursion.current=null;invalidate()},[followEnabled,invalidate])
  const diagonal=layout.bounds?Math.hypot(...layout.bounds.size):24
  const limits=useMemo(()=>({minDistance:tokens.minDistance,maxDistance:Math.max(tokens.minDistance,3*diagonal),pan:[Math.max(12,diagonal),Math.max(12,diagonal),Math.max(12,diagonal)] as Vec3}),[diagonal])
  const boxes=useMemo(()=>cameraCollisionBoxes(Object.values(scene.entities).map(node=>node.anchor),camera.near,tokens.fov*Math.PI/180,size.width/size.height),[scene.entities,camera.near,size.width,size.height])
@@ -49,7 +51,7 @@ export function CameraRig({scene,plan,layout,safeFrame,inspectorRect,input}:{sce
  useEffect(()=>{
   if(!(camera instanceof PerspectiveCamera))return
   camera.fov=tokens.fov;camera.near=.05;camera.far=10000;camera.updateProjectionMatrix()
-  if(!initialized.current||recordingId.current!==scene.recordingId){initialized.current=true;recordingId.current=scene.recordingId;begin(heroFraming(scene,plan,safeFrame,size),scene.cursor?600:0);useCameraStore.setState({follow:scene.cursor>0})}
+  if(!initialized.current||recordingId.current!==scene.recordingId){initialized.current=true;recordingId.current=scene.recordingId;lastFollow.current=-1;followRecursion.current=null;begin(heroFraming(scene,plan,safeFrame,size),scene.cursor?600:0);useCameraStore.setState({follow:scene.cursor>0})}
  },[scene.recordingId,camera])
  useEffect(()=>{
   const state=useCameraStore.getState(),intent=state.intent
@@ -94,7 +96,11 @@ export function CameraRig({scene,plan,layout,safeFrame,inspectorRect,input}:{sce
   const safe=constrainCameraPose(eye(),previous.current,latest.current.boxes,layout.bounds?.center,latest.current.limits);camera.position.set(...safe.position);control.target.set(...safe.target);camera.lookAt(control.target);camera.updateMatrixWorld();previous.current=safe
   useCameraStore.getState().setPose(orbitPoseFromEye(safe))
   const state=useCameraStore.getState(),focus=useInteractionStore.getState().focus
-  if(state.follow&&!move.current&&!focus&&scene.cursor===scene.liveHead&&lastFollow.current!==scene.cursor){lastFollow.current=scene.cursor;const id=scene.liveStack.at(-1),node=id?scene.entities[id]:null;if(node?.kind==='frame'&&node.live){const pose=followFraming(anchorCorners(node.anchor),state.pose,safeFrame,size);if(pose)begin(pose,600)}}
+  if(state.follow&&!move.current&&!focus&&(lastFollow.current!==scene.cursor||followForensic.current!==!!plan.exceptionPanel)){
+   lastFollow.current=scene.cursor;followForensic.current=!!plan.exceptionPanel
+   const next=guidedFollow(scene,plan,event,state.pose,safeFrame,size,followRecursion.current)
+   followRecursion.current=next.recursion;if(next.pose)begin(next.pose,600)
+  }
   if(now-lastDetail.current>=200||lastCursor.current!==scene.cursor){lastDetail.current=now;lastCursor.current=scene.cursor;const next=nextDetailLevel(state.detailLevel,representativeFaceHeight(scene,camera,size),size.height);if(state.detailLevel!==next)state.setDetailLevel(next)}
   if(move.current)requestAnimationFrameRender(invalidate)
   cameraReadiness.moving=!!move.current

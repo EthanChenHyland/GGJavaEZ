@@ -107,6 +107,13 @@ export async function seekCursor(page:Page,cursor:number):Promise<void>{
  await expect(slider).toHaveAttribute('aria-valuenow',String(cursor));await ready(page)
 }
 export async function home(page:Page):Promise<void>{await page.getByRole('button',{name:'Home',exact:true}).click();await ready(page)}
+export async function follow(page:Page):Promise<void>{
+ await page.locator('.world-canvas').focus();await page.keyboard.press('F1')
+ await page.getByRole('combobox',{name:'Search commands'}).fill('Follow')
+ await page.getByRole('option').filter({has:page.getByText('Navigation: Follow',{exact:true})}).click()
+ await expect(page.getByRole('dialog',{name:'Command Palette'})).toHaveCount(0)
+ await ready(page)
+}
 export async function selectEntity(page:Page,id:string):Promise<void>{
  await page.locator('.world-canvas').focus();await page.keyboard.press('Tab')
  const list=page.getByRole('listbox',{name:'Runtime entities'})
@@ -196,12 +203,29 @@ export async function captureComparison(page:Page,request:APIRequestContext,stat
   if(!target)misses.push('Focus front face missing')
   else{
    if(target.height<.38*before.viewport.height||target.height>.52*before.viewport.height)misses.push(`Focus height: ${target.height/before.viewport.height} H, expected .38–.52 H`)
+   const w=target.width/before.viewport.width,h=target.height/before.viewport.height
+   if(w<.25-1e-9&&Math.abs(h-.52)>1e-6||w>.35+1e-9&&Math.abs(h-.38)>1e-6)misses.push(`Focus width: ${w} W is not the closest height-constrained width`)
    const inspector=before.shell.inspector
    if(inspector&&target.x<inspector.x+inspector.width&&target.x+target.width>inspector.x&&target.y<inspector.y+inspector.height&&target.y+target.height>inspector.y)misses.push('Focus face is covered by the actual Inspector rectangle')
   }
   const delta=before.pose.position.map((value,index)=>value-before.pose.target[index]),yaw=Math.abs(Math.atan2(delta[0],delta[2])*180/Math.PI),pitch=-Math.atan2(delta[1],Math.hypot(delta[0],delta[2]))*180/Math.PI
   if(yaw<18||yaw>24)misses.push(`Focus yaw: ${yaw} degrees, expected 18–24`)
   if(pitch< -11||pitch> -5)misses.push(`Focus pitch: ${pitch} degrees, expected −11 to −5`)
+ }
+ if(state.id==='recursion'){
+  const frames=before.scene.liveStack.slice(-4),safe=before.shell.safeFrame
+  if(frames.length!==4)misses.push('Recursive Follow requires four actual live frames')
+  const centres:{x:number;y:number}[]=[]
+  for(const id of frames){
+   const body=before.world.entities.find(body=>body.id===id),bounds=body?.bounds,face=body?.face
+   if(!bounds||!face){misses.push(`Recursive frame ${id} has no actual projection`);continue}
+   if(bounds.x<safe.x-1e-5||bounds.y<safe.y-1e-5||bounds.x+bounds.width>safe.x+safe.width+1e-5||bounds.y+bounds.height>safe.y+safe.height+1e-5)misses.push(`Recursive frame ${id} lies outside Safe Frame`)
+   centres.push({x:face.x+face.width/2,y:face.y+face.height/2})
+  }
+  const steps=centres.slice(1).map((point,index)=>({x:point.x-centres[index].x,y:point.y-centres[index].y}))
+  if(!steps.every(step=>step.x>=0)&&!steps.every(step=>step.x<=0)||steps.some(step=>step.y<=0))misses.push('Recursive frame centres do not progress monotonically')
+  const delta=before.pose.position.map((value,index)=>value-before.pose.target[index]),yaw=Math.atan2(delta[0],delta[2])*180/Math.PI,pitch=-Math.atan2(delta[1],Math.hypot(delta[0],delta[2]))*180/Math.PI
+  if(yaw<14||yaw>22||pitch< -19||pitch> -13)misses.push(`Recursive Follow angles: ${yaw}, ${pitch}; expected +18°/−16° within specified tolerances`)
  }
  const report={runId:process.env.VJ_REFERENCE_RUN_ID??null,id,state:state.id,viewport:viewportLabel,capture:`docs/checkpoints/reference-exact/captures/${id}.png`,sha256:createHash('sha256').update(png).digest('hex'),twin:state.twin,...composed.comparison,sessionId,realJvmExecuted:true,rawEventCount:session.rawEvents.length,build:session.build,sourceManifest:session.sourceManifest,measurements:before,misses}
  const reports=resolve('.ggjavaez/qa/reference-exact/captures');await mkdir(reports,{recursive:true});await writeFile(resolve(reports,`${id}.json`),JSON.stringify(report,null,2)+'\n')

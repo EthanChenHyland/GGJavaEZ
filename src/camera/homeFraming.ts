@@ -12,7 +12,7 @@ export function homeInvocations(scene:SceneModel):string[] {
  return ids
 }
 export function homeFraming(scene:SceneModel,plan:PresentationPlan,safeFrame:Rect,viewport:Size,layout?:LayoutState):{pose:OrbitPose;ids:readonly string[];points:readonly Vec3[]} {
- const frames=homeInvocations(scene),frame=scene.entities[frames[0]],angles=frames.length>=4?tokens.recursion:tokens.hero
+ const frames=homeInvocations(scene),frame=scene.entities[frames[0]],angles=tokens.hero
  const headings=plan.headings.filter(heading=>heading.id==='STACK'||heading.id==='HEAP').flatMap(heading=>{
   const position:Vec3=heading.id==='STACK'&&frame?[frame.anchor.position[0],frame.anchor.position[1]+frame.anchor.size[1]/2+.75,frame.anchor.position[2]+frame.anchor.size[2]/2]:heading.position
   return[position,[position[0]+2.4,position[1]+.4,position[2]] as Vec3]

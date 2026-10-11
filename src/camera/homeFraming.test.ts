@@ -14,5 +14,6 @@ it('Home frames the most recent invocation and its actual nearest ancestors afte
  const frames=homeInvocations(scene);expect(frames.at(-1)).toBe(scene.order.frames.at(-1));expect(frames.length).toBeLessThanOrEqual(4)
  const plan=planPresentation({scene,layout:layout.state,detailLevel:'MEDIUM',selection:null,focusTargetId:null,trace:{active:false,scope:'relevant'}}),safe={x:450,y:100,width:920,height:630},viewport={width:1440,height:900}
  const home=homeFraming(scene,plan,safe,viewport),camera=projectionCamera(home.pose,viewport)
+ expect(home.pose.yawDeg).toBe(8);expect(home.pose.pitchDeg).toBe(-13)
  for(const point of home.points){const projected=screenPoint(point,camera,viewport);expect(projected.x).toBeGreaterThanOrEqual(safe.x);expect(projected.x).toBeLessThanOrEqual(safe.x+safe.width);expect(projected.y).toBeGreaterThanOrEqual(safe.y);expect(projected.y).toBeLessThanOrEqual(safe.y+safe.height)}
 })

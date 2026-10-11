@@ -175,7 +175,7 @@ export function RuntimeCanvas({ scene, plan, layout, safeFrame,inspectorRect, se
         {scene.io.map(io => <group key={io.id} position={[...io.anchor.position]}><mesh><boxGeometry args={[...io.anchor.size]}/><meshStandardMaterial color={roleColor[io.id]} emissive={roleColor[io.id]} emissiveIntensity={.2}/></mesh><WorldText position={[-.75, .02, .17]} size={.2} width={1.5}>{`${io.id} · ${io.lines}`}</WorldText></group>)}
         </FaceTextBatch>
       </Suspense>
-      <CameraRig scene={scene} plan={plan} layout={layout} safeFrame={safeFrame} inspectorRect={inspectorRect} input={input}/>
+      <CameraRig scene={scene} plan={plan} event={trace.events[scene.cursor-1]??null} layout={layout} safeFrame={safeFrame} inspectorRect={inspectorRect} input={input}/>
       <QualityRuntime guidedMoving={() => cameraReadiness.moving}/>
       <MotionLayer trace={trace} timeline={timeline} scene={scene} plan={plan}/>
       <AccessibleCatalog scene={scene} plan={plan} publish={setAccessible}/>
