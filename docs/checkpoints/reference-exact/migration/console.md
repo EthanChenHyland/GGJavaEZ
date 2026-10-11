@@ -63,3 +63,41 @@ both session IDs, zero-prefix/End/Home scrubbing, retained stdout and separate,
 visibly reachable new-build diagnostics while keeping all earlier canvas/history
 assertions. This narrows the retained Console gap; broader Prior_World/source
 binding, input and final acceptance/performance/visual gates remain open.
+
+## Input wait and acknowledged submissions — 2026-10-11
+
+Lead direction: Console submissions are client acknowledgements, separate from
+recorder consumption and process output. `ConsoleInputController` reads the
+current process identity, project/generation and draft at the action, serializes
+pending Enter submissions, sends unchanged text plus exactly one LF, and appends
+a separately labelled stdin row only on `{ok:true}`. An empty field submits LF.
+The acknowledgement cannot clear a newer draft or write into another process,
+project/generation or unmounted view. Receipt owners retain only the current
+attempt and committed World, retiring on replacement/project switch.
+The input epoch advances only on project replacement; unrelated source/tree
+operations do not invalidate a write acknowledgement for the same process.
+
+Actual wait evidence opens Console on a new wait transition. `ConsoleInput`
+focuses in layout only when that wait or its active display becomes newly active;
+same-wait metadata refreshes do not reclaim manually moved focus. The wait
+message depends on the actual process phase, independent of partial recording,
+first-event publication or historical cursor. Live input without wait evidence
+shows "Input wait status unknown". Acknowledged input is labelled in submission
+order; no output interleaving or consumption is inferred, and no runtime/graph,
+World endpoint or animation state is changed by drafts or receipts.
+
+Known non-input-capable/ended processes send and append nothing and keep the
+draft, with inline "Program is not accepting input" feedback. A rejected or
+unacknowledged write keeps the draft and reports unconfirmed delivery, using the
+actual diagnostic instead of guessing a closed-stdin state. The preserved DTO
+does not expose independent stdin closure; preflight prevention for a live
+process whose stdin has closed remains open. The API returns an acknowledgement,
+not a new execution DTO, so phase/wait transitions still come from real metadata.
+
+Controller tests cover exact/empty text, duplicate Enter, edited drafts, ended
+phases, failed/false acknowledgements, retirement and receipt ownership. Actual
+JVM desktop/narrow checks exercise empty and Unicode lines, delayed real API
+responses, exact Java output and the ended-process guard. An explicitly isolated
+production-component fixture checks partial/no-event wait focus, clearing and
+manual focus preservation; it is not represented as a real-JVM saturation run.
+Fresh real-JVM partial-limit/no-first-event checks and final A–G gates remain open.

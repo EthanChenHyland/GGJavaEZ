@@ -57,9 +57,24 @@ for (const viewport of [{ width: 1440, height: 900 }, { width: 760, height: 900 
   expect(response.ok()).toBe(true); const {id} = await response.json()
   await page.addInitScript(id => localStorage.setItem('ggjavaez:project', id), id)
   await page.goto('/?qa=1'); await expect(page.getByRole('button', {name:'Run',exact:true})).toBeEnabled()
+  await page.evaluate(()=>{
+    const host=window as unknown as {consoleWaitFocus?:{elapsed:number;focused:boolean}}
+    const observer=new MutationObserver(()=>{
+      if(!document.querySelector('.shell-state')?.textContent?.includes('Waiting for input'))return
+      const start=performance.now();observer.disconnect()
+      requestAnimationFrame(()=>requestAnimationFrame(()=>{host.consoleWaitFocus={elapsed:performance.now()-start,focused:document.activeElement?.getAttribute('aria-label')==='Console input'}}))
+    });observer.observe(document.body,{subtree:true,childList:true,characterData:true})
+  })
   await page.getByRole('button', {name:'Run',exact:true}).click()
   await expect.poll(async () => {const session = await currentSession(request); return session && session.projectId === id ? session.phase : null}).toBe('WAITING_FOR_INPUT')
   await expect(page.getByLabel('Console input', {exact:true})).toBeVisible()
+  await expect(page.getByLabel('Console input', {exact:true})).toBeFocused()
+  await expect(page.locator('.console-input-status')).toContainText('Program is waiting for input')
+  await expect.poll(()=>page.evaluate(()=>(window as unknown as {consoleWaitFocus?:{focused:boolean}}).consoleWaitFocus?.focused)).toBe(true)
+  const waitFocus=await page.evaluate(()=>(window as unknown as {consoleWaitFocus:{elapsed:number;focused:boolean}}).consoleWaitFocus)
+  expect(waitFocus.elapsed).toBeLessThanOrEqual(200)
+  await writeFile(`.ggjavaez/qa/reference-exact/console-wait-${viewport.width}x${viewport.height}.json`,JSON.stringify({realJvm:true,measurement:'frontend wait status commit through two animation frames',viewport,...waitFocus},null,2)+'\n')
+  await page.screenshot({path:`.ggjavaez/qa/reference-exact/console-wait-${viewport.width}x${viewport.height}.png`})
   await page.getByRole('button', {name:'CONSOLE',exact:true}).click()
   const console = page.getByLabel('Program console', {exact:true})
   await expect(console).toContainText('prompt ready'); await expect(console).toContainText('warning only')
@@ -70,6 +85,8 @@ for (const viewport of [{ width: 1440, height: 900 }, { width: 760, height: 900 
   await expect.poll(async () => { const current = await currentSession(request); return current?.id === session!.id ? current.phase : null }).toBe('COMPLETED')
   await page.getByRole('button', {name:'CONSOLE',exact:true}).click()
   await expect(console).toContainText('Hello Ada & <exact>')
+  await expect(page.locator('.console-input-status')).not.toContainText('Program is waiting for input')
+  await expect(console.getByRole('list',{name:'Submitted input rows'})).toContainText('Ada & <exact>')
   await console.evaluate(node => { node.scrollTop = 0 })
   await expect(console.getByRole('list', {name:'Recorded console rows'}).locator('[aria-posinset="1"]')).toBeVisible()
   await page.screenshot({path:`.ggjavaez/qa/reference-exact/console-real-${viewport.width}x${viewport.height}.png`})

@@ -581,3 +581,47 @@ unchanged. Input-wait/submission behavior, graphics fallback diagnostics,
 broader Prior_World/source binding and final acceptance/performance/visual
 gates remain open. This does not replace the fresh 80-case/96-capture matrix
 or formal A–G visual approval.
+
+## Console input wait and submissions — 2026-10-11
+
+Console now focuses a newly active real wait in layout and shows wait evidence
+independently of recording status and cursor. Metadata refreshes during the same
+wait preserve manually moved focus. Live input without wait evidence is labelled
+unknown. The submission controller reads the current session and project epoch,
+serializes pending Enter, sends unchanged text plus one LF, and records only true
+acknowledgements in a separately labelled submission-order list. It preserves
+newly edited drafts, rejects retired acknowledgements and retains only current
+and committed-World receipt owners. Source/tree operations do not retire a write
+for the same process. Curated recordings show no workspace input state.
+
+Final build, lint and strict reference TypeScript passed; AppRoot is 341.32 kB
+gzip. The 39 focused unit checks across five files passed in 407 ms. Eight
+focused browser checks passed in 22.3 seconds. The final default suite passed
+1,803 tests with 70 opt-in skips (1,873 total), across 188 files (181 passed,
+seven skipped), in 158.33 seconds after the project-epoch correction. The earlier
+full run also passed, in 157.24 seconds.
+All 40 final reconstruction browser checks passed in 3.3 minutes. The existing
+WebGL-disabled SDF context diagnostics remain open for a separate correction.
+
+Real desktop/narrow JVM checks use actual stdin writes and delayed real API
+responses to verify empty input, exact spaces/Unicode, pending duplicate Enter,
+new draft preservation, Java stdout, ended-process no-send/no-append and exact
+blank submission detail. Wait checks observe the actual frontend wait commit
+through two animation frames and require focused input within 200 ms. A separate,
+explicitly isolated production-component fixture verifies partial/no-event
+presentation, same-wait manual focus retention and wait clearing within 200 ms;
+it is not a real-JVM saturation test.
+The final real wait receipts measured 181.7 ms (desktop) and 164.2 ms (narrow);
+the isolated fixture measured 24.8 ms for focus and 26.6 ms for clearing.
+All four fresh wait/submission captures received original-size lead review.
+The wait message, submission-order qualification, two submission rows and kept
+draft are readable in both viewports. Exact blank detail is asserted as captured
+text, without claiming its entire expansion is visible in those screenshots.
+
+Known ended processes and unconfirmed writes keep their draft with inline
+feedback. The preserved API lacks independent stdin-closure knowledge, so
+preflight prevention for a live process with closed stdin remains open. No
+backend, trace, reducer, history, graph, World endpoint or animation contracts
+change. Fresh real-JVM partial-limit/no-first-event checks, graphics diagnostics,
+formal acceptance/performance suites and final A–G visual convergence remain
+open. This does not replace the fresh 80-case/96-capture matrix.
