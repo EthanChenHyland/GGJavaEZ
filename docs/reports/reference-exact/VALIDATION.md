@@ -514,3 +514,38 @@ Home remains separately verified. Console virtualization, ownership hierarchy,
 cluster travel, dense route crossings and final A–G convergence remain open.
 This increment does not replace the fresh 80-case/96-capture matrix or formal
 visual approval. Details are in `migration/source-debug.md`.
+
+## Console line virtualization — 2026-10-11
+
+The Shell now renders bounded, paged Console rows through captured-text offsets.
+Adjacent writes to the same output channel join across chunks without inserted
+characters; input entries and channel boundaries remain distinct. A separate
+detail view retains exact text, including CRLF, blanks, Unicode and a final
+unterminated line. Manual navigation stops following, Last resumes it, and a
+shrunk prefix clamps its page before later growth. Build, recorder, run-event,
+pipe and archive ownership remain explicit; no equal-text deduplication or
+invented cross-channel ordering is introduced.
+
+Build, lint and strict reference TypeScript passed; AppRoot is 339.72 kB gzip.
+Ten focused unit tests across two files passed in 196 ms. The final default
+suite passed 1,774 tests with 70 opt-in skips (1,844 total), across 185 files
+(178 passed, seven skipped), in 160.18 seconds. All 37 reconstruction browser
+checks passed in 3.2 minutes, including the three new Console cases.
+
+The isolated production-component fixture indexed one million terminated lines.
+Its four measured First/Last presentations took 22–32.6 ms and mounted at most
+six offscreen rows. The receipt identifies this as a rendering fixture, not a
+real-JVM million-line execution. It also verifies arbitrary index reachability,
+append, manual-scroll retention, shrink/continued growth, exact long text and
+stderr color/glyph. Real desktop and narrow JVM cases verify stdout/stderr,
+submitted text, visibly accessible recorder/pipe groups, rewind to zero and
+exact restored prefix text. All six final Console captures received original-size
+lead review; a polish pass removed empty space from short lists.
+
+The WebGL-disabled cases passed their fallback assertions while Troika emitted
+SDF context rejections; these graphics diagnostics remain open. Retained-world
+Console association through a new pending/failed attempt, input-wait feedback,
+submission receipts, closed-stdin feedback, legacy browser migration, the
+independent acceptance/performance suites and final A–G convergence remain open.
+This increment does not replace the fresh 80-case/96-capture matrix or formal
+visual approval. Details are in `migration/console.md`.
