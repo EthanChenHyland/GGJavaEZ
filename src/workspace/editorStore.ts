@@ -7,8 +7,9 @@ export interface EditorState {
   tabs: Tab[]
   active: string
   nav: SourceLocation | null
-  recordedView: { file: TraceDocument['sourceFiles'][number]; location: RuntimeSourceLocation } | null
-  mappedExecutingSource: SourceLocation | null
+  recordedView: { file: TraceDocument['sourceFiles'][number]; location: RuntimeSourceLocation|null } | null
+  mappedExecutingSource: (SourceLocation&{recordedFileId?:string}) | null
+  sourceUnavailable:boolean
 }
 export const editorStore = createStore<EditorState>(() => ({
   tabs: [],
@@ -16,4 +17,5 @@ export const editorStore = createStore<EditorState>(() => ({
   nav: null,
   recordedView: null,
   mappedExecutingSource: null,
+  sourceUnavailable:false,
 }))

@@ -6,6 +6,7 @@ import { orbitPoseFromEye } from '../camera/CameraRig'
 import type { EyePose } from '../camera/cameraConstraints'
 import type {} from './worldObservation'
 import {productionClock} from '../motion/clock'
+import {observeSource} from './sourceObservation'
 export interface QaSnapshot { appState: AppState; layout: ShellLayout; cursor: number; liveHead: number }
 function createQaBridge(snapshot: QaSnapshot) {
   const rect = (selector: string) => { const node = document.querySelector(selector); if (!node) return null; const r = node.getBoundingClientRect(); return { x: r.x, y: r.y, width: r.width, height: r.height } }
@@ -20,6 +21,7 @@ function createQaBridge(snapshot: QaSnapshot) {
     clock:{step:(ms:number)=>productionClock.step(ms),resume:()=>productionClock.resume()},
     worldProjection:()=>window.__ggjavaezWorld?.worldProjection()??null,
     selection:()=>window.__ggjavaezWorld?.selection()??null,
+    source:observeSource,
     projectedPoint:(id:string)=>window.__ggjavaezWorld?.projectedPoint(id)??null,
     planStats:()=>{const plan=window.__ggjavaezWorld?.plan();return plan?{...plan.accounting,detailLevel:plan.detailLevel,budgetOverflow:plan.budgetOverflow,curves:plan.curves.length,cells:[...plan.cellWindows.values()].reduce((count,window)=>count+window.visible.length,0),renderer:window.__ggjavaezWorld?.renderer()}:null},
     ready: () => new Promise<void>((resolve, reject) => {

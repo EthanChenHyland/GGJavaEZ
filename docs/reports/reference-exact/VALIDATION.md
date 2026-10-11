@@ -219,3 +219,37 @@ have original-size lead reviews, recorded as open with current screenshot hashes
 The convergence command still exits 1 for open/missing reviews. Additional
 findings include unreadable FAR cluster labels, wrapped Debug controls and
 crowded return/array headings. This is not completion of a milestone or A–G.
+
+## Source scrolling and debugger controls — 2026-10-10
+
+Editable and recorded source share an owned Monaco scroll policy. Captured
+pauses center once; manual scrolling, tab view state and caret/selection survive
+resize and source expansion. Exact class/manifest/hash proof supplies pause
+locations, and a pending attempt cannot supply a pause to the previous world.
+Unknown source retains the displayed file without an execution marker. The six
+debugger commands fit one fixed row and retain command-registry availability.
+
+- Build, lint and strict reference TypeScript passed. AppRoot is 333.54 kB gzip;
+  bootstrap and shared Troika remain 72.53 and 230.28 kB gzip. These figures do
+  not establish aggregate startup or retention performance.
+- The final default unit run passed 1,736 tests with 70 opt-in skips (1,806 total),
+  across 178 files (171 passed, seven skipped), in 158.19 seconds. Semantic
+  goldens were unchanged; explicit JVM gates remain separate.
+- All 20 reconstruction browser checks passed in 1.5 minutes. Five source cases
+  import ordinary Java files and suspend actual JVMs at lines 91 and 100. They
+  verify the middle third, native wheel scrolling, source expansion, a real
+  two-file tab round trip, unchanged caret/selection/scroll/cursor/camera, and
+  header/debugger hit geometry at every required viewport.
+
+Earlier diagnostics exposed a stale pause marker, narrow drawer control
+occlusion and Monaco replacing its view DOM while retaining the editor instance.
+The owner now rebinds DOM listeners and waits for actual visible ranges with a
+finite deadline. The first broad tab run passed 19 and failed one because its
+narrow hydration wait named the second file; the corrected wait names Aux.java
+and preserves all pause, state and geometry assertions.
+
+Original-size source captures were inspected, including the final 1280-wide and
+narrow reruns. Array identity/length overlap and flat bright faces remain open.
+These diagnostic captures do not replace the fourth formal matrix's 96 captures
+or approve its visual reviews. Source lazy mounting, exception source markers,
+workspace cleanup and the remaining A–G gates remain open.

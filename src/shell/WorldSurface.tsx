@@ -16,12 +16,12 @@ import { seek } from '../runtime';
 import { createLayoutEngine } from '../world/layoutEngine';
 import { createSceneProjector } from '../world/sceneProjector';
 import { planPresentation } from '../world/presentationPlanner';
-import { focusSourceLocation } from './source/sourceSync';
+import { focusSourceLocation, sourceLocationFor } from './source/sourceSync';
 import {useQualityStore} from '../render/quality/qualityStore';
 import { shellStore } from '../workspace/shellStore';
 import { registerWorldCommandSurface } from '../ide/commands';
 const fullRecording = { state: 'FULL', reason: null, budget: null, lastRecordedSeq: null, executionContinued: false } as const;
-export function WorldSurface({ trace, onSourceChange, onRuntimeChange, navigation, suppressInspector = false, execution, safeFrame,inspectorRect }: {
+export function WorldSurface({ trace, onSourceChange, onRuntimeChange, navigation, suppressInspector = false, execution, safeFrame,inspectorRect,pausedSource }: {
     trace: TraceDocument;
     onSourceChange?: (location: SourceLocation | null) => void;
     onRuntimeChange?: (runtime: RuntimeState, selection: Selection) => void;
@@ -30,6 +30,7 @@ export function WorldSurface({ trace, onSourceChange, onRuntimeChange, navigatio
     execution?: EmbeddedExecution;
     safeFrame: Rect;
     inspectorRect?:Rect|null;
+    pausedSource?:{location:SourceLocation|null};
 }) {
     const playback = useTimelinePlayback(trace, execution);
     const { cursor, liveHead: liveCursor } = playback.state;
@@ -82,8 +83,9 @@ export function WorldSurface({ trace, onSourceChange, onRuntimeChange, navigatio
             setSelection(navigation.selection);
     }, [navigation]);
     useEffect(() => { onRuntimeChange?.(runtime, selection); }, [runtime, selection, onRuntimeChange]);
-    const sourceLocation=focus?focusSourceLocation(scene,focus.targetId,trace):runtime.currentSource;
-    useEffect(() => { onSourceChange?.(sourceLocation); }, [sourceLocation, onSourceChange]);
+    const sourceLocation=sourceLocationFor({hasFocus:!!focus,focusLocation:focus?focusSourceLocation(scene,focus.targetId,trace):null,pausedAtHead:!!pausedSource&&cursor===liveCursor,pauseLocation:pausedSource?.location??null,cursorEvent:cursor>0?trace.events[cursor-1]??null:null});
+    const sourceFileId=sourceLocation?.fileId,sourceLine=sourceLocation?.line;
+    useEffect(() => { onSourceChange?.(sourceFileId&&sourceLine?{fileId:sourceFileId,line:sourceLine}:null); }, [sourceFileId,sourceLine,onSourceChange,trace.demoId]);
     useEffect(() => { useCameraStore.getState().resetRecording(!!execution&&trace.events.length>0); }, [trace.demoId]);
     const select = (next: Selection) => {
         setSelection(next);

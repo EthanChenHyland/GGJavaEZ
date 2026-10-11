@@ -1,4 +1,6 @@
-import type { SourceLocation, TraceDocument } from '../../contracts/runtime'
+import type { SourceLocation, TraceDocument, TraceEvent } from '../../contracts/runtime'
+import type { DebugPause,DebugSession } from '../../debugger/contracts'
+import type { InstrumentationSourceManifest } from '../../instrumentation/normalize'
 import type { SceneModel } from '../../contracts/worldV2'
 import { arrayCellTarget } from '../../world/arrayCellTarget'
 
@@ -18,6 +20,30 @@ export function focusSourceLocation(scene:SceneModel,targetId:string|null,trace:
  }
  return null
 }
-export function recordedFileFor(trace:TraceDocument,location:SourceLocation|null) {
- return location?trace.sourceFiles.find(file=>file.fileId===location.fileId):trace.sourceFiles[0]
+export function recordedFileFor(trace:TraceDocument,location:SourceLocation|null,retainedFileId=trace.sourceFiles[0]?.fileId) {
+ return (location?trace.sourceFiles.find(file=>file.fileId===location.fileId):undefined)??trace.sourceFiles.find(file=>file.fileId===retainedFileId)
+}
+
+/** The control pause is authoritative, even before normalized events publish.
+ * Match the binary class identity and captured hash; ambiguous metadata stays absent.
+ */
+export function pauseSourceLocation(pause:DebugPause|null,manifest:InstrumentationSourceManifest):SourceLocation|null {
+ if(!pause||!Number.isInteger(pause.line)||pause.line<1)return null
+ const matches=manifest.classes.filter(item=>item.className===pause.className)
+ if(matches.length!==1)return null
+ const binding=matches[0]
+ if(binding.status!=='resolved'||!binding.fileId||!binding.sourceSha256)return null
+ const files=manifest.sources.filter(file=>file.fileId===binding.fileId&&file.sha256===binding.sourceSha256)
+ return files.length===1&&pause.line<=files[0].content.split('\n').length?{fileId:binding.fileId,line:pause.line}:null
+}
+
+/** A new pending attempt cannot lend its pause to the retained previous world. */
+export function sourcePauseFor(debug:Pick<DebugSession,'sessionId'|'status'|'pause'>|null,worldSessionId:string|null):DebugPause|null {
+ return debug?.status==='paused'&&(worldSessionId===null||worldSessionId===debug.sessionId)?debug.pause:null
+}
+
+export function sourceLocationFor(input:{hasFocus:boolean;focusLocation:SourceLocation|null;pausedAtHead:boolean;pauseLocation:SourceLocation|null;cursorEvent:TraceEvent|null}):SourceLocation|null {
+ if(input.hasFocus)return input.focusLocation
+ if(input.pausedAtHead)return input.pauseLocation
+ return input.cursorEvent?.source??null
 }

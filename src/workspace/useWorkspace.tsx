@@ -125,6 +125,7 @@ export function useWorkspace(recordingViewer = false) {
   const [runtimeNavigation, setRuntimeNavigation] = useStoreField(interactionStore, 'runtimeNavigation')
   const [recordedView, setRecordedView] = useStoreField(editorStore, 'recordedView')
   const [mappedExecutingSource, setMappedExecutingSource] = useStoreField(editorStore, 'mappedExecutingSource')
+  const [sourceUnavailable, setSourceUnavailable] = useStoreField(editorStore, 'sourceUnavailable')
   const [cwdInvalid, setCwdInvalid] = useStoreField(workspaceStore, 'cwdInvalid')
   const workspaceGeneration = useRef(0)
   const sourceBindings = useRef(new Map<string, SourceBindings>())
@@ -288,16 +289,18 @@ export function useWorkspace(recordingViewer = false) {
     return () => previous?.focus()
   }, [projectDialog?.kind])
 
-  const openFile = useCallback(async (id: string, path: string, location?: SourceLocation) => {
+  const openFile = useCallback(async (id: string, path: string, location?: SourceLocation, isCurrent:()=>boolean=()=>true) => {
     if (!path) return
     const generation = workspaceGeneration.current
     if (!tabsRef.current.some((tab) => tab.path === path)) {
       const file = await bridge.file(id, path)
+      if(!isCurrent())return
       if (id !== projectIdRef.current || generation !== workspaceGeneration.current) throw new Error('Open belongs to an older workspace')
       const next = tabsRef.current.some((tab) => tab.path === path) ? tabsRef.current : [...tabsRef.current, hydratedTab(id, file)]
       tabsRef.current = next; setTabs(next)
     }
     if (id !== projectIdRef.current || generation !== workspaceGeneration.current) throw new Error('Open belongs to an older workspace')
+    if(!isCurrent())return
     activeRef.current = path; setActive(path); setRecordedView(null)
     if (location) { navRef.current = { ...location }; setNav(navRef.current) }
   }, [])
@@ -368,7 +371,7 @@ export function useWorkspace(recordingViewer = false) {
     projectIdRef.current = nextId
     tabsRef.current = []; activeRef.current = ''; treeRef.current = []; navRef.current = null; executionRef.current = null
     cwdInvalidRef.current = false
-    setProjectId(nextId); setTabs([]); setActive(''); setRecordedView(null); setMappedExecutingSource(null); setCwdInvalid(false)
+    setProjectId(nextId); setTabs([]); setActive(''); setRecordedView(null); setMappedExecutingSource(null);setSourceUnavailable(false); setCwdInvalid(false)
     setBuild(null)
     setExecution(null); setTimelineLens('LIVE'); activeExecutionId.current = null
     setVisualization(null)
@@ -724,22 +727,26 @@ export function useWorkspace(recordingViewer = false) {
   const handleExecutingSource = useCallback((location: RuntimeSourceLocation | null) => {
     executingSourceRef.current = location
     const request = ++sourceRequest.current
-    if (!location) { setMappedExecutingSource(null); setRecordedView(null); return }
+    if (!location) { setMappedExecutingSource(null);setSourceUnavailable(true);setRecordedView(view=>view?{...view,location:null}:null);return }
     const captured = visualizationRef.current
-    if (!captured) return
-    const bindings = sourceBindings.current.get(captured.sessionId)
+    const paused=executionRef.current?.kind==='debug'&&executionRef.current.phase==='PAUSED'?executionRef.current:null
+    const sourceContext=captured??(paused?{sessionId:paused.id,trace:{sourceFiles:paused.sourceManifest.sources}}:null)
+    if (!sourceContext) return
+    const bindings = sourceBindings.current.get(sourceContext.sessionId)
     const id = projectIdRef.current, generation = workspaceGeneration.current
     requestedSourceRef.current = location.fileId
     void (async () => {
       const path = bindings ? await verifiedWorkspaceSource(bindings, location.fileId, (path) => effectiveSource(id, path)) : null
       if (request !== sourceRequest.current || id !== projectIdRef.current || generation !== workspaceGeneration.current) return
       if (path) {
-        setMappedExecutingSource({ path, line: location.line, column: null }); setRecordedView(null)
-        if (path !== activeRef.current) await openFile(id, path, { path, line: location.line, column: null })
+        setSourceUnavailable(false);setMappedExecutingSource({ path, line: location.line, column: null,recordedFileId:location.fileId }); setRecordedView(null)
+        if (path !== activeRef.current) await openFile(id, path,undefined,()=>request===sourceRequest.current)
       } else {
         setMappedExecutingSource(null)
-        const file = captured.trace.sourceFiles.find((source) => source.fileId === location.fileId)
+        const file = sourceContext.trace.sourceFiles.find((source) => source.fileId === location.fileId)
+        setSourceUnavailable(!file)
         if (file) setRecordedView({ file, location })
+        else setRecordedView(view=>view?{...view,location:null}:null)
       }
     })().catch(fail).finally(() => { requestedSourceRef.current = '' })
   }, [openFile])
@@ -1049,7 +1056,7 @@ export function useWorkspace(recordingViewer = false) {
       else if (id === 'execution.stop') await commandIO(async () => { const session = executionRef.current; if (session) { const next = await bridge.executionStop(session.id); checkContext(context); acceptExecution(next) } })
       else if (id === 'workbench.explorer') toggleExplorer()
       else if (id === 'workbench.source') { userLayoutOverride.current = true; if (runtimeExpanded) setFocusSourceOpen((value) => !value); else { setSourceOpen((value) => !value); setFocusSourceOpen((value) => !value) } }
-      else if (id === 'workbench.edit') { userLayoutOverride.current = true; enterMode('code') }
+      else if (id === 'workbench.edit') { userLayoutOverride.current = true; enterMode('code');setFocusSourceOpen(true) }
       else if (id === 'workbench.tools') { bottomPinned.current = !bottomOpen; setBottomOpen(!bottomOpen) }
       else if (id === 'workbench.console' || id === 'workbench.problems' || id === 'workbench.debugger') { bottomPinned.current = true; setTool(id === 'workbench.console' ? 'console' : id === 'workbench.problems' ? 'problems' : 'debugger'); setBottomOpen(true) }
       else if (id === 'workbench.inspector') setInspectorHidden((value) => !value)
@@ -1236,5 +1243,5 @@ export function useWorkspace(recordingViewer = false) {
   const acceptsInput = !!execution && ['RUNNING', 'WAITING_FOR_INPUT', 'PAUSED'].includes(execution.phase)
   const availableTools: Tool[] = ['console', 'problems', 'debugger', ...(recordingIsCurrent && visualization.trace.events.some((event) => event.type === 'THROW_EXCEPTION') || exception ? ['errors'] as Tool[] : [])]
   const targets = build?.mainClasses ?? javaProject?.runnableTargets ?? []
-  return { endedAt, projects, projectId, tree, tabs, active, setActive, jdk, setJdk, jdkInput, setJdkInput, showJdk, build, execution, timelineLens, setTimelineLens, tool, setTool, bottomPinned, workspaceMode, explorerOpen, inspectorHidden, bottomOpen, setBottomOpen, focusSourceOpen, sourceOpen, picker, setPicker, tabMenu, setTabMenu, input, setInput, notice, setNotice, busy, pending, projectDialog, setProjectDialog, nav, mainClass, setMainClass, javaProject, projectStatus, launch, setLaunch, showLaunch, setShowLaunch, showSymbols, setShowSymbols, languageClient, languageSnapshot, visualization, runtimeExpanded, breakpoints, runtime, runtimeSelection, runtimeNavigation, recordedView, setRecordedView, mappedExecutingSource, setCwdInvalid, commands, projectWidth, editorWidth, bottomHeight, setBottomHeight, collapsed, platform, shellRef, contentRef, upperRef, importRef, consoleRef, confirmRef, projectDialogRef, activeRef, launchRef, mainClassRef, cwdInvalidRef, displayedBreakpoints, activeTab, entries, diagnostics, languageProblems, problems, allEvents, exception, debugSession, recordingIsCurrent, previousRecording, recordedPhase, traceStale, fail, refreshTree, switchProject, edit, commandContext, requestDecision, resolveDecision, invoke, closeTab, action, navigateRuntime, handleRuntimeChange, runProject, debugProject, debugCommand, toggleBreakpoint, removeBreakpoint, handleExecutingSource, stopRun, sendInput, newEntry, cancelProjectDialog, submitProjectDialog, importFiles, openDiagnostic, divider, toggleTreeEntry, treeAction, projectOptions, pickerItems, choosePicker, showTabMenu, activeExecution, acceptsInput, availableTools, targets }
+  return { endedAt, projects, projectId, tree, tabs, active, setActive, jdk, setJdk, jdkInput, setJdkInput, showJdk, build, execution, timelineLens, setTimelineLens, tool, setTool, bottomPinned, workspaceMode, explorerOpen, inspectorHidden, bottomOpen, setBottomOpen, focusSourceOpen, sourceOpen, picker, setPicker, tabMenu, setTabMenu, input, setInput, notice, setNotice, busy, pending, projectDialog, setProjectDialog, nav, mainClass, setMainClass, javaProject, projectStatus, launch, setLaunch, showLaunch, setShowLaunch, showSymbols, setShowSymbols, languageClient, languageSnapshot, visualization, runtimeExpanded, breakpoints, runtime, runtimeSelection, runtimeNavigation, recordedView, setRecordedView, mappedExecutingSource, sourceUnavailable, setCwdInvalid, commands, projectWidth, editorWidth, bottomHeight, setBottomHeight, collapsed, platform, shellRef, contentRef, upperRef, importRef, consoleRef, confirmRef, projectDialogRef, activeRef, launchRef, mainClassRef, cwdInvalidRef, displayedBreakpoints, activeTab, entries, diagnostics, languageProblems, problems, allEvents, exception, debugSession, recordingIsCurrent, previousRecording, recordedPhase, traceStale, fail, refreshTree, switchProject, edit, commandContext, requestDecision, resolveDecision, invoke, closeTab, action, navigateRuntime, handleRuntimeChange, runProject, debugProject, debugCommand, toggleBreakpoint, removeBreakpoint, handleExecutingSource, stopRun, sendInput, newEntry, cancelProjectDialog, submitProjectDialog, importFiles, openDiagnostic, divider, toggleTreeEntry, treeAction, projectOptions, pickerItems, choosePicker, showTabMenu, activeExecution, acceptsInput, availableTools, targets }
 }
