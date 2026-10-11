@@ -21,7 +21,7 @@ import { recordedFileFor, pauseSourceLocation,sourcePauseFor,exceptionSourceLoca
 import { loadJavaEditorRuntime } from '../language/editorRuntime'
 import { Header } from './Header'
 import { DebugBar } from './DebugBar'
-import { ConsoleOutput } from './ConsoleOutput'
+import { BoundConsoleOutput } from './BoundConsoleOutput'
 import { computeShellLayout } from './shellLayout'
 import { useViewport } from './useViewport'
 import { WorldSurface } from './WorldSurface'
@@ -119,7 +119,8 @@ return <div className={`shell ide-shell ${debugSession&&activeExecution?'shell--
           : tool === 'problems' ? <ProblemsPanel build={build} language={languageProblems} onOpen={openDiagnostic}/>
           : <div className="ide-console">
             <div className="ide-console-output" aria-label="Program console">
-              <ConsoleOutput key={recordingIsCurrent ? workspace.runtimeRecordingId ?? execution?.id : execution?.id} build={build} execution={execution} recordingIsCurrent={recordingIsCurrent} entries={runtime?.console ?? []}/>
+              <BoundConsoleOutput recording={recording} visualization={visualization} runtimeRecordingId={workspace.runtimeRecordingId}
+                entries={runtime?.console ?? []} worldExecution={workspace.worldExecution} execution={execution} build={build}/>
               {exception && <div className="ide-stack"><strong>{exception.type}: {exception.message}</strong><details><summary>Raw JVM stack trace</summary><pre>{exception.rawStackTrace}</pre></details>{exception.frames.map((frame, index) => <button key={index} disabled={!frame.location} onClick={() => frame.location && handleExecutingSource({ fileId: frame.location.path, line: frame.location.line })}>{frame.raw}</button>)}</div>}
             </div>
             <form className="ide-console-input" onSubmit={(event) => { event.preventDefault(); sendInput() }}><span>›</span><input aria-label="Console input" placeholder={acceptsInput ? 'Send input to program…' : 'Run a program to send input'} value={input} disabled={!acceptsInput} onChange={(event) => setInput(event.target.value)}/><button disabled={!acceptsInput}>Send ↵</button></form>

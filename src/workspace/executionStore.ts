@@ -8,6 +8,8 @@ export interface ExecutionState {
   build: BuildResult | null
   endedAt: string | null
   execution: ExecutionSession | null
+  /** Process/archives associated with the committed World, retained until its replacement. */
+  worldExecution: ExecutionSession | null
   visualization: { sessionId: string; trace: TraceDocument; capability: VisualizationCapabilityReport } | null
   runtime: RuntimeState | null
   runtimeRecordingId:string|null
@@ -16,6 +18,7 @@ export const executionStore = createStore<ExecutionState>(() => ({
   build: null,
   endedAt: null,
   execution: null,
+  worldExecution: null,
   visualization: null,
   runtime: null,
   runtimeRecordingId:null,

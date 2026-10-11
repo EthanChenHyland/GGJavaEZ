@@ -89,6 +89,7 @@ export function useWorkspace(recordingViewer = false) {
   const [build, setBuild] = useStoreField(executionStore, 'build')
   const [endedAt, setEndedAt] = useStoreField(executionStore, 'endedAt')
   const [execution, setExecution] = useStoreField(executionStore, 'execution')
+  const worldExecution = useStore(executionStore,state=>state.worldExecution)
   const [timelineLens, setTimelineLens] = useStoreField(timelineStore, 'timelineLens')
   const [tool, setTool] = useStoreField(shellStore, 'tool')
   const toolRef = useRef<Tool>('console'); toolRef.current = tool
@@ -378,6 +379,7 @@ export function useWorkspace(recordingViewer = false) {
     setBuild(null)
     setExecution(null); setTimelineLens('LIVE'); activeExecutionId.current = null
     setVisualization(null)
+    executionStore.setState({worldExecution:null})
     for (const ingest of new Set([ingestRef.current, committedIngest.current, ...retiredIngests.current])) ingest?.dispose()
     ingestRef.current = null; committedIngest.current = null; retiredIngests.current = []; latestExecutionRef.current = null
     clearTimeout(ingestPublication.current.timer); ingestPublication.current = { at: -Infinity }
@@ -608,7 +610,7 @@ export function useWorkspace(recordingViewer = false) {
     if (runtimeSessionId.current !== session.id) { setTimelineLens('LIVE'); executionStore.setState({runtime:null,runtimeRecordingId:null}); setRuntimeSelection(null); runtimeSessionId.current = session.id }
     if (committedIngest.current && committedIngest.current !== ingest) retiredIngests.current.push(committedIngest.current)
     committedIngest.current = ingest
-    setVisualization({ sessionId: session.id, trace: ingest.publishTrace(), capability: normalized.capability })
+    executionStore.setState({ visualization:{ sessionId: session.id, trace: ingest.publishTrace(), capability: normalized.capability }, worldExecution:session })
     if (!userLayoutOverride.current) {
       const emphasis = session.kind === 'debug' ? 'debug' : 'visualize'
       setWorkspaceMode(emphasis); setEditorWidth(runtimeEditorWidth())
@@ -631,6 +633,7 @@ export function useWorkspace(recordingViewer = false) {
     executionRevision.current = session.revision
     latestExecutionRef.current = session
     executionRef.current = session; setExecution(session)
+    if (executionStore.getState().visualization?.sessionId === session.id) executionStore.setState({worldExecution:session})
     if (['COMPLETED', 'FAILED', 'STOPPED'].includes(session.phase)) setEndedAt(previous => previous ?? new Date().toISOString())
     if (!sessionWorkspaceGeneration.current.has(session.id)) sessionWorkspaceGeneration.current.set(session.id, workspaceGeneration.current)
     if (session.sourceManifest.sources.length && !sourceBindings.current.has(session.id)) {
@@ -1252,5 +1255,5 @@ export function useWorkspace(recordingViewer = false) {
   const acceptsInput = !!execution && ['RUNNING', 'WAITING_FOR_INPUT', 'PAUSED'].includes(execution.phase)
   const availableTools: Tool[] = ['console', 'problems', 'debugger', ...(recordingIsCurrent && visualization.trace.events.some((event) => event.type === 'THROW_EXCEPTION') || exception ? ['errors'] as Tool[] : [])]
   const targets = build?.mainClasses ?? javaProject?.runnableTargets ?? []
-  return { endedAt, projects, projectId, tree, tabs, active, setActive, jdk, setJdk, jdkInput, setJdkInput, showJdk, build, execution, timelineLens, setTimelineLens, tool, setTool, bottomPinned, workspaceMode, explorerOpen, inspectorHidden, bottomOpen, setBottomOpen, focusSourceOpen, sourceOpen, picker, setPicker, tabMenu, setTabMenu, input, setInput, notice, setNotice, busy, pending, projectDialog, setProjectDialog, nav, mainClass, setMainClass, javaProject, projectStatus, launch, setLaunch, showLaunch, setShowLaunch, showSymbols, setShowSymbols, languageClient, languageSnapshot, visualization, runtimeExpanded, breakpoints, runtime, runtimeRecordingId, runtimeSelection, runtimeNavigation, recordedView, setRecordedView, mappedExecutingSource, sourceUnavailable, sourceFileProof, setCwdInvalid, commands, projectWidth, editorWidth, bottomHeight, setBottomHeight, collapsed, platform, shellRef, contentRef, upperRef, importRef, confirmRef, projectDialogRef, activeRef, launchRef, mainClassRef, cwdInvalidRef, displayedBreakpoints, activeTab, entries, diagnostics, languageProblems, problems, allEvents, exception, debugSession, recordingIsCurrent, previousRecording, recordedPhase, traceStale, fail, refreshTree, switchProject, edit, commandContext, requestDecision, resolveDecision, invoke, closeTab, action, navigateRuntime, handleRuntimeChange, runProject, debugProject, debugCommand, toggleBreakpoint, removeBreakpoint, handleExecutingSource, stopRun, sendInput, newEntry, cancelProjectDialog, submitProjectDialog, importFiles, openDiagnostic, divider, toggleTreeEntry, treeAction, projectOptions, pickerItems, choosePicker, showTabMenu, activeExecution, acceptsInput, availableTools, targets }
+  return { worldExecution, endedAt, projects, projectId, tree, tabs, active, setActive, jdk, setJdk, jdkInput, setJdkInput, showJdk, build, execution, timelineLens, setTimelineLens, tool, setTool, bottomPinned, workspaceMode, explorerOpen, inspectorHidden, bottomOpen, setBottomOpen, focusSourceOpen, sourceOpen, picker, setPicker, tabMenu, setTabMenu, input, setInput, notice, setNotice, busy, pending, projectDialog, setProjectDialog, nav, mainClass, setMainClass, javaProject, projectStatus, launch, setLaunch, showLaunch, setShowLaunch, showSymbols, setShowSymbols, languageClient, languageSnapshot, visualization, runtimeExpanded, breakpoints, runtime, runtimeRecordingId, runtimeSelection, runtimeNavigation, recordedView, setRecordedView, mappedExecutingSource, sourceUnavailable, sourceFileProof, setCwdInvalid, commands, projectWidth, editorWidth, bottomHeight, setBottomHeight, collapsed, platform, shellRef, contentRef, upperRef, importRef, confirmRef, projectDialogRef, activeRef, launchRef, mainClassRef, cwdInvalidRef, displayedBreakpoints, activeTab, entries, diagnostics, languageProblems, problems, allEvents, exception, debugSession, recordingIsCurrent, previousRecording, recordedPhase, traceStale, fail, refreshTree, switchProject, edit, commandContext, requestDecision, resolveDecision, invoke, closeTab, action, navigateRuntime, handleRuntimeChange, runProject, debugProject, debugCommand, toggleBreakpoint, removeBreakpoint, handleExecutingSource, stopRun, sendInput, newEntry, cancelProjectDialog, submitProjectDialog, importFiles, openDiagnostic, divider, toggleTreeEntry, treeAction, projectOptions, pickerItems, choosePicker, showTabMenu, activeExecution, acceptsInput, availableTools, targets }
 }

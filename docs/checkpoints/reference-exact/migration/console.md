@@ -38,3 +38,28 @@ runs, closed-stdin feedback, retained-world Console association through a new
 pending/failed attempt, every legacy browser selector, the independent
 acceptance/performance suites and final A–G convergence still need validation or
 implementation. The world I/O renderer and semantic goldens remain untouched.
+
+## Retained Console association — 2026-10-11
+
+Lead direction: `executionStore.worldExecution` is the process/archive metadata
+owner of the committed World. It commits atomically with the accepted nonempty
+visualization publication, receives only matching-session metadata, and retires
+on World or project replacement. A pending/failed attempt cannot overwrite it.
+No execution, normalizer, reducer or history contract changes.
+
+`bindConsole` compares the actual recording, session and runtime-prefix identities
+without parsing IDs. `BoundConsoleOutput` keeps previous-run recorded output and
+its pipe/archive metadata together, and presents the current attempt in a separate
+labelled section. New build diagnostics belong to that new attempt. A verified
+build failure has no program output; it does not create empty process lists.
+Current process input stays with the existing input owner. Curated recordings
+cannot borrow workspace pipes, build messages or archives. A stale runtime prefix
+contributes no rows until the matching prefix arrives.
+
+Tests cover matching metadata, pending/building/starting/waiting/failed attempts,
+wrong retained identities, stale prefixes, curated isolation, no-first-event runs,
+and actual rendered archive links. The real failed-rebuild browser case verifies
+both session IDs, zero-prefix/End/Home scrubbing, retained stdout and separate,
+visibly reachable new-build diagnostics while keeping all earlier canvas/history
+assertions. This narrows the retained Console gap; broader Prior_World/source
+binding, input and final acceptance/performance/visual gates remain open.

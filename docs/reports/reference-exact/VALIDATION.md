@@ -549,3 +549,35 @@ submission receipts, closed-stdin feedback, legacy browser migration, the
 independent acceptance/performance suites and final A–G convergence remain open.
 This increment does not replace the fresh 80-case/96-capture matrix or formal
 visual approval. Details are in `migration/console.md`.
+
+## Retained Console ownership — 2026-10-11
+
+The committed World now retains its own process/archive metadata. A new
+pending or failed attempt has a separate labelled Console section; it cannot
+replace the previous recording's output owner. Curated recordings borrow no
+workspace pipes, archives or build messages. Runtime rows require the actual
+matching recording identity. Verified build failures show compiler diagnostics
+and explicitly declare that they have no program output.
+
+Build, lint and strict reference TypeScript passed; AppRoot is 340.25 kB gzip.
+Twenty focused unit tests across three files passed in 277 ms. The full default
+suite passed 1,784 tests with 70 opt-in skips (1,854 total), across 186 files
+(179 passed, seven skipped), in 158.86 seconds. Five focused browser checks
+passed in 15.4 seconds.
+
+The first complete browser run passed 36 checks and failed an immediate timeline
+count read after process completion. Metadata can arrive before retained raw
+pages publish; the test now waits for the actual nonempty timeline before
+preserving all existing cursor, identity and failed-rebuild assertions.
+The final complete rerun passed all 37 reconstruction browser checks in 3.2
+minutes. Troika's WebGL-disabled SDF context diagnostics remain open.
+
+Both fresh failed-rebuild captures received original-size lead review. The
+previous output and current compiler diagnostics are visibly labelled; all four
+compiler rows are reachable and retain their whitespace and orange stderr glyph.
+The no-program-output message is asserted as present, without claiming it lies
+inside that screenshot's visible scroll range. World and camera geometry are
+unchanged. Input-wait/submission behavior, graphics fallback diagnostics,
+broader Prior_World/source binding and final acceptance/performance/visual
+gates remain open. This does not replace the fresh 80-case/96-capture matrix
+or formal A–G visual approval.
