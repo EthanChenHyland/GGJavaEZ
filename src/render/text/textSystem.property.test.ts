@@ -1,7 +1,7 @@
 import {expect,it} from 'vitest'
 import fc from 'fast-check'
 import {PerspectiveCamera,Vector3} from 'three'
-import {fitWorldText,localFontText,projectedFontPixels,textAdvance,worldTextVisible} from './textSystem'
+import {fitWorldText,localFontText,projectedFontPixels,projectedPlaneFontPixels,textAdvance,worldTextVisible} from './textSystem'
 it('fits captured Unicode text without splitting code points or consulting asynchronous glyph layout',()=>{
  fc.assert(fc.property(fc.array(fc.integer({min:32,max:0x10ffff}),{maxLength:100}),fc.double({min:.01,max:10,noNaN:true}),fc.constantFrom(400 as const,500 as const,600 as const),(codes,width,weight)=>{
   const text=String.fromCodePoint(...codes),fitted=fitWorldText(text,width,.32,weight)
@@ -26,4 +26,16 @@ it('uses local glyph escapes and deterministic Inter advances including real pai
  expect(localFontText('😀')).toBe('\\ud83d\\ude00')
  expect(textAdvance('AV',500)).toBeLessThan(textAdvance('A',500)+textAdvance('V',500))
  expect(fitWorldText('Person.main(java.lang.String[])',2,.4,600,0,28)).toContain('…')
+})
+it('measures horizontal and vertical face foreshortening independently at the same readable nominal size',()=>{
+ const viewport={width:1440,height:900},camera=new PerspectiveCamera(36,viewport.width/viewport.height,.05,10000),point=new Vector3()
+ camera.position.set(0,0,10);camera.lookAt(point);camera.updateMatrixWorld()
+ const nominal=projectedFontPixels(.28,point,camera,viewport.height)
+ expect(projectedPlaneFontPixels(.28,point,camera,viewport,'x')).toBeCloseTo(nominal,6)
+ expect(projectedPlaneFontPixels(.28,point,camera,viewport)).toBeCloseTo(nominal,6)
+ camera.position.set(Math.sqrt(75),0,5);camera.lookAt(point);camera.updateMatrixWorld()
+ expect(projectedFontPixels(.28,point,camera,viewport.height)).toBeCloseTo(nominal,6)
+ expect(projectedPlaneFontPixels(.28,point,camera,viewport)).toBeCloseTo(nominal,6)
+ expect(projectedPlaneFontPixels(.28,point,camera,viewport,'x')).toBeLessThan(nominal*.51)
+ expect(projectedPlaneFontPixels(.28,new Vector3(0,0,10000),camera,viewport,'x')).toBe(0)
 })

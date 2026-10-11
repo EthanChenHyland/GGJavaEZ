@@ -11,6 +11,8 @@ import { Vector3 } from 'three'
 import type { OrbitPose } from './projection'
 import { clusterFraming } from './clusterFraming'
 import { cameraPosition,nextDetailLevel,projectionCamera,representativeFaceHeight,screenPoint } from './projection'
+import {faceHeading} from '../render/text/faceTypography'
+import {projectedFontPixels,projectedPlaneFontPixels} from '../render/text/textSystem'
 
 function catalog(){
   const raw=generateRawTrace({seed:17,rawEvents:1600,classes:1,callRate:.7,allocateRate:.9,maxDepth:8})
@@ -58,6 +60,13 @@ it('measures CLOSE for an explicit ownership key without rewriting the scene own
   expect(result).not.toBeNull();expect(result!.detailLevel).toBe('CLOSE')
   const height=representativeFaceHeight(data.scene,projectionCamera(result!.pose,viewport),viewport)
   for(const level of ['FAR','MEDIUM','CLOSE'] as const)expect(nextDetailLevel(level,height,viewport.height)).toBe('CLOSE')
+  const camera=projectionCamera(result!.pose,viewport),heading=faceHeading(data.scene.entities[result!.memberId])
+  for(const label of [heading.title,...(heading.identity?[heading.identity]:[])]){
+    const point=new Vector3(...label.position)
+    expect(projectedFontPixels(label.size,point,camera,viewport.height)).toBeGreaterThanOrEqual(12)
+    expect(projectedPlaneFontPixels(label.size,point,camera,viewport)).toBeGreaterThanOrEqual(12)
+    expect(projectedPlaneFontPixels(label.size,point,camera,viewport,'x')).toBeGreaterThanOrEqual(12)
+  }
   expect(JSON.stringify(data.scene)).toBe(before)
 })
 it('never substitutes a proxy or an absent member for runtime geometry',()=>{

@@ -28,7 +28,8 @@ import {ExceptionPanel} from './ExceptionPanel';
 import {projectBodies,projectInstancedBody,projectRect} from '../qa/worldProjection';
 import {anchorCorners} from '../world/presentationPlanner';
 import {StructuralLabels} from './StructuralLabels';
-import {projectedPlaneFontPixels} from './text/textSystem';
+import {projectedFontPixels,projectedPlaneFontPixels} from './text/textSystem';
+import type {Text} from 'troika-three-text';
 import type {StructuralLabelSpec} from './text/structuralLabelLayout';
 
 function GradientBackground() {
@@ -60,6 +61,16 @@ function Metrics({ scene, plan, selection,trace }: {
         if (import.meta.env.DEV||import.meta.env.VITE_QA==='1')
             window.__ggjavaezWorld={ scene: () => scene, plan: () => plan, selection:()=>selection,
                 recordedEvents:()=>trace.events,
+                runtimeHeadings:()=>{
+                    const headings:ReturnType<NonNullable<Window['__ggjavaezWorld']>['runtimeHeadings']>[number][]=[];
+                    if(!(camera instanceof PerspectiveCamera))return headings;
+                    world.traverse(group=>{
+                        const heading=group.userData.runtimeHeading as {entityId:string;kind:'title'|'identity';text:Text}|undefined;
+                        if(!heading)return;
+                        const text=heading.text,point=new Vector3().setFromMatrixPosition(text.matrix),scale=new Vector3().setFromMatrixScale(text.matrix).y;
+                        headings.push({entityId:heading.entityId,kind:heading.kind,text:text.text,opacity:text.fillOpacity,fontPixels:projectedFontPixels(text.fontSize*scale,point,camera,size.height),planePixels:projectedPlaneFontPixels(text.fontSize*scale,point,camera,size),widthPixels:projectedPlaneFontPixels(text.fontSize*scale,point,camera,size,'x')});
+                    });return headings;
+                },
                 structuralLabels:()=>{
                     const host=world.getObjectByName('structural-labels');if(!host||!(camera instanceof PerspectiveCamera))return[];
                     return host.children.map(group=>{
@@ -135,6 +146,8 @@ export function RuntimeCanvas({ scene, plan, layout, safeFrame,inspectorRect, se
     const input = useRef<CameraInput | null>(null), pointer = useRef<{
         x: number;
         y: number;
+        button:number;
+        orbitStarted:boolean;
     } | null>(null), moved = useRef(false);
     const lightTarget = useMemo(() => ({ x: 4, y: -3, z: 0 }), []);
     useEffect(()=>{
@@ -145,8 +158,12 @@ export function RuntimeCanvas({ scene, plan, layout, safeFrame,inspectorRect, se
     },[])
     const select = (next: Selection) => { if (!moved.current)
         onSelect(next); };
-    return <div ref={worldElement} className="world-canvas" role="application" tabIndex={0} aria-label="Three-dimensional Java runtime world" onContextMenu={event => event.preventDefault()} onPointerDownCapture={event => { event.currentTarget.focus(); pointer.current = { x: event.clientX, y: event.clientY }; moved.current = false; input.current?.shift(event.shiftKey); input.current?.cancel(); }} onPointerMoveCapture={event => { if (pointer.current && Math.hypot(event.clientX - pointer.current.x, event.clientY - pointer.current.y) > 4)
-        moved.current = true; }} onPointerUpCapture={() => { pointer.current = null; }} onKeyDown={event => {
+    return <div ref={worldElement} className="world-canvas" role="application" tabIndex={0} aria-label="Three-dimensional Java runtime world" onContextMenu={event => event.preventDefault()} onPointerDownCapture={event => { event.currentTarget.focus(); pointer.current = { x: event.clientX, y: event.clientY,button:event.button,orbitStarted:false }; moved.current = false; input.current?.shift(event.shiftKey); input.current?.cancel(); }} onPointerMoveCapture={event => {
+        const gesture=pointer.current;if(!gesture)return;
+        const distance=Math.hypot(event.clientX-gesture.x,event.clientY-gesture.y);
+        if(distance>0&&!gesture.orbitStarted&&gesture.button===0&&(event.buttons&1)&&!event.shiftKey){input.current?.orbit();gesture.orbitStarted=true}
+        if(distance>4)moved.current=true;
+    }} onPointerUpCapture={() => { pointer.current = null; }} onPointerCancelCapture={() => {pointer.current=null}} onKeyDown={event => {
             if(event.key==='Tab'&&accessible.length){const index=activeIndex+(event.shiftKey?-1:1),next=accessible[index];if(next){event.preventDefault();onSelect(next.selection);list.current?.focus()}return}
             if(event.target===list.current&&event.key.startsWith('Arrow')){event.preventDefault();const index=Math.min(accessible.length-1,Math.max(0,activeIndex+(event.key==='ArrowUp'||event.key==='ArrowLeft'?-1:1)));if(accessible[index])onSelect(accessible[index].selection);return}
             if (event.key === 'Escape') {

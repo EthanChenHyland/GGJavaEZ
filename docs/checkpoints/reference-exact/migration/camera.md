@@ -178,3 +178,50 @@ despite satisfying the geometric Safe Frame checks. The camera solver needs a
 visibility-aware polish pass. Narrow Inspector/timeline occlusion and dense
 foreground/glow readability remain open. These screenshots are diagnostics,
 not formal reference approval or completion of A–G.
+
+## Ownership visibility and Focus input — 2026-10-11
+
+Ownership travel now ranks actual canonical cuboid sightlines through a bounded
+set of physical camera angles. Arrays contribute their actual title plate,
+not their reserved empty tray envelope; presented cells still need native
+raycast verification. The solver retains ordinary collision admission, full
+member bounds and original proxy centre inside command Safe Frame, and CLOSE
+measured by the unchanged canonical global metric from every hysteresis state.
+Generic type/package travel retains its prior angle search and MEDIUM target.
+
+The renderer and camera share title/identity positions and world font sizes.
+An ownership destination must project both headings at at least 12 CSS pixels
+nominally and along both actual face-plane axes. This prevents nominally large
+but horizontally compressed labels. Text sizes, canonical bodies, ports and
+detail thresholds are unchanged. Sightlines remain a conservative ranking,
+not a proof that every row or member in an arbitrary world is unobstructed.
+
+The six actual-JVM ownership cases additionally click a fully framed detailed
+member's centre through the native production raycast. Slot ownership comes
+from actual recorded rows/entries/cells, never an alias spelling. After the
+selection transition settles, read-only observation of actual WorldText
+headings checks non-empty title, expected identity, positive rendered opacity
+and the three projected size measurements. A single member click keeps the
+camera, Focus and recorded runtime facts unchanged. All six refined diagnostic
+captures received original-size lead review; narrow foreground overlap,
+collection entry presentation and Inspector/timeline overlap remain open.
+
+Manual non-shift arrow orbit and the first actual primary-pointer drag now
+resolve the same actual Focus anchor as explicit Focus. They rebase the orbit
+pivot while retaining the last safe eye for swept collision checks. Pointer
+down or selection alone cannot rebase the camera; pan and dolly keep their
+ordinary behavior. An absent Focus target supplies no replacement anchor.
+Two native dense-JVM cases cover desktop and narrow layouts, auxiliary heap
+travel, camera-stable clicks, keyboard orbit, pan then pointer orbit, and
+restoration of the original pre-Focus pose.
+
+Those native checks also exposed a shortcut scope bug: an open Inspector was
+consuming World Escape globally. Dispatch now closes Inspector only while
+keyboard focus is inside it. World Escape can exit Focus with the Inspector
+still open; Inspector Escape preserves Focus and the camera. This scope change
+does not alter the saved pre-Focus pose or any runtime identity.
+
+This is a bounded camera/input convergence increment. The complete hierarchy,
+inter-cluster connector convergence, broad visual polish, fresh formal 80/96
+matrix, independent acceptance/performance gates and final A–G approval remain
+open.

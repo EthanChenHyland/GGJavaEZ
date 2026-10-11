@@ -1224,6 +1224,7 @@ export function useWorkspace(recordingViewer = false) {
           editor: !!target?.closest('.monaco-editor'),
           textInput: !!target?.closest('input, textarea, select, [contenteditable]:not([contenteditable="false"]), [role="textbox"]'),
           world: !!target?.closest('.world-canvas'),
+          inspector: !!target?.closest('.inspector, .gg-inspector'),
           shellSurface: !!target?.closest('.shell-source, .ide-source-pane, .ide-editor-panel, .shell-source-peek, .ide-jdk, .gg-inspector, .world-timeline, .world-settings, [role="dialog"], [role="menu"]'),
         }
         const interaction = useWorldInteractionStore.getState()

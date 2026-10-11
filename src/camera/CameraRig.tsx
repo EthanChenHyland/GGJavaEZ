@@ -20,7 +20,7 @@ import {clusterFraming} from './clusterFraming'
 import {guidedTravel,travelPose,type GuidedTravel} from './guidedTravel'
 import {requestAnimationFrameRender} from '../render/renderActivity'
 import {productionClock} from '../motion/clock'
-export interface CameraInput {cancel():void;key(key:string,shift:boolean):void;wheel(dx:number,dy:number,pixelPan:boolean):void;shift(value:boolean):void}
+export interface CameraInput {cancel():void;orbit():void;key(key:string,shift:boolean):void;wheel(dx:number,dy:number,pixelPan:boolean):void;shift(value:boolean):void}
 export const cameraReadiness={moving:false}
 const tuple=(v:Vector3):Vec3=>[v.x,v.y,v.z]
 const ease=(t:number)=>t<.5?4*t*t*t:1-(-2*t+2)**3/2
@@ -42,6 +42,11 @@ export function CameraRig({scene,plan,event,layout,safeFrame,inspectorRect,input
  const eye=():EyePose=>({position:tuple(camera.position),target:tuple(controls.current?.target??new Vector3())})
  const previous=useRef<EyePose>(eye()),latest=useRef({scene,plan,safeFrame,boxes,limits})
  latest.current={scene,plan,safeFrame,boxes,limits}
+ const anchorForFocus=(targetId:string)=>{
+  const {scene,plan}=latest.current,owner=plan.framing.focus?.targetId??targetId
+  const cell=[...plan.cellWindows.values()].flatMap(window=>[...window.mapping.values()]).find(cell=>cell.anchor.entityId===targetId)
+  return cell?.anchor??scene.entities[owner]?.anchor??plan.clusters.find(cluster=>cluster.id===targetId)?.anchor
+ }
  const reduced=()=>useCameraStore.getState().reducedMotion||matchMedia('(prefers-reduced-motion: reduce)').matches
  const beginWaypoints=(poses:readonly OrbitPose[],duration:number,home=false,flowId?:string)=>{
   if(!poses.length)return
@@ -66,8 +71,7 @@ export function CameraRig({scene,plan,event,layout,safeFrame,inspectorRect,input
   if(intent.kind==='home')begin(home(),motion.homeMs,true)
   if(intent.kind==='recording'||intent.kind==='hero')begin(heroFraming(scene,plan,safeFrame,size),scene.cursor?600:0)
   if(intent.kind==='focus'){
-   const owner=plan.framing.focus?.targetId??intent.targetId,node=scene.entities[owner],cell=[...plan.cellWindows.values()].flatMap(window=>[...window.mapping.values()]).find(cell=>cell.anchor.entityId===intent.targetId)
-   const anchor=cell?.anchor??node?.anchor??plan.clusters.find(cluster=>cluster.id===intent.targetId)?.anchor
+   const anchor=anchorForFocus(intent.targetId)
    if(!anchor)return
    // Opening a narrow sheet never moves the camera by itself. An explicit
    // Focus request uses the free rectangle above that actual visible sheet.
@@ -102,8 +106,16 @@ export function CameraRig({scene,plan,event,layout,safeFrame,inspectorRect,input
  },[intentRevision])
  useEffect(()=>{
   const cancel=()=>{move.current=null;lastFollow.current=-1;useCameraStore.getState().setPose(orbitPoseFromEye(eye()));useCameraStore.getState().userInput();invalidate()}
-  input.current={cancel,shift(value){if(controls.current)controls.current.mouseButtons.LEFT=value?MOUSE.PAN:MOUSE.ROTATE},
-   key(key,shift){cancel();const pivot=controls.current?.target;if(!pivot)return;const offset=camera.position.clone().sub(pivot)
+  const orbit=()=>{
+   const focus=useInteractionStore.getState().focus,anchor=focus?anchorForFocus(focus.targetId):null
+   if(!anchor||!controls.current)return
+   controls.current.target.set(...anchor.position)
+   // Rebase only the pivot. Preserve the last safe eye for swept collision
+   // checks; an orbit is not a pan blocked between two unrelated targets.
+   previous.current={...previous.current,target:anchor.position}
+  }
+  input.current={cancel,orbit,shift(value){if(controls.current)controls.current.mouseButtons.LEFT=value?MOUSE.PAN:MOUSE.ROTATE},
+   key(key,shift){cancel();if(!shift&&key.startsWith('Arrow'))orbit();const pivot=controls.current?.target;if(!pivot)return;const offset=camera.position.clone().sub(pivot)
     if(['+','=','-'].includes(key))offset.multiplyScalar(key==='-'?1.1:.9)
     else if(shift){const right=new Vector3().setFromMatrixColumn(camera.matrixWorld,0),up=new Vector3().setFromMatrixColumn(camera.matrixWorld,1);const delta=(key==='ArrowLeft'?right.multiplyScalar(-1):key==='ArrowRight'?right:key==='ArrowUp'?up:up.multiplyScalar(-1)).multiplyScalar(offset.length()*.025);camera.position.add(delta);pivot.add(delta);return}
     else {const distance=offset.length(),yaw=Math.atan2(offset.x,offset.z)+(key==='ArrowLeft'?-5:key==='ArrowRight'?5:0)*Math.PI/180,pitch=Math.max(2*Math.PI/180,Math.min(80*Math.PI/180,Math.asin(offset.y/distance)+(key==='ArrowUp'?5:key==='ArrowDown'?-5:0)*Math.PI/180));offset.set(Math.sin(yaw)*Math.cos(pitch)*distance,Math.sin(pitch)*distance,Math.cos(yaw)*Math.cos(pitch)*distance)}camera.position.copy(pivot).add(offset)

@@ -5,7 +5,7 @@ import { notRecordedValue, truncateFrameText } from '../world/valueText';
 import { WorldText } from './FaceText';
 import { faceRows } from './faceModel';
 import { displayType } from '../world/displayType';
-import {faceColumns,rowValueLabel} from './text/faceTypography';
+import {faceColumns,faceHeading,rowValueLabel} from './text/faceTypography';
 import {fitWorldText,textAdvance} from './text/textSystem';
 export { WorldText } from './FaceText';
 /** Face labels share the solid/row geometry model and one glyph batch. */
@@ -19,7 +19,8 @@ export function RuntimeSolid({ node, presented, plan }: {
     const { anchor } = node, [x, y, z] = anchor.position, [w, h, d] = anchor.size, top = y + h / 2, face = z + d / 2 + .085, left = x - w / 2 + .28, opacity = presented.opacity;
     const model = faceRows(node, presented);
     const identity=node.kind==='frame'?`#${node.invocationNumber}`:node.kind==='class'?'':`#${node.displayId}`;
-    const identityWidth=identity?textAdvance(identity,500)*.28+.04:0,titleSize=node.anchor.region==='library'?.3:.4;
+    const heading=faceHeading(node),titleSize=heading.title.size;
+    const identityWidth=identity?textAdvance(identity,500)*.28+.04:0;
     const lengthLabel=node.kind==='array'?`length ${node.length}`:null;
     const metadataWidth=Math.max(identityWidth,lengthLabel?textAdvance(lengthLabel)*.25+.04:0);
     const titleWidth=Math.max(.1,w-.56-metadataWidth-(metadataWidth?.2:0)),title=fitWorldText(truncateFrameText(node.title),titleWidth,titleSize,600,0,28);
@@ -27,8 +28,8 @@ export function RuntimeSolid({ node, presented, plan }: {
     const emphasis = presented.highlight === 'exception' ? color.semantic.exception : presented.highlight === 'mutation' ? color.semantic.mutation : color.ui.textSecondary;
     const string = node.kind === 'object' ? node.groups.flatMap(g => g.rows).find(row => row.slotId.endsWith(':captured-string')) : null;
     return <group>
-    <WorldText position={[left, top - .45, face]} weight={600} size={titleSize} width={titleWidth} opacity={opacity}>{title}</WorldText>
-    {identity&&<WorldText position={[x+w/2-.28,top-(node.kind==='array'?.66:.45),face]} weight={500} size={.28} align="right" width={identityWidth} opacity={opacity}>{identity}</WorldText>}
+    <WorldText position={heading.title.position} weight={600} size={titleSize} width={titleWidth} opacity={opacity} heading={{entityId:node.id,kind:'title'}}>{title}</WorldText>
+    {identity&&heading.identity&&<WorldText position={heading.identity.position} weight={500} size={heading.identity.size} align="right" width={identityWidth} opacity={opacity} heading={{entityId:node.id,kind:'identity'}}>{identity}</WorldText>}
     {node.kind === 'frame' && <WorldText position={[left, top - .94, face]} size={.25} tint={emphasis} opacity={opacity}>{frameStatusText(node.status)}</WorldText>}
     {node.kind === 'class' && <WorldText position={[left, top - .85, face]} size={.23} tint={color.ui.textSecondary} opacity={opacity}>{`static · ${node.initialization}`}</WorldText>}
     {string && <WorldText position={[left, top - 1.2, face]} size={.3} width={w - .55} opacity={opacity}>{string.value.text}</WorldText>}

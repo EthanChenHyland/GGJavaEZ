@@ -1,7 +1,7 @@
 export type Platform = 'mac' | 'windows' | 'linux'
 export interface Shortcut { code: string; primary?: boolean; alt?: boolean; shift?: boolean; ctrl?: boolean; meta?: boolean }
 export type KeyEventLike = Pick<KeyboardEvent, 'code' | 'key' | 'ctrlKey' | 'metaKey' | 'altKey' | 'shiftKey'>
-export interface ShortcutFocus { world: boolean; editor: boolean; textInput: boolean; shellSurface: boolean }
+export interface ShortcutFocus { world: boolean; editor: boolean; textInput: boolean; shellSurface: boolean; inspector?:boolean }
 export interface ScopedShortcutCommand {
   id: string; scope: 'workspace' | 'editor' | 'world'; bindings: readonly Shortcut[]
 }
@@ -20,7 +20,7 @@ export function commandForShortcut<T extends ScopedShortcutCommand>(
 /** Escape belongs to source/inspector chrome and widgets before it belongs to navigation. */
 export function worldEscapeCommand(event: KeyEventLike, focus: ShortcutFocus, state: { inspectorOpen: boolean; focusActive: boolean; traceActive: boolean }): 'workbench.inspector' | 'navigation.exitFocus' | 'navigation.explore' | null {
   if (!matchesShortcut(event, { code: 'Escape' }, 'linux') || focus.textInput || focus.editor) return null
-  if (state.inspectorOpen) return 'workbench.inspector'
+  if (state.inspectorOpen && focus.inspector) return 'workbench.inspector'
   if (focus.shellSurface) return null
   if (state.focusActive) return 'navigation.exitFocus'
   return state.traceActive ? 'navigation.explore' : null

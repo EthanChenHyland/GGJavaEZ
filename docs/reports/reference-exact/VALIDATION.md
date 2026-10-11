@@ -750,3 +750,58 @@ Focus pivot audit remain open. The complete collection/invocation/age hierarchy,
 inter-cluster connector convergence, fresh 80/96 formal comparison, independent
 acceptance/performance suites and final A–G approval also remain open. These
 functional checks are not visual completion or a replacement for that matrix.
+
+## Ownership visibility and Focus orbit — 2026-10-11
+
+Ownership travel adds bounded sightline ranking against actual canonical solids
+and actual array title plates. It admits only physical destinations whose real
+title and identity project at least 12 CSS pixels nominally and along both face
+axes. Renderer and solver share heading geometry and font sizes. Ordinary
+collision admission, complete member bounds/proxy centre in command Safe Frame,
+the canonical global zoom metric and runtime anchors remain unchanged. Generic
+type/package travel retains its prior search and MEDIUM target. Ranking does
+not establish that every row in an arbitrary world is unobstructed.
+
+All six actual-JVM ownership cases now additionally select a fully framed
+member's central face by native raycast. After actual selection/text transitions
+settle, read-only WorldText observation verifies title, identity, rendered
+opacity and all three projected font measurements. Selection preserves the
+camera, Focus, Cursor and runtime anchors. The final full browser run regenerates
+the six ignored destination images/JSON diagnostics. All six refined images
+also received original-size lead inspection; title visibility has improved,
+while narrow foreground overlap, collection entry presentation and the narrow
+Inspector's timeline occlusion remain open.
+
+The Focus pivot now rebases to the actual focused body/cell/cluster only on an
+actual orbit gesture or non-shift arrow orbit. Single clicks, pointer down, pan
+and dolly do not trigger that rebase. Swept collision checks retain their last
+safe eye. Two native dense-JVM regressions cover desktop/narrow auxiliary heap
+travel, plain clicks, keyboard orbit, pan followed by primary-pointer orbit,
+Inspector Escape/return, World Escape with the Inspector open and exact
+pre-Focus pose restoration. They exposed the old pivot error and a global
+Inspector Escape interception; both were fixed. Inspector dispatch now depends
+on actual keyboard focus inside that surface.
+
+Build, lint and strict reference TypeScript pass. AppRoot is 343.91 kB gzip.
+The focused camera/visibility/projection/shortcut run passes 23 tests in
+0.885 seconds. The first complete unit run found one new fixture error: a
+16:9 camera was paired with a 1440×900 viewport. After correcting the fixture,
+the final complete default suite passes 1,826 tests with 70 opt-in skips (1,896
+total), across 192 files (185 passed, seven skipped), in 158.64 seconds.
+
+The final reconstruction browser run passes all 57 cases in 6.5 minutes,
+including all six ownership cases and both expanded native Focus cases in the
+same run. This includes the existing actual clock, cluster travel, Follow Path,
+runtime identity, Console/input, editor/debugger, quality and graphics recovery
+regressions. It excludes the separate formal 80-case matrix and legacy E2E
+scenarios. Supported-renderer THREE.Clock/PCFSoftShadowMap warnings and legacy
+unit Three CommonJS warnings remain visible; these results do not claim zero
+warnings or a completed performance audit.
+
+Complete collection/invocation/age hierarchy, current-reference inter-cluster
+aggregation, broad visual/contrast polish, fresh 80/96 comparison and approval,
+independent acceptance/performance suites and final A–G approval remain open.
+The read-only inter-cluster audit confirms that the existing planner drops
+clustered references and individual connector overflow and that production
+bundle picking/captions/inspection need convergence. No runtime semantics,
+normalizer, reducer, graph schema or Semantic_Golden changed in this increment.

@@ -61,7 +61,7 @@ for(const scenario of scenarios)test(`actual JVM ownership collapse and native C
  await step(0);const cluster=await clickCluster(page,true,undefined,true);await step(0)
  if(!('reduced'in scenario)){expect(await step(450)).not.toEqual(start);await step(450)}
  await ready(page);expect(await page.evaluate(()=>window.__ggjavaezWorld!.plan().detailLevel)).toBe('CLOSE')
- const result=await page.evaluate(ids=>({pose:window.__ggjavaezQA!.cameraPose(),shell:window.__ggjavaezQA!.shellRects(),members:ids.filter(id=>window.__ggjavaezWorld!.plan().entities.get(id)?.mode==='detailed').map(id=>({id,bounds:window.__ggjavaezWorld!.worldProjection().entities.find(body=>body.id===id)?.bounds}))}),cluster.memberIds)
+ const result=await page.evaluate(ids=>({pose:window.__ggjavaezQA!.cameraPose(),shell:window.__ggjavaezQA!.shellRects(),members:ids.filter(id=>window.__ggjavaezWorld!.plan().entities.get(id)?.mode==='detailed').map(id=>({id,node:window.__ggjavaezWorld!.scene().entities[id],bounds:window.__ggjavaezWorld!.worldProjection().entities.find(body=>body.id===id)?.bounds}))}),cluster.memberIds)
  const safe={...result.shell.safeFrame};if(scenario.width<1024&&result.shell.inspector)safe.height=Math.min(safe.y+safe.height,result.shell.inspector.y-scenario.height*.01)-safe.y
  const camera=new PerspectiveCamera(36,scenario.width/scenario.height,.05,10000);camera.position.set(...result.pose.position);camera.lookAt(...result.pose.target);camera.updateMatrixWorld()
  const p=new Vector3(...cluster.anchor.position).project(camera),x=(p.x+1)*scenario.width/2,y=(1-p.y)*scenario.height/2
@@ -69,6 +69,27 @@ for(const scenario of scenarios)test(`actual JVM ownership collapse and native C
  expect(result.members.some(({bounds:b})=>b&&b.x>=safe.x-.01&&b.y>=safe.y-.01&&b.x+b.width<=safe.x+safe.width+.01&&b.y+b.height<=safe.y+safe.height+.01)).toBe(true)
  expect(await facts()).toEqual(before)
  await test.info().attach('recorded-ownership-travel',{body:JSON.stringify({realJvmExecuted:true,sessionId:session.id,cluster,result}),contentType:'application/json'})
+ await writeFile(`.ggjavaez/qa/reference-exact/ownership-travel-destination-${scenario.width}x${scenario.height}${'reduced'in scenario?'-reduced':''}.json`,JSON.stringify({realJvmExecuted:true,sessionId:session.id,cluster,result},null,2)+'\n')
+ // A Safe Frame rectangle alone can hide a member behind other solids. Prove
+ // that a complete detailed member's central face is reachable by the actual
+ // production raycast, resolving slot ownership from recorded rows, not IDs.
+ let reached:string|null=null
+ for(const {node,bounds:b}of result.members){
+  if(!b||b.x<safe.x-.01||b.y<safe.y-.01||b.x+b.width>safe.x+safe.width+.01||b.y+b.height>safe.y+safe.height+.01)continue
+  const a=node.anchor,point=new Vector3(a.position[0],node.kind==='array'?a.position[1]+a.size[1]/2-.45:a.position[1],a.position[2]+(node.kind==='array'?.06:a.size[2]/2)+.06).project(camera)
+  await page.mouse.click((point.x+1)*scenario.width/2,(1-point.y)*scenario.height/2)
+  await page.evaluate(()=>new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve()))))
+  const selected=await page.evaluate(()=>window.__ggjavaezQA!.selection())
+  const slots=node.kind==='array'?node.cells.map(cell=>cell.slotId):node.kind==='collection'?node.entries.flatMap(entry=>entry.keySlotId?[entry.slotId,entry.keySlotId]:[entry.slotId]):node.kind==='object'?node.groups.flatMap(group=>group.rows.map(row=>row.slotId)):node.rows.map(row=>row.slotId)
+  if(selected?.id===node.id||selected?.kind==='slot'&&slots.includes(selected.id)){reached=node.id;break}
+ }
+ expect(reached,'A detailed member central face is visible and natively selectable').not.toBeNull()
+ await page.evaluate(()=>window.__ggjavaezQA!.clock.resume());await ready(page)
+ const headings=await page.evaluate(id=>window.__ggjavaezWorld!.runtimeHeadings().filter(heading=>heading.entityId===id),reached)
+ expect(headings.find(heading=>heading.kind==='title')?.text).toBeTruthy()
+ expect(headings.map(heading=>heading.kind).sort()).toEqual(result.members.find(member=>member.id===reached)!.node.kind==='class'?['title']:['identity','title'])
+ for(const heading of headings){expect(heading.opacity).toBeGreaterThan(0);expect(heading.fontPixels).toBeGreaterThanOrEqual(12-.001);expect(heading.planePixels).toBeGreaterThanOrEqual(12-.001);expect(heading.widthPixels).toBeGreaterThanOrEqual(12-.001)}
+ expect(await page.evaluate(()=>window.__ggjavaezQA!.cameraPose())).toEqual(result.pose);expect(await facts()).toEqual(before)
  await page.screenshot({path:`.ggjavaez/qa/reference-exact/ownership-travel-${scenario.width}x${scenario.height}${'reduced'in scenario?'-reduced':''}.png`})
- await page.evaluate(()=>window.__ggjavaezQA!.clock.resume());await ready(page);expect(errors).toEqual([])
+ expect(errors).toEqual([])
 })

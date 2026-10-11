@@ -91,10 +91,13 @@ describe('canonical shortcut dispatch scopes', () => {
     expect(worldEscapeCommand(key('Escape', { ctrlKey: true }), world, both)).toBeNull()
     expect(worldEscapeCommand(key('KeyT'), world, both)).toBeNull()
   })
-  it('closes the open Inspector before Focus or Trace, including when Selection was cleared in Focus', () => {
+  it('closes the Inspector only from its own focused surface, leaving World Escape to Focus and Trace', () => {
     const state = { inspectorOpen: true, focusActive: true, traceActive: true }
-    expect(worldEscapeCommand(key('Escape'), world, state)).toBe('workbench.inspector')
-    expect(worldEscapeCommand(key('Escape'), { ...world, world: false, shellSurface: true }, state)).toBe('workbench.inspector')
+    expect(worldEscapeCommand(key('Escape'), world, state)).toBe('navigation.exitFocus')
+    expect(worldEscapeCommand(key('Escape'), { ...world, world: false, shellSurface: true,inspector:true }, state)).toBe('workbench.inspector')
+    expect(worldEscapeCommand(key('Escape'), { ...world, world: false, shellSurface: true }, state)).toBeNull()
+    expect(worldEscapeCommand(key('Escape'), world, {...state,focusActive:false})).toBe('navigation.explore')
+    expect(worldEscapeCommand(key('Escape'), world, {...state,focusActive:false,traceActive:false})).toBeNull()
     expect(worldEscapeCommand(key('Escape'), { ...world, editor: true }, state)).toBeNull()
     expect(worldEscapeCommand(key('Escape'), { ...world, textInput: true }, state)).toBeNull()
     expect(worldEscapeCommand(key('Escape'), world, { ...state, inspectorOpen: false })).toBe('navigation.exitFocus')

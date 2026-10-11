@@ -1,7 +1,11 @@
 import type { DetailLevel, PresentedCluster, SceneModel, Vec3, WorldAnchor } from '../contracts/worldV2'
 import type { Rect } from '../shell/shellLayout'
 import { camera as tokens } from '../theme/tokens'
-import { fitToSafeFrame,nextDetailLevel,projectionCamera,representativeFaceHeight,screenPoint,type OrbitPose,type Size } from './projection'
+import { cameraPosition,fitToSafeFrame,nextDetailLevel,projectionCamera,representativeFaceHeight,screenPoint,type OrbitPose,type Size } from './projection'
+import {createMemberVisibility} from './memberVisibility'
+import {Vector3} from 'three'
+import {faceHeading} from '../render/text/faceTypography'
+import {projectedFontPixels,projectedPlaneFontPixels} from '../render/text/textSystem'
 
 export interface ClusterDestination { memberId:string;pose:OrbitPose;detailLevel:'MEDIUM'|'CLOSE';canonicalRatio:number }
 const corners=(anchor:WorldAnchor):Vec3[]=>[-1,1].flatMap(x=>[-1,1].flatMap(y=>[-1,1].map(z=>anchor.position.map((v,i)=>v+[x,y,z][i]*anchor.size[i]/2) as unknown as Vec3)))
@@ -27,7 +31,9 @@ export function clusterFraming(scene:SceneModel,cluster:PresentedCluster|undefin
   const members=cluster.memberIds.map(id=>scene.entities[id]).filter(node=>!!node&&
     (cluster.members===1||!overlaps(node.anchor,cluster.anchor)))
     .sort((a,b)=>Math.hypot(...a.anchor.position.map((v,i)=>v-cluster.anchor.position[i]))-Math.hypot(...b.anchor.position.map((v,i)=>v-cluster.anchor.position[i]))||a.id.localeCompare(b.id)).slice(0,3)
-  const angles=[...(current?[{yaw:current.yawDeg,pitch:current.pitchDeg}]:[]),tokens.hero,tokens.focus]
+  const ownership=cluster.key.kind==='ownership',visibility=ownership?createMemberVisibility(scene):null
+  const angles=[...(current?[{yaw:current.yawDeg,pitch:current.pitchDeg}]:[]),tokens.hero,tokens.focus,
+    ...(ownership?[{yaw:8,pitch:-35},{yaw:8,pitch:-55},{yaw:45,pitch:-35},{yaw:-45,pitch:-35},{yaw:65,pitch:-25},{yaw:-65,pitch:-25}]:[])]
     .filter((angle,index,all)=>all.findIndex(other=>other.yaw===angle.yaw&&other.pitch===angle.pitch)===index)
   let best:ClusterDestination|null=null,score=Infinity
   for(const node of members)for(const angle of angles){
@@ -40,11 +46,19 @@ export function clusterFraming(scene:SceneModel,cluster:PresentedCluster|undefin
       const camera=projectionCamera(pose,viewport)
       camera.near=.05;camera.far=10000;camera.updateProjectionMatrix()
       if(!points.every(point=>inside(screenPoint(point,camera,viewport),safe)))continue
+      if(ownership){
+        const heading=faceHeading(node)
+        if([heading.title,...(heading.identity?[heading.identity]:[])].some(label=>{
+          const point=new Vector3(...label.position)
+          return projectedFontPixels(label.size,point,camera,viewport.height)<12||projectedPlaneFontPixels(label.size,point,camera,viewport)<12||projectedPlaneFontPixels(label.size,point,camera,viewport,'x')<12
+        }))continue
+      }
       const height=representativeFaceHeight(scene,camera,viewport)
       if(height===null||!(['FAR','MEDIUM','CLOSE'] as DetailLevel[]).every(level=>nextDetailLevel(level,height,viewport.height)===desired))continue
-      const ratio=height/viewport.height,error=Math.abs(ratio-target)
-      if(error<score){score=error;best={memberId:node.id,pose,detailLevel:desired,canonicalRatio:ratio}}
-      if(error<.005)return best
+      const ratio=height/viewport.height,error=Math.abs(ratio-target),sightline=visibility?.(node,cameraPosition(pose))
+      const ranked=error+(sightline?sightline.blocked+(sightline.centreBlocked?6:0):0)
+      if(ranked<score){score=ranked;best={memberId:node.id,pose,detailLevel:desired,canonicalRatio:ratio}}
+      if(ranked<.005)return best
     }
   }
   return best

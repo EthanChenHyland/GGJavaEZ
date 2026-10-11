@@ -40,10 +40,11 @@ export function projectedFontPixels(size:number,point:Vector3,camera:Camera,view
 }
 export const worldTextVisible=(pixels:number,minimum:11|12=11)=>Number.isFinite(pixels)&&pixels>=minimum
 
-/** Structural text stays on a real XY plane: oblique views also reduce its
- * projected vertical size, not just its distance from the lens. */
-export function projectedPlaneFontPixels(size:number,point:Vector3,camera:PerspectiveCamera,viewport:{width:number;height:number}):number{
- const low=point.clone().add(new Vector3(0,-size/2,0)).project(camera),high=point.clone().add(new Vector3(0,size/2,0)).project(camera)
+/** Text stays on a real XY plane: oblique views foreshorten either font span,
+ * independently of distance. Vertical is the default for structural labels. */
+export function projectedPlaneFontPixels(size:number,point:Vector3,camera:PerspectiveCamera,viewport:{width:number;height:number},axis:'x'|'y'='y'):number{
+ const span=new Vector3();span[axis]=size/2
+ const low=point.clone().sub(span).project(camera),high=point.clone().add(span).project(camera)
  if(low.z<=-1||low.z>=1||high.z<=-1||high.z>=1)return 0
  return Math.hypot((high.x-low.x)*viewport.width/2,(high.y-low.y)*viewport.height/2)
 }
