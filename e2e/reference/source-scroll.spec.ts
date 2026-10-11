@@ -139,6 +139,24 @@ for(const viewport of [{width:1728,height:1117},{width:1440,height:900},{width:1
   expect(reopened.position).toEqual(top.position);expect(reopened.selection).toEqual(top.selection)
  }
  expect(await page.evaluate(()=>({cursor:window.__ggjavaezQA!.cursor(),pose:window.__ggjavaezQA!.cameraPose(),selection:window.__ggjavaezQA!.selection()}))).toEqual(before)
+ // Home must fit both real region headings, independent of a transient Source
+ // drawer. Changing the camera is explicit; restoring Source must retain its
+ // manually scrolled model view.
+ if(viewport.width<1024)await page.getByRole('button',{name:/^(Collapse source|Close source drawer)$/}).click()
+ await page.getByRole('button',{name:'Home',exact:true}).click();await ready(page)
+ const headings=await page.evaluate(()=>({labels:window.__ggjavaezWorld!.structuralLabels().filter(label=>label.kind==='heading'&&['STACK','HEAP'].includes(label.id)),safe:window.__ggjavaezQA!.shellRects().safeFrame}))
+ await test.info().attach('source-home-headings',{body:JSON.stringify(headings),contentType:'application/json'})
+ expect(headings.labels.map(label=>label.id).sort()).toEqual(['HEAP','STACK'])
+ for(const label of headings.labels){
+  expect(label.visible).toBe(true);expect(label.minimumFontPixels).toBeGreaterThanOrEqual(12)
+  const rect=label.bounds!,safe=headings.safe
+  expect(rect.x).toBeGreaterThanOrEqual(safe.x);expect(rect.y).toBeGreaterThanOrEqual(safe.y)
+  expect(rect.x+rect.width).toBeLessThanOrEqual(safe.x+safe.width);expect(rect.y+rect.height).toBeLessThanOrEqual(safe.y+safe.height)
+ }
+ await page.screenshot({path:`.ggjavaez/qa/reference-exact/source-home-${viewport.width}x${viewport.height}.png`})
+ if(viewport.width<1024)await page.getByRole('button',{name:'Show source drawer',exact:true}).click()
+ await sourceSettled(page)
+ expect((await editorView(page))!.first).toBe(top.first)
  await page.getByRole('button',{name:'Step Over',exact:true}).click()
  await expect.poll(async()=>{const session=await currentSession(request);return session&&session.projectId===id&&session.phase==='PAUSED'?session.pause?.line:null},{timeout:15000}).toBe(100)
  await ready(page);await sourceSettled(page);await expect.poll(async()=>(await editorView(page))?.target).toEqual({mark:'paused',line:100})

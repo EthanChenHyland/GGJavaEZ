@@ -50,7 +50,8 @@ ownership hierarchy and formal reference convergence remain separate open work.
 
 Captions also avoid the projected bounds of actual represented solids and I/O.
 They try at most five bounded vertical positions in the same real 3D plane;
-headings keep their canonical position and omit when blocked. No body or camera
+headings try their canonical position and at most two font heights of lift in
+the same plane, then omit if every candidate is blocked. No body or camera
 moves. Structural font sizing measures the actual projected world-Y glyph span,
 including oblique views, rather than distance alone.
 
@@ -59,3 +60,26 @@ volumes. The forensic panel participates in body clearance. Package previews use
 the existing type formatter only when no different current canonical grouping
 key has the same short name; ambiguous previews retain the qualified key and
 literal dollar names remain literal. Inspector and identity keys stay exact.
+
+## Heading clearance and empty-world presentation — 2026-10-11
+
+Region headings now try at most two font heights of upward clearance while
+retaining their original X/Z text plane. Two placement tests prove bounded
+clearance, immutable canonical input and omission when all candidates are
+blocked. The real debugger checks invoke Home at all five target viewports,
+measure both rendered region headings inside Safe Frame at ≥12 CSS pixels,
+and retain the manually scrolled Source view through narrow collapse/reopen.
+The earlier manual-camera-preservation assertions still run before explicit Home.
+
+Without either an editable or recorded runtime, the entire WebGL environment
+uses the specified 45% opacity. The recorded-source route is explicitly excluded
+from this idle state. Ready sits in the actual space beside Source/Explorer,
+above region headings, with bounded width at narrow sizes. This presentation
+does not refit the camera or create runtime entities. Desktop and narrow browser
+checks measure prompt clearance, environment opacity and heading non-overlap.
+
+The focused eight browser checks passed in 54.2 seconds. Original-size lead
+review covered all five Home captures, all five pause captures and both idle
+captures. Clearer small-program headings do not close global heading placement,
+cluster ownership/travel, expanded Source/debug-toolbar overlap, dense route
+hierarchy or the complete reference comparison.

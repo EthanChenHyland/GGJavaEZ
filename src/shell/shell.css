@@ -11,6 +11,7 @@
 .ide-runtime-panel,.ide-runtime-live,.world-panel,.world-canvas { position:absolute;inset:0;min-width:0;min-height:0;border:0;background:transparent;overflow:visible }
 .ide-runtime-panel { z-index:0 }
 .world-canvas canvas { display:block;touch-action:none }
+.ide-runtime-live--idle .world-canvas canvas { opacity:.45 }
 .shell-header { position:absolute;left:0;top:0;width:100%;height:var(--header-height);display:flex;align-items:center;gap:16px;padding:0 1.2vw;z-index:4;pointer-events:none }
 .shell-header>* { pointer-events:auto }
 .shell-brand { display:flex;align-items:center;gap:13px;flex:none }
@@ -64,7 +65,7 @@
 .ide-first-use-content select { width:100%;margin:12px 0;background:#081538;border:1px solid #354A64;padding:8px }
 .ide-first-use-actions { display:flex;gap:12px;margin:16px 0 }
 .ide-first-use-actions button { border:1px solid #354A64;background:#0D235F;padding:10px;display:flex;align-items:center;gap:8px;border-radius:6px }
-.ide-runtime-ready { position:absolute;left:55%;top:45%;color:#A9B8DA;pointer-events:none }
+.ide-runtime-ready { position:absolute;left:var(--ready-x);top:var(--ready-y);bottom:auto;width:var(--ready-width);max-width:260px;color:#A9B8DA;pointer-events:none }
 .ide-runtime-ready span { display:block;color:#5CC8FF;letter-spacing:.16em;font-size:12px }
 .ide-runtime-ready strong {font-size:26px;font-weight:500;display:block;margin-top:12px}
 .ide-runtime-ready p {max-width:260px;line-height:1.6}

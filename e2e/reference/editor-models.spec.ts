@@ -65,6 +65,16 @@ for(const viewport of [{width:1440,height:900},{width:760,height:900}])test(`edi
  await expect(page.locator('.ide-editor-foot')).toContainText('Main.java')
  await expect(page.locator('.monaco-editor .view-line').first()).toContainText('class Main')
  await expect.poll(()=>page.locator('.ide-editor-panel').evaluate(panel=>{const rect=panel.getBoundingClientRect(),style=getComputedStyle(panel);return Math.abs(rect.width-Number.parseFloat(style.getPropertyValue('--source-width')))})).toBeLessThan(1)
+ const idle=await page.evaluate(()=>{
+  const prompt=document.querySelector('.ide-runtime-ready')!.getBoundingClientRect(),source=document.querySelector('.ide-editor-panel')!.getBoundingClientRect()
+  return{opacity:getComputedStyle(document.querySelector('.world-canvas canvas')!).opacity,prompt:{x:prompt.x,y:prompt.y,width:prompt.width,height:prompt.height},sourceRight:source.right,shell:window.__ggjavaezQA!.shellRects(),headings:window.__ggjavaezWorld!.structuralLabels().filter(label=>label.visible)}
+ })
+ expect(idle.opacity).toBe('0.45');expect(idle.prompt.x).toBeGreaterThanOrEqual(idle.sourceRight+12)
+ expect(idle.prompt.x+idle.prompt.width).toBeLessThanOrEqual(viewport.width)
+ expect(idle.shell.header).not.toBeNull();expect(idle.shell.timeDock).not.toBeNull()
+ expect(idle.prompt.y).toBeGreaterThanOrEqual(idle.shell.header!.height)
+ expect(idle.prompt.y+idle.prompt.height).toBeLessThan(idle.shell.timeDock!.y)
+ for(const label of idle.headings){const rect=label.bounds!;expect(Math.min(rect.y+rect.height,idle.prompt.y+idle.prompt.height)-Math.max(rect.y,idle.prompt.y)).toBeLessThanOrEqual(0)}
  await page.screenshot({path:`.ggjavaez/qa/reference-exact/editor-models-${viewport.width}x${viewport.height}.png`})
  // Repeated project replacement cannot accumulate the previous project's
  // models or view caches, even when the original files are opened again.

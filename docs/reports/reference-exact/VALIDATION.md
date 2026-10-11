@@ -458,3 +458,35 @@ overlap Ready and need the specified reduced environment opacity. Heading
 clearance, wider workspace/performance cleanup, the fresh 80-case/96-capture
 matrix and A–G visual convergence remain open. Details are in
 `migration/source-debug.md`.
+
+## Heading clearance and idle composition — 2026-10-11
+
+Region text can lift by at most two font heights on its original 3D plane to
+clear represented bodies. Empty worlds dim the canvas to the specified 45%;
+Ready uses the actual space beside Source/Explorer and no longer overlaps
+region headings. Recorded examples retain their active-world opacity. Runtime
+anchors, camera ownership, semantic detail and semantic goldens are unchanged.
+
+Build, lint and strict reference TypeScript passed; AppRoot is 337.59 kB gzip.
+Fifty-eight focused tests across three files passed in 272 ms. The final default
+suite passed 1,758 tests with 70 opt-in skips (1,828 total), across 183 files
+(176 passed, seven skipped), in 161.32 seconds. All 34 reconstruction browser
+checks passed in 3.0 minutes; the eight focused Source/idle checks passed in
+54.2 seconds. Real debugger Home checks now require both rendered headings
+entirely inside Safe Frame at ≥12 CSS pixels in all five target viewports while
+preserving manually scrolled Source views. Desktop and narrow checks measure
+idle opacity, prompt clearance and heading non-overlap.
+
+Original-size inspection covered five Home, five paused Source, two idle and
+five dense-world captures. The lifted HEAP label is visible in the debugger
+captures; the narrow open Source drawer continues to cover its underlying
+stack, and explicit Home with the drawer collapsed presents both regions.
+Expanded Source/debug-toolbar overlap, broader heading/ownership hierarchy,
+dense route crossings, cluster travel and A–G convergence remain open. These
+diagnostics do not replace the fresh 80-case/96-capture matrix or formal lead
+approval. Details are in `migration/typography.md`.
+
+The isolated 1728×1117 hero diagnostic passed in 9.0 seconds. Both its QA and
+native 1672×941 captures received original-size review: STACK and HEAP remain
+visible; bright cyan crossings and overlapping heap labels remain open. The
+diagnostic uses the list reporter and preserves the last complete matrix report.

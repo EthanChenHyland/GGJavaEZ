@@ -36,7 +36,7 @@ export function placeStructuralLabels(specs:readonly StructuralLabelSpec[],camer
  const projected=new Map<string,ProjectedStructuralLabel>(),occupied:Rect[]=[]
  for(const spec of [...specs].sort((a,b)=>a.priority-b.priority||b.count-a.count||a.id.localeCompare(b.id))){
   let label=projectStructuralLabel(spec,camera,viewport)
-  for(const lift of spec.kind==='cluster'?[0,1,2,3,4]:[0]){
+  for(const lift of spec.kind==='cluster'?[0,1,2,3,4]:[0,1,2]){
    if(lift)label=projectStructuralLabel(spec,camera,viewport,lift);const rect=label.bounds
    if(!rect||!inside(rect,safe)||blocked.some(area=>structuralRectsOverlap(rect,area))||occupied.some(area=>structuralRectsOverlap(rect,area)))continue
    label.visible=true;occupied.push(rect);break

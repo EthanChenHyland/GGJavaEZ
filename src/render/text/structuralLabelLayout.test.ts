@@ -39,3 +39,21 @@ it('omits behind-camera and clipped text without changing its anchor',()=>{
  expect(projectStructuralLabel(label,camera,{width:1440,height:900})).toMatchObject({bounds:null,visible:false})
  expect(JSON.stringify(label)).toBe(before)
 })
+it('lifts a blocked region heading within two font heights on its original 3D plane',()=>{
+ const camera=cameraAt(60),viewport={width:1440,height:900},safe={x:0,y:0,width:1440,height:900}
+ const heading:StructuralLabelSpec={...spec('HEAP',4,1),kind:'heading',size:.6,localBounds:[0,2.4,-.3,.3]}
+ const before=JSON.stringify(heading),base=projectStructuralLabel(heading,camera,viewport)
+ const placed=placeStructuralLabels([heading],camera,viewport,safe,[base.bounds!])[0]
+ expect(placed.visible).toBe(true);expect(placed.minimumFontPixels).toBeGreaterThanOrEqual(12)
+ expect(structuralRectsOverlap(placed.bounds!,base.bounds!)).toBe(false)
+ expect(placed.position[0]).toBe(heading.position[0]);expect(placed.position[2]).toBe(heading.position[2])
+ expect(placed.position[1]-heading.position[1]).toBeGreaterThan(0)
+ expect(placed.position[1]-heading.position[1]).toBeLessThanOrEqual(2*heading.size*placed.scale)
+ expect(JSON.stringify(heading)).toBe(before)
+})
+it('omits a heading when every bounded candidate is obstructed rather than detaching it from its region',()=>{
+ const camera=cameraAt(60),viewport={width:1440,height:900},safe={x:0,y:0,width:1440,height:900}
+ const heading:StructuralLabelSpec={...spec('STACK',0,1),kind:'heading',size:.6,localBounds:[0,2.4,-.3,.3]}
+ const blocked=[0,1,2].map(lift=>projectStructuralLabel(heading,camera,viewport,lift).bounds!)
+ expect(placeStructuralLabels([heading],camera,viewport,safe,blocked)[0].visible).toBe(false)
+})
