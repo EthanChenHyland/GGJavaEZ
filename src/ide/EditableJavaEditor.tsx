@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef } from 'react'
 import Editor, { type OnMount } from '@monaco-editor/react'
 import type { editor, IDisposable } from 'monaco-editor'
 import * as monacoApi from 'monaco-editor/editor/editor.api.js'
@@ -12,6 +12,7 @@ import '../ui/monacoSetup'
 import { bindMonacoSourceScroll } from '../shell/source/monacoSourceScroll'
 import type { SourceMark } from '../shell/source/sourceScrollPolicy'
 import {sourceDecorations} from '../shell/source/sourceDecorations'
+import {rememberEditableView,restoreEditableView} from '../workspace/editorModels'
 
 export function EditableJavaEditor({ projectId, path, value, onChange, diagnostics, navigate, onSave, executingLine = null, pausedLine = null, breakpoints = [], onToggleBreakpoint, sourceMark='running', sourceKey='', pauseId=null, exceptionLine=null, viewportHeight }: {
   projectId: string
@@ -93,6 +94,8 @@ export function EditableJavaEditor({ projectId, path, value, onChange, diagnosti
   const onMount: OnMount = (instance, monaco) => {
     clearEditorBindings()
     editorRef.current = instance
+    restoreEditableView(instance,projectId)
+    listenersRef.current.push(instance.onDidChangeModel(()=>restoreEditableView(instance,projectId)))
     decorationsRef.current = instance.createDecorationsCollection()
     breakpointDecorations.current = instance.createDecorationsCollection()
     scrollRef.current = bindMonacoSourceScroll(instance, monaco)
@@ -120,6 +123,7 @@ export function EditableJavaEditor({ projectId, path, value, onChange, diagnosti
     applyCurrentLine()
   }, [executingLine, pausedLine, path, sourceMark, sourceKey, pauseId, exceptionLine,applyCurrentLine])
   useEffect(() => clearEditorBindings, [clearEditorBindings])
+  useLayoutEffect(()=>()=>{const instance=editorRef.current;if(instance)rememberEditableView(instance,projectId)},[projectId,path])
   useEffect(() => { showBreakpoints() }, [breakpoints, path])
   useEffect(() => {
     const instance = editorRef.current
@@ -138,7 +142,7 @@ export function EditableJavaEditor({ projectId, path, value, onChange, diagnosti
     value={value}
     onChange={(next) => { if (!isApplyingWorkspaceEdit()) onChange(next ?? '') }}
     onMount={onMount}
-    saveViewState
+    saveViewState={false}
     keepCurrentModel
     options={{
       automaticLayout: true,

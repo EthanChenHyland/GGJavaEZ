@@ -32,6 +32,7 @@ import { runCommandAvailability } from '../state/appState'
 import { executionDimensions } from '../state/useAppState'
 import { debugStore } from './debugStore'
 import { editorStore } from './editorStore'
+import {createEditableModelOwner,retireEditableModels} from './editorModels'
 import { executionStore } from './executionStore'
 import { interactionStore } from './interactionStore'
 import { saveAllOrThrow,type SaveAllTask } from './saveAll'
@@ -255,6 +256,9 @@ export function useWorkspace(recordingViewer = false) {
   }, [])
 
   useEffect(() => languageClient.subscribe(setLanguageSnapshot), [languageClient])
+  const editableModels=useMemo(()=>createEditableModelOwner(),[])
+  useEffect(()=>{editableModels.update(projectId,tabs.map(tab=>tab.path))},[editableModels,projectId,tabs])
+  useEffect(()=>()=>editableModels.dispose(),[editableModels])
   useEffect(() => {
     if (!projectId) return
     languagePaths.current.clear()
@@ -827,18 +831,6 @@ export function useWorkspace(recordingViewer = false) {
     if (executionRef.current?.id !== session.id || generation !== workspaceGeneration.current) return
     acceptExecution(await bridge.executionBreakpoints(session.id, translated))
   }
-  function retireModels(id: string, path: string) {
-    const monacoApi = getLoadedJavaEditorRuntime()?.monaco
-    if (!monacoApi) return
-    for (const model of monacoApi.editor.getModels()) {
-      const relative = documentPath(model.uri.toString(), id)
-      if (!relative || !pathIsWithin(relative, path)) continue
-      monacoApi.editor.setModelMarkers(model, 'javac', [])
-      monacoApi.editor.setModelMarkers(model, 'language', [])
-      for (const editor of monacoApi.editor.getEditors()) if (editor.getModel() === model) editor.setModel(null)
-      model.dispose()
-    }
-  }
   function invalidateWorkspaceModel() {
     modelRef.current = null; setJavaProject(null); setBuild(null)
     setProjectStatus('Project files changed. Build or Run refreshes the project.')
@@ -889,7 +881,7 @@ export function useWorkspace(recordingViewer = false) {
     }
     setCollapsed((previous) => new Set([...previous].filter((path) => change.kind !== 'delete' || !pathIsWithin(path, source)).map(mapPath)))
     invalidateWorkspaceModel()
-    retireModels(id, source)
+    retireEditableModels(id, source)
     const oldLanguagePaths = [...languagePaths.current].filter((path) => pathIsWithin(path, source))
     for (const path of oldLanguagePaths) { languagePaths.current.delete(path); await languageClient.closeDocument(path).catch(() => {}) }
     await refreshTree(id)

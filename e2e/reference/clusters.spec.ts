@@ -40,7 +40,13 @@ for(const viewport of [{width:1728,height:1117},{width:1440,height:900},{width:1
  for(let pass=0;pass<cluster!.members+1;pass++){
   for(const id of await list.getByRole('button').evaluateAll(buttons=>buttons.map(button=>button.getAttribute('title')!)))observed.add(id)
   const done=await list.evaluate(element=>element.scrollTop+element.clientHeight>=element.scrollHeight-1)
-  if(done)break
+  if(done){
+   // Native scrolling can reach its limit before React commits the final
+   // virtual window. Observe that actual row, then sample its real IDs.
+   await expect(rows.last()).toHaveAttribute('aria-posinset',String(cluster!.members))
+   for(const id of await list.getByRole('button').evaluateAll(buttons=>buttons.map(button=>button.getAttribute('title')!)))observed.add(id)
+   break
+  }
   await list.hover();await page.mouse.wheel(0,180);await page.waitForTimeout(25)
  }
  expect([...observed].sort()).toEqual([...cluster!.memberIds].sort())

@@ -424,3 +424,37 @@ Dense route crossings, broader heading/ownership hierarchy, cluster travel and
 A–G convergence remain open. These diagnostics are not a fresh unfiltered
 80-case/96-capture matrix or formal visual approval. Details are in
 `migration/typography.md`.
+
+## Editable model retirement — 2026-10-11
+
+Committed workspace tab/project state now owns editable Monaco models and their
+URI-scoped caret, selection and scroll snapshots. Switching tabs or hiding
+Source retains views; confirmed closure, project replacement, rename/delete
+and unmount retire owned models and snapshots. Cancelled dirty decisions retain
+the model. Retirement cannot load Monaco and excludes recorded-source models.
+
+Build, lint and strict reference TypeScript passed; AppRoot is 337.44 kB gzip.
+Eighteen focused tests across four files passed in 277 ms. With all four JVM
+flags enabled, the unfiltered default suite passed 1,824 tests with two opt-in
+legacy presentation skips (1,826 total), across 183 files (182 passed, one
+skipped), in 271.70 seconds. The repository's installed Maven and Gradle were
+supplied through explicit tool-path environment variables for temporary build
+workspaces; the initial run without these paths failed three tool-discovery
+cases. The successful rerun produced fresh Maven, Gradle and cross-file source
+receipts. Default Vitest still excludes the separate acceptance/performance
+suites; this result does not claim those gates.
+
+All 34 reconstruction browser checks passed in 3.3 minutes. Two new real-editor
+cases prove exact view restoration, dirty-cancel retention, closure retirement,
+repeated project replacement and zero editor requests before narrow Source's
+first display. A cluster scroll check now waits for the actual final virtual
+row before sampling IDs; all exact membership assertions remain. Three repeated
+1728×1117 cluster checks also passed in 25.6 seconds.
+
+All five final debugger Source captures and both model-ownership captures
+received original-size lead inspection. Source pause centering and controls
+remain readable. HEAP is absent in several debugger layouts; idle headings
+overlap Ready and need the specified reduced environment opacity. Heading
+clearance, wider workspace/performance cleanup, the fresh 80-case/96-capture
+matrix and A–G visual convergence remain open. Details are in
+`migration/source-debug.md`.

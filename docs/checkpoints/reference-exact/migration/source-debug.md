@@ -124,3 +124,19 @@ Three consecutive actual narrow debugger runs passed in 26.5 seconds. The
 middle-third bounds, font/pitch bounds, exact tab/resize/caret preservation and
 later manual-scroll assertions are unchanged. The test also attaches the actual
 owning editor's pause observation for future diagnosis.
+
+## Editable model ownership — 2026-10-11
+
+Lead direction: committed workspace tab/project state owns editable model and
+view-state retirement. Tab switches and Source collapse retain both; closing a
+tab, replacing its project, rename/delete and workspace unmount retire only
+canonical `inmemory://ggjavaez` URIs belonging to that project/path. Dirty
+decisions, persisted drafts and JDT document coordination retain their existing
+owners. Retirement only inspects an already loaded runtime and cannot request
+Monaco. Recorded source and other URI schemes/projects are outside this owner.
+
+Editable view snapshots move out of the React wrapper's unbounded module cache.
+The outgoing layout-effect cleanup captures caret, selection and scroll before
+its model changes; the actual model-change listener restores before the existing
+deferred Source policy. The owner removes matching snapshots with the model.
+Read-only QA reports real model/view URI inventory without a mutation API.
