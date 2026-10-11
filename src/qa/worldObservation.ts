@@ -8,6 +8,7 @@ export interface WorldObservation {
   selection(): Selection
   recordedEvents():readonly TraceEvent[]
   worldProjection():WorldProjection
+  structuralLabels():readonly {id:string;kind:'cluster'|'heading';visible:boolean;minimumFontPixels:number;bounds:import('../shell/shellLayout').Rect|null}[]
   projectedPoint(id: string): { x:number; y:number; visible:boolean } | null
   renderer(): {calls:number;triangles:number;geometries:number;textures:number;frame:number}
   effects():{ready:boolean;frames:number;revision:number;failure:string;cinematic:boolean}

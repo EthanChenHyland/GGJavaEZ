@@ -46,6 +46,19 @@ for(const viewport of [{width:1728,height:1117},{width:1440,height:900},{width:1
  expect([...observed].sort()).toEqual([...cluster!.memberIds].sort())
  const after=await page.evaluate(()=>({recording:window.__ggjavaezWorld!.scene().recordingId,cursor:window.__ggjavaezWorld!.scene().cursor,pose:window.__ggjavaezQA!.cameraPose(),anchors:Object.fromEntries(Object.entries(window.__ggjavaezWorld!.scene().entities).map(([id,node])=>[id,node.anchor]))}))
  expect(after).toEqual(before)
+ const labels=await page.evaluate(()=>({labels:window.__ggjavaezWorld!.structuralLabels().filter(label=>label.visible),shell:window.__ggjavaezQA!.shellRects()}))
+ expect(labels.labels.some(label=>label.id===cluster!.id)).toBe(true)
+ for(const label of labels.labels){
+  expect(label.minimumFontPixels).toBeGreaterThanOrEqual(12);expect(label.bounds).toBeTruthy()
+  const rect=label.bounds!,safe=labels.shell.safeFrame
+  expect(rect.x).toBeGreaterThanOrEqual(safe.x);expect(rect.y).toBeGreaterThanOrEqual(safe.y)
+  expect(rect.x+rect.width).toBeLessThanOrEqual(safe.x+safe.width);expect(rect.y+rect.height).toBeLessThanOrEqual(safe.y+safe.height)
+  if(labels.shell.inspector){const area=labels.shell.inspector;expect(rect.x>=area.x+area.width+4||rect.x+rect.width+4<=area.x||rect.y>=area.y+area.height+4||rect.y+rect.height+4<=area.y).toBe(true)}
+ }
+ for(let i=0;i<labels.labels.length;i++)for(let j=i+1;j<labels.labels.length;j++){
+  const a=labels.labels[i].bounds!,b=labels.labels[j].bounds!
+  expect(a.x>=b.x+b.width+4||a.x+a.width+4<=b.x||a.y>=b.y+b.height+4||a.y+a.height+4<=b.y).toBe(true)
+ }
  await page.screenshot({path:`.ggjavaez/qa/reference-exact/cluster-members-${viewport.width}x${viewport.height}.png`})
  const button=list.getByRole('button').last(),id=await button.getAttribute('title');await button.click();await ready(page)
  expect(await page.evaluate(()=>window.__ggjavaezQA!.selection()?.id)).toBe(id)

@@ -395,3 +395,32 @@ dense routes cross faces and neighboring labels. Ownership hierarchy, cluster
 travel and A–G convergence remain open. This increment is not the required fresh
 80-case/96-capture matrix or formal visual approval. Details are in
 `migration/materials.md`.
+
+## Readable structural captions — 2026-10-11
+
+Cluster captions and region headings retain real 3D text planes. Deterministic
+placement scales glyphs to at least 12 projected CSS pixels and admits whole
+labels inside the actual Safe Frame, outside Inspector, represented bodies,
+I/O and forensic panels, with four-pixel clearance between captions. Cluster
+captions can lift by at most four font heights; selected captions take priority.
+Unambiguous short type previews preserve exact counts and canonical identity.
+Batched text now honors ancestor scale and visibility. Camera, runtime anchors,
+membership, semantic detail and semantic goldens are unchanged.
+
+Build, lint and strict reference TypeScript passed; AppRoot is 337.08 kB gzip.
+Fourteen focused tests across four files passed in 542 ms. The complete default
+suite passed 1,752 tests with 70 opt-in skips (1,822 total), across 182 files
+(175 passed, seven skipped), in 154.55 seconds. All 32 reconstruction browser
+checks passed in 2.7 minutes; five focused real-JVM caption/member checks also
+passed in 35.7 seconds. Their assertions cover exact membership, real scrolling,
+unchanged camera/anchors, minimum font size, clipping and non-overlap.
+
+All five final dense-world screenshots received original-size lead inspection.
+The hero diagnostic passed in 8.7 seconds, and both its 1728×1117 and native
+1672×941 captures received original-size inspection: STACK and HEAP remain
+visible. An earlier caption candidate used world-unit lifts and occluded I/O;
+the final bounded font-height placement addresses those observed problems.
+Dense route crossings, broader heading/ownership hierarchy, cluster travel and
+A–G convergence remain open. These diagnostics are not a fresh unfiltered
+80-case/96-capture matrix or formal visual approval. Details are in
+`migration/typography.md`.

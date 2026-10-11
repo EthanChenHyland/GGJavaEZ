@@ -7,7 +7,7 @@ import {createSceneProjector} from '../world/sceneProjector'
 import {planPresentation} from '../world/presentationPlanner'
 import {clusterAnchor} from '../world/clusterAnchor'
 import {buildSolidBatch} from './SolidBatch'
-import {clusterLabelParts} from './ClusterLabels'
+import {clusterLabelParts,clusterLabelNames} from './ClusterLabels'
 import {color} from '../theme/tokens'
 
 it('routes and draws every collapsed body through the same port-free bounds and semantic material',()=>{
@@ -30,6 +30,11 @@ it('routes and draws every collapsed body through the same port-free bounds and 
  expect(selected.clusters.filter(cluster=>cluster.selected).map(cluster=>cluster.id)).toEqual([selectedCluster.id])
  expect(selected.clusters.map(cluster=>[cluster.id,cluster.memberIds,cluster.anchor])).toEqual(plan.clusters.map(cluster=>[cluster.id,cluster.memberIds,cluster.anchor]))
  expect(buildSolidBatch(scene,selected).find(solid=>solid.role!=='face'&&solid.pick.id===selectedCluster.id)?.edge).toBe(color.semantic.execution)
+})
+it('keeps short package previews unambiguous and preserves literal binary dollar names',()=>{
+ const names=clusterLabelNames([{id:'heap:a',label:'warehouse.Crate'},{id:'stack:a',label:'warehouse.Crate'},{id:'heap:b',label:'retail.Crate'},{id:'heap:c',label:'catalog.Label'},{id:'heap:d',label:'pkg.Cash$Money'}])
+ expect(names.get('heap:a')).toBe('warehouse.Crate');expect(names.get('stack:a')).toBe('warehouse.Crate');expect(names.get('heap:b')).toBe('retail.Crate')
+ expect(names.get('heap:c')).toBe('Label');expect(names.get('heap:d')).toBe('Cash$Money')
 })
 it('abbreviates the grouping key without truncating the exact count and discards inherited row ports',()=>{
  const representative={entityId:'captured',region:'heap' as const,position:[9,-3,4] as const,size:[5.2,8,2.3] as const,ports:{'captured:field':[9,-2,5.15] as const},bodyPort:[9,-3,5.15] as const}

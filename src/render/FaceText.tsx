@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useId, useLayoutEffect, useMemo, useRef, type ReactNode } from 'react';
 import { useFrame,useThree } from '@react-three/fiber';
 import { BatchedText, Text } from 'troika-three-text';
-import { Group, MeshBasicMaterial,Vector3 } from 'three';
+import { Group, MeshBasicMaterial,Vector3,type Object3D } from 'three';
 import type { Vec3 } from '../contracts/worldV2';
 import { color, runtimeFonts } from '../theme/tokens';
 import {fitWorldText,projectedFontPixels,worldTextVisible} from './text/textSystem';
@@ -63,8 +63,10 @@ export function WorldText({ children, position, size = .25, tint = color.ui.text
         anchor.current.updateWorldMatrix(true, false);
         text.matrix.copy(anchor.current.matrixWorld);
         projection.point.setFromMatrixPosition(anchor.current.matrixWorld);
-        const pixels=projectedFontPixels(size,projection.point,camera,viewport.height,projection.scratch);
-        text.fillOpacity=worldTextVisible(pixels,minimumPixels)?opacity:0;
-    } });
+        const scale=projection.scratch.setFromMatrixScale(anchor.current.matrixWorld).y;
+        let visible=true;for(let parent:Object3D|null=anchor.current;parent;parent=parent.parent)if(!parent.visible){visible=false;break}
+        const pixels=projectedFontPixels(size*scale,projection.point,camera,viewport.height,projection.scratch);
+        text.fillOpacity=visible&&worldTextVisible(pixels,minimumPixels)?opacity:0;
+    } },.5);
     return <group ref={anchor} position={[...position]}/>;
 }

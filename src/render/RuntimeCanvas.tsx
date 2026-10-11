@@ -11,7 +11,7 @@ import { useInteractionStore } from '../interaction/interactionStore';
 import { RuntimeSolid, WorldText } from './RuntimeSolid';
 import { roleColor } from './RuntimeMaterials';
 import { FaceTextBatch, textReadiness } from './FaceText';
-import { ACESFilmicToneMapping, Color, DataTexture, InstancedMesh, RGBAFormat, SRGBColorSpace, UnsignedByteType, Vector3 } from 'three';
+import { ACESFilmicToneMapping, Color, DataTexture, InstancedMesh, PerspectiveCamera, RGBAFormat, SRGBColorSpace, UnsignedByteType, Vector3 } from 'three';
 import type {} from '../qa/worldObservation';
 import { SolidBatch,buildSolidBatch } from './SolidBatch';
 import { ConnectorBatch } from './ConnectorBatch';
@@ -27,7 +27,9 @@ import {supportsRuntimeWebGL,graphicsRecovery} from './graphicsRecovery';
 import {ExceptionPanel} from './ExceptionPanel';
 import {projectBodies,projectInstancedBody,projectRect} from '../qa/worldProjection';
 import {anchorCorners} from '../world/presentationPlanner';
-import {ClusterLabels} from './ClusterLabels';
+import {StructuralLabels} from './StructuralLabels';
+import {projectedPlaneFontPixels} from './text/textSystem';
+import type {StructuralLabelSpec} from './text/structuralLabelLayout';
 
 function GradientBackground() {
     const texture = useMemo(() => {
@@ -58,6 +60,15 @@ function Metrics({ scene, plan, selection,trace }: {
         if (import.meta.env.DEV||import.meta.env.VITE_QA==='1')
             window.__ggjavaezWorld={ scene: () => scene, plan: () => plan, selection:()=>selection,
                 recordedEvents:()=>trace.events,
+                structuralLabels:()=>{
+                    const host=world.getObjectByName('structural-labels');if(!host||!(camera instanceof PerspectiveCamera))return[];
+                    return host.children.map(group=>{
+                        const spec=group.userData.structuralLabel as StructuralLabelSpec;group.updateWorldMatrix(true,false);
+                        const [left,right,bottom,top]=spec.localBounds,points=[left,right].flatMap(x=>[bottom,top].map(y=>new Vector3(x,y,0).applyMatrix4(group.matrixWorld)));
+                        const scale=new Vector3().setFromMatrixScale(group.matrixWorld).y;
+                        return{id:spec.id,kind:spec.kind,visible:group.visible,minimumFontPixels:Math.min(...points.map(point=>projectedPlaneFontPixels(spec.size*scale,point,camera,size))),bounds:projectRect(points.map(point=>point.toArray() as [number,number,number]),camera,size)};
+                    });
+                },
                 worldProjection:()=>{const projection=projectBodies([
                     ...buildSolidBatch(scene,plan).filter(solid=>solid.role!=='face').map(solid=>({anchor:solid.anchor,live:scene.entities[solid.anchor.entityId]?.kind==='frame'&&(scene.entities[solid.anchor.entityId] as {live:boolean}).live})),
                 ],camera,size);
@@ -172,11 +183,10 @@ export function RuntimeCanvas({ scene, plan, layout, safeFrame,inspectorRect, se
         <SolidBatch scene={scene} plan={plan} onSelect={select} onFocus={onFocus}/>
         <FaceTextBatch>
         {[...plan.entities].map(([id, presented]) => <RuntimeSolid key={id} node={scene.entities[id]} presented={presented} plan={plan}/>)}
-        {plan.clusters.map(cluster => <ClusterLabels key={cluster.id} cluster={cluster}/>)}
+        <StructuralLabels scene={scene} plan={plan} safeFrame={safeFrame} inspectorRect={inspectorRect}/>
         <ConnectorBatch curves={[...plan.curves,...plan.bundles.map(bundle=>({id:bundle.id,kind:'flow' as const,points:bundle.points,colorRole:'reference' as const,opacity:.35,widthPx:2.5 as const,arrow:false}))]} onSelect={id => { if (scene.references.some(ref => ref.id === id))
         select({ kind: 'reference', id }); else if(plan.curves.some(curve=>curve.id===id)) select({kind:'flow',id}); }}/>
         {plan.bundles.map(bundle=><WorldText key={bundle.id} position={bundle.points[Math.floor(bundle.points.length/2)]} size={.23} width={2} tint={color.ui.textSecondary}>{`${bundle.count} recorded flows`}</WorldText>)}
-        {plan.headings.map(heading => <WorldText key={heading.id} position={heading.position} size={.6} weight={600} tracking={.18} width={5} minimumPixels={12} tint={heading.id === 'STACK' ? color.stack.edge : heading.id === 'HEAP' ? color.heap.edge : heading.id==='RETURNS'?color.semantic.return:color.class.edge}>{heading.id}</WorldText>)}
         {plan.structural.map(item => <WorldText key={item.id} position={item.position} size={.3} width={5} tint={color.ui.textSecondary}>{item.text}</WorldText>)}
         <ExceptionPanel panel={plan.exceptionPanel} recordingState={scene.recording.state}/>
         {scene.io.map(io => <group key={io.id} position={[...io.anchor.position]}><mesh><boxGeometry args={[...io.anchor.size]}/><meshStandardMaterial color={roleColor[io.id]} emissive={roleColor[io.id]} emissiveIntensity={.2}/></mesh><WorldText position={[-.75, .02, .17]} size={.2} width={1.5}>{`${io.id} · ${io.lines}`}</WorldText></group>)}

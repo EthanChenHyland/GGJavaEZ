@@ -28,3 +28,34 @@ remains available, and verify array/collection summary sizes. This repairs the
 assertion's earlier mismatch with Requirements 12.7 and the value-text contract;
 it does not relax captured-value equality. MEDIUM rows now show `name → value`
 with no type column, while CLOSE retains the declared-type grid.
+
+## Structural-label placement direction — 2026-10-11
+
+Lead contract: headings and cluster text retain real 3D anchor planes. Scale only
+their glyph groups to a readable nominal minimum, then admit deterministic
+non-overlapping projected rectangles inside the actual Safe Frame and outside
+Inspector. Selected cluster labels outrank optional headings and background
+cluster labels; larger real counts and stable IDs break ties. Counts never
+abbreviate. Runtime body anchors, camera pose, semantic detail measurement,
+membership and source evidence are unchanged. This is structural text, not a
+screen-space substitute for the runtime solids.
+
+Frame ordering is camera/motion at priority 0, structural text-group placement
+at 0.25, text matrices/visibility at 0.5, and the existing compositor at 1. Font
+visibility accounts for the actual ancestor scale and visibility, so batched
+glyphs cannot ignore a culled parent or use the unscaled font size. Placement
+is cached by actual camera/projection/viewport/plan inputs and adds no demand
+render loop. Optional text that cannot fit is omitted. Cluster navigation,
+ownership hierarchy and formal reference convergence remain separate open work.
+
+Captions also avoid the projected bounds of actual represented solids and I/O.
+They try at most five bounded vertical positions in the same real 3D plane;
+headings keep their canonical position and omit when blocked. No body or camera
+moves. Structural font sizing measures the actual projected world-Y glyph span,
+including oblique views, rather than distance alone.
+
+Lift is bounded to four projected font heights, keeping captions close to their
+volumes. The forensic panel participates in body clearance. Package previews use
+the existing type formatter only when no different current canonical grouping
+key has the same short name; ambiguous previews retain the qualified key and
+literal dollar names remain literal. Inspector and identity keys stay exact.
