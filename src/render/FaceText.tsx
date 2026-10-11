@@ -24,7 +24,7 @@ export function FaceTextBatch({ children }: {
     useFrame(({ gl }) => { textReadiness.lastUploadFrame = gl.info.render.frame; });
     return <Context.Provider value={batch}><primitive object={batch}/>{children}</Context.Provider>;
 }
-export function WorldText({ children, position, size = .25, tint = color.ui.text, width = 4, align = 'left', opacity = 1, weight=400, tracking=0 }: {
+export function WorldText({ children, position, size = .25, tint = color.ui.text, width = 4, align = 'left', opacity = 1, weight=400, tracking=0, minimumPixels=11 }: {
     children: string;
     position: Vec3;
     size?: number;
@@ -34,6 +34,7 @@ export function WorldText({ children, position, size = .25, tint = color.ui.text
     opacity?: number;
     weight?:400|500|600;
     tracking?:number;
+    minimumPixels?:11|12;
 }) {
     const batch = useContext(Context), anchor = useRef<Group>(null), id = useId(), text = useMemo(() => new Text(), []),lastLayout=useRef(''),syncGeneration=useRef(0);
     const invalidate=useThree(state=>state.invalidate);
@@ -62,7 +63,8 @@ export function WorldText({ children, position, size = .25, tint = color.ui.text
         anchor.current.updateWorldMatrix(true, false);
         text.matrix.copy(anchor.current.matrixWorld);
         projection.point.setFromMatrixPosition(anchor.current.matrixWorld);
-        text.fillOpacity=worldTextVisible(projectedFontPixels(size,projection.point,camera,viewport.height,projection.scratch))?opacity:0;
+        const pixels=projectedFontPixels(size,projection.point,camera,viewport.height,projection.scratch);
+        text.fillOpacity=worldTextVisible(pixels,minimumPixels)?opacity:0;
     } });
     return <group ref={anchor} position={[...position]}/>;
 }

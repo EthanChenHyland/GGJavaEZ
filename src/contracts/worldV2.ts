@@ -306,6 +306,8 @@ export interface PresentedCluster {
     key: ClusterKey;
     label: string;
     members: number;
+    memberIds: readonly EntityId[]; // exact current residual cut; excludes detailed/quiet entities
+    selected: boolean;
     anchor: WorldAnchor;
     opacity: number;
     pickable: boolean;

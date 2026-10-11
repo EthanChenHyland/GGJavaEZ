@@ -70,6 +70,9 @@
 .ide-runtime-ready p {max-width:260px;line-height:1.6}
 .world-settings { position:absolute;right:1vw;top:calc(var(--header-height) + 6px);z-index:2;display:flex;gap:12px;padding:6px 10px;font-size:12px;color:#A9B8DA }
 .world-settings select { background:transparent;border:0;color:#A9B8DA }
+.world-settings button {min-height:28px;padding:3px 10px;border:1px solid rgba(160,190,255,.18);border-radius:6px;background:transparent;color:#A9B8DA}
+.world-settings button:hover {background:rgba(63,140,255,.12);color:#EEF4FF}
+.world-settings button[aria-pressed=true] {background:rgba(63,140,255,.18);border-color:#5CC8FF;color:#EEF4FF}
 .shell-source-peek { display:none;position:absolute;top:var(--source-y);left:0;width:40px;max-height:var(--source-height);z-index:3;writing-mode:vertical-rl;padding:10px 8px;color:#A9B8DA }
 .shell--source-peek .ide-editor-panel {visibility:hidden;pointer-events:none}
 .shell--source-peek .shell-source-peek {display:block}

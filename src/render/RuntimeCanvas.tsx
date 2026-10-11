@@ -27,6 +27,7 @@ import {supportsRuntimeWebGL,graphicsRecovery} from './graphicsRecovery';
 import {ExceptionPanel} from './ExceptionPanel';
 import {projectBodies,projectInstancedBody,projectRect} from '../qa/worldProjection';
 import {anchorCorners} from '../world/presentationPlanner';
+import {ClusterLabels} from './ClusterLabels';
 
 function GradientBackground() {
     const texture = useMemo(() => {
@@ -59,7 +60,6 @@ function Metrics({ scene, plan, selection,trace }: {
                 recordedEvents:()=>trace.events,
                 worldProjection:()=>{const projection=projectBodies([
                     ...buildSolidBatch(scene,plan).filter(solid=>solid.role!=='face').map(solid=>({anchor:solid.anchor,live:scene.entities[solid.anchor.entityId]?.kind==='frame'&&(scene.entities[solid.anchor.entityId] as {live:boolean}).live})),
-                    ...plan.clusters.map(cluster=>({anchor:{...cluster.anchor,size:[2.4,1.2,.8] as const},live:false})),
                 ],camera,size);
                  const panel=plan.exceptionPanel,frame=panel?.content.throwFrameId?scene.entities[panel.content.throwFrameId]:null;
                  const panelBody=world.getObjectByName('exception-panel-body');
@@ -172,11 +172,11 @@ export function RuntimeCanvas({ scene, plan, layout, safeFrame,inspectorRect, se
         <SolidBatch scene={scene} plan={plan} onSelect={select} onFocus={onFocus}/>
         <FaceTextBatch>
         {[...plan.entities].map(([id, presented]) => <RuntimeSolid key={id} node={scene.entities[id]} presented={presented} plan={plan}/>)}
-        {plan.clusters.map(cluster => <group key={cluster.id} onClick={event=>{if(cluster.pickable){event.stopPropagation();select({kind:'cluster',id:cluster.id})}}} onDoubleClick={event=>{if(cluster.pickable){event.stopPropagation();onFocus({kind:'cluster',id:cluster.id})}}} position={[...cluster.anchor.position]}><mesh><boxGeometry args={[2.4, 1.2, .8]}/><meshStandardMaterial color={color.heap.core} transparent opacity={cluster.opacity}/></mesh><WorldText position={[-1, .1, .45]} size={.3} width={2}>{`${cluster.label} · ${cluster.members}`}</WorldText></group>)}
+        {plan.clusters.map(cluster => <ClusterLabels key={cluster.id} cluster={cluster}/>)}
         <ConnectorBatch curves={[...plan.curves,...plan.bundles.map(bundle=>({id:bundle.id,kind:'flow' as const,points:bundle.points,colorRole:'reference' as const,opacity:.35,widthPx:2.5 as const,arrow:false}))]} onSelect={id => { if (scene.references.some(ref => ref.id === id))
         select({ kind: 'reference', id }); else if(plan.curves.some(curve=>curve.id===id)) select({kind:'flow',id}); }}/>
         {plan.bundles.map(bundle=><WorldText key={bundle.id} position={bundle.points[Math.floor(bundle.points.length/2)]} size={.23} width={2} tint={color.ui.textSecondary}>{`${bundle.count} recorded flows`}</WorldText>)}
-        {plan.headings.map(heading => <WorldText key={heading.id} position={heading.position} size={.6} weight={600} tracking={.18} width={5} tint={heading.id === 'STACK' ? color.stack.edge : heading.id === 'HEAP' ? color.heap.edge : heading.id==='RETURNS'?color.semantic.return:color.class.edge}>{heading.id}</WorldText>)}
+        {plan.headings.map(heading => <WorldText key={heading.id} position={heading.position} size={.6} weight={600} tracking={.18} width={5} minimumPixels={12} tint={heading.id === 'STACK' ? color.stack.edge : heading.id === 'HEAP' ? color.heap.edge : heading.id==='RETURNS'?color.semantic.return:color.class.edge}>{heading.id}</WorldText>)}
         {plan.structural.map(item => <WorldText key={item.id} position={item.position} size={.3} width={5} tint={color.ui.textSecondary}>{item.text}</WorldText>)}
         <ExceptionPanel panel={plan.exceptionPanel} recordingState={scene.recording.state}/>
         {scene.io.map(io => <group key={io.id} position={[...io.anchor.position]}><mesh><boxGeometry args={[...io.anchor.size]}/><meshStandardMaterial color={roleColor[io.id]} emissive={roleColor[io.id]} emissiveIntensity={.2}/></mesh><WorldText position={[-.75, .02, .17]} size={.2} width={1.5}>{`${io.id} · ${io.lines}`}</WorldText></group>)}

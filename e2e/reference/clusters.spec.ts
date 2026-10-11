@@ -1,0 +1,55 @@
+import {expect,test} from '@playwright/test'
+import {browserErrors,home,ready,runFixture,stopOwnedSession} from './harness'
+test.afterEach(async({request})=>stopOwnedSession(request))
+
+for(const viewport of [{width:1728,height:1117},{width:1440,height:900},{width:1280,height:800},{width:760,height:900},{width:1440,height:650}])test(`collapsed cluster bounds and reachable exact members ${viewport.width}x${viewport.height}`,async({page,request})=>{
+ test.setTimeout(60000);await page.setViewportSize(viewport)
+ const errors=browserErrors(page);await runFixture(page,request,'dense');await home(page)
+ const world=page.locator('.world-canvas');await world.focus()
+ for(let index=0;index<40&&await page.evaluate(()=>window.__ggjavaezWorld!.plan().detailLevel!=='FAR');index++){
+  await page.waitForTimeout(210);await page.keyboard.press('-');await ready(page)
+ }
+ expect(await page.evaluate(()=>window.__ggjavaezWorld!.plan().detailLevel)).toBe('FAR')
+ const before=await page.evaluate(()=>({recording:window.__ggjavaezWorld!.scene().recordingId,cursor:window.__ggjavaezWorld!.scene().cursor,pose:window.__ggjavaezQA!.cameraPose(),anchors:Object.fromEntries(Object.entries(window.__ggjavaezWorld!.scene().entities).map(([id,node])=>[id,node.anchor]))}))
+ const clusters=await page.evaluate(()=>window.__ggjavaezWorld!.plan().clusters)
+ expect(clusters.length).toBeGreaterThan(0)
+ await test.info().attach('actual-cluster-cut',{body:JSON.stringify({clusters,accessible:await page.locator('.gg-world-entities').getByRole('option').allTextContents(),before}),contentType:'application/json'})
+ for(const cluster of clusters){
+  expect(cluster.members).toBe(cluster.memberIds.length);expect(new Set(cluster.memberIds).size).toBe(cluster.members)
+  expect(cluster.anchor.size).toEqual([2.4,1.2,.8]);expect(cluster.anchor.ports).toEqual({})
+ }
+ // Select through the production spatial accessibility order, with real keys.
+ for(let index=0;index<100;index++){
+  await page.keyboard.press('Tab')
+  if(await page.evaluate(()=>{const selection=window.__ggjavaezQA!.selection();return selection?.kind==='cluster'&&(window.__ggjavaezWorld!.plan().clusters.find(cluster=>cluster.id===selection.id)?.members??0)>=11}))break
+ }
+ const cluster=await page.evaluate(()=>window.__ggjavaezWorld!.plan().clusters.find(cluster=>cluster.id===window.__ggjavaezQA!.selection()?.id))
+ expect(cluster).toBeTruthy();expect(cluster!.members).toBeGreaterThanOrEqual(11);await ready(page)
+ await test.info().attach('actual-cluster-members',{body:JSON.stringify(cluster),contentType:'application/json'})
+ const inspector=page.getByRole('complementary',{name:'Selection inspector'})
+ await expect(inspector).toBeVisible();await expect(inspector.locator('.inspector-heading')).toContainText(`Cluster · ${cluster!.label} ×${cluster!.members}`)
+ await expect(inspector.locator('p').first()).toHaveText(`Structural summary · ${cluster!.members} recorded entities`)
+ const count=await inspector.locator('.inspector-cluster-title span').last().boundingBox(),heading=await inspector.locator('.inspector-cluster-title').boundingBox()
+ expect(count!.x+count!.width).toBeLessThanOrEqual(heading!.x+heading!.width+.01)
+ expect(await page.evaluate(()=>window.__ggjavaezWorld!.plan().clusters.find(cluster=>cluster.id===window.__ggjavaezQA!.selection()?.id)?.selected)).toBe(true)
+ const list=inspector.getByRole('list',{name:'Cluster members'}),rows=list.getByRole('listitem')
+ await expect(rows.first()).toHaveAttribute('aria-setsize',String(cluster!.members))
+ expect(await rows.count()).toBeLessThanOrEqual(200)
+ expect(await rows.count()).toBeLessThan(cluster!.members)
+ const observed=new Set<string>()
+ for(let pass=0;pass<cluster!.members+1;pass++){
+  for(const id of await list.getByRole('button').evaluateAll(buttons=>buttons.map(button=>button.getAttribute('title')!)))observed.add(id)
+  const done=await list.evaluate(element=>element.scrollTop+element.clientHeight>=element.scrollHeight-1)
+  if(done)break
+  await list.hover();await page.mouse.wheel(0,180);await page.waitForTimeout(25)
+ }
+ expect([...observed].sort()).toEqual([...cluster!.memberIds].sort())
+ const after=await page.evaluate(()=>({recording:window.__ggjavaezWorld!.scene().recordingId,cursor:window.__ggjavaezWorld!.scene().cursor,pose:window.__ggjavaezQA!.cameraPose(),anchors:Object.fromEntries(Object.entries(window.__ggjavaezWorld!.scene().entities).map(([id,node])=>[id,node.anchor]))}))
+ expect(after).toEqual(before)
+ await page.screenshot({path:`.ggjavaez/qa/reference-exact/cluster-members-${viewport.width}x${viewport.height}.png`})
+ const button=list.getByRole('button').last(),id=await button.getAttribute('title');await button.click();await ready(page)
+ expect(await page.evaluate(()=>window.__ggjavaezQA!.selection()?.id)).toBe(id)
+ expect(await page.evaluate(()=>window.__ggjavaezQA!.cameraPose())).toEqual(before.pose)
+ expect(await page.evaluate(id=>window.__ggjavaezWorld!.plan().entities.get(id!)?.mode,id)).toBe('detailed')
+ expect(errors).toEqual([])
+})

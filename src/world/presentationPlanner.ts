@@ -7,6 +7,7 @@ import type { FlowCatalog, SceneFlow } from './flowCatalog';
 import type { FlowEndpoint } from '../motion/semanticTransition';
 import { arrayCellTarget } from './arrayCellTarget';
 import { connectorClearsFaces, roundedConnectorPoints, surfaceConnectorPoints } from './connectorRouting';
+import {clusterAnchor} from './clusterAnchor';
 export interface PlanInput {
     scene: SceneModel;
     flows?: FlowCatalog;
@@ -87,7 +88,7 @@ export function planPresentation(input: PlanInput, previous?: PresentationPlan):
             pin(id, 'exception evidence');
     const entities = new Map<string, PresentedEntity>(), overflow: PresentationPlan['budgetOverflow'][number][] = [];
     if (requiredFlows.length > budget.flows) overflow.push({category:'flows', nominal:budget.flows, actual:requiredFlows.length, mandatoryIds:requiredFlows.map(flow=>flow.id), reasons:['selected flow or current evidence']});
-    let pickable = 0;
+    let pickableQuiet = 0;
     const add = (id: string, mode: 'detailed' | 'quiet') => {
         const node = scene.entities[id], pinned = mandatory.has(id);
         const isFocused = id === focused || neighbours.includes(id);
@@ -96,9 +97,9 @@ export function planPresentation(input: PlanInput, previous?: PresentationPlan):
         if (focused && !isFocused)
             opacity = Math.min(opacity, world.opacity.focusDim);
         if (forensicState)opacity=forensic?1:Math.min(opacity,world.opacity.forensicDim);
-        const canPick = pinned || pickable < budget.pickable;
-        if (canPick)
-            pickable++;
+        const canPick = mode === 'detailed' || pinned || pickableQuiet < budget.pickable;
+        if (canPick && mode === 'quiet')
+            pickableQuiet++;
         entities.set(id, { id, mode, detail: id === focused ? 'CLOSE' : detailLevel, opacity, pinned, pickable: canPick,
             highlight: forensic ? 'exception' : id === selected ? 'selected' : id === focused ? 'focus' : node.kind === 'object' && node.mutation ? 'mutation' : scene.cursorEvent?.subjects.includes(id) ? 'current' : null });
     };
@@ -132,11 +133,8 @@ export function planPresentation(input: PlanInput, previous?: PresentationPlan):
     const clusters: PresentedCluster[] = [...groups].map(([key, members]) => {
         const region = layout.anchors[members[0]].region;
         const first = Object.keys(layout.anchors).find(id => layout.anchors[id].region === region && (key === region || `${region}:${layout.placement[id]?.clusterPath.find(k => k.kind === 'type')?.value}` === key))!;
-        const base = layout.anchors[first], anchor = { ...base, entityId: `cluster:${key}` };
-        const canPick = pickable < budget.pickable;
-        if (canPick)
-            pickable++;
-        return { id: `cluster:${key}`, key: { kind: 'type', value: key }, label: key.split(':').at(-1)!, members: members.length, anchor, opacity: focused ? .25 : .55, pickable: canPick };
+        const anchor = clusterAnchor(`cluster:${key}`,layout.anchors[first]);
+        return { id: `cluster:${key}`, key: { kind: 'type', value: key }, label: key.split(':').at(-1)!, members: members.length, memberIds:members, selected:selection?.kind==='cluster'&&selection.id===`cluster:${key}`, anchor, opacity: focused ? .25 : .55, pickable: true };
     });
     const cellWindows = new Map<string, ArrayWindow>();
     const arrayRequests = new Map<string, Set<number>>();

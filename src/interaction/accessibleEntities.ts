@@ -9,6 +9,6 @@ export function accessibleEntities(scene:SceneModel,plan:PresentationPlan,projec
  for(const[id,presented]of plan.entities){if(!presented.pickable)continue;const node=scene.entities[id],label=node.kind==='frame'?`${node.title} #${node.invocationNumber}`:node.kind==='class'?`${node.title} static state`:`${node.title} #${node.displayId}`;add(id,label,{kind:node.kind==='frame'?'frame':node.kind==='class'?'class':'object',id},node.anchor.position)
   if(node.kind==='array')for(const[slotId,cell]of plan.cellWindows.get(id)?.mapping??[])add(slotId,`${label} [${cell.index}]`,{kind:'slot',id:slotId},cell.anchor.position)
  }
- for(const cluster of plan.clusters)if(cluster.pickable)add(cluster.id,`${cluster.label} · ${cluster.members} recorded entities`,{kind:'cluster',id:cluster.id},cluster.anchor.position)
+ for(const cluster of plan.clusters)if(cluster.pickable)add(cluster.id,`Cluster ${cluster.label} ×${cluster.members} recorded entities`,{kind:'cluster',id:cluster.id},cluster.anchor.position)
  return result.sort((a,b)=>a.y-b.y||a.x-b.x||a.id.localeCompare(b.id))
 }

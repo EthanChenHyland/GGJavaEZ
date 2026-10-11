@@ -365,3 +365,33 @@ These diagnostics do not replace the fresh unfiltered 80-case/96-capture matrix
 or formal visual approval. Cluster presentation, route/label overlap and A–G
 convergence remain open. Implementation details are in `migration/camera.md`
 and `migration/source-debug.md`.
+
+## Shared cluster bounds and exact member inspection — 2026-10-11
+
+Collapsed bodies now use the shared rounded instanced materials and one
+port-free structural anchor, consumed by routing, picking, floor contacts and QA.
+The planner publishes the exact residual member IDs behind each count.
+Inspector virtualizes those members and selects their real identities while
+preserving the camera. Selected cluster edges use the shared selection color;
+world and Inspector previews protect the count from key truncation. Visible
+structural text has the 12 CSS pixel cutoff. The existing pick budget now applies
+to quiet volumes alone, as specified; represented detailed entities and clusters
+remain pickable within their own category budgets. Runtime semantics and goldens
+are unchanged.
+
+Build, lint and strict reference TypeScript passed; AppRoot is 335.77 kB gzip.
+The final default suite passed 1,747 tests with 70 opt-in skips (1,817 total),
+across 181 files (174 passed, seven skipped), in 156.47 seconds. Nine focused
+tests across five files passed in 1.55 seconds. All 32 reconstruction browser
+checks passed in 2.7 minutes, including five real-JVM dense-world cluster cases
+that prove partial mounting and exact reachability of every member through real
+scrolling at all target sizes. A 20-member test assumption was corrected after
+the actual fixture cut showed groups of at most 12; the final assertions require
+at least 11, fewer mounted rows than members, and equality with the exact IDs.
+
+All five final captures received original-size lead inspection. Inspector counts
+are legible at all sizes, but FAR world labels remain excessively culled and
+dense routes cross faces and neighboring labels. Ownership hierarchy, cluster
+travel and A–G convergence remain open. This increment is not the required fresh
+80-case/96-capture matrix or formal visual approval. Details are in
+`migration/materials.md`.

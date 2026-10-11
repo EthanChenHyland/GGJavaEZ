@@ -29,9 +29,9 @@ export function VirtualList({count,rowHeight,label,initialIndex=0,children,class
       <button aria-label={`Next ${label} page`} aria-disabled={range.pageStart+range.pageCount>=count} onClick={()=>{if(range.pageStart+range.pageCount<count)reveal(range.pageStart+range.pageCount)}}>›</button>
       <small>{range.pageStart}–{range.pageStart+range.pageCount-1} of {count}</small>
     </div>}
-    <div ref={host} className="virtual-list-scroll" onScroll={event=>setScroll(event.currentTarget.scrollTop)}>
+    <div ref={host} className="virtual-list-scroll" role="list" aria-label={label} onScroll={event=>setScroll(event.currentTarget.scrollTop)}>
       <div style={{height:range.height,position:'relative'}}>{Array.from({length:range.count},(_,offset)=>{
-        const index=range.start+offset;return <div key={index} style={{position:'absolute',top:(index-range.pageStart)*rowHeight,left:0,right:0,height:rowHeight}}>{children(index)}</div>;
+        const index=range.start+offset;return <div key={index} role="listitem" aria-setsize={count} aria-posinset={index+1} style={{position:'absolute',top:(index-range.pageStart)*rowHeight,left:0,right:0,height:rowHeight}}>{children(index)}</div>;
       })}</div>
     </div>
   </div>;

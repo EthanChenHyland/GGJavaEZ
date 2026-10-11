@@ -19,6 +19,7 @@ it('Property 64: font visibility uses the actual projected size, including clip 
   expect(worldTextVisible(projectedFontPixels(size,new Vector3(0,0,depth),camera,height))).toBe(false)
  }),{numRuns:100})
  expect(worldTextVisible(11)).toBe(true);expect(worldTextVisible(10.999)).toBe(false)
+ expect(worldTextVisible(11.999,12)).toBe(false);expect(worldTextVisible(12,12)).toBe(true)
 })
 it('uses local glyph escapes and deterministic Inter advances including real pair kerning',()=>{
  for(const weight of [400,500,600] as const) expect(localFontText('⟨not captured⟩',weight)).toBe('⟨not captured⟩')

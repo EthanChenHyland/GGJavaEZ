@@ -64,6 +64,13 @@ export function buildSolidBatch(scene: SceneModel, plan: PresentationPlan): Soli
                 plate(id, [cx, cy, cz + .79], [1.4, 1.4, .025], color.heap.face, opacity, arrayPick);
             }
     }
+    for (const cluster of plan.clusters) {
+        const role=cluster.anchor.region==='stack'?'stack':cluster.anchor.region==='class'?'class':'heap',palette=color[role];
+        const pick:Pick={kind:'cluster',id:cluster.id},[x,y,z]=cluster.anchor.position,[w,h,d]=cluster.anchor.size;
+        solids.push({anchor:cluster.anchor,pick,pickable:cluster.pickable,role,opacity:cluster.opacity,tint:palette.core,edge:cluster.selected?color.semantic.execution:palette.edge});
+        const position:Vec3=[x,y,z+d/2+.015];
+        solids.push({anchor:{...cluster.anchor,entityId:`${cluster.id}:face`,position,size:[w-.18,h-.18,.035],ports:{},bodyPort:position},pick,pickable:cluster.pickable,role:'face',opacity:cluster.opacity,tint:palette.face});
+    }
     return solids;
 }
 const noRaycast = () => undefined;

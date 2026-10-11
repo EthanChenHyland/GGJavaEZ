@@ -2,6 +2,9 @@
 .gg-inspector p { margin:0;color:#A9B8DA;font-size:12px }
 .gg-inspector .inspector-heading { display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:16px }
 .gg-inspector .inspector-heading strong { overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600 }
+.gg-inspector .inspector-heading .inspector-cluster-title {display:flex;min-width:0;gap:4px}
+.gg-inspector .inspector-cluster-title span:first-child {min-width:0;overflow:hidden;text-overflow:ellipsis}
+.gg-inspector .inspector-cluster-title span:last-child {flex:none}
 .gg-inspector button { min-width:24px;min-height:24px;display:inline-flex;align-items:center;gap:4px;border:1px solid rgba(160,190,255,.18);border-radius:6px;background:rgba(31,107,255,.08);color:#EEF4FF;font:inherit;cursor:pointer;padding:4px 6px }
 .gg-inspector button:focus-visible,.gg-inspector summary:focus-visible { outline:2px solid #FFF;outline-offset:3px }
 .gg-inspector button[aria-disabled=true] { opacity:.45;cursor:default }
@@ -20,6 +23,9 @@
 .gg-inspector .inspector-value>span { min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap }
 .gg-inspector .inspector-value small { display:block;color:#64759A;font-size:12px }
 .gg-inspector .inspector-value button { max-width:60%;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;display:block;font-family:'JetBrains Mono',monospace;font-size:12px;color:#5CC8FF }
+.gg-inspector .inspector-member {width:100%;height:48px;text-align:left}
+.gg-inspector .inspector-member span {min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gg-inspector .inspector-member small {display:block;font-size:12px;color:#A9B8DA;overflow:hidden;text-overflow:ellipsis}
 .gg-inspector-id { overflow-wrap:anywhere;font-family:'JetBrains Mono',monospace }
 .gg-inspector details { border-top:1px solid rgba(160,190,255,.12);padding-top:8px;font-size:12px }
 .gg-inspector summary { cursor:pointer;min-height:24px }
