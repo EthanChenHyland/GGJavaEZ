@@ -140,3 +140,19 @@ The outgoing layout-effect cleanup captures caret, selection and scroll before
 its model changes; the actual model-change listener restores before the existing
 deferred Source policy. The owner removes matching snapshots with the model.
 Read-only QA reports real model/view URI inventory without a mutation API.
+
+## Source/debug control clearance — 2026-10-11
+
+Lead direction: `computeShellLayout` owns a presentation-only Source heading
+inset, derived from the actual debugger rectangle and Source's final rectangle.
+An intersecting toolbar reserves space above the complete Source control row;
+an inactive/clear toolbar or collapsed drawer reserves none. The same rule
+replaces narrow-only hardcoded spacing. Source bounds, Safe Frame and debugger
+centering do not change. Monaco uses its existing layout/view preservation.
+
+Five viewport tests check the expanded header clearance without changing the
+Source surface or Safe Frame; a sixth covers nonintersecting/collapsed states.
+Real debugger cases measure all four Source hit targets before and after
+expansion, prove their centers receive the native pointer hit, and reject any
+overlap with the debugger toolbar. Existing manual scroll, exact tab view,
+camera preservation, Home and middle-third pause assertions remain.

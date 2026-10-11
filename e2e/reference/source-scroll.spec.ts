@@ -46,6 +46,19 @@ async function editorView(page:Page){
 async function sourceSettled(page:Page){
  await expect.poll(()=>page.locator('.ide-editor-panel').evaluate(panel=>{const r=panel.getBoundingClientRect(),style=getComputedStyle(panel);return Math.max(Math.abs(r.height-Number.parseFloat(style.getPropertyValue('--source-height'))),Math.abs(r.width-Number.parseFloat(style.getPropertyValue('--source-width'))))})).toBeLessThan(1)
 }
+async function sourceControlsClear(page:Page){
+ const controls=await page.locator('.ide-source-heading button').evaluateAll(buttons=>buttons.map(button=>{
+  const rect=button.getBoundingClientRect(),source=button.closest('.ide-editor-panel')!.getBoundingClientRect(),debug=document.querySelector('.debug-toolbar')!.getBoundingClientRect()
+  return{rect:{x:rect.x,y:rect.y,width:rect.width,height:rect.height},source:{x:source.x,y:source.y,width:source.width,height:source.height},debug:{x:debug.x,y:debug.y,width:debug.width,height:debug.height},hit:document.elementFromPoint(rect.x+rect.width/2,rect.y+rect.height/2)?.closest('button')===button}
+ }))
+ expect(controls).toHaveLength(4)
+ for(const {rect,source,debug,hit} of controls){
+  expect(rect.width).toBeGreaterThanOrEqual(24);expect(rect.height).toBeGreaterThanOrEqual(24);expect(hit).toBe(true)
+  expect(rect.x).toBeGreaterThanOrEqual(source.x);expect(rect.y).toBeGreaterThanOrEqual(source.y)
+  expect(rect.x+rect.width).toBeLessThanOrEqual(source.x+source.width);expect(rect.y+rect.height).toBeLessThanOrEqual(source.y+source.height)
+  expect(rect.x>=debug.x+debug.width||rect.x+rect.width<=debug.x||rect.y>=debug.y+debug.height||rect.y+rect.height<=debug.y).toBe(true)
+ }
+}
 for(const viewport of [{width:1728,height:1117},{width:1440,height:900},{width:1280,height:800},{width:760,height:900},{width:1440,height:650}])test(`real debugger source scrolling and compact controls ${viewport.width}x${viewport.height}`,async({page,request})=>{
  await page.setViewportSize(viewport)
  test.setTimeout(60000)
@@ -85,6 +98,7 @@ for(const viewport of [{width:1728,height:1117},{width:1440,height:900},{width:1
  expect(first.pitch).toBeGreaterThanOrEqual(Math.max(20,viewport.height*.029)*.9);expect(first.pitch).toBeLessThanOrEqual(Math.max(20,viewport.height*.029)*1.1)
  const controls=page.getByRole('toolbar',{name:'JVM debugger controls'})
  await expect(controls.getByRole('button')).toHaveCount(6)
+ await sourceControlsClear(page)
  const header=page.getByRole('banner'),headerButtons=await header.getByRole('button').all()
  const rectangles=await Promise.all(headerButtons.map(button=>button.boundingBox()))
  for(let index=0;index<rectangles.length;index++){
@@ -117,6 +131,8 @@ for(const viewport of [{width:1728,height:1117},{width:1440,height:900},{width:1
  const top=(await editorView(page))!
  await page.getByRole('button',{name:'Expand source for editing',exact:true}).click();await ready(page);await sourceSettled(page)
  await expect(page.locator('.monaco-editor')).toBeVisible()
+ await sourceControlsClear(page)
+ await page.screenshot({path:`.ggjavaez/qa/reference-exact/source-expanded-debug-${viewport.width}x${viewport.height}.png`})
  const expanded=(await editorView(page))!
  expect(expanded.first).toBe(top.first);expect(expanded.position).toEqual(top.position);expect(expanded.selection).toEqual(top.selection)
  expect(expanded.last).toBeLessThan(91)

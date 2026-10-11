@@ -25,6 +25,8 @@ export interface ShellLayout {
   dockDrawer: Rect | null
   inspector: Rect | null
   debugBar: Rect | null
+  /** Reserve Source's control row below an intersecting debugger toolbar. */
+  sourceHeadingInset: number
   /** World content fitting rectangle used by Hero, Home, Focus and Follow. */
   safeFrame: Rect
 }
@@ -119,6 +121,9 @@ export function computeShellLayout(input: ShellLayoutInput): ShellLayout {
     x: (w - debugWidth) / 2, y: header.height + 8,
     width: debugWidth, height: shell.modeButton.maxPx,
   } : null
+  const sourceHeadingInset=debugBar&&source.size!=='DRAWER_COLLAPSED'
+    &&source.x<debugBar.x+debugBar.width&&source.x+source.width>debugBar.x
+    ?Math.max(0,debugBar.y+debugBar.height-source.y):0
 
   // Narrow framing always reserves the collapsed peek rail, even while its
   // transient drawer/sheet is open; opening them does not refit the World.
@@ -130,5 +135,5 @@ export function computeShellLayout(input: ShellLayoutInput): ShellLayout {
   if (kind === 'SHORT') bottom = Math.max(bottom, top + shell.safeFrame.minShortH * h)
   const safeFrame: Rect = { x: left, y: top, width: Math.max(0, right - left), height: Math.max(0, bottom - top) }
 
-  return { viewportClass: kind, header, source, explorer, timeDock, dockStrip, dockDrawer, inspector, debugBar, safeFrame }
+  return { viewportClass: kind, header, source, explorer, timeDock, dockStrip, dockDrawer, inspector, debugBar, sourceHeadingInset, safeFrame }
 }

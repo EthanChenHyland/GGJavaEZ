@@ -89,7 +89,7 @@
 .shell--narrow .world-timeline .vj-timeline {padding:8px;gap:8px}
 .shell--narrow .vj-timeline__speed {display:none}
 .shell--narrow .ide-first-use-content {padding:18px}
-.shell--narrow.shell--debug-active .ide-source-heading {height:80px;padding-top:48px}
+.shell--source-controls-inset .ide-source-heading {height:calc(32px + var(--source-heading-inset));padding-top:var(--source-heading-inset)}
 @media(prefers-reduced-motion:reduce) { .ide-editor-panel {transition:none} }
 .shell-source-files {border:0;background:none;color:#A9B8DA;padding:3px 6px}
 .shell-prior-world {position:absolute;left:55%;top:calc(var(--header-height) + 12px);padding:7px 12px;font-size:12px;z-index:2;color:#A9B8DA}

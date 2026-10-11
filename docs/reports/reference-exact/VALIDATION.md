@@ -490,3 +490,27 @@ The isolated 1728×1117 hero diagnostic passed in 9.0 seconds. Both its QA and
 native 1672×941 captures received original-size review: STACK and HEAP remain
 visible; bright cyan crossings and overlapping heap labels remain open. The
 diagnostic uses the list reporter and preserves the last complete matrix report.
+
+## Source/debug control clearance — 2026-10-11
+
+The Source heading now reserves the actual intersecting debugger toolbar's
+height. All four Source hit targets remain inside Source and clear of the
+toolbar before and after expansion in all five target viewports. This changes
+only internal heading spacing; Source bounds, Safe Frame and camera ownership
+remain unchanged. Narrow spacing uses the same measured rule as desktop.
+
+Build, lint and strict reference TypeScript passed; AppRoot is 337.66 kB gzip.
+The 57 focused layout tests passed in 99 ms. The full default suite passed
+1,764 tests with 70 opt-in skips (1,834 total), across 183 files (176 passed,
+seven skipped), in 153.67 seconds. All 34 reconstruction browser checks passed
+in 3.0 minutes; the six focused Source checks passed in 49.6 seconds. Native
+pointer-hit checks, exact tab views, manual scroll, camera preservation, Home
+and middle-third pause checks all remain in place.
+
+All five final expanded Source captures received original-size lead review.
+The controls are visibly below Debug in each capture. Expanded Source still
+covers underlying world geometry without moving the user's camera; explicit
+Home remains separately verified. Console virtualization, ownership hierarchy,
+cluster travel, dense route crossings and final A–G convergence remain open.
+This increment does not replace the fresh 80-case/96-capture matrix or formal
+visual approval. Details are in `migration/source-debug.md`.

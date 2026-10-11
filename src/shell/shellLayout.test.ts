@@ -187,4 +187,18 @@ describe('transient surfaces and Safe_Frame', () => {
     expect(JSON.stringify(shell)).toBe(tokensBefore)
     expect(Object.isFrozen(shell.source)).toBe(true)
   })
+  it.each([[1728,1117],[1440,900],[1280,800],[760,900],[1440,650]])(
+    'keeps expanded Source controls below Debug without moving its surface at %i × %i',(w,h)=>{
+      const data=input(w,h,{debugActive:true,sourceExpanded:true,narrowDrawerOpen:true,appState:state('DEBUG_PAUSED')})
+      const layout=computeShellLayout(data),ordinary=computeShellLayout({...data,debugActive:false}),bar=layout.debugBar!
+      expect(layout.sourceHeadingInset).toBeGreaterThan(0)
+      expect(layout.source.y+layout.sourceHeadingInset).toBeGreaterThanOrEqual(bar.y+bar.height)
+      expect(layout.source).toEqual(ordinary.source);expect(layout.safeFrame).toEqual(ordinary.safeFrame)
+      expect(ordinary.sourceHeadingInset).toBe(0)
+    },
+  )
+  it('reserves no extra Source header space when the debugger is clear or the drawer is collapsed',()=>{
+    expect(computeShellLayout(input(1440,900,{debugActive:true,appState:state('DEBUG_PAUSED')})).sourceHeadingInset).toBe(0)
+    expect(computeShellLayout(input(760,900,{debugActive:true})).sourceHeadingInset).toBe(0)
+  })
 })
