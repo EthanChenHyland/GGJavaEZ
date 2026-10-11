@@ -291,3 +291,27 @@ case passed in 9.4 seconds, then all 21 reconstruction browser checks passed in
 hydrated file peek instead of requiring a hidden Monaco mount. Semantic and
 geometry assertions remain unchanged. Exception markers, model-registry
 retirement, final performance and visual convergence remain open.
+
+## Acrylic edge hierarchy — 2026-10-10
+
+The Interactive Fresnel contribution now uses the actual instance's distance to
+its second-nearest surface plane, keeping rim ink within a fixed edge band.
+Frozen body opacity/roughness/emission, lighting, opaque face/chip colours,
+canonical geometry/picks and Cinematic transmission remain unchanged. It adds
+no draw batches. The shader program cache identity was updated.
+
+- Build and lint passed; AppRoot is 333.93 kB gzip.
+- Eight material/geometry/mask/cinematic tests passed across four files in
+  954 ms. The full default suite passed 1,736 tests with 70 opt-in skips (1,806
+  total), across 178 files (171 passed, seven skipped), in 157.36 seconds.
+  Semantic goldens were unchanged.
+- All six graphics/quality browser checks passed in 17.0 seconds, including
+  actual context recovery and hardware-gated tier compilation.
+- Five real-JVM Hero/inspection/array/Debug/Exception diagnostic cases passed in
+  41.0 seconds, producing ten QA/native captures with zero geometry misses.
+  All five native captures received original-size lead inspection. A first
+  anchored grep command matched no tests; it is not counted as validation.
+
+Broad surfaces are more restrained, but cyan route crossings, neighboring label
+overlap and reference fidelity remain open. These diagnostics are not a fresh
+unfiltered matrix or 96 current approvals. Details are in `migration/materials.md`.

@@ -33,14 +33,24 @@ export function glassMaterial(role: BodyRole, opacity = 1, tier: QualityTier = '
     material.name = `runtime:INTERACTIVE:${role}`;
     material.onBeforeCompile = shader => {
         shader.uniforms.runtimeEdgeTint = { value: new Color(palette.edge) };
-        shader.fragmentShader = 'uniform vec3 runtimeEdgeTint;\n' + shader.fragmentShader.replace('#include <opaque_fragment>', `
+        const surfaceVaryings='varying vec3 runtimeBodyPoint;\nvarying vec3 runtimeBodyHalfSize;\n';
+        // Rounded-box expansion composes after this hook, before these captures.
+        shader.vertexShader=surfaceVaryings+shader.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>
+runtimeBodyHalfSize = runtimeRoundedSize() * 0.5;
+runtimeBodyPoint = transformed * runtimeRoundedSize();`);
+        shader.fragmentShader = 'uniform vec3 runtimeEdgeTint;\n'+surfaceVaryings + shader.fragmentShader.replace('#include <opaque_fragment>', `
 float acrylicFacing = clamp(abs(dot(normalize(normal), normalize(vViewPosition))), 0.0, 1.0);
 float acrylicRim = pow(1.0 - acrylicFacing, 2.5);
-// Keep the interior dark enough for the reflected panels and luminous rim to read as depth.
-outgoingLight = outgoingLight * mix(0.62, 1.0, acrylicRim) + runtimeEdgeTint * acrylicRim * 0.72;
+// The nearest plane is the surface itself; the second nearest locates its rim.
+// World-unit distances keep the edge band fixed across differently sized bodies.
+vec3 surfaceGap = max(runtimeBodyHalfSize - abs(runtimeBodyPoint), vec3(0.0));
+float edgeDistance = max(min(surfaceGap.x, surfaceGap.y), min(max(surfaceGap.x, surfaceGap.y), surfaceGap.z));
+float edgeBand = 1.0 - smoothstep(0.10, 0.35, edgeDistance);
+// Grazing-angle reflection alone must not turn an entire top/side into emissive ink.
+outgoingLight = outgoingLight * mix(0.62, 1.0, acrylicRim * edgeBand) + runtimeEdgeTint * acrylicRim * 0.72 * edgeBand;
 #include <opaque_fragment>`);
     };
-    material.customProgramCacheKey = () => 'runtime-acrylic-fresnel-v4-2';
+    material.customProgramCacheKey = () => 'runtime-acrylic-fresnel-v4-3';
     applyRoundedBoxMaterial(material);
     materials.set(key, material);
     return material;
