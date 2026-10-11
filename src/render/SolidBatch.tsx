@@ -60,7 +60,7 @@ export function buildSolidBatch(scene: SceneModel, plan: PresentationPlan): Soli
                 const [cx, cy, cz] = cell.anchor.position;
                 const window=plan.cellWindows.get(node.id)!;
                 const arrayPick: ArrayWindowPick={recordingId:window.recordingId,arrayId:node.id,windowRevision:window.windowRevision,index:cell.index,slotId:id,presentedSlot:cell.presentedSlot};
-                solids.push({ anchor: cell.anchor, pick: { kind: 'slot', id }, pickable: presented.pickable, role: 'heap', opacity, tint: color.heap.core, edge: node.activity?.index === cell.index ? color.semantic.mutation : color.heap.edge, arrayPick });
+                solids.push({ anchor: cell.anchor, pick: { kind: 'slot', id }, pickable: presented.pickable, role: 'heap', opacity, tint: color.heap.core, edge: node.activity?.index === cell.index ? node.activity.kind==='write'?color.semantic.mutation:color.semantic.execution : color.heap.edge, arrayPick });
                 plate(id, [cx, cy, cz + .79], [1.4, 1.4, .025], color.heap.face, opacity, arrayPick);
             }
     }

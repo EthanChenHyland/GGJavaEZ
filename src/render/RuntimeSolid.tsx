@@ -20,17 +20,19 @@ export function RuntimeSolid({ node, presented, plan }: {
     const model = faceRows(node, presented);
     const identity=node.kind==='frame'?`#${node.invocationNumber}`:node.kind==='class'?'':`#${node.displayId}`;
     const identityWidth=identity?textAdvance(identity,500)*.28+.04:0,titleSize=node.anchor.region==='library'?.3:.4;
-    const titleWidth=Math.max(.1,w-.56-identityWidth-(identity?.2:0)),title=fitWorldText(truncateFrameText(node.title),titleWidth,titleSize,600,0,28);
+    const lengthLabel=node.kind==='array'?`length ${node.length}`:null;
+    const metadataWidth=Math.max(identityWidth,lengthLabel?textAdvance(lengthLabel)*.25+.04:0);
+    const titleWidth=Math.max(.1,w-.56-metadataWidth-(metadataWidth?.2:0)),title=fitWorldText(truncateFrameText(node.title),titleWidth,titleSize,600,0,28);
     const columns=faceColumns(w,presented.detail);
     const emphasis = presented.highlight === 'exception' ? color.semantic.exception : presented.highlight === 'mutation' ? color.semantic.mutation : color.ui.textSecondary;
     const string = node.kind === 'object' ? node.groups.flatMap(g => g.rows).find(row => row.slotId.endsWith(':captured-string')) : null;
     return <group>
     <WorldText position={[left, top - .45, face]} weight={600} size={titleSize} width={titleWidth} opacity={opacity}>{title}</WorldText>
-    {identity&&<WorldText position={[x+w/2-.28,top-.45,face]} weight={500} size={.28} align="right" width={identityWidth} opacity={opacity}>{identity}</WorldText>}
+    {identity&&<WorldText position={[x+w/2-.28,top-(node.kind==='array'?.66:.45),face]} weight={500} size={.28} align="right" width={identityWidth} opacity={opacity}>{identity}</WorldText>}
     {node.kind === 'frame' && <WorldText position={[left, top - .94, face]} size={.25} tint={emphasis} opacity={opacity}>{frameStatusText(node.status)}</WorldText>}
     {node.kind === 'class' && <WorldText position={[left, top - .85, face]} size={.23} tint={color.ui.textSecondary} opacity={opacity}>{`static · ${node.initialization}`}</WorldText>}
     {string && <WorldText position={[left, top - 1.2, face]} size={.3} width={w - .55} opacity={opacity}>{string.value.text}</WorldText>}
-    {node.kind === 'array' && <WorldText position={[x + w / 2 - .25, top - .45, face]} size={.25} tint={color.ui.textSecondary} align="right" width={1.5} opacity={opacity}>{`length ${node.length}`}</WorldText>}
+    {lengthLabel && <WorldText position={[x + w / 2 - .28, top - .28, face]} size={.25} tint={color.ui.textSecondary} align="right" width={metadataWidth} opacity={opacity}>{lengthLabel}</WorldText>}
     {node.kind==='object'&&node.anchor.region!=='library'&&node.groups.map(group=>{
       const first=group.rows.find(row=>row.declaringClass&&model.visible.some(visible=>visible.slotId===row.slotId)&&row.port);
       return first?.port?<WorldText key={group.declaringClass} position={[left,first.port[1]+model.pitch/2+.3,face]} size={.23} tint={color.ui.textMuted} opacity={opacity}>{displayType(group.declaringClass)}</WorldText>:null
@@ -47,9 +49,11 @@ export function RuntimeSolid({ node, presented, plan }: {
     {node.kind === 'object' && node.summaryUnavailable && <WorldText position={[left, top - 1.2, face]} size={.23} tint={color.ui.textMuted} opacity={opacity}>summary not recorded</WorldText>}
     {node.kind === 'array' && [...(plan.cellWindows.get(node.id)?.mapping ?? [])].map(([id, cell]) => {
             const captured = node.cells.find(c => c.index === cell.index), value = captured?.value ?? notRecordedValue(), [cx, cy, cz] = cell.anchor.position;
+            const activity=node.activity?.index===cell.index?node.activity.kind:null;
+            const activityTint=activity==='write'?color.semantic.mutation:activity==='read'?color.semantic.execution:null;
             return <group key={id}>
-        <WorldText position={[cx, cy + .38, cz + .83]} size={.22} width={1.3} align="center" tint={color.ui.textSecondary} opacity={opacity}>{`[${cell.index}]`}</WorldText>
-        <WorldText position={[cx, cy - .1, cz + .83]} size={.34} width={1.3} align="center" tint={value.kind === 'reference' ? color.semantic.execution : color.ui.text} opacity={opacity}>{value.text}</WorldText>
+        <WorldText position={[cx, cy + .38, cz + .83]} size={.28} width={1.3} align="center" tint={activityTint??color.ui.textSecondary} opacity={opacity}>{`[${cell.index}]${activity==='write'?' ←':activity==='read'?' →':''}`}</WorldText>
+        <WorldText position={[cx, cy - .1, cz + .83]} size={.34} width={1.3} align="center" tint={activityTint??(value.kind === 'reference' ? color.semantic.execution : color.ui.text)} opacity={opacity}>{value.text}</WorldText>
       </group>;
         })}
   </group>;

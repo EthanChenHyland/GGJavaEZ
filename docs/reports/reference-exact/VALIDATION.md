@@ -253,3 +253,24 @@ narrow reruns. Array identity/length overlap and flat bright faces remain open.
 These diagnostic captures do not replace the fourth formal matrix's 96 captures
 or approve its visual reviews. Source lazy mounting, exception source markers,
 workspace cleanup and the remaining A–G gates remain open.
+
+## Array metadata and activity labels — 2026-10-10
+
+Array title plates now reserve the wider measured metadata column before title
+truncation. Length and identity occupy separate lines. Captured reads use cyan,
+captured writes amber, with directional index cues and the captured value; a
+read no longer receives the write edge colour. Index text is 0.28 world units
+so the five-cell narrow capture keeps its labels above the existing visibility
+cutoff. RETURNS uses the shared semantic return colour.
+
+The existing text/array/projector checks passed 32 tests across five files in
+1.85 seconds. All fifteen real-JVM array/return diagnostic cases passed in
+1.4 minutes. Original-size review found narrow index culling; after the size
+adjustment, all five array-operation reruns passed in 31.4 seconds. Native,
+narrow and short captures were inspected against the unchanged array reference.
+Length/identity and the written index/value are distinguishable. Build and lint
+pass; reference TypeScript passed on the same code before the scalar font-size
+adjustment. Main AppRoot remains below 500 kB gzip. Bright broad body surfaces,
+tray stacking occlusion and small return-tower rows remain open. These partial
+diagnostics replace some capture files but do not constitute a new unfiltered
+80-case matrix, 96 current visual reviews or convergence approval.
