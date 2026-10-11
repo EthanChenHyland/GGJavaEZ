@@ -1,14 +1,42 @@
 import {describe,expect,it} from 'vitest'
-import {pauseSourceLocation,sourceLocationFor,recordedFileFor,sourcePauseFor} from './sourceSync'
+import {pauseSourceLocation,sourceLocationFor,recordedFileFor,sourcePauseFor,exceptionSourceLocation,exceptionLineForFile,sourceProofFile} from './sourceSync'
 import type {DebugPause} from '../../debugger/contracts'
 import type {InstrumentationSourceManifest} from '../../instrumentation/normalize'
 import rawPersonTrace from '../../examples/demos/person/person.trace.json'
-import type {TraceDocument} from '../../contracts/runtime'
+import type {TraceDocument,RuntimeExceptionFact} from '../../contracts/runtime'
 const personTrace=rawPersonTrace as TraceDocument
 
 const pause:DebugPause={reason:'step',threadId:'thread:1',frameId:'frame:2',className:'pkg.Outer$Inner',methodName:'run',line:2,rawEventCount:17}
 const manifest:InstrumentationSourceManifest={sources:[{fileId:'src/pkg/Outer.java',name:'Outer.java',content:'class Outer {\n class Inner {}\n}',sha256:'recorded-hash'}],classes:[{className:'pkg.Outer$Inner',sourceFile:'Outer.java',fileId:'src/pkg/Outer.java',sourceSha256:'recorded-hash',status:'resolved',candidates:['src/pkg/Outer.java']}]}
 describe('authoritative source presentation',()=>{
+ it('keeps a recorded throw marker through unwind but never before its applied prefix or after catch',()=>{
+  const source={fileId:'Throw.java',line:2},event={...personTrace.events[0],seq:1,eventId:'recorded-throw',type:'THROW_EXCEPTION' as const,frameId:'thrower',exceptionId:'failure',className:'Failure',message:'captured',explicit:true,source}
+  const trace={...personTrace,events:[personTrace.events[0],event],sourceFiles:[{fileId:source.fileId,name:'Throw.java',content:'class Throw {\n void fail() {}\n}'}]}
+  const fact:RuntimeExceptionFact={eventId:event.eventId,exceptionId:event.exceptionId,className:event.className,message:event.message,explicit:true,source,frameIds:['thrower'],unwoundFrameIds:['thrower']}
+  expect(exceptionSourceLocation({cursor:2,exceptions:[fact]},trace,trace.demoId)).toEqual(source)
+  expect(exceptionSourceLocation({cursor:2,exceptions:[fact]},trace,'prior-recording')).toBeNull()
+  expect(exceptionSourceLocation({cursor:2,exceptions:[fact]},trace,null)).toBeNull()
+  expect(exceptionSourceLocation({cursor:1,exceptions:[fact]},trace,trace.demoId)).toBeNull()
+  expect(exceptionSourceLocation({cursor:2,exceptions:[{...fact,caughtBy:'caller'}]},trace,trace.demoId)).toBeNull()
+  expect(exceptionSourceLocation({cursor:2,exceptions:[{...fact,eventId:'another-recording'}]},trace,trace.demoId)).toBeNull()
+  expect(exceptionSourceLocation({cursor:2,exceptions:[fact]},{...trace,events:[{...event,source:null}]},trace.demoId)).toBeNull()
+ })
+ it('does not mark a wrong, missing or out-of-range displayed file',()=>{
+  const file={fileId:'Throw.java',content:'one\ntwo'}
+  expect(exceptionLineForFile({fileId:file.fileId,line:2},file)).toBe(2)
+  expect(exceptionLineForFile({fileId:'Other.java',line:2},file)).toBeNull()
+  for(const line of [0,3,1.5])expect(exceptionLineForFile({fileId:file.fileId,line},file)).toBeNull()
+  expect(exceptionLineForFile({fileId:file.fileId,line:2},undefined)).toBeNull()
+ })
+ it('rejects stale sessions, different tabs and dirty drafts after a verified source mapping',()=>{
+  const proof={sessionId:'recording',fileId:'captured/File.java',path:'renamed/File.java',content:'captured text'}
+  const tab={path:proof.path,draft:proof.content}
+  expect(sourceProofFile(proof,'recording',tab)).toBe(proof)
+  expect(sourceProofFile(proof,'new-attempt',tab)).toBeUndefined()
+  expect(sourceProofFile(proof,'recording',{...tab,path:'different/File.java'})).toBeUndefined()
+  expect(sourceProofFile(proof,'recording',{...tab,draft:'unsaved changes'})).toBeUndefined()
+  expect(sourceProofFile(null,'recording',tab)).toBeUndefined()
+ })
  it('maps a zero-event pause by binary class identity and captured hash',()=>{
   expect(pauseSourceLocation(pause,manifest)).toEqual({fileId:'src/pkg/Outer.java',line:2})
  })

@@ -11,8 +11,9 @@ import { ideShortcuts } from './shortcuts'
 import '../ui/monacoSetup'
 import { bindMonacoSourceScroll } from '../shell/source/monacoSourceScroll'
 import type { SourceMark } from '../shell/source/sourceScrollPolicy'
+import {sourceDecorations} from '../shell/source/sourceDecorations'
 
-export function EditableJavaEditor({ projectId, path, value, onChange, diagnostics, navigate, onSave, executingLine = null, pausedLine = null, breakpoints = [], onToggleBreakpoint, sourceMark='running', sourceKey='', pauseId=null, viewportHeight }: {
+export function EditableJavaEditor({ projectId, path, value, onChange, diagnostics, navigate, onSave, executingLine = null, pausedLine = null, breakpoints = [], onToggleBreakpoint, sourceMark='running', sourceKey='', pauseId=null, exceptionLine=null, viewportHeight }: {
   projectId: string
   path: string
   value: string
@@ -27,6 +28,7 @@ export function EditableJavaEditor({ projectId, path, value, onChange, diagnosti
   sourceMark?: SourceMark
   sourceKey?: string
   pauseId?: string | null
+  exceptionLine?:number|null
   viewportHeight: number
 }) {
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null)
@@ -38,16 +40,14 @@ export function EditableJavaEditor({ projectId, path, value, onChange, diagnosti
   toggleRef.current = onToggleBreakpoint
   const listenersRef = useRef<IDisposable[]>([])
   const scrollRef = useRef<ReturnType<typeof bindMonacoSourceScroll> | null>(null)
-  const sourceRef = useRef({ line: pausedLine ?? executingLine, mark: sourceMark, key: sourceKey, pauseId })
-  sourceRef.current = { line: pausedLine ?? executingLine, mark: sourceMark, key: sourceKey, pauseId }
+  const sourceRef = useRef({ line: pausedLine ?? executingLine, mark: sourceMark, key: sourceKey, pauseId,exceptionLine })
+  sourceRef.current = { line: pausedLine ?? executingLine, mark: sourceMark, key: sourceKey, pauseId,exceptionLine }
   const applyCurrentLine = useCallback(() => {
     const instance = editorRef.current
     if(!instance)return
     const source=sourceRef.current,count=instance.getModel()?.getLineCount()??0
     const line=source.line&&source.line>=1&&source.line<=count?source.line:null,mark=source.mark
-    const className=mark==='paused'?'debug-paused-line':mark==='history'?'executing-line gg-source-history-line':mark==='focus'?'executing-line gg-source-focus-line':'executing-line'
-    const gutter=mark==='paused'?'debug-paused-gutter':mark==='history'?'gg-source-history-gutter':'executing-gutter'
-    decorationsRef.current?.set(line?[{range:{startLineNumber:line,endLineNumber:line,startColumn:1,endColumn:1},options:{isWholeLine:true,className,linesDecorationsClassName:gutter}}]:[])
+    decorationsRef.current?.set(sourceDecorations(line,mark,source.exceptionLine,count))
     scrollRef.current?.sync({mark,line,key:`${source.key}:${pathRef.current}:${line}`},source.pauseId)
   }, [])
   const clearEditorBindings = useCallback(() => {
@@ -118,7 +118,7 @@ export function EditableJavaEditor({ projectId, path, value, onChange, diagnosti
   }
   useEffect(() => {
     applyCurrentLine()
-  }, [executingLine, pausedLine, path, sourceMark, sourceKey, pauseId, applyCurrentLine])
+  }, [executingLine, pausedLine, path, sourceMark, sourceKey, pauseId, exceptionLine,applyCurrentLine])
   useEffect(() => clearEditorBindings, [clearEditorBindings])
   useEffect(() => { showBreakpoints() }, [breakpoints, path])
   useEffect(() => {

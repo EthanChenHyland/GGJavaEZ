@@ -24,7 +24,7 @@ const fullRecording = { state: 'FULL', reason: null, budget: null, lastRecordedS
 export function WorldSurface({ trace, onSourceChange, onRuntimeChange, navigation, suppressInspector = false, execution, safeFrame,inspectorRect,pausedSource }: {
     trace: TraceDocument;
     onSourceChange?: (location: SourceLocation | null) => void;
-    onRuntimeChange?: (runtime: RuntimeState, selection: Selection) => void;
+    onRuntimeChange?: (runtime: RuntimeState, selection: Selection,recordingId:string) => void;
     navigation?: RuntimeNavigation | null;
     suppressInspector?: boolean;
     execution?: EmbeddedExecution;
@@ -82,7 +82,7 @@ export function WorldSurface({ trace, onSourceChange, onRuntimeChange, navigatio
         if (navigation.selection !== undefined)
             setSelection(navigation.selection);
     }, [navigation]);
-    useEffect(() => { onRuntimeChange?.(runtime, selection); }, [runtime, selection, onRuntimeChange]);
+    useEffect(() => { onRuntimeChange?.(runtime, selection,trace.demoId); }, [runtime, selection, onRuntimeChange,trace.demoId]);
     const sourceLocation=sourceLocationFor({hasFocus:!!focus,focusLocation:focus?focusSourceLocation(scene,focus.targetId,trace):null,pausedAtHead:!!pausedSource&&cursor===liveCursor,pauseLocation:pausedSource?.location??null,cursorEvent:cursor>0?trace.events[cursor-1]??null:null});
     const sourceFileId=sourceLocation?.fileId,sourceLine=sourceLocation?.line;
     useEffect(() => { onSourceChange?.(sourceFileId&&sourceLine?{fileId:sourceFileId,line:sourceLine}:null); }, [sourceFileId,sourceLine,onSourceChange,trace.demoId]);

@@ -10,6 +10,7 @@ export interface ExecutionState {
   execution: ExecutionSession | null
   visualization: { sessionId: string; trace: TraceDocument; capability: VisualizationCapabilityReport } | null
   runtime: RuntimeState | null
+  runtimeRecordingId:string|null
 }
 export const executionStore = createStore<ExecutionState>(() => ({
   build: null,
@@ -17,4 +18,5 @@ export const executionStore = createStore<ExecutionState>(() => ({
   execution: null,
   visualization: null,
   runtime: null,
+  runtimeRecordingId:null,
 }))

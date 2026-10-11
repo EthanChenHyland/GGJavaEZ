@@ -315,3 +315,26 @@ no draw batches. The shader program cache identity was updated.
 Broad surfaces are more restrained, but cyan route crossings, neighboring label
 overlap and reference fidelity remain open. These diagnostics are not a fresh
 unfiltered matrix or 96 current approvals. Details are in `migration/materials.md`.
+
+## Captured exception source — 2026-10-10
+
+Source now marks the recorded throw line separately from the current execution
+target. Proof requires explicit runtime recording identity, the actual applied
+throw event, an unambiguous captured source file and valid line. Editable Source
+also requires the existing verified binding and the exact displayed content.
+Unwind retains the marker; caught exceptions, dirty drafts, different files and
+different recordings cannot inherit it. No backend, reducer or semantic golden
+changed. Details are in `migration/source-debug.md`.
+
+Build, lint and strict reference TypeScript passed. The targeted source/debugger
+browser run passed ten cases in 59.4 seconds; all 21 reconstruction browser
+checks then passed in 1.5 minutes. The full default suite passed 1,739 tests with
+70 opt-in skips (1,809 total), across 178 files (171 passed, seven skipped), in
+155.56 seconds. A focused source run passed 41 tests across three files in 208 ms;
+its command also named a nonexistent source-observation path, so that file was
+not part of the focused count. The full suite includes the actual observation
+test. The terminal failure screenshot received original-size lead inspection;
+the red throw marker and unavailable current-source footer coexist correctly.
+This diagnostic does not replace a fresh unfiltered matrix or formal visual
+approval. Model-registry retirement, route overlap and A–G convergence remain
+open.

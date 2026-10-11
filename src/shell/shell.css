@@ -100,6 +100,8 @@
 .gg-source-history-line { background:rgba(63,216,255,.18)!important;outline:1.5px dashed rgba(63,216,255,.7)!important;outline-offset:-1.5px }
 .gg-source-focus-line { background:rgba(63,216,255,.18)!important;outline:1.5px solid rgba(63,216,255,.7);outline-offset:-1.5px }
 .gg-source-history-gutter::before { content:'⟲';color:#3FD8FF;font-size:12px;position:absolute;left:0 }
+.shell .gg-source-exception-line {background:rgba(255,74,94,.18)!important;outline:1.5px solid rgba(255,74,94,.7)!important;outline-offset:-1.5px}
+.shell .gg-source-exception-gutter::before {content:'!';color:#FF4A5E;font-size:12px;font-weight:700;position:absolute;left:0}
 .world-quality-notice { position:absolute;right:24px;top:90px;max-width:380px;padding:12px;font-size:12px;pointer-events:auto }
 .world-quality-notice button { min-width:24px;min-height:24px;margin-left:8px }
 .world-graphics-status{position:absolute;left:50%;top:45%;transform:translate(-50%,-50%);display:flex;align-items:center;gap:12px;border-radius:8px;padding:16px;color:inherit;font-size:14px;pointer-events:auto}

@@ -1,8 +1,9 @@
-import type { SourceLocation, TraceDocument, TraceEvent } from '../../contracts/runtime'
+import type { SourceLocation, TraceDocument, TraceEvent,RuntimeState } from '../../contracts/runtime'
 import type { DebugPause,DebugSession } from '../../debugger/contracts'
 import type { InstrumentationSourceManifest } from '../../instrumentation/normalize'
 import type { SceneModel } from '../../contracts/worldV2'
 import { arrayCellTarget } from '../../world/arrayCellTarget'
+export interface SourceFileProof {sessionId:string;fileId:string;path:string;content:string}
 
 /** Focus locations come from recorded identity/evidence, never from a type-name guess. */
 export function focusSourceLocation(scene:SceneModel,targetId:string|null,trace:TraceDocument):SourceLocation|null {
@@ -46,4 +47,23 @@ export function sourceLocationFor(input:{hasFocus:boolean;focusLocation:SourceLo
  if(input.hasFocus)return input.focusLocation
  if(input.pausedAtHead)return input.pauseLocation
  return input.cursorEvent?.source??null
+}
+
+/** Extra provenance marker: never substitutes for the cursor's source target. */
+export function exceptionSourceLocation(state:Pick<RuntimeState,'cursor'|'exceptions'>|null,trace:TraceDocument|undefined,runtimeRecordingId:string|null):SourceLocation|null {
+ const fact=state?.exceptions.at(-1)
+ if(!state||!trace||trace.demoId!==runtimeRecordingId||!fact||fact.caughtBy)return null
+ const index=trace.events.findIndex(event=>event.eventId===fact.eventId),event=trace.events[index]
+ if(index<0||index>=state.cursor||event?.type!=='THROW_EXCEPTION'||!event.source)return null
+ const location=event.source,files=trace.sourceFiles.filter(file=>file.fileId===location.fileId)
+ return files.length===1&&Number.isInteger(location.line)&&location.line>=1&&location.line<=files[0].content.split('\n').length?location:null
+}
+
+export function exceptionLineForFile(location:SourceLocation|null,file:Pick<TraceDocument['sourceFiles'][number],'fileId'|'content'>|undefined):number|null {
+ return location&&file?.fileId===location.fileId&&Number.isInteger(location.line)&&location.line>=1&&location.line<=file.content.split('\n').length?location.line:null
+}
+
+/** A verified mapping remains usable only for this exact displayed version. */
+export function sourceProofFile(proof:SourceFileProof|null,sessionId:string|undefined,displayed:{path:string;draft:string}|undefined):SourceFileProof|undefined {
+ return proof&&proof.sessionId===sessionId&&proof.path===displayed?.path&&proof.content===displayed.draft?proof:undefined
 }

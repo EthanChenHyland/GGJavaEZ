@@ -80,3 +80,31 @@ through the owning editor. Build, lint and reference TypeScript passed; 68
 existing source/layout/loader checks passed across five files in 321 ms.
 AppRoot is 333.73 kB gzip. Exception markers, model-registry cleanup and broader
 source/workspace migration remain open.
+
+## Captured exception source
+
+Editable and recorded Source now use the same decoration grammar for a captured
+throw marker. It is a separate red line and `!` gutter indicator: it never
+substitutes for the current execution, pause, History or Focus target. The actual
+throw event must belong to the applied prefix of the explicitly identified
+recording and resolve to one captured source file with a valid line. Caught
+exceptions clear the marker; unwind retains it.
+
+Editable files additionally require the existing hash-verified source binding,
+the same recording session, displayed path and exact captured content. Dirty
+drafts and other tabs cannot inherit the marker. Project/file generation changes
+invalidate the proof. A short JVM that publishes directly at its terminal event
+verifies throw provenance independently, without opening a file, moving the
+caret or inventing a current source target. Runtime notifications carry their
+recording identity atomically with the state because normalized event IDs can
+repeat across recordings. Runtime/backend DTOs and reducers are unchanged.
+
+Build, lint and strict reference TypeScript passed. All 21 reconstruction browser
+checks passed in 1.5 minutes, including the actual uncaught JVM, dirty-source
+invalidation and successful rerun, all five pause/tab/resize checks and both
+narrow lazy-loading paths. A targeted ten-case run also passed in 59.4 seconds.
+The terminal failure screenshot was inspected at original resolution: the
+recorded throw line is marked while the footer and current source target remain
+unavailable. This is a diagnostic, not a replacement for the formal 96-capture
+visual review. Model registry retirement and wider workspace cleanup remain
+open; task 3.3 and the A–G milestones remain incomplete.

@@ -6,6 +6,7 @@ import { typography } from '../../theme/tokens'
 import '../../ui/monacoSetup'
 import { bindMonacoSourceScroll } from './monacoSourceScroll'
 import type { SourceMark } from './sourceScrollPolicy'
+import {sourceDecorations} from './sourceDecorations'
 
 interface SourceEditorProps {
   file: TraceDocument['sourceFiles'][number]
@@ -14,11 +15,12 @@ interface SourceEditorProps {
   mark:SourceMark
   sourceKey:string
   pauseId:string|null
+  exceptionLine:number|null
   viewportHeight:number
 }
 
 /** Loaded only when SourcePane renders the full editor. Owns Monaco's lifecycle. */
-export default function RecordedSourceEditor({ file, location, onChooseLine, mark,sourceKey,pauseId,viewportHeight }: SourceEditorProps) {
+export default function RecordedSourceEditor({ file, location, onChooseLine, mark,sourceKey,pauseId,exceptionLine,viewportHeight }: SourceEditorProps) {
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null)
   const decorationsRef = useRef<editor.IEditorDecorationsCollection | null>(null)
   const listenersRef = useRef<IDisposable[]>([])
@@ -27,21 +29,18 @@ export default function RecordedSourceEditor({ file, location, onChooseLine, mar
   chooseLineRef.current = onChooseLine
   // Monaco's React wrapper retains its initial onMount callback while loading.
   // Read these refs at mount time so a cursor change during loading is not lost.
-  const sourceRef = useRef({ location, file,mark,sourceKey,pauseId })
-  sourceRef.current = { location, file,mark,sourceKey,pauseId }
+  const sourceRef = useRef({ location, file,mark,sourceKey,pauseId,exceptionLine })
+  sourceRef.current = { location, file,mark,sourceKey,pauseId,exceptionLine }
 
   const applyCurrentLine = useCallback(() => {
     const instance = editorRef.current
     const decorations = decorationsRef.current
     if (!instance || !decorations) return
-    const { location: current, file: source,mark,sourceKey,pauseId } = sourceRef.current
+    const { location: current, file: source,mark,sourceKey,pauseId,exceptionLine } = sourceRef.current
     const lineCount = instance.getModel()?.getLineCount() ?? 0
     const line = current && current.fileId === source?.fileId && current.line >= 1 && current.line <= lineCount
       ? current.line : null
-    decorations.set(line !== null ? [{
-      range: { startLineNumber: line, endLineNumber: line, startColumn: 1, endColumn: 1 },
-      options: { isWholeLine: true, className: mark==='paused'?'debug-paused-line':mark==='history'?'executing-line gg-source-history-line':mark==='focus'?'executing-line gg-source-focus-line':'executing-line', linesDecorationsClassName: mark==='paused'?'debug-paused-gutter':mark==='history'?'gg-source-history-gutter':'executing-gutter' },
-    }] : [])
+    decorations.set(sourceDecorations(line,mark,exceptionLine,lineCount))
     scrollRef.current?.sync({mark,line,key:`${sourceKey}:${source.fileId}:${line}`},pauseId)
   }, [])
 
@@ -72,7 +71,7 @@ export default function RecordedSourceEditor({ file, location, onChooseLine, mar
 
   useEffect(() => {
     applyCurrentLine()
-  }, [location, file, mark,sourceKey,pauseId,applyCurrentLine])
+  }, [location, file, mark,sourceKey,pauseId,exceptionLine,applyCurrentLine])
 
   useEffect(() => clearEditorBindings, [clearEditorBindings])
 
