@@ -271,6 +271,7 @@ export interface PlacementInfo {
     firstSeq: number;
     clusterPath: readonly ClusterKey[];
     frameRows?: number;
+    ownershipHistory?: readonly { seq:number;value:Ownership }[];
 }
 export interface LayoutState {
     anchors: Readonly<Record<EntityId, WorldAnchor>>;

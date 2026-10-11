@@ -1,13 +1,15 @@
 import {exceptionPanelFor,exceptionPanelAnchor} from './exceptionPanelPlacement'
 import type { Selection } from '../contracts/interaction';
-import type { DetailLevel, EntityId, LayoutState, MaterialRole, PresentationPlan, PresentedCluster, PresentedCurve, PresentedEntity, SceneEntity, SceneModel, TraceScope, Vec3, WorldAnchor } from '../contracts/worldV2';
+import type { DetailLevel, EntityId, LayoutState, MaterialRole, PresentationPlan, PresentedCurve, PresentedEntity, SceneEntity, SceneModel, TraceScope, Vec3, WorldAnchor } from '../contracts/worldV2';
 import { budgets, world } from '../theme/tokens';
 import { computeArrayWindow, type ArrayWindow } from './arrayWindow';
 import type { FlowCatalog, SceneFlow } from './flowCatalog';
 import type { FlowEndpoint } from '../motion/semanticTransition';
 import { arrayCellTarget } from './arrayCellTarget';
 import { connectorClearsFaces, roundedConnectorPoints, surfaceConnectorPoints } from './connectorRouting';
-import {clusterAnchor} from './clusterAnchor';
+import {presentationClusters} from './presentationClusters';
+import {recordedOwnership} from './recordedOwnership';
+import {faceRows} from './faceRows';
 export interface PlanInput {
     scene: SceneModel;
     flows?: FlowCatalog;
@@ -88,6 +90,19 @@ export function planPresentation(input: PlanInput, previous?: PresentationPlan):
     if (scene.exception)
         for (const id of [scene.exception.throwFrameId, ...scene.exception.unwound, scene.exception.catchFrameId, scene.exception.exceptionId,...scene.exception.causes])
             pin(id, 'exception evidence');
+    const recordedOwners = new Map(ids.map(id => [id, recordedOwnership(layout, id, scene.cursor)]));
+    const collapsedExternal = (id: string) => detailLevel !== 'CLOSE' && ['LIBRARY', 'JDK'].includes(recordedOwners.get(id) ?? '');
+    const dependencies = (id: string): string[] => {
+        const node = scene.entities[id];
+        if (detailLevel === 'CLOSE' || !(node.kind === 'frame' || node.kind === 'object' && recordedOwners.get(id) === 'PROJECT')) return [];
+        return [...new Set(faceRows(node, {detail:id === focused ? 'CLOSE' : detailLevel}).visible.flatMap(row =>
+            row.value.kind === 'reference' && scene.entities[row.value.targetId] && collapsedExternal(row.value.targetId) ? [row.value.targetId] : []))];
+    };
+    // Correctness-required sources may exceed a nominal limit. Optional sources
+    // must fit together with their visible-row dependencies before admission.
+    for (const id of [...mandatory.keys()]) for (const target of dependencies(id)) pin(target, 'direct detailed-row reference');
+    const reservedObjects = new Set(ids.filter(id => category(scene.entities[id]) === 'objects' && mandatory.has(id)));
+    const reserve = (targets: readonly string[]) => { for (const target of targets) { pin(target, 'direct detailed-row reference'); reservedObjects.add(target); } };
     const entities = new Map<string, PresentedEntity>(), overflow: PresentationPlan['budgetOverflow'][number][] = [];
     if (requiredFlows.length > budget.flows) overflow.push({category:'flows', nominal:budget.flows, actual:requiredFlows.length, mandatoryIds:requiredFlows.map(flow=>flow.id), reasons:['selected flow or current evidence']});
     let pickableQuiet = 0;
@@ -111,33 +126,27 @@ export function planPresentation(input: PlanInput, previous?: PresentationPlan):
             add(id, 'detailed');
         if (required.length > budget[cat])
             overflow.push({ category: cat, nominal: budget[cat], actual: required.length, mandatoryIds: required, reasons: [...new Set(required.flatMap(id => [...mandatory.get(id)!]))] });
-        const optional = ids.filter(id => category(scene.entities[id]) === cat && !mandatory.has(id)).reverse();
-        for (const id of optional.slice(0, Math.max(0, budget[cat] - required.length)))
-            add(id, 'detailed');
-    }
-    for (const id of ids.filter(id => !entities.has(id)).slice(0, budget.quiet))
-        add(id, 'quiet');
-    const residual = ids.filter(id => !entities.has(id)), groups = new Map<string, string[]>();
-    for (const id of residual) {
-        const anchor = layout.anchors[id], type = layout.placement[id]?.clusterPath.find(key => key.kind === 'type')?.value ?? anchor.region;
-        const key = `${anchor.region}:${type}`, members = groups.get(key) ?? [];
-        members.push(id);
-        groups.set(key, members);
-    }
-    if (groups.size > budget.clusters) {
-        groups.clear();
-        for (const id of residual) {
-            const key = layout.anchors[id].region, members = groups.get(key) ?? [];
-            members.push(id);
-            groups.set(key, members);
+        const optional = ids.filter(id => category(scene.entities[id]) === cat && !mandatory.has(id) && !collapsedExternal(id)).reverse();
+        let remaining = Math.max(0, budget[cat] - required.length);
+        for (const id of optional) {
+            if (!remaining) break;
+            if (entities.has(id)) continue;
+            const targets = dependencies(id), additional = targets.filter(target => !reservedObjects.has(target));
+            const cost = additional.length + (cat === 'objects' ? 1 : 0);
+            if (cost > Math.max(0, budget.objects - reservedObjects.size)) continue;
+            if (cat === 'objects' && cost > remaining) continue;
+            reserve(targets); add(id, 'detailed'); remaining--;
+            if (cat === 'objects') {
+                reservedObjects.add(id);
+                for (const target of additional) add(target, 'detailed');
+                remaining -= additional.length;
+            }
         }
     }
-    const clusters: PresentedCluster[] = [...groups].map(([key, members]) => {
-        const region = layout.anchors[members[0]].region;
-        const first = Object.keys(layout.anchors).find(id => layout.anchors[id].region === region && (key === region || `${region}:${layout.placement[id]?.clusterPath.find(k => k.kind === 'type')?.value}` === key))!;
-        const anchor = clusterAnchor(`cluster:${key}`,layout.anchors[first]);
-        return { id: `cluster:${key}`, key: { kind: 'type', value: key }, label: key.split(':').at(-1)!, members: members.length, memberIds:members, selected:selection?.kind==='cluster'&&selection.id===`cluster:${key}`, anchor, opacity: focused ? .25 : .55, pickable: true };
-    });
+    for (const id of ids.filter(id => !entities.has(id) && !collapsedExternal(id)).slice(0, budget.quiet))
+        add(id, 'quiet');
+    const residual = ids.filter(id => !entities.has(id));
+    const clusters = presentationClusters(scene, layout, residual, detailLevel, budget.clusters, selection, !!focused);
     const cellWindows = new Map<string, ArrayWindow>();
     const arrayRequests = new Map<string, Set<number>>();
     const request = (slotId: string | undefined) => { const cell = arrayCellTarget(scene,slotId); if (!cell) return; const indices = arrayRequests.get(cell.array.id) ?? new Set<number>(); indices.add(cell.index); arrayRequests.set(cell.array.id, indices); };

@@ -124,3 +124,57 @@ default suite passes 1,809 tests with 70 opt-in skips in 157.31 seconds; all
 48 final reconstruction browser checks pass in 4.8 minutes. AppRoot is
 342.29 kB gzip. The eight final-run travel captures received original-size
 lead review; none is marked as formal reference-matrix visual approval.
+
+## Ownership hierarchy — implemented functional cut, visual convergence open
+
+Ownership clustering uses actual normalized type-metadata observations, indexed
+with semantic sequence numbers in placement data. Unknown ownership stays
+unknown; conservative scene defaults and type-name prefixes cannot create an
+ownership cluster. The ledger retains first-known ownership and classification
+changes, resolved at the applied-prefix Cursor. Cluster anchors use the earliest
+recorded observation of the same ownership key within the same canonical runtime
+region. Later metadata and future members cannot change earlier membership.
+Runtime state, graphs, normalized events, canonical bodies and ports stay intact.
+
+FAR/MEDIUM residual library and JDK data use ownership keys. Existing mandatory
+targets remain detailed; real external targets referenced by visible detailed
+Frame rows or recorded project-object fields also remain detailed. The planner
+uses the renderer's shared row-visibility model. Optional source detail must fit
+together with those dependencies in its nominal budget rather than causing
+optional traversal to invent mandatory overflow. Required dependencies may
+overflow, with their actual reasons exposed. Quiet external volumes cannot
+bypass ownership collapse. CLOSE exposes normal detail without moving bodies.
+
+Region is the fixed spatial scope of a hierarchy; its grouping key is ownership,
+type or package. Coarsening optional type groups uses recorded package ancestry,
+with the root namespace as the final coarser package cut. Counts remain exact,
+every identity appears once, and key identities/anchors persist across cuts and
+rewinds. This cut is now connected to the production planner. It does not claim
+the complete hierarchy/bundling milestone: collection, invocation-branch and
+execution-age cuts and inter-cluster connector convergence still need their
+own checks.
+
+The real dense JVM bridge has 589 metadata observations, all bound to
+prefix-present identities, including five JDK-owned objects/arrays. No runtime
+alias or class-name inference is used. Thirteen new normalized-unit checks cover
+the persistent ownership ledger, late/changed metadata, stable key anchors,
+package cuts, row visibility, optional source/dependency costs and genuine
+mandatory overflow. Together with existing camera/planner checks, all eighteen
+focused checks pass. A unit fixture initially omitted PROGRAM_START and used an
+ended-session context for a live-reference assertion; both fixture errors were
+corrected before those results.
+
+All nine existing cluster/metadata browser checks pass with the new cut. Six
+explicit actual-JVM ownership checks cover all five target viewports and reduced
+motion: FAR/MEDIUM collapse follows applied recorded metadata, selection does
+not move the camera, native double-click reaches physical CLOSE in 900 ms (or
+the reduced-motion final frame), and the original proxy anchor plus a real
+detailed member's full bounds fit command Safe Frame. Desktop travel also
+preserves a different actual focused frame. Every identity is counted once.
+
+Original-size lead review of all six ownership destinations finds a remaining
+visual limitation: library members can be behind foreground project solids
+despite satisfying the geometric Safe Frame checks. The camera solver needs a
+visibility-aware polish pass. Narrow Inspector/timeline occlusion and dense
+foreground/glow readability remain open. These screenshots are diagnostics,
+not formal reference approval or completion of A–G.

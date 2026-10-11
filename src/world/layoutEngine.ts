@@ -1,9 +1,10 @@
 import { createOccupancy } from './occupancy';
 import type { TraceEvent, RuntimeSlot } from '../contracts/runtime';
 import { arrayElementSlotId } from '../contracts/runtime';
-import type { LayoutState, WorldAnchor, WorldBounds, Vec3, PlacementInfo, Region } from '../contracts/worldV2';
+import type { LayoutState, WorldAnchor, WorldBounds, Vec3, PlacementInfo, Region, Ownership } from '../contracts/worldV2';
 import { world as worldLayoutTokens } from '../theme/tokens';
-import { persistentPut, persistentRecord } from '../runtime/storage';
+import { persistentAppend, persistentPut, persistentRecord } from '../runtime/storage';
+import {ownershipObservation} from './recordedOwnership';
 export type { LayoutState } from '../contracts/worldV2';
 export type WorldLayoutTokens = typeof worldLayoutTokens;
 export interface LayoutEngine {
@@ -161,7 +162,7 @@ export function createLayoutEngine(t: WorldLayoutTokens = worldLayoutTokens): La
                             break;
                         front += t.frame.depth + t.frame.deckGapZ;
                     }
-                    add(anchor, event.seq, event.className, event.className.slice(0, event.className.lastIndexOf('.')), 'PROJECT', capacity);
+                    add(anchor, event.seq, event.className, event.className.slice(0, Math.max(0,event.className.lastIndexOf('.'))), 'PROJECT', capacity);
                     lastChild.set(event.callerFrameId ?? 'root', anchor);
                     root ??= anchor;
                     ports(anchor, event.locals, capacity, t.frame.header, t.frame.row);
@@ -180,13 +181,18 @@ export function createLayoutEngine(t: WorldLayoutTokens = worldLayoutTokens): La
                     const capacity = Math.min(event.fields.length, t.classShelf.rowsMax) + 1, height = t.classShelf.header + t.frame.pad + t.classShelf.row * capacity;
                     const position: Vec3 = [-t.frame.w / 2 + classes.length * t.classShelf.pitchX + t.classShelf.w / 2, 2.175 + height / 2, -2];
                     const anchor: WorldAnchor = { entityId: event.classId, region: 'class', position, size: [t.classShelf.w, height, t.classShelf.depth], ports: {}, bodyPort: [position[0], position[1], position[2] + t.classShelf.depth / 2] };
-                    add(anchor, event.seq, event.className, event.metadata?.packageName ?? '', 'PROJECT', capacity);
+                    add(anchor, event.seq, event.className, event.metadata?.packageName ?? event.className.slice(0,Math.max(0,event.className.lastIndexOf('.'))), 'PROJECT', capacity);
                     ports(anchor, event.fields, capacity, t.classShelf.header, t.classShelf.row);
                 }
                 const channel = event.type === 'CONSOLE_WRITE' ? event.channel : event.type === 'OUTPUT_WRITE' ? 'stdout' : event.type === 'CONSOLE_INPUT' || event.type === 'INPUT_READ' ? 'stdin' : null;
                 if (channel && !anchors[channel]) {
                     const index = ['stdin', 'stdout', 'stderr'].indexOf(channel), position: Vec3 = [t.io.x, t.io.y[index], t.io.z];
                     add({ entityId: channel, region: 'io', position, size: t.io.size as unknown as Vec3, ports: {}, bodyPort: [position[0], position[1], position[2] + t.io.size[2] / 2] }, event.seq, channel, '', 'PROJECT');
+                }
+                const observation=ownershipObservation(event);
+                if(observation&&placement[observation.id]){
+                    const entry=placement[observation.id],history=(entry.ownershipHistory??[]) as {seq:number;value:Ownership}[];
+                    if(history.at(-1)?.value!==observation.value)placement=persistentPut(placement,observation.id,{...entry,ownershipHistory:persistentAppend(history,{seq:observation.seq,value:observation.value})});
                 }
             }
             if (length !== events.length) {

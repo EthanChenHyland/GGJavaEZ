@@ -695,3 +695,58 @@ needs the broader Focus audit. The explicit ownership-key solver test is math
 coverage, not proof of production ownership hierarchy. That hierarchy, fresh
 80/96 comparisons, final visual approval and independent acceptance/performance
 gates remain open. This increment does not close all of Requirement 22 or A–G.
+
+## Recorded ownership hierarchy — 2026-10-11
+
+The production planner now collapses applied-prefix LIBRARY/JDK metadata into
+exact ownership groups at FAR/MEDIUM. Missing metadata stays unknown; region,
+type-name prefixes and conservative scene defaults cannot supply ownership.
+An immutable placement ledger retains classification changes using normalized
+semantic ordinals. Canonical type/package/ownership key anchors remain stable
+when a representative is detailed, residual order changes, members disappear
+or the Cursor rewinds. Package coarsening keeps the default namespace distinct
+from a root namespace cut. Runtime bodies, ports, reducer, graph, normalized
+event contracts and semantic goldens are unchanged.
+
+Detailed Frame rows and recorded project-object fields share the renderer's
+row-visibility model for required external targets. Optional sources and their
+visible dependencies must fit together before admission; genuine mandatory
+overflow keeps its reasons. Quiet external volumes cannot bypass collapse.
+
+Build, lint and strict reference TypeScript pass; AppRoot is 343.21 kB gzip.
+Thirteen new ledger/hierarchy/admission unit checks and the existing focused
+camera/planner checks pass: 18 tests in 1.36 seconds. Initial unit fixture errors
+(missing PROGRAM_START and ended-session context for live references) were
+corrected before the passing result. The complete default suite passes 1,822
+tests with 70 opt-in skips (1,892 total), across 191 files (184 passed, seven
+skipped), in 157.24 seconds.
+
+Nine existing cluster/metadata browser checks pass in 1.6 minutes. The actual
+dense JVM records 589 metadata observations; all match prefix-present identities,
+including five JDK-owned objects/arrays. Six explicit ownership browser checks
+pass in 1.0 minute, covering all five target viewports and reduced motion. They
+use real Java, native pointer/keyboard interaction and the production camera
+clock. They verify truthful FAR/MEDIUM collapse, exact identity accounting,
+camera-stable single selection, physical CLOSE on ownership double-click,
+unchanged runtime anchors/Focus and complete member bounds plus original proxy
+anchor inside command Safe Frame. Desktop travel preserves a different actual
+focused Frame. The browser harness reads the shared production row model in
+its Vite browser environment; a preliminary Node import failed on the token
+JSON import before any test ran, and was corrected without changing production
+token loading.
+
+The expanded final reconstruction browser run passes all 55 cases in 6.0
+minutes, including the metadata bridge and all six ownership-travel cases in
+that single run. This count excludes legacy E2E scenarios and the formal
+80-case matrix. The dense recorded scene is retained as an ignored diagnostic
+for visibility-aware camera analysis; it is an actual JVM observation, not a
+replacement trace or synthetic production fixture.
+
+All six ownership diagnostic images received original-size lead inspection.
+Library members can still be obscured by foreground project solids even when
+their projected bounds fit Safe Frame. Visibility-aware camera polish, dense
+foreground/glow readability, narrow Inspector/timeline overlap and the broader
+Focus pivot audit remain open. The complete collection/invocation/age hierarchy,
+inter-cluster connector convergence, fresh 80/96 formal comparison, independent
+acceptance/performance suites and final A–G approval also remain open. These
+functional checks are not visual completion or a replacement for that matrix.

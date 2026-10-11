@@ -1,0 +1,35 @@
+import {expect,type Page} from '@playwright/test'
+import {PerspectiveCamera,Vector3} from 'three'
+import {ready} from './harness'
+import type {PresentedCluster} from '../../src/contracts/worldV2'
+
+export async function far(page:Page){
+ await page.locator('.world-canvas').focus()
+ for(let index=0;index<40&&await page.evaluate(()=>window.__ggjavaezWorld!.plan().detailLevel!=='FAR');index++){
+  await page.waitForTimeout(210);await page.keyboard.press('-');await ready(page)
+ }
+ expect(await page.evaluate(()=>window.__ggjavaezWorld!.plan().detailLevel)).toBe('FAR')
+}
+export async function clickCluster(page:Page,double=false,region?:'heap'|'library',ownership=false):Promise<PresentedCluster>{
+ const snapshot=await page.evaluate(()=>({pose:window.__ggjavaezQA!.cameraPose(),shell:window.__ggjavaezQA!.shellRects(),clusters:window.__ggjavaezWorld!.plan().clusters}))
+ const viewport=page.viewportSize()!,camera=new PerspectiveCamera(36,viewport.width/viewport.height,.05,10000)
+ camera.position.set(...snapshot.pose.position);camera.lookAt(...snapshot.pose.target);camera.updateMatrixWorld()
+ for(const cluster of snapshot.clusters){
+  if(region&&cluster.anchor.region!==region||ownership&&cluster.key.kind!=='ownership')continue
+  const [x,y,z]=cluster.anchor.position,[w,h,d]=cluster.anchor.size
+  for(const [u,v] of [[0,0],[-.3,0],[.3,0],[0,.3],[0,-.3]]){
+   const p=new Vector3(x+u*w,y+v*h,z+d/2+.02).project(camera),point={x:(p.x+1)*viewport.width/2,y:(1-p.y)*viewport.height/2}
+   const safe=snapshot.shell.safeFrame,inspector=snapshot.shell.inspector
+   if(p.z<=-1||p.z>=1||point.x<safe.x||point.x>safe.x+safe.width||point.y<safe.y||point.y>safe.y+safe.height||inspector&&point.x>=inspector.x&&point.x<=inspector.x+inspector.width&&point.y>=inspector.y&&point.y<=inspector.y+inspector.height)continue
+   await page.mouse.click(point.x,point.y)
+   // Read-only observation after the real raycast selection has committed.
+   await page.evaluate(()=>new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve()))))
+   if(await page.evaluate(id=>window.__ggjavaezQA!.selection()?.kind==='cluster'&&window.__ggjavaezQA!.selection()?.id===id,cluster.id)){
+    if(double)await page.mouse.dblclick(point.x,point.y)
+    return cluster
+   }
+  }
+ }
+ await page.screenshot({path:'.ggjavaez/qa/reference-exact/cluster-travel-unreachable.png'})
+ throw new Error('No actual cluster face was reachable by native pointer input')
+}
