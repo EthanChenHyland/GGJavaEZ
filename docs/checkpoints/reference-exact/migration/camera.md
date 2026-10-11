@@ -66,3 +66,61 @@ unchanged runtime/Trace/selection/anchors, and real orbit, pan, wheel, keyboard
 and prefix-change cancellation. All six diagnostic captures received
 original-size lead inspection. This does not approve the full reference matrix
 or close cluster travel and broader visual convergence.
+
+## Cluster travel contract — generic clusters integrated
+
+Lead direction: double-clicking a real presented Cluster requests a separate
+camera intent with its actual recording, cursor and cluster identities. It
+does not enter or exit Focus or replace its target. Keyboard Enter retains the
+existing Focus action. The accepted destination identifies an actual
+prefix-present member, which becomes an explicitly accounted detailed member;
+the representative proxy is never reified as a runtime object. This pin retires
+on manual navigation, a new camera intent or prefix/recording replacement.
+
+The destination solver evaluates physical poses against the unchanged full
+canonical-catalog semantic-zoom metric, including all hysteresis starting
+levels. Generic travel targets MEDIUM; an actual ownership key targets CLOSE.
+It frames the original proxy anchor and a real member in Safe Frame without
+moving their anchors or forcing Detail_Level. Ordinary collision constraints
+are applied before measurement, and a route ending short of the validated
+destination is rejected. Travel
+uses the shared eased 900 ms route, with the existing one-frame reduced-motion
+and manual-input cancellation rules. No trace, graph, Lens or selection repair
+is introduced by the camera intent.
+
+The application now routes a native proxy double-click through this intent.
+The planner pins its actual member through the ordinary mandatory budget,
+removes it from residual counts, and releases the pin after cancellation.
+The Inspector distinguishes a cluster absent from the current presentation
+from a runtime entity absent at the Cursor; it invents neither a count nor an
+expanded runtime object. A read-only QA observation exposes the unchanged Focus
+target for native interaction checks.
+
+Four solver/accounting tests use the normalized synthetic catalog, retaining
+its conservative library ownership. They check every member corner after
+ordinary collision constraints in all five viewports, canonical metric
+hysteresis, unchanged anchors, exact accounting and invalid/absent targets.
+An explicitly supplied ownership key exercises CLOSE math only; it is not
+evidence that production ownership clustering exists. The camera-store test
+also protects Focus, pre-Focus pose, Trace, selection and manual/Follow release.
+Eight actual-JVM dense-fixture browser cases cover the five target viewports and
+reduced motion, native face double-clicks, the shared 900 ms stepped clock,
+actual detailed-member bounds, unchanged prefix/anchors/Focus, manual input and
+cursor-change cancellation. Six initial focused checks and two additional heap
+checks pass. The heap cases exercise desktop and narrow object geometry, and
+the desktop case retains a different, actual frame as its Focus target.
+
+Original-size inspection of these eight diagnostics confirms spatial depth and
+readable Inspector status. Dense route crowding, foreground label clipping,
+and narrow-sheet timeline occlusion remain visible; this is not visual approval.
+Manual Focus pivot semantics after auxiliary camera travel also need the broader
+Focus convergence audit; these checks prove identity retention and cancellation,
+not that every Focus interaction criterion has passed.
+Production ownership hierarchy, full reference comparison and final performance
+and semantic acceptance gates remain open.
+
+Release checks: build, lint and strict reference TypeScript pass. The full
+default suite passes 1,809 tests with 70 opt-in skips in 157.31 seconds; all
+48 final reconstruction browser checks pass in 4.8 minutes. AppRoot is
+342.29 kB gzip. The eight final-run travel captures received original-size
+lead review; none is marked as formal reference-matrix visual approval.

@@ -4,7 +4,7 @@ import type {DetailLevel} from '../contracts/worldV2'
 import type {OrbitPose} from './projection'
 import {focusable,useInteractionStore} from '../interaction/interactionStore'
 export type NavigationMode='EXPLORE'|'FOCUS'|'TRACE'|'HOME'
-export type CameraIntent={kind:'home'}|{kind:'recording'}|{kind:'hero'}|{kind:'focus';targetId:string}|{kind:'exitFocus';pose:OrbitPose;mode:NavigationMode}|{kind:'followPath';flowId:string}|{kind:'zoom';factor:number}|{kind:'pose';pose:OrbitPose}
+export type CameraIntent={kind:'home'}|{kind:'recording'}|{kind:'hero'}|{kind:'focus';targetId:string}|{kind:'exitFocus';pose:OrbitPose;mode:NavigationMode}|{kind:'followPath';flowId:string}|{kind:'cluster';clusterId:string;recordingId:string;cursor:number;memberId?:string}|{kind:'zoom';factor:number}|{kind:'pose';pose:OrbitPose}
 export interface CameraStore {
  mode:NavigationMode;follow:boolean;pose:OrbitPose;detailLevel:DetailLevel;viewTile:string
  intent:CameraIntent|null;intentRevision:number;reducedMotion:boolean
@@ -12,6 +12,7 @@ export interface CameraStore {
  followPath(flowId:string):void;enableFollow():void;userInput():void;setPose(pose:OrbitPose):void;setDetailLevel(detailLevel:DetailLevel):void
  setReducedMotion(value:boolean):void;requestPose(pose:OrbitPose):void
  frameHero():void
+ travelCluster(clusterId:string,recordingId:string,cursor:number):void
 }
 const initialPose:OrbitPose={target:[4,-2,0],distance:24,yawDeg:8,pitchDeg:-13}
 export const useCameraStore=create<CameraStore>((set,get)=>({mode:'EXPLORE',follow:false,pose:initialPose,detailLevel:'MEDIUM',viewTile:'0:0:0',intent:null,intentRevision:0,reducedMotion:false,
@@ -22,7 +23,8 @@ export const useCameraStore=create<CameraStore>((set,get)=>({mode:'EXPLORE',foll
  enterTrace(){const interaction=useInteractionStore.getState();interaction.enterTrace();set({mode:interaction.focus?'FOCUS':'TRACE'})},
  resetRecording(follow=false){useInteractionStore.getState().resetRecording();set(state=>({mode:'EXPLORE',follow,intent:{kind:'recording'},intentRevision:state.intentRevision+1}))},
  followPath(flowId){set(state=>({follow:false,intent:{kind:'followPath',flowId},intentRevision:state.intentRevision+1}))},
- enableFollow(){set({follow:true})},
+ travelCluster(clusterId,recordingId,cursor){set(state=>({follow:false,intent:{kind:'cluster',clusterId,recordingId,cursor},intentRevision:state.intentRevision+1}))},
+ enableFollow(){set(state=>state.intent?.kind==='cluster'?{follow:true,intent:null,intentRevision:state.intentRevision+1}:{follow:true})},
  userInput(){set(state=>({follow:false,intent:null,intentRevision:state.intentRevision+1,mode:state.mode==='HOME'?'EXPLORE':state.mode}))},
  setPose(pose){const prior=get().pose;if(Math.abs(prior.distance-pose.distance)<1e-7&&Math.abs(prior.yawDeg-pose.yawDeg)<1e-7&&Math.abs(prior.pitchDeg-pose.pitchDeg)<1e-7&&prior.target.every((value,i)=>Math.abs(value-pose.target[i])<1e-7))return;set({pose,viewTile:pose.target.map(value=>Math.floor(value/12)).join(':')})},
  requestPose(pose){set(state=>({pose,intent:{kind:'pose',pose},intentRevision:state.intentRevision+1,follow:false}))},

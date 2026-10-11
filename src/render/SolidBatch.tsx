@@ -9,6 +9,7 @@ import { expandRoundedBoxVertex, unitRoundedBox, unitRoundedOutline } from './ge
 import { faceRows } from './faceModel';
 import { useQualityStore, type QualityTier } from './quality/qualityStore';
 import { resolveArrayWindowPick, type ArrayWindowPick } from '../world/arrayWindow';
+import { useCameraStore } from '../camera/cameraStore';
 type Pick = NonNullable<Selection>;
 interface Solid {
     anchor: WorldAnchor;
@@ -81,13 +82,14 @@ function canonicalSolidRaycast(this: InstancedMesh, raycaster: Raycaster, inters
     try { InstancedMesh.prototype.raycast.call(this, raycaster, intersects); }
     finally { this.geometry = geometry; }
 }
-function Instances({ items, onSelect, onFocus, tier, plan, recordingId }: {
+function Instances({ items, onSelect, onFocus, tier, plan, recordingId, cursor }: {
     items: Solid[];
     onSelect(selection: Pick): void;
     onFocus(selection: Pick): void;
     tier: QualityTier;
     plan: PresentationPlan;
     recordingId: string;
+    cursor: number;
 }) {
     const ref = useRef<InstancedMesh>(null), role = items[0].role, opacity = items[0].opacity;
     const press=useRef<{pick:Pick;arrayPick?:ArrayWindowPick;recordingId:string}|null>(null);
@@ -119,7 +121,8 @@ function Instances({ items, onSelect, onFocus, tier, plan, recordingId }: {
         onSelect(item!.pick);
     } }} onDoubleClick={event => { const item = items[event.instanceId ?? -1]; if (validPress(item)) {
         event.stopPropagation();
-        onFocus(item!.pick);
+        if(item!.pick.kind==='cluster')useCameraStore.getState().travelCluster(item!.pick.id,recordingId,cursor);
+        else onFocus(item!.pick);
     } }}>
     {role === 'face' && <meshBasicMaterial color="white" transparent={opacity<1} opacity={opacity} depthWrite={opacity>=1} toneMapped={false}/>}
   </instancedMesh>;
@@ -169,5 +172,5 @@ export function SolidBatch({ scene, plan, onSelect, onFocus }: {
         }
         return { groups, edges };
     }, [scene, plan]);
-    return <>{[...batches.groups].map(([key, items]) => <Instances key={key} items={items} tier={tier} plan={plan} recordingId={scene.recordingId} onSelect={onSelect} onFocus={onFocus}/>)}{[...batches.edges].map(([key, items]) => <Edges key={key} items={items}/>)}</>;
+    return <>{[...batches.groups].map(([key, items]) => <Instances key={key} items={items} tier={tier} plan={plan} recordingId={scene.recordingId} cursor={scene.cursor} onSelect={onSelect} onFocus={onFocus}/>)}{[...batches.edges].map(([key, items]) => <Edges key={key} items={items}/>)}</>;
 }

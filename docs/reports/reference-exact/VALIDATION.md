@@ -653,3 +653,45 @@ FALLBACK_OK alongside the unsupported-World message. Final reference visuals,
 ownership/cluster travel, input closure knowledge and independent acceptance/
 performance gates remain open. This is an unsupported-graphics initialization
 correction, not full A–G approval or a substitute for the fresh 80/96 matrix.
+
+## Physical cluster travel — 2026-10-11
+
+Native cluster proxy double-clicks now request a separate prefix-owned camera
+intent rather than entering Focus. The physical solver measures the unchanged
+full canonical catalog after ordinary destination constraints, frames the old
+proxy anchor and every corner of a real member in Safe Frame, and accepts only
+poses that reach the required semantic detail from all hysteresis states. It
+targets MEDIUM for generic keys and CLOSE for an explicit ownership key, without
+forcing Detail_Level or moving runtime anchors. The shared collision route must
+reach that validated destination before the planner pins the actual member.
+The pin consumes the existing mandatory budget and is excluded from residual
+counts. Manual navigation, another camera command and prefix replacement retire
+it. Focus, Trace, selection, Lens and runtime semantics are not rewritten.
+
+Build, lint and strict reference TypeScript pass; AppRoot is 342.29 kB gzip.
+Ten focused solver, accounting, camera-store and planner checks pass in 1.27 s.
+The default suite passes 1,809 tests with 70 opt-in skips (1,879 total), across
+189 files (182 passed, seven skipped), in 157.31 s. The initial accounting test
+incorrectly compared a successor plan's revision to a fresh plan's revision;
+its expected revision now advances normally while the full cut remains equal.
+
+Six focused actual-JVM cluster travel checks pass in 1.1 minutes. They use all
+five QA viewport sizes plus reduced motion, native face double-clicks and the
+production presentation clock stepped through the 900 ms destination. They
+verify real detailed-member bounds, the original proxy anchor, unchanged
+recording/cursor/anchors/Focus, manual cancellation and cursor-change retirement.
+Two further heap checks pass in 26.8 s, covering desktop/narrow object geometry
+and travel while a different, actual frame remains focused. The earlier 46-case
+reconstruction browser run passes in 4.4 minutes. The expanded 48-case final run
+passes in 4.8 minutes, including all eight travel cases in that single run.
+These counts do not describe legacy browser tests or the formal 80-case
+reference matrix.
+
+All eight diagnostics received original-size lead inspection. Real Z-depth and
+the Inspector's truthful absent-presentation status are visible. Dense cyan
+route crowding, foreground caption clipping and narrow-sheet timeline occlusion
+remain visible. Manual Focus pivot behavior after auxiliary camera travel still
+needs the broader Focus audit. The explicit ownership-key solver test is math
+coverage, not proof of production ownership hierarchy. That hierarchy, fresh
+80/96 comparisons, final visual approval and independent acceptance/performance
+gates remain open. This increment does not close all of Requirement 22 or A–G.

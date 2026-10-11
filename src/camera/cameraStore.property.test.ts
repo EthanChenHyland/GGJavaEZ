@@ -31,3 +31,13 @@ it('Property 52: manual camera input cancels travel and Follow until explicitly 
 it('Flow and connector Selection cannot enter Focus',()=>{
  const camera=useCameraStore.getState();camera.focus({kind:'flow',id:'edge'});expect(useInteractionStore.getState().focus).toBeNull();camera.focus({kind:'reference',id:'ref'});expect(useInteractionStore.getState().focus).toBeNull()
 })
+it('cluster travel preserves Focus, pre-Focus pose, Trace and selection while owning only its camera intent',()=>{
+ const camera=useCameraStore.getState()
+ camera.focus({kind:'object',id:'actual-focus'});camera.enterTrace();useInteractionStore.getState().setTraceScope('all')
+ const before=useInteractionStore.getState(),mode=useCameraStore.getState().mode,pose=useCameraStore.getState().pose
+ camera.travelCluster('cluster:type','opaque-recording',23)
+ expect(useInteractionStore.getState()).toBe(before);expect(useCameraStore.getState()).toMatchObject({mode,pose,follow:false,intent:{kind:'cluster',clusterId:'cluster:type',recordingId:'opaque-recording',cursor:23}})
+ useCameraStore.setState({intent:{kind:'cluster',clusterId:'cluster:type',recordingId:'opaque-recording',cursor:23,memberId:'actual-member'}})
+ camera.userInput();expect(useCameraStore.getState().intent).toBeNull();expect(useInteractionStore.getState()).toBe(before)
+ camera.travelCluster('cluster:type','opaque-recording',23);camera.enableFollow();expect(useCameraStore.getState()).toMatchObject({intent:null,follow:true});expect(useInteractionStore.getState()).toBe(before)
+})

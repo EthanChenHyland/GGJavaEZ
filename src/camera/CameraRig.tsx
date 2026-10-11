@@ -16,6 +16,7 @@ import {heroFraming} from './heroFraming'
 import {guidedFollow} from './guidedFollow'
 import {focusFraming} from './focusFraming'
 import {followPathFraming} from './followPathFraming'
+import {clusterFraming} from './clusterFraming'
 import {guidedTravel,travelPose,type GuidedTravel} from './guidedTravel'
 import {requestAnimationFrameRender} from '../render/renderActivity'
 import {productionClock} from '../motion/clock'
@@ -80,6 +81,24 @@ export function CameraRig({scene,plan,event,layout,safeFrame,inspectorRect,input
    const curve=plan.curves.find(curve=>curve.id===intent.flowId)
    beginWaypoints(followPathFraming(curve,commandArea(),size),1000,false,intent.flowId)
   }
+  if(intent.kind==='cluster'){
+   move.current=null
+   if(intent.recordingId!==scene.recordingId||intent.cursor!==scene.cursor)return
+   const cluster=plan.clusters.find(cluster=>cluster.id===intent.clusterId)
+   const destination=clusterFraming(scene,cluster,commandArea(),size,state.pose,pose=>{
+    const requested={position:cameraPosition(pose),target:pose.target}
+    return orbitPoseFromEye(constrainCameraPose(requested,requested,latest.current.boxes,layout.bounds?.center,latest.current.limits))
+   })
+   if(!destination)return
+   const route=guidedTravel(eye(),[destination.pose],latest.current.boxes,layout.bounds?.center,latest.current.limits),end=route.path.at(-1)!,destinationEye=cameraPosition(destination.pose)
+   // Reject a collision stop that cannot reach the validated physical pose.
+   if(Math.hypot(...end.position.map((v,i)=>v-destinationEye[i]))>1e-6||Math.hypot(...end.target.map((v,i)=>v-destination.pose.target[i]))>1e-6)return
+   // Resolve one actual prefix-owned member. This changes only the accounted
+   // presentation cut; Focus, selection and the runtime catalog stay intact.
+   useCameraStore.setState({intent:{...intent,memberId:destination.memberId}})
+   move.current={...route,start:productionClock.now(),duration:reduced()?0:900,home:false}
+   invalidate()
+  }
  },[intentRevision])
  useEffect(()=>{
   const cancel=()=>{move.current=null;lastFollow.current=-1;useCameraStore.getState().setPose(orbitPoseFromEye(eye()));useCameraStore.getState().userInput();invalidate()}
@@ -94,6 +113,10 @@ export function CameraRig({scene,plan,event,layout,safeFrame,inspectorRect,input
  useFrame(()=>{
   const control=controls.current;if(!control||!(camera instanceof PerspectiveCamera))return
   const selected=useInteractionStore.getState().selection
+  const intent=useCameraStore.getState().intent
+  if(intent?.kind==='cluster'&&(intent.recordingId!==scene.recordingId||intent.cursor!==scene.cursor)){
+   move.current=null;useCameraStore.setState({intent:null});invalidate()
+  }
   const flowMove=move.current
   if(flowMove?.flowId&&(selected?.kind!=='flow'||selected.id!==flowMove.flowId||flowMove.flowPrefix?.recordingId!==scene.recordingId||flowMove.flowPrefix?.cursor!==scene.cursor||!plan.curves.some(curve=>curve.id===flowMove.flowId)))move.current=null
   const now=productionClock.now(),travel=move.current

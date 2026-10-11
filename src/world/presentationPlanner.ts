@@ -15,6 +15,7 @@ export interface PlanInput {
     detailLevel: DetailLevel;
     selection: Selection;
     focusTargetId: EntityId | null;
+    clusterTravelMemberId?: EntityId;
     trace: {
         active: boolean;
         scope: TraceScope;
@@ -62,6 +63,7 @@ export function planPresentation(input: PlanInput, previous?: PresentationPlan):
     for (const flow of requiredFlows) { pin(flow.from?.id, 'targeted flow endpoint'); pin(flow.to.id, 'targeted flow endpoint'); }
     pin(selected, 'selection');
     pin(focused, 'focus');
+    if(input.clusterTravelMemberId&&scene.entities[input.clusterTravelMemberId])pin(input.clusterTravelMemberId,'cluster travel member');
     if (selectedRef) {
         pin(selectedRef.sourceId, 'selected connector');
         pin(selectedRef.targetId, 'selected connector');

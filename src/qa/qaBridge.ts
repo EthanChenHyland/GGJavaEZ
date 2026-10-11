@@ -1,6 +1,7 @@
 import type { AppState } from '../state/appState'
 import type { ShellLayout } from '../shell/shellLayout'
 import { useCameraStore } from '../camera/cameraStore'
+import {useInteractionStore} from '../interaction/interactionStore'
 import { cameraPosition } from '../camera/projection'
 import { orbitPoseFromEye } from '../camera/CameraRig'
 import type { EyePose } from '../camera/cameraConstraints'
@@ -22,6 +23,7 @@ function createQaBridge(snapshot: QaSnapshot) {
     clock:{step:(ms:number)=>productionClock.step(ms),resume:()=>productionClock.resume()},
     worldProjection:()=>window.__ggjavaezWorld?.worldProjection()??null,
     selection:()=>window.__ggjavaezWorld?.selection()??null,
+    focusTarget:()=>useInteractionStore.getState().focus,
     source:observeSource,
     editorModels:observeEditableModels,
     projectedPoint:(id:string)=>window.__ggjavaezWorld?.projectedPoint(id)??null,
