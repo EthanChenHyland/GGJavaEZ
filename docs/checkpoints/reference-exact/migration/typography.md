@@ -83,3 +83,21 @@ review covered all five Home captures, all five pause captures and both idle
 captures. Clearer small-program headings do not close global heading placement,
 cluster ownership/travel, expanded Source/debug-toolbar overlap, dense route
 hierarchy or the complete reference comparison.
+
+## WebGL-unavailable font prewarming — 2026-10-11
+
+Lead direction: the shared `preloadRuntimeText` entry point checks the same
+graphics capability probe as the World before starting atlas work. Tokens and
+legacy label imports can run before Canvas, so guarding only Canvas did not
+prevent Troika from starting SDF generation against a null graphics context.
+A negative probe starts no atlas worker and populates no font cache keys. A
+later supported call still warms all three weights once and preserves the
+existing all-jobs readiness barrier and both cache keys. Active context recovery
+and shared text disposal are unchanged.
+
+Both WebGL-disabled browser cases now observe all page/Console errors, warnings
+and runtime-atlas font requests rather than ignoring the SDF diagnostics. They
+still require usable Source/timeline, real Java execution and exact process
+output with no World canvas. Process completion is independent of retained page
+publication; the real-run check waits for the actual nonempty timeline.
+This targets unsupported-graphics initialization, not overall visual approval.

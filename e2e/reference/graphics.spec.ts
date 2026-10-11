@@ -1,4 +1,11 @@
 import {expect,test} from '@playwright/test'
+import {browserErrors} from './harness'
+const observeFallback=(page:Parameters<typeof browserErrors>[0])=>{
+ const errors=browserErrors(page),warnings:string[]=[],fonts:string[]=[]
+ page.on('console',message=>{if(message.type()==='warning')warnings.push(message.text())})
+ page.on('request',request=>{if(request.url().includes('/fonts/runtime/VisualJavaInter-'))fonts.push(request.url())})
+ return {errors,warnings,fonts}
+}
 test('the settled world uses demand rendering and redraws after a timeline seek',async({page})=>{
  await page.goto('/examples?qa=1')
  await page.waitForFunction(()=>!!window.__ggjavaezWorld?.ready)
@@ -38,6 +45,7 @@ test('an actual lost graphics context restores the same canvas, recording, selec
  expect(errors).toEqual([])
 })
 test('without WebGL the recording source and timeline remain usable',async({page})=>{
+ const observed=observeFallback(page)
  await page.addInitScript(()=>{
   const getContext=HTMLCanvasElement.prototype.getContext
   HTMLCanvasElement.prototype.getContext=function(this:HTMLCanvasElement,type:string,...args:unknown[]){if(type==='webgl'||type==='webgl2')return null;return Reflect.apply(getContext,this,[type,...args])} as typeof getContext
@@ -47,8 +55,11 @@ test('without WebGL the recording source and timeline remain usable',async({page
  const slider=page.getByRole('slider',{name:'Recorded execution position'});await slider.focus();await page.keyboard.press('End')
  await expect(slider).toHaveAttribute('aria-valuenow',await slider.getAttribute('aria-valuemax')??'')
  await expect(page.locator('.ide-editor-panel')).toBeVisible();await expect(page.locator('.world-canvas canvas')).toHaveCount(0)
+ await page.screenshot({path:'.ggjavaez/qa/reference-exact/graphics-fallback-recording.png'})
+ expect(observed).toEqual({errors:[],warnings:[],fonts:[]})
 })
 test('without WebGL the IDE still runs actual Java and retains its process output',async({page,request})=>{
+ const observed=observeFallback(page)
  const imported=await request.post('/api/projects/import',{data:{name:`Graphics fallback ${Date.now()}`,files:[{path:'Main.java',content:'public class Main { public static void main(String[] args) { System.out.println("FALLBACK_OK"); } }\n'}]}})
  expect(imported.ok()).toBe(true);const {id}=await imported.json()
  await page.addInitScript(id=>localStorage.setItem('ggjavaez:project',id),id)
@@ -62,6 +73,8 @@ test('without WebGL the IDE still runs actual Java and retains its process outpu
  await expect(page.locator('.shell-state')).toContainText('Completed',{timeout:45000})
  await page.getByRole('button',{name:'CONSOLE',exact:true}).click()
  await expect(page.getByLabel('Program console')).toContainText('FALLBACK_OK')
- expect(Number(await page.getByRole('slider',{name:'Recorded execution position'}).getAttribute('aria-valuemax'))).toBeGreaterThan(0)
+ await expect.poll(async()=>Number(await page.getByRole('slider',{name:'Recorded execution position'}).getAttribute('aria-valuemax'))).toBeGreaterThan(0)
  await expect(page.locator('.world-canvas canvas')).toHaveCount(0)
+ await page.screenshot({path:'.ggjavaez/qa/reference-exact/graphics-fallback-jvm.png'})
+ expect(observed).toEqual({errors:[],warnings:[],fonts:[]})
 })

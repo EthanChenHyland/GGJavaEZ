@@ -15,8 +15,16 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
-it('warms all three weights once and publishes readiness only after every bounded job finishes', async () => {
+it('does not queue an atlas or populate font jobs without WebGL',async()=>{
+  vi.stubGlobal('window',{})
+  vi.stubGlobal('document',{createElement:()=>({getContext:()=>null})})
+  preloadRuntimeText();preloadRuntimeText();await Promise.resolve()
+  expect(font.jobs).toHaveLength(0)
+})
+
+it('warms all three weights once after a skipped probe and waits for every bounded job', async () => {
   vi.stubGlobal('window', {})
+  vi.stubGlobal('document',{createElement:()=>({getContext:()=>({getExtension:()=>null})})})
   preloadRuntimeText()
   preloadRuntimeText()
   await vi.waitFor(() => expect(font.jobs).toHaveLength(3))

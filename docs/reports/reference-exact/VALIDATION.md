@@ -625,3 +625,31 @@ backend, trace, reducer, history, graph, World endpoint or animation contracts
 change. Fresh real-JVM partial-limit/no-first-event checks, graphics diagnostics,
 formal acceptance/performance suites and final A–G visual convergence remain
 open. This does not replace the fresh 80-case/96-capture matrix.
+
+## Unsupported-graphics font prewarming — 2026-10-11
+
+Shared token imports previously started Troika atlas work before the Canvas
+WebGL check, producing null-context SDF failures on operational fallback pages.
+The font entry point now checks the same graphics probe before starting atlas
+work or populating either cache key. Supported calls still warm all three
+weights once and wait for every job; context recovery and disposal are unchanged.
+
+Build, lint and strict reference TypeScript passed; AppRoot is 341.17 kB gzip.
+Two focused font tests passed in 186 ms. The default suite passed 1,804 tests
+with 70 opt-in skips (1,874 total), across 188 files (181 passed, seven skipped),
+in 158.02 seconds. All four focused graphics browser checks passed in 9.9 seconds.
+Both WebGL-disabled pages now assert zero page/Console errors, zero warnings
+and zero runtime-atlas font requests, while preserving their existing Source,
+timeline, real Java output and absent-World-canvas assertions. These checks
+include actual context loss/restoration and settled demand rendering.
+All 40 final reconstruction browser checks passed in 3.3 minutes. Their log
+contains no WebGL SDF failures or unhandled rejections. Supported-renderer
+Three.Clock/PCFSoftShadowMap deprecation warnings remain; this does not claim
+that every browser scenario emits zero warnings.
+
+Both fallback captures received original-size lead review: recorded Source and
+its completed timeline remain readable, and the real-run Console visibly shows
+FALLBACK_OK alongside the unsupported-World message. Final reference visuals,
+ownership/cluster travel, input closure knowledge and independent acceptance/
+performance gates remain open. This is an unsupported-graphics initialization
+correction, not full A–G approval or a substitute for the fresh 80/96 matrix.

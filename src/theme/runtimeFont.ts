@@ -1,4 +1,5 @@
 import { preload } from 'suspend-react'
+import { supportsRuntimeWebGL } from '../render/graphicsRecovery'
 
 export const runtimeFont = '/fonts/runtime/VisualJavaInter-Regular.ttf'
 export const runtimeFonts={400:runtimeFont,500:'/fonts/runtime/VisualJavaInter-Medium.ttf',600:'/fonts/runtime/VisualJavaInter-SemiBold.ttf'} as const
@@ -7,7 +8,9 @@ export const runtimeCharacters = Array.from({ length: 95 }, (_, index) => String
 let preloadPromise: Promise<void> | undefined
 
 export function preloadRuntimeText(): void {
-  if (typeof window === 'undefined') return
+  // Tokens are imported before Canvas mounts. Atlas generation also needs GL;
+  // the operational fallback must not start its worker or populate these keys.
+  if (typeof window === 'undefined' || !supportsRuntimeWebGL()) return
   // Match both Drei cache keys: shared primitives specify characters; region
   // headings and transient cues use the font-only key. Both await all weights.
   // Import asynchronously so the shell can paint
