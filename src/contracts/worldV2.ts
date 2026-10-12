@@ -191,6 +191,21 @@ export interface SceneReference {
     overlay: 'return' | 'exception' | null; // colour precedence exception > return (16.5)
     evidence: Evidence;
 }
+/** One accepted normalized owner/slot binding interval. Ending metadata is
+ * present only after its ending event belongs to the applied prefix. */
+export interface SceneReferenceBinding {
+    readonly id: string;
+    readonly referenceId: ReferenceId;
+    readonly sourceId: EntityId;
+    readonly sourceSlotId: SlotId;
+    readonly targetId: ObjectId;
+    readonly role: SceneReference['role'];
+    readonly introducedSeq: number;
+    readonly introducedEventId: EventId;
+    readonly endSeq: number | null;
+    readonly endEventId: EventId | null;
+    readonly endKind: 'overwritten' | 'null' | 'unavailable' | 'retired' | null;
+}
 export interface SceneCallLink {
     id: string;
     callerId: FrameId;
@@ -245,6 +260,7 @@ export interface SceneModel {
         classes: readonly string[];
     };
     references: readonly SceneReference[];
+    historicalBindings: readonly SceneReferenceBinding[]; // immutable closed prefix, never future endings
     callLinks: readonly SceneCallLink[];
     returnFlows: readonly SceneReturnFlow[]; // canonical candidates; planner applies mandatory overflow
     exception: SceneExceptionPath | null;
@@ -337,7 +353,7 @@ interface PresentedBundleBase {
     arrow: boolean;
 }
 export type PresentedBundle = PresentedBundleBase & (
-    | { kind: 'connector'; referenceIds: readonly ReferenceId[] } // current references, never graph flow IDs
+    | { kind: 'connector' | 'binding-history'; referenceIds: readonly ReferenceId[] } // slot bindings, never graph flow IDs
     | { kind: 'flow'; referenceIds?: never }
 );
 export interface ReferencePresentation {
@@ -345,6 +361,10 @@ export interface ReferencePresentation {
     unavailable: readonly { id: ReferenceId; reason: string }[];
     internal: readonly { id: ReferenceId; clusterId: string }[];
     scopeExcluded: readonly ReferenceId[];
+}
+export interface HistoricalReferencePresentation extends Omit<ReferencePresentation, 'counts'> {
+    counts: Omit<ReferencePresentation['counts'], 'current'> & { recorded: number; eligible: number; lifetimeExcluded: number };
+    lifetimeExcluded: readonly { id: string; endKind: SceneReferenceBinding['endKind'] }[];
 }
 export type ArrayIndexReason = 'requested' | 'selected' | 'focused' | 'current';
 export interface ArrayWindowSlot {
@@ -414,6 +434,7 @@ export interface PresentationPlan {
     curves: readonly PresentedCurve[];
     bundles: readonly PresentedBundle[];
     referencePresentation: ReferencePresentation;
+    historicalReferencePresentation: HistoricalReferencePresentation;
     cellWindows: ReadonlyMap<ObjectId, ArrayWindow>;
     headings: readonly {
         id: 'STACK' | 'HEAP' | 'CLASS STATE' | 'RETURNS';

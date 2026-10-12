@@ -3,6 +3,7 @@ import type {
   SceneReference, Vec3, WorldAnchor,
 } from '../contracts/worldV2'
 import { faceRows } from './faceRows'
+import {collectionEntryFace} from './collectionFace'
 
 export interface ReferenceTopologyInput {
   scene: SceneModel
@@ -13,6 +14,8 @@ export interface ReferenceTopologyInput {
   mandatoryIds: ReadonlySet<string>
   priorityIds?: ReadonlySet<string>
   enabled?: boolean
+  references?: readonly SceneReference[]
+  historical?: boolean
 }
 export interface IndividualReference {
   reference: SceneReference
@@ -100,7 +103,7 @@ export function buildReferenceTopology(input: ReferenceTopologyInput): Reference
   if (!Number.isSafeInteger(input.individualLimit) || input.individualLimit < 0)
     throw new RangeError('individualLimit must be a non-negative safe integer')
   const { scene, entities, cellWindows } = input
-  const references = [...scene.references].sort((a, b) => compareId(a.id, b.id))
+  const references = [...(input.references??scene.references)].sort((a, b) => compareId(a.id, b.id))
   const seen = new Set<string>()
   for (const reference of references) {
     if (seen.has(reference.id)) throw new Error(`Duplicate current reference ID: ${reference.id}`)
@@ -148,9 +151,12 @@ export function buildReferenceTopology(input: ReferenceTopologyInput): Reference
         let ports = collectionPorts.get(node.id)
         if (!ports) {
           const entries = new Map<string, Vec3 | null | undefined>()
-          for (const entry of node.entries) if (visible.has(entry.slotId)) {
-            entries.set(entry.slotId, entry.port)
-            if (entry.keySlotId !== undefined) entries.set(entry.keySlotId, entry.keyPort)
+          for (const [index,entry] of node.entries.entries()) if (visible.has(entry.slotId)) {
+            // An ended binding may have a current null/scalar chip. Its actual
+            // visible geometry is still a source; retired/hidden chips are not.
+            const geometry=input.historical?collectionEntryFace(node.anchor,index,node.collectionKind==='Map'):null
+            entries.set(entry.slotId, input.historical?geometry?.value:entry.port)
+            if (entry.keySlotId !== undefined) entries.set(entry.keySlotId, input.historical?geometry?.key:entry.keyPort)
           }
           ports = entries
           collectionPorts.set(node.id, ports)
@@ -198,7 +204,7 @@ export function buildReferenceTopology(input: ReferenceTopologyInput): Reference
     const groups = new Map<string, { from: Endpoint; to: Endpoint; references: SceneReference[] }>()
     for (const candidate of candidates) {
       if (emitted.has(candidate.reference.id)) continue
-      const id = `presentation:reference-bundle:${JSON.stringify([scene.recordingId, candidate.from.id, candidate.to.id])}`
+      const id = `presentation:${input.historical?'binding-history':'reference'}-bundle:${JSON.stringify([scene.recordingId, candidate.from.id, candidate.to.id])}`
       const group = groups.get(id) ?? { from: candidate.from, to: candidate.to, references: [] }
       group.references.push(candidate.reference)
       groups.set(id, group)

@@ -10,6 +10,7 @@ import { frameStatus } from './frameStatus'
 import { frameTitle } from './frameTitle'
 import { consoleIoSummaries, graphIoSummaries } from './ioSummary'
 import { stringValueText, valueText } from './valueText'
+import {createRecordedReferenceBindings} from './recordedReferenceBindings'
 
 export interface ProjectionContext {
   sessionEnded: boolean
@@ -125,6 +126,7 @@ function referenceSnapshot(groups: readonly ReferenceGroup[]): readonly SceneRef
 export function createSceneProjector(trace: TraceDocument): SceneProjector {
   let events: readonly TraceEvent[] = trace.events, indexed = 0, invocationNumber = 0, revision = 0
   const byEvent = new Map<string, TraceEvent>(), owners = new Map<string, OwnerHistory>(), slotOwners = new Map<string, string>()
+  const bindingHistory=createRecordedReferenceBindings(trace.demoId)
   const frameCache = new WeakMap<RuntimeFrame, CachedNode<SceneFrame>>()
   const objectCache = new WeakMap<RuntimeObject, CachedNode<SceneObject | SceneArray | SceneCollection>>()
   const classCache = new WeakMap<RuntimeClass, CachedNode<SceneClass>>()
@@ -202,6 +204,7 @@ export function createSceneProjector(trace: TraceDocument): SceneProjector {
   }
   function extend(next: readonly TraceEvent[]) {
     if (next.length < indexed || indexed && next[indexed - 1].eventId !== events[indexed - 1].eventId) throw new Error('SceneProjector requires one append-only recording')
+    bindingHistory.append(next)
     events = next
     for (; indexed < next.length; indexed++) {
       const event = next[indexed]
@@ -526,7 +529,7 @@ export function createSceneProjector(trace: TraceDocument): SceneProjector {
     // would undo the incremental index. Its facade rejects every mutation itself.
     const scene: SceneModel = Object.freeze({ ...freezeValue({ revision: ++revision, recordingId: trace.demoId, cursor: state.cursor, liveHead: context.liveHead,
       entities, order, callLinks: links, returnFlows: returns, exception: exceptionPath(state, context), io: ioNodes(state, layout),
-      cursorEvent: cursorEvent(state), liveStack: state.activeFrameIds, recording: context.recording }), references })
+      cursorEvent: cursorEvent(state), liveStack: state.activeFrameIds, recording: context.recording }), references, historicalBindings:bindingHistory.historical(state.cursor) })
     previous = { state, layout, context, scene }; return scene
   }
   function project(input: RuntimeState, layout: LayoutState, inputContext: ProjectionContext): SceneModel {

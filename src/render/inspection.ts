@@ -17,7 +17,7 @@ export function inspectorRows(node:SceneEntity):{count:number;at(index:number):I
 }
 export function inspectorEntity(scene:SceneModel,selection:Selection):SceneEntity|null {
  if(!selection||selection.kind==='flow'||selection.kind==='cluster'||selection.kind==='bundle')return null
- const reference=selection.kind==='reference'?scene.references.find(reference=>reference.id===selection.id):null
+ const reference=selection.kind==='reference'?scene.references.find(reference=>reference.id===selection.id)??scene.historicalBindings.find(binding=>binding.id===selection.id):null
  const id=reference?.sourceId??selection.id
  return scene.entities[id]??arrayCellTarget(scene,id)?.array??Object.values(scene.entities).find(node=>entitySlotIds(node).includes(id))??null
 }

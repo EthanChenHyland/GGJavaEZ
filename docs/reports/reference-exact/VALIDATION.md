@@ -966,3 +966,65 @@ remain visible. Formal 80/96 comparison, independent
 acceptance/torture/performance, remaining visual/IDE cleanup and final A–G
 approval remain open. Runtime normalization/reducer/graph schemas,
 Semantic_Goldens, main and best.png remain unchanged.
+
+## Historical reference bindings — 2026-10-12
+
+Production SceneModel now exposes an immutable closed-binding prefix, derived
+from accepted normalized slot observations/writes and actual retirement. It
+does not alter RuntimeState, ExecutionGraph or normalization. Trace All draws
+overwritten/nulled bindings at no more than .25 opacity, including selected,
+focused and current-evidence relationships. Current and historical individuals
+share the connector budget; mandatory overflow admits no optional excess.
+Historical directed bundles retain exact constituent IDs in a separate
+namespace. Hidden/retired sources remain unavailable; current null Map chips
+use their actual distinct value/key geometry for proved earlier bindings.
+Retired/unavailable endings have separate lifetime accounting and remain
+queryable. Native curve/bundle selection and Inspector evidence are integrated.
+
+Append validates accepted ordinals/IDs before adding facts. Closed history
+captures a fixed immutable facade in logarithmic time; unchanged closed
+prefixes reuse the facade and derived catalog. No per-projection growing-history
+copy or future ending metadata is exposed. The implementation and evidence
+limits are documented in `migration/historical-bindings.md`.
+
+The focused integration run passes 58 tests in eight files in 3.13 seconds,
+including independent interval properties and normalized cursor/null/Map/
+retirement/budget checks. The first new scalar SET_FIELD fixture incorrectly
+carried a reference; it was corrected to CREATE_REFERENCE without weakening
+event validation. Strict TypeScript initially caught a nullable session cleanup
+guard in the new browser test; the guard now explicitly requires the session.
+Production build, strict browser TypeScript and lint pass. The production
+AppRoot chunk is 1,143.30 kB / 349.78 kB gzip. The large-chunk warning remains
+visible; browser evidence also retains Three.Clock and removed soft-shadow
+filter warnings. These are not suppressed or treated as performance approval.
+
+The first native ordinary BindingApp cases pass at both sizes in 16.8 seconds:
+79 raw/135 normalized events, six historical bindings, four drawable and two
+unavailable. The extended ordinary Java fixture adds captured field writes and
+emits 553 raw/755 normalized events. At desktop and narrow poses, 78 historical
+bindings partition into 76 drawable and two unavailable: 58 individuals plus
+18 constituents in two directed bundles. A nine-constituent historical bundle
+and an actual historical curve are selected through native pointers, then a
+real Inspector constituent is selected without camera/Focus/Cursor/anchor
+changes. Rewind before ending, empty-prefix replay and Trace Current/All keep
+exact prefix accounting and opacity caps. Inspector mounted elements remain
+below 200 in the checked states. The first extended run passed desktop and
+failed narrow picking because a missed click opened the sheet over later
+World points. Native sheet closure between attempts preserves the camera;
+the narrow rerun passes in 9.8 seconds. No routing/picking tolerance was relaxed.
+Both original-size extended captures received lead review and still show
+strong current-flow clutter/crossings, so visual approval is not claimed.
+The JVM only captured the final Map snapshot in this fixture; absent earlier
+Map bindings are not invented. Map history geometry uses accepted normalized
+unit evidence, not a claimed real-JVM observation.
+
+The complete default suite passes 1,944 tests with 70 opt-in skips (2,014 total),
+across 198 files (191 passed, seven skipped), in 156.22 seconds. The complete
+68-case reconstruction browser gate passes in 8.0 minutes, including both
+extended native-JVM history cases and the quality-readiness/collection checks.
+The fresh desktop and narrow original-size captures received lead review;
+current-flow crossings and excessive glow remain visible. Formal 80/96 comparison,
+complete Flow provenance partitioning, hierarchy, sustained/world-scaling
+performance, independent acceptance/torture, visual/IDE cleanup and final A–G
+approval remain open. Main, best.png and the protected reference images are
+unchanged.

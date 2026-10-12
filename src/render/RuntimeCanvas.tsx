@@ -211,7 +211,7 @@ export function RuntimeCanvas({ scene, plan, layout, safeFrame,inspectorRect, se
         <FaceTextBatch>
         {[...plan.entities].map(([id, presented]) => <RuntimeSolid key={id} node={scene.entities[id]} presented={presented} plan={plan}/>)}
         <StructuralLabels scene={scene} plan={plan} safeFrame={safeFrame} inspectorRect={inspectorRect}/>
-        <ConnectorBatch curves={[...plan.curves,...plan.bundles]} onSelect={id => { if(plan.bundles.some(bundle=>bundle.id===id))select({kind:'bundle',id}); else if (scene.references.some(ref => ref.id === id))
+        <ConnectorBatch curves={[...plan.curves,...plan.bundles]} onSelect={id => { if(plan.bundles.some(bundle=>bundle.id===id))select({kind:'bundle',id}); else if (scene.references.some(ref => ref.id === id)||scene.historicalBindings.some(binding=>binding.id===id))
         select({ kind: 'reference', id }); else if(plan.curves.some(curve=>curve.id===id)) select({kind:'flow',id}); }}/>
         {plan.structural.map(item => <WorldText key={item.id} position={item.position} size={.3} width={5} tint={color.ui.textSecondary}>{item.text}</WorldText>)}
         <ExceptionPanel panel={plan.exceptionPanel} recordingState={scene.recording.state}/>

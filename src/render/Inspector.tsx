@@ -9,26 +9,29 @@ import { inspectorEntity, inspectorProvenance, inspectorRows, type InspectorRow 
 import { VirtualList } from '../shell/VirtualList'
 import { arrayCellTarget } from '../world/arrayCellTarget'
 import { focusable } from '../interaction/interactionStore'
+import {historicalSceneReference} from '../world/historicalReference'
 import './inspector.css'
 export function Inspector({selection,scene,runtime,flows,plan,onClose,onFocus,onReturn,onSelectRow,onSelectEntity}:{
  selection:Selection;scene:SceneModel;runtime:RuntimeState;flows?:FlowCatalog;plan:PresentationPlan
  onClose():void;onFocus():void;onReturn():void;onSelectRow(slotId:string):void;onSelectEntity(selection:NonNullable<Selection>):void
 }) {
  const [expanded,setExpanded]=useState<InspectorRow|null>(null),[copyMessage,setCopyMessage]=useState('');
+ const [historyOpen,setHistoryOpen]=useState(false)
  const node=useMemo(()=>inspectorEntity(scene,selection),[scene,selection])
  const rows=useMemo(()=>node?inspectorRows(node):null,[node])
  const flow=useMemo(()=>selection?.kind==='flow'?runtime.executionGraph?.edges.find(edge=>edge.id===selection.id):undefined,[selection,runtime.executionGraph])
  const provenance=useMemo(()=>inspectorProvenance(flows,selection,node,scene.cursor,flow),[flows,selection,node,scene.cursor,flow])
- const referenceMap=useMemo(()=>new Map(scene.references.map(ref=>[ref.id,ref])),[scene.references])
+ const referenceMap=useMemo(()=>new Map([...scene.references,...scene.historicalBindings.map(historicalSceneReference)].map(ref=>[ref.id,ref])),[scene.references,scene.historicalBindings])
  useEffect(()=>{setExpanded(null);setCopyMessage('')},[selection?.id])
  useEffect(()=>{setExpanded(null);setCopyMessage('')},[scene.cursor])
  if(!selection)return null
- const reference=selection.kind==='reference'?scene.references.find(item=>item.id===selection.id):null
+ const reference=selection.kind==='reference'?referenceMap.get(selection.id):null
+ const historicalBinding=selection.kind==='reference'?scene.historicalBindings.find(item=>item.id===selection.id):null
  const cluster=selection.kind==='cluster'?plan.clusters.find(item=>item.id===selection.id):null
  const bundle=selection.kind==='bundle'?plan.bundles.find(item=>item.id===selection.id):undefined
- const canFocus=focusable(selection)&&!!(node||cluster),unavailableReference=reference?plan.referencePresentation.unavailable.find(item=>item.id===reference.id):undefined
+ const canFocus=focusable(selection)&&!!(node||cluster),unavailableReference=reference?(historicalBinding?plan.historicalReferencePresentation:plan.referencePresentation).unavailable.find(item=>item.id===reference.id):undefined
  const bundleReferences=(bundle?.referenceIds??[]).flatMap(id=>referenceMap.has(id)?[referenceMap.get(id)!]:[])
- const title=flow?flow.kind:cluster?`Cluster · ${cluster.label} ×${cluster.members}`:bundle?`${bundle.count} ${bundle.kind==='connector'?'current references':'recorded flows'}`:node?node.kind==='frame'?`${node.title} #${node.invocationNumber}`:node.kind==='class'?node.title:`${node.title} #${node.displayId}`:selection.kind==='cluster'?'Cluster':selection.kind==='bundle'?'Bundle is not in the current presentation':selection.id
+ const title=flow?flow.kind:cluster?`Cluster · ${cluster.label} ×${cluster.members}`:bundle?`${bundle.count} ${bundle.kind==='connector'?'current references':bundle.kind==='binding-history'?'historical bindings':'recorded flows'}`:node?node.kind==='frame'?`${node.title} #${node.invocationNumber}`:node.kind==='class'?node.title:`${node.title} #${node.displayId}`:selection.kind==='cluster'?'Cluster':selection.kind==='bundle'?'Bundle is not in the current presentation':selection.id
  const status=node?.kind==='frame'?frameStatusText(node.status):node?.kind==='array'?`length ${node.length} · ${node.cells.length} cells captured`:node?.kind==='collection'?`size ${node.size} · ${node.recordedEntries} entries captured · ${node.size-node.recordedEntries} not recorded`:node?.kind==='object'?`${node.fieldCount} fields`:node?.kind==='class'?`static · ${node.initialization}`:flow?'Recorded graph edge':cluster?`Structural summary · ${cluster.members} recorded entities`:bundle?'Structural summary':selection.kind==='cluster'?'Cluster is not in the current presentation':'Not present at this point in time'
  const source=node?.kind==='frame'?node.sourceLine:node?.kind==='object'?node.allocationSite:flow?.context.source
  const copy=(text:string)=>void navigator.clipboard.writeText(text).then(()=>setCopyMessage('Captured text copied'),()=>setCopyMessage('Clipboard access unavailable'))
@@ -39,10 +42,11 @@ export function Inspector({selection,scene,runtime,flows,plan,onClose,onFocus,on
   <p>{status}</p>
   <div className="inspector-actions"><button aria-label="Focus selection" title={canFocus?'Focus selection':'Select a present runtime entity or cluster to Focus'} aria-disabled={!canFocus} onClick={()=>{if(canFocus)onFocus()}}><Crosshair size={14}/>Focus</button><button onClick={onReturn}><CornerUpLeft size={14}/>Return to World</button><button onClick={()=>copy(title)}><Copy size={14}/>Copy</button></div>
   {reference&&<p className="gg-inspector-id">Recorded reference · {reference.sourceSlotId} → {reference.targetId}</p>}
+  {historicalBinding&&<p className="gg-inspector-id">Historical binding · introduced at Event {historicalBinding.introducedSeq} · {historicalBinding.endKind} at Event {historicalBinding.endSeq}</p>}
   {unavailableReference&&<p>{unavailableReference.reason}</p>}
   {flow&&<details open><summary>Recorded flow</summary><p className="gg-inspector-id">{flow.from} → {flow.to}</p><p>{flow.evidence} · {flow.eventId}</p>{!plan.curves.some(curve=>curve.id===flow.id)&&<p>Recorded evidence has no presented semantic ports at this point in time.</p>}</details>}
-  {bundle&&<><p className="gg-inspector-id">{bundle.from} → {bundle.to}</p><p>This line groups recorded {bundle.kind==='connector'?'references':'flows'} between these bodies or clusters.</p></>}
-  {bundle?.kind==='connector'&&<VirtualList key={bundle.id} className="inspector-values inspector-members" count={bundleReferences.length} rowHeight={76} label="Bundle references">{index=>{
+  {bundle&&<><p className="gg-inspector-id">{bundle.from} → {bundle.to}</p><p>This line groups recorded {bundle.kind==='flow'?'flows':bundle.kind==='binding-history'?'historical bindings':'references'} between these bodies or clusters.</p></>}
+  {bundle&&bundle.kind!=='flow'&&<VirtualList key={bundle.id} className="inspector-values inspector-members" count={bundleReferences.length} rowHeight={76} label="Bundle references">{index=>{
     const ref=bundleReferences[index];return <button className="inspector-member inspector-reference-member" title={`${ref.sourceSlotId} → ${ref.targetId}`} aria-label={`Inspect recorded reference ${ref.id}`} onClick={()=>onSelectEntity({kind:'reference',id:ref.id})}><span>{ref.sourceSlotId}<small>→ {ref.targetId}</small><small>{ref.role}{ref.overlay?` · ${ref.overlay}`:''}</small></span></button>;
   }}</VirtualList>}
   {source&&<p className="gg-inspector-source">{source.fileId}:{source.line}</p>}
@@ -68,6 +72,10 @@ export function Inspector({selection,scene,runtime,flows,plan,onClose,onFocus,on
   <details><summary>Current reference presentation · {plan.referencePresentation.counts.current} recorded</summary>
    <p>{plan.referencePresentation.counts.individual} individual · {plan.referencePresentation.counts.bundled} aggregated · {plan.referencePresentation.counts.internal} inside collapsed clusters · {plan.referencePresentation.counts.unavailable} unavailable · {plan.referencePresentation.counts.scopeExcluded} excluded by Trace scope</p>
    <VirtualList count={plan.referencePresentation.unavailable.length} rowHeight={76} label="Unavailable reference geometry" className="gg-inspector-provenance">{index=>{const item=plan.referencePresentation.unavailable[index],ref=referenceMap.get(item.id);return <div className="gg-inspector-record"><strong title={item.id}>{item.id}</strong><span title={ref?`${ref.sourceSlotId} → ${ref.targetId}`:item.id}>{ref?`${ref.sourceSlotId} → ${ref.targetId}`:item.id}</span><small title={item.reason}>{item.reason}</small></div>}}</VirtualList>
+  </details>
+  <details open={historyOpen} onToggle={event=>setHistoryOpen(event.currentTarget.open)}><summary>Historical bindings · {plan.historicalReferencePresentation.counts.recorded} recorded</summary>
+   {historyOpen&&<><p>{plan.historicalReferencePresentation.counts.individual} individual · {plan.historicalReferencePresentation.counts.bundled} aggregated · {plan.historicalReferencePresentation.counts.internal} inside collapsed clusters · {plan.historicalReferencePresentation.counts.unavailable} unavailable · {plan.historicalReferencePresentation.counts.scopeExcluded} excluded by Trace scope · {plan.historicalReferencePresentation.counts.lifetimeExcluded} retired or unavailable endings</p>
+   <VirtualList count={scene.historicalBindings.length} rowHeight={76} label="Historical bindings" className="gg-inspector-provenance">{index=>{const binding=scene.historicalBindings[index];return <button className="inspector-member inspector-reference-member" aria-label={`Inspect historical binding ${binding.id}`} title={`${binding.sourceSlotId} → ${binding.targetId}`} onClick={()=>onSelectEntity({kind:'reference',id:binding.id})}><span>{binding.sourceSlotId}<small>→ {binding.targetId}</small><small>Event {binding.introducedSeq} → {binding.endSeq} · {binding.endKind}</small></span></button>}}</VirtualList></>}
   </details>
  </aside>
 }

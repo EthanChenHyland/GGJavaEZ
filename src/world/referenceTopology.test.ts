@@ -36,7 +36,7 @@ function scene(nodes: readonly SceneEntity[], references?: readonly SceneReferen
   }
   return { recordingId: 'unit/recording', revision: 1, cursor: 20, liveHead: 20, entities: Object.fromEntries(nodes.map(node => [node.id, node])),
     order: { frames: nodes.filter(node => node.kind === 'frame').map(node => node.id), classes: nodes.filter(node => node.kind === 'class').map(node => node.id), objects: nodes.filter(node => node.kind !== 'frame' && node.kind !== 'class').map(node => node.id) },
-    references: references ?? derived, callLinks: [], returnFlows: [], exception: null, io: [], cursorEvent: null, liveStack: [],
+    references: references ?? derived, historicalBindings:[], callLinks: [], returnFlows: [], exception: null, io: [], cursorEvent: null, liveStack: [],
     recording: { state: 'FULL', reason: null, budget: null, lastRecordedSeq: null, executionContinued: false } }
 }
 const inputFor = (model: SceneModel, overrides: Partial<ReferenceTopologyInput> = {}): ReferenceTopologyInput =>
