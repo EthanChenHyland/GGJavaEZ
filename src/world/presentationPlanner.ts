@@ -3,8 +3,7 @@ import type { Selection } from '../contracts/interaction';
 import type { DetailLevel, EntityId, LayoutState, MaterialRole, PresentationPlan, PresentedCurve, PresentedEntity, SceneEntity, SceneModel, TraceScope, Vec3, WorldAnchor } from '../contracts/worldV2';
 import { budgets, world } from '../theme/tokens';
 import { computeArrayWindow, type ArrayWindow } from './arrayWindow';
-import type { FlowCatalog, SceneFlow } from './flowCatalog';
-import type { FlowEndpoint } from '../motion/semanticTransition';
+import type { FlowCatalog, RecordedFlow } from './flowCatalog';
 import { arrayCellTarget } from './arrayCellTarget';
 import { connectorClearsFaces, roundedConnectorPoints, surfaceConnectorPoints } from './connectorRouting';
 import {presentationClusters} from './presentationClusters';
@@ -12,6 +11,7 @@ import {recordedOwnership} from './recordedOwnership';
 import {faceRows} from './faceRows';
 import {referencePresentationTopology} from './referencePresentationTopology';
 import {historicalReferenceCatalog} from './historicalReference';
+import {buildFlowTopology} from './flowTopology';
 export interface PlanInput {
     scene: SceneModel;
     flows?: FlowCatalog;
@@ -58,9 +58,7 @@ export function planPresentation(input: PlanInput, previous?: PresentationPlan):
     const queriedFlows = input.flows?.query({ cursor: scene.cursor, scene, priority, limit: budget.flows * 3 }) ?? [];
     const targetedFlow = selection?.kind === 'flow' ? queriedFlows.find(flow => flow.id === selection.id) : null;
     const requiredFlows = [...new Map([...currentFlows, ...(targetedFlow&&!(trace.active&&trace.scope==='current') ? [targetedFlow] : [])].map(flow => [flow.id, flow])).values()];
-    const flowCandidates = trace.active && trace.scope === 'current' ? currentFlows : [...requiredFlows, ...queriedFlows.filter(flow => !requiredFlows.some(required => required.id === flow.id))];
-    const flowRelevant = (flow: SceneFlow) => flow.id === selection?.id || [flow.from, flow.to].some(point => point && (priority.selectedIds.has(point.id) || priority.focusedIds.has(point.id) || priority.currentIds.has(point.id)));
-    const admittedFlows = [...requiredFlows, ...flowCandidates.filter(flow => !requiredFlows.includes(flow) && (!trace.active || trace.scope !== 'relevant' || flowRelevant(flow))).slice(0, Math.max(0, budget.flows - requiredFlows.length))];
+    const flowRelevant = (flow: RecordedFlow) => flow.id === selection?.id || [flow.from, flow.to].some(point => point && (priority.selectedIds.has(point.id) || priority.focusedIds.has(point.id) || priority.currentIds.has(point.id)));
 
     const mandatory = new Map<string, Set<string>>();
     const pin = (id: string | null | undefined, reason: string) => { const resolved = owner(id); if (!resolved)
@@ -107,7 +105,6 @@ export function planPresentation(input: PlanInput, previous?: PresentationPlan):
     const reservedObjects = new Set(ids.filter(id => category(scene.entities[id]) === 'objects' && mandatory.has(id)));
     const reserve = (targets: readonly string[]) => { for (const target of targets) { pin(target, 'direct detailed-row reference'); reservedObjects.add(target); } };
     const entities = new Map<string, PresentedEntity>(), overflow: PresentationPlan['budgetOverflow'][number][] = [];
-    if (requiredFlows.length > budget.flows) overflow.push({category:'flows', nominal:budget.flows, actual:requiredFlows.length, mandatoryIds:requiredFlows.map(flow=>flow.id), reasons:['selected flow or current evidence']});
     let pickableQuiet = 0;
     const add = (id: string, mode: 'detailed' | 'quiet') => {
         const node = scene.entities[id], pinned = mandatory.has(id);
@@ -187,8 +184,6 @@ export function planPresentation(input: PlanInput, previous?: PresentationPlan):
     const cellAnchors = new Map([...cellWindows.values()].flatMap(window => [...window.mapping].map(([id, cell]) => [id, cell.anchor] as const)));
     const routeBodies = [...bodyAnchors.values(), ...cellAnchors.values(), ...scene.io.map(io => io.anchor), ...clusters.map(cluster => cluster.anchor),...(exceptionPanel?[exceptionPanelAnchor(exceptionPanel,scene.recording)]:[])];
     const portAnchor = (id: string, slot?: string) => slot && scene.entities[id]?.kind === 'array' ? cellAnchors.get(slot) : bodyAnchors.get(id);
-    const endpointAnchor = (point: FlowEndpoint | null): WorldAnchor | undefined => point?.kind === 'io' ? scene.io.find(io => io.id === point.id)?.anchor : point?.kind === 'slot' ? portAnchor(owner(point.id) ?? '', point.id) : point ? portAnchor(point.id) : undefined;
-    const endpoint = (point: FlowEndpoint | null): Vec3 | null => point?.kind === 'io' ? scene.io.find(io=>io.id===point.id)?.anchor.bodyPort ?? null : point ? point.kind === 'slot' ? owner(point.id) ? port(owner(point.id)!, point.id) : null : port(point.id) : null;
     const routes = new Map<string, Vec3[]>();
     const route = (from: Vec3, to: Vec3, source?: WorldAnchor, target?: WorldAnchor, left = false) => {
       const key = `${from.join(',')}/${to.join(',')}/${source?.entityId}/${target?.entityId}/${left}`, cached = routes.get(key);
@@ -242,16 +237,17 @@ export function planPresentation(input: PlanInput, previous?: PresentationPlan):
         curve(call.id, 'call', [from.position[0] - from.size[0] / 2, from.position[1] + from.size[1] / 2 - .7, from.position[2] + from.size[2] / 2], [to.position[0] - to.size[0] / 2, to.position[1] + to.size[1] / 2 - .7, to.position[2] + to.size[2] / 2], 'call', relevant, true, false, undefined, from, to);
         if(relevant)participate(call.callerId,call.calleeId);
     }
-    const drawnFlowIds = new Set<string>();
-    for (const flow of admittedFlows) {
-      const source=flow.from?.kind==='frame'?scene.entities[flow.from.id]:null;
-      const from = flow.kind==='return'&&source?.kind==='frame'?[source.anchor.position[0]+source.anchor.size[0]/2,source.anchor.position[1]+source.anchor.size[1]/2-.85,source.anchor.position[2]+source.anchor.size[2]/2] as Vec3:endpoint(flow.from), to = endpoint(flow.to); if (!from || !to) continue;
+    const flowTopology=buildFlowTopology({scene,entities,cellWindows,flows:input.flows?.prefix(scene.cursor,scene)??[],limit:budget.flows,
+      mandatoryIds:new Set(requiredFlows.map(flow=>flow.id)),aggregate:trace.active&&trace.scope==='all',
+      priority:flow=>flow.id===selection?.id?0:[flow.from,flow.to].some(point=>point&&priority.focusedIds.has(point.id))?1:flow.evidenceSeqs.includes(scene.cursorEvent?.seq??-1)?2:flowRelevant(flow)?3:4,
+      inScope:flow=>!trace.active||trace.scope==='all'||trace.scope==='current'&&flow.evidenceSeqs.includes(scene.cursorEvent?.seq??-1)||trace.scope==='relevant'&&flowRelevant(flow)});
+    if(flowTopology.mandatory.length>budget.flows)overflow.push({category:'flows',nominal:budget.flows,actual:flowTopology.mandatory.length,mandatoryIds:flowTopology.mandatory,reasons:['drawable selected flow or current evidence']});
+    for (const {flow,from,to} of flowTopology.individual) {
       const exception = ['throw','unwind','catch'].includes(flow.kind), returned = flow.kind === 'return';
       const relevant=trace.active&&trace.scope==='all'||flowRelevant(flow)||requiredFlows.includes(flow);
       const forensicPath=exception&&flow.evidenceEventIds.some(id=>scene.exception?.evidence.eventIds.includes(id));
-      curve(flow.id, exception ? 'exception' : returned ? 'return' : 'flow', from, to, exception ? 'exception' : returned ? 'return' : flow.kind === 'input' ? 'stdin' : flow.kind === 'output' ? flow.to.kind==='io'&&flow.to.id==='stderr'?'stderr':'stdout' : 'reference', relevant, false, exception || returned, flow.valueText ?? undefined, endpointAnchor(flow.from), endpointAnchor(flow.to),forensicPath);
+      curve(flow.id, exception ? 'exception' : returned ? 'return' : 'flow', from.point, to.point, exception ? 'exception' : returned ? 'return' : flow.kind === 'input' ? 'stdin' : flow.kind === 'output' ? flow.to.kind==='io'&&flow.to.id==='stderr'?'stderr':'stdout' : 'reference', relevant, false, exception || returned, flow.valueText ?? undefined, from.anchor, to.anchor,forensicPath);
       if(relevant)participate(flow.from?.id,flow.to.id);
-      drawnFlowIds.add(flow.id);
     }
     if (!input.flows) for (const flow of scene.returnFlows.slice(0, budget.flows))
       if (entities.has(flow.frameId) && entities.has(flow.destination.entityId)) curve(flow.id, 'return', port(flow.frameId), port(flow.destination.entityId, flow.destination.slotId), 'return', scene.cursorEvent?.seq === flow.returnSeq, false, true, flow.value.text, portAnchor(flow.frameId), portAnchor(flow.destination.entityId, flow.destination.slotId));
@@ -266,17 +262,17 @@ export function planPresentation(input: PlanInput, previous?: PresentationPlan):
       bundles.push({id:bundle.id,kind:'binding-history',from:bundle.from,to:bundle.to,count:bundle.count,points:route(bundle.sourcePoint,bundle.destinationPoint,bundle.sourceAnchor,bundle.destinationAnchor),colorRole:roles.size===1?[...roles][0]:'reference',opacity:Math.min(.25,referenceOpacity(bundle.references,true)),widthPx:bundle.id===selection?.id?3.5:2.5,arrow:bundle.references.every(ref=>ref.role==='object-object'),referenceIds:bundle.references.map(ref=>ref.id)});
       for(const ref of bundle.references)participate(ref.sourceId,ref.targetId);
     }
-    if (trace.active && trace.scope === 'all') for (const bundle of input.flows?.bundles({cursor:scene.cursor,scene,exclude:drawnFlowIds}) ?? []) {
-      const from = endpoint(bundle.from), to = endpoint(bundle.to); if (!bundle.drawable || !from || !to) continue;
-      bundles.push({id:bundle.id,kind:'flow',from:bundle.from.id,to:bundle.to.id,count:bundle.count,points:route(from,to,endpointAnchor(bundle.from),endpointAnchor(bundle.to)),colorRole:'reference',opacity:Math.min(.35,focused?world.opacity.focusDim:1),widthPx:bundle.id===selection?.id?3.5:2.5,arrow:false});
-      participate(bundle.from.id,bundle.to.id);
+    for (const bundle of flowTopology.bundles) {
+      const exemplar=bundle.flows[0],exception=['throw','unwind','catch'].includes(exemplar.kind),returned=exemplar.kind==='return';
+      bundles.push({id:bundle.id,kind:'flow',from:exemplar.from!.id,to:exemplar.to.id,count:bundle.flows.length,points:route(bundle.from.point,bundle.to.point,bundle.from.anchor,bundle.to.anchor),colorRole:exception?'exception':returned?'return':exemplar.kind==='input'?'stdin':exemplar.kind==='output'?exemplar.to.kind==='io'&&exemplar.to.id==='stderr'?'stderr':'stdout':'reference',opacity:Math.min(.35,focused?world.opacity.focusDim:1),widthPx:bundle.id===selection?.id?3.5:2.5,arrow:exception||returned,flowIds:bundle.flows.map(flow=>flow.id)});
+      participate(exemplar.from!.id,exemplar.to.id);
     }
     if(trace.active)for(const[id,presented]of entities)if(!traceParticipants.has(id)&&!(forensicState&&mandatory.get(id)?.has('exception evidence')))entities.set(id,{...presented,opacity:Math.min(presented.opacity,world.opacity.traceDim)});
     const headings: PresentationPlan['headings'][number][] = [{ id: 'STACK', position: layout.headings.stack, opacity: 1 }, { id: 'HEAP', position: layout.headings.heap, opacity: 1 }, ...(layout.headings.classState ? [{ id: 'CLASS STATE' as const, position: layout.headings.classState, opacity: 1 }] : [])];
     if (curves.some(curve=>curve.kind === 'return')) headings.push({id:'RETURNS', position:layout.headings.returns, opacity:1});
     const homeIds = [...new Set([live.at(-1) ?? scene.order.frames.at(-1), ...live.slice(-4), scene.order.frames[0], ...scene.order.objects.filter(id => layout.anchors[id].region === 'heap').slice(0, 12)])].filter((id): id is string => !!id);
     const hero = [...headings.slice(0, 2).flatMap(h => [h.position, [h.position[0] + 2.4, h.position[1] + .4, h.position[2]] as Vec3]), ...homeIds.flatMap(id => anchorCorners(scene.entities[id].anchor))];
-    return { revision: (previous?.revision ?? 0) + 1, sceneRevision: scene.revision, detailLevel, budgetOverflow: overflow, entities, clusters:forensicState?clusters.map(cluster=>({...cluster,opacity:Math.min(cluster.opacity,world.opacity.forensicDim)})):clusters, curves, bundles, referencePresentation:{counts:topology.counts,unavailable:topology.unavailable.map(item=>({id:item.reference.id,reason:item.reason})),internal:topology.internal.map(item=>({id:item.reference.id,clusterId:item.clusterId})),scopeExcluded:topology.scopeExcluded.map(ref=>ref.id)}, historicalReferencePresentation:{counts:{recorded:scene.historicalBindings.length,eligible:historicalTopology.counts.current,drawable:historicalTopology.counts.drawable,individual:historicalTopology.counts.individual,bundled:historicalTopology.counts.bundled,bundleCurves:historicalTopology.counts.bundleCurves,unavailable:historicalTopology.counts.unavailable,internal:historicalTopology.counts.internal,scopeExcluded:historicalTopology.counts.scopeExcluded,lifetimeExcluded:lifetimeExcluded.length},unavailable:historicalTopology.unavailable.map(item=>({id:item.reference.id,reason:item.reason})),internal:historicalTopology.internal.map(item=>({id:item.reference.id,clusterId:item.clusterId})),scopeExcluded:historicalTopology.scopeExcluded.map(ref=>ref.id),lifetimeExcluded:lifetimeExcluded}, cellWindows, headings,
+    return { revision: (previous?.revision ?? 0) + 1, sceneRevision: scene.revision, detailLevel, budgetOverflow: overflow, entities, clusters:forensicState?clusters.map(cluster=>({...cluster,opacity:Math.min(cluster.opacity,world.opacity.forensicDim)})):clusters, curves, bundles, referencePresentation:{counts:topology.counts,unavailable:topology.unavailable.map(item=>({id:item.reference.id,reason:item.reason})),internal:topology.internal.map(item=>({id:item.reference.id,clusterId:item.clusterId})),scopeExcluded:topology.scopeExcluded.map(ref=>ref.id)}, historicalReferencePresentation:{counts:{recorded:scene.historicalBindings.length,eligible:historicalTopology.counts.current,drawable:historicalTopology.counts.drawable,individual:historicalTopology.counts.individual,bundled:historicalTopology.counts.bundled,bundleCurves:historicalTopology.counts.bundleCurves,unavailable:historicalTopology.counts.unavailable,internal:historicalTopology.counts.internal,scopeExcluded:historicalTopology.counts.scopeExcluded,lifetimeExcluded:lifetimeExcluded.length},unavailable:historicalTopology.unavailable.map(item=>({id:item.reference.id,reason:item.reason})),internal:historicalTopology.internal.map(item=>({id:item.reference.id,clusterId:item.clusterId})),scopeExcluded:historicalTopology.scopeExcluded.map(ref=>ref.id),lifetimeExcluded:lifetimeExcluded}, flowPresentation:flowTopology.presentation, cellWindows, headings,
         structural: focusTargetId && !focused && layout.anchors[focusTargetId] ? [{ id: focusTargetId, text: 'Not present at this point in time', position: layout.anchors[focusTargetId].position }] : [],
         exceptionPanel, io: scene.io.map(io => ({ id: io.id, opacity: 1 })), pinned: new Set(mandatory.keys()),
         accounting: { detailed: [...entities.values()].filter(e => e.mode === 'detailed').length, quiet: [...entities.values()].filter(e => e.mode === 'quiet').length, clustered: residual.length, total: ids.length },

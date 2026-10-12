@@ -1028,3 +1028,57 @@ complete Flow provenance partitioning, hierarchy, sustained/world-scaling
 performance, independent acceptance/torture, visual/IDE cleanup and final A–G
 approval remain open. Main, best.png and the protected reference images are
 unchanged.
+
+## Complete Flow partition and obsolete shell removal — 2026-10-12
+
+The modern planner accounts for every supported ExecutionGraph edge in the
+applied prefix after selecting actual visible semantic ports. Individuals,
+exact directed semantic-pair/role bundle constituents, unavailable spatial
+evidence and active-scope/context exclusions form a disjoint complete partition.
+Trace All has no scope exclusions. Quiet/hidden/retired rows, uncaptured array
+cells and collapsed clusters never supply fabricated provenance ports. Actual
+Map key/null-value chip geometry remains distinct. Mandatory drawable evidence
+can overflow its nominal budget without admitting optional excess. Inspector
+Flow bundles expose exact graph-edge IDs through virtual native-selectable lists.
+
+The focused integration gate passes 19 tests in seven files in 3.15 seconds,
+including two 100-case properties. Actual ordinary BindingApp JVM evidence
+accounts for 289 supported edges: 158 drawable and 131 unavailable; 20
+individuals plus 138 constituents in 13 bundles. Desktop and narrow native
+Flow bundle/constituent picking, rewind, empty-prefix replay and Trace scopes
+pass. Initial new unit fixtures used an incorrect array contract, no active
+frame and unknown-source compact Map geometry; they were corrected to accepted
+normalized facts. The initial native prefix oracle failed only at cursor zero,
+where no graph exists; it now checks the actual empty edge prefix. Runtime
+validation, picking tolerances and geometry admission were not weakened.
+
+The obsolete unreferenced App and Inspector views are removed after a module
+dependency scan. Their three live formatter consumers now import the extracted
+pure formatter; the lead independently confirmed its declaration is
+byte-identical. Legacy tested primitives remain, and broader renderer/style
+deletion is still open. Migration evidence is in `migration/legacy-visible-shell.md`
+and `migration/flow-partition.md`.
+
+Application and strict browser TypeScript, lint and production build pass.
+AppRoot is 1,147.83 kB / 350.95 kB gzip; Monaco and Cinematic remain separate
+chunks. The full default suite passes 1,950 tests with 70 opt-in skips
+(2,020 total; 199 files, 192 passed and seven skipped) in 162.45 seconds.
+The complete 68-case reconstruction browser gate passes in 8.1 minutes
+(`browser-flow-cleanup-all-68.log`). The quality evidence actually exercises
+Cinematic on ANGLE Metal Apple M4 Pro: WebGL2, half-float buffers, four samples
+and 16,384 maximum texture size; shaders compile, effects become ready,
+the same canvas survives switching back, and page errors are empty.
+Interactive makes no Cinematic request before the native switch. Explicit PCF
+shadow mode preserves the effective filter already selected by installed Three
+and removes the obsolete soft-shadow warning; Clock and build chunk warnings
+remain visible.
+
+The lead inspected fresh original-size desktop/narrow Flow captures and both
+quality captures against the supplied reference. Text-crossing routes and
+strong glow remain unapproved. Complete prefix resolution and topology still
+cost linear work per changed prefix; the modern CPU benchmark has been
+implemented and reviewed but has not run at this checkpoint. Million-edge
+indexed aggregation, full hierarchy, sustained GPU/browser performance,
+formal 80/96 comparison, independent acceptance/torture, remaining visual/IDE
+cleanup and final A–G approval remain open. Main, best.png and protected user
+reference assets remain unchanged.

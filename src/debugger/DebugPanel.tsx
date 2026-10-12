@@ -1,6 +1,6 @@
 import type { RuntimeState } from '../contracts/runtime'
 import type { Selection } from '../contracts/interaction'
-import { formatValue } from '../ui/Inspector'
+import { formatValue } from './formatValue'
 import type { DebugSession, ResolvedBreakpoint, SourceBreakpoint } from './contracts'
 import './debugger.css'
 

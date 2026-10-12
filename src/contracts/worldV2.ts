@@ -354,8 +354,14 @@ interface PresentedBundleBase {
 }
 export type PresentedBundle = PresentedBundleBase & (
     | { kind: 'connector' | 'binding-history'; referenceIds: readonly ReferenceId[] } // slot bindings, never graph flow IDs
-    | { kind: 'flow'; referenceIds?: never }
+    | { kind: 'flow'; referenceIds?: never; flowIds:readonly string[] }
 );
+export interface FlowPresentation {
+    counts: { recorded: number; drawable: number; individual: number; bundled: number; bundleCurves: number; unavailable: number; scopeExcluded: number };
+    individualIds: readonly string[];
+    unavailable: readonly { id:string; reason:string }[];
+    scopeExcluded: readonly string[];
+}
 export interface ReferencePresentation {
     counts: { current: number; drawable: number; individual: number; bundled: number; bundleCurves: number; unavailable: number; internal: number; scopeExcluded: number };
     unavailable: readonly { id: ReferenceId; reason: string }[];
@@ -435,6 +441,7 @@ export interface PresentationPlan {
     bundles: readonly PresentedBundle[];
     referencePresentation: ReferencePresentation;
     historicalReferencePresentation: HistoricalReferencePresentation;
+    flowPresentation: FlowPresentation;
     cellWindows: ReadonlyMap<ObjectId, ArrayWindow>;
     headings: readonly {
         id: 'STACK' | 'HEAP' | 'CLASS STATE' | 'RETURNS';

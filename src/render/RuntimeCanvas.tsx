@@ -192,7 +192,7 @@ export function RuntimeCanvas({ scene, plan, layout, safeFrame,inspectorRect, se
                 input.current?.key(event.key, event.shiftKey);
             }
         }}>
-    {!supportsWebGL?<div className="world-graphics-status glass" role="status">The 3D World requires WebGL</div>:<Canvas frameloop="demand" shadows dpr={[1, 1.5]} camera={{ fov: 36, position: [7, 5, 24], near: .05, far: 10000 }} gl={{ antialias: false, alpha: false, powerPreference: 'high-performance', toneMapping: ACESFilmicToneMapping }} onPointerMissed={() => { if (!moved.current)
+    {!supportsWebGL?<div className="world-graphics-status glass" role="status">The 3D World requires WebGL</div>:<Canvas frameloop="demand" shadows="percentage" dpr={[1, 1.5]} camera={{ fov: 36, position: [7, 5, 24], near: .05, far: 10000 }} gl={{ antialias: false, alpha: false, powerPreference: 'high-performance', toneMapping: ACESFilmicToneMapping }} onPointerMissed={() => { if (!moved.current)
         onSelect(null); }}>
       <GradientBackground/>
       <hemisphereLight args={['#A8C8FF', '#090B22', .25]}/>

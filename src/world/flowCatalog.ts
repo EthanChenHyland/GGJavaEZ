@@ -4,8 +4,10 @@ import type { Evidence, SceneModel } from '../contracts/worldV2'
 import { graphTransition, type FlowEndpoint } from '../motion/semanticTransition'
 import { seek } from '../runtime'
 import { valueText } from './valueText'
+import {collectionEntryFace} from './collectionFace'
 export type FlowKind='argument'|'receiver'|'local-field'|'field-read'|'assignment'|'reference'|'array-read'|'array-write'|'return'|'input'|'output'|'throw'|'unwind'|'catch'
 export interface SceneFlow {id:string;edgeIndex:number;kind:FlowKind;from:FlowEndpoint|null;to:FlowEndpoint;evidenceEventIds:readonly string[];evidenceSeqs:readonly number[];valueText:string|null}
+export interface RecordedFlow extends Omit<SceneFlow,'to'> {to:FlowEndpoint|null}
 export interface RecordedProvenance {edgeId:string;edgeIndex:number;kind:GraphEdge['kind'];from:string;to:string;originSlotId:string|null;eventId:string;graphEvidence:GraphEdge['evidence'];evidence:Evidence;spatial:{drawable:boolean;reason:string|null}}
 export interface FlowPriorityInput {selectedIds:ReadonlySet<string>;focusedIds:ReadonlySet<string>;currentIds:ReadonlySet<string>}
 export interface FlowBundle {id:string;from:FlowEndpoint;to:FlowEndpoint;count:number;drawable:boolean;reason:string|null}
@@ -14,18 +16,19 @@ export interface FlowCatalog {
  query(input:{cursor:number;scene:SceneModel;priority:FlowPriorityInput;limit:number}):SceneFlow[]
  bundles(input:{cursor:number;scene:SceneModel;exclude:ReadonlySet<string>}):FlowBundle[]
  atEvent(cursor:number,scene:SceneModel):SceneFlow[]
+ /** Complete supported-edge prefix, including evidence without spatial endpoints. */
+ prefix(cursor:number,scene:SceneModel):readonly RecordedFlow[]
  recordedProvenanceOf(valueOrSlotId:string,cursor:number):readonly RecordedProvenance[]
  drawableFlowsOf(valueOrSlotId:string,cursor:number,scene:SceneModel):readonly SceneFlow[]
 }
-interface Candidate {edgeIndex:number;edge:GraphEdge;seq:number;kind:FlowKind;from:FlowEndpoint|null;to:FlowEndpoint|null;value:RuntimeValue|undefined;bundleKey:string|null}
-interface BundleIndex {items:Candidate[]}
+interface Candidate {edgeIndex:number;edge:GraphEdge;seq:number;kind:FlowKind;value:RuntimeValue|undefined}
 const kinds:Partial<Record<GraphEdge['kind'],FlowKind>>={ARGUMENT_BIND:'argument',RECEIVER_BIND:'receiver',ASSIGN:'assignment',FIELD_WRITE:'local-field',STATIC_WRITE:'local-field',FIELD_READ:'field-read',STATIC_READ:'field-read',REFERENCE_BIND:'reference',ARRAY_READ:'array-read',ARRAY_WRITE:'array-write',RETURN:'return',INPUT_CONSUME:'input',OUTPUT:'output',THROW:'throw',UNWIND:'unwind',CATCH:'catch'}
-function prefixCount(items:readonly Candidate[],cursor:number){let lo=0,hi=items.length;while(lo<hi){const mid=(lo+hi)>>>1;if(items[mid].seq<cursor)lo=mid+1;else hi=mid}return lo}
 /** Complete recorded adjacency is independent of drawable-flow filtering; all IDs are looked up explicitly. */
 export function createFlowCatalog():FlowCatalog {
  let graph:ExecutionGraph|null=null,acceptedTrace:TraceDocument|null=null,indexedEvents=0,indexedEdges=0,lastScene:SceneModel|null=null
  const resolvedCache=new WeakMap<ExecutionGraph,Map<number,{from:FlowEndpoint|null;to:FlowEndpoint|null}>>()
- const events=new Map<string,TraceEvent>(),candidates=new Map<number,Candidate>(),byId=new Map<string,Candidate>(),byEvent=new Map<string,Candidate[]>(),bundleIndex=new Map<string,BundleIndex>()
+ const events=new Map<string,TraceEvent>(),candidates=new Map<number,Candidate>(),byId=new Map<string,Candidate>(),byEvent=new Map<string,Candidate[]>()
+ let prefixCache:{scene:SceneModel;cursor:number;indexedEdges:number;items:readonly RecordedFlow[]}|undefined
  const physical=(id:string,state:RuntimeState):FlowEndpoint|null=>{
   const storage=state.executionGraph?.storage[id]
   if(storage)return{kind:'slot',id}
@@ -41,7 +44,8 @@ export function createFlowCatalog():FlowCatalog {
   const storage=acceptedTrace?seek(acceptedTrace,scene.cursor).executionGraph?.storage[point.id]:null,owner=storage?scene.entities[storage.ownerId]:null
   if(!owner)return false
   if(owner.kind==='array')return owner.cells.some(cell=>cell.slotId===point.id) // actual window attachment is checked by the planner
-  const rows=owner.kind==='frame'||owner.kind==='class'?owner.rows:owner.kind==='object'?owner.groups.flatMap(g=>g.rows):owner.entries
+  if(owner.kind==='collection')return owner.entries.some((entry,index)=>(entry.slotId===point.id||entry.keySlotId===point.id)&&!!collectionEntryFace(owner.anchor,index,owner.collectionKind==='Map'))
+  const rows=owner.kind==='frame'||owner.kind==='class'?owner.rows:owner.groups.flatMap(g=>g.rows)
   return rows.some(row=>row.slotId===point.id&&row.port!==null)
  }
  const formatted=(candidate:Candidate,scene:SceneModel):SceneFlow|null=>{
@@ -89,20 +93,14 @@ export function createFlowCatalog():FlowCatalog {
    for(;indexedEvents<trace.events.length;indexedEvents++){const event=trace.events[indexedEvents];if(events.has(event.eventId)||event.seq!==indexedEvents)throw new Error('FlowCatalog requires unique event identities and semantic ordinals');events.set(event.eventId,event)}
    graph=next;acceptedTrace=trace
    if(indexedEdges===next.edges.length)return
-   const state=seek(trace,trace.events.length)
    for(;indexedEdges<next.edges.length;indexedEdges++){
     const edge=next.edges[indexedEdges],event=events.get(edge.eventId),kind=kinds[edge.kind]
     if(!event)throw new Error(`Graph edge lacks accepted event ${edge.eventId}`)
     if(!kind)continue
-    const transition=graphTransition(event,edge,state,next,true)
-    const from=transition?.from??(edge.evidence==='unknown'?null:physical(edge.originSlotId??edge.from,state)),to=transition?.to??physical(edge.to,state)
-    const mayGainPort=!!edge.originSlotId||['RETURN','INPUT_CONSUME','FIELD_READ','STATIC_READ','ARRAY_READ'].includes(edge.kind)||!!next.storage[edge.from]||!!next.objects[edge.from]||!!next.classes?.[edge.from]||!!next.values[edge.from]&&!['literal','computed','unknown'].includes(next.values[edge.from].kind);
-    const bundleKey=from&&to||mayGainPort?`${edge.originSlotId??edge.from}>${edge.to}:${edge.kind}`:null
     const capturedValue=next.values[edge.from]?.value??next.values[edge.to]?.value??(event.type==='EXECUTION_FACT'&&'value'in event.fact?event.fact.value:undefined)
-    const candidate:Candidate={edgeIndex:indexedEdges,edge,seq:event.seq,kind,from,to,value:capturedValue,bundleKey}
+    const candidate:Candidate={edgeIndex:indexedEdges,edge,seq:event.seq,kind,value:capturedValue}
     candidates.set(indexedEdges,candidate);byId.set(edge.id,candidate)
     const eventItems=byEvent.get(event.eventId)??[];eventItems.push(candidate);byEvent.set(event.eventId,eventItems)
-    if(bundleKey){const index=bundleIndex.get(bundleKey)??{items:[]};index.items.push(candidate);bundleIndex.set(bundleKey,index)}
    }
   },
   query({cursor,scene,priority,limit}){
@@ -115,11 +113,27 @@ export function createFlowCatalog():FlowCatalog {
    return result.slice(0,Math.max(0,limit))
   },
   atEvent(cursor,scene){lastScene=scene;if(!cursor||!scene.cursorEvent)return[];return(byEvent.get(scene.cursorEvent.id)??[]).filter(c=>c.seq===cursor-1&&drawable(c,scene)).flatMap(c=>{const flow=formatted(c,scene);return flow?[flow]:[]})},
+  prefix(cursor,scene){
+   lastScene=scene
+   if(prefixCache?.scene===scene&&prefixCache.cursor===cursor&&prefixCache.indexedEdges===indexedEdges)return prefixCache.items
+   const items:RecordedFlow[]=[]
+   for(const candidate of candidates.values()){
+    if(candidate.seq>=cursor)break
+    const points=resolve(candidate,cursor),flow=formatted(candidate,scene)
+    items.push(flow??{id:candidate.edge.id,edgeIndex:candidate.edgeIndex,kind:candidate.kind,from:points.from,to:points.to,evidenceEventIds:[candidate.edge.eventId],evidenceSeqs:[candidate.seq],valueText:null})
+   }
+   const result=Object.freeze(items);prefixCache={scene,cursor,indexedEdges,items:result};return result
+  },
   bundles({cursor,scene,exclude}){
-   lastScene=scene;const result:FlowBundle[]=[],excluded=new Map<string,number>()
-   for(const id of exclude){const item=byId.get(id);if(item?.bundleKey&&item.seq<cursor)excluded.set(item.bundleKey,(excluded.get(item.bundleKey)??0)+1)}
-   for(const[key,index]of bundleIndex){const count=prefixCount(index.items,cursor)-(excluded.get(key)??0);if(!count)continue;const points=resolve(index.items[0],cursor);if(!points.from||!points.to)continue;const canDraw=mapped(points.from,scene)&&mapped(points.to,scene);result.push({id:`bundle:${key}`,from:points.from,to:points.to,count,drawable:canDraw,reason:canDraw?null:'An endpoint is absent, retired or lacks a captured spatial mapping'})}
-   return result
+   lastScene=scene;const groups=new Map<string,FlowBundle>()
+   for(const flow of api.prefix(cursor,scene)){
+    if(exclude.has(flow.id)||!flow.from||!flow.to)continue
+    const id=`presentation:flow-bundle:${JSON.stringify([scene.recordingId,flow.from.kind,flow.from.id,flow.to.kind,flow.to.id,flow.kind])}`,prior=groups.get(id)
+    if(prior){prior.count++;continue}
+    const canDraw=mapped(flow.from,scene)&&mapped(flow.to,scene)
+    groups.set(id,{id,from:flow.from,to:flow.to,count:1,drawable:canDraw,reason:canDraw?null:'An endpoint is absent, retired or lacks a captured spatial mapping'})
+   }
+   return [...groups.values()]
   },
   recordedProvenanceOf(id,cursor){
    if(!graph)return[]

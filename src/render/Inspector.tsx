@@ -17,6 +17,7 @@ export function Inspector({selection,scene,runtime,flows,plan,onClose,onFocus,on
 }) {
  const [expanded,setExpanded]=useState<InspectorRow|null>(null),[copyMessage,setCopyMessage]=useState('');
  const [historyOpen,setHistoryOpen]=useState(false)
+ const [flowsOpen,setFlowsOpen]=useState(false)
  const node=useMemo(()=>inspectorEntity(scene,selection),[scene,selection])
  const rows=useMemo(()=>node?inspectorRows(node):null,[node])
  const flow=useMemo(()=>selection?.kind==='flow'?runtime.executionGraph?.edges.find(edge=>edge.id===selection.id):undefined,[selection,runtime.executionGraph])
@@ -49,6 +50,9 @@ export function Inspector({selection,scene,runtime,flows,plan,onClose,onFocus,on
   {bundle&&bundle.kind!=='flow'&&<VirtualList key={bundle.id} className="inspector-values inspector-members" count={bundleReferences.length} rowHeight={76} label="Bundle references">{index=>{
     const ref=bundleReferences[index];return <button className="inspector-member inspector-reference-member" title={`${ref.sourceSlotId} → ${ref.targetId}`} aria-label={`Inspect recorded reference ${ref.id}`} onClick={()=>onSelectEntity({kind:'reference',id:ref.id})}><span>{ref.sourceSlotId}<small>→ {ref.targetId}</small><small>{ref.role}{ref.overlay?` · ${ref.overlay}`:''}</small></span></button>;
   }}</VirtualList>}
+  {bundle?.kind==='flow'&&<VirtualList key={bundle.id} className="inspector-values inspector-members" count={bundle.flowIds.length} rowHeight={76} label="Bundle flows">{index=>{
+   const id=bundle.flowIds[index];return <button className="inspector-member" aria-label={`Inspect recorded flow ${id}`} title={id} onClick={()=>onSelectEntity({kind:'flow',id})}><span>{id}<small>Recorded graph edge</small></span></button>
+  }}</VirtualList>}
   {source&&<p className="gg-inspector-source">{source.fileId}:{source.line}</p>}
   {node&&'ownership'in node&&<p>{node.ownership} · stable identity <span className="gg-inspector-id">{node.id}</span></p>}
   {selection.kind==='slot'&&<p className="gg-inspector-id">Selected storage lifetime: {selection.id}</p>}
@@ -76,6 +80,10 @@ export function Inspector({selection,scene,runtime,flows,plan,onClose,onFocus,on
   <details open={historyOpen} onToggle={event=>setHistoryOpen(event.currentTarget.open)}><summary>Historical bindings · {plan.historicalReferencePresentation.counts.recorded} recorded</summary>
    {historyOpen&&<><p>{plan.historicalReferencePresentation.counts.individual} individual · {plan.historicalReferencePresentation.counts.bundled} aggregated · {plan.historicalReferencePresentation.counts.internal} inside collapsed clusters · {plan.historicalReferencePresentation.counts.unavailable} unavailable · {plan.historicalReferencePresentation.counts.scopeExcluded} excluded by Trace scope · {plan.historicalReferencePresentation.counts.lifetimeExcluded} retired or unavailable endings</p>
    <VirtualList count={scene.historicalBindings.length} rowHeight={76} label="Historical bindings" className="gg-inspector-provenance">{index=>{const binding=scene.historicalBindings[index];return <button className="inspector-member inspector-reference-member" aria-label={`Inspect historical binding ${binding.id}`} title={`${binding.sourceSlotId} → ${binding.targetId}`} onClick={()=>onSelectEntity({kind:'reference',id:binding.id})}><span>{binding.sourceSlotId}<small>→ {binding.targetId}</small><small>Event {binding.introducedSeq} → {binding.endSeq} · {binding.endKind}</small></span></button>}}</VirtualList></>}
+  </details>
+  <details open={flowsOpen} onToggle={event=>setFlowsOpen(event.currentTarget.open)}><summary>Flow presentation · {plan.flowPresentation.counts.recorded} supported records</summary>
+   {flowsOpen&&<><p>{plan.flowPresentation.counts.individual} individual · {plan.flowPresentation.counts.bundled} aggregated · {plan.flowPresentation.counts.unavailable} unavailable · {plan.flowPresentation.counts.scopeExcluded} outside the current scope or context budget</p>
+   <VirtualList count={plan.flowPresentation.unavailable.length} rowHeight={76} label="Unavailable flow ports" className="gg-inspector-provenance">{index=>{const item=plan.flowPresentation.unavailable[index];return <button className="inspector-member" aria-label={`Inspect unavailable flow ${item.id}`} onClick={()=>onSelectEntity({kind:'flow',id:item.id})}><span>{item.id}<small>{item.reason}</small></span></button>}}</VirtualList></>}
   </details>
  </aside>
 }

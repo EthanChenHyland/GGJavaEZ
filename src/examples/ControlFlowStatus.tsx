@@ -1,5 +1,5 @@
 import type { RuntimeState, TraceEvent } from '../contracts/runtime'
-import { formatValue } from '../ui/Inspector'
+import { formatValue } from '../debugger/formatValue'
 
 /** Explanatory chrome consumes recorded facts; it never evaluates source code. */
 export function ControlFlowStatus({ runtime, event, guided }: { runtime: RuntimeState; event: TraceEvent | null; guided: boolean }) {
