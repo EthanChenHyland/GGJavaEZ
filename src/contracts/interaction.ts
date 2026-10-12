@@ -9,6 +9,7 @@ export type Selection =
   | { kind: 'reference'; id: ReferenceId }
   | { kind: 'flow'; id: string }
   | { kind: 'cluster'; id: string }
+  | { kind: 'bundle'; id: string }
   | null
 
 export type CameraMode = 'HOME' | 'GUIDED_FOLLOW' | 'FREE_EXPLORE' | 'FOCUS_ENTITY' | 'TRACE_PATH' | 'THEATER'

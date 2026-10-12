@@ -101,3 +101,24 @@ still require usable Source/timeline, real Java execution and exact process
 output with no World canvas. Process completion is independent of retained page
 publication; the real-run check waits for the actual nonempty timeline.
 This targets unsupported-graphics initialization, not overall visual approval.
+
+## Header contrast over the navigable World — 2026-10-11
+
+The Header now carries a translucent dark vertical backing across its existing
+height, with the existing glass blur/saturation. Active navigation retains a
+dark glass base beneath its blue tint. Header layout, shell layers, Safe Frame,
+world lighting, floor materials and runtime geometry are unchanged.
+
+Five fresh dense-JVM browser checks use Home and native keyboard orbit, with
+no private pose setter or substitute background. They temporarily hide Header
+glyphs to sample each enabled text/icon run's actual composited pixel background,
+then restore the glyphs and capture the original viewport. Minimum measured
+contrast across the ten states is 8.995:1, above the 4.5:1 requirement. Disabled
+controls are excluded; this makes no contrast claim for inactive text. Both
+sampling and capture preserve the real Cursor, anchors, Focus and camera pose.
+
+All five checks passed in 33.0 seconds. Original-size lead review covered all
+five orbit captures, including bright floor reflections visible immediately
+below the Header. These are ignored diagnostics rather than replacements for
+the formal reference comparison. Broad floating-surface/world contrast and
+final visual approval remain open.

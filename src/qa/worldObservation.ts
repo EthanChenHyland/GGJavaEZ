@@ -9,7 +9,7 @@ export interface WorldObservation {
   recordedEvents():readonly TraceEvent[]
   worldProjection():WorldProjection
   runtimeHeadings():readonly {entityId:string;kind:'title'|'identity';text:string;opacity:number;fontPixels:number;planePixels:number;widthPixels:number}[]
-  structuralLabels():readonly {id:string;kind:'cluster'|'heading';visible:boolean;minimumFontPixels:number;bounds:import('../shell/shellLayout').Rect|null}[]
+  structuralLabels():readonly {id:string;kind:'cluster'|'heading'|'bundle';visible:boolean;minimumFontPixels:number;bounds:import('../shell/shellLayout').Rect|null}[]
   projectedPoint(id: string): { x:number; y:number; visible:boolean } | null
   renderer(): {calls:number;triangles:number;geometries:number;textures:number;frame:number}
   effects():{ready:boolean;frames:number;revision:number;failure:string;cinematic:boolean}

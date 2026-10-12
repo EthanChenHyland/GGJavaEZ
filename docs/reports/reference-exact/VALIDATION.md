@@ -805,3 +805,65 @@ The read-only inter-cluster audit confirms that the existing planner drops
 clustered references and individual connector overflow and that production
 bundle picking/captions/inspection need convergence. No runtime semantics,
 normalizer, reducer, graph schema or Semantic_Golden changed in this increment.
+
+## Current-reference topology and Header contrast — 2026-10-11
+
+Current references are now partitioned over the exact presented cut instead of
+dropping collapsed endpoints or silently discarding individual overflow. The
+pure helper emits proven individuals, exact directed structural bundles,
+unavailable geometry reasons, internal collapsed-cluster relationships and
+Trace Current exclusions. All constituent IDs remain recorded current
+references. No future, historical replacement or formatted identity is used.
+The planner and readonly QA observation expose conservation counts separately
+from runtime entity and graph-flow accounting.
+
+Production bundle curves share ConnectorBatch, support native raycast selection
+and open an exact virtualized constituent Inspector under explicit structural
+`bundle` selection. Reference and flow captions are distinguished and use the
+shared readable structural-label placement. Individual reference colour roles
+now follow recorded frame/object/class semantics, with overlay precedence and
+composed Focus/forensic caps. Selecting a constituent never issues a camera
+command. Unavailable source ports stay unavailable; they are not replaced with
+invented body-port references.
+
+The complete default unit suite passes 1,841 tests with 70 opt-in skips (1,911
+total), across 193 files (186 passed, seven skipped), in 155.39 seconds. The
+focused helper/planner/structural-label/inspection run passes 23 tests in 1.03
+seconds, including 100 randomized topology cases and normalized
+replacement/null/rewind fixtures. The first typecheck caught tuple inference
+and a null fixture payload error in the delegated tests, and an omitted
+structural-label observation union in integration. These were corrected; no
+runtime contract was relaxed. The strict browser typecheck also caught a DOM
+Node cleanup type mismatch in the Header sampler; cleanup now uses the typed
+parent operation.
+
+The initial two native dense-JVM bundle cases pass in 16.7 seconds. At both
+desktop and narrow FAR poses, their 107 current references partition as 101
+drawable references in 14 directed bundles, six unavailable source ports, zero
+individuals and zero internal relationships. Actual curve selection and
+constituent inspection preserve camera, Focus, Cursor and canonical anchors.
+Inspector mounted elements stay below 200. Both original-size ignored captures
+received lead review. Their extended replay and Trace Current/All checks also
+pass in the complete reconstruction browser gate.
+
+Five fresh dense-JVM Header cases pass in 33.0 seconds at all target viewports,
+using native Home/orbit and actual composited background pixels. The minimum
+enabled text/icon contrast across ten states is 8.995:1. Glyph sampling preserves
+the World, camera and runtime facts. Original-size lead review covered all five
+orbit captures, including bright floor reflection immediately below the Header.
+This verifies the Header's local backing and active-mode glass base; inactive
+controls, broad floating surfaces and full World contrast remain outside this
+check.
+
+Build, lint and final strict reference TypeScript pass. AppRoot is 346.18 kB
+gzip (CSS 8.73 kB gzip); the existing large-chunk build warning remains visible.
+All 64 cases pass in 7.3 minutes in the complete reconstruction browser gate, including native
+camera/Focus/cluster travel, actual-JVM playback/identity, Console/input,
+editor/debugger, graphics/quality recovery and the new Header/reference cases.
+This excludes legacy E2E and the separate formal matrix. The separate
+80/96 formal matrix, sustained performance/chunk checks, complete
+collection/invocation/age hierarchy, historical Trace All bindings, remaining
+visual polish, independent acceptance/torture and final A–G approval remain
+open. Supported-renderer Clock/shadow and legacy unit Three CommonJS warnings
+remain visible. Runtime normalization/reducer/graph schema, Semantic_Goldens,
+main and the frozen best.png reference remain unchanged.

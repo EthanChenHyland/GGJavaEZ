@@ -13,6 +13,7 @@
 .world-canvas canvas { display:block;touch-action:none }
 .ide-runtime-live--idle .world-canvas canvas { opacity:.45 }
 .shell-header { position:absolute;left:0;top:0;width:100%;height:var(--header-height);display:flex;align-items:center;gap:16px;padding:0 1.2vw;z-index:4;pointer-events:none }
+.shell-header::before { content:'';position:absolute;inset:0;z-index:-1;pointer-events:none;background:linear-gradient(rgba(8,12,32,.9),rgba(8,12,32,.84));backdrop-filter:blur(18px) saturate(1.2) }
 .shell-header>* { pointer-events:auto }
 .shell-brand { display:flex;align-items:center;gap:13px;flex:none }
 .shell-brand-cube { color:#5CC8FF;filter:drop-shadow(0 0 8px #1F6BFF) }
@@ -27,7 +28,7 @@
 .shell-run-cluster .shell-run { color:#5BE3A8;border-color:rgba(91,227,168,.4) }
 .shell-modes { display:flex;gap:14px }
 .shell-modes button { width:clamp(98px,6.7vw,112px) }
-.shell-modes button[aria-pressed=true] { color:#EEF4FF;border-color:#5CC8FF;background:rgba(63,140,255,.18);box-shadow:inset 0 0 16px rgba(31,107,255,.3),0 0 14px rgba(31,107,255,.18) }
+.shell-modes button[aria-pressed=true] { color:#EEF4FF;border-color:#5CC8FF;background:linear-gradient(rgba(63,140,255,.18),rgba(63,140,255,.18)),rgba(8,14,34,.72);box-shadow:inset 0 0 16px rgba(31,107,255,.3),0 0 14px rgba(31,107,255,.18) }
 .ide-editor-panel { position:absolute;left:var(--source-x);top:var(--source-y);width:var(--source-width);height:var(--source-height);z-index:2;display:flex;flex-direction:column;overflow:hidden;transition:width 400ms ease,height 400ms ease }
 .ide-project-panel { display:none;position:absolute;left:var(--explorer-x);top:var(--explorer-y);width:var(--explorer-width);height:var(--explorer-height);z-index:3;flex-direction:column;overflow:hidden }
 .shell--explorer-open .ide-project-panel { display:flex }

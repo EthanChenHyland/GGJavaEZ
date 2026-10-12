@@ -325,13 +325,26 @@ export interface PresentedCurve {
     arrow: boolean;
     label?: string;
 }
-export interface PresentedBundle {
+interface PresentedBundleBase {
     id: string;
-    kind: 'connector' | 'flow';
     from: string;
     to: string;
     count: number;
     points: readonly Vec3[];
+    colorRole: MaterialRole;
+    opacity: number;
+    widthPx: 2.5 | 3.5;
+    arrow: boolean;
+}
+export type PresentedBundle = PresentedBundleBase & (
+    | { kind: 'connector'; referenceIds: readonly ReferenceId[] } // current references, never graph flow IDs
+    | { kind: 'flow'; referenceIds?: never }
+);
+export interface ReferencePresentation {
+    counts: { current: number; drawable: number; individual: number; bundled: number; bundleCurves: number; unavailable: number; internal: number; scopeExcluded: number };
+    unavailable: readonly { id: ReferenceId; reason: string }[];
+    internal: readonly { id: ReferenceId; clusterId: string }[];
+    scopeExcluded: readonly ReferenceId[];
 }
 export type ArrayIndexReason = 'requested' | 'selected' | 'focused' | 'current';
 export interface ArrayWindowSlot {
@@ -400,6 +413,7 @@ export interface PresentationPlan {
     clusters: readonly PresentedCluster[];
     curves: readonly PresentedCurve[];
     bundles: readonly PresentedBundle[];
+    referencePresentation: ReferencePresentation;
     cellWindows: ReadonlyMap<ObjectId, ArrayWindow>;
     headings: readonly {
         id: 'STACK' | 'HEAP' | 'CLASS STATE' | 'RETURNS';

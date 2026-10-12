@@ -16,14 +16,14 @@ export function inspectorRows(node:SceneEntity):{count:number;at(index:number):I
  return{count:rows.length,at:index=>rows[index]}
 }
 export function inspectorEntity(scene:SceneModel,selection:Selection):SceneEntity|null {
- if(!selection||selection.kind==='flow'||selection.kind==='cluster')return null
+ if(!selection||selection.kind==='flow'||selection.kind==='cluster'||selection.kind==='bundle')return null
  const reference=selection.kind==='reference'?scene.references.find(reference=>reference.id===selection.id):null
  const id=reference?.sourceId??selection.id
  return scene.entities[id]??arrayCellTarget(scene,id)?.array??Object.values(scene.entities).find(node=>entitySlotIds(node).includes(id))??null
 }
 /** Geometry budgets never truncate the selected entity's recorded history. */
 export function inspectorProvenance(catalog:FlowCatalog|undefined,selection:Selection,node:SceneEntity|null,cursor:number,flow?:GraphEdge):readonly RecordedProvenance[] {
- if(!catalog||!selection)return[]
+ if(!catalog||!selection||selection.kind==='bundle')return[]
  const ids=selection.kind==='flow'&&flow?[flow.from,flow.to,...(flow.originSlotId?[flow.originSlotId]:[])]:selection.kind==='slot'?[selection.id]:node?[node.id,...entitySlotIds(node)]:[selection.id]
  const evidence=new Map<string,RecordedProvenance>()
  for(const id of ids)for(const item of catalog.recordedProvenanceOf(id,cursor))evidence.set(item.edgeId,item)

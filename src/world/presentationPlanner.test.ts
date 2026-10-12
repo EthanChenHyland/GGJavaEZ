@@ -20,6 +20,19 @@ it('presentation cut accounts for every prefix-present identity and retains requ
         expect(plan.accounting.detailed + plan.accounting.quiet + plan.accounting.clustered).toBe(plan.accounting.total);
         expect(plan.accounting.total).toBe(Object.keys(scene.entities).length);
         expect(plan.clusters.reduce((sum, c) => sum + c.members, 0)).toBe(plan.accounting.clustered);
+        const counts=plan.referencePresentation.counts;
+        expect(counts.current).toBe(scene.references.length);
+        expect(counts.current).toBe(counts.individual+counts.bundled+counts.unavailable+counts.internal+counts.scopeExcluded);
+        const references=[...plan.curves.filter(curve=>curve.kind==='connector').map(curve=>curve.id),...plan.bundles.filter(bundle=>bundle.kind==='connector').flatMap(bundle=>{
+            expect(bundle.count).toBe(bundle.referenceIds!.length);return bundle.referenceIds!;
+        }),...plan.referencePresentation.unavailable.map(item=>item.id),...plan.referencePresentation.internal.map(item=>item.id),...plan.referencePresentation.scopeExcluded];
+        expect(references.slice().sort()).toEqual(scene.references.map(ref=>ref.id).sort());
+        expect(new Set(references).size).toBe(counts.current);
+        for(const curve of plan.curves.filter(curve=>curve.kind==='connector')){
+            const ref=scene.references.find(ref=>ref.id===curve.id)!;
+            expect(curve.colorRole).toBe(ref.overlay??(ref.role==='object-object'?'heap':ref.role==='class-object'?'class':'reference'));
+            if(selected&&ref.sourceId!==selected&&ref.targetId!==selected&&!plan.framing.focus?.neighbours.some(id=>id===ref.sourceId||id===ref.targetId))expect(curve.opacity).toBeLessThanOrEqual(.25);
+        }
         const residual=plan.clusters.flatMap(cluster=>{
             expect(cluster.members).toBe(cluster.memberIds.length);
             expect(cluster.anchor.size).toEqual(clusterSize);

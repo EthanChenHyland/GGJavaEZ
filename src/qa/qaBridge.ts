@@ -27,7 +27,7 @@ function createQaBridge(snapshot: QaSnapshot) {
     source:observeSource,
     editorModels:observeEditableModels,
     projectedPoint:(id:string)=>window.__ggjavaezWorld?.projectedPoint(id)??null,
-    planStats:()=>{const plan=window.__ggjavaezWorld?.plan();return plan?{...plan.accounting,detailLevel:plan.detailLevel,budgetOverflow:plan.budgetOverflow,curves:plan.curves.length,cells:[...plan.cellWindows.values()].reduce((count,window)=>count+window.visible.length,0),renderer:window.__ggjavaezWorld?.renderer()}:null},
+    planStats:()=>{const plan=window.__ggjavaezWorld?.plan();return plan?{...plan.accounting,detailLevel:plan.detailLevel,budgetOverflow:plan.budgetOverflow,curves:plan.curves.length,bundles:plan.bundles.length,referenceCounts:plan.referencePresentation.counts,cells:[...plan.cellWindows.values()].reduce((count,window)=>count+window.visible.length,0),renderer:window.__ggjavaezWorld?.renderer()}:null},
     ready: () => new Promise<void>((resolve, reject) => {
       let closed=false
       const timeout = setTimeout(() => {closed=true;reject(new Error('Renderer readiness timeout'))}, 10000)
