@@ -33,7 +33,9 @@ for(const scenario of scenarios)test(`cluster double-click travels without chang
  if(scenario.width<1024&&result.shell.inspector)safe.height=Math.min(safe.y+safe.height,result.shell.inspector.y-scenario.height*.01)-safe.y
  const finalCamera=new PerspectiveCamera(36,scenario.width/scenario.height,.05,10000)
  finalCamera.position.set(...result.pose.position);finalCamera.lookAt(...result.pose.target);finalCamera.updateMatrixWorld()
- const p=new Vector3(...cluster.anchor.position).project(finalCamera),x=(p.x+1)*scenario.width/2,y=(1-p.y)*scenario.height/2
+ const arrival=cluster.key.kind==='ownership'?result.members.find(({bounds:b})=>b&&b.x>=safe.x-.01&&b.y>=safe.y-.01&&b.x+b.width<=safe.x+safe.width+.01&&b.y+b.height<=safe.y+safe.height+.01):undefined
+ const arrivalAnchor=arrival?before.anchors[arrival.id].position:cluster.anchor.position
+ const p=new Vector3(...arrivalAnchor).project(finalCamera),x=(p.x+1)*scenario.width/2,y=(1-p.y)*scenario.height/2
  expect(p.z).toBeGreaterThan(-1);expect(p.z).toBeLessThan(1)
  expect(x).toBeGreaterThanOrEqual(safe.x-.01);expect(x).toBeLessThanOrEqual(safe.x+safe.width+.01)
  expect(y).toBeGreaterThanOrEqual(safe.y-.01);expect(y).toBeLessThanOrEqual(safe.y+safe.height+.01)
@@ -42,7 +44,12 @@ for(const scenario of scenarios)test(`cluster double-click travels without chang
  if(!await page.evaluate(id=>window.__ggjavaezWorld!.plan().clusters.some(cluster=>cluster.id===id),cluster.id))await expect(page.getByRole('complementary',{name:'Selection inspector'}).locator('p').first()).toHaveText('Cluster is not in the current presentation')
  await page.screenshot({path:`.ggjavaez/qa/reference-exact/cluster-travel-${scenario.width}x${scenario.height}${'reduced'in scenario?'-reduced':''}${'heap'in scenario?'-heap':''}.png`})
  if(!('reduced'in scenario)){
-  await page.evaluate(()=>window.__ggjavaezQA!.clock.resume());await far(page);await step(0);await clickCluster(page,true,region);await step(200)
+  await page.evaluate(()=>window.__ggjavaezQA!.clock.resume())
+  // A distant ownership member can leave its stable proxy off-screen after
+  // zooming out. Use native Home to establish this independent cancellation
+  // interaction when there is no Focus to preserve; do not teleport via QA.
+  if(!before.focus){await page.getByRole('complementary',{name:'Selection inspector'}).getByRole('button',{name:'Close inspector'}).click();await home(page)}
+  await far(page);expect(await facts()).toEqual(before);await step(0);await clickCluster(page,true,region);await step(200)
   const selection=await page.evaluate(()=>window.__ggjavaezQA!.selection())
   await page.locator('.world-canvas').focus();await page.keyboard.press('ArrowRight');const cancelled=await step(0)
   expect(await step(2000)).toEqual(cancelled);expect(await facts()).toEqual(before)

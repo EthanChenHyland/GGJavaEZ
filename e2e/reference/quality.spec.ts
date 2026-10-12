@@ -4,6 +4,8 @@ test('the real GPU gates quality, Interactive never requests Cinematic, and tier
  page.on('pageerror',error=>errors.push(error.message));page.on('console',message=>{if(message.type()==='error')errors.push(message.text())})
  page.on('request',request=>{if(/cinematicMaterials|cinematicPasses/.test(request.url()))requests.push(request.url())})
  await page.goto('/examples?qa=1')
+ await expect.poll(()=>page.evaluate(()=>typeof window.__ggjavaezWorld?.ready==='function')).toBe(true)
+ await page.evaluate(()=>window.__ggjavaezWorld!.ready())
  const slider=page.getByRole('slider',{name:'Recorded execution position'});await slider.focus();await page.keyboard.press('End')
  await page.getByRole('button',{name:'Home',exact:true}).click()
  await page.evaluate(()=>window.__ggjavaezWorld!.ready())

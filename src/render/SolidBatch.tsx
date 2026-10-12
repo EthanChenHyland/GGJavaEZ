@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef,type RefObject } from 'react';
 import { BufferGeometry, Float32BufferAttribute, InstancedMesh, Object3D, Color, Vector3 } from 'three';
 import type { Intersection, Raycaster } from 'three';
 import type { Selection } from '../contracts/interaction';
@@ -7,10 +7,12 @@ import { color, world } from '../theme/tokens';
 import { glassMaterial, unitBox, roundedDepthMaterial, roundedDistanceMaterial } from './RuntimeMaterials';
 import { expandRoundedBoxVertex, unitRoundedBox, unitRoundedOutline } from './geometry/roundedBox';
 import { faceRows } from './faceModel';
+import {collectionEntryFace} from '../world/collectionFace';
 import { useQualityStore, type QualityTier } from './quality/qualityStore';
 import { resolveArrayWindowPick, type ArrayWindowPick } from '../world/arrayWindow';
 import { useCameraStore } from '../camera/cameraStore';
 type Pick = NonNullable<Selection>;
+interface SolidPress {pick:Pick;arrayPick?:ArrayWindowPick;recordingId:string}
 interface Solid {
     anchor: WorldAnchor;
     pick: Pick;
@@ -36,18 +38,17 @@ export function buildSolidBatch(scene: SceneModel, plan: PresentationPlan): Soli
         if (node.kind !== 'array')
             plate(id, [x, y, face - .01], [w - .18, h - .18, .035], palette.face);
         if (node.kind === 'collection') {
-            const { rows, columns, pitch, sizeRow } = world.collection;
+            const { sizeRow } = world.collection;
             const header = world.object.header, bottom = y - h / 2 + world.object.pad;
             const sizeY = top - header - sizeRow / 2;
             if (presented.detail !== 'FAR' && sizeY - sizeRow * .36 >= bottom)
                 plate(id, [x, sizeY, face + .01], [w - .45, sizeRow * .73, .05], color.heap.chip);
-            const limit = presented.detail === 'FAR' ? 0 : presented.detail === 'MEDIUM' ? 8 : rows * columns;
-            for (const [index, entry] of node.entries.slice(0, limit).entries()) {
-                const row = index % rows, column = Math.floor(index / rows);
-                const ry = entry.port?.[1] ?? entry.keyPort?.[1] ?? top - header - sizeRow - (row + .5) * pitch;
-                if (ry - pitch * .365 < bottom) continue;
-                const cx = entry.port?.[0] ?? x - w / 2 + (column + .5) * w / columns;
-                plate(entry.slotId, [cx, ry, face + .01], [w / columns - .25, pitch * .73, .05], color.heap.chip);
+            const visible=new Set(faceRows(node,presented).visible.map(row=>row.slotId));
+            for (const [index, entry] of node.entries.slice(0,world.collection.rows*world.collection.columns).entries()) {
+                if(!visible.has(entry.slotId))continue;
+                const geometry=collectionEntryFace(node.anchor,index,node.collectionKind==='Map');if(!geometry)continue;
+                plate(entry.slotId,[geometry.value[0],geometry.value[1],face+.01],[geometry.valueWidth,geometry.height,.05],color.heap.chip);
+                if(geometry.key&&entry.keySlotId)plate(entry.keySlotId,[geometry.key[0],geometry.key[1],face+.01],[geometry.valueWidth,geometry.height,.05],color.heap.chip);
             }
             continue;
         }
@@ -82,7 +83,7 @@ function canonicalSolidRaycast(this: InstancedMesh, raycaster: Raycaster, inters
     try { InstancedMesh.prototype.raycast.call(this, raycaster, intersects); }
     finally { this.geometry = geometry; }
 }
-function Instances({ items, onSelect, onFocus, tier, plan, recordingId, cursor }: {
+function Instances({ items, onSelect, onFocus, tier, plan, recordingId, cursor,press }: {
     items: Solid[];
     onSelect(selection: Pick): void;
     onFocus(selection: Pick): void;
@@ -90,9 +91,9 @@ function Instances({ items, onSelect, onFocus, tier, plan, recordingId, cursor }
     plan: PresentationPlan;
     recordingId: string;
     cursor: number;
+    press:RefObject<SolidPress|null>;
 }) {
     const ref = useRef<InstancedMesh>(null), role = items[0].role, opacity = items[0].opacity;
-    const press=useRef<{pick:Pick;arrayPick?:ArrayWindowPick;recordingId:string}|null>(null);
     const validPress=(item:Solid|undefined)=>{
         const started=press.current;
         if(!item?.pickable||!started||started.recordingId!==recordingId||started.pick.kind!==item.pick.kind||started.pick.id!==item.pick.id)return false;
@@ -116,7 +117,7 @@ function Instances({ items, onSelect, onFocus, tier, plan, recordingId, cursor }
             mesh.instanceColor.needsUpdate = true;
         mesh.computeBoundingSphere();
     }, [items, role]);
-    return <instancedMesh ref={ref} args={[undefined, undefined, capacity]} geometry={role === 'face' ? unitBox : unitRoundedBox} material={role === 'face' ? undefined : glassMaterial(role, opacity, tier)} userData={{runtimeBloomRole:'protected'}} customDepthMaterial={role === 'face' ? undefined : roundedDepthMaterial()} customDistanceMaterial={role === 'face' ? undefined : roundedDistanceMaterial()} dispose={null} castShadow={role !== 'face'} receiveShadow raycast={items.some(item => item.pickable) ? canonicalSolidRaycast : noRaycast} onPointerDown={event=>{const item=items[event.instanceId??-1];press.current=item?.pickable?{pick:item.pick,arrayPick:item.arrayPick,recordingId}:null}} onClick={event => { const item = items[event.instanceId ?? -1]; if (validPress(item)) {
+    return <instancedMesh ref={ref} args={[undefined, undefined, capacity]} geometry={role === 'face' ? unitBox : unitRoundedBox} material={role === 'face' ? undefined : glassMaterial(role, opacity, tier)} userData={{runtimeBloomRole:'protected'}} customDepthMaterial={role === 'face' ? undefined : roundedDepthMaterial()} customDistanceMaterial={role === 'face' ? undefined : roundedDistanceMaterial()} dispose={null} castShadow={role !== 'face'} receiveShadow raycast={items.some(item => item.pickable) ? canonicalSolidRaycast : noRaycast} onPointerDown={event=>{const item=items[event.instanceId??-1];press.current=item?.pickable?{pick:item.pick,arrayPick:item.arrayPick,recordingId}:null;if(item?.pickable)event.stopPropagation()}} onClick={event => { const item = items[event.instanceId ?? -1]; if (validPress(item)) {
         event.stopPropagation();
         onSelect(item!.pick);
     } }} onDoubleClick={event => { const item = items[event.instanceId ?? -1]; if (validPress(item)) {
@@ -158,6 +159,10 @@ export function SolidBatch({ scene, plan, onSelect, onFocus }: {
     onFocus(selection: Pick): void;
 }) {
     const tier = useQualityStore(state => state.active);
+    // A face and body can resolve the same semantic pick in different draw
+    // batches across click/double-click dispatch. Own the closest press once
+    // for the complete solid surface, rather than losing it at a batch boundary.
+    const press=useRef<SolidPress|null>(null);
     const batches = useMemo(() => {
         const groups = new Map<string, Solid[]>(), edges = new Map<number, Solid[]>();
         for (const item of buildSolidBatch(scene, plan)) {
@@ -172,5 +177,5 @@ export function SolidBatch({ scene, plan, onSelect, onFocus }: {
         }
         return { groups, edges };
     }, [scene, plan]);
-    return <>{[...batches.groups].map(([key, items]) => <Instances key={key} items={items} tier={tier} plan={plan} recordingId={scene.recordingId} cursor={scene.cursor} onSelect={onSelect} onFocus={onFocus}/>)}{[...batches.edges].map(([key, items]) => <Edges key={key} items={items}/>)}</>;
+    return <>{[...batches.groups].map(([key, items]) => <Instances key={key} items={items} tier={tier} plan={plan} recordingId={scene.recordingId} cursor={scene.cursor} press={press} onSelect={onSelect} onFocus={onFocus}/>)}{[...batches.edges].map(([key, items]) => <Edges key={key} items={items}/>)}</>;
 }

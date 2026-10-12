@@ -83,7 +83,7 @@ describe('collectionSummary captured projection', () => {
     expect(first[0]).toBeCloseTo(6.7)
     expect(column2[0]).toBeCloseTo(9.3)
     expect(column2[1]).toBe(first[1])
-    expect(first[2]).toBeCloseTo(3.15)
+    expect(first[2]).toBeCloseTo(3.15+.06) // exposed chip-front port
     expect(first[1]).toBeCloseTo(-4 + 9.93 / 2 - 1.5 - 0.7 - 0.28)
   })
   it('never manufactures operation history from observation labels, method names or field writes', () => {

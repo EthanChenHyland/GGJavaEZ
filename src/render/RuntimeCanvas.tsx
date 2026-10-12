@@ -71,6 +71,16 @@ function Metrics({ scene, plan, selection,trace }: {
                         headings.push({entityId:heading.entityId,kind:heading.kind,text:text.text,opacity:text.fillOpacity,fontPixels:projectedFontPixels(text.fontSize*scale,point,camera,size.height),planePixels:projectedPlaneFontPixels(text.fontSize*scale,point,camera,size),widthPixels:projectedPlaneFontPixels(text.fontSize*scale,point,camera,size,'x')});
                     });return headings;
                 },
+                collectionText:()=>{
+                    const labels:ReturnType<NonNullable<Window['__ggjavaezWorld']>['collectionText']>[number][]=[];
+                    if(!(camera instanceof PerspectiveCamera))return labels;
+                    world.traverse(group=>{
+                        const label=group.userData.runtimeCollectionText as {entityId:string;kind:'size'|'more'|'key'|'value';slotId?:string;text:Text}|undefined;
+                        if(!label)return;
+                        const text=label.text,point=new Vector3().setFromMatrixPosition(text.matrix),scale=new Vector3().setFromMatrixScale(text.matrix).y;
+                        labels.push({entityId:label.entityId,kind:label.kind,slotId:label.slotId,text:text.text,opacity:text.fillOpacity,fontPixels:projectedFontPixels(text.fontSize*scale,point,camera,size.height),planePixels:projectedPlaneFontPixels(text.fontSize*scale,point,camera,size),widthPixels:projectedPlaneFontPixels(text.fontSize*scale,point,camera,size,'x')});
+                    });return labels;
+                },
                 structuralLabels:()=>{
                     const host=world.getObjectByName('structural-labels');if(!host||!(camera instanceof PerspectiveCamera))return[];
                     return host.children.map(group=>{

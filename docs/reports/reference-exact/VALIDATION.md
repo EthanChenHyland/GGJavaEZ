@@ -867,3 +867,102 @@ visual polish, independent acceptance/torture and final A–G approval remain
 open. Supported-renderer Clock/shadow and legacy unit Three CommonJS warnings
 remain visible. Runtime normalization/reducer/graph schema, Semantic_Goldens,
 main and the frozen best.png reference remain unchanged.
+
+## Collection reservations, entry faces and chip picking — 2026-10-12
+
+The source-bearing dense-JVM ArrayList now reserves 5.2 × 9.93 × 2.3 project
+heap geometry from its first captured allocation type/source. The pure helper
+uses an explicit finite table of 28 canonical standard collection classes;
+ordinary objects, arrays and unknown classes retain their formulas. A
+reservation is not a collection fact. The SceneModel exposes no size or entry
+before a captured summary, and later source/ownership does not move an
+originally compact library anchor. Recorded JDK ownership remains unchanged.
+Referencing-owner placement, unknown collection subclasses and complete
+hierarchy remain open.
+
+Captured entry chips, labels, visibility and key/value reference ports now share
+one physical grid. MEDIUM displays up to eight captured entries; CLOSE displays
+up to 24 across two columns of 12. Maps have distinct key/value chips and
+chip-front ports. The runtime still caps collection previews at 32 values,
+therefore normalized Maps at 16 pairs. No positions, defaults or operations are
+fabricated to fill the reservation. `+M more` accounts for the recorded size,
+including known unrecorded positions. Generic fields without a summary keep
+their ports; explicit summary entries no longer get conflicting generic ports.
+
+Native checks exposed two shared instanced-picking defects: farther body plates
+could overwrite a chip's pointer-down state, and a face pointer-down followed
+by body double-click dispatch lost the press across draw batches. The closest
+pickable press now stops propagation and belongs to the whole solid surface,
+with semantic identity and recording/array-window validation shared across
+batches. Desktop/narrow actual chip selection and Inspector storage identity
+pass. The cluster helper now proves a fresh native selection publication; an
+unchanged old selection is no longer accepted as proof of a new hit.
+
+The focused six-file run passes 118 tests in 1.36 seconds, including 100-run
+layout/collection properties and new typed normalized prefix/geometry checks.
+The initial new fixtures omitted PROGRAM_START, exceeded the Map capture budget
+and used an out-of-range source line; they were corrected without relaxing
+validation. Existing port tests were updated from the covered body face to the
+exposed chip front and independently checked against actual solid geometry.
+The first full default suite passed 1,910 tests with 70 opt-in skips (1,980
+total), across 195 files (188 passed, seven skipped), in 152.52 seconds.
+After the proxy and shared-press fixes, the full working-tree suite passes
+1,939 tests with 70 opt-in skips (2,009 total), across 197 files (190 passed,
+seven skipped), in 159.65 seconds. That count includes 26 tests in two pending,
+unintegrated historical-binding modules; this collection checkpoint contributes
+1,913 passing tests across 195 files. The pending index's subsequent immutable
+prefix-view change also passes its focused 26 tests in 256 ms. Neither test
+count establishes production historical Trace All behavior.
+
+Two dense-JVM cases pass in 20.1 seconds with actual glyph observation. Each
+shows 24 captured value slots, `size = 72` and `+48 more`; 32 entries were captured
+and 40 were not recorded. Minimum actual projected text spans are 13.99 pixels
+on desktop and 12.18 on narrow; headings measure at least 14.10 and 12.26.
+Observed draw calls are 98 and 119, under 250. These are readiness snapshots,
+not sustained CPU/GPU or pixel-occlusion measurements. Native selection and
+prefix-before-summary/replay preserve the canonical body and Focus. Both
+original-size ignored captures received lead review.
+
+The narrow native case closes the sheet through its real control before
+explicit Focus in the full World; closing alone preserves the camera. Initial
+Focus with the sheet open remains physically obstructed by foreground frames
+in this dense arrangement. A two-angle Focus-ranking attempt did not resolve
+it and was removed. Foreground stack occlusion and bright connectors crossing
+labels remain visible polish issues. Map browser coverage and final reference
+approval are not claimed by these List checks.
+
+The first complete 66-case browser run passed 64 and failed two cases in 7.6
+minutes. It exposed infeasible narrow ownership framing and proxies hidden
+inside individually presented members. Structural proxies now reserve separate
+stable space outside the runtime bands; actual ownership-observation ordinals
+preserve reservation order. Ownership CLOSE replaces its outgoing proxy, so
+arrival now frames the actual complete member with the same Safe Frame bounds
+and tolerance, and asserts that the outgoing proxy is absent. Generic groups
+still frame their proxy centre. The bounded solver uses the full actual Safe
+Frame only if its centred search finds no feasible pose. The second full run
+passed 65 and failed the short desktop native double-click in 7.7 minutes;
+pointer diagnostics isolated the face/body press boundary, and the final
+shared-press fix passes that native case in 11.7 seconds. Temporary production
+diagnostics were removed. Pure proxy/arrival checks pass 25 tests in 1.88 seconds
+and a subsequent focused 17 tests in 1.03 seconds, including a distant outgoing
+proxy and actual readable member geometry.
+
+The final complete 66-case run passes 65 cases and fails the initial quality
+test lifecycle wait in 7.8 minutes (`browser-collection-shared-press-all.log`).
+All collection, cluster, ownership, directed-bundle, camera, Console/input,
+editor/debugger and runtime-identity cases pass. The quality test had called
+the readonly World bridge before Metrics mounted; it now waits for that real
+lifecycle boundary before invoking readiness. All original GPU capability,
+lazy-loading, effect readiness and same-canvas assertions remain. Its focused
+rerun, together with desktop/narrow collection tests tightened to at least
+12 pixels on all three measured glyph spans, passes all three cases in 22.2
+seconds (`browser-collection-quality-mounted.log`). A single fully passing
+66-case run after this test-only wait is not claimed; the final product gate
+must rerun the complete suite after subsequent integration.
+
+Build, lint and strict reference TypeScript pass. AppRoot is 347.13 kB gzip;
+the existing large-chunk, renderer Clock/shadow and unit CommonJS warnings
+remain visible. Formal 80/96 comparison, independent
+acceptance/torture/performance, remaining visual/IDE cleanup and final A–G
+approval remain open. Runtime normalization/reducer/graph schemas,
+Semantic_Goldens, main and best.png remain unchanged.

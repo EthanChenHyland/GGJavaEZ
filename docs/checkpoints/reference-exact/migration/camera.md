@@ -225,3 +225,27 @@ This is a bounded camera/input convergence increment. The complete hierarchy,
 inter-cluster connector convergence, broad visual polish, fresh formal 80/96
 matrix, independent acceptance/performance gates and final A–G approval remain
 open.
+
+## Collection-sized members and stable proxy reservations — 2026-10-12
+
+Structural proxies now reserve separate cuboids outside the immutable runtime
+bands, rather than occupying their first member's body. Causal key introduction
+order preserves their anchors when membership changes or a later ownership
+observation arrives. Runtime geometry is not moved to make space.
+
+The prior ownership travel notes above required an outgoing proxy centre in the
+arrival view. CLOSE removes that ownership proxy. A remaining actual member
+can be distant from its stable reservation, so ownership arrival now frames the
+actual complete member at physical CLOSE with the same Safe Frame bounds and
+tolerance. The centre assertion moves to that member, and the native gate also
+requires the outgoing ownership proxy to be absent. Generic type/package
+travel still frames its proxy centre. Actual face picking, camera/Focus/Cursor
+stability and minimum 12-pixel heading checks remain required.
+
+The bounded solver tries its existing centre-biased rectangle first and falls
+back to the full actual Safe Frame only when no centred candidate is feasible.
+No synthetic LOD, camera bypass or changed collision limits are introduced.
+The repeated cancellation setup uses native Home only when no Focus exists;
+zooming out from a distant member does not guarantee its proxy stays on-screen.
+These changes and the common face/body press fix are documented in
+`migration/collections.md`; final formal reference approval remains open.

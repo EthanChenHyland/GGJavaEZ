@@ -36,8 +36,14 @@ export function clusterFraming(scene:SceneModel,cluster:PresentedCluster|undefin
     ...(ownership?[{yaw:8,pitch:-35},{yaw:8,pitch:-55},{yaw:45,pitch:-35},{yaw:-45,pitch:-35},{yaw:65,pitch:-25},{yaw:-65,pitch:-25}]:[])]
     .filter((angle,index,all)=>all.findIndex(other=>other.yaw===angle.yaw&&other.pitch===angle.pitch)===index)
   let best:ClusterDestination|null=null,score=Infinity
+  // Centre-biased framing can waste half the available height beside a narrow
+  // sheet. Use the full actual Safe Frame only when no centred pose is feasible.
+  for(const area of [centralArea(safe,viewport),safe]){
   for(const node of members)for(const angle of angles){
-    const points=[...corners(node.anchor),cluster.anchor.position],area=centralArea(safe,viewport),base=fitToSafeFrame(points,angle,area,viewport)
+    // Ownership cuts can span distant types. CLOSE removes the outgoing
+    // ownership proxy, so its old position must not prevent framing an actual
+    // residual member. Generic groups retain the existing proxy-centre rule.
+    const points=[...corners(node.anchor),...(ownership?[]:[cluster.anchor.position])],base=fitToSafeFrame(points,angle,area,viewport)
     const center=[0,1,2].map(axis=>(Math.min(...points.map(point=>point[axis]))+Math.max(...points.map(point=>point[axis])))/2) as unknown as Vec3
     for(let sample=0;sample<=32;sample++){
       const factor=2**(sample/8),pose=admit({...base,distance:base.distance*factor,
@@ -60,6 +66,8 @@ export function clusterFraming(scene:SceneModel,cluster:PresentedCluster|undefin
       if(ranked<score){score=ranked;best={memberId:node.id,pose,detailLevel:desired,canonicalRatio:ratio}}
       if(ranked<.005)return best
     }
+  }
+  if(best)return best
   }
   return best
 }

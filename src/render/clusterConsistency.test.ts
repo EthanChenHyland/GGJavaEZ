@@ -39,7 +39,7 @@ it('keeps short package previews unambiguous and preserves literal binary dollar
 it('abbreviates the grouping key without truncating the exact count and discards inherited row ports',()=>{
  const representative={entityId:'captured',region:'heap' as const,position:[9,-3,4] as const,size:[5.2,8,2.3] as const,ports:{'captured:field':[9,-2,5.15] as const},bodyPort:[9,-3,5.15] as const}
  const before=JSON.stringify(representative),anchor=clusterAnchor('cluster:type',representative),parts=clusterLabelParts({label:'VeryLongCapturedBinaryClassName$Nested',members:1842,anchor})
- expect(anchor.position).toEqual(representative.position);expect(anchor.ports).toEqual({})
+ expect(anchor.position[0]).toBe(representative.position[0]);expect(anchor.position[1]-anchor.size[1]/2).toBeGreaterThan(representative.position[1]+representative.size[1]/2);expect(anchor.ports).toEqual({})
  expect(parts.count).toBe('×1842');expect(parts.fits).toBe(true);expect(parts.key).toContain('…')
  expect(JSON.stringify(representative)).toBe(before)
 })

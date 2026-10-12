@@ -4,6 +4,7 @@ import {writeFile} from 'node:fs/promises'
 import {browserErrors,home,ready,runFixture,stopOwnedSession} from './harness'
 import {clickCluster,far} from './clusterInteractions'
 import {ownershipObservation} from '../../src/world/recordedOwnership'
+import {clusterDiagnostics} from './clusterDiagnostics'
 test.afterEach(async({request})=>stopOwnedSession(request))
 const snapshot=(page:Page)=>page.evaluate(async()=>{
  // Read the production row model in its browser environment (Vite owns the
@@ -59,14 +60,22 @@ for(const scenario of scenarios)test(`actual JVM ownership collapse and native C
  if('reduced'in scenario)await page.emulateMedia({reducedMotion:'reduce'})
  const step=async(ms:number)=>page.evaluate(async ms=>{window.__ggjavaezQA!.clock.step(ms);await new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve())));return window.__ggjavaezQA!.cameraPose()},ms)
  await step(0);const cluster=await clickCluster(page,true,undefined,true);await step(0)
+ await writeFile(`.ggjavaez/qa/reference-exact/collection-ownership-command-${scenario.width}x${scenario.height}${'reduced'in scenario?'-reduced':''}.json`,JSON.stringify(await clusterDiagnostics(page,cluster.id),null,2)+'\n')
  if(!('reduced'in scenario)){expect(await step(450)).not.toEqual(start);await step(450)}
  await ready(page);expect(await page.evaluate(()=>window.__ggjavaezWorld!.plan().detailLevel)).toBe('CLOSE')
  const result=await page.evaluate(ids=>({pose:window.__ggjavaezQA!.cameraPose(),shell:window.__ggjavaezQA!.shellRects(),members:ids.filter(id=>window.__ggjavaezWorld!.plan().entities.get(id)?.mode==='detailed').map(id=>({id,node:window.__ggjavaezWorld!.scene().entities[id],bounds:window.__ggjavaezWorld!.worldProjection().entities.find(body=>body.id===id)?.bounds}))}),cluster.memberIds)
  const safe={...result.shell.safeFrame};if(scenario.width<1024&&result.shell.inspector)safe.height=Math.min(safe.y+safe.height,result.shell.inspector.y-scenario.height*.01)-safe.y
  const camera=new PerspectiveCamera(36,scenario.width/scenario.height,.05,10000);camera.position.set(...result.pose.position);camera.lookAt(...result.pose.target);camera.updateMatrixWorld()
- const p=new Vector3(...cluster.anchor.position).project(camera),x=(p.x+1)*scenario.width/2,y=(1-p.y)*scenario.height/2
- expect(p.z).toBeGreaterThan(-1);expect(p.z).toBeLessThan(1);expect(x).toBeGreaterThanOrEqual(safe.x-.01);expect(x).toBeLessThanOrEqual(safe.x+safe.width+.01);expect(y).toBeGreaterThanOrEqual(safe.y-.01);expect(y).toBeLessThanOrEqual(safe.y+safe.height+.01)
+ // CLOSE replaces the ownership proxy with actual detailed runtime members.
+ // Its stable, absent position can be distant from the residual member and is
+ // not an arrival target. The real member bounds/picking/glyph checks below are.
+ expect(await page.evaluate(id=>window.__ggjavaezWorld!.plan().clusters.some(cluster=>cluster.id===id),cluster.id)).toBe(false)
  expect(result.members.some(({bounds:b})=>b&&b.x>=safe.x-.01&&b.y>=safe.y-.01&&b.x+b.width<=safe.x+safe.width+.01&&b.y+b.height<=safe.y+safe.height+.01)).toBe(true)
+ const arrival=result.members.find(({bounds:b})=>b&&b.x>=safe.x-.01&&b.y>=safe.y-.01&&b.x+b.width<=safe.x+safe.width+.01&&b.y+b.height<=safe.y+safe.height+.01)!
+ const centre=new Vector3(...arrival.node.anchor.position).project(camera),cx=(centre.x+1)*scenario.width/2,cy=(1-centre.y)*scenario.height/2
+ expect(centre.z).toBeGreaterThan(-1);expect(centre.z).toBeLessThan(1)
+ expect(cx).toBeGreaterThanOrEqual(safe.x-.01);expect(cx).toBeLessThanOrEqual(safe.x+safe.width+.01)
+ expect(cy).toBeGreaterThanOrEqual(safe.y-.01);expect(cy).toBeLessThanOrEqual(safe.y+safe.height+.01)
  expect(await facts()).toEqual(before)
  await test.info().attach('recorded-ownership-travel',{body:JSON.stringify({realJvmExecuted:true,sessionId:session.id,cluster,result}),contentType:'application/json'})
  await writeFile(`.ggjavaez/qa/reference-exact/ownership-travel-destination-${scenario.width}x${scenario.height}${'reduced'in scenario?'-reduced':''}.json`,JSON.stringify({realJvmExecuted:true,sessionId:session.id,cluster,result},null,2)+'\n')

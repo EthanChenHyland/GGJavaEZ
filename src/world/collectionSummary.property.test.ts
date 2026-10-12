@@ -62,7 +62,7 @@ it('Property 40 collection summary: fixed captured-position ports and structural
       else {
         expect(port![0]).toBeCloseTo(-2.6 + (Math.floor(index / 12) + 0.5) * 2.6)
         expect(port![1]).toBeCloseTo(9.93 / 2 - 1.5 - 0.7 - (index % 12 + 0.5) * 0.56)
-        expect(port![2]).toBeCloseTo(1.15)
+        expect(port![2]).toBeCloseTo(1.15+.06) // actual chip front, not the covered body face
       }
     }
     expect(collectionSummary(runtime, anchor, { ...context, objects: { target } })).toEqual(scene)

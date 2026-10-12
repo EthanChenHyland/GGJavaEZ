@@ -1,12 +1,13 @@
 import {expect,it} from 'vitest'
 import type {RuntimeSlot,RuntimeTypeMetadata,TraceDocument,TraceEvent} from '../contracts/runtime'
-import type {Ownership} from '../contracts/worldV2'
+import type {Ownership,WorldAnchor} from '../contracts/worldV2'
 import {seek} from '../runtime'
 import {createLayoutEngine} from './layoutEngine'
 import {createSceneProjector} from './sceneProjector'
 import {presentationClusters} from './presentationClusters'
 import {planPresentation} from './presentationPlanner'
 import {faceRows} from './faceRows'
+const overlap=(a:WorldAnchor,b:WorldAnchor)=>a.position.every((v,i)=>Math.abs(v-b.position[i])<(a.size[i]+b.size[i])/2-1e-6)
 
 // Explicit normalized unit fixtures, not evidence of JVM execution.
 const base=(seq:number)=>({seq,eventId:`unit/hierarchy/${seq}`,source:null,label:'Hierarchy unit fixture',importance:'quiet' as const})
@@ -31,6 +32,31 @@ it('collapses only applied recorded external ownership and exposes ordinary type
  expect(presentationClusters(scene,data.layout.state,ids,'CLOSE',20,null,false).every(c=>c.key.kind==='type')).toBe(true)
  expect(JSON.stringify({scene,layout:data.layout.state})).toBe(before)
 })
+it('reserves proxies outside runtime bodies and other proxies even when the first member is detailed',()=>{
+ const events:TraceEvent[]=[]
+ for(let i=0;i<8;i++)events.push(allocation(i,`body-${i}`,`vendor.T${i}`,i%2?'JDK':'LIBRARY'))
+ events.push({...base(8),type:'ENTER_METHOD',frameId:'frame',callerFrameId:null,className:'app.Main',methodName:'run',locals:[]})
+ const data=catalog(events),scene=data.at(),ids=Object.keys(scene.entities)
+ for(const detail of ['FAR','MEDIUM','CLOSE']as const){
+  const clusters=presentationClusters(scene,data.layout.state,ids,detail,20,null,false)
+  for(let i=0;i<clusters.length;i++){
+   for(const node of Object.values(scene.entities))expect(overlap(clusters[i].anchor,node.anchor),`${clusters[i].id} inside ${node.id}`).toBe(false)
+   for(const other of clusters.slice(i+1))expect(overlap(clusters[i].anchor,other.anchor)).toBe(false)
+  }
+  const residual=presentationClusters(scene,data.layout.state,ids.filter(id=>id!=='body-0'),detail,20,null,false)
+  for(const cluster of residual)expect(cluster.anchor).toEqual(clusters.find(initial=>initial.id===cluster.id)!.anchor)
+ }
+})
+it('late ownership on an old body cannot reorder already introduced structural reservations',()=>{
+ const data=catalog([allocation(0,'older','vendor.Older'),allocation(1,'known','vendor.Known','JDK'),{...base(2),type:'OBJECT_OBSERVE' as const,objectId:'older',metadata:metadata('LIBRARY','vendor.Older')}])
+ const engine=createLayoutEngine();engine.append(data.trace.events.slice(0,3))
+ const early=presentationClusters(data.at(2),engine.state,['older','known'],'FAR',20,null,false)
+ engine.append(data.trace.events)
+ const late=presentationClusters(data.at(3),engine.state,['older','known'],'FAR',20,null,false)
+ for(const cluster of early.filter(cluster=>late.some(item=>item.id===cluster.id)))expect(late.find(item=>item.id===cluster.id)!.anchor).toEqual(cluster.anchor)
+ const rewound=presentationClusters(data.at(2),engine.state,['older','known'],'FAR',20,null,false)
+ expect(rewound.map(cluster=>[cluster.id,cluster.anchor])).toEqual(early.map(cluster=>[cluster.id,cluster.anchor]))
+})
 it('keeps exact residual counts and the canonical key anchor when its representative is detailed or the cursor rewinds',()=>{
  const data=catalog([allocation(0,'first','vendor.First','LIBRARY'),allocation(1,'second','vendor.Second','LIBRARY'),allocation(2,'third','vendor.Third','LIBRARY')])
  const cluster=(cursor:number,ids:readonly string[])=>presentationClusters(data.at(cursor),data.layout.state,ids,'FAR',20,null,false)[0]
@@ -43,7 +69,8 @@ it('keeps exact residual counts and the canonical key anchor when its representa
 it('uses the first metadata observation for an ownership anchor, not the oldest body or later residual order',()=>{
  const events=[allocation(0,'older','vendor.Older'),allocation(1,'known','vendor.Known','JDK'),{...base(2),type:'OBJECT_OBSERVE' as const,objectId:'older',metadata:metadata('JDK','vendor.Older')}]
  const data=catalog(events),early=presentationClusters(data.at(2),data.layout.state,['older','known'],'FAR',20,null,false)
- expect(early.find(c=>c.key.kind==='ownership')!.anchor.position).toEqual(data.layout.state.anchors.known.position)
+ const proxy=early.find(c=>c.key.kind==='ownership')!.anchor,known=data.layout.state.anchors.known
+ expect(proxy.position[0]).toBe(known.position[0]);expect(proxy.position[1]-proxy.size[1]/2).toBeGreaterThan(known.position[1]+known.size[1]/2)
  const late=presentationClusters(data.at(3),data.layout.state,['older'],'FAR',20,null,false)[0]
  expect(late.id).toBe(early.find(c=>c.key.kind==='ownership')!.id);expect(late.anchor).toEqual(early.find(c=>c.key.kind==='ownership')!.anchor)
  const incremental=createLayoutEngine();incremental.append(data.trace.events.slice(0,3))

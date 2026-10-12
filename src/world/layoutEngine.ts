@@ -5,6 +5,7 @@ import type { LayoutState, WorldAnchor, WorldBounds, Vec3, PlacementInfo, Region
 import { world as worldLayoutTokens } from '../theme/tokens';
 import { persistentAppend, persistentPut, persistentRecord } from '../runtime/storage';
 import {ownershipObservation} from './recordedOwnership';
+import {firstObjectPresentation} from './firstObjectPresentation';
 export type { LayoutState } from '../contracts/worldV2';
 export type WorldLayoutTokens = typeof worldLayoutTokens;
 export interface LayoutEngine {
@@ -93,12 +94,8 @@ export function createLayoutEngine(t: WorldLayoutTokens = worldLayoutTokens): La
         const isArray = event.type === 'ALLOCATE_ARRAY';
         const className = isArray ? `${event.elementType}[]` : event.className;
         const count = isArray ? event.length ?? event.elements.length : event.fields.length;
-        const groups = isArray ? 0 : new Set(event.fields.map(slot => slot.declaringClass).filter(Boolean)).size;
         const cols = Math.max(t.array.cellsPerRowMin, Math.min(t.array.cellsPerRowMax, count));
-        const cellRows = count > 128 ? 8 : Math.ceil(count / cols);
-        const size: Vec3 = isArray ? [Math.max(t.object.w, cols * (t.array.cell + t.array.gap) - t.array.gap), t.array.titlePlate + (cellRows ? cellRows * (t.array.cell + t.array.gap) + t.array.indexLabel : .45), t.array.cell + t.array.backplate]
-            : [t.object.w, t.object.header + t.object.pad + t.object.row * Math.min(count, 13) + .6 * groups, t.object.depth];
-        const projectData = event.metadata?.ownership === 'PROJECT' || isArray && !!event.source || (className === 'java.lang.String' || className === 'String') && !!event.source;
+        const {size,projectData}=firstObjectPresentation(event,t);
         const region: Region = projectData ? 'heap' : 'library';
         let position: Vec3, realSize = size;
         if (region === 'library') {
@@ -129,7 +126,7 @@ export function createLayoutEngine(t: WorldLayoutTokens = worldLayoutTokens): La
         add(anchor, event.seq, className, event.metadata?.packageName ?? className.slice(0, Math.max(0, className.lastIndexOf('.'))), region === 'heap' ? 'PROJECT' : 'LIBRARY', Math.min(count, 13));
         if (!isArray)
             ports(anchor,event.fields,region==='library'?2:Math.min(count,13),region==='library'?.7:t.object.header,region==='library'?.55:t.object.row);
-        else if (count <= 128) {
+        else if (isArray && count <= 128) {
             const cellPorts: Record<string, Vec3> = {};
             for (let index = 0; index < count; index++) {
                 const cellId = arrayElementSlotId(event.objectId, index), x = position![0] - realSize[0] / 2 + t.array.cell / 2 + (index % cols) * (t.array.cell + t.array.gap), y = position![1] + realSize[1] / 2 - t.array.titlePlate - t.array.cell / 2 - Math.floor(index / cols) * (t.array.cell + t.array.gap), z = position![2] + realSize[2] / 2 - t.array.cell / 2;
@@ -174,7 +171,7 @@ export function createLayoutEngine(t: WorldLayoutTokens = worldLayoutTokens): La
                 }
                 else if (event.type === 'ALLOCATE_OBJECT' || event.type === 'ALLOCATE_ARRAY')
                     object(event);
-                else if (event.type === 'OBJECT_OBSERVE' && event.fields && anchors[event.objectId]) {
+                else if (event.type === 'OBJECT_OBSERVE' && event.fields && anchors[event.objectId]&&!(event.library&&['LIST','SET','MAP','QUEUE','DEQUE'].includes(event.library.kind))) {
                     const anchor=anchors[event.objectId];ports(anchor,event.fields,anchor.region==='library'?2:Math.max(0,Math.floor((anchor.size[1]-t.object.header-t.object.pad)/t.object.row)),anchor.region==='library'?.7:t.object.header,anchor.region==='library'?.55:t.object.row);
                 }
                 else if (event.type === 'CLASS_OBSERVE' && !anchors[event.classId]) {

@@ -77,6 +77,32 @@ it('never substitutes a proxy or an absent member for runtime geometry',()=>{
   expect(clusterFraming(scene,cluster,safe,viewport,undefined,pose=>({...pose,distance:NaN}))).toBeNull()
   expect(clusterFraming(scene,cluster,safe,viewport,undefined,pose=>({...pose,target:[1e9,1e9,1e9]}))).toBeNull()
 })
+it('frames a readable actual ownership member even when its retired proxy is far outside the arrival view',()=>{
+  const data=catalog(),before=JSON.stringify(data.scene)
+  const cluster={...data.cluster,key:{kind:'ownership' as const,value:'LIBRARY'},anchor:{...data.cluster.anchor,position:[-10000,10000,-10000] as const}}
+  const viewport={width:760,height:900},safe={x:38,y:90,width:684,height:396}
+  const result=clusterFraming(data.scene,cluster,safe,viewport,undefined,admitted(data,viewport))
+  expect(result).not.toBeNull();expect(cluster.memberIds).toContain(result!.memberId)
+  const node=data.scene.entities[result!.memberId],camera=projectionCamera(result!.pose,viewport)
+  for(const corner of anchorCorners(node.anchor)){
+    const point=screenPoint(corner,camera,viewport)
+    expect(point.z).toBeGreaterThan(-1);expect(point.z).toBeLessThan(1)
+    expect(point.x).toBeGreaterThanOrEqual(safe.x);expect(point.x).toBeLessThanOrEqual(safe.x+safe.width)
+    expect(point.y).toBeGreaterThanOrEqual(safe.y);expect(point.y).toBeLessThanOrEqual(safe.y+safe.height)
+  }
+  const proxy=screenPoint(cluster.anchor.position,camera,viewport)
+  expect(proxy.x<safe.x||proxy.x>safe.x+safe.width||proxy.y<safe.y||proxy.y>safe.y+safe.height||proxy.z<=-1||proxy.z>=1).toBe(true)
+  const metric=representativeFaceHeight(data.scene,camera,viewport)
+  for(const level of ['FAR','MEDIUM','CLOSE']as const)expect(nextDetailLevel(level,metric,viewport.height)).toBe('CLOSE')
+  const heading=faceHeading(node)
+  for(const label of [heading.title,...(heading.identity?[heading.identity]:[])]){
+    const point=new Vector3(...label.position)
+    expect(projectedFontPixels(label.size,point,camera,viewport.height)).toBeGreaterThanOrEqual(12)
+    expect(projectedPlaneFontPixels(label.size,point,camera,viewport)).toBeGreaterThanOrEqual(12)
+    expect(projectedPlaneFontPixels(label.size,point,camera,viewport,'x')).toBeGreaterThanOrEqual(12)
+  }
+  expect(JSON.stringify(data.scene)).toBe(before)
+})
 it('accounts a travel member once, retires its pin, and never promotes a proxy or unknown slot',()=>{
   const {scene,cluster,layout}=catalog(),member=cluster.memberIds[0]
   const input={scene,layout,detailLevel:'MEDIUM' as const,selection:null,focusTargetId:null,trace:{active:false,scope:'relevant' as const}}
