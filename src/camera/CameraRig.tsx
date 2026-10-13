@@ -18,7 +18,7 @@ import {focusFraming} from './focusFraming'
 import {followPathFraming} from './followPathFraming'
 import {clusterFraming} from './clusterFraming'
 import {guidedTravel,travelPose,type GuidedTravel} from './guidedTravel'
-import {requestAnimationFrameRender} from '../render/renderActivity'
+import {noteRequestedAnimationFrame,requestAnimationFrameRender} from '../render/renderActivity'
 import {productionClock} from '../motion/clock'
 export interface CameraInput {cancel():void;orbit():void;key(key:string,shift:boolean):void;wheel(dx:number,dy:number,pixelPan:boolean):void;shift(value:boolean):void}
 export const cameraReadiness={moving:false}
@@ -147,5 +147,5 @@ export function CameraRig({scene,plan,event,layout,safeFrame,inspectorRect,input
   if(move.current)requestAnimationFrameRender(invalidate)
   cameraReadiness.moving=!!move.current
  })
- return <OrbitControls ref={controls} makeDefault enableDamping={false} minDistance={tokens.minDistance} maxDistance={Math.max(tokens.minDistance,3*diagonal)} minPolarAngle={10*Math.PI/180} maxPolarAngle={88*Math.PI/180} mouseButtons={{LEFT:MOUSE.ROTATE,MIDDLE:MOUSE.DOLLY,RIGHT:MOUSE.PAN}} onStart={()=>input.current?.cancel()}/>
+ return <OrbitControls ref={controls} makeDefault enableDamping={false} minDistance={tokens.minDistance} maxDistance={Math.max(tokens.minDistance,3*diagonal)} minPolarAngle={10*Math.PI/180} maxPolarAngle={88*Math.PI/180} mouseButtons={{LEFT:MOUSE.ROTATE,MIDDLE:MOUSE.DOLLY,RIGHT:MOUSE.PAN}} onStart={()=>input.current?.cancel()} onChange={noteRequestedAnimationFrame}/>
 }

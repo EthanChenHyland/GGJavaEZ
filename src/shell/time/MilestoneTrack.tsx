@@ -56,18 +56,16 @@ export function MilestoneTrack({ index, playback, summary, maxLabels, execution 
     context.globalAlpha = 1
   }, [cursor, liveHead, index, width, maxLabels])
 
-  const seekPointer = (event: PointerEvent<HTMLDivElement>) => {
-    const bounds = event.currentTarget.getBoundingClientRect()
-    if (bounds.width > 0) playback.seekTo((event.clientX - bounds.left) / bounds.width * liveHead)
-  }
-  const finish = (event: PointerEvent<HTMLDivElement>, cancelled = false) => {
+  const finish = (event: PointerEvent<HTMLInputElement>, cancelled = false) => {
     if (activePointer.current !== event.pointerId) return
-    if (!cancelled) seekPointer(event)
+    if (!cancelled) playback.seekTo(Number(event.currentTarget.value))
     activePointer.current = null
     if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId)
     playback.endScrub()
   }
-  return <div ref={rail} className="gg-time-track" role="slider" tabIndex={0} aria-label="Recorded execution position"
+  return <div ref={rail} className="gg-time-track">
+    <input className="gg-time-track__input" type="range" role="slider" min={0} max={liveHead} step={1} value={cursor}
+    aria-label="Recorded execution position"
     aria-valuemin={0} aria-valuemax={liveHead} aria-valuenow={cursor} aria-valuetext={summary} aria-disabled={empty}
     title={empty ? 'The recording contains no Events' : 'Space plays or pauses; arrows step; Home rewinds; End returns to Live'}
     onKeyDown={(event) => {
@@ -84,13 +82,13 @@ export function MilestoneTrack({ index, playback, summary, maxLabels, execution 
       }
     }}
     onPointerDown={(event) => {
-      if (empty || event.button !== 0) return
-      event.preventDefault(); event.currentTarget.focus(); event.currentTarget.setPointerCapture(event.pointerId)
-      activePointer.current = event.pointerId; playback.beginScrub(); seekPointer(event)
+      if (empty || event.button !== 0) {event.preventDefault();return}
+      event.currentTarget.focus(); event.currentTarget.setPointerCapture(event.pointerId)
+      activePointer.current = event.pointerId; playback.beginScrub()
     }}
-    onPointerMove={(event) => { if (activePointer.current === event.pointerId) seekPointer(event) }}
+    onChange={(event)=>{if(!empty)playback.seekTo(Number(event.currentTarget.value))}}
     onPointerUp={(event) => finish(event)} onPointerCancel={(event) => finish(event, true)}
-    onLostPointerCapture={() => { if (activePointer.current !== null) { activePointer.current = null; playback.endScrub() } }}>
+    onLostPointerCapture={() => { if (activePointer.current !== null) { activePointer.current = null; playback.endScrub() } }}/>
     <div className="gg-time-track__line" aria-hidden="true"><span style={{ width: `${empty ? 0 : cursor / liveHead * 100}%` }} /></div>
     <canvas ref={canvas} className="gg-time-track__density" aria-hidden="true" />
     {labelled.map((milestone) => <span key={milestone.id} aria-hidden="true"

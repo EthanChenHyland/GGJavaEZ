@@ -41,7 +41,10 @@ function sameDependencies(a: readonly (RuntimeObject | undefined)[], b: readonly
 }
 function sameReferences(a: readonly SceneReference[], b: readonly SceneReference[]): boolean {
   return a.length === b.length && a.every((ref, i) => ref.id === b[i].id && ref.targetId === b[i].targetId && ref.overlay === b[i].overlay
-    && ref.evidence.changedSeq === b[i].evidence.changedSeq && ref.evidence.introducedSeq === b[i].evidence.introducedSeq)
+    && ref.evidence.changedSeq === b[i].evidence.changedSeq && ref.evidence.introducedSeq === b[i].evidence.introducedSeq
+    && ref.evidence.kind === b[i].evidence.kind && ref.evidence.derivation === b[i].evidence.derivation
+    && ref.evidence.unavailableReason === b[i].evidence.unavailableReason
+    && ref.evidence.eventIds.length === b[i].evidence.eventIds.length && ref.evidence.eventIds.every((id, index) => id === b[i].evidence.eventIds[index]))
 }
 
 interface ReferenceTree {
@@ -553,6 +556,11 @@ export function createSceneProjector(trace: TraceDocument): SceneProjector {
       extend(nextEvents)
       const { state, context } = bounded(input, inputContext), prior = previous
       if (!prior || prior.state.cursor !== from || state.cursor !== to || to < from || to > events.length) return project(state, layout, context)
+      // Sparse playback stays incremental. For a long seek through a compact
+      // world, rebuild from the already reconstructed prefix instead of walking
+      // thousands of skipped events and graph edges to find the same owners.
+      const population = prior.scene.order.frames.length + prior.scene.order.objects.length + prior.scene.order.classes.length
+      if (to - from > Math.max(256, population * 4)) return project(state, layout, context)
       updateReturnIndex(state)
       const touched = new Set<string>(prior.scene.cursorEvent?.subjects ?? [])
       const oldTop = prior.state.activeFrameIds.at(-1), newTop = state.activeFrameIds.at(-1)

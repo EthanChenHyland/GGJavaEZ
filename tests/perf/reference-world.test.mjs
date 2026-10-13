@@ -13,6 +13,7 @@ import { validateTrace } from '../../src/runtime/trace.ts';
 import { createLayoutEngine } from '../../src/world/layoutEngine.ts';
 import { createSceneProjector } from '../../src/world/sceneProjector.ts';
 import { createFlowCatalog } from '../../src/world/flowCatalog.ts';
+import { createConnectorRouter } from '../../src/world/connectorRouter.ts';
 import { planPresentation } from '../../src/world/presentationPlanner.ts';
 
 // Explicit VJ_SUITE=perf opt-in; no legacy layout/scene-model API or JVM claim.
@@ -41,8 +42,8 @@ function measuredHeap() {
   globalThis.gc();
   return process.memoryUsage().heapUsed;
 }
-function planInput(scene, layout, flows, detailLevel) {
-  return { scene, layout, flows, detailLevel, selection: null, focusTargetId: null, trace: { active: true, scope: 'all' } };
+function planInput(scene, layout, flows, detailLevel, router) {
+  return { scene, layout, flows, router, detailLevel, selection: null, focusTargetId: null, trace: { active: true, scope: 'all' } };
 }
 function assertScene(scene, state, trace, layout) {
   assert.equal(scene.cursor, state.cursor);
@@ -177,8 +178,9 @@ function corpus(requestedRawEvents) {
     const flows = createFlowCatalog();
     const indexed = timed(() => flows.extend(graph, trace));
     const catalogAfter = measuredHeap();
+    const router = createConnectorRouter();
     // Retain exactly the final world and one plan per level for the heap probe.
-    const retainedPlans = LEVELS.map(level => planPresentation(planInput(initialProjection.value, layout, flows, level)));
+    const retainedPlans = LEVELS.map(level => planPresentation(planInput(initialProjection.value, layout, flows, level, router)));
     retainedPlans.forEach(plan => assertPlan(plan, initialProjection.value));
     const presentationAfter = measuredHeap();
     const heapSnapshot = requestedRawEvents === 20000 && process.env.VJ_PERF_HEAP_OUTPUT
@@ -197,13 +199,15 @@ function corpus(requestedRawEvents) {
     const cursorSamples = [], seekMs = [], projectionMs = [], flowPrefixMs = [], flowQueryMs = [];
     const planningMs = Object.fromEntries(LEVELS.map(level => [level, []]));
     const perSeek = [];
+    let previousCursor = history.length;
     // Multiplication by 37 permutes all 100 evenly spread positions, including
     // zero/live head, and deliberately mixes forward and backward seeks.
     for (let i = 0; i < SEEK_SAMPLES; i++) {
       const cursor = Math.floor(((i * 37) % SEEK_SAMPLES) * history.length / (SEEK_SAMPLES - 1));
       cursorSamples.push(cursor);
       const sought = timed(() => history.materialize(cursor));
-      const projected = timed(() => projector.project(sought.value, layout, context(trace, true)));
+      const projected = timed(() => projector.advance(sought.value, layout, trace.events, previousCursor, cursor, context(trace, true)));
+      previousCursor = cursor;
       const scene = projected.value;
       assertScene(scene, sought.value, trace, layout);
       const prefix = timed(() => flows.prefix(cursor, scene));
@@ -217,7 +221,7 @@ function corpus(requestedRawEvents) {
       const query = timed(() => flows.query({ cursor, scene, priority, limit: 64 }));
       const stats = {};
       for (const level of LEVELS) {
-        const planned = timed(() => planPresentation(planInput(scene, layout, flows, level)));
+        const planned = timed(() => planPresentation(planInput(scene, layout, flows, level, router)));
         assertPlan(planned.value, scene);
         planningMs[level].push(planned.ms);
         stats[level] = { accounting: planned.value.accounting, clusters: planned.value.clusters.length,
@@ -252,7 +256,7 @@ function corpus(requestedRawEvents) {
       graph: { edges: graph.edges.length, invocations: Object.keys(graph.invocations).length, values: Object.keys(graph.values).length },
       seeks: { count: SEEK_SAMPLES, cursors: cursorSamples, materializeMs: distribution(seekMs), sceneProjectionMs: distribution(projectionMs),
         flowPrefixMs: distribution(flowPrefixMs), flowQueryMs: distribution(flowQueryMs), planningMs: Object.fromEntries(LEVELS.map(level => [level, distribution(planningMs[level])])), samples: perSeek },
-      memory, historyStats: history.stats };
+      routingCache: router.stats(), memory, historyStats: history.stats };
   } finally { normalizer.history.dispose(); }
 }
 
@@ -266,7 +270,7 @@ test.skipIf(process.env.VJ_SUITE !== 'perf')('modern reference world CPU scaling
     methodology: { source: 'Generated data, not actual JVM execution', clock: 'node:perf_hooks performance.now; milliseconds',
       constructionRunsPerConfiguration: 1, lineScaling: '100 individually appended LINE_EXECUTE batches after 20 identical-kind warmups at 1000 and 20000 actual runtime objects, one active main frame. advance timer excludes validation/reduction/layout/attachment/checks.',
       corpus: 'Seed 42 generator with provenance=true, requested 200/5000/20000 raw records; actual counts can exceed target to close frames. NDJSON parse, integrated normalization/validation/reduction, layout, projection, Flow indexing/prefix/query and planning have separate timers.',
-      seeks: '100 deterministic spread cursors, permuted by stride 37, including zero/live, forward/backward. Same accepted shared history; all levels use the same SceneModel. No camera/view-tile memoization claim.',
+      seeks: '100 deterministic spread cursors, permuted by stride 37, including zero/live, forward/backward. Production SceneProjector.advance receives the preceding cursor; reverse and long compact-world jumps reconstruct from the accepted prefix. Same shared history; all levels use the same SceneModel. Earlier reports used direct project calls and are not identical-path timing comparisons. No camera/view-tile memoization claim.',
       planning: 'Actual planPresentation with Trace All, no selection/Focus, FAR/MEDIUM/CLOSE. CPU planner evidence analogous to INTERACTIVE detail cuts; no WebGL render or quality tier is instantiated.',
       stageCaveat: 'Flow prefix/query may internally materialize semantic history to resolve endpoints; those costs stay inside their real production calls. Complete prefix is timed before plans, so planner measurements reuse that cache. Assertions and report serialization excluded from stage timers.',
       samplingCaveat: 'Single process and one construction per configuration; construct both scaling worlds first and alternate first-updated size each round, no statistical confidence claim. Stage caches and JIT/GC remain part of recorded environment.' },

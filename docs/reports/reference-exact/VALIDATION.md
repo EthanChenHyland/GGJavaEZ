@@ -1147,3 +1147,101 @@ ratios 1.602/0.714/0.641 and update ratio 1.061. Its pre-seek V8 snapshot is
 changes, derived caches and measurement arrays, not isolated presentation
 bytes. The saved diagnostic motivates cache-lifetime analysis; it supplies
 neither a budget waiver nor a completed optimization claim.
+
+## Flow cache and fresh native Dense_Sample diagnostics — 2026-10-13
+
+The complete-frame instrumentation checkpoint is committed and pushed as
+`48f49edd15c745b6affb377426af5f27caa0e473`; local/origin match. Main/origin/main
+remain `316b94ad79582c284fd466174db6f82d939aebba`, and best.png retains blob
+`489b10543535dfe3e4d2d656904ce8261c9f64d6`. Protected user assets remain untouched.
+
+Flow endpoint caching now keeps one currently resolved semantic graph's derived
+map, clearing it on graph changes instead of retaining one map for every history
+root. Ten focused Flow checks pass, including both 100-run properties and
+repeated backward/forward prefix equality against a fresh catalog. The same
+generated benchmark records post-100-seek increments of
+7,272,104/10,310,160/16,673,704 bytes versus the preceding
+8,180,408/33,824,024/109,549,592-byte diagnostic. These single-run totals include
+semantic and reporting changes and do not isolate each cache. Initial
+presentation-memory ratios remain 1.616/0.722/0.642 against 0.25; the benchmark
+still exits 1. Its unchanged update guard passes at 1.055.
+
+The reviewed native browser harness has strict TypeScript and focused lint
+passing. It imports the preserved ordinary Topology source (SHA-256 verified)
+and clicks actual Run. A completed fresh JVM yields 7,492 raw facts; independent
+normalization requires the frontend to reach all 9,852 events, four frames and
+33 objects before timing. Initial source-character/UTF-8-byte confusion and an
+early 26-event catch-up-prefix attempt remain archived, with no complete-world
+performance claim.
+
+The first complete attempt has five fresh frontend loads with actual JDT,
+median 3,919.73 ms against 5,300 ms. Fifty distinct captured-cell Focus/Home
+pairs complete, but p95 167.72/232.70 ms exceed 125/152 ms. Seeking fails on
+Time Dock width changing between press/release at cursor zero, so it is
+unmeasured. Five complete 30-second windows retain every draw-call record,
+maximum 110, but median cadence 32.1–33.3 ms, p95 34.7–35.1 ms and whole-owner
+CPU p95 6.3–6.5 ms fail their budgets. The 60-second window passes drift/growth
+at 0.304%/0.433%; whole-frontend heap does not isolate semantic/presentation
+memory. The test exits 1 and its full report is preserved.
+
+Time Dock now reserves sequence width for the entire accepted count, including
+an invisible allocation at cursor zero without displaying a fabricated event.
+Drei's already-requested orbit redraws are noted by the existing activity tracker
+without an extra invalidation. A native probe smoke passes in 8.5 seconds and
+checks continuity specifically after native orbit starts. The harness removes
+its separate per-move rAF RPC; native pointer coordinates vary by elapsed wall
+time and renderer submissions still determine every cadence sample. The fixed
+full run and separate post-latency CPU profiling were subsequently completed. No sample
+count, threshold, semantic truth or missing result is waived. Full default unit,
+69-case browser, build/static checks after these changes and remaining A–G
+convergence remain open.
+
+The corrected-cadence attempt completes all fixed stages with no errors or
+exceptions. Its preserved report records 100 exact seeks and 50 captured-cell
+Focus/Home pairs; latency still fails at 145.03/193.22 ms seek p50/p95 and
+167.55/223.26 ms Focus/Home p95. All five continuous viewport windows pass,
+as do the 60-second drift and whole-frontend GC-growth checks. The optional
+ten extra command pairs are profiled after all required timed pairs.
+
+Prepared represented-face bounds, a bounded recording-owned route cache and
+camera-intent subscription narrowing pass 20 focused tests, including 100
+warm/cold geometry comparisons, invalidation and both cache limits. Thirteen
+native checks pass across five viewport cluster travel, reduced motion,
+actual historical-binding recordings and timeline semantics. The timeline
+now has a public native HTML range; its separate regression passes exact
+range fill, stable width from zero and real pointer scrub lifecycle.
+
+The subsequent prepared-routing full browser attempt completes in 7.2 minutes:
+fresh actual JVM `ad325471-2325-46f7-b3c2-98018533b91c`, full 7,492 raw /
+9,852 normalized events, five cold loads, 100 exact spread cursors, 50 actual
+captured-cell Focus/Home pairs, five continuous 30-second viewports and one
+60-second stability window. No browser or stage failures occur. Cold median
+3,913.28 ms passes. All viewport budgets pass at median 16.7 ms, p95
+17.2–17.6 ms, CPU p95 2.4–5.6 ms and 109–110 maximum calls. Drift/GC growth
+pass at 0%/0.324%. Seek p50/p95 102.21/133.12 ms and Focus/Home p95
+167.60/199.43 ms still fail unchanged budgets; exit is 1. The old pointer
+method and new baseline public-range method remain explicitly distinguished.
+
+The separate extra-command profile shows planner inclusive sampled time
+437.68 ms versus approximately 1,239.56 ms previously; this is diagnostic,
+not a confidence claim or a replacement for latency samples. Shader work
+remains substantial. Complete report, raw profile and summary are preserved
+before subsequent production changes. No F milestone or A–G approval follows.
+
+## Command and resource convergence — 2026-10-13, ongoing
+
+The stable-material Dense browser attempt completes every stage with no browser errors or stage exceptions. Fresh actual JVM session `7f22cf7b-95ba-49fc-b893-cf30ea3ef9c3` supplies 7,492 raw / 9,852 normalized facts from the preserved source hash. All five 30-second viewport windows and the 60-second soak pass their unchanged submission/CPU/calls/drift/whole-frontend-growth limits. Five actual-JDT cold loads pass at median 4,163.32 ms. The command budgets still fail: seek p50/p95 100.75/134.37 ms, Focus/Home p95 184.79/232.32 ms. Exit 1 is preserved; there is no whole-product performance approval.
+
+The separate ten-pair profile shows 26.61 ms shader program-log self time, down from 352.56 ms in the preceding diagnostic, with inclusive planner time 414.67 ms. These diagnostic runs are not statistical proof or replacement budget samples. Component timings leave the original command-to-two-rAF measurement boundary unchanged and show most measured time inside the native input-command await; this includes delivery and application work, so production causality remains unproven.
+
+Subsequent production changes reuse one current accepted Flow runtime prefix, refresh complete collection-reference evidence on repeated observations, reconstruct long compact-world forward seeks instead of scanning skipped events, and restrict connector terminal exemptions to actual outward port corridors. Exact ports, canonical runtime IDs, complete recorded Flow/provenance counts and stable anchors stay intact. The retained actual Dense Node diagnostic compares 100 spread cursors with reconstruction; all agree. Its forward advance median is 1.149 ms versus 3.126 ms before the long-jump choice, without claiming browser-budget repair. A repeated-observation regression plus collection/binding checks pass 35 tests; combined routing/Flow/projector convergence passes 24, including 100-run append/replay, arbitrary left/right ports and long-jump properties. Root reference/browser-harness strict typechecks and full `src` lint pass. Full default units, production build and complete native suite are being rerun; their results must be recorded before treating this checkpoint as stable.
+
+The full default suite passes **1,981 tests**, with **70 opt-in skips** (2,051 total; 202 files, 195 passed and seven skipped), in **168.31 seconds**. This includes the new collection-observation, long-jump, append/replay, terminal-clearance and resource checks. Full source lint, strict reference/performance-browser checks and production `tsc -b`/Vite build pass. AppRoot is 1,151.11 kB / **351.99 kB gzip**; entry, Monaco, Troika and Cinematic artifacts remain separately recorded. The normal large-chunk warning remains visible. Logs: `unit-command-convergence.log`, `lint-command-convergence.log`, `typecheck-reference-command-convergence.log`, `typecheck-perf-command-convergence.log`, and `build-command-convergence.log`. These results establish the static/unit checkpoint only; full native, fresh fixed performance and final convergence gates remain pending.
+
+The first complete 69-case native run exits 1: **55 passed / 14 failed**, over **2.8 hours**. This is not a passing checkpoint. macOS power logs confirm repeated Sleep/DarkWake cycles during the interrupted window and full wake at 14:31:20 local; individual tests show 12–17 minute wall durations despite 60-second configured limits. Cluster/collection failures retain actual `ERR_NETWORK_IO_SUSPENDED` console errors, and other cases retain language-service timeouts or failed source loading. The isolated Console input timing is 245.5 ms against its unchanged 200-ms limit; that failure is preserved and is not waived or asserted to have a proven production cause. The complete log is archived as `browser-command-convergence-sleep-interrupted.log`, with original error contexts in `browser-command-sleep-interrupted-results/`. A full fresh 69-case awake run is required, without reducing counts, altering thresholds or suppressing errors.
+
+Generated prefix-reuse/long-seek gate (2026-10-13): `.ggjavaez/qa/reference-exact/perf-command-convergence.log` exits 1 for presentation memory, with unchanged ratios 1.773067568 / 0.750901169 / 0.650666492 against 0.25. The 100-batch single-event 20k/1k update ratio is 1.091262570 and passes 2×. Replay diagnostic retained bytes are 7,345,736 / 10,443,496 / 16,024,856, with mixed semantic/report attribution retained explicitly. Full awake native rerun is pending; the prior 55-pass/14-fail sleep-interrupted result is preserved and is not converted into a pass.
+
+The full unchanged native suite rerun with `caffeinate -i npx playwright test e2e/reference --reporter=list` passes **69/69** in **7.9 minutes**, exit 0. Evidence: `.ggjavaez/qa/reference-exact/browser-command-convergence-awake.log`. This rerun used the same production tree, required case counts, assertions and timing limits. The sleep-interrupted 55/14 result and original failed contexts remain archived; they were not suppressed or relabeled. Native success does not approve the formal 80/96 visual matrix or the outstanding fixed performance/retention gates.
+
+Required source/reference guardrails are implemented: `node scripts/reference/scan-generic.mjs` and `node scripts/reference/check-references.mjs` pass; 14 focused guardrail cases pass in 593 ms (`guardrails-integrity.log`). The scan checks TS/JS/Java/JSON identifiers and literals, ignores comments/tests/examples, handles camel case and space/underscore/hyphen separators and names all hits. Artwork caption checks preserve required functional Home/Focus/Trace controls. Six original images match their tracked twins and corrected-spec baseline bytes, with best tracked and five user-owned roots untracked. The temporary strict performance-harness config confirms the additional diagnostic seek profile typechecks, exit 0 (`typecheck-perf-seek-profile-confirmed.log`). The six requested checkpoint documentation files now record substantive implementation and current open gates; final cleaned-tree evidence still needs reconciliation.

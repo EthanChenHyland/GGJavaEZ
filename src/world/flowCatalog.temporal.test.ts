@@ -34,3 +34,20 @@ it('return destinations require prefix-visible assignment evidence, even when th
  expect(query(trace.events.length).filter(flow=>flow.kind==='return')).toEqual([])
  expect(catalog.recordedProvenanceOf('jvm:frame:main:local:2:2:0:999',trace.events.length).length).toBeGreaterThan(0)
 })
+it('repeated rewinds resolve the same complete prefix as a fresh catalog across assignment and retirement',()=>{
+ const trace=recording(),layout=createLayoutEngine();layout.append(trace.events)
+ const projector=createSceneProjector(trace),graph=seek(trace,trace.events.length).executionGraph!
+ const catalog=createFlowCatalog();catalog.extend(graph,trace)
+ const write=trace.events.find(event=>event.type==='EXECUTION_FACT'&&event.fact.kind==='write'&&event.fact.origin.kind==='call_result')!
+ const cursors=[write.seq+1,trace.events.length,write.seq,0,write.seq+1,trace.events.length,write.seq+1,write.seq]
+ for(const cursor of cursors){
+  const scene=projector.project(seek(trace,cursor),layout.state,{sessionEnded:false,pausedAtLiveHead:false,liveHead:trace.events.length,recording:{state:'FULL',reason:null,budget:null,lastRecordedSeq:null,executionContinued:false}})
+  const fresh=createFlowCatalog();fresh.extend(graph,trace)
+  const actual=catalog.prefix(cursor,scene)
+  expect(actual).toEqual(fresh.prefix(cursor,scene))
+  expect(actual.every(flow=>flow.evidenceSeqs.every(seq=>seq<cursor))).toBe(true)
+  const transfers=actual.filter(flow=>flow.kind==='return'&&flow.from&&flow.to)
+  if(cursor===write.seq||cursor===0)expect(transfers).toHaveLength(0)
+  if(cursor===write.seq+1){expect(transfers).toHaveLength(1);expect(transfers[0].to).toEqual({kind:'slot',id:'jvm:frame:main:local:2:2:0:999'})}
+ }
+})

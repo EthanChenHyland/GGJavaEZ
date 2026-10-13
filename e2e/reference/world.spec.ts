@@ -20,6 +20,18 @@ test('semantic timeline keyboard reaches both boundaries and highlights captured
  await expect(page.locator('.ide-editor-foot')).toContainText('Recorded source · Main.java')
  await expect(page.locator('.ide-editor-foot')).toContainText('22 lines')
  await expect(page.locator('.executing-line')).toHaveCount(1)
+ await expect(slider).toHaveAttribute('type','range')
+ await slider.focus();await page.keyboard.press('Home');await qa(page)
+ const before=(await slider.boundingBox())!,middle=Math.floor(count/2)
+ await slider.fill(String(middle));await expect(slider).toHaveAttribute('aria-valuenow',String(middle));await qa(page)
+ expect(await page.evaluate(()=>window.__ggjavaezWorld!.scene().cursor)).toBe(middle)
+ const after=(await slider.boundingBox())!
+ expect(after.x).toBeCloseTo(before.x,4);expect(after.width).toBeCloseTo(before.width,4)
+ await page.mouse.move(after.x+after.width*.25,after.y+after.height/2);await page.mouse.down()
+ await expect(page.getByRole('region',{name:'Execution timeline'})).toHaveAttribute('data-scrubbing','true')
+ await page.mouse.move(after.x+after.width*.75,after.y+after.height/2);await page.mouse.up();await qa(page)
+ await expect(page.getByRole('region',{name:'Execution timeline'})).toHaveAttribute('data-scrubbing','false')
+ expect(Number(await slider.getAttribute('aria-valuenow'))).toBeGreaterThan(middle)
  expect(errors).toEqual([])
 })
 

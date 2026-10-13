@@ -26,7 +26,20 @@ const kinds:Partial<Record<GraphEdge['kind'],FlowKind>>={ARGUMENT_BIND:'argument
 /** Complete recorded adjacency is independent of drawable-flow filtering; all IDs are looked up explicitly. */
 export function createFlowCatalog():FlowCatalog {
  let graph:ExecutionGraph|null=null,acceptedTrace:TraceDocument|null=null,indexedEvents=0,indexedEdges=0,lastScene:SceneModel|null=null
- const resolvedCache=new WeakMap<ExecutionGraph,Map<number,{from:FlowEndpoint|null;to:FlowEndpoint|null}>>()
+ // History owns retained semantic prefixes. Derived endpoint records belong
+ // only to the currently resolved graph, rather than multiplying across every
+ // retained checkpoint/recent root after scrubbing.
+ const resolvedCache=new Map<number,{from:FlowEndpoint|null;to:FlowEndpoint|null}>()
+ let currentPrefix:{trace:TraceDocument;cursor:number;length:number;state:RuntimeState}|undefined
+ const stateAt=(cursor:number):RuntimeState|null=>{
+  if(!acceptedTrace)return null
+  const length=acceptedTrace.events.length
+  if(currentPrefix?.trace===acceptedTrace&&currentPrefix.cursor===cursor&&currentPrefix.length===length)return currentPrefix.state
+  const state=seek(acceptedTrace,cursor)
+  resolvedCache.clear()
+  currentPrefix={trace:acceptedTrace,cursor,length,state}
+  return state
+ }
  const events=new Map<string,TraceEvent>(),candidates=new Map<number,Candidate>(),byId=new Map<string,Candidate>(),byEvent=new Map<string,Candidate[]>()
  let prefixCache:{scene:SceneModel;cursor:number;indexedEdges:number;items:readonly RecordedFlow[]}|undefined
  const physical=(id:string,state:RuntimeState):FlowEndpoint|null=>{
@@ -41,7 +54,7 @@ export function createFlowCatalog():FlowCatalog {
   if(!point)return false
   if(point.kind==='io')return scene.io.some(io=>io.id===point.id)
   if(point.kind!=='slot')return !!scene.entities[point.id]
-  const storage=acceptedTrace?seek(acceptedTrace,scene.cursor).executionGraph?.storage[point.id]:null,owner=storage?scene.entities[storage.ownerId]:null
+  const storage=stateAt(scene.cursor)?.executionGraph?.storage[point.id],owner=storage?scene.entities[storage.ownerId]:null
   if(!owner)return false
   if(owner.kind==='array')return owner.cells.some(cell=>cell.slotId===point.id) // actual window attachment is checked by the planner
   if(owner.kind==='collection')return owner.entries.some((entry,index)=>(entry.slotId===point.id||entry.keySlotId===point.id)&&!!collectionEntryFace(owner.anchor,index,owner.collectionKind==='Map'))
@@ -56,10 +69,11 @@ export function createFlowCatalog():FlowCatalog {
   return{id:candidate.edge.id,edgeIndex:candidate.edgeIndex,kind:candidate.kind,from:points.from,to:points.to,evidenceEventIds:[candidate.edge.eventId],evidenceSeqs:[candidate.seq],valueText:text}
  }
  const resolve=(candidate:Candidate,cursor:number):{from:FlowEndpoint|null;to:FlowEndpoint|null}=>{
-  if(!acceptedTrace)return{from:null,to:null}
-  const state=seek(acceptedTrace,cursor),prefix=state.executionGraph,event=events.get(candidate.edge.eventId)!
+  const state=stateAt(cursor)
+  if(!state)return{from:null,to:null}
+  const prefix=state.executionGraph,event=events.get(candidate.edge.eventId)!
   if(!prefix||candidate.seq>=cursor)return{from:null,to:null}
-  const cached=resolvedCache.get(prefix)??new Map(),prior=cached.get(candidate.edgeIndex);if(prior)return prior
+  const prior=resolvedCache.get(candidate.edgeIndex);if(prior)return prior
   const edge=candidate.edge,transition=graphTransition(event,edge,state,prefix,true)
   let from=transition?.from??(edge.evidence==='unknown'?null:physical(edge.originSlotId??edge.from,state)),to=transition?.to??physical(edge.to,state)
   const consumingDestination=(valueId:string)=>{
@@ -76,7 +90,7 @@ export function createFlowCatalog():FlowCatalog {
   else if(edge.kind==='INPUT_CONSUME'){from=physical(edge.from,state);to=consumingDestination(edge.to)}
   if(from?.kind==='slot'&&from.id.startsWith('return:')){const id=from.id.slice('return:'.length),invocation=prefix.invocations[id];from=invocation?.returnValueId&&invocation.returnValueId===edge.from&&state.frames[id]?{kind:'frame',id}:null}
   if(from?.id===to?.id&&from?.kind===to?.kind)from=null
-  const result={from:from??null,to:to??null};cached.set(candidate.edgeIndex,result);resolvedCache.set(prefix,cached);return result
+  const result={from:from??null,to:to??null};resolvedCache.set(candidate.edgeIndex,result);return result
  }
  const drawable=(candidate:Candidate,scene:SceneModel)=>{const points=resolve(candidate,scene.cursor);return mapped(points.from,scene)&&mapped(points.to,scene)}
  const adjacency=(ids:ReadonlySet<string>,result:Set<number>,tail:number,cursor=Infinity)=>{

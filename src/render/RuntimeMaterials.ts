@@ -5,9 +5,20 @@ import { qualityStore, type QualityTier } from './quality/qualityStore';
 import {bodyPalette} from './quality/bodyPalette';
 import type { BodyRole } from './quality/materialTypes';
 import { applyRoundedBoxMaterial } from './geometry/roundedBox';
+import {LineMaterial} from 'three/addons/lines/LineMaterial.js';
+import {curveAlphaShaders} from './curveAlpha';
 export const unitBox = new BoxGeometry(1, 1, 1);
 export const unitEdges = new EdgesGeometry(unitBox);
 export const roleColor: Record<MaterialRole, string> = { stack: color.stack.edge, heap: color.heap.edge, class: color.class.edge, reference: color.semantic.execution, call: color.stack.edge, return: color.semantic.return, exception: color.semantic.exception, mutation: color.semantic.mutation, stdout: color.semantic.stdout, stderr: color.semantic.stderr, stdin: color.semantic.stdin };
+/** One material per mounted emphasis band, independent of its changing path
+ * geometry. The band owns disposal; shader and mask programs survive updates. */
+export function connectorMaterial(halo:boolean,widthPx:2.5|3.5):LineMaterial {
+    const material=new LineMaterial({vertexColors:true,linewidth:halo?8:widthPx,transparent:true,opacity:halo?.10:1,depthTest:true,depthWrite:false});
+    Object.assign(material,curveAlphaShaders(material.vertexShader,material.fragmentShader));
+    material.toneMapped=false;
+    material.name=`runtime:connector:${halo?'halo':widthPx}`;
+    return material;
+}
 const materials = new Map<string, MeshStandardMaterial>();
 let roundedDepth: MeshDepthMaterial | null = null;
 let roundedDistance: MeshDistanceMaterial | null = null;

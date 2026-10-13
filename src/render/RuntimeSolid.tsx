@@ -9,9 +9,10 @@ import {faceColumns,faceHeading,rowValueLabel} from './text/faceTypography';
 import {fitWorldText,textAdvance} from './text/textSystem';
 import {collectionEntryFace} from '../world/collectionFace';
 import {world} from '../theme/tokens';
+import {memo} from 'react';
 export { WorldText } from './FaceText';
 /** Face labels share the solid/row geometry model and one glyph batch. */
-export function RuntimeSolid({ node, presented, plan }: {
+export const RuntimeSolid=memo(function RuntimeSolid({ node, presented, plan }: {
     node: SceneEntity;
     presented: PresentedEntity;
     plan: PresentationPlan;
@@ -66,4 +67,7 @@ export function RuntimeSolid({ node, presented, plan }: {
       </group>;
         })}
   </group>;
-}
+},(prior,next)=>prior.node===next.node
+    &&prior.presented.mode===next.presented.mode&&prior.presented.detail===next.presented.detail
+    &&prior.presented.opacity===next.presented.opacity&&prior.presented.highlight===next.presented.highlight
+    &&(next.node.kind!=='array'||prior.plan.cellWindows.get(next.node.id)===next.plan.cellWindows.get(next.node.id)));

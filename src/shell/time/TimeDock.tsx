@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { Pause, Play, RotateCcw, SkipBack, SkipForward, Settings, Rewind } from 'lucide-react'
 import type { TraceDocument } from '../../contracts/runtime'
 import type { EmbeddedExecution } from '../runtimeContracts'
@@ -74,7 +74,10 @@ export function TimeDock({ trace, playback, execution, settings }: TimeDockProps
         Partial recording · {stopped.reason ?? stopped.state}</span>}
     </div>
     <div className="gg-time-options">
-      {caption.seq !== null && <span className="gg-time-seq" title="Normalized Event sequence">t = {caption.seq}<span className="gg-time-seq-label">Event seq</span></span>}
+      <span className="gg-time-seq" title="Normalized Event sequence" aria-hidden={caption.seq===null} data-empty={caption.seq===null}
+        style={{'--sequence-width':`${Math.max(8,String(Math.max(0,state.liveHead-1)).length+4)}ch`} as CSSProperties}>
+        {caption.seq!==null&&<>t = {caption.seq}<span className="gg-time-seq-label">Event seq</span></>}
+      </span>
       <span className="gg-time-inline-speed"><Speed playback={playback} empty={controls.empty} /></span>
       <details ref={menu} className="gg-time-settings" onKeyDown={(event) => {
         if (event.key === 'Escape') { event.preventDefault(); if (menu.current) menu.current.open = false; menuButton.current?.focus() }

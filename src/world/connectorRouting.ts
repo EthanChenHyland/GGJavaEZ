@@ -1,5 +1,15 @@
 import type { Vec3, WorldAnchor } from '../contracts/worldV2'
 
+export function curvedPath(from: Vec3, to: Vec3, left = false): Vec3[] {
+  const reach = Math.max(.6, Math.min(3, Math.abs(to[0] - from[0]) * .35 + Math.abs(to[1] - from[1]) * .1));
+  const a: Vec3 = [from[0] + (left ? -reach : reach), from[1], from[2] + .5];
+  const b: Vec3 = [to[0] - reach, to[1], to[2] + .5];
+  return Array.from({ length: 33 }, (_, i) => {
+    const t = i / 32, u = 1 - t;
+    return from.map((v, axis) => u ** 3 * v + 3 * u ** 2 * t * a[axis] + 3 * u * t ** 2 * b[axis] + t ** 3 * to[axis]) as unknown as Vec3;
+  });
+}
+
 /** Short quadratic fillets retain the exterior corridor instead of bowing a
  * cubic spline back through labels. Endpoints stay exact canonical ports. */
 export function roundedConnectorPoints(points: readonly Vec3[], radius = .025): Vec3[] {
@@ -25,21 +35,61 @@ export function roundedConnectorPoints(points: readonly Vec3[], radius = .025): 
 /** Face clearance admits only the departure and arrival inside their own
  * terminals. A path that returns through an intervening face is rejected. */
 export function connectorClearsFaces(points: readonly Vec3[], source: WorldAnchor, target: WorldAnchor, bodies: readonly WorldAnchor[]): boolean {
+  return prepareConnectorFaceClearance(bodies)(points,source,target)
+}
+
+/** Prepare represented face bounds once for all routes in one presentation cut. */
+export function prepareConnectorFaceClearance(bodies:readonly WorldAnchor[]){
   const rectangle = (body: WorldAnchor) => ({ left: body.position[0] - body.size[0] / 2 - .035, right: body.position[0] + body.size[0] / 2 + .035, bottom: body.position[1] - body.size[1] / 2 - .14, top: body.position[1] + body.size[1] / 2 + .14 })
-  const inside = (point: Vec3, body: WorldAnchor) => { const rect = rectangle(body); return point[0] > rect.left && point[0] < rect.right && point[1] > rect.bottom && point[1] < rect.top }
+  const face=(body:WorldAnchor)=>({id:body.entityId,...rectangle(body),front:body.position[2]+body.size[2]/2+.75,back:body.position[2]-body.size[2]/2-.75})
+  const faces=bodies.map(face)
+  return (points:readonly Vec3[],source:WorldAnchor,target:WorldAnchor):boolean=>{
+  if(points.length<2)return false
+  const sourceRect=face(source),targetRect=face(target)
+  const inside = (point: Vec3, rect: ReturnType<typeof face>) => point[0] > rect.left && point[0] < rect.right && point[1] > rect.bottom && point[1] < rect.top&&point[2]>=rect.back&&point[2]<=rect.front
   let departure = 1, arrival = points.length - 1
-  while (departure < points.length - 1 && inside(points[departure], source)) departure++
-  while (arrival > 1 && inside(points[arrival - 1], target)) arrival--
-  for (const body of bodies) {
-    const rect = rectangle(body)
+  while (departure < points.length - 1 && inside(points[departure], sourceRect)) departure++
+  while (arrival > 1 && inside(points[arrival - 1], targetRect)) arrival--
+  const bounds=new Float64Array(Math.max(0,points.length-1)*6)
+  for(let i=1;i<points.length;i++){
+    const a=points[i-1],b=points[i],offset=(i-1)*6
+    bounds[offset]=Math.min(a[0],b[0]);bounds[offset+1]=Math.max(a[0],b[0])
+    bounds[offset+2]=Math.min(a[1],b[1]);bounds[offset+3]=Math.max(a[1],b[1])
+    bounds[offset+4]=Math.min(a[2],b[2]);bounds[offset+5]=Math.max(a[2],b[2])
+  }
+  for (const rect of faces) {
     for (let i = 1; i < points.length; i++) {
-      if (body.entityId === source.entityId && i <= departure || body.entityId === target.entityId && i >= arrival) continue
-      const a = points[i - 1], b = points[i]
-      if (body.position[2] + body.size[2] / 2 + .75 < Math.min(a[2], b[2]) || body.position[2] - body.size[2] / 2 - .75 > Math.max(a[2], b[2])) continue
-      if (Math.min(a[0], b[0]) < rect.right && Math.max(a[0], b[0]) > rect.left && Math.min(a[1], b[1]) < rect.top && Math.max(a[1], b[1]) > rect.bottom) return false
+      const offset=(i-1)*6
+      if (rect.front < bounds[offset+4] || rect.back > bounds[offset+5]) continue
+      if(bounds[offset]>=rect.right||bounds[offset+1]<=rect.left||bounds[offset+2]>=rect.top||bounds[offset+3]<=rect.bottom)continue
+      // Clip the actual segment, not its XY bounding box. A diagonal passing
+      // above a corner must not be mistaken for a face crossing.
+      const a=points[i-1],b=points[i]
+      let enter=0,leave=1
+      const lower=[rect.left,rect.bottom,rect.back],upper=[rect.right,rect.top,rect.front]
+      for(let axis=0;axis<3&&enter<=leave;axis++){
+        const delta=b[axis]-a[axis]
+        if(Math.abs(delta)<1e-12){if(a[axis]<lower[axis]||a[axis]>upper[axis])enter=2;continue}
+        const first=(lower[axis]-a[axis])/delta,last=(upper[axis]-a[axis])/delta
+        enter=Math.max(enter,Math.min(first,last));leave=Math.min(leave,Math.max(first,last))
+      }
+      if(enter>leave)continue
+      const terminal=(point:Vec3,body:WorldAnchor,departing:boolean)=>{
+        const side=point[0]>=body.position[0]?1:-1
+        if((b[0]-a[0])*side*(departing?1:-1)<-1e-7)return false
+        for(const t of[enter,leave]){
+          const x=a[0]+(b[0]-a[0])*t,y=a[1]+(b[1]-a[1])*t
+          if((x-point[0])*side<-1e-7||Math.abs(y-point[1])>.14+1e-7)return false
+        }
+        return true
+      }
+      if(rect.id===source.entityId&&i<=departure&&terminal(points[0],source,true))continue
+      if(rect.id===target.entityId&&i>=arrival&&terminal(points.at(-1)!,target,false))continue
+      return false
     }
   }
   return true
+  }
 }
 
 /** Connect real ports through exterior side/roof channels. Geometry, IDs and

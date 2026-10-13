@@ -6,7 +6,7 @@ import { createReductionEngine } from '../runtime/engine'
 import { seek } from '../runtime'
 import { generateRawTrace } from '../testing/traceGen'
 import type { SceneModel } from '../contracts/worldV2'
-import type { TraceDocument } from '../contracts/runtime'
+import type { TraceDocument, TraceEvent } from '../contracts/runtime'
 import { createLayoutEngine } from './layoutEngine'
 import { createSceneProjector, type ProjectionContext } from './sceneProjector'
 
@@ -15,13 +15,38 @@ function context(trace: TraceDocument): ProjectionContext {
     recording: { state: 'FULL', reason: null, budget: null, lastRecordedSeq: null, executionContinued: false } }
 }
 function comparable(scene: SceneModel) { const { revision, ...semantic } = scene; void revision; return semantic }
-function generated(seed: number) {
-  const raw = generateRawTrace({ seed, rawEvents: 20, classes: 2, maxDepth: 3, callRate: .3, allocateRate: .7, provenance: seed % 2 === 0 })
+function generated(seed: number, rawEvents = 20) {
+  const raw = generateRawTrace({ seed, rawEvents, classes: 2, maxDepth: 3, callRate: .3, allocateRate: .7, provenance: seed % 2 === 0 })
   const trace=normalizeTrace(raw.rawEvents, raw.manifest, { status: 'complete', exitCode: 0, diagnostic: null }).trace
   return{...trace,events:trace.events.map((event,index)=>({...event,eventId:`opaque/${seed}/record-${index.toString(36)}`}))}
 }
 
 describe('complete prefix scene catalog', () => {
+  it('refreshes collection observation evidence even when values and change ordinals are unchanged',()=>{
+    const events:TraceEvent[]=[
+      {type:'PROGRAM_START'},
+      {type:'ENTER_METHOD',frameId:'main',callerFrameId:null,className:'Main',methodName:'main',locals:[]},
+      {type:'ALLOCATE_OBJECT',objectId:'node',displayId:1,className:'Node',fields:[]},
+      {type:'ALLOCATE_OBJECT',objectId:'list',displayId:2,className:'java.util.ArrayList',fields:[]},
+      {type:'OBJECT_OBSERVE',objectId:'list',library:{kind:'LIST',size:1,items:[{kind:'reference',objectId:'node',javaType:'Node'}]}},
+      {type:'LINE_EXECUTE',frameId:'main'},
+      {type:'OBJECT_OBSERVE',objectId:'list',library:{kind:'LIST',size:1,items:[{kind:'reference',objectId:'node',javaType:'Node'}]}},
+      {type:'LINE_EXECUTE',frameId:'main'},
+      {type:'EXIT_METHOD',frameId:'main'},
+      {type:'PROGRAM_END'},
+    ].map((event,seq)=>({...event,eventId:`opaque-observation/${seq.toString(36)}`,seq,source:event.type==='LINE_EXECUTE'?{fileId:'Main.java',line:1}:null,label:'Recorded statement',importance:'quiet'} as TraceEvent))
+    const trace:TraceDocument={schemaVersion:2,demoId:'reobserved-collection',sourceFiles:[{fileId:'Main.java',name:'Main.java',content:'class Main {}'}],events},layout=createLayoutEngine();layout.append(events)
+    const incremental=createSceneProjector(trace),rebuilt=createSceneProjector(trace)
+    let from=5,scene=incremental.project(seek(trace,from),layout.state,context(trace))
+    const first=scene.references.find(ref=>ref.sourceId==='list')!
+    expect(first.evidence).toMatchObject({introducedSeq:null,changedSeq:null,eventIds:[events[4].eventId]})
+    for(const cursor of[7,10,0,5,10]){
+      scene=incremental.advance(seek(trace,cursor),layout.state,events,from,cursor,context(trace));from=cursor
+      expect(comparable(scene)).toEqual(comparable(rebuilt.project(seek(trace,cursor),layout.state,context(trace))))
+      if(cursor>=7)expect(scene.references.find(ref=>ref.sourceId==='list')!.evidence.eventIds).toEqual([events[6].eventId])
+    }
+    expect(first.evidence.eventIds).toEqual([events[4].eventId])
+  })
   it('shows the recorded receiver, reference and age mutation without changing runtime truth', () => {
     const trace = loadPersonTrace(), layout = createLayoutEngine(); layout.append(trace.events)
     const projector = createSceneProjector(trace)
@@ -65,6 +90,20 @@ describe('complete prefix scene catalog', () => {
       }
     }), { numRuns: 100 })
   })
+  it('long forward jumps, single steps and reverse replay equal full prefix reconstruction (100 runs)',()=>{
+    fc.assert(fc.property(fc.integer({min:1,max:100000}),seed=>{
+      const trace=generated(seed,1000),layout=createLayoutEngine();layout.append(trace.events)
+      const incremental=createSceneProjector(trace),rebuilt=createSceneProjector(trace),head=trace.events.length
+      incremental.project(seek(trace,0),layout.state,context(trace))
+      let from=0
+      for(const to of[Math.floor(head*.7),Math.floor(head*.7)+1,Math.floor(head*.2),head,0,1,head]){
+        const state=seek(trace,to),scene=incremental.advance(state,layout.state,trace.events,from,to,context(trace))
+        expect(comparable(scene)).toEqual(comparable(rebuilt.project(state,layout.state,context(trace))))
+        for(const node of Object.values(scene.entities))expect(node.anchor).toBe(layout.state.anchors[node.id])
+        from=to
+      }
+    }),{numRuns:100,endOnFailure:true})
+  },60000)
   it('Property 27: opaque event identity remains evidence and append never exposes future entities (100 runs)', () => {
     fc.assert(fc.property(fc.integer({ min: 1, max: 100000 }), seed => {
       const trace = generated(seed), layout = createLayoutEngine(); layout.append(trace.events)

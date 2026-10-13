@@ -16,6 +16,7 @@ import { seek } from '../runtime';
 import { createLayoutEngine } from '../world/layoutEngine';
 import { createSceneProjector } from '../world/sceneProjector';
 import { planPresentation } from '../world/presentationPlanner';
+import {createConnectorRouter} from '../world/connectorRouter';
 import { focusSourceLocation, sourceLocationFor } from './source/sourceSync';
 import {useQualityStore} from '../render/quality/qualityStore';
 import { shellStore } from '../workspace/shellStore';
@@ -42,12 +43,12 @@ export function WorldSurface({ trace, onSourceChange, onRuntimeChange, navigatio
     const inspectorSelection=selection??(focus?{kind:focus.kind==='arrayCell'?'slot':focus.kind==='cluster'?'cluster':focus.kind,id:focus.targetId} as NonNullable<Selection>:null);
     useEffect(()=>{if(inspectorSelection)shellStore.setState({inspectorHidden:false})},[inspectorSelection?.id]);
     const detail = useCameraStore(state => state.detailLevel);
-    const cameraIntent = useCameraStore(state => state.intent);
+    const cameraIntent = useCameraStore(state => state.intent?.kind==='cluster'?state.intent:undefined);
     const motionPreference=useQualityStore(state=>state.reducedMotion),quality=useQualityStore(state=>state.setting),cinematic=useQualityStore(state=>state.cinematicAvailable),qualityNotice=useQualityStore(state=>state.notice);
     const reducedMotion=motionPreference.os||motionPreference.inApp;
     useEffect(()=>{useCameraStore.getState().setReducedMotion(reducedMotion)},[reducedMotion]);
     useEffect(()=>{useQualityStore.getState().setActivity({scrubbing:playback.state.scrubbing,liveTrailing:playback.state.lens==='LIVE'&&execution?.phase==='RUNNING'})},[playback.state.scrubbing,playback.state.lens,execution?.phase]);
-    const compiler = useMemo(() => ({ layout: createLayoutEngine(), projector: createSceneProjector(trace), flows: createFlowCatalog(), previous: null as SceneModel | null, previousPlan: null as PresentationPlan | null, windows: new Map<string,ArrayWindow>() }), [trace.demoId]);
+    const compiler = useMemo(() => ({ layout: createLayoutEngine(), projector: createSceneProjector(trace), flows: createFlowCatalog(), router:createConnectorRouter(), previous: null as SceneModel | null, previousPlan: null as PresentationPlan | null, windows: new Map<string,ArrayWindow>() }), [trace.demoId]);
     const layout = useMemo(() => { compiler.layout.append(trace.events); return compiler.layout.state; }, [compiler, trace.events, trace.events.length]);
     const flows = useMemo(() => { const graph = seek(trace, liveCursor).executionGraph; if (graph) compiler.flows.extend(graph, trace); return graph ? compiler.flows : undefined; }, [compiler, trace, liveCursor]);
     const ended = execution ? ['COMPLETED', 'FAILED', 'STOPPED'].includes(execution.phase) : trace.events.length > 0;
@@ -68,7 +69,7 @@ export function WorldSurface({ trace, onSourceChange, onRuntimeChange, navigatio
     const plan = useMemo(() => {
         const previous=compiler.previousPlan?{...compiler.previousPlan,cellWindows:compiler.windows}:undefined;
         const clusterTravelMemberId=cameraIntent?.kind==='cluster'&&cameraIntent.recordingId===scene.recordingId&&cameraIntent.cursor===scene.cursor?cameraIntent.memberId:undefined;
-        const next=planPresentation({ scene, flows, layout, detailLevel: detail, selection, focusTargetId: focus?.targetId ?? null, clusterTravelMemberId, trace: traceState },previous);
+        const next=planPresentation({ scene, flows, router:compiler.router, layout, detailLevel: detail, selection, focusTargetId: focus?.targetId ?? null, clusterTravelMemberId, trace: traceState },previous);
         compiler.previousPlan=next;
         for(const[id,window]of next.cellWindows)compiler.windows.set(id,window);
         return next;

@@ -3,10 +3,8 @@ import { useThree } from '@react-three/fiber';
 import { Color, InstancedBufferAttribute, InstancedMesh, Object3D, Vector3 } from 'three';
 import { LineSegments2 } from 'three/addons/lines/LineSegments2.js';
 import { LineSegmentsGeometry } from 'three/addons/lines/LineSegmentsGeometry.js';
-import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
 import type { PresentedCurve } from '../contracts/worldV2';
-import { roleColor } from './RuntimeMaterials';
-import { curveAlphaShaders } from './curveAlpha';
+import { connectorMaterial,roleColor } from './RuntimeMaterials';
 import {instanceAlphaMaterial} from './instanceAlpha';
 function Curves({ curves, halo, onSelect }: {
     curves: readonly PresentedCurve[];
@@ -14,6 +12,9 @@ function Curves({ curves, halo, onSelect }: {
     onSelect(id: string): void;
 }) {
     const { size } = useThree();
+    const widthPx=halo?2.5:curves[0].widthPx;
+    const material=useMemo(()=>connectorMaterial(halo,widthPx),[halo,widthPx]);
+    useEffect(()=>()=>material.dispose(),[material]);
     const data = useMemo(() => {
         const positions: number[] = [], colors: number[] = [], opacity: number[] = [], ids: string[] = [], color = new Color();
         for (const curve of curves) {
@@ -28,17 +29,14 @@ function Curves({ curves, halo, onSelect }: {
         geometry.setPositions(positions);
         geometry.setColors(colors);
         geometry.setAttribute('instanceCurveOpacity',new InstancedBufferAttribute(new Float32Array(opacity),1));
-        const material = new LineMaterial({ vertexColors: true, linewidth: halo ? 8 : curves[0].widthPx, transparent: true, opacity: halo ? .10 : 1, depthTest: true, depthWrite: false });
-        Object.assign(material,curveAlphaShaders(material.vertexShader,material.fragmentShader));
-        material.toneMapped = false;
         const line = new LineSegments2(geometry, material);
         line.computeLineDistances();
         line.frustumCulled = false;
         line.userData.runtimeBloomRole = 'emitter';
         return { line, ids, geometry, material };
-    }, [curves, halo]);
+    }, [curves, material]);
     useLayoutEffect(() => { data.material.resolution.set(size.width, size.height); }, [data, size.width, size.height]);
-    useEffect(() => () => { data.geometry.dispose(); data.material.dispose(); }, [data]);
+    useEffect(() => () => data.geometry.dispose(), [data]);
     return <primitive object={data.line} onClick={halo ? undefined : (event: {
         faceIndex?: number | null;
         stopPropagation(): void;

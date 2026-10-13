@@ -1,9 +1,33 @@
 import { describe, expect, it } from 'vitest'
 import fc from 'fast-check'
 import type { Vec3, WorldAnchor } from '../contracts/world'
-import { roundedConnectorPoints, surfaceConnectorPoints } from './connectorRouting'
+import { connectorClearsFaces, curvedPath, roundedConnectorPoints, surfaceConnectorPoints } from './connectorRouting'
 const anchor = (id: string, position: Vec3): WorldAnchor => ({entityId:id,position,size:[4,3,1.7],region:'heap',ports:{},bodyPort:position})
 describe('exterior connector routes', () => {
+  it('rejects opposite-side arrival through a target face and preserves its real row port on the exterior route',()=>{
+    const source=anchor('source',[-8,0,0]),target=anchor('target',[8,0,0]),bodies=[source,target]
+    const from:Vec3=[-6.16,-.4,.905],to:Vec3=[9.84,.3,.905]
+    expect(connectorClearsFaces(curvedPath(from,to),source,target,bodies)).toBe(false)
+    const route=roundedConnectorPoints(surfaceConnectorPoints(from,to,source,target,bodies))
+    expect(route[0]).toEqual(from);expect(route.at(-1)).toEqual(to)
+    expect(connectorClearsFaces(route,source,target,bodies)).toBe(true)
+  })
+  it('rejects wrong-side departure, row wandering and later re-entry into a source face',()=>{
+    const source=anchor('source',[0,0,0]),target=anchor('target',[8,0,0]),bodies=[source,target]
+    const from:Vec3=[1.84,0,.905],to:Vec3=[6.16,0,.905]
+    expect(connectorClearsFaces([from,[-2.5,0,.905],[5.5,2,.905],to],source,target,bodies)).toBe(false)
+    expect(connectorClearsFaces([from,[1.9,.6,.905],[2.5,.6,.905],to],source,target,bodies)).toBe(false)
+    expect(connectorClearsFaces([from,[2.5,0,.905],[0,0,.905],[5.5,2,.905],to],source,target,bodies)).toBe(false)
+  })
+  it('uses actual clipped geometry for diagonal corner clearance and keeps self-reference terminals bounded',()=>{
+    const source=anchor('source',[-8,0,0]),target=anchor('target',[8,0,0]),blocker=anchor('blocker',[0,0,0])
+    const above:Vec3[]=[[-6,0,.905],[-3,2,.905],[0,4,.905],[5.5,4,.905],[5.5,0,.905],[6,0,.905]]
+    expect(connectorClearsFaces(above,source,target,[source,target,blocker])).toBe(true)
+    const from:Vec3=[-6.16,-.5,.905],to:Vec3=[-6.16,.5,.905]
+    const self=roundedConnectorPoints(surfaceConnectorPoints(from,to,source,source,[source]))
+    expect(connectorClearsFaces(self,source,source,[source])).toBe(true)
+    expect(connectorClearsFaces([from,[-10.5,-.5,.905],[-10.5,.5,.905],to],source,source,[source])).toBe(false)
+  })
   it('keeps rounded routes outside represented information faces without moving canonical ports (100 runs)', () => {
     fc.assert(fc.property(fc.integer({ min: -8, max: 8 }), fc.integer({ min: -8, max: 8 }), fc.integer({ min: -6, max: 6 }), (sourceY, targetY, obstacleY) => {
       const source = anchor('source', [-8, sourceY, 0]), target = anchor('target', [8, targetY, 0]), obstruction = anchor('obstruction', [0, obstacleY, 0])

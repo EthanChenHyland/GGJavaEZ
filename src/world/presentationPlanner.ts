@@ -5,7 +5,8 @@ import { budgets, world } from '../theme/tokens';
 import { computeArrayWindow, type ArrayWindow } from './arrayWindow';
 import type { FlowCatalog, RecordedFlow } from './flowCatalog';
 import { arrayCellTarget } from './arrayCellTarget';
-import { connectorClearsFaces, roundedConnectorPoints, surfaceConnectorPoints } from './connectorRouting';
+import {createConnectorRouter,type ConnectorRouter} from './connectorRouter';
+export {curvedPath} from './connectorRouting';
 import {presentationClusters} from './presentationClusters';
 import {recordedOwnership} from './recordedOwnership';
 import {faceRows} from './faceRows';
@@ -15,6 +16,7 @@ import {buildFlowTopology} from './flowTopology';
 export interface PlanInput {
     scene: SceneModel;
     flows?: FlowCatalog;
+    router?: ConnectorRouter;
     layout: LayoutState;
     detailLevel: DetailLevel;
     selection: Selection;
@@ -27,15 +29,6 @@ export interface PlanInput {
 }
 export function anchorCorners(anchor: WorldAnchor): Vec3[] {
     return [-1, 1].flatMap(x => [-1, 1].flatMap(y => [-1, 1].map(z => [anchor.position[0] + x * anchor.size[0] / 2, anchor.position[1] + y * anchor.size[1] / 2, anchor.position[2] + z * anchor.size[2] / 2] as Vec3)));
-}
-export function curvedPath(from: Vec3, to: Vec3, left = false): Vec3[] {
-    const reach = Math.max(.6, Math.min(3, Math.abs(to[0] - from[0]) * .35 + Math.abs(to[1] - from[1]) * .1));
-    const a: Vec3 = [from[0] + (left ? -reach : reach), from[1], from[2] + .5];
-    const b: Vec3 = [to[0] - reach, to[1], to[2] + .5];
-    return Array.from({ length: 33 }, (_, i) => {
-        const t = i / 32, u = 1 - t;
-        return from.map((v, axis) => u ** 3 * v + 3 * u ** 2 * t * a[axis] + 3 * u * t ** 2 * b[axis] + t ** 3 * to[axis]) as unknown as Vec3;
-    });
 }
 const category = (node: SceneEntity): 'frames' | 'objects' | 'classes' => node.kind === 'frame' ? 'frames' : node.kind === 'class' ? 'classes' : 'objects';
 const rowIds = (node: SceneEntity): readonly string[] => node.kind === 'frame' || node.kind === 'class' ? node.rows.map(r => r.slotId) : node.kind === 'object' ? node.groups.flatMap(g => g.rows.map(r => r.slotId)) : node.kind === 'array' ? node.cells.map(c => c.slotId) : node.entries.flatMap(e => e.keySlotId ? [e.slotId, e.keySlotId] : [e.slotId]);
@@ -184,21 +177,7 @@ export function planPresentation(input: PlanInput, previous?: PresentationPlan):
     const cellAnchors = new Map([...cellWindows.values()].flatMap(window => [...window.mapping].map(([id, cell]) => [id, cell.anchor] as const)));
     const routeBodies = [...bodyAnchors.values(), ...cellAnchors.values(), ...scene.io.map(io => io.anchor), ...clusters.map(cluster => cluster.anchor),...(exceptionPanel?[exceptionPanelAnchor(exceptionPanel,scene.recording)]:[])];
     const portAnchor = (id: string, slot?: string) => slot && scene.entities[id]?.kind === 'array' ? cellAnchors.get(slot) : bodyAnchors.get(id);
-    const routes = new Map<string, Vec3[]>();
-    const route = (from: Vec3, to: Vec3, source?: WorldAnchor, target?: WorldAnchor, left = false) => {
-      const key = `${from.join(',')}/${to.join(',')}/${source?.entityId}/${target?.entityId}/${left}`, cached = routes.get(key);
-      if (cached) return cached;
-      let points = curvedPath(from, to, left);
-      if (source && target && !connectorClearsFaces(points, source, target, routeBodies)) {
-        const corridor = surfaceConnectorPoints(from, to, source, target, routeBodies);
-        points = roundedConnectorPoints(corridor);
-        for (const radius of [.35, .18, .08]) {
-          const rounded = roundedConnectorPoints(corridor, radius);
-          if (connectorClearsFaces(rounded, source, target, routeBodies)) { points = rounded; break; }
-        }
-      }
-      routes.set(key, points); return points;
-    };
+    const route = (input.router??createConnectorRouter()).forBodies(routeBodies);
     const relevantEntities=new Set([selected,focused,...(scene.cursorEvent?.subjects??[]).map(owner)].filter((id):id is string=>!!id));
     const traceParticipants=new Set<string>();
     const participate=(...ids:(string|undefined)[])=>{for(const id of ids){const resolved=owner(id);if(resolved)traceParticipants.add(resolved)}};

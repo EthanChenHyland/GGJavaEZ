@@ -42,3 +42,24 @@ it('flow queries are bounded, current-only evidence is exact and bundle counts s
   if(!cursor){expect(flows).toEqual([]);expect(catalog.atEvent(cursor,scene)).toEqual([]);expect(total).toBe(0)}
  }),{numRuns:100})
 })
+it('append and replay keep complete flows, drawable endpoints and bundle membership equal to a fresh prefix (100 runs)',()=>{
+ fc.assert(fc.property(fc.integer({min:1,max:100000}),seed=>{
+  const raw=generateRawTrace({seed,rawEvents:80,maxDepth:4,classes:3,callRate:.4,allocateRate:.7,provenance:true})
+  const full=normalizeTrace(raw.rawEvents,raw.manifest,{status:'complete',exitCode:0,diagnostic:null}).trace
+  const layout=createLayoutEngine();layout.append(full.events)
+  const catalog=createFlowCatalog()
+  for(const length of[Math.floor(full.events.length/2),full.events.length]){
+   const accepted={...full,events:full.events.slice(0,length)},graph=seek(accepted,length).executionGraph!
+   catalog.extend(graph,accepted)
+   const projector=createSceneProjector(accepted)
+   for(const cursor of[length,Math.floor(length/2),0,length]){
+    const scene=projector.project(seek(accepted,cursor),layout.state,{liveHead:length,sessionEnded:false,pausedAtLiveHead:false,recording:{state:'FULL',reason:null,budget:null,lastRecordedSeq:null,executionContinued:false}})
+    const fresh=createFlowCatalog();fresh.extend(graph,accepted)
+    const query={cursor,scene,priority:{selectedIds:new Set<string>(),focusedIds:new Set<string>(),currentIds:new Set(scene.cursorEvent?.subjects??[])},limit:40}
+    expect(catalog.prefix(cursor,scene)).toEqual(fresh.prefix(cursor,scene))
+    expect(catalog.query(query)).toEqual(fresh.query(query))
+    expect(catalog.bundles({cursor,scene,exclude:new Set()})).toEqual(fresh.bundles({cursor,scene,exclude:new Set()}))
+   }
+  }
+ }),{numRuns:100})
+})
