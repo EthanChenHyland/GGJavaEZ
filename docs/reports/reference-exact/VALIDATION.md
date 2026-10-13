@@ -1082,3 +1082,68 @@ indexed aggregation, full hierarchy, sustained GPU/browser performance,
 formal 80/96 comparison, independent acceptance/torture, remaining visual/IDE
 cleanup and final A–G approval remain open. Main, best.png and protected user
 reference assets remain unchanged.
+
+## Whole-frame instrumentation and measured CPU diagnostics — 2026-10-12
+
+Selected Flow details now show the accepted normalized event sequence from
+the complete provenance record, with no event-ID parsing. Both actual JVM
+desktop/narrow native bundle, constituent and replay cases pass in 24.2 seconds.
+
+A guarded, read-only frame probe records one actual full-render submission,
+draw calls, renderer resources and bounded asynchronous GPU results. The lead
+found Floor rendered reflection/contact before the composer's callback;
+those auxiliary passes now execute immediately before the composer under the
+same owner and timing boundary. This preserves render order and resource/data
+contracts while including their CPU/GPU work. Ordinary visits return no probe;
+only DEV/VITE_QA plus `perf=1` creates one. No frame requests, synchronous GPU
+waits or camera/runtime mutation access are added. The 16,384-sample ring and
+eight-query limit expose drops, pending work, disjoint results and omissions.
+
+The focused probe/registry suite passes 18 cases in 158 ms. Strict application
+and reference TypeScript, lint and production build pass. AppRoot is
+1,148.41 kB / 351.13 kB gzip; separate Monaco/Cinematic chunks and the existing
+chunk warning remain. The complete default suite passes 1,968 tests with 70
+opt-in skips (2,038 total; 201 files) in 161.14 seconds. Native probe, real
+quality and graphics/context recovery checks pass six cases in 21.9 seconds.
+The first new probe smoke failed before measurement by calling readiness before
+the actual QA bridge mounted; the test now waits for that lifecycle at both
+navigations. No metrics or thresholds were relaxed. The full 69-case browser
+gate after this render-owner change remains to be run.
+
+Actual native Person orbit evidence captures 103 INTERACTIVE submissions with
+103 resolved GPU results. Cinematic captures 114 submissions with 113 resolved
+and one pending; final INTERACTIVE has 118/117. There are no drops, lifecycle
+issues or omission reasons. Actual settled full-frame calls are 72/103 for
+INTERACTIVE/Cinematic. This short smoke is not Dense_Sample or sustained
+30/60-second performance approval. The old Dense_Sample session is unavailable
+after backend restart; a fresh ordinary Topology JVM run and modern browser
+harness are required, not manufactured replay data.
+
+The new modern CPU harness calls actual layout, projector, Flow and planner
+APIs, with validated generated data and 100 distinct spread seeks per corpus.
+The 200/5,000/20,000 raw targets yield 208/5,024/20,018 raw records and
+367/8,875/35,346 normalized events. Initial fixed-order update ratios fail at
+4.280 and 2.187; adding only heap diagnostics yields 1.501. No production
+update code changed. Constructing both worlds before measurement and
+counterbalancing their update order yields 1.123 against the same 2x guard,
+with all 100 samples and identity assertions intact. Earlier failures remain
+saved; this does not establish a repaired production bottleneck.
+
+Every run fails generated retained-presentation memory checks. Counterbalanced
+ratios are 1.638/0.721/0.645 against 0.25. The attribution run's largest corpus
+retains 52.79 MiB semantic state and adds approximately 4.2 MiB layout,
+10.7 MiB projector indexes, 5.9 MiB scene, 5.6 MiB Flow indexes and 7.4 MiB
+plans/resolved flows. Forced-GC heap deltas are estimates with documented
+boundaries. The opt-in test exits 1; no memory budget is waived. These generated
+results do not substitute for the actual Dense_Sample retention gate. Further
+heap/replay diagnostics, cache/index optimization, sustained native browser
+work, hierarchy, formal reference convergence, independent acceptance/torture
+and final A–G approval remain open.
+
+The opt-in heap/replay diagnostic completed with the same memory failures:
+ratios 1.602/0.714/0.641 and update ratio 1.061. Its pre-seek V8 snapshot is
+400,253,908 bytes. Forced-GC retention after 100 seeks adds
+8,180,408/33,824,024/109,549,592 bytes; this includes semantic checkpoint/recent
+changes, derived caches and measurement arrays, not isolated presentation
+bytes. The saved diagnostic motivates cache-lifetime analysis; it supplies
+neither a budget waiver nor a completed optimization claim.

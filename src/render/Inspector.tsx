@@ -22,6 +22,7 @@ export function Inspector({selection,scene,runtime,flows,plan,onClose,onFocus,on
  const rows=useMemo(()=>node?inspectorRows(node):null,[node])
  const flow=useMemo(()=>selection?.kind==='flow'?runtime.executionGraph?.edges.find(edge=>edge.id===selection.id):undefined,[selection,runtime.executionGraph])
  const provenance=useMemo(()=>inspectorProvenance(flows,selection,node,scene.cursor,flow),[flows,selection,node,scene.cursor,flow])
+ const flowEvidence=flow?provenance.find(item=>item.edgeId===flow.id):undefined
  const referenceMap=useMemo(()=>new Map([...scene.references,...scene.historicalBindings.map(historicalSceneReference)].map(ref=>[ref.id,ref])),[scene.references,scene.historicalBindings])
  useEffect(()=>{setExpanded(null);setCopyMessage('')},[selection?.id])
  useEffect(()=>{setExpanded(null);setCopyMessage('')},[scene.cursor])
@@ -45,7 +46,7 @@ export function Inspector({selection,scene,runtime,flows,plan,onClose,onFocus,on
   {reference&&<p className="gg-inspector-id">Recorded reference · {reference.sourceSlotId} → {reference.targetId}</p>}
   {historicalBinding&&<p className="gg-inspector-id">Historical binding · introduced at Event {historicalBinding.introducedSeq} · {historicalBinding.endKind} at Event {historicalBinding.endSeq}</p>}
   {unavailableReference&&<p>{unavailableReference.reason}</p>}
-  {flow&&<details open><summary>Recorded flow</summary><p className="gg-inspector-id">{flow.from} → {flow.to}</p><p>{flow.evidence} · {flow.eventId}</p>{!plan.curves.some(curve=>curve.id===flow.id)&&<p>Recorded evidence has no presented semantic ports at this point in time.</p>}</details>}
+  {flow&&<details open><summary>Recorded flow</summary><p className="gg-inspector-id">{flow.from} → {flow.to}</p><p>{flow.evidence}{flowEvidence&&` · Event ${flowEvidence.evidence.introducedSeq}`} · {flow.eventId}</p>{!plan.curves.some(curve=>curve.id===flow.id)&&<p>Recorded evidence has no presented semantic ports at this point in time.</p>}</details>}
   {bundle&&<><p className="gg-inspector-id">{bundle.from} → {bundle.to}</p><p>This line groups recorded {bundle.kind==='flow'?'flows':bundle.kind==='binding-history'?'historical bindings':'references'} between these bodies or clusters.</p></>}
   {bundle&&bundle.kind!=='flow'&&<VirtualList key={bundle.id} className="inspector-values inspector-members" count={bundleReferences.length} rowHeight={76} label="Bundle references">{index=>{
     const ref=bundleReferences[index];return <button className="inspector-member inspector-reference-member" title={`${ref.sourceSlotId} → ${ref.targetId}`} aria-label={`Inspect recorded reference ${ref.id}`} onClick={()=>onSelectEntity({kind:'reference',id:ref.id})}><span>{ref.sourceSlotId}<small>→ {ref.targetId}</small><small>{ref.role}{ref.overlay?` · ${ref.overlay}`:''}</small></span></button>;

@@ -21,7 +21,7 @@ import { useQualityStore } from './quality/qualityStore';
 import {MotionLayer,motionReadiness} from './MotionLayer';
 import type {TraceDocument} from '../contracts/runtime';
 import type {TimelineStore} from '../timeline/timelineStore';
-import {PostPipeline,postReadiness} from './post/PostPipeline';
+import {PostPipeline,postReadiness,postPerformance} from './post/PostPipeline';
 import {Floor} from './Floor';
 import {supportsRuntimeWebGL,graphicsRecovery} from './graphicsRecovery';
 import {ExceptionPanel} from './ExceptionPanel';
@@ -105,6 +105,7 @@ function Metrics({ scene, plan, selection,trace }: {
                 },
                 renderer: () => ({ calls: gl.info.render.calls, triangles: gl.info.render.triangles, geometries: gl.info.memory.geometries, textures: gl.info.memory.textures, frame: gl.info.render.frame }),
                 effects:()=>({...postReadiness}),
+                framePerformance:()=>postPerformance?.snapshot()??null,
                 quality:()=>{const state=useQualityStore.getState();return{setting:state.setting,active:state.active,compiled:state.compiled,cinematicStatus:state.cinematicStatus,availability:state.cinematicAvailable,capabilities:state.capabilities,contextLost:state.contextLost,notice:state.notice}},
                 ready:()=>new Promise<void>((resolve,reject)=>{
                     const started=performance.now();let eligibleFrame:number|null=null,stableKey='';

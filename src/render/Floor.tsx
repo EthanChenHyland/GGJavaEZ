@@ -1,12 +1,13 @@
 import { useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 import { Grid } from '@react-three/drei'
-import {useFrame,useThree} from '@react-three/fiber'
+import {useThree} from '@react-three/fiber'
 import {createFloorReflection} from './floorReflection'
 import {createFloorContact} from './floorContact'
 import { Color, Group, Mesh, InstancedBufferAttribute, InstancedMesh, MeshBasicMaterial, Object3D } from 'three'
 import type { LayoutState, PresentationPlan, SceneModel } from '../contracts/worldV2'
 import {useQualityStore,type QualityTier} from './quality/qualityStore'
 import { contactFootprints, floorModel, floorStyle, type ContactFootprint } from './floorModel'
+import {registerAuxiliaryPass} from './post/auxiliaryPasses'
 
 function ContactBlobs({ footprints }: { footprints: ContactFootprint[] }) {
   const mesh = useRef<InstancedMesh>(null)
@@ -48,12 +49,12 @@ export function Floor({ layout, plan, scene, quality }: { layout: LayoutState; p
   const captured=useRef('')
   useEffect(()=>()=>reflection?.dispose(),[reflection])
   useEffect(()=>{captured.current='';return()=>contact?.dispose()},[contact])
-  useFrame(()=>{
+  useLayoutEffect(()=>registerAuxiliaryPass(gl,'floor',()=>{
     if(!group.current||!surface.current||!reflection)return
     const key=`${scene.recordingId}:${plan.revision}`
     if(contact&&key!==captured.current){contact.render(world,group.current);captured.current=key}
     reflection.render(world,camera,surface.current,group.current)
-  },.5)
+  }),[gl,world,camera,reflection,contact,scene.recordingId,plan.revision])
   if(!reflection)return null
   return <group ref={group}>
     <mesh ref={surface} rotation={[-Math.PI/2,0,0]} position={[...floor.position]} material={reflection.material} dispose={null}

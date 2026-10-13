@@ -100,7 +100,9 @@ for(const viewport of [{width:1440,height:900},{width:760,height:900}])test(`act
  await expect(inspector).toContainText(`${flowBundle.count} recorded flows`);expect(await inspector.locator('*').count()).toBeLessThanOrEqual(200)
  await inspector.getByRole('list',{name:'Bundle flows'}).getByRole('button').first().click();await ready(page)
  const flowConstituent=await page.evaluate(()=>window.__ggjavaezQA!.selection());expect(flowConstituent?.kind).toBe('flow');expect(flowBundle.flowIds).toContain(flowConstituent?.id)
- await expect(inspector).toContainText('Recorded graph edge');await partition(page,traceOracle)
+ const selectedGraphEdge=seek(traceOracle,all.cursor).executionGraph!.edges.find(edge=>edge.id===flowConstituent?.id)!
+ const flowEvent=traceOracle.events.find(event=>event.eventId===selectedGraphEdge.eventId)!
+ await expect(inspector).toContainText('Recorded graph edge');await expect(inspector).toContainText(`Event ${flowEvent.seq} · ${flowEvent.eventId}`);await partition(page,traceOracle)
  expect(await facts()).toEqual(before);expect(await page.evaluate(()=>window.__ggjavaezQA!.cameraPose())).toEqual(pose)
  await page.screenshot({path:`.ggjavaez/qa/reference-exact/flow-constituent-${viewport.width}x${viewport.height}.png`})
  const binding=all.bindings.find(binding=>binding.id===picked)!

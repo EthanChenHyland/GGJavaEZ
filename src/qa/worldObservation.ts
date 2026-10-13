@@ -14,6 +14,7 @@ export interface WorldObservation {
   projectedPoint(id: string): { x:number; y:number; visible:boolean } | null
   renderer(): {calls:number;triangles:number;geometries:number;textures:number;frame:number}
   effects():{ready:boolean;frames:number;revision:number;failure:string;cinematic:boolean}
+  framePerformance():import('./framePerformance').FramePerformanceObservation|null
   quality():{setting:string;active:string;compiled:boolean;cinematicStatus:string;availability:{enabled:true}|{enabled:false;reason:string};capabilities:import('../render/quality/gpuCapabilities').GpuCapabilities|null;contextLost:boolean;notice:string|null}
   ready(): Promise<void>
 }
