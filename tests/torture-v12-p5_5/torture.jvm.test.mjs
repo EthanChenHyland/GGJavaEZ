@@ -5,9 +5,7 @@ import { expect, test, describe } from 'vitest';
 import { recordProject } from '../coverage-v12-p4/runner.mjs';
 import { assertArchiveAndReplay } from '../coverage-v12-p4/replay.mjs';
 import { beginProbe, finishProbe, writeCaseEvidence } from '../coverage-v12-p4/evidence.mjs';
-import { createLayout } from '../../src/world/layout.ts';
-import { buildSceneModel } from '../../src/world/sceneModel.ts';
-import { seek } from '../../src/runtime/seek.ts';
+import { projectTrace } from '../../src/testing/projectTrace.ts';
 
 const root = 'fixtures/torture-v12-p5_5';
 const enabled = process.env.VJ_PHASE5_5_JVM === '1' && process.env.VJ_PHASE4_JVM === '1';
@@ -42,10 +40,11 @@ describe.skipIf(!enabled)('Phase 5.5 fresh torture projects — one serialized J
       expect(Object.keys(state.frames).length).toBeGreaterThan(0);
       expect(run.batches.at(-1).to).toBe(run.rawEvents.length);
       await assertArchiveAndReplay(run);
-      const layout = createLayout(trace), scene = buildSceneModel(state, layout, 'micro');
+      const projection = projectTrace(trace, { sessionEnded: ['exited', 'failed', 'stopped'].includes(snapshot.status), recording: snapshot.recording });
+      const layout = projection.layout, scene = projection.project(trace.events.length);
       const before = JSON.stringify(layout.anchors);
       for (const cursor of [1, Math.floor(trace.events.length / 2), trace.events.length, 0]) {
-        buildSceneModel(seek(trace, cursor), layout, 'macro');
+        projection.project(cursor);
         expect(JSON.stringify(layout.anchors)).toBe(before);
       }
       if (name.startsWith('01')) {
@@ -64,12 +63,12 @@ describe.skipIf(!enabled)('Phase 5.5 fresh torture projects — one serialized J
       }
       if (name.startsWith('07')) {
         expect(snapshot.recording.state).toBe('FULL');
-        expect(scene.frames.length).toBeGreaterThanOrEqual(160);
-        expect(Math.max(...scene.frames.map(frame => frame.depth))).toBeGreaterThanOrEqual(70);
+        expect(scene.order.frames.length).toBeGreaterThanOrEqual(160);
+        expect(Math.max(...scene.order.frames.map(id => scene.entities[id].depth))).toBeGreaterThanOrEqual(70);
       }
       if (name.startsWith('08')) {
         expect(snapshot.recording.state).toBe('FULL');
-        expect(scene.classes.length).toBeGreaterThanOrEqual(24);
+        expect(scene.order.classes.length).toBeGreaterThanOrEqual(24);
       }
       const probe = finishProbe(run, baseline);
       await writeCaseEvidence({ name, spec, run, accepted: true, probe });
@@ -79,7 +78,7 @@ describe.skipIf(!enabled)('Phase 5.5 fresh torture projects — one serialized J
         await writeFile(join(output, `${name}.json`), JSON.stringify({ name, recording: snapshot.recording,
           exitCode: snapshot.exitCode, stdoutBytes: Buffer.byteLength(snapshot.stdout), stderrBytes: Buffer.byteLength(snapshot.stderr),
           stdoutSha256: digest(snapshot.stdout), stderrSha256: digest(snapshot.stderr), rawEvents: run.rawEvents.length,
-          semanticEvents: trace.events.length, frames: scene.frames.length, objects: scene.objects.length,
+          semanticEvents: trace.events.length, frames: scene.order.frames.length, objects: scene.order.objects.length,
           references: scene.references.length, anchors: Object.keys(layout.anchors).length,
           timings: run.timings, probe, jdkVersion: run.jdk.version, status: state.status }, null, 2) + '\n');
       }

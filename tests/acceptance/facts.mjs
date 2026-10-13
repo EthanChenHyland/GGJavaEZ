@@ -41,7 +41,7 @@ export const evaluators = {
       detail: `recording ${JSON.stringify(recording)}, visual end ${end?.type}/${run.final.status}` };
   },
   validWorld: (run) => {
-    const frames = run.scene.frames.length, total = Object.keys(run.final.frames).length;
+    const frames = run.scene.order.frames.length, total = Object.keys(run.final.frames).length;
     return { ok: frames === total && frames > 0 && run.trace.events.length > 1, detail: `${frames}/${total} invocations in scene, ${run.trace.events.length} events` };
   },
   objects: (run, f) => { const n = objectsOf(run, f.className).length; return { ok: n >= (f.min ?? 1) && (f.max === undefined || n <= f.max), detail: `${n} ${f.className}` }; },
@@ -106,10 +106,11 @@ export const evaluators = {
   },
   retainedInPlace: (run) => {
     // Every invocation that ever entered remains a scene frame after completion, with a terminal status.
-    const statuses = run.scene.frames.map((frame) => frame.invocationStatus);
-    const active = statuses.filter((s) => s === 'active').length;
-    return { ok: run.scene.frames.length === Object.keys(run.final.frames).length && (run.final.status !== 'ended' || active === 0),
-      detail: `${run.scene.frames.length} frames, statuses ${JSON.stringify([...new Set(statuses)])}` };
+    const frames = run.scene.order.frames.map(id => run.scene.entities[id]);
+    const statuses = frames.map(frame => frame.status.kind);
+    const active = frames.filter(frame => frame.live).length;
+    return { ok: frames.length === Object.keys(run.final.frames).length && (run.final.status !== 'ended' || active === 0),
+      detail: `${frames.length} frames, statuses ${JSON.stringify([...new Set(statuses)])}` };
   },
   sourceFiles: (run, f) => {
     const files = new Set(run.trace.events.map((event) => event.source?.fileId).filter(Boolean));

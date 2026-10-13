@@ -8,8 +8,7 @@ import { buildInstrumentationSourceManifest } from './instrumentation-sources.mj
 import { normalizeTrace } from '../src/instrumentation/normalize.ts';
 import { validateTrace } from '../src/runtime/trace.ts';
 import { seek } from '../src/runtime/seek.ts';
-import { layoutForTrace as createLayout } from '../src/app/layoutForTrace.ts';
-import { buildSceneModel } from '../src/world/sceneModel.ts';
+import { projectTrace } from '../src/testing/projectTrace.ts';
 
 async function recorded(files) {
   const projectRoot = await mkdtemp(join(tmpdir(), 'visual-java-integration-'));
@@ -100,9 +99,9 @@ test('implicit JVM failure retains an inspectable historical frame after actual 
   const state = seek(trace, trace.events.length);
   expect(state.activeFrameIds).toEqual([]);
   expect(state.exceptions.at(-1)).toMatchObject({ className: 'java.lang.NullPointerException', unwoundFrameIds: ['jvm:frame:f1'] });
-  const scene = buildSceneModel(state, createLayout(trace), 'meso');
-  expect(scene.frames).toMatchObject([{ id: 'jvm:frame:f1', historical: true, active: false }]);
-  expect(scene.frames[0].label).toContain('unwound');
+  const scene = projectTrace(trace, { sessionEnded: true }).project(trace.events.length);
+  expect(scene.order.frames).toEqual(['jvm:frame:f1']);
+  expect(scene.entities['jvm:frame:f1']).toMatchObject({ id: 'jvm:frame:f1', live: false, exceptionRole: 'origin', status: { kind: 'threw', exception: 'NullPointerException' } });
 });
 
 test('caught implicit arithmetic failure preserves origin, actual catch line, unsupported exception local and continuation', async () => {

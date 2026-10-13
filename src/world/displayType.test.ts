@@ -1,6 +1,16 @@
 import { expect, it } from 'vitest'
 import { describeType, displayType, methodParameterTypes } from './displayType'
 
+it('keeps hidden-class names and their recorded VM suffix separate from package separators', () => {
+  const canonical = 'pkg.Worker$$Lambda/0x000000010014ea68'
+  expect(describeType(canonical)).toEqual({ canonical, display: 'Worker$$Lambda/0x000000010014ea68' })
+  expect(displayType(canonical, { simple: false })).toBe(canonical)
+  expect(displayType('pkg/Worker$$Lambda/0x000000010014ea68', { representation: 'binary' })).toBe('Worker$$Lambda/0x000000010014ea68')
+  expect(displayType('[Lpkg/Worker$$Lambda/0x000000010014ea68;')).toBe('Worker$$Lambda/0x000000010014ea68[]')
+  expect(displayType(canonical + '[][]')).toBe('Worker$$Lambda/0x000000010014ea68[][]')
+  expect(displayType(canonical, { sourceName: 'RecordedWorker' })).toBe('RecordedWorker')
+})
+
 it('formats JVM arrays and objects without changing canonical identity', () => {
   expect(describeType('[[Lpkg/Outer$Inner;')).toEqual({ canonical: '[[Lpkg/Outer$Inner;', display: 'Outer$Inner[][]' })
   expect(displayType('[[I')).toBe('int[][]')

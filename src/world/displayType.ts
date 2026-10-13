@@ -12,6 +12,14 @@ const primitiveDescriptors: Readonly<Record<string, string>> = {
   B: 'byte', C: 'char', D: 'double', F: 'float', I: 'int', J: 'long', S: 'short', Z: 'boolean', V: 'void',
 }
 
+/** Hidden JVM classes append a VM identity suffix after the binary class name.
+ * Its slash is not a package separator; preserving it also preserves the name
+ * when the display removes a package prefix. Canonical identity stays intact. */
+function binaryName(text: string): string {
+  const suffix = text.match(/\/0x[0-9a-f]+(?:\[\])*$/i)?.[0] ?? ''
+  return text.slice(0, text.length - suffix.length).replaceAll('/', '.') + suffix
+}
+
 function readDescriptor(text: string, start: number, allowVoid: boolean): { type: string; end: number } | null {
   let index = start
   while (text[index] === '[') index++
@@ -21,9 +29,9 @@ function readDescriptor(text: string, start: number, allowVoid: boolean): { type
   if (code === 'L') {
     const end = text.indexOf(';', index)
     if (end <= index + 1) return null
-    const binaryName = text.slice(index + 1, end)
-    if (/[[()<>;]/.test(binaryName)) return null
-    type = binaryName.replaceAll('/', '.')
+    const name = text.slice(index + 1, end)
+    if (/[[()<>;]/.test(name)) return null
+    type = binaryName(name)
     index = end + 1
   } else {
     type = primitiveDescriptors[code]
@@ -53,7 +61,7 @@ export function methodParameterTypes(descriptor: string): readonly string[] | nu
 export function displayType(canonical: string, options: DisplayTypeOptions = {}): string {
   const descriptor = options.representation === 'descriptor' || (options.representation !== 'binary' && (canonical.startsWith('[') || canonical.startsWith('L') && canonical.endsWith(';')))
   const parsed = descriptor ? readDescriptor(canonical, 0, true) : null
-  const decoded = parsed?.end === canonical.length ? parsed.type : canonical.replaceAll('/', '.')
+  const decoded = parsed?.end === canonical.length ? parsed.type : binaryName(canonical)
   const suffix = decoded.match(/(?:\[\])+$/)?.[0] ?? ''
   const base = decoded.slice(0, decoded.length - suffix.length)
   const genericAt = base.indexOf('<')

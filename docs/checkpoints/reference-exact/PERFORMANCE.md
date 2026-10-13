@@ -4,25 +4,27 @@ As of 2026-10-13, performance approval is incomplete. Budgets and required sampl
 
 ## Complete native Dense sample
 
-The most recent completed browser measurement before prefix reuse/long-seek reconstruction uses a fresh ordinary Java Run, session `7f22cf7b-95ba-49fc-b893-cf30ea3ef9c3`: 7,492 raw events, 9,852 normalized events, four frames and 33 objects. Source hash `97e6a390f5349cb8a474d5ff2f5de3104bad8c3f86f46fea43ad4b9e841b10da`, exact stdout `TOPOLOGY 73 100 1000 3 true\n`, exit 0 and FULL recording. Real JDT remains enabled. The browser run finishes every stage with no browser errors and exits 1 for unchanged latency limits.
+The most recent completed browser measurement on commit `44f5bc2391bdf191eed9bd2a2874bf12f7828d27` uses a fresh ordinary Java Run, session `012ada8d-beb2-4b75-8d94-8dc4d26496a5` (browser run `b8847180-9a3d-4931-a911-fbcb6db9018c`): 7,492 raw events, 9,852 normalized events, four frames and 33 objects. Source hash `97e6a390f5349cb8a474d5ff2f5de3104bad8c3f86f46fea43ad4b9e841b10da`, exact stdout `TOPOLOGY 73 100 1000 3 true\n`, exit 0 and FULL recording. Real JDT remains enabled. The browser run finishes every stage with no browser errors and exits 1 for unchanged latency limits.
 
 | Metric | Measured | Budget | Phase 5.5 baseline | Result |
 | --- | ---: | ---: | ---: | --- |
-| 100 spread seeks p50 | 100.7475 ms | 55 ms | 50.45 ms | Fail |
-| 100 spread seeks p95 | 134.372417 ms | 112 ms | 101.24 ms | Fail |
-| 50 actual cell Focus commands p95 | 184.7945 ms | 125 ms | 110.97 ms | Fail |
-| 50 Home commands p95 | 232.320209 ms | 152 ms | 138.49 ms | Fail |
-| Five fresh frontend loads, median | 4163.322917 ms | 5300 ms | 4816 ms (one sample, excluded JDT) | Pass, differing historical method |
+| 100 spread seeks p50 | 99.188 ms | 55 ms | 50.45 ms | Fail |
+| 100 spread seeks p95 | 116.456459 ms | 112 ms | 101.24 ms | Fail |
+| 50 actual cell Focus commands p95 | 167.212083 ms | 125 ms | 110.97 ms | Fail |
+| 50 Home commands p95 | 199.873084 ms | 152 ms | 138.49 ms | Fail |
+| Five fresh frontend loads, median | 3928.589958 ms | 5300 ms | 4816 ms (one sample, excluded JDT) | Pass, differing historical method |
 | Five ≥30 s continuous native orbit windows, median | 16.7 ms | 16.7 ms | — | Pass |
-| Orbit frame intervals p95 across sizes | 17.4–18.5 ms | 33.3 ms | — | Pass |
-| Whole-owner CPU submission p95 across sizes | 3.0–3.8 ms | 6 ms | 3.70 ms | Pass |
-| Every submitted-frame draw-call maximum | 109–110 | 250 | — | Pass |
+| Orbit frame intervals p95 across sizes | 17.3–17.4 ms | 33.3 ms | — | Pass |
+| Whole-owner CPU submission p95 across sizes | 2.4–3.0 ms | 6 ms | 3.70 ms | Pass |
+| Every submitted-frame draw-call maximum | 110 | 250 | — | Pass |
 | 60 s soak first/last 10 s median absolute drift | 0% | 10% | — | Pass |
-| Forced-GC whole-frontend soak heap growth | 0.090617723% | 5% | — | Pass |
+| Forced-GC whole-frontend soak heap growth | 0.136979571% | 5% | — | Pass |
 
 Command timing includes the real native command, UI commit and two real animation frames. Readiness occurs outside timing. Camera choreography is not replaced by a clock setter. CPU submission is separate from asynchronously resolved GPU time and physical-display FPS. All five viewport windows use elapsed native pointer motion without an additional per-move rAF RPC. Required samples, error checks and failed stages stay in the raw report.
 
-Evidence: `.ggjavaez/qa/reference-exact/browser-world-performance-stable-materials.json`, matching log and command profile. The later production prefix/evidence/route changes require a fresh full run. The optional ten seek and ten Focus/Home profiling samples are additional diagnostics, not substitutions for required samples.
+Evidence: `.ggjavaez/qa/reference-exact/browser-world-performance-prefix-reuse.json`, matching log, seek/command profiles and compact summaries. Earlier stable-material and interrupted results remain archived. The optional ten seek and ten Focus/Home profiling samples are additional diagnostics, not substitutions for required samples.
+
+The five windows contain 1,832 / 1,831 / 1,829 / 1,832 / 1,830 actual submissions. Asynchronous GPU queries resolve 1,832 / 1,830 / 1,829 / 1,831 / 1,829 samples; three queries remain pending at their window boundary and none are reported unavailable. GPU p50/p95 ranges are 1.098–2.994 / 5.763–19.054 ms. These are actual queries, with whole-owner pass attribution, not estimates from CPU time. The separate ten-seek profile identifies persistent-record enumeration under React development prop diffing and current-prefix Flow resolution; the ten Focus/Home profile also identifies routing, camera collision planning and batched text work. Profiling samples do not alter the required command samples or limits.
 
 ## Generated CPU and retention gate
 
@@ -38,6 +40,6 @@ The presentation checkpoint conservatively includes layout/projector/Flow indexe
 
 ## Build and remaining work
 
-The current production build passes typecheck and Vite. AppRoot gzip is 351.99 kB and entry index gzip 72.67 kB. Monaco/editor and Cinematic passes/materials are separate chunks. The large-chunk warning remains visible. These individual numbers are not a measured complete initial-load closure; the final 500 kB entry budget must be reported with the exact build boundary and artifact manifest.
+The current production build passes typecheck and Vite. AppRoot gzip is 352.06 kB and entry index gzip 72.67 kB. Monaco/editor and Cinematic passes/materials are separate chunks. The large-chunk warning remains visible. Requirement 32.7 limits the main entry JavaScript chunk, not the complete dependency closure. `scripts/reference/measure-build.mjs` now checks actual built bytes, SHA-256 and default gzip compression with a decimal 500,000-byte threshold, and reports static dependency closures separately. The actual main HTML entry is **71,915 bytes gzip** and passes 500,000 bytes. AppRoot is 348,716 bytes gzip under this same measurement. The entry static closure sums to 72,343 bytes and the main/Shell static closure to 649,587 bytes; those sums are separate diagnostics, not the entry-chunk limit. Vite console gzip estimates above are distinguished from these post-build file-byte measurements. Monaco/editor API and Cinematic passes occupy separate chunks. The native request-policy checks remain separate, because chunk separation alone does not prove when a chunk is fetched. The large dependency closure remains useful startup evidence, without inventing a second 500 kB criterion.
 
 Central connector material retention greatly reduced shader program lookup cost in the diagnostic profile; unchanged label trees are memoized, route contexts are bounded, Flow endpoint resolution owns one current prefix, and compact-world long seeks choose reconstruction. Full command latency and memory limits still need to pass. Methods and earlier failures are preserved in `migration/performance-methods.md`, `migration/browser-performance-methods.md`, `migration/connector-route-cache.md` and `migration/frame-performance.md`.
