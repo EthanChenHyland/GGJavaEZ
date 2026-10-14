@@ -8,7 +8,8 @@ import { arrayCellTarget } from '../world/arrayCellTarget'
 import { computeArrayWindow } from '../world/arrayWindow'
 import { presentedFlowPorts } from '../world/flowTopology'
 import type { TraceEvent } from '../contracts/runtime'
-import { relevantFlowHistory, semanticFlowPoints, transitionIsFlow } from './flowPresentation'
+import { relevantFlowHistory, transitionIsFlow } from './flowSelection'
+import { createConnectorRouter } from '../world/connectorRouter'
 import { deriveSemanticTransition, transitionsForTrace, type SemanticTransition } from './semanticTransition'
 
 describe('semantic transition pipeline', () => {
@@ -60,18 +61,20 @@ describe('semantic transition pipeline', () => {
     expect(recursion.filter((item) => item.kind === 'return' && item.to?.kind === 'slot')).toHaveLength(5)
   })
 
-  it('attaches semantic movement beside front-face ports for arbitrary endpoint positions', () => {
+  it('attaches semantic movement to exact ports with a forward curve for arbitrary endpoint positions', () => {
+    const route=createConnectorRouter().forBodies([])
     for (const [from, to] of [
       [[-4, 2, 1], [3, -1, 0]],
       [[2, -5, -2], [-6, 3, 2]],
     ] as const) {
-      const points = semanticFlowPoints([...from], [...to], -4)
+      const points = route([...from], [...to])
       expect(points[0]).toEqual(from)
       expect(points.at(-1)).toEqual(to)
       expect(points[1][2]).toBeGreaterThan(from[2])
-      expect(points[2][2]).toBeGreaterThan(Math.max(from[2], to[2]))
-      expect(points[3][2]).toBe(points[2][2])
-      expect(points.at(-2)![0]).toBeGreaterThan(to[0])
+      const middle=points[Math.floor(points.length/2)]
+      expect(middle[2]).toBeGreaterThan((from[2]+to[2])/2)
+      expect(points.at(-2)![2]).toBeGreaterThan(to[2])
+      expect(points.every(point=>point.every(Number.isFinite))).toBe(true)
     }
   })
 

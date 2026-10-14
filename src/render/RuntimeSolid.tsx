@@ -4,6 +4,7 @@ import { frameStatusText } from '../world/frameStatus';
 import { notRecordedValue, truncateFrameText } from '../world/valueText';
 import { WorldText } from './FaceText';
 import { faceRows } from './faceModel';
+import {faceRowPort} from '../world/faceRows';
 import { displayType } from '../world/displayType';
 import {faceColumns,faceHeading,rowValueLabel} from './text/faceTypography';
 import {fitWorldText,textAdvance} from './text/textSystem';
@@ -48,7 +49,7 @@ export const RuntimeSolid=memo(function RuntimeSolid({ node, presented, plan }: 
                 const label=(value:typeof entry.value,point:readonly[number,number,number],kind:'key'|'value',slotId?:string)=><WorldText position={[point[0],point[1],face+.015]} align="center" size={.34} weight={600} width={geometry.valueWidth-.08} opacity={opacity} tint={value.kind==='reference'?color.semantic.execution:value.kind==='not-recorded'?color.ui.textMuted:color.ui.text} collectionText={{entityId:node.id,kind,slotId}}>{rowValueLabel(value)}</WorldText>;
                 return <group key={entry.slotId}>{label(entry.value,geometry.value,'value',entry.slotId)}{entry.key&&geometry.key&&label(entry.key,geometry.key,'key',entry.keySlotId)}</group>;
             }
-            const ry = anchor.ports[row.slotId]?.[1] ?? top - model.header - model.pitch * (index + .5), value = row.value, mutation = node.kind === 'object' && node.mutation?.slotId === row.slotId;
+            const ry = faceRowPort(node,presented,row.slotId,model)?.[1] ?? top - model.header - model.pitch * (index + .5), value = row.value, mutation = node.kind === 'object' && node.mutation?.slotId === row.slotId;
             return <group key={row.slotId}>
         <WorldText position={[left, ry, face + .015]} weight={500} size={node.anchor.region==='library'?.23:.32} width={columns.name} tint={color.ui.textSecondary} opacity={opacity}>{presented.detail==='MEDIUM'?`${row.name} →`:row.name}</WorldText>
         {presented.detail!=='MEDIUM'&&<WorldText position={[left+columns.typeOffset,ry,face+.015]} size={node.anchor.region==='library'?.20:.27} width={columns.type} tint={color.ui.textMuted} opacity={opacity}>{displayType(row.type)}</WorldText>}
@@ -70,4 +71,5 @@ export const RuntimeSolid=memo(function RuntimeSolid({ node, presented, plan }: 
 },(prior,next)=>prior.node===next.node
     &&prior.presented.mode===next.presented.mode&&prior.presented.detail===next.presented.detail
     &&prior.presented.opacity===next.presented.opacity&&prior.presented.highlight===next.presented.highlight
+    &&prior.presented.rowSlotIds===next.presented.rowSlotIds
     &&(next.node.kind!=='array'||prior.plan.cellWindows.get(next.node.id)===next.plan.cellWindows.get(next.node.id)));

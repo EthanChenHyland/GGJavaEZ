@@ -53,6 +53,15 @@ export function planPresentation(input: PlanInput, previous?: PresentationPlan):
     const queriedFlows = input.flows?.query({ cursor: scene.cursor, scene, priority, limit: budget.flows * 3 }) ?? [];
     const targetedFlow = selection?.kind === 'flow' ? queriedFlows.find(flow => flow.id === selection.id) : null;
     const requiredFlows = [...new Map([...currentFlows, ...(targetedFlow&&!(trace.active&&trace.scope==='current') ? [targetedFlow] : [])].map(flow => [flow.id, flow])).values()];
+    const rowRequests=new Map<string,Set<string>>();
+    const requestRow=(slotId:string|undefined)=>{
+      const id=owner(slotId),node=id?scene.entities[id]:null;
+      if(!id||node?.kind!=='frame'||!node.rows.some(row=>row.slotId===slotId))return;
+      const ids=rowRequests.get(id)??new Set<string>();ids.add(slotId!);rowRequests.set(id,ids);
+    };
+    if(selection?.kind==='slot')requestRow(selection.id);
+    requestRow(focusTargetId??undefined);requestRow(selectedRef?.sourceSlotId);
+    for(const flow of requiredFlows){if(flow.from?.kind==='slot')requestRow(flow.from.id);if(flow.to?.kind==='slot')requestRow(flow.to.id)}
     const flowRelevant = (flow: RecordedFlow) => flow.id === selection?.id || [flow.from, flow.to].some(point => point && (priority.selectedIds.has(point.id) || priority.focusedIds.has(point.id) || priority.currentIds.has(point.id)));
 
     const mandatory = new Map<string, Set<string>>();
@@ -91,7 +100,7 @@ export function planPresentation(input: PlanInput, previous?: PresentationPlan):
     const dependencies = (id: string): string[] => {
         const node = scene.entities[id];
         if (detailLevel === 'CLOSE' || !(node.kind === 'frame' || node.kind === 'object' && recordedOwners.get(id) === 'PROJECT')) return [];
-        return [...new Set(faceRows(node, {detail:id === focused ? 'CLOSE' : detailLevel}).visible.flatMap(row =>
+        return [...new Set(faceRows(node, {detail:id === focused ? 'CLOSE' : detailLevel==='FAR'&&rowRequests.has(id)?'MEDIUM':detailLevel,rowSlotIds:[...(rowRequests.get(id)??[])]}).visible.flatMap(row =>
             row.value.kind === 'reference' && scene.entities[row.value.targetId] && collapsedExternal(row.value.targetId) ? [row.value.targetId] : []))];
     };
     // Correctness-required sources may exceed a nominal limit. Optional sources
@@ -120,7 +129,10 @@ export function planPresentation(input: PlanInput, previous?: PresentationPlan):
         const canPick = mode === 'detailed' || pinned || pickableQuiet < budget.pickable;
         if (canPick && mode === 'quiet')
             pickableQuiet++;
-        entities.set(id, { id, mode, detail: id === focused ? 'CLOSE' : detailLevel, opacity, pinned, pickable: canPick,
+        const requested=[...(rowRequests.get(id)??[])],prior=previous?.entities.get(id)?.rowSlotIds;
+        const rowSlotIds=prior&&prior.length===requested.length&&prior.every((slot,index)=>slot===requested[index])?prior:requested;
+        entities.set(id, { id, mode, detail: id === focused ? 'CLOSE' : detailLevel==='FAR'&&requested.length?'MEDIUM':detailLevel, opacity, pinned, pickable: canPick,
+            ...(requested.length?{rowSlotIds}:{}),
             highlight: forensic ? 'exception' : id === selected ? 'selected' : id === focused ? 'focus' : node.kind === 'object' && node.mutation ? 'mutation' : scene.cursorEvent?.subjects.includes(id) ? 'current' : null });
     };
     for (const cat of ['frames', 'objects', 'classes'] as const) {

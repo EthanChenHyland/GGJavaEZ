@@ -1,5 +1,6 @@
 import {expect,test} from '@playwright/test'
 import {browserErrors,home,ready,runFixture,stopOwnedSession} from './harness'
+import {writeFile} from 'node:fs/promises'
 test.afterEach(async({request})=>stopOwnedSession(request))
 
 for(const viewport of [{width:1728,height:1117},{width:1440,height:900},{width:1280,height:800},{width:760,height:900},{width:1440,height:650}])test(`collapsed cluster bounds and reachable exact members ${viewport.width}x${viewport.height}`,async({page,request})=>{
@@ -24,6 +25,10 @@ for(const viewport of [{width:1728,height:1117},{width:1440,height:900},{width:1
   if(await page.evaluate(()=>{const selection=window.__ggjavaezQA!.selection();return selection?.kind==='cluster'&&(window.__ggjavaezWorld!.plan().clusters.find(cluster=>cluster.id===selection.id)?.members??0)>=11}))break
  }
  const cluster=await page.evaluate(()=>window.__ggjavaezWorld!.plan().clusters.find(cluster=>cluster.id===window.__ggjavaezQA!.selection()?.id))
+ if(!cluster){
+  const observation=await page.evaluate(()=>({selection:window.__ggjavaezQA!.selection(),plan:window.__ggjavaezWorld!.plan().clusters,catalog:document.querySelector('.gg-world-entities')?.outerHTML}))
+  const path=test.info().outputPath('cluster-keyboard-failure.json');await writeFile(path,JSON.stringify(observation,null,2));await test.info().attach('cluster-keyboard-failure',{path,contentType:'application/json'})
+ }
  expect(cluster).toBeTruthy();expect(cluster!.members).toBeGreaterThanOrEqual(11);await ready(page)
  await test.info().attach('actual-cluster-members',{body:JSON.stringify(cluster),contentType:'application/json'})
  const inspector=page.getByRole('complementary',{name:'Selection inspector'})
@@ -32,6 +37,7 @@ for(const viewport of [{width:1728,height:1117},{width:1440,height:900},{width:1
  const count=await inspector.locator('.inspector-cluster-title span').last().boundingBox(),heading=await inspector.locator('.inspector-cluster-title').boundingBox()
  expect(count!.x+count!.width).toBeLessThanOrEqual(heading!.x+heading!.width+.01)
  expect(await page.evaluate(()=>window.__ggjavaezWorld!.plan().clusters.find(cluster=>cluster.id===window.__ggjavaezQA!.selection()?.id)?.selected)).toBe(true)
+ await expect(page.getByRole('option',{name:`Cluster ${cluster!.label} ×${cluster!.members} recorded entities`,exact:true})).toHaveAttribute('aria-selected','true')
  const list=inspector.getByRole('list',{name:'Cluster members'}),rows=list.getByRole('listitem')
  await expect(rows.first()).toHaveAttribute('aria-setsize',String(cluster!.members))
  expect(await rows.count()).toBeLessThanOrEqual(200)

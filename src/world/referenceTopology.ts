@@ -2,7 +2,7 @@ import type {
   ArrayWindow, PresentedCluster, PresentedEntity, SceneEntity, SceneModel,
   SceneReference, Vec3, WorldAnchor,
 } from '../contracts/worldV2'
-import { faceRows } from './faceRows'
+import { faceRows,faceRowPort } from './faceRows'
 import {collectionEntryFace} from './collectionFace'
 
 export interface ReferenceTopologyInput {
@@ -128,6 +128,7 @@ export function buildReferenceTopology(input: ReferenceTopologyInput): Reference
     }
     // Visibility is cached per source entity, not searched again for every slot.
     const visibleRows = new Map<string, ReadonlySet<string>>()
+    const faceModels = new Map<string, ReturnType<typeof faceRows>>()
     const collectionPorts = new Map<string, ReadonlyMap<string, Vec3 | null | undefined>>()
     const sourcePort = (reference: SceneReference, source: Endpoint): SourcePort => {
       const node = scene.entities[reference.sourceId], presented = entities.get(node.id)!
@@ -144,7 +145,9 @@ export function buildReferenceTopology(input: ReferenceTopologyInput): Reference
       }
       let visible = visibleRows.get(node.id)
       if (!visible) {
-        visible = new Set(faceRows(node, presented).visible.map(row => row.slotId))
+        const model=faceRows(node,presented)
+        faceModels.set(node.id,model)
+        visible = new Set(model.visible.map(row => row.slotId))
         visibleRows.set(node.id, visible)
       }
       if (node.kind === 'collection') {
@@ -166,7 +169,7 @@ export function buildReferenceTopology(input: ReferenceTopologyInput): Reference
         return validPoint(point) ? { point, anchor: source.anchor } : { reason: 'Source collection entry has no recorded port' }
       }
       if (!visible.has(reference.sourceSlotId)) return { reason: 'Source slot is not in the visible face rows' }
-      const point = node.anchor.ports[reference.sourceSlotId]
+      const point = faceRowPort(node,presented,reference.sourceSlotId,faceModels.get(node.id)!)
       return validPoint(point) ? { point, anchor: source.anchor } : { reason: 'Visible source slot has no recorded port' }
     }
     const candidates: Candidate[] = []

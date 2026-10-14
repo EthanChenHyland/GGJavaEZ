@@ -59,7 +59,7 @@ export function createFlowCatalog():FlowCatalog {
   if(owner.kind==='array')return owner.cells.some(cell=>cell.slotId===point.id) // actual window attachment is checked by the planner
   if(owner.kind==='collection')return owner.entries.some((entry,index)=>(entry.slotId===point.id||entry.keySlotId===point.id)&&!!collectionEntryFace(owner.anchor,index,owner.collectionKind==='Map'))
   const rows=owner.kind==='frame'||owner.kind==='class'?owner.rows:owner.groups.flatMap(g=>g.rows)
-  return rows.some(row=>row.slotId===point.id&&row.port!==null)
+  return rows.some(row=>row.slotId===point.id&&(owner.kind==='frame'||row.port!==null)) // actual frame row windows are resolved by the planner
  }
  const formatted=(candidate:Candidate,scene:SceneModel):SceneFlow|null=>{
   const points=resolve(candidate,scene.cursor);if(!points.to)return null

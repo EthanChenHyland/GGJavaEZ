@@ -332,6 +332,9 @@ export interface PresentedEntity {
     pinned: boolean;
     pickable: boolean;
     highlight: 'selected' | 'focus' | 'current' | 'mutation' | 'exception' | 'static-change' | null;
+    /** Actual captured frame storage requested by selection/current evidence.
+     * Presentation slots may change; canonical storage IDs/anchors never do. */
+    rowSlotIds?: readonly SlotId[];
 }
 export interface PresentedCluster {
     id: string;

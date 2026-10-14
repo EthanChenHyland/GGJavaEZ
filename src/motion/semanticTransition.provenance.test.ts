@@ -4,7 +4,7 @@ import type { RuntimeState, RuntimeValue, TraceDocument, TraceEvent } from '../c
 import { applyExecutionFact } from '../runtime/executionGraph'
 import { applyEvent, createInitialState, type ReductionStorage } from '../runtime/state'
 import { deriveSemanticTransition, deriveSemanticTransitions, transitionsForTrace } from './semanticTransition'
-import { transitionIsFlow } from './flowPresentation'
+import { transitionIsFlow } from './flowSelection'
 
 const scalar = (value = 25): Extract<RuntimeValue, { kind: 'primitive' }> => ({ kind: 'primitive', javaType: 'int', value })
 const method = { owner: 'Ledger', name: 'accept', descriptor: '(I)I' }

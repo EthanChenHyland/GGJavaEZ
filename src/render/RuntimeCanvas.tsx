@@ -131,8 +131,10 @@ function Metrics({ scene, plan, selection,trace }: {
 }
 function AccessibleCatalog({scene,plan,publish}:{scene:SceneModel;plan:PresentationPlan;publish(items:AccessibleEntity[]):void}) {
  const{camera,size}=useThree(),last=useRef(0),revision=useRef(-1),ids=useRef('')
- useFrame(()=>{const now=performance.now();if(now-last.current<100&&revision.current===scene.revision)return;last.current=now;revision.current=scene.revision
-  const items=accessibleEntities(scene,plan,point=>{const p=new Vector3(...point).project(camera);return{x:(p.x+1)*size.width/2,y:(1-p.y)*size.height/2,visible:Math.abs(p.x)<=1&&Math.abs(p.y)<=1&&p.z>=-1&&p.z<=1}}),key=items.map(item=>item.id).join('\n')
+ // Selection may change represented geometry without changing runtime truth.
+ // Publish each committed cut immediately; throttle only unchanged-cut orbit.
+ useFrame(()=>{const now=performance.now();if(now-last.current<100&&revision.current===plan.revision)return;last.current=now;revision.current=plan.revision
+  const items=accessibleEntities(scene,plan,point=>{const p=new Vector3(...point).project(camera);return{x:(p.x+1)*size.width/2,y:(1-p.y)*size.height/2,visible:Math.abs(p.x)<=1&&Math.abs(p.y)<=1&&p.z>=-1&&p.z<=1}}),key=JSON.stringify(items.map(item=>[item.id,item.label]))
   if(key!==ids.current){ids.current=key;publish(items)}
  })
  return null

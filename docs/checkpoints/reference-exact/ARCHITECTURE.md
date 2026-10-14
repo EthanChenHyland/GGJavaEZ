@@ -43,3 +43,9 @@ The opt-in frame observer measures complete submitted render ownership, includin
 Superseded modules outside the production dependency closure remain in the repository and still have legacy test consumers. Their removal, shared stylesheet extraction, contract rename and test migration are required before final completion. The requested clean-replacement scan must fail until that work is proven; a one-shell production route alone is insufficient.
 
 Java runs locally and unsandboxed. Maven and Gradle may execute project build logic. The product must retain that security truth in documentation and relevant launch/project surfaces; no renderer change creates a Java sandbox.
+
+## Captured late frame storage — 2026-10-14
+
+The current presentation can promote selected/focused/current graph-backed captured frame storage into a bounded face window. Runtime labels, pick chips, references and Flow endpoints share the same row membership/physical port; canonical frame/slot identity, body geometry and reserved ports stay immutable. Requests never synthesize unobserved storage or resize the frame. Graphless events retain semantic transitions/channel summaries, but corrected Requirement 17 excludes provenance Flow curves without an actual graph edge. The root removed an incompatible proposed event catalogue before integration. See `migration/frame-row-windows.md`. Full convergence and broader cleanup remain ongoing.
+
+The production accessibility catalogue now refreshes each committed presentation-cut revision independently of runtime revision. Unchanged-cut orbit keeps its prior cadence, and publication identity includes actual labels/counts. The full unchanged-input reconstruction gate passes 69/69 after this correction; failed and diagnostic runs are preserved in `migration/frame-row-windows.md`.

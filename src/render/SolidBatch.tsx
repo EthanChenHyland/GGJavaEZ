@@ -7,6 +7,7 @@ import { color, world } from '../theme/tokens';
 import { glassMaterial, unitBox, roundedDepthMaterial, roundedDistanceMaterial } from './RuntimeMaterials';
 import { expandRoundedBoxVertex, unitRoundedBox, unitRoundedOutline } from './geometry/roundedBox';
 import { faceRows } from './faceModel';
+import { faceRowPort } from '../world/faceRows';
 import {collectionEntryFace} from '../world/collectionFace';
 import { useQualityStore, type QualityTier } from './quality/qualityStore';
 import { resolveArrayWindowPick, type ArrayWindowPick } from '../world/arrayWindow';
@@ -54,7 +55,7 @@ export function buildSolidBatch(scene: SceneModel, plan: PresentationPlan): Soli
         }
         const model = faceRows(node, presented);
         for (const [rowIndex, row] of model.visible.entries()) {
-            const ry = node.anchor.ports[row.slotId]?.[1] ?? top - model.header - model.pitch * (rowIndex + .5);
+            const ry = faceRowPort(node,presented,row.slotId,model)?.[1] ?? top - model.header - model.pitch * (rowIndex + .5);
             plate(row.slotId, [x, ry, face + .01], [w - .45, model.pitch * .73, .05], 'chip' in palette ? palette.chip : palette.face);
         }
         if (node.kind === 'array')
