@@ -43,6 +43,7 @@ export function WorldSurface({ trace, onSourceChange, onRuntimeChange, navigatio
     const inspectorSelection=selection??(focus?{kind:focus.kind==='arrayCell'?'slot':focus.kind==='cluster'?'cluster':focus.kind,id:focus.targetId} as NonNullable<Selection>:null);
     useEffect(()=>{if(inspectorSelection)shellStore.setState({inspectorHidden:false})},[inspectorSelection?.id]);
     const detail = useCameraStore(state => state.detailLevel);
+    const viewTile=useCameraStore(state=>state.viewTile);
     const cameraIntent = useCameraStore(state => state.intent?.kind==='cluster'?state.intent:undefined);
     const motionPreference=useQualityStore(state=>state.reducedMotion),quality=useQualityStore(state=>state.setting),cinematic=useQualityStore(state=>state.cinematicAvailable),qualityNotice=useQualityStore(state=>state.notice);
     const reducedMotion=motionPreference.os||motionPreference.inApp;
@@ -69,11 +70,11 @@ export function WorldSurface({ trace, onSourceChange, onRuntimeChange, navigatio
     const plan = useMemo(() => {
         const previous=compiler.previousPlan?{...compiler.previousPlan,cellWindows:compiler.windows}:undefined;
         const clusterTravelMemberId=cameraIntent?.kind==='cluster'&&cameraIntent.recordingId===scene.recordingId&&cameraIntent.cursor===scene.cursor?cameraIntent.memberId:undefined;
-        const next=planPresentation({ scene, flows, router:compiler.router, layout, detailLevel: detail, selection, focusTargetId: focus?.targetId ?? null, clusterTravelMemberId, trace: traceState },previous);
+        const next=planPresentation({ scene, flows, router:compiler.router, layout, detailLevel: detail, selection, focusTargetId: focus?.targetId ?? null, clusterTravelMemberId, viewTile:viewTile.split(':').map(Number) as [number,number,number], trace: traceState },previous);
         compiler.previousPlan=next;
         for(const[id,window]of next.cellWindows)compiler.windows.set(id,window);
         return next;
-    }, [compiler,scene, flows, layout, detail, selection, focus, traceState,cameraIntent]);
+    }, [compiler,scene, flows, layout, detail, selection, focus, traceState,cameraIntent,viewTile]);
     const commandWorld=useRef({plan,recorded:trace.events.length>0});commandWorld.current={plan,recorded:trace.events.length>0};
     useEffect(()=>registerWorldCommandSurface({hasRecording:()=>commandWorld.current.recorded,hasPresentedFlow:id=>commandWorld.current.plan.curves.some(curve=>curve.id===id&&['flow','return','exception','binding-history'].includes(curve.kind))}),[]);
     const lastNavigation = useRef(-1);

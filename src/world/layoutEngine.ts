@@ -6,6 +6,7 @@ import { world as worldLayoutTokens } from '../theme/tokens';
 import { persistentAppend, persistentPut, persistentRecord } from '../runtime/storage';
 import {ownershipObservation} from './recordedOwnership';
 import {firstObjectPresentation} from './firstObjectPresentation';
+import {createClusterMembershipIndex} from './clusterMemberships';
 export type { LayoutState } from '../contracts/worldV2';
 export type WorldLayoutTokens = typeof worldLayoutTokens;
 export interface LayoutEngine {
@@ -28,6 +29,7 @@ function boundsOf(anchors: readonly WorldAnchor[]): WorldBounds | null {
 export function createLayoutEngine(t: WorldLayoutTokens = worldLayoutTokens): LayoutEngine {
     let length = 0, anchors: Record<string, WorldAnchor> = persistentRecord({}), placement: Record<string, PlacementInfo> = persistentRecord({});
     let snapshot: LayoutState | null = null;
+    const memberships=createClusterMembershipIndex();
     const stack: WorldAnchor[] = [], heap: WorldAnchor[] = [], library: WorldAnchor[] = [], classes: WorldAnchor[] = [], io: WorldAnchor[] = [];
     const columns = new Map<string, {
         left: number;
@@ -45,9 +47,9 @@ export function createLayoutEngine(t: WorldLayoutTokens = worldLayoutTokens): La
     const rows = new Map<string, string[]>();
     const recordedSlots = new Map<string, Map<string, RuntimeSlot>>();
     let nextLeft = t.frame.w / 2 + t.regions.stackHeapGap, root: WorldAnchor | null = null;
-    const add = (anchor: WorldAnchor, firstSeq: number, type: string, packageName: string, ownership: string, capacity?: number) => {
+    const add = (anchor: WorldAnchor, firstSeq: number, type: string, packageName: string, ownership: Ownership | undefined, capacity?: number) => {
         anchors = persistentPut(anchors, anchor.entityId, anchor);
-        placement = persistentPut(placement, anchor.entityId, { firstSeq, clusterPath: [{ kind: 'type', value: type }, { kind: 'package', value: packageName }, { kind: 'ownership', value: ownership }], ...(capacity === undefined ? {} : { frameRows: capacity }) });
+        placement = persistentPut(placement, anchor.entityId, { firstSeq, clusterPath: [{ kind: 'class', value: type }, { kind: 'type', value: type }, { kind: 'package', value: packageName }, ...(ownership?[{kind:'ownership' as const,value:ownership}]:[]), {kind:'execution-age',value:String(Math.floor(firstSeq/4096))}], ...(capacity === undefined ? {} : { frameRows: capacity }), ...(memberships.history(anchor.entityId).length?{clusterMemberships:memberships.history(anchor.entityId)}:{}) });
         const prior = regionBounds[anchor.region];
         const boxes = prior ? [{ ...anchor, position: prior.center, size: prior.size }, anchor] : [anchor];
         regionBounds[anchor.region] = boundsOf(boxes);
@@ -123,7 +125,7 @@ export function createLayoutEngine(t: WorldLayoutTokens = worldLayoutTokens): La
             } while (heapOccupancy.intersects(candidate));
         }
         const anchor: WorldAnchor = { entityId: event.objectId, region, position: position!, size: realSize, ports: {}, bodyPort: [position![0] - realSize[0] / 2, position![1], position![2] + realSize[2] / 2] };
-        add(anchor, event.seq, className, event.metadata?.packageName ?? className.slice(0, Math.max(0, className.lastIndexOf('.'))), region === 'heap' ? 'PROJECT' : 'LIBRARY', Math.min(count, 13));
+        add(anchor, event.seq, className, event.metadata?.packageName ?? className.slice(0, Math.max(0, className.lastIndexOf('.'))), event.metadata?.ownership, Math.min(count, 13));
         if (!isArray)
             ports(anchor,event.fields,region==='library'?2:Math.min(count,13),region==='library'?.7:t.object.header,region==='library'?.55:t.object.row);
         else if (isArray && count <= 128) {
@@ -159,7 +161,11 @@ export function createLayoutEngine(t: WorldLayoutTokens = worldLayoutTokens): La
                             break;
                         front += t.frame.depth + t.frame.deckGapZ;
                     }
-                    add(anchor, event.seq, event.className, event.className.slice(0, Math.max(0,event.className.lastIndexOf('.'))), 'PROJECT', capacity);
+                    add(anchor, event.seq, event.className, event.className.slice(0, Math.max(0,event.className.lastIndexOf('.'))), undefined, capacity);
+                    const parentInfo=event.callerFrameId?placement[event.callerFrameId]:undefined;
+                    const branch=parentInfo?parentInfo.callerId?parentInfo.clusterPath.find(key=>key.kind==='invocation-branch')?.value:`${event.callerFrameId}/observed-descendants`:event.callerFrameId?`${event.callerFrameId}/unavailable-ancestor`:`${event.frameId}/observed-root`;
+                    const parameterTypes=event.locals.length===0||event.locals.some(slot=>slot.role==='parameter')?event.locals.filter(slot=>slot.role==='parameter').map(slot=>slot.javaType):null;
+                    placement=persistentPut(placement,event.frameId,{...placement[event.frameId],callerId:event.callerFrameId,method:{owner:event.className,name:event.methodName,parameterTypes},clusterPath:[...placement[event.frameId].clusterPath,{kind:'invocation-branch',value:branch??event.frameId}]});
                     lastChild.set(event.callerFrameId ?? 'root', anchor);
                     root ??= anchor;
                     ports(anchor, event.locals, capacity, t.frame.header, t.frame.row);
@@ -178,19 +184,27 @@ export function createLayoutEngine(t: WorldLayoutTokens = worldLayoutTokens): La
                     const capacity = Math.min(event.fields.length, t.classShelf.rowsMax) + 1, height = t.classShelf.header + t.frame.pad + t.classShelf.row * capacity;
                     const position: Vec3 = [-t.frame.w / 2 + classes.length * t.classShelf.pitchX + t.classShelf.w / 2, 2.175 + height / 2, -2];
                     const anchor: WorldAnchor = { entityId: event.classId, region: 'class', position, size: [t.classShelf.w, height, t.classShelf.depth], ports: {}, bodyPort: [position[0], position[1], position[2] + t.classShelf.depth / 2] };
-                    add(anchor, event.seq, event.className, event.metadata?.packageName ?? event.className.slice(0,Math.max(0,event.className.lastIndexOf('.'))), 'PROJECT', capacity);
+                    add(anchor, event.seq, event.className, event.metadata?.packageName ?? event.className.slice(0,Math.max(0,event.className.lastIndexOf('.'))), event.metadata?.ownership, capacity);
                     ports(anchor, event.fields, capacity, t.classShelf.header, t.classShelf.row);
                 }
                 const channel = event.type === 'CONSOLE_WRITE' ? event.channel : event.type === 'OUTPUT_WRITE' ? 'stdout' : event.type === 'CONSOLE_INPUT' || event.type === 'INPUT_READ' ? 'stdin' : null;
                 if (channel && !anchors[channel]) {
                     const index = ['stdin', 'stdout', 'stderr'].indexOf(channel), position: Vec3 = [t.io.x, t.io.y[index], t.io.z];
-                    add({ entityId: channel, region: 'io', position, size: t.io.size as unknown as Vec3, ports: {}, bodyPort: [position[0], position[1], position[2] + t.io.size[2] / 2] }, event.seq, channel, '', 'PROJECT');
+                    add({ entityId: channel, region: 'io', position, size: t.io.size as unknown as Vec3, ports: {}, bodyPort: [position[0], position[1], position[2] + t.io.size[2] / 2] }, event.seq, channel, '', undefined);
                 }
                 const observation=ownershipObservation(event);
                 if(observation&&placement[observation.id]){
                     const entry=placement[observation.id],history=(entry.ownershipHistory??[]) as {seq:number;value:Ownership}[];
                     if(history.at(-1)?.value!==observation.value)placement=persistentPut(placement,observation.id,{...entry,ownershipHistory:persistentAppend(history,{seq:observation.seq,value:observation.value})});
                 }
+                if(event.type==='EXECUTION_FACT'&&event.fact.kind==='enter'){
+                    const entry=placement[event.fact.invocationId],method=entry?.method;
+                    if(method&&method.descriptors?.at(-1)?.descriptor!==event.fact.method.descriptor){
+                        const descriptors=(method.descriptors??[]) as {seq:number;owner:string;name:string;descriptor:string}[];
+                        placement=persistentPut(placement,event.fact.invocationId,{...entry,method:{...method,descriptors:persistentAppend(descriptors,{seq:event.seq,...event.fact.method})}});
+                    }
+                }
+                memberships.observe(event,placement,(id,entry)=>{placement=persistentPut(placement,id,entry)});
             }
             if (length !== events.length) {
                 length = events.length;

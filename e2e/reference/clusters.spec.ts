@@ -47,7 +47,19 @@ for(const viewport of [{width:1728,height:1117},{width:1440,height:900},{width:1
    for(const id of await list.getByRole('button').evaluateAll(buttons=>buttons.map(button=>button.getAttribute('title')!)))observed.add(id)
    break
   }
-  await list.hover();await page.mouse.wheel(0,180);await page.waitForTimeout(25)
+  const previousScroll=await list.evaluate(element=>element.scrollTop)
+  await list.hover();await page.mouse.wheel(0,180)
+  await expect.poll(()=>list.evaluate(element=>element.scrollTop)).toBeGreaterThan(previousScroll)
+  // Native wheel completion does not imply React committed its virtual window.
+  // Observe that the mounted rows cover the actual physical viewport before
+  // sampling IDs or issuing the next wheel packet; no scroll setters are used.
+  await expect.poll(()=>list.evaluate(element=>{
+   const mounted=[...element.querySelectorAll<HTMLElement>('[role="listitem"]')]
+   if(!mounted.length||element.clientHeight<=0)return false
+   const height=Number.parseFloat(mounted[0].style.height),total=Number(mounted[0].getAttribute('aria-setsize'))
+   const first=Number(mounted[0].getAttribute('aria-posinset')),last=Number(mounted.at(-1)!.getAttribute('aria-posinset'))
+   return height>0&&first<=Math.floor(element.scrollTop/height)+1&&last>=Math.min(total,Math.ceil((element.scrollTop+element.clientHeight)/height))
+  })).toBe(true)
  }
  expect([...observed].sort()).toEqual([...cluster!.memberIds].sort())
  const after=await page.evaluate(()=>({recording:window.__ggjavaezWorld!.scene().recordingId,cursor:window.__ggjavaezWorld!.scene().cursor,pose:window.__ggjavaezQA!.cameraPose(),anchors:Object.fromEntries(Object.entries(window.__ggjavaezWorld!.scene().entities).map(([id,node])=>[id,node.anchor]))}))

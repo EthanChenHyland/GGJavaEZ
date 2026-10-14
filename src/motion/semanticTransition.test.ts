@@ -3,10 +3,12 @@ import { seek } from '../runtime'
 import { applyEvent, createInitialState } from '../runtime/state'
 import { historyForTrace } from '../runtime/history'
 import { loadArrayTrace, loadControlTrace, loadPersonTrace, loadRecursionTrace } from '../examples/traces'
-import { layoutForTrace as createLayout } from '../app/layoutForTrace'
-import { buildSceneModel } from '../world/sceneModel'
+import { projectTrace } from '../testing/projectTrace'
+import { arrayCellTarget } from '../world/arrayCellTarget'
+import { computeArrayWindow } from '../world/arrayWindow'
+import { presentedFlowPorts } from '../world/flowTopology'
 import type { TraceEvent } from '../contracts/runtime'
-import { endpointPosition, relevantFlowHistory, semanticFlowPoints, transitionIsFlow } from './flowPresentation'
+import { relevantFlowHistory, semanticFlowPoints, transitionIsFlow } from './flowPresentation'
 import { deriveSemanticTransition, transitionsForTrace, type SemanticTransition } from './semanticTransition'
 
 describe('semantic transition pipeline', () => {
@@ -34,9 +36,19 @@ describe('semantic transition pipeline', () => {
     const flows = transitionsForTrace(trace)
     const write = flows.find((item) => item.kind === 'array-write' && item.from)
     expect(write).toMatchObject({ evidence: 'observed' })
-    const layout = createLayout(trace)
-    const final = buildSceneModel(seek(trace, trace.events.length), layout, 'meso')
-    expect(endpointPosition(write!.to, layout, final)).toEqual(layout.anchors[write!.to!.id].bodyPort)
+    const projection = projectTrace(trace), final = projection.project(trace.events.length)
+    const target = arrayCellTarget(final, write!.to!.id)!
+    expect(target).not.toBeNull()
+    const window = computeArrayWindow({ recordingId: final.recordingId, arrayId: target.array.id, recordedLength: target.array.length,
+      anchor: target.array.anchor, requestedIndices: [target.index], nominalCellBudget: 128 })
+    const presented = new Map([[target.array.id, {id:target.array.id,mode:'detailed' as const,detail:'CLOSE' as const,opacity:1,pinned:true,pickable:true,highlight:null}]])
+    const windows = new Map([[target.array.id, window]])
+    const destination = presentedFlowPorts(final, presented, windows)(write!.to!)!
+    expect(destination.point).toEqual(window.mapping.get(write!.to!.id)!.port)
+    expect(destination.point).toEqual(projection.layout.anchors[write!.to!.id].bodyPort)
+    for (const cursor of [write!.seq + 1, trace.events.length, write!.seq + 1]) {
+      expect(presentedFlowPorts(projection.project(cursor), presented, windows)(write!.to!)?.point).toEqual(destination.point)
+    }
     expect(relevantFlowHistory(flows, write!.to!.id, trace.events.length).some((item) => item.id === write!.id)).toBe(true)
   })
 

@@ -1,6 +1,6 @@
 # Architecture
 
-Current implementation, 2026-10-13. Whole-product convergence, hierarchy completion, presentation-memory approval and legacy removal are still open. This is an implementation record, not a completed milestone claim.
+Current implementation, 2026-10-13. Whole-product convergence, presentation-memory approval and legacy removal are still open. This is an implementation record, not a completed milestone claim.
 
 ## Runtime boundary
 
@@ -22,7 +22,7 @@ The scene is complete; PresentationPlanner chooses detail, quiet entities, resid
 
 Array windows map temporary presented cells back to canonical object/index slot IDs. Collections retain captured preview/size/observation truth, including retirement when an accepted summary replaces earlier entries. Historical references retain recorded lifetimes and event IDs; overwritten/null bindings do not become current references. Repeated observations with unchanged values still expose their latest recorded evidence.
 
-Current residual clustering supports type, package and recorded JDK/library ownership with stable outward proxy reservations. Class, recorded invocation-branch, collection-membership and execution-age hierarchy completion remains open. Existing first-sequence geography is not claimed to solve all prefix/lifetime roles.
+The current hierarchy indexes class, type, package, actual recorded ownership, captured collection membership, observed invocation ancestry and normalized execution-age buckets. Immutable membership intervals handle preview replacement and rewind; canonical nodes retain zero-member identity/anchors, while the presented cut excludes pins and detailed/quiet identities exactly once. Optional detail expands whole groups ranked by one-hop relevance, actual project ownership and coarse target tile. Residual groups coarsen to package and recorded ownership; live-depth labels use canonical recorded methods with innermost ties. Native convergence of this hierarchy passes all 69 current cases; `migration/cluster-hierarchy.md` records the precise contract and evidence boundary.
 
 ## Interaction, camera and time
 

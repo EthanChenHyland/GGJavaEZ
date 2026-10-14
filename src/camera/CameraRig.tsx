@@ -15,6 +15,7 @@ import {homeFraming} from './homeFraming'
 import {heroFraming} from './heroFraming'
 import {guidedFollow} from './guidedFollow'
 import {focusFraming} from './focusFraming'
+import {focusAngles} from './focusAngles'
 import {followPathFraming} from './followPathFraming'
 import {clusterFraming} from './clusterFraming'
 import {guidedTravel,travelPose,type GuidedTravel} from './guidedTravel'
@@ -76,8 +77,8 @@ export function CameraRig({scene,plan,event,layout,safeFrame,inspectorRect,input
    // Opening a narrow sheet never moves the camera by itself. An explicit
    // Focus request uses the free rectangle above that actual visible sheet.
    const area=commandArea()
-   const neighbours=plan.framing.focus?.neighbours??[],left=neighbours.filter(id=>scene.entities[id]?.anchor.position[0]<anchor.position[0]).length,right=neighbours.length-left
-   begin(focusFraming(anchor,{yaw:left>=right?Math.abs(tokens.focus.yaw):-Math.abs(tokens.focus.yaw),pitch:tokens.focus.pitch},area,size),motion.focusMs)
+   const neighbours=(plan.framing.focus?.neighbours??[]).flatMap(id=>scene.entities[id]?[scene.entities[id].anchor]:[])
+   begin(focusFraming(anchor,focusAngles(anchor,neighbours,useInteractionStore.getState().focus?.kind==='cluster'),area,size),motion.focusMs)
   }
   if(intent.kind==='exitFocus')begin(intent.pose,motion.exitFocusMs)
   if(intent.kind==='zoom'){move.current=null;const pivot=controls.current?.target??new Vector3();camera.position.sub(pivot).multiplyScalar(intent.factor).add(pivot)}

@@ -1,13 +1,22 @@
-import {expect,type Page} from '@playwright/test'
+import {expect,test,type Page} from '@playwright/test'
+import {writeFile} from 'node:fs/promises'
 import {PerspectiveCamera,Vector3} from 'three'
 import {ready} from './harness'
 import type {PresentedCluster} from '../../src/contracts/worldV2'
 import type {Selection} from '../../src/contracts/interaction'
 
 export async function far(page:Page){
+ const observations:unknown[]=[]
  await page.locator('.world-canvas').focus()
  for(let index=0;index<40&&await page.evaluate(()=>window.__ggjavaezWorld!.plan().detailLevel!=='FAR');index++){
   await page.waitForTimeout(210);await page.keyboard.press('-');await ready(page)
+  observations.push(await page.evaluate(()=>({pose:window.__ggjavaezQA!.cameraPose(),detail:window.__ggjavaezWorld!.plan().detailLevel,focus:window.__ggjavaezQA!.focusTarget()})))
+ }
+ if(await page.evaluate(()=>window.__ggjavaezWorld!.plan().detailLevel!=='FAR')){
+  const geometry=await page.evaluate(()=>({shell:window.__ggjavaezQA!.shellRects(),entities:Object.values(window.__ggjavaezWorld!.scene().entities).map(node=>({id:node.id,kind:node.kind,anchor:node.anchor})),clusters:window.__ggjavaezWorld!.plan().clusters}))
+  const path=test.info().outputPath('far-native-observations.json')
+  await writeFile(path,JSON.stringify({observations,geometry},null,2))
+  await test.info().attach('far-native-observations',{path,contentType:'application/json'})
  }
  expect(await page.evaluate(()=>window.__ggjavaezWorld!.plan().detailLevel)).toBe('FAR')
 }

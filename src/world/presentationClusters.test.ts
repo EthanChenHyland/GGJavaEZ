@@ -78,19 +78,19 @@ it('uses the first metadata observation for an ownership anchor, not the oldest 
  incremental.append(data.trace.events)
  expect(presentationClusters(data.at(3),incremental.state,['older'],'FAR',20,null,false)[0].anchor).toEqual(original.anchor)
 })
-it('coarsens exact type keys into recorded package keys, then the root namespace, without mixing ownership',()=>{
+it('coarsens exact type keys into recorded package keys, then recorded ownership, without mixing ownership',()=>{
  const data=catalog([allocation(0,'a','app.one.A','PROJECT'),allocation(1,'b','app.one.B','PROJECT'),allocation(2,'c','app.two.C','PROJECT'),allocation(3,'d','app.two.D','PROJECT'),allocation(4,'external','vendor.Any','JDK')]),scene=data.at()
  const packages=presentationClusters(scene,data.layout.state,scene.order.objects,'MEDIUM',3,null,false)
  expect(packages.map(c=>[c.key,c.memberIds])).toEqual([[{kind:'package',value:'app.one'},['a','b']],[{kind:'package',value:'app.two'},['c','d']],[{kind:'ownership',value:'JDK'},['external']]])
  const root=presentationClusters(scene,data.layout.state,scene.order.objects,'MEDIUM',2,null,false)
- expect(root.map(c=>[c.key,c.memberIds])).toEqual([[{kind:'package',value:'*'},['a','b','c','d']],[{kind:'ownership',value:'JDK'},['external']]])
+ expect(root.map(c=>[c.key,c.memberIds])).toEqual([[{kind:'ownership',value:'PROJECT'},['a','b','c','d']],[{kind:'ownership',value:'JDK'},['external']]])
  for(const clusters of [packages,root])expect(clusters.reduce((sum,c)=>sum+c.members,0)).toBe(scene.order.objects.length)
 })
-it('separates the actual default package from a whole-region root package cut',()=>{
+it('separates the actual default package from a recorded ownership cut',()=>{
  const data=catalog([allocation(0,'a','A','PROJECT'),allocation(1,'b','named.B','PROJECT')]),scene=data.at()
  const exact=presentationClusters(scene,data.layout.state,scene.order.objects,'CLOSE',2,null,false)
  const root=presentationClusters(scene,data.layout.state,scene.order.objects,'CLOSE',1,null,false)[0]
- expect(root.key).toEqual({kind:'package',value:'*'});expect(root.id).not.toBe(exact[0].id)
+ expect(root.key).toEqual({kind:'ownership',value:'PROJECT'});expect(root.id).not.toBe(exact[0].id)
  expect(root.memberIds).toEqual(['a','b']);expect(root.anchor.ports).toEqual({})
 })
 

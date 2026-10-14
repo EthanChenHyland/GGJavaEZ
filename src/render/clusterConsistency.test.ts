@@ -35,6 +35,8 @@ it('keeps short package previews unambiguous and preserves literal binary dollar
  const names=clusterLabelNames([{id:'heap:a',label:'warehouse.Crate'},{id:'stack:a',label:'warehouse.Crate'},{id:'heap:b',label:'retail.Crate'},{id:'heap:c',label:'catalog.Label'},{id:'heap:d',label:'pkg.Cash$Money'}])
  expect(names.get('heap:a')).toBe('warehouse.Crate');expect(names.get('stack:a')).toBe('warehouse.Crate');expect(names.get('heap:b')).toBe('retail.Crate')
  expect(names.get('heap:c')).toBe('Label');expect(names.get('heap:d')).toBe('Cash$Money')
+ const structural=clusterLabelNames([{id:'live',label:'Live depth · Work.execute()',key:{kind:'invocation-branch',value:'live stack'}},{id:'collection',label:'Collection pkg.list',key:{kind:'collection',value:'pkg.list'}}])
+ expect(structural.get('live')).toBe('Live depth · Work.execute()');expect(structural.get('collection')).toBe('Collection pkg.list')
 })
 it('abbreviates the grouping key without truncating the exact count and discards inherited row ports',()=>{
  const representative={entityId:'captured',region:'heap' as const,position:[9,-3,4] as const,size:[5.2,8,2.3] as const,ports:{'captured:field':[9,-2,5.15] as const},bodyPort:[9,-3,5.15] as const}

@@ -7,7 +7,8 @@ import type { FlowCatalog, RecordedFlow } from './flowCatalog';
 import { arrayCellTarget } from './arrayCellTarget';
 import {createConnectorRouter,type ConnectorRouter} from './connectorRouter';
 export {curvedPath} from './connectorRouting';
-import {presentationClusters} from './presentationClusters';
+import {presentationClusters,residualGroups} from './presentationClusters';
+import {clusterHierarchy} from './clusterHierarchy';
 import {recordedOwnership} from './recordedOwnership';
 import {faceRows} from './faceRows';
 import {referencePresentationTopology} from './referencePresentationTopology';
@@ -22,6 +23,7 @@ export interface PlanInput {
     selection: Selection;
     focusTargetId: EntityId | null;
     clusterTravelMemberId?: EntityId;
+    viewTile?: Vec3; // coarse target tile only; continuous orbit does not re-plan
     trace: {
         active: boolean;
         scope: TraceScope;
@@ -98,6 +100,14 @@ export function planPresentation(input: PlanInput, previous?: PresentationPlan):
     const reservedObjects = new Set(ids.filter(id => category(scene.entities[id]) === 'objects' && mandatory.has(id)));
     const reserve = (targets: readonly string[]) => { for (const target of targets) { pin(target, 'direct detailed-row reference'); reservedObjects.add(target); } };
     const entities = new Map<string, PresentedEntity>(), overflow: PresentationPlan['budgetOverflow'][number][] = [];
+    const hierarchy=clusterHierarchy(scene,layout);
+    const oneHop=new Set(scene.references.flatMap(ref=>mandatory.has(ref.sourceId)?[ref.targetId]:mandatory.has(ref.targetId)?[ref.sourceId]:[]));
+    const tile=input.viewTile??[0,0,0];
+    const rank=(members:readonly string[])=>{
+      const result={hop:1,project:1,distance:Infinity,first:Infinity};
+      for(const id of members){if(oneHop.has(id))result.hop=0;if(recordedOwners.get(id)==='PROJECT')result.project=0;result.distance=Math.min(result.distance,layout.anchors[id].position.reduce((sum,value,axis)=>sum+(Math.floor(value/12)-tile[axis])**2,0));result.first=Math.min(result.first,layout.placement[id].firstSeq)}
+      return result;
+    };
     let pickableQuiet = 0;
     const add = (id: string, mode: 'detailed' | 'quiet') => {
         const node = scene.entities[id], pinned = mandatory.has(id);
@@ -119,19 +129,23 @@ export function planPresentation(input: PlanInput, previous?: PresentationPlan):
             add(id, 'detailed');
         if (required.length > budget[cat])
             overflow.push({ category: cat, nominal: budget[cat], actual: required.length, mandatoryIds: required, reasons: [...new Set(required.flatMap(id => [...mandatory.get(id)!]))] });
-        const optional = ids.filter(id => category(scene.entities[id]) === cat && !mandatory.has(id) && !collapsedExternal(id)).reverse();
+        const optional = residualGroups(scene,layout,ids.filter(id => category(scene.entities[id]) === cat && !mandatory.has(id) && !collapsedExternal(id)),detailLevel)
+          .map(group=>({...group,rank:rank(group.members)})).sort((a,b)=>a.rank.hop-b.rank.hop||a.rank.project-b.rank.project||a.rank.distance-b.rank.distance||a.rank.first-b.rank.first||a.id.localeCompare(b.id));
         let remaining = Math.max(0, budget[cat] - required.length);
-        for (const id of optional) {
+        for (const group of optional) {
             if (!remaining) break;
-            if (entities.has(id)) continue;
-            const targets = dependencies(id), additional = targets.filter(target => !reservedObjects.has(target));
-            const cost = additional.length + (cat === 'objects' ? 1 : 0);
+            const members=group.members.filter(id=>!entities.has(id));
+            if(!members.length||members.length>remaining)continue;
+            const targets=[...new Set(members.flatMap(dependencies))],additional=targets.filter(target=>!reservedObjects.has(target)&&!members.includes(target));
+            const cost = additional.length + (cat === 'objects' ? members.length : 0);
             if (cost > Math.max(0, budget.objects - reservedObjects.size)) continue;
             if (cat === 'objects' && cost > remaining) continue;
-            reserve(targets); add(id, 'detailed'); remaining--;
+            reserve(targets);
+            for(const id of members)add(id,'detailed');
+            for(const target of additional)add(target,'detailed');
+            remaining-=members.length;
             if (cat === 'objects') {
-                reservedObjects.add(id);
-                for (const target of additional) add(target, 'detailed');
+                for(const id of members)reservedObjects.add(id);
                 remaining -= additional.length;
             }
         }
@@ -139,7 +153,8 @@ export function planPresentation(input: PlanInput, previous?: PresentationPlan):
     for (const id of ids.filter(id => !entities.has(id) && !collapsedExternal(id)).slice(0, budget.quiet))
         add(id, 'quiet');
     const residual = ids.filter(id => !entities.has(id));
-    const clusters = presentationClusters(scene, layout, residual, detailLevel, budget.clusters, selection, !!focused);
+    const clusters = presentationClusters(scene, layout, residual, detailLevel, budget.clusters, selection, !!focused,hierarchy);
+    if(clusters.length>budget.clusters)overflow.push({category:'clusters',nominal:budget.clusters,actual:clusters.length,mandatoryIds:clusters.map(cluster=>cluster.id),reasons:['irreducible recorded ownership/region and live-depth partitions required for exact accounting']});
     const cellWindows = new Map<string, ArrayWindow>();
     const arrayRequests = new Map<string, Set<number>>();
     const request = (slotId: string | undefined) => { const cell = arrayCellTarget(scene,slotId); if (!cell) return; const indices = arrayRequests.get(cell.array.id) ?? new Set<number>(); indices.add(cell.index); arrayRequests.set(cell.array.id, indices); };

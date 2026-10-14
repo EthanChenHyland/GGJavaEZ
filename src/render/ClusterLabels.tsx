@@ -6,10 +6,11 @@ import {displayType} from '../world/displayType'
 
 /** Package previews may simplify only when no different canonical key shares
  * the displayed name. Neither lookup nor selection ever uses the preview. */
-export function clusterLabelNames(clusters:readonly Pick<PresentedCluster,'id'|'label'>[]):Map<string,string> {
+export function clusterLabelNames(clusters:readonly (Pick<PresentedCluster,'id'|'label'>&Partial<Pick<PresentedCluster,'key'>>)[]):Map<string,string> {
+ const preview=(cluster:typeof clusters[number])=>!cluster.key||['class','type','package'].includes(cluster.key.kind)?displayType(cluster.label):cluster.label
  const aliases=new Map<string,Set<string>>()
- for(const cluster of clusters){const name=displayType(cluster.label),keys=aliases.get(name)??new Set<string>();keys.add(cluster.label);aliases.set(name,keys)}
- return new Map(clusters.map(cluster=>{const name=displayType(cluster.label);return[cluster.id,aliases.get(name)!.size===1?name:cluster.label]}))
+ for(const cluster of clusters){const name=preview(cluster),keys=aliases.get(name)??new Set<string>();keys.add(cluster.label);aliases.set(name,keys)}
+ return new Map(clusters.map(cluster=>{const name=preview(cluster);return[cluster.id,aliases.get(name)!.size===1?name:cluster.label]}))
 }
 
 export function clusterLabelParts(cluster:Pick<PresentedCluster,'label'|'members'|'anchor'>,displayLabel=cluster.label) {

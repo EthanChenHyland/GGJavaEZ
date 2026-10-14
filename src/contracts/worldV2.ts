@@ -287,7 +287,22 @@ export interface PlacementInfo {
     firstSeq: number;
     clusterPath: readonly ClusterKey[];
     frameRows?: number;
+    callerId?: string | null;
+    method?: {
+        owner: string;
+        name: string;
+        parameterTypes: readonly string[] | null;
+        descriptors?: readonly {seq:number;owner:string;name:string;descriptor:string}[];
+    };
+    /** Recorded structural relationships. Intervals use normalized ordinals,
+     * not raw recorder sequence or an inferred allocation-time caller. */
+    clusterMemberships?: readonly ClusterMembership[];
     ownershipHistory?: readonly { seq:number;value:Ownership }[];
+}
+export interface ClusterMembership {
+    key: ClusterKey;
+    fromSeq: number;
+    untilSeq: number | null;
 }
 export interface LayoutState {
     anchors: Readonly<Record<EntityId, WorldAnchor>>;
