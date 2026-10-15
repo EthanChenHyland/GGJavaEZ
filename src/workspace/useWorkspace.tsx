@@ -489,6 +489,8 @@ export function useWorkspace(recordingViewer = false) {
 
   const edit = (path: string, draft: string) => {
     if (deletingPath.current && pathIsWithin(path, deletingPath.current)) return
+    const current=tabsRef.current.find(tab=>tab.path===path)
+    if(!current||current.draft===draft)return
     sourceRequest.current++; setMappedExecutingSource(null)
     const next = tabsRef.current.map((tab) => tab.path === path ? { ...tab, draft } : tab)
     tabsRef.current = next; setTabs(next)

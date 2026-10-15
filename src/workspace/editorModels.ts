@@ -5,6 +5,13 @@ import {pathIsWithin} from '../ide/pathChanges'
 
 // Owned by editable workspace tabs, never by recorded-source editors.
 const views=new Map<string,editor.ICodeEditorViewState>()
+/** Model switches can notify a listener installed for the preceding tab.
+ * Only the currently owned URI may publish a changed draft. */
+export function publishEditableDraft(instance:editor.IStandaloneCodeEditor|null,uri:string,currentValue:string,next:string,publish:(value:string)=>void):boolean {
+ const model=instance?.getModel()
+ if(!model||model.isDisposed()||model.uri.toString()!==uri||next===currentValue)return false
+ publish(next);return true
+}
 export function rememberEditableView(instance:editor.IStandaloneCodeEditor,projectId:string) {
  const model=instance.getModel(),view=instance.saveViewState()
  if(model&&!model.isDisposed()&&documentPath(model.uri.toString(),projectId)!==null&&view)views.set(model.uri.toString(),view)

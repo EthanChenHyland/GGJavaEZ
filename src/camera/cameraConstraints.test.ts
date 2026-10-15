@@ -1,17 +1,30 @@
 import { describe, expect, it } from 'vitest'
 import { Box3, Vector3 } from 'three'
-import type { CameraPose } from '../contracts/interaction'
+import type { EyePose as CameraPose } from './cameraConstraints'
 import rawTrace from '../examples/demos/person/person.trace.json'
 import type { TraceDocument } from '../contracts/runtime'
 const personTrace = rawTrace as TraceDocument
-import { layoutForTrace as createLayout } from '../app/layoutForTrace'
-import { responsiveHomePose } from './cameraMotion'
+import { createLayoutEngine } from '../world/layoutEngine'
+import { projectTrace } from '../testing/projectTrace'
+import { planPresentation } from '../world/presentationPlanner'
+import { homeFraming } from './homeFraming'
+import { cameraPosition } from './projection'
 import { cameraBounds, cameraCollisionBoxes, cameraSegmentHit, collisionSafeRoute, constrainCameraPose, zoomPose } from './cameraConstraints'
+
+const createLayout = (trace: TraceDocument) => { const engine = createLayoutEngine(); engine.append(trace.events); return engine.state }
+const homes = new Map<number, CameraPose>()
+const responsiveHomePose = (_unused: undefined, aspect: number): CameraPose => {
+  const known = homes.get(aspect); if (known) return known
+  const projection = projectTrace(personTrace), scene = projection.project(personTrace.events.length)
+  const plan = planPresentation({ scene, layout: projection.layout, detailLevel: 'MEDIUM', selection: null, focusTargetId: null, trace: { active: false, scope: 'relevant' } })
+  const viewport = { width: aspect * 900, height: 900 }, pose = homeFraming(scene, plan, { x: 0, y: 0, ...viewport }, viewport, projection.layout).pose
+  const eye = { position: cameraPosition(pose), target: pose.target }; homes.set(aspect, eye); return eye
+}
 
 const box = new Box3(new Vector3(-2, -1, -1), new Vector3(2, 1, 1))
 const front: CameraPose = { position: [0, 0, 8], target: [0, 0, 0] }
 
-describe('bounded runtime navigation', () => {
+describe('bounded production camera navigation', () => {
   it('clamps repeated button zoom, keeping target and viewing direction', () => {
     let pose = front
     for (let i = 0; i < 100; i++) pose = zoomPose(pose, 'out')
@@ -89,7 +102,7 @@ describe('bounded runtime navigation', () => {
   })
 
   it('keeps finite wheel/pan extremes outside runtime solids across repeated exploration', () => {
-    const boxes = cameraCollisionBoxes(Object.values(createLayout(personTrace).anchors), 0.1, 41 * Math.PI / 180, 1.5)
+    const boxes = cameraCollisionBoxes(Object.values(createLayout(personTrace).anchors), 0.1, 36 * Math.PI / 180, 1.5)
     let pose = responsiveHomePose(undefined, 1.5)
     let seed = 19
     const random = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 2 ** 32 }
@@ -98,7 +111,7 @@ describe('bounded runtime navigation', () => {
         target: [(random() - 0.5) * 120, (random() - 0.5) * 80, (random() - 0.5) * 120],
         position: [(random() - 0.5) * 200, (random() - 0.5) * 200, (random() - 0.5) * 200],
       }
-      pose = constrainCameraPose(requested, pose, boxes)
+      pose = constrainCameraPose(requested, pose, boxes, responsiveHomePose(undefined, 1.5).target)
       expect([...pose.target, ...pose.position].every(Number.isFinite)).toBe(true)
       pose.target.forEach((value, axis) => expect(Math.abs(value - responsiveHomePose(undefined, 1.5).target[axis])).toBeLessThanOrEqual(cameraBounds.pan[axis] + 1e-6))
       const range = new Vector3(...pose.position).distanceTo(new Vector3(...pose.target))
@@ -109,10 +122,10 @@ describe('bounded runtime navigation', () => {
   })
 
   it('leaves established overview framing unchanged at normal desktop aspects', () => {
-    const boxes = cameraCollisionBoxes(Object.values(createLayout(personTrace).anchors), 0.1, 41 * Math.PI / 180, 1.5)
+    const boxes = cameraCollisionBoxes(Object.values(createLayout(personTrace).anchors), 0.1, 36 * Math.PI / 180, 1.5)
     for (const aspect of [1, 1.5, 2]) {
       const pose = responsiveHomePose(undefined, aspect)
-      expect(constrainCameraPose(pose, pose, boxes)).toEqual(pose)
+      expect(constrainCameraPose(pose, pose, boxes, pose.target)).toEqual(pose)
     }
   })
 })

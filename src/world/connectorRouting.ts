@@ -41,7 +41,9 @@ export function connectorClearsFaces(points: readonly Vec3[], source: WorldAncho
 /** Prepare represented face bounds once for all routes in one presentation cut. */
 export function prepareConnectorFaceClearance(bodies:readonly WorldAnchor[]){
   const rectangle = (body: WorldAnchor) => ({ left: body.position[0] - body.size[0] / 2 - .035, right: body.position[0] + body.size[0] / 2 + .035, bottom: body.position[1] - body.size[1] / 2 - .14, top: body.position[1] + body.size[1] / 2 + .14 })
-  const face=(body:WorldAnchor)=>({id:body.entityId,...rectangle(body),front:body.position[2]+body.size[2]/2+.75,back:body.position[2]-body.size[2]/2-.75})
+  // Bodies block their real depth. Labels/chips are proud of the front face;
+  // extending that caption space behind the back would erase real deck gaps.
+  const face=(body:WorldAnchor)=>({id:body.entityId,...rectangle(body),front:body.position[2]+body.size[2]/2+.75,back:body.position[2]-body.size[2]/2})
   const faces=bodies.map(face)
   return (points:readonly Vec3[],source:WorldAnchor,target:WorldAnchor):boolean=>{
   if(points.length<2)return false
@@ -118,7 +120,7 @@ export function surfaceConnectorPoints(from: Vec3, to: Vec3, source: WorldAnchor
  * This is presentation routing; it never reserves or moves a runtime anchor. */
 function faceClearPath(start: Vec3, end: Vec3, bodies: readonly WorldAnchor[], roof: number, minimumZ: number): Vec3[] | null {
   const rects = bodies.filter(body => body.position[2] + body.size[2] / 2 + 0.75 >= minimumZ
-    && body.position[2] - body.size[2] / 2 - 0.75 <= start[2])
+    && body.position[2] - body.size[2] / 2 <= start[2])
     .map(body => ({ left: body.position[0] - body.size[0] / 2 - 0.035, right: body.position[0] + body.size[0] / 2 + 0.035,
       bottom: body.position[1] - body.size[1] / 2 - 0.14, top: body.position[1] + body.size[1] / 2 + 0.14 }))
     .filter(rect => rect.right > Math.min(start[0], end[0]) - 3 && rect.left < Math.max(start[0], end[0]) + 3

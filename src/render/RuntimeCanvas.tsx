@@ -81,6 +81,16 @@ function Metrics({ scene, plan, selection,trace }: {
                         labels.push({entityId:label.entityId,kind:label.kind,slotId:label.slotId,text:text.text,opacity:text.fillOpacity,fontPixels:projectedFontPixels(text.fontSize*scale,point,camera,size.height),planePixels:projectedPlaneFontPixels(text.fontSize*scale,point,camera,size),widthPixels:projectedPlaneFontPixels(text.fontSize*scale,point,camera,size,'x')});
                     });return labels;
                 },
+                frameText:()=>{
+                    const labels:ReturnType<NonNullable<Window['__ggjavaezWorld']>['frameText']>[number][]=[];
+                    if(!(camera instanceof PerspectiveCamera))return labels;
+                    world.traverse(group=>{
+                        const label=group.userData.runtimeFrameText as {entityId:string;kind:'scope'|'name'|'value';slotId?:string;text:Text}|undefined;
+                        if(!label)return;
+                        const text=label.text,point=new Vector3().setFromMatrixPosition(text.matrix),scale=new Vector3().setFromMatrixScale(text.matrix).y;
+                        labels.push({entityId:label.entityId,kind:label.kind,slotId:label.slotId,text:text.text,position:point.toArray() as [number,number,number],opacity:text.fillOpacity,fontPixels:projectedFontPixels(text.fontSize*scale,point,camera,size.height)});
+                    });return labels;
+                },
                 structuralLabels:()=>{
                     const host=world.getObjectByName('structural-labels');if(!host||!(camera instanceof PerspectiveCamera))return[];
                     return host.children.map(group=>{

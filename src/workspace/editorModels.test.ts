@@ -2,7 +2,7 @@ import {beforeEach,expect,it,vi} from 'vitest'
 import type {editor} from 'monaco-editor'
 import {getLoadedJavaEditorRuntime,type JavaEditorRuntime} from '../language/editorRuntime'
 import {documentUri} from '../language/protocol'
-import {createEditableModelOwner,observeEditableModels,rememberEditableView,restoreEditableView,retireEditableModels} from './editorModels'
+import {createEditableModelOwner,publishEditableDraft,observeEditableModels,rememberEditableView,restoreEditableView,retireEditableModels} from './editorModels'
 vi.mock('../language/editorRuntime',()=>({getLoadedJavaEditorRuntime:vi.fn()}))
 const loaded=vi.mocked(getLoadedJavaEditorRuntime)
 const view={cursorState:[{inSelectionMode:true,selectionStart:{lineNumber:42,column:3},position:{lineNumber:42,column:9}}],viewState:{scrollLeft:10,firstPosition:{lineNumber:20,column:1},firstPositionDeltaTop:4},contributionsState:{}} as unknown as editor.ICodeEditorViewState
@@ -51,4 +51,22 @@ it('clears owned view caches without fetching Monaco, including project replacem
  owner.update('p2',['Main.java']);expect(observeEditableModels()).toEqual({loaded:false,modelUris:[],viewUris:[]})
  rememberEditableView(instance(model(documentUri('p2','Main.java'))),'p2');owner.dispose()
  expect(observeEditableModels()).toEqual({loaded:false,modelUris:[],viewUris:[]})
+})
+
+it('ignores draft echoes and stale foreign/tab model notifications before any workspace mutation',()=>{
+ const publish=vi.fn(),own=instance(model(documentUri('p1','Main.java')))
+ expect(publishEditableDraft(own,documentUri('p1','Main.java'),'class Main {}','class Main {}',publish)).toBe(false)
+ expect(publishEditableDraft(own,documentUri('p1','Aux.java'),'class Aux {}','class Main {}',publish)).toBe(false)
+ expect(publishEditableDraft(own,documentUri('p2','Main.java'),'class Other {}','class Main {}',publish)).toBe(false)
+ expect(publishEditableDraft(null,documentUri('p1','Main.java'),'old','new',publish)).toBe(false)
+ expect(publish).not.toHaveBeenCalled()
+})
+it('publishes the exact changed draft only for the currently owned live model, including empty content',()=>{
+ const publish=vi.fn(),uri=documentUri('p1','Main.java'),text=model(uri),own=instance(text)
+ expect(publishEditableDraft(own,uri,'class Main {}','class Main { int age; }',publish)).toBe(true)
+ expect(publish).toHaveBeenLastCalledWith('class Main { int age; }')
+ expect(publishEditableDraft(own,uri,'class Main {}','',publish)).toBe(true)
+ expect(publish).toHaveBeenLastCalledWith('')
+ text.dispose();expect(publishEditableDraft(own,uri,'old','new',publish)).toBe(false)
+ expect(publish).toHaveBeenCalledTimes(2)
 })

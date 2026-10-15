@@ -10,7 +10,7 @@ import {useCameraStore} from './cameraStore'
 import {useInteractionStore} from '../interaction/interactionStore'
 import {camera as tokens,motion} from '../theme/tokens'
 import {cameraPosition,nextDetailLevel,representativeFaceHeight,type OrbitPose} from './projection'
-import {cameraCollisionBoxes,constrainCameraPose,type EyePose} from './cameraConstraints'
+import {cameraCollisionAnchors,cameraCollisionBoxes,constrainCameraPose,type EyePose} from './cameraConstraints'
 import {homeFraming} from './homeFraming'
 import {heroFraming} from './heroFraming'
 import {guidedFollow} from './guidedFollow'
@@ -39,7 +39,7 @@ export function CameraRig({scene,plan,event,layout,safeFrame,inspectorRect,input
  useEffect(()=>{lastFollow.current=-1;followRecursion.current=null;invalidate()},[followEnabled,invalidate])
  const diagonal=layout.bounds?Math.hypot(...layout.bounds.size):24
  const limits=useMemo(()=>({minDistance:tokens.minDistance,maxDistance:Math.max(tokens.minDistance,3*diagonal),pan:[Math.max(12,diagonal),Math.max(12,diagonal),Math.max(12,diagonal)] as Vec3}),[diagonal])
- const boxes=useMemo(()=>cameraCollisionBoxes(Object.values(scene.entities).map(node=>node.anchor),camera.near,tokens.fov*Math.PI/180,size.width/size.height),[scene.entities,camera.near,size.width,size.height])
+ const boxes=useMemo(()=>cameraCollisionBoxes(cameraCollisionAnchors(scene),camera.near,tokens.fov*Math.PI/180,size.width/size.height),[scene.entities,scene.io,camera.near,size.width,size.height])
  const eye=():EyePose=>({position:tuple(camera.position),target:tuple(controls.current?.target??new Vector3())})
  const previous=useRef<EyePose>(eye()),latest=useRef({scene,plan,safeFrame,boxes,limits})
  latest.current={scene,plan,safeFrame,boxes,limits}

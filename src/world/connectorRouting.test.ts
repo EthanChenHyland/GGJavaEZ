@@ -1,9 +1,21 @@
 import { describe, expect, it } from 'vitest'
 import fc from 'fast-check'
-import type { Vec3, WorldAnchor } from '../contracts/world'
+import type { Vec3, WorldAnchor } from '../contracts/worldV2'
+import { Box3, Ray, Vector3 } from 'three'
 import { connectorClearsFaces, curvedPath, roundedConnectorPoints, surfaceConnectorPoints } from './connectorRouting'
 const anchor = (id: string, position: Vec3): WorldAnchor => ({entityId:id,position,size:[4,3,1.7],region:'heap',ports:{},bodyPort:position})
 describe('exterior connector routes', () => {
+  it('protects actual bodies and proud front captions without inventing captions behind a body', () => {
+    const blocker=anchor('blocker',[0,0,0])
+    for(const [z,clear]of [[-1.2,true],[0,false],[1.1,false]] as const){
+      const source=anchor('source',[-8,0,z-.85]),target=anchor('target',[8,0,z-.85])
+      const from:Vec3=[-6,0,z],to:Vec3=[6,0,z]
+      const box=new Box3().setFromCenterAndSize(new Vector3(...blocker.position),new Vector3(...blocker.size))
+      const start=new Vector3(...from),end=new Vector3(...to),hit=new Ray(start,end.clone().sub(start).normalize()).intersectBox(box,new Vector3())
+      expect(!!hit&&hit.distanceTo(start)<=start.distanceTo(end)).toBe(z===0)
+      expect(connectorClearsFaces([from,to],source,target,[source,target,blocker])).toBe(clear)
+    }
+  })
   it('rejects opposite-side arrival through a target face and preserves its real row port on the exterior route',()=>{
     const source=anchor('source',[-8,0,0]),target=anchor('target',[8,0,0]),bodies=[source,target]
     const from:Vec3=[-6.16,-.4,.905],to:Vec3=[9.84,.3,.905]

@@ -43,7 +43,7 @@ export function createLayoutEngine(t: WorldLayoutTokens = worldLayoutTokens): La
     }>();
     const stackOccupancy = createOccupancy(), heapOccupancy = createOccupancy();
     const regionBounds: Record<Region, WorldBounds | null> = { stack: null, heap: null, library: null, class: null, io: null };
-    const lastChild = new Map<string, WorldAnchor>();
+    const lastChild = new Map<string | null, WorldAnchor>();
     const rows = new Map<string, string[]>();
     const recordedSlots = new Map<string, Map<string, RuntimeSlot>>();
     let nextLeft = t.frame.w / 2 + t.regions.stackHeapGap, root: WorldAnchor | null = null;
@@ -150,7 +150,7 @@ export function createLayoutEngine(t: WorldLayoutTokens = worldLayoutTokens): La
                 const event = events[i];
                 if (event.type === 'ENTER_METHOD' && !anchors[event.frameId]) {
                     const capacity = Math.max(t.frame.rowsMin, Math.min(t.frame.rowsMax, event.locals.filter(slot => slot.role === 'parameter' || slot.name === 'this').length + t.frame.rowAllowance));
-                    const size: Vec3 = [t.frame.w, t.frame.header + t.frame.pad + t.frame.row * capacity, t.frame.depth], parent = event.callerFrameId ? anchors[event.callerFrameId] : null, sibling = lastChild.get(event.callerFrameId ?? 'root');
+                    const size: Vec3 = [t.frame.w, t.frame.header + t.frame.pad + t.frame.row * capacity, t.frame.depth], parent = event.callerFrameId ? anchors[event.callerFrameId] : null, sibling = lastChild.get(event.callerFrameId);
                     const top = sibling ? sibling.position[1] + sibling.size[1] / 2 : parent ? parent.position[1] - parent.size[1] / 2 - t.frame.stackGap : 0;
                     let front = sibling ? sibling.position[2] + sibling.size[2] / 2 + t.frame.depth + t.frame.deckGapZ : parent ? parent.position[2] + parent.size[2] / 2 - t.frame.depthStepZ : t.frame.depth / 2;
                     let anchor: WorldAnchor;
@@ -166,7 +166,7 @@ export function createLayoutEngine(t: WorldLayoutTokens = worldLayoutTokens): La
                     const branch=parentInfo?parentInfo.callerId?parentInfo.clusterPath.find(key=>key.kind==='invocation-branch')?.value:`${event.callerFrameId}/observed-descendants`:event.callerFrameId?`${event.callerFrameId}/unavailable-ancestor`:`${event.frameId}/observed-root`;
                     const parameterTypes=event.locals.length===0||event.locals.some(slot=>slot.role==='parameter')?event.locals.filter(slot=>slot.role==='parameter').map(slot=>slot.javaType):null;
                     placement=persistentPut(placement,event.frameId,{...placement[event.frameId],callerId:event.callerFrameId,method:{owner:event.className,name:event.methodName,parameterTypes},clusterPath:[...placement[event.frameId].clusterPath,{kind:'invocation-branch',value:branch??event.frameId}]});
-                    lastChild.set(event.callerFrameId ?? 'root', anchor);
+                    lastChild.set(event.callerFrameId, anchor);
                     root ??= anchor;
                     ports(anchor, event.locals, capacity, t.frame.header, t.frame.row);
                 }

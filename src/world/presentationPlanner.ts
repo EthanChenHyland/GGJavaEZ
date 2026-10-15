@@ -123,8 +123,8 @@ export function planPresentation(input: PlanInput, previous?: PresentationPlan):
         const isFocused = id === focused || neighbours.includes(id);
         const forensic = scene.exception && mandatory.get(id)?.has('exception evidence');
         let opacity = node.kind === 'frame' && !node.live ? world.opacity.historicalFrame : mode === 'quiet' ? world.opacity.quiet : 1;
-        if (focused && !isFocused)
-            opacity = Math.min(opacity, world.opacity.focusDim);
+        if (focused)
+            opacity = isFocused ? 1 : Math.min(opacity, world.opacity.focusDim);
         if (forensicState)opacity=forensic?1:Math.min(opacity,world.opacity.forensicDim);
         const canPick = mode === 'detailed' || pinned || pickableQuiet < budget.pickable;
         if (canPick && mode === 'quiet')

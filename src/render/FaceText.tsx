@@ -24,7 +24,7 @@ export function FaceTextBatch({ children }: {
     useFrame(({ gl }) => { textReadiness.lastUploadFrame = gl.info.render.frame; });
     return <Context.Provider value={batch}><primitive object={batch}/>{children}</Context.Provider>;
 }
-export function WorldText({ children, position, size = .25, tint = color.ui.text, width = 4, align = 'left', opacity = 1, weight=400, tracking=0, minimumPixels=11, heading,collectionText }: {
+export function WorldText({ children, position, size = .25, tint = color.ui.text, width = 4, align = 'left', opacity = 1, weight=400, tracking=0, minimumPixels=11, heading,collectionText,frameText }: {
     children: string;
     position: Vec3;
     size?: number;
@@ -36,6 +36,7 @@ export function WorldText({ children, position, size = .25, tint = color.ui.text
     tracking?:number;
     minimumPixels?:11|12;
     heading?:{entityId:string;kind:'title'|'identity'};
+    frameText?:{entityId:string;kind:'scope'|'name'|'value';slotId?:string};
     collectionText?:{entityId:string;kind:'size'|'more'|'key'|'value';slotId?:string};
 }) {
     const batch = useContext(Context), anchor = useRef<Group>(null), id = useId(), text = useMemo(() => new Text(), []),lastLayout=useRef(''),syncGeneration=useRef(0);
@@ -70,5 +71,5 @@ export function WorldText({ children, position, size = .25, tint = color.ui.text
         const pixels=projectedFontPixels(size*scale,projection.point,camera,viewport.height,projection.scratch);
         text.fillOpacity=visible&&worldTextVisible(pixels,minimumPixels)?opacity:0;
     } },.5);
-    return <group ref={anchor} position={[...position]} userData={{...(heading?{runtimeHeading:{...heading,text}}:{}),...(collectionText?{runtimeCollectionText:{...collectionText,text}}:{})}}/>;
+    return <group ref={anchor} position={[...position]} userData={{...(heading?{runtimeHeading:{...heading,text}}:{}),...(collectionText?{runtimeCollectionText:{...collectionText,text}}:{}),...(frameText?{runtimeFrameText:{...frameText,text}}:{})}}/>;
 }

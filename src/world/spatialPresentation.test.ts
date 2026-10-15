@@ -1,242 +1,233 @@
 import { describe, expect, it } from 'vitest'
-import type { DetailLevel, SceneArrayCell, SceneClassNode, SceneFrameNode, SceneModel, SceneObjectNode, SceneReferenceEdge, WorldAnchor } from '../contracts/world'
-import type { SemanticTransition } from '../motion/semanticTransition'
-import { focusReferenceBudget, homeExternalGroupBudget, homeGroupBudget, planSpatialPresentation, presentationBounds, spatialBudgets } from './spatialPresentation'
+import type { RuntimeSlot, TraceDocument, TraceEvent } from '../contracts/runtime'
+import { arrayElementSlotId } from '../contracts/runtime'
+import type { DetailLevel, PresentationPlan } from '../contracts/worldV2'
+import type { Selection } from '../contracts/interaction'
+import { projectTrace } from '../testing/projectTrace'
+import { seek } from '../runtime'
+import { planPresentation, anchorCorners } from './presentationPlanner'
+import { createFlowCatalog } from './flowCatalog'
+import { clusterHierarchy, clusterId } from './clusterHierarchy'
+import { budgets } from '../theme/tokens'
+import { homeFraming } from '../camera/homeFraming'
+import { focusFraming } from '../camera/focusFraming'
 
-const anchor = (id: string, index = 0, region: WorldAnchor['region'] = 'heap'): WorldAnchor => ({ entityId: id, region, position: [region === 'heap' ? 12 : -5, -index * 4.25, -index * 1.8], size: [5.1, 3.6, 1.6], ports: {}, bodyPort: [12, -index * 4.25, -index * 1.8] })
-const frame = (id: string, index: number, caller: string | null = null): SceneFrameNode => ({ kind: 'frame', id, label: 'execute()', className: 'app.Work', depth: index, active: false, historical: true, callerFrameId: caller, anchor: anchor(id, index, 'stack'), slots: [] })
-const object = (id: string, index: number, className = 'app.Item'): SceneObjectNode => ({ kind: 'object', id, className, label: `${className} #${index}`, displayId: index, anchor: anchor(id, index), fields: [] })
-const catalog = (frames: SceneFrameNode[] = [], objects: SceneObjectNode[] = []): SceneModel => ({ frames, objects, references: [], detailLevel: 'meso', activeEventId: null, layoutKind: 'spatial2' })
-const ref = (id: string, sourceId: string, targetId: string): SceneReferenceEdge => ({ id, source: { kind: 'frame', frameId: sourceId, slotId: `${sourceId}:slot` }, targetObjectId: targetId, from: [0, 0, 0], to: [12, 0, 0] })
-const flow = (id: string, seq: number, from: string, to: string): SemanticTransition => ({ id, seq, kind: 'reference', label: 'bind', evidence: 'observed', from: { kind: 'frame', id: from }, to: { kind: 'object', id: to }, source: null, importance: 'normal' })
+type Input<T = TraceEvent> = T extends TraceEvent ? Omit<T, 'eventId' | 'seq' | 'source' | 'label' | 'importance'> : never
+const refValue = (id: string) => ({ kind: 'reference' as const, javaType: 'app.Item', objectId: id })
+const slot = (id: string, target: string): RuntimeSlot => ({ id, name: id, javaType: 'app.Item', value: refValue(target) })
+const object = (id: string, className = 'app.Item', fields: RuntimeSlot[] = [], ownership: 'PROJECT' | 'LIBRARY' | 'JDK' = 'PROJECT'): Input => ({ type: 'ALLOCATE_OBJECT', objectId: id, displayId: 1, className, fields, metadata: { ownership, runtimeType: className, packageName: className.slice(0, className.lastIndexOf('.')) } })
+const enter = (id: string, caller: string | null = null, locals: RuntimeSlot[] = []): Input => ({ type: 'ENTER_METHOD', frameId: id, callerFrameId: caller, className: 'app.Work', methodName: 'execute', locals })
+const exit = (id: string): Input => ({ type: 'EXIT_METHOD', frameId: id })
+const context = (frameId: string | null) => ({ owner: 'app.Work', name: 'execute', descriptor: '()V', frameId, site: 1, rawSeq: 91, source: null })
+const bind = (frameId: string, target: string): Input => ({ type: 'EXECUTION_FACT', fact: { kind: 'write', context: context(frameId),
+  target: { id: `${frameId}:slot`, kind: 'variable', ownerId: frameId, name: 'item', javaType: 'app.Item' }, value: refValue(target), origin: { kind: 'unknown' } } })
+function rig(inputs: Input[], completed = true) {
+  const events = [{ type: 'PROGRAM_START' as const }, ...inputs, ...(completed ? [{ type: 'PROGRAM_END' as const }] : [])].map((event, seq) => ({ ...event,
+    ...('displayId' in event ? { displayId: seq } : {}), seq, eventId: `unit/cut/${seq}`, source: null, label: 'Explicit normalized presentation unit record', importance: 'quiet' as const }))
+  const trace: TraceDocument = { schemaVersion: 2, demoId: 'unit/adaptive-cut', sourceFiles: [], events }, projection = projectTrace(trace)
+  const scene = projection.project(events.length), graph = seek(trace, events.length).executionGraph, flows = createFlowCatalog()
+  if (graph) flows.extend(graph, trace)
+  return { trace, projection, scene, flows }
+}
+type Rig = ReturnType<typeof rig>
+const cut = (r: Rig, detailLevel: DetailLevel = 'MEDIUM', selection: Selection = null, focusTargetId: string | null = null, scope: 'current' | 'relevant' | 'all' | null = null, viewTile?: readonly [number, number, number]) => planPresentation({ scene: r.scene, layout: r.projection.layout, flows: r.flows, detailLevel, selection, focusTargetId, trace: { active: scope !== null, scope: scope ?? 'relevant' }, viewTile })
+function accounted(r: Rig, plan: PresentationPlan) {
+  const members = [...plan.entities.keys(), ...plan.clusters.flatMap(cluster => cluster.memberIds)]
+  expect(members).toHaveLength(Object.keys(r.scene.entities).length)
+  expect(new Set(members)).toEqual(new Set(Object.keys(r.scene.entities)))
+  const c = plan.referencePresentation.counts
+  expect(c.current).toBe(r.scene.references.length)
+  expect(c.individual + c.bundled + c.unavailable + c.internal + c.scopeExcluded).toBe(c.current)
+  for (const category of ['frames', 'objects', 'classes'] as const) {
+    const ids = r.scene.order[category], detailed = ids.filter(id => plan.entities.get(id)?.mode === 'detailed'), required = ids.filter(id => plan.pinned.has(id))
+    expect(detailed.length).toBeLessThanOrEqual(Math.max(budgets[plan.detailLevel][category], required.length))
+  }
+  expect([...plan.entities.values()].filter(item => item.mode === 'quiet' && item.pickable).length).toBeLessThanOrEqual(budgets[plan.detailLevel].pickable)
+}
+const safe = { x: 0, y: 0, width: 1440, height: 900 }, viewport = { width: 1440, height: 900 }
+const home = (r: Rig, plan: PresentationPlan) => homeFraming(r.scene, plan, safe, viewport, r.projection.layout)
+function fanIn() {
+  const inputs: Input[] = Array.from({ length: 1000 }, (_, i) => object(`o${i}`))
+  const locals = (frame: number) => Array.from({ length: 1000 }, (_, i) => slot(`f${frame}:slot:${i}`, `o${i}`))
+  inputs.push(enter('f0', null, locals(0)))
+  for (let i = 1; i < 1000; i++) inputs.push(enter(`f${i}`, 'f0', i < 4 ? locals(i) : []), exit(`f${i}`))
+  inputs.push(exit('f0'))
+  return rig(inputs)
+}
+const fan = fanIn()
 
-describe('adaptive spatial representation', () => {
-  it.each<DetailLevel>(['macro', 'meso', 'micro'])('strictly caps %s faces, neighbors, links and picking even under large fan-in', level => {
-    const frames = Array.from({ length: 1000 }, (_, index) => ({ ...frame(`f${index}`, index, index ? 'f0' : null), active: true, historical: false }))
-    const objects = Array.from({ length: 1000 }, (_, index) => object(`o${index}`, index))
-    const scene = catalog(frames, objects)
-    scene.references = objects.flatMap(node => frames.slice(0, 4).map(source => ref(`${source.id}:${node.id}`, source.id, node.id)))
-    const plan = planSpatialPresentation(scene, { kind: 'object', id: 'o999' }, { detailLevel: level, flowDisplay: 'all' })
-    const cap = spatialBudgets[level]
-    expect(plan.scene.frames.length).toBeLessThanOrEqual(cap.frames)
-    expect(plan.scene.objects.length).toBeLessThanOrEqual(cap.objects)
-    expect(plan.scene.references.length).toBeLessThanOrEqual(cap.references)
-    expect(plan.labelledClusters.length).toBeLessThanOrEqual(cap.clusters)
-    expect(plan.pickableQuiet.length).toBeLessThanOrEqual(cap.picking)
-    expect(plan.quietVolumes.length).toBeLessThanOrEqual(cap.quiet)
-    expect(plan.scene.objects).toContain(objects[999])
-    expect(plan.geometryScene.frames.length + plan.geometryScene.objects.length).toBeLessThanOrEqual(cap.frames + cap.objects + cap.classes + cap.picking + cap.clusters)
+describe('adaptive production presentation', () => {
+  it.each<DetailLevel>(['FAR', 'MEDIUM', 'CLOSE'])('accounts for every %s identity and reference under the original 1000-frame/1000-object/4000-link fan-in', level => {
+    const plan = cut(fan, level, { kind: 'object', id: 'o999' }, null, 'all')
+    expect(fan.scene.order.frames).toHaveLength(1000); expect(fan.scene.order.objects).toHaveLength(1000); expect(fan.scene.references).toHaveLength(4000)
+    expect(plan.entities.get('o999')).toMatchObject({ mode: 'detailed', pinned: true })
+    expect(plan.clusters.length).toBeLessThanOrEqual(budgets[level].clusters)
+    const mandatoryConnectors = plan.budgetOverflow.find(item => item.category === 'connectors')?.actual ?? 0
+    expect(plan.curves.filter(curve => curve.kind === 'connector').length).toBeLessThanOrEqual(Math.max(budgets[level].connectors, mandatoryConnectors))
+    accounted(fan, plan)
   })
-
-  it('macro counts actual type and caller-branch records while preserving their stable first member', () => {
-    const frames = [frame('root', 0), ...Array.from({ length: 1000 }, (_, index) => frame(`child${index}`, index + 1, 'root'))]
-    const objects = Array.from({ length: 1000 }, (_, index) => object(`o${index}`, index))
-    const scene = catalog(frames, objects)
-    const plan = planSpatialPresentation(scene, null, { detailLevel: 'macro' })
-    expect(plan.scene.frames).toHaveLength(0)
-    expect(plan.scene.objects).toHaveLength(0)
-    const heap = plan.clusters.find(cluster => cluster.kind === 'object')!
-    const branch = plan.clusters.find(cluster => cluster.kind === 'frame' && cluster.count === 1000)!
-    expect(heap.count).toBe(1000)
-    expect(heap.quietCount).toBe(1000)
-    expect(heap.anchor).toBe(objects[0].anchor)
-    expect(branch.anchor).toBe(frames[1].anchor)
-    expect(plan.homeBounds!.size[1]).toBeLessThan(20)
-    expect(plan.homeScene.frames).toHaveLength(2)
-    const movedView = planSpatialPresentation(scene, { kind: 'object', id: 'o500' }, { detailLevel: 'micro', viewTarget: [500, 300, 40] })
-    expect(movedView.clusters.find(cluster => cluster.kind === 'object')!.anchor).toBe(heap.anchor)
-    expect(movedView.scene.objects.find(node => node.id === 'o500')).toBe(objects[500])
+  it('counts actual type and caller-branch records with stable independent cluster anchors across view and selection', () => {
+    const r = rig([enter('root'), ...Array.from({ length: 1000 }, (_, i) => [enter(`child${i}`, 'root'), exit(`child${i}`)]).flat(), exit('root'), ...Array.from({ length: 1000 }, (_, i) => object(`o${i}`))])
+    const first = cut(r, 'FAR'), hierarchy = clusterHierarchy(r.scene, r.projection.layout)
+    const heap = hierarchy.get(clusterId('heap', { kind: 'type', value: 'app.Item' }))!, branch = hierarchy.get(clusterId('stack', { kind: 'invocation-branch', value: 'root/observed-descendants' }))!
+    expect(heap.memberIds).toHaveLength(1000); expect(branch.memberIds).toHaveLength(1000)
+    expect(heap.anchor).not.toBe(r.scene.entities.o0.anchor)
+    expect(first.clusters.find(cluster => cluster.id === heap.id)?.members).toBe(1000)
+    expect(first.clusters.find(cluster => cluster.id === branch.id)?.members).toBe(1000)
+    const moved = cut(r, 'CLOSE', { kind: 'object', id: 'o500' }, null, null, [42, 25, 3])
+    expect(moved.entities.get('o500')?.pinned).toBe(true)
+    expect(moved.clusters.find(cluster => cluster.id === heap.id)?.anchor).toBe(heap.anchor)
+    expect(home(r, first).ids.filter(id => r.scene.entities[id].kind === 'frame')).toEqual(['root', 'child999'])
+    accounted(r, moved)
   })
-
-  it('recursive descendants aggregate without conflating a different caller', () => {
-    const frames = [frame('root', 0), frame('a', 1, 'root'), frame('b', 2, 'a'), frame('c', 3, 'b'), frame('other-root', 4), frame('d', 5, 'other-root')]
-    const plan = planSpatialPresentation(catalog(frames), null, { detailLevel: 'macro' })
-    expect(plan.clusters.find(cluster => cluster.representative.id === 'a')!.count).toBe(3)
-    expect(plan.clusters.find(cluster => cluster.representative.id === 'd')!.count).toBe(1)
+  it('keeps recursive descendants in their observed branch without conflating another root', () => {
+    const r = rig([enter('root'), enter('a', 'root'), enter('b', 'a'), enter('c', 'b'), exit('c'), exit('b'), exit('a'), exit('root'), enter('other-root'), enter('d', 'other-root'), exit('d'), exit('other-root')])
+    const hierarchy = clusterHierarchy(r.scene, r.projection.layout)
+    expect(hierarchy.get(clusterId('stack', { kind: 'invocation-branch', value: 'root/observed-descendants' }))?.memberIds).toEqual(['a', 'b', 'c'])
+    expect(hierarchy.get(clusterId('stack', { kind: 'invocation-branch', value: 'other-root/observed-descendants' }))?.memberIds).toEqual(['d'])
+    accounted(r, cut(r, 'FAR'))
   })
-
-  it('describes opaque caller relationships as observed ancestry', () => {
-    const ancestor = { ...frame('ancestor', 0), label: 'outer()' }
-    const child = { ...frame('callback', 1, ancestor.id), callerEvidence: 'unavailable' as const }
-    const plan = planSpatialPresentation(catalog([ancestor, child]), null, { detailLevel: 'macro' })
-    expect(plan.clusters.find(cluster => cluster.representative.id === child.id)?.label).toContain('observed ancestor outer()')
-    expect(child.callerEvidence).toBe('unavailable')
+  it('uses recorded observed ancestry without inventing a direct opaque call', () => {
+    const method = { owner: 'app.Work', name: 'execute', descriptor: '()V' }
+    const fact = (id: string, caller: string | null): Input => ({ type: 'EXECUTION_FACT', fact: { kind: 'enter', invocationId: id, callerInvocationId: caller, method, receiver: null, parameters: [], context: context(caller) } })
+    const r = rig([enter('ancestor'), fact('ancestor', null), enter('callback', 'ancestor'), fact('callback', 'ancestor')], false)
+    expect(seek(r.trace, r.trace.events.length).executionGraph!.invocations.callback).toMatchObject({ callerInvocationId: null, observedAncestorInvocationId: 'ancestor' })
+    expect(r.scene.callLinks).toEqual([])
+    expect(clusterHierarchy(r.scene, r.projection.layout).get(clusterId('stack', { kind: 'invocation-branch', value: 'ancestor/observed-descendants' }))?.memberIds).toEqual(['callback'])
+    accounted(r, cut(r, 'FAR'))
   })
-
-  it('separates actual ownership metadata and exposes selected class references', () => {
-    const objects = [object('project', 0), { ...object('library', 1), metadata: { ownership: 'LIBRARY' as const, runtimeType: 'app.Item', packageName: 'app' } }]
-    const klass: SceneClassNode = { kind: 'class', id: 'class:Registry', label: 'Registry', className: 'app.Registry', initialization: 'completed', fields: [], anchor: anchor('class:Registry', 0, 'class') }
-    const scene = { ...catalog([], objects), classes: [klass], references: [{ ...ref('static-edge', '', 'project'), source: { kind: 'class' as const, classId: klass.id, slotId: 'Registry.item' } }] }
-    const far = planSpatialPresentation({ ...scene, references: [] }, null, { detailLevel: 'macro' })
-    expect(far.clusters.filter(cluster => cluster.kind === 'object')).toHaveLength(2)
-    const selected = planSpatialPresentation(scene, { kind: 'reference', id: 'static-edge' }, { detailLevel: 'macro' })
-    expect(selected.scene.classes).toContain(klass)
-    expect(selected.scene.objects).toContain(objects[0])
-    expect(selected.scene.references[0]).toBe(scene.references[0])
+  it('separates recorded ownership and protects both endpoints of selected written static references', () => {
+    const r = rig([object('project'), object('library', 'app.Item', [], 'LIBRARY'),
+      { type: 'CLASS_OBSERVE', classId: 'jvm:class:app.Registry', className: 'app.Registry', initialization: 'observed', fields: [slot('Registry.item', 'project')] },
+      { type: 'SET_STATIC', classId: 'jvm:class:app.Registry', slotId: 'Registry.item', value: refValue('project') }])
+    const hierarchy = clusterHierarchy(r.scene, r.projection.layout)
+    expect(hierarchy.get(clusterId('heap', { kind: 'ownership', value: 'PROJECT' }))?.memberIds).toEqual(['project'])
+    expect(hierarchy.get(clusterId('library', { kind: 'ownership', value: 'LIBRARY' }))?.memberIds).toEqual(['library'])
+    const reference = r.scene.references[0], plan = cut(r, 'MEDIUM', { kind: 'reference', id: reference.id })
+    for (const id of ['jvm:class:app.Registry', 'project']) expect(plan.entities.get(id)?.pinned).toBe(true)
+    expect(plan.curves.some(curve => curve.id === reference.id)).toBe(true)
+    accounted(r, plan)
   })
-
-  it('defaults to relevant links and honors current/all within the same cap', () => {
-    const frames = [frame('current', 0), frame('past', 1)]
-    const objects = [object('a', 0), object('b', 1)]
-    const scene = catalog(frames, objects)
-    scene.frames[0] = { ...frames[0], active: true, historical: false }
-    scene.references = [ref('now', 'current', 'a'), { ...ref('old', 'past', 'b'), historical: true }]
-    const history = [flow('old-flow', 1, 'past', 'b'), flow('now-flow', 2, 'current', 'a')]
-    const relevant = planSpatialPresentation(scene, null, { flowHistory: history })
-    expect(relevant.scene.references.map(edge => edge.id)).toEqual(['now'])
-    expect(relevant.flows.map(item => item.id)).toEqual(['now-flow'])
-    const current = planSpatialPresentation(scene, { kind: 'object', id: 'b' }, { flowDisplay: 'current', flowHistory: history, transition: history[1] })
-    expect(current.scene.references.map(edge => edge.id)).toEqual(['now'])
-    expect(current.flows.map(item => item.id)).toEqual(['now-flow'])
-    const all = planSpatialPresentation(scene, null, { flowDisplay: 'all', flowHistory: history })
-    expect(all.scene.references).toHaveLength(2)
-    expect(all.flows).toHaveLength(2)
+  it('keeps default connectors and scopes actual graph-backed flows by current/relevant/all evidence', () => {
+    const r = rig([object('a'), object('b'), enter('past', null, [slot('past:slot', 'b')]), bind('past', 'b'), exit('past'), enter('current', null, [slot('current:slot', 'a')]), bind('current', 'a')], false)
+    const graph = seek(r.trace, r.trace.events.length).executionGraph!, now = graph.edges.find(edge => edge.kind === 'REFERENCE_BIND' && edge.from === 'current:slot')!, old = graph.edges.find(edge => edge.kind === 'REFERENCE_BIND' && edge.from === 'past:slot')!
+    const baseline = cut(r, 'CLOSE'), current = cut(r, 'CLOSE', { kind: 'object', id: 'b' }, null, 'current'), relevant = cut(r, 'CLOSE', { kind: 'object', id: 'a' }, null, 'relevant'), all = cut(r, 'CLOSE', null, null, 'all')
+    expect(baseline.curves.filter(curve => curve.kind === 'connector')).toHaveLength(2)
+    expect(current.curves.filter(curve => curve.kind === 'connector')).toHaveLength(0)
+    expect(current.curves.some(curve => curve.id === now.id)).toBe(true)
+    expect(current.flowPresentation.scopeExcluded).toContain(old.id)
+    expect(relevant.curves.some(curve => curve.id === now.id)).toBe(true)
+    expect(all.curves.some(curve => curve.id === old.id)).toBe(true)
+    expect(all.curves.some(curve => curve.id === now.id)).toBe(true)
+    for (const plan of [baseline, current, relevant, all]) accounted(r, plan)
   })
-
-  it('retains bounded reference architecture when a small completed world has no current subject', () => {
-    const scene = catalog([frame('done', 0)], [object('retained', 0)])
-    scene.references = [{ ...ref('retained-link', 'done', 'retained'), historical: true }]
-    const far = planSpatialPresentation(scene, null, { detailLevel: 'macro' })
-    expect(far.scene.frames[0]).toBe(scene.frames[0])
-    expect(far.scene.objects[0]).toBe(scene.objects[0])
-    expect(far.scene.references[0]).toBe(scene.references[0])
-    expect(far.quietVolumes).toHaveLength(0)
+  it('retains a completed small world and bounded reference architecture without a current subject', () => {
+    const r = rig([object('retained'), enter('done', null, [slot('done:slot', 'retained')]), exit('done')]), before = JSON.stringify(r.scene)
+    const plan = cut(r, 'MEDIUM')
+    for (const id of ['done', 'retained']) expect(plan.entities.has(id)).toBe(true)
+    expect(plan.curves.some(curve => curve.id === r.scene.references[0].id)).toBe(true)
+    expect(r.scene.liveStack).toEqual([]); expect(JSON.stringify(r.scene)).toBe(before)
+    accounted(r, plan)
   })
-
-  it('preserves selected and current invocations inside a live stack larger than the face cap', () => {
-    const frames = Array.from({ length: 1000 }, (_, index) => ({ ...frame(`f${index}`, index, index ? `f${index - 1}` : null), historical: false, active: index === 999 }))
-    const plan = planSpatialPresentation(catalog(frames), { kind: 'frame', id: 'f0' }, { detailLevel: 'micro' })
-    expect(plan.scene.frames).toHaveLength(spatialBudgets.micro.frames)
-    expect(plan.scene.frames).toContain(frames[0])
-    expect(plan.scene.frames).toContain(frames[999])
-    expect(plan.scene.frames).toContain(frames[998])
-    expect(plan.quiet.length).toBe(1000 - spatialBudgets.micro.frames)
+  it('protects selected/current invocations and aggregates the remaining original 1000-frame live stack', () => {
+    const r = rig(Array.from({ length: 1000 }, (_, i) => enter(`f${i}`, i ? `f${i - 1}` : null)), false), plan = cut(r, 'CLOSE', { kind: 'frame', id: 'f0' })
+    expect(r.scene.liveStack).toHaveLength(1000)
+    for (const id of ['f0', 'f999', 'f998', 'f997', 'f996']) expect(plan.entities.get(id)?.pinned).toBe(true)
+    expect(plan.entities.size + plan.clusters.reduce((sum, cluster) => sum + cluster.members, 0)).toBe(1000)
+    expect(plan.clusters.reduce((sum, cluster) => sum + cluster.members, 0)).toBeGreaterThan(0)
+    accounted(r, plan)
   })
-
-  it('promotes an explicitly selected old flow and its endpoints beyond the recent suffix', () => {
-    const frames = Array.from({ length: 100 }, (_, index) => frame(`f${index}`, index))
-    const objects = Array.from({ length: 100 }, (_, index) => object(`o${index}`, index))
-    const history = frames.map((node, index) => flow(`flow${index}`, index, node.id, objects[index].id))
-    const plan = planSpatialPresentation(catalog(frames, objects), null, { selectedFlowId: 'flow0', flowHistory: history })
-    expect(plan.flows[0]).toBe(history[0])
-    expect(plan.scene.frames).toContain(frames[0])
-    expect(plan.scene.objects).toContain(objects[0])
+  it('promotes an explicitly selected graph flow beyond the recent suffix and pins its actual endpoints', () => {
+    const inputs: Input[] = Array.from({ length: 100 }, (_, i) => object(`o${i}`))
+    for (let i = 0; i < 100; i++) inputs.push(enter(`f${i}`, null, [slot(`f${i}:slot`, `o${i}`)]), bind(`f${i}`, `o${i}`), exit(`f${i}`))
+    const r = rig(inputs), graph = seek(r.trace, r.trace.events.length).executionGraph!, old = graph.edges.find(edge => edge.kind === 'REFERENCE_BIND' && edge.from === 'f0:slot')!, plan = cut(r, 'CLOSE', { kind: 'flow', id: old.id }, null, 'all')
+    expect(plan.curves.some(curve => curve.id === old.id)).toBe(true)
+    expect(plan.entities.get('f0')?.pinned).toBe(true); expect(plan.entities.get('o0')?.pinned).toBe(true)
+    const recorded = graph.edges.filter(edge => edge.kind === 'REFERENCE_BIND' && r.trace.events.find(event => event.eventId === edge.eventId)?.type === 'EXECUTION_FACT')
+    expect(new Set(recorded.map(edge => edge.eventId)).size).toBe(100)
+    expect(recorded).toHaveLength(200) // Recorded binding edges include both storage and observed value versions.
+    const complete = new Set(r.flows.prefix(r.scene.cursor, r.scene).map(flow => flow.id))
+    for (const edge of recorded) expect(complete.has(edge.id)).toBe(true)
+    accounted(r, plan)
   })
-
-  it('retains array reference source cells when promoting completed topology', () => {
-    const a = object('array', 0, 'app.Item[]')
-    const cell: SceneArrayCell = { id: 'array:element:10000', index: 10000, name: '[10000]', javaType: 'app.Item', value: { kind: 'reference', javaType: 'app.Item', objectId: 'target' }, port: [12, 0, -20], anchor: anchor('array:element:10000', 0) }
-    const array = { ...a, array: { elementType: 'app.Item', length: 10001, cells: [cell] } }
-    const scene = catalog([], [array, object('target', 0)])
-    scene.references = [{ ...ref('cell-edge', '', 'target'), source: { kind: 'object', objectId: array.id, slotId: cell.id } }]
-    const plan = planSpatialPresentation(scene, null, { detailLevel: 'macro' })
-    expect(plan.faceIds.has(array.id)).toBe(true)
-    expect(plan.cellWindows.get(array.id)).toContain(cell)
-    expect(plan.scene.references[0]).toBe(scene.references[0])
-    expect(plan.geometryScene.objects.find(node => node.id === array.id)?.array?.cells[0]).toBe(cell)
+  it('maps a selected sparse reference-array source cell to its exact actual completed binding', () => {
+    const r = rig([object('target'), { type: 'ALLOCATE_ARRAY', objectId: 'array', displayId: 2, elementType: 'app.Item', length: 10001, observed: true, elements: [], metadata: { ownership: 'PROJECT', runtimeType: 'app.Item[]', packageName: 'app' } },
+      { type: 'OBJECT_OBSERVE', objectId: 'array', arrayElements: [{ index: 10000, value: refValue('target') }] }])
+    const reference = r.scene.references[0], plan = cut(r, 'CLOSE', { kind: 'reference', id: reference.id }), cell = plan.cellWindows.get('array')!.mapping.get(arrayElementSlotId('array', 10000))!
+    expect(cell.index).toBe(10000)
+    expect(plan.curves.find(curve => curve.id === reference.id)?.points[0]).toEqual(cell.port)
+    expect(plan.entities.get('array')?.pinned).toBe(true)
+    accounted(r, plan)
   })
-
-  it('keeps sparse selected cells exact inside a global cell budget', () => {
-    const arrays = Array.from({ length: 20 }, (_, arrayIndex) => {
-      const node = object(`array${arrayIndex}`, arrayIndex, 'int[]')
-      const cells: SceneArrayCell[] = Array.from({ length: 60 }, (_, index) => ({ id: `${node.id}:element:${index === 59 ? 100000 : index}`, name: `[${index}]`, javaType: 'int', value: { kind: 'primitive', javaType: 'int', value: index }, index: index === 59 ? 100000 : index, port: [12, 0, -index], anchor: anchor(`${node.id}:element:${index}`, index) }))
-      return { ...node, array: { elementType: 'int', length: 100001, cells } }
-    })
-    const selected = arrays[19].array.cells[59]
-    const scene = catalog([], arrays)
-    const plan = planSpatialPresentation(scene, { kind: 'slot', id: selected.id }, { detailLevel: 'micro' })
-    expect(plan.scene.objects).toContain(arrays[19])
-    expect(plan.cellWindows.get(arrays[19].id)).toContain(selected)
-    expect([...plan.cellWindows.values()].reduce((sum, cells) => sum + cells.length, 0)).toBeLessThanOrEqual(spatialBudgets.micro.cells)
-    expect(arrays[19].array.cells).toHaveLength(60)
-    expect(selected.index).toBe(100000)
+  it('keeps exact sparse selection within the global cell budget across the original 20 arrays and 60 captured values each', () => {
+    const inputs: Input[] = []
+    for (let i = 0; i < 20; i++) {
+      inputs.push({ type: 'ALLOCATE_ARRAY', objectId: `array${i}`, displayId: i + 1, elementType: 'int', length: 100001, observed: true, elements: [], metadata: { ownership: 'PROJECT', runtimeType: 'int[]', packageName: '' } })
+      // The unchanged recorder contract accepts at most 32 observations per event.
+      for (const [start, count] of [[0, 32], [32, 28]]) inputs.push({ type: 'OBJECT_OBSERVE', objectId: `array${i}`,
+        arrayElements: Array.from({ length: count }, (_, offset) => { const index = start + offset; return { index: index === 59 ? 100000 : index, value: { kind: 'primitive', javaType: 'int', value: index } } }) })
+    }
+    const r = rig(inputs), id = arrayElementSlotId('array19', 100000), plan = cut(r, 'CLOSE', { kind: 'slot', id })
+    expect(plan.cellWindows.get('array19')!.mapping.get(id)?.index).toBe(100000)
+    expect([...plan.cellWindows.values()].reduce((sum, window) => sum + window.mapping.size, 0)).toBeLessThanOrEqual(budgets.CLOSE.cells)
+    for (const id of r.scene.order.objects) { const node = r.scene.entities[id]; if (node.kind !== 'array') throw new Error('Expected array'); expect(node.cells).toHaveLength(60) }
+    accounted(r, plan)
   })
-
-  it('Focus retains one-hop context with immutable entities and no unrelated clusters', () => {
-    const a = object('a', 0); const b = object('b', 1); const unrelated = object('unrelated', 2)
-    const scene = catalog([], [a, b, unrelated])
-    scene.references = [{ ...ref('a:b', '', 'b'), source: { kind: 'object', objectId: 'a', slotId: 'a:field' } }]
-    const before = JSON.stringify(scene)
-    const plan = planSpatialPresentation(scene, { kind: 'object', id: 'a' }, { focus: true })
-    expect(plan.scene.objects).toEqual([a, b])
-    expect(plan.scene.objects[0]).toBe(a)
-    expect(plan.clusters).toHaveLength(0)
-    expect(plan.scene.references[0]).toBe(scene.references[0])
-    expect(JSON.stringify(scene)).toBe(before)
+  it('keeps immutable one-hop Focus context and dims every unrelated identity instead of deleting it', () => {
+    const r = rig([object('b'), object('a', 'app.Item', [slot('a:field', 'b')]), object('unrelated')]), before = JSON.stringify(r.scene), plan = cut(r, 'MEDIUM', { kind: 'object', id: 'a' }, 'a')
+    expect(plan.framing.focus?.neighbours).toEqual(['b'])
+    for (const id of ['a', 'b']) expect(plan.entities.get(id)?.opacity).toBe(1)
+    expect(plan.entities.get('unrelated')?.opacity).toBeLessThanOrEqual(.25)
+    expect(JSON.stringify(r.scene)).toBe(before); accounted(r, plan)
   })
-
-  it('Home prioritizes project groups and excludes remote external catalog extents', () => {
-    const project = Array.from({ length: 3 }, (_, index) => ({ ...object(`project${index}`, index, `app.Type${index}`), metadata: { ownership: 'PROJECT' as const, runtimeType: `app.Type${index}`, packageName: 'app' } }))
-    const jdk = Array.from({ length: 200 }, (_, index) => ({ ...object(`jdk${index}`, index + 1000, `java.Type${index}`), metadata: { ownership: 'JDK' as const, runtimeType: `java.Type${index}`, packageName: 'java' } }))
-    const scene = catalog([], [...jdk, ...project])
-    const plan = planSpatialPresentation(scene, null, { detailLevel: 'macro' })
-    expect(plan.homeScene.objects.length).toBeLessThanOrEqual(homeGroupBudget)
-    expect(plan.homeScene.objects.filter(node => node.metadata?.ownership === 'JDK').length).toBeLessThanOrEqual(homeExternalGroupBudget)
-    expect(plan.homeScene.objects).toEqual(project)
-    expect(plan.labelledClusters.map(cluster => cluster.representative)).toEqual(project)
-    expect(plan.geometryScene.objects).toEqual(project)
-    expect(plan.quietVolumes).toHaveLength(0)
-    expect(plan.homeBounds!.size[1]).toBeLessThan(20)
-    expect(scene.objects).toHaveLength(203)
-    for (const node of project) expect(plan.homeScene.objects).toContain(node)
+  it('frames project groups before bounded external groups in the original 3-project/200-JDK world', () => {
+    const r = rig([...Array.from({ length: 200 }, (_, i) => object(`jdk${i}`, `java.Type${i}`, [], 'JDK')), ...Array.from({ length: 3 }, (_, i) => object(`project${i}`, `app.Type${i}`))]), plan = cut(r, 'FAR'), framing = home(r, plan)
+    const project = framing.ids.filter(id => r.scene.entities[id].anchor.region === 'heap'), external = framing.ids.filter(id => r.scene.entities[id].anchor.region === 'library')
+    expect(project).toEqual(['project0', 'project1', 'project2']); expect(external.length).toBeLessThanOrEqual(2)
+    expect(r.scene.order.objects).toHaveLength(203); expect(plan.clusters.some(cluster => cluster.key.kind === 'ownership' && cluster.key.value === 'JDK')).toBe(true)
+    accounted(r, plan)
   })
-
-  it('Focus caps nearby true references and excludes remote endpoints', () => {
-    const center = object('subject', 0)
-    const neighbors = Array.from({ length: 30 }, (_, index) => object(`neighbor${index}`, index + 1))
-    const scene = catalog([], [center, ...neighbors])
-    scene.references = neighbors.map(node => ({ ...ref(`subject:${node.id}`, '', node.id), source: { kind: 'object' as const, objectId: center.id, slotId: `subject:${node.id}` } }))
-    const plan = planSpatialPresentation(scene, { kind: 'object', id: center.id }, { focus: true, detailLevel: 'micro' })
-    expect(plan.scene.references.length).toBeLessThanOrEqual(focusReferenceBudget)
-    expect(plan.scene.objects).toContain(center)
-    expect(plan.scene.objects).not.toContain(neighbors[29])
-    for (const edge of plan.scene.references) expect(scene.references).toContain(edge)
+  it('limits bright Focus to six deterministic true neighbors while retaining the original 30 recorded references', () => {
+    const r = rig([...Array.from({ length: 30 }, (_, i) => object(`neighbor${i}`)), object('subject', 'app.Item', Array.from({ length: 30 }, (_, i) => slot(`subject:${i}`, `neighbor${i}`)))]), plan = cut(r, 'CLOSE', { kind: 'object', id: 'subject' }, 'subject')
+    expect(plan.framing.focus!.neighbours).toHaveLength(6)
+    expect(plan.framing.focus!.neighbours).not.toContain('neighbor29')
+    expect(r.scene.references).toHaveLength(30)
+    for (const id of plan.framing.focus!.neighbours) expect(plan.entities.get(id)?.opacity).toBe(1)
+    accounted(r, plan)
   })
-
-  it('samples quiet detail near the camera target while preserving a remote selected identity', () => {
-    const nearby = Array.from({ length: 100 }, (_, index) => ({ ...object(`near${index}`, index), anchor: anchor(`near${index}`, index % 5) }))
-    const remote = Array.from({ length: 1000 }, (_, index) => object(`remote${index}`, index + 1000))
-    const plan = planSpatialPresentation(catalog([], [...nearby, ...remote]), { kind: 'object', id: 'remote999' }, {
-      detailLevel: 'meso', viewTarget: [12, 0, 0], viewPosition: [12, 0, 20],
-    })
-    expect(plan.scene.objects).toContain(remote[999])
-    expect(plan.quietVolumes.length).toBeGreaterThan(0)
-    for (const node of plan.quietVolumes) expect(nearby).toContain(node)
-    for (const node of plan.scene.objects.filter(node => node.id !== 'remote999')) expect(nearby).toContain(node)
-    expect(plan.quiet).toContain(remote[0])
+  it('prioritizes nearby whole groups while preserving a remote selection across the original 100-near/1000-remote catalog', () => {
+    const r = rig([...Array.from({ length: 100 }, (_, i) => object(`near${i}`, `near.Type${Math.floor(i / 5)}`)), ...Array.from({ length: 1000 }, (_, i) => object(`remote${i}`, 'remote.Item'))]), anchor = r.scene.entities.near0.anchor
+    const tile = anchor.position.map(value => Math.floor(value / 12)) as [number, number, number], plan = cut(r, 'MEDIUM', { kind: 'object', id: 'remote999' }, null, null, tile)
+    expect(plan.entities.get('remote999')?.pinned).toBe(true)
+    expect([...plan.entities.keys()].filter(id => id.startsWith('near')).length).toBeGreaterThan(0)
+    expect(plan.clusters.some(cluster => cluster.memberIds.includes('remote500'))).toBe(true)
+    expect(r.scene.order.objects).toHaveLength(1100); accounted(r, plan)
   })
-
-  it('derives bounds from the supplied physical volumes and handles empty catalogs', () => {
-    const node = object('a', 2)
-    expect(presentationBounds([node.anchor])!.center).toEqual(node.anchor.position)
-    presentationBounds([node.anchor])!.size.forEach((value, axis) => expect(value).toBeCloseTo(node.anchor.size[axis]))
-    expect(planSpatialPresentation(catalog(), null).homeBounds).toBeUndefined()
+  it('fits actual supplied geometry and keeps an empty catalog finite without fabricated volumes', () => {
+    const r = rig([object('a')]), anchor = r.scene.entities.a.anchor, points = anchorCorners(anchor)
+    for (const axis of [0, 1, 2]) {
+      expect((Math.min(...points.map(p => p[axis])) + Math.max(...points.map(p => p[axis]))) / 2).toBeCloseTo(anchor.position[axis])
+      expect(Math.max(...points.map(p => p[axis])) - Math.min(...points.map(p => p[axis]))).toBeCloseTo(anchor.size[axis])
+    }
+    const empty = rig([]), framing = home(empty, cut(empty))
+    expect(framing.ids).toEqual([]); expect(framing.pose.distance).toBeGreaterThan(0)
+    expect([...framing.pose.target, framing.pose.distance].every(Number.isFinite)).toBe(true)
   })
-
-  it('terminal Home summarizes distant last effects while an explicit selection remains framed in place', () => {
-    const first=object('first',0), last=object('last',1000)
-    const scene=catalog([], [first,last])
-    const event={type:'PROGRAM_END' as const,eventId:'end',seq:1,source:null,label:'complete',importance:'major' as const}
-    const transition=flow('last-effect',0,'unknown-caller',last.id)
-    const overview=planSpatialPresentation(scene,null,{detailLevel:'macro',event,transition})
-    expect(overview.scene.objects).toContain(last)
-    expect(overview.homeScene.objects).toEqual([first])
-    expect(overview.homeBounds!.size[1]).toBeLessThan(10)
-    const selected=planSpatialPresentation(scene,{kind:'object',id:last.id},{detailLevel:'macro',event,transition})
-    expect(selected.homeScene.objects).toContain(last)
-    expect(selected.scene.objects.find(node=>node.id===last.id)?.anchor).toBe(last.anchor)
-    expect(last.anchor.position).toEqual([12,-4250,-1800])
+  it('keeps terminal Home bounded while a distant selected object remains focused at its immutable recorded anchor', () => {
+    const r = rig([object('first'), ...Array.from({ length: 1000 }, (_, i) => object(`middle${i}`)), object('last')]), before = JSON.stringify(r.scene.entities.last.anchor)
+    const plan = cut(r, 'FAR', { kind: 'object', id: 'last' }, 'last'), framing = home(r, plan), pose = focusFraming(r.scene.entities.last.anchor, { yaw: 21, pitch: -8 }, safe, viewport)
+    expect(plan.entities.get('last')).toMatchObject({ pinned: true, detail: 'CLOSE' })
+    expect(framing.ids).toContain('first'); expect(framing.ids).not.toContain('last')
+    expect([...pose.target, pose.distance].every(Number.isFinite)).toBe(true)
+    expect(JSON.stringify(r.scene.entities.last.anchor)).toBe(before); accounted(r, plan)
   })
-
-  it('retains recorded I/O without visible flow and frames its immutable reserved volume', () => {
-    const io = { id: 'stdout' as const, observations: 3, preview: 'done', anchor: { ...anchor('io:stdout', 0, 'io'), position: [7, 2, 1] as const, size: [2.8, 0.8, 0.55] as const, bodyPort: [7, 2, 1.3] as const } }
-    const scene = { ...catalog(), io: [io] }
-    const plan = planSpatialPresentation(scene, null, { detailLevel: 'macro' })
-    expect(plan.scene.io?.[0]).toBe(io)
-    expect(plan.homeScene.io?.[0]).toBe(io)
-    expect(plan.geometryScene.io?.[0]).toBe(io)
-    expect(plan.homeBounds?.center).toEqual(io.anchor.position)
-    expect(plan.flows).toHaveLength(0)
-    expect(planSpatialPresentation(catalog(), null).scene.io).toBeUndefined()
+  it('retains three actual stdout observations and the immutable I/O volume without graphless flow invention', () => {
+    const r = rig(Array.from({ length: 3 }, (_, i) => ({ type: 'CONSOLE_WRITE' as const, channel: 'stdout' as const, frameId: null, text: `${i}\n` }))), plan = cut(r, 'FAR'), before = r.scene.io[0]
+    expect(before.lines).toBe(3); expect(before.anchor).toBe(r.projection.layout.anchors.stdout)
+    expect(plan.curves.filter(curve => curve.kind === 'flow')).toHaveLength(0)
+    expect(plan.flowPresentation.counts.recorded).toBe(0)
+    expect(r.projection.project(1).io).toEqual([])
+    expect(r.projection.project(r.trace.events.length).io[0].anchor).toBe(before.anchor)
+    expect(rig([]).scene.io).toEqual([])
   })
 })

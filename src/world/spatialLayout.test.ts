@@ -1,92 +1,121 @@
 import { describe, expect, it } from 'vitest'
 import type { TraceEvent, TraceDocument, RuntimeSlot } from '../contracts/runtime'
-import { createLayout, createLayoutBuilder } from './layout'
-import { buildSceneModel } from './sceneModel'
-import { seek } from '../runtime'
+import { arrayElementSlotId } from '../contracts/runtime'
+import { createLayoutEngine } from './layoutEngine'
+import { projectTrace } from '../testing/projectTrace'
+import { planPresentation } from './presentationPlanner'
+import { faceRows } from './faceRows'
+import { computeArrayWindow } from './arrayWindow'
+import { world } from '../theme/tokens'
 
-const base = { eventId: '', seq: 0, source: null, label: 'observed', importance: 'major' as const }
+const base = { eventId: '', seq: 0, source: null, label: 'Explicit observed unit fixture', importance: 'major' as const }
 const local = (id: string): RuntimeSlot => ({ id, name: id, javaType: 'int', value: { kind: 'primitive', javaType: 'int', value: 1 } })
 const enter = (id: string, caller: string | null): TraceEvent => ({ ...base, type: 'ENTER_METHOD', frameId: id, callerFrameId: caller, className: 'app.Program', methodName: 'work', locals: [], returnType: 'int' })
-const traceOf = (events: TraceEvent[]): TraceDocument => ({ schemaVersion: 2, demoId: 'spatial-contract', sourceFiles: [], events: [{ ...base, type: 'PROGRAM_START' } as TraceEvent, ...events].map((event, seq) => ({ ...event, seq, eventId: `e${seq}` })) })
-const allocation = (id: string, type: string, fields = 2): TraceEvent => ({ ...base, type: 'ALLOCATE_OBJECT', objectId: id, displayId: id === 'a' ? 1 : id === 'b' ? 2 : 3, className: type, fields: Array.from({ length: fields }, (_, index) => local(`${id}:field:${index}`)) })
+const traceOf = (events: TraceEvent[]): TraceDocument => ({ schemaVersion: 2, demoId: 'unit/spatial-contract', sourceFiles: [], events: [{ ...base, type: 'PROGRAM_START' } as TraceEvent, ...events].map((event, seq) => ({ ...event, seq, eventId: `e${seq}` })) })
+const allocation = (id: string, type: string, fields = 2): TraceEvent => ({ ...base, type: 'ALLOCATE_OBJECT', objectId: id, displayId: id === 'a' ? 1 : id === 'b' ? 2 : 3, className: type, metadata: { ownership: 'PROJECT', runtimeType: type, packageName: 'app' }, fields: Array.from({ length: fields }, (_, index) => local(`${id}:field:${index}`)) })
+const createLayout = (trace: TraceDocument) => { const engine = createLayoutEngine(); engine.append(trace.events); return engine.state }
+const cut = (trace: TraceDocument, selection: { kind: 'slot'; id: string } | null = null) => {
+  const projection = projectTrace(trace), scene = projection.project(trace.events.length)
+  return { scene, layout: projection.layout, plan: planPresentation({ scene, layout: projection.layout, detailLevel: 'CLOSE', selection, focusTargetId: null, trace: { active: false, scope: 'relevant' } }) }
+}
 
-describe('Spatial 2.0 persistent runtime geography', () => {
-  it('places descendants below and behind their actual caller; siblings do not overlap', () => {
+describe('persistent production runtime geography', () => {
+  it('places first descendants below and behind their recorded caller and siblings on nonoverlapping depth decks', () => {
     const trace = traceOf([enter('root', null), enter('left', 'root'), enter('deep', 'left'), enter('right', 'root')])
     const layout = createLayout(trace)
-    expect(layout.layoutKind).toBe('spatial2')
-    for (const [parent, child] of [['root', 'left'], ['left', 'deep'], ['root', 'right']]) {
+    for (const [parent, child] of [['root', 'left'], ['left', 'deep']]) {
       const a = layout.anchors[parent], b = layout.anchors[child]
       expect(b.position[1]).toBeLessThan(a.position[1] - (a.size[1] + b.size[1]) / 2)
       expect(b.position[2]).toBeLessThan(a.position[2])
     }
-    expect(Math.abs(layout.anchors.left.position[0] - layout.anchors.right.position[0])).toBeGreaterThan(layout.anchors.left.size[0])
-    expect(layout.anchors.deep.position[0]).toBe(layout.anchors.left.position[0])
+    const left = layout.anchors.left, right = layout.anchors.right
+    expect(right.position[1] + right.size[1] / 2).toBe(left.position[1] + left.size[1] / 2)
+    expect(right.position[2] - left.position[2]).toBeGreaterThanOrEqual(world.frame.depth + world.frame.deckGapZ - 1e-8)
+    expect(layout.anchors.deep.position[0]).toBe(left.position[0])
+    expect(layout.placement.right.callerId).toBe('root')
   })
-  it('groups actual types in append-only shelves and bounds face fields without losing runtime values', () => {
+  it('groups captured types in append-only shelves and bounds face fields without losing runtime values', () => {
     const trace = traceOf([enter('root', null), allocation('a', 'app.A', 20), allocation('b', 'app.B'), allocation('c', 'app.A')])
-    const layout = createLayout(trace)
+    const { layout, scene, plan } = cut(trace)
     expect(layout.anchors.a.position[0]).toBe(layout.anchors.c.position[0])
     expect(layout.anchors.a.position[0]).not.toBe(layout.anchors.b.position[0])
-    expect(Object.keys(layout.anchors.a.ports)).toHaveLength(6)
-    const scene = buildSceneModel(seek(trace, trace.events.length), layout, 'micro')
-    expect(scene.objects.find(node => node.id === 'a')?.fields).toHaveLength(20)
-    const builder = createLayoutBuilder()
-    for (const event of trace.events) {
+    expect(Object.keys(layout.anchors.a.ports)).toHaveLength(13)
+    const node = scene.entities.a
+    if (node.kind !== 'object') throw new Error('Expected captured object')
+    expect(node.groups.flatMap(group => group.rows)).toHaveLength(20)
+    expect(faceRows(node, plan.entities.get('a')!).visible).toHaveLength(12)
+    const builder = createLayoutEngine()
+    for (let cursor = 1; cursor <= trace.events.length; cursor++) {
       const before = builder.state, snapshot = JSON.stringify(before)
-      builder.append([event])
+      builder.append(trace.events.slice(0, cursor))
       expect(JSON.stringify(before)).toBe(snapshot)
       for (const anchor of Object.values(before.anchors)) {
-        expect(builder.state.anchors[anchor.entityId].position).toEqual(anchor.position)
-        expect(builder.state.anchors[anchor.entityId].size).toEqual(anchor.size)
+        expect(builder.state.anchors[anchor.entityId].position).toBe(anchor.position)
+        expect(builder.state.anchors[anchor.entityId].size).toBe(anchor.size)
       }
     }
     expect(builder.state).toEqual(layout)
   })
-  it('wraps 32 observed array cells into physical rows and appends an exact sparse index without moving prefix cells', () => {
+  it('maps 32 captured cells into physical rows and presents exact sparse index 999 without moving the array', () => {
     const allocate: TraceEvent = { ...base, type: 'ALLOCATE_ARRAY', objectId: 'array', displayId: 2, elementType: 'int', observed: true, length: 1000,
-      elements: Array.from({ length: 32 }, () => ({ kind: 'primitive', javaType: 'int', value: 0 })) }
+      metadata: { ownership: 'PROJECT', runtimeType: 'int[]', packageName: '' }, elements: Array.from({ length: 32 }, () => ({ kind: 'primitive', javaType: 'int', value: 0 })) }
     const observe: TraceEvent = { ...base, type: 'OBJECT_OBSERVE', objectId: 'array', arrayElements: [{ index: 999, value: { kind: 'primitive', javaType: 'int', value: 7 } }] }
-    const trace = traceOf([enter('root', null), allocate, observe]), layout = createLayout(trace)
-    const prefix = createLayout(traceOf([enter('root', null), allocate]))
-    const ids = Array.from({ length: 32 }, (_, index) => `array:element:${index}`)
-    expect(new Set(ids.map(id => layout.anchors[id].position.join(','))).size).toBe(32)
-    expect(layout.anchors[ids[8]].position[1]).toBeLessThan(layout.anchors[ids[0]].position[1])
-    for (const id of ids) expect(layout.anchors[id]).toEqual(prefix.anchors[id])
-    expect(layout.anchors['array:element:999']).toBeDefined()
-    const scene = buildSceneModel(seek(trace, trace.events.length), layout, 'micro')
-    expect(scene.objects[0].array?.cells.at(-1)?.index).toBe(999)
-    expect(scene.objects[0].array?.length).toBe(1000)
+    const prefix = traceOf([enter('root', null), allocate]), trace = traceOf([enter('root', null), allocate, observe])
+    const before = cut(prefix), after = cut(trace, { kind: 'slot', id: arrayElementSlotId('array', 999) })
+    expect(after.layout.anchors.array).toEqual(before.layout.anchors.array)
+    expect(after.layout.anchors[arrayElementSlotId('array', 999)]).toBeUndefined()
+    const window = computeArrayWindow({ recordingId: prefix.demoId, arrayId: 'array', recordedLength: 1000, anchor: before.layout.anchors.array, requestedIndices: Array.from({ length: 32 }, (_, index) => index), nominalCellBudget: 48 })
+    const cells = Array.from({ length: 32 }, (_, index) => window.mapping.get(arrayElementSlotId('array', index))!)
+    expect(new Set(cells.map(cell => cell.anchor.position.join(','))).size).toBe(32)
+    expect(cells[16].anchor.position[1]).toBeLessThan(cells[0].anchor.position[1])
+    const mapped = after.plan.cellWindows.get('array')!.mapping.get(arrayElementSlotId('array', 999))!
+    expect(mapped.index).toBe(999)
+    const node = after.scene.entities.array
+    if (node.kind !== 'array') throw new Error('Expected array')
+    expect(node.cells.at(-1)?.index).toBe(999)
+    expect(node.cells.at(-1)?.value.exact).toBe('7')
+    expect(node.length).toBe(1000)
   })
-  it('reserves late sparse observations without intersecting earlier or future arrays', () => {
-    const array = (id: string): TraceEvent => ({ ...base, type: 'ALLOCATE_ARRAY', objectId: id, displayId: 2,
-      elementType: 'int', observed: true, length: 1000, elements: [{ kind: 'primitive', javaType: 'int', value: 0 }] })
+  it('keeps sparse observations inside their reserved array volume without intersecting earlier or future arrays', () => {
+    const array = (id: string): TraceEvent => ({ ...base, type: 'ALLOCATE_ARRAY', objectId: id, displayId: id === 'a' ? 1 : id === 'b' ? 2 : 3,
+      elementType: 'int', observed: true, length: 1000, metadata: { ownership: 'PROJECT', runtimeType: 'int[]', packageName: '' }, elements: [{ kind: 'primitive', javaType: 'int', value: 0 }] })
     const observation: TraceEvent = { ...base, type: 'OBJECT_OBSERVE', objectId: 'a', arrayElements: Array.from({ length: 24 }, (_, i) => ({ index: 900 + i, value: { kind: 'primitive', javaType: 'int', value: i } })) }
     const before = createLayout(traceOf([enter('root', null), array('a'), array('b')]))
-    const complete = createLayout(traceOf([enter('root', null), array('a'), array('b'), observation, array('c')]))
-    for (const id of ['a', 'b', 'a:element:0', 'b:element:0']) {
-      expect(complete.anchors[id].position).toEqual(before.anchors[id].position)
-      expect(complete.anchors[id].size).toEqual(before.anchors[id].size)
-      for (const [slot, port] of Object.entries(before.anchors[id].ports)) expect(complete.anchors[id].ports[slot]).toEqual(port)
-    }
-    const solids = ['a', 'b', 'c', ...Array.from({ length: 24 }, (_, i) => `a:element:${900 + i}`)].map(id => complete.anchors[id])
+    const { layout: complete, scene } = cut(traceOf([enter('root', null), array('a'), array('b'), observation, array('c')]))
+    for (const id of ['a', 'b']) expect(complete.anchors[id]).toEqual(before.anchors[id])
+    const solids = ['a', 'b', 'c'].map(id => complete.anchors[id])
     for (let i = 0; i < solids.length; i++) for (const other of solids.slice(i + 1)) {
-      const solid = solids[i]
-      const gap = Math.max(...[0, 1, 2].map(axis => Math.abs(solid.position[axis] - other.position[axis]) - (solid.size[axis] + other.size[axis]) / 2))
-      expect(gap).toBeGreaterThanOrEqual(0.08 - 1e-8)
+      const solid = solids[i], gap = Math.max(...[0, 1, 2].map(axis => Math.abs(solid.position[axis] - other.position[axis]) - (solid.size[axis] + other.size[axis]) / 2))
+      expect(gap).toBeGreaterThanOrEqual(world.object.tierGap - 1e-8)
     }
+    const anchor = complete.anchors.a
+    const window = computeArrayWindow({ recordingId: scene.recordingId, arrayId: 'a', recordedLength: 1000, anchor, requestedIndices: Array.from({ length: 24 }, (_, index) => 900 + index), nominalCellBudget: 48 })
+    const sparse = Array.from({ length: 24 }, (_, index) => window.mapping.get(arrayElementSlotId('a', 900 + index))!)
+    expect(new Set(sparse.map(cell => cell.anchor.position.join(','))).size).toBe(24)
+    for (const cell of sparse) for (const axis of [0, 1, 2]) {
+      expect(Math.abs(cell.anchor.position[axis] - anchor.position[axis]) + cell.anchor.size[axis] / 2).toBeLessThanOrEqual(anchor.size[axis] / 2 + 1e-8)
+    }
+    const node = scene.entities.a
+    if (node.kind !== 'array') throw new Error('Expected array')
+    expect(node.cells).toHaveLength(25)
   })
-  it('projects class storage and its reference as a real distinct class identity', () => {
+  it('projects written static storage and its reference as a distinct class identity through every LOD', () => {
     const reference = { kind: 'reference' as const, javaType: 'app.A', objectId: 'a' }
     const event: TraceEvent = { ...base, type: 'CLASS_OBSERVE', classId: 'jvm:class:app.Program', className: 'app.Program', initialization: 'observed',
       fields: [{ id: 'static:shared', name: 'shared', javaType: 'app.A', value: reference }] }
-    const trace = traceOf([enter('root', null), allocation('a', 'app.A'), event]), layout = createLayout(trace)
-    const runtime = seek(trace, trace.events.length), scene = buildSceneModel(runtime, layout, 'micro')
-    expect(scene.classes?.[0].id).toBe('jvm:class:app.Program')
-    expect(scene.classes?.[0].anchor.region).toBe('class')
-    expect(scene.objects.map(node => node.id)).toEqual(['a'])
-    expect(scene.references[0].source).toEqual({ kind: 'class', classId: event.classId, slotId: 'static:shared' })
-    expect(scene.references[0].from).toEqual(layout.anchors[event.classId].ports['static:shared'])
-    expect(buildSceneModel(runtime, layout, 'meso').classes?.[0]).toBe(scene.classes?.[0])
+    const write: TraceEvent = { ...base, type: 'SET_STATIC', classId: event.classId, slotId: 'static:shared', value: reference }
+    const trace = traceOf([enter('root', null), allocation('a', 'app.A'), event, write]), { scene, layout } = cut(trace)
+    expect(scene.entities[event.classId].kind).toBe('class')
+    expect(scene.entities[event.classId].anchor.region).toBe('class')
+    expect(Object.values(scene.entities).filter(node => node.kind === 'object').map(node => node.id)).toEqual(['a'])
+    expect(scene.references[0].sourceId).toBe(event.classId)
+    expect(scene.references[0].sourceSlotId).toBe('static:shared')
+    for (const detailLevel of ['FAR', 'MEDIUM', 'CLOSE'] as const) {
+      const plan = planPresentation({ scene, layout, detailLevel, selection: { kind: 'reference', id: scene.references[0].id }, focusTargetId: null, trace: { active: false, scope: 'relevant' } })
+      expect(plan.entities.get(event.classId)?.pinned).toBe(true)
+      expect(scene.entities[event.classId].anchor).toBe(layout.anchors[event.classId])
+      if (detailLevel === 'FAR') expect(plan.referencePresentation.unavailable.map(item => item.id)).toContain(scene.references[0].id)
+      else expect(plan.curves.find(curve => curve.id === scene.references[0].id)?.points[0]).toEqual(layout.anchors[event.classId].ports['static:shared'])
+    }
   })
 })

@@ -108,5 +108,19 @@ for (const viewport of [{ width: 1440, height: 900 }, { width: 760, height: 900 
   const first = console.getByRole('button', {name:'Open Recorded console row 1',exact:true})
   await first.click()
   expect(await console.getByRole('region', {name:'Exact Recorded console row 1'}).locator('pre').textContent()).toBe('prompt ready\n')
+  await page.evaluate(()=>window.__ggjavaezWorld!.ready())
+  const worldBefore=await page.evaluate(()=>({cursor:window.__ggjavaezWorld!.scene().cursor,recording:window.__ggjavaezWorld!.scene().recordingId,pose:window.__ggjavaezQA!.cameraPose(),selection:window.__ggjavaezQA!.selection(),io:window.__ggjavaezWorld!.scene().io}))
+  expect(worldBefore.io.map(channel=>channel.id).sort()).toEqual(['stderr','stdin','stdout'])
+  for(const channel of worldBefore.io){
+    // Exercise the real CameraRig intent/recovery path. This is a QA pose
+    // request into observed geometry, not a claim of native pointer input.
+    await page.evaluate(anchor=>window.__ggjavaezQA!.setCameraPose({position:anchor.position,target:[anchor.position[0],anchor.position[1],anchor.position[2]-8]}),channel.anchor)
+    await page.evaluate(()=>window.__ggjavaezWorld!.ready())
+    const eye=await page.evaluate(()=>window.__ggjavaezQA!.cameraPose().position)
+    expect(eye.some((value,axis)=>Math.abs(value-channel.anchor.position[axis])>channel.anchor.size[axis]/2)).toBe(true)
+  }
+  await page.evaluate(pose=>window.__ggjavaezQA!.setCameraPose(pose),worldBefore.pose)
+  await page.evaluate(()=>window.__ggjavaezWorld!.ready())
+  expect(await page.evaluate(()=>({cursor:window.__ggjavaezWorld!.scene().cursor,recording:window.__ggjavaezWorld!.scene().recordingId,selection:window.__ggjavaezQA!.selection()}))).toEqual({cursor:worldBefore.cursor,recording:worldBefore.recording,selection:worldBefore.selection})
   expect(errors).toEqual([])
 })

@@ -1,5 +1,5 @@
 import { Box3, Vector3 } from 'three'
-import type { Vec3, WorldAnchor } from '../contracts/worldV2'
+import type { SceneModel, Vec3, WorldAnchor } from '../contracts/worldV2'
 export interface EyePose { position:Vec3;target:Vec3 }
 type CameraPose=EyePose
 const defaultHomePose:EyePose={position:[7,5,24],target:[4,-2,0]}
@@ -23,6 +23,10 @@ const clearance = 0.18
 const epsilon = 0.0001
 const tuple = (v: Vector3): Vec3 => [v.x, v.y, v.z]
 const finite = (pose: CameraPose) => [...pose.position, ...pose.target].every(Number.isFinite)
+
+export function cameraCollisionAnchors(scene:Pick<SceneModel,'entities'|'io'>):WorldAnchor[] {
+  return [...Object.values(scene.entities).map(node=>node.anchor),...scene.io.map(channel=>channel.anchor)]
+}
 
 /** A sphere enclosing the near-plane corners prevents the lens from cutting a face. */
 export function cameraCollisionBoxes(anchors: readonly WorldAnchor[], near: number, verticalFov: number, aspect: number): Box3[] {

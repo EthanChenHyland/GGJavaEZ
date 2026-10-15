@@ -113,3 +113,27 @@ it('promotes a late slot for its current recorded graph edge without inventing a
   expect(catalog.recordedProvenanceOf('late/19', seq + 1).some(item => item.edgeId === edge.id)).toBe(true)
   expect(catalog.atEvent(seq, current.project(seq))).toEqual([])
 })
+
+it('reuses bounded face positions when retired scope storage exposes a captured late local', () => {
+  const { trace } = fixture(), seq = trace.events.length
+  const retired: TraceDocument = { ...trace, events: [...trace.events, {
+    type: 'REMOVE_LOCAL', frameId: 'unit/frame', slotId: 'a', seq, eventId: 'unit/retire-first-local', source: null, label: 'Retire captured storage', importance: 'normal',
+  }] }
+  const current = projectTrace(retired), scene = current.project(seq + 1), frame = scene.entities['unit/frame'] as SceneFrame
+  const before = JSON.stringify(current.layout), model = faceRows(frame, presented)
+  expect(frame.rows.some(row => row.slotId === 'a')).toBe(false)
+  expect(model.visible.map(row => row.slotId)).toEqual(['b', 'c', 'late/0'])
+  const plan = planPresentation({ scene, layout: current.layout, detailLevel: 'CLOSE', selection: null, focusTargetId: null, trace: { active: false, scope: 'relevant' } })
+  const plates = buildSolidBatch(scene, plan).filter(solid => solid.pick.kind === 'slot' && model.visible.some(row => row.slotId === solid.pick.id))
+  expect(plates).toHaveLength(3)
+  expect(new Set(plates.map(plate => plate.anchor.position[1])).size).toBe(3)
+  const port = presentedFlowPorts(scene, plan.entities, plan.cellWindows)
+  for (const row of model.visible) {
+    expect(port({ kind: 'slot', id: row.slotId })?.point[1]).toBe(plates.find(plate => plate.pick.id === row.slotId)!.anchor.position[1])
+    expect(faceRowPort(frame, presented, row.slotId)).not.toBeNull()
+  }
+  expect(port({ kind: 'slot', id: 'a' })).toBeNull()
+  expect(faceRowPort(frame, presented, 'a')).toBeNull()
+  expect(JSON.stringify(current.layout)).toBe(before)
+  expect(current.layout.anchors['unit/frame'].ports['late/0']).toBeUndefined()
+})

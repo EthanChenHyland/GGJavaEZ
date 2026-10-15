@@ -12,7 +12,7 @@ import '../ui/monacoSetup'
 import { bindMonacoSourceScroll } from '../shell/source/monacoSourceScroll'
 import type { SourceMark } from '../shell/source/sourceScrollPolicy'
 import {sourceDecorations} from '../shell/source/sourceDecorations'
-import {rememberEditableView,restoreEditableView} from '../workspace/editorModels'
+import {rememberEditableView,restoreEditableView,publishEditableDraft} from '../workspace/editorModels'
 
 export function EditableJavaEditor({ projectId, path, value, onChange, diagnostics, navigate, onSave, executingLine = null, pausedLine = null, breakpoints = [], onToggleBreakpoint, sourceMark='running', sourceKey='', pauseId=null, exceptionLine=null, viewportHeight }: {
   projectId: string
@@ -33,6 +33,12 @@ export function EditableJavaEditor({ projectId, path, value, onChange, diagnosti
   viewportHeight: number
 }) {
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null)
+  const draftRef = useRef({uri:documentUri(projectId,path),value,onChange})
+  draftRef.current={uri:documentUri(projectId,path),value,onChange}
+  const changeDraft=useCallback((next:string|undefined)=>{
+    const current=draftRef.current
+    if(!isApplyingWorkspaceEdit())publishEditableDraft(editorRef.current,current.uri,current.value,next??'',current.onChange)
+  },[])
   const decorationsRef = useRef<editor.IEditorDecorationsCollection | null>(null)
   const breakpointDecorations = useRef<editor.IEditorDecorationsCollection | null>(null)
   const breakpointRef = useRef(breakpoints)
@@ -140,7 +146,7 @@ export function EditableJavaEditor({ projectId, path, value, onChange, diagnosti
     language={path.endsWith('.java') ? 'java' : 'plaintext'}
     theme="visual-java"
     value={value}
-    onChange={(next) => { if (!isApplyingWorkspaceEdit()) onChange(next ?? '') }}
+    onChange={changeDraft}
     onMount={onMount}
     saveViewState={false}
     keepCurrentModel
