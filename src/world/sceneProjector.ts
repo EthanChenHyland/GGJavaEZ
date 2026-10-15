@@ -11,6 +11,7 @@ import { frameTitle } from './frameTitle'
 import { consoleIoSummaries, graphIoSummaries } from './ioSummary'
 import { stringValueText, valueText } from './valueText'
 import {createRecordedReferenceBindings} from './recordedReferenceBindings'
+import {recordedReturnDestination} from './returnEvidence'
 
 export interface ProjectionContext {
   sessionEnded: boolean
@@ -297,14 +298,14 @@ export function createSceneProjector(trace: TraceDocument): SceneProjector {
     for (let i = extendsPrior ? length : 0; i < state.returns.length; i++) returnIndex = persistentPut(returnIndex, state.returns[i].frameId, state.returns[i])
     indexedReturns = state.returns
   }
-  function provenDestination(frameId: string, state: RuntimeState): SceneReturnFlow['destination'] | null {
-    const transfer = returnIndex[frameId]
-    if (transfer?.destination) return { entityId: transfer.destination.frameId, slotId: transfer.destination.slotId }
-    const graph = state.executionGraph, valueId = graph?.invocations[frameId]?.returnValueId
-    if (!graph || !valueId) return null
-    for (const index of graph.outgoing[valueId] ?? []) {
-      const edge = graph.edges[index], storage = graph.storage[edge.to]
-      if (edge.kind === 'ASSIGN' && storage && seqOf(edge.eventId, state.cursor) !== null) return { entityId: storage.ownerId, slotId: storage.id }
+  function provenReturn(frameId:string,state:RuntimeState) {
+    const graph=state.executionGraph,valueId=graph?.invocations[frameId]?.returnValueId
+    if(!graph||!valueId)return null
+    for(const index of graph.incoming[valueId]??[]){
+      const edge=graph.edges[index],event=byEvent.get(edge.eventId)
+      if(!event||event.seq>=state.cursor)continue
+      const returned=recordedReturnDestination(graph,edge,event,byEvent)
+      if(returned?.frameId===frameId)return {edge,event,...returned}
     }
     return null
   }
@@ -312,7 +313,7 @@ export function createSceneProjector(trace: TraceDocument): SceneProjector {
     const event = state.cursor ? events[state.cursor - 1] : null, sourceLine = sourceAt(frame.id, state.cursor)
     const invocation = state.executionGraph?.invocations[frame.id]
     const status = frameStatus({ frame, state, cursorEvent: event, context, sourceLine, returnTransfer: returnIndex[frame.id] ?? null,
-      returnDestinationProven: !!provenDestination(frame.id, state), valueOptions: { objects: state.objects, context: 'frame' } })
+      returnDestinationProven: !!provenReturn(frame.id, state), valueOptions: { objects: state.objects, context: 'frame' } })
     const exception = state.exceptions.at(-1)
     const exceptionRole = exception?.caughtBy === frame.id ? 'caught' : exception?.frameIds.at(-1) === frame.id ? 'origin' : exception?.unwoundFrameIds.includes(frame.id) ? 'unwound' : null
     const live = frame.status === 'active' && !(context.sessionEnded && state.cursor === context.liveHead)
@@ -432,8 +433,8 @@ export function createSceneProjector(trace: TraceDocument): SceneProjector {
   function returnFlows(state: RuntimeState): SceneModel['returnFlows'] {
     const result: SceneReturnFlow[] = []
     for (let i = state.returns.length - 1; i >= 0; i--) {
-      const transfer = state.returns[i], seq = seqOf(transfer.eventId, state.cursor), destination = provenDestination(transfer.frameId, state)
-      if (seq !== null && destination) result.push({ id: transfer.eventId, frameId: transfer.frameId, destination, value: valueText(transfer.value, { objects: state.objects }), operands: transfer.expression ?? null, returnSeq: seq })
+      const transfer=state.returns[i],returned=provenReturn(transfer.frameId,state)
+      if(returned)result.push({id:returned.edge.id,frameId:transfer.frameId,destination:{entityId:returned.destination.ownerId,slotId:returned.destination.id},value:valueText(transfer.value,{objects:state.objects}),operands:transfer.expression??null,returnSeq:returned.event.seq})
     }
     return freezeValue(result)
   }
@@ -569,6 +570,8 @@ export function createSceneProjector(trace: TraceDocument): SceneProjector {
       const graph = state.executionGraph, priorGraph = prior.state.executionGraph
       if (graph) for (let i = priorGraph?.edges.length ?? 0; i < graph.edges.length; i++) {
         const edge: GraphEdge = graph.edges[i]
+        const returned=graph.values[edge.from]
+        if(returned?.kind==='return'&&returned.context.frameId)touched.add(returned.context.frameId)
         for (const id of [edge.from, edge.to, edge.originSlotId]) if (id) {
           const storageOwner = graph.storage[id]?.ownerId ?? slotOwners.get(id)
           if (storageOwner) touched.add(storageOwner)

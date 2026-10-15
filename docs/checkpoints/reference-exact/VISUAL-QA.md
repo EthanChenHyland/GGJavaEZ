@@ -28,3 +28,8 @@ The root inspects `best.png` at its original 1672×941 resolution and the fresh 
 ## Original-size scoped-face inspection — 2026-10-15
 
 The root opens the actual 1440×900 scoped-face capture beside original-size best.png. The captured `if · value < 0` section and indented row are physically inside the unchanged callee frame; the real chip selects the captured local, with labels and terminals aligned. This is a functional geometry check, not visual convergence. The same capture still shows opaque blue faces, bright grid/connector response, clipped neighboring frames, abbreviated names and weaker acrylic/environment depth than the reference. `migration/scoped-faces.md` records the raw captures and native evidence. The formal matrix and open review rows still require current captures and a dedicated shared-material/typography/composition polish pass.
+
+
+## Return evidence and Classic successors — 2026-10-15, ongoing
+
+The root opens return-provenance-native.png at 1440×900 against original 1672×941 recursion reference 08_true3d_recursion.png. Correct graph attachment is visible, but saturated opaque faces, large bright headings/halos, clipped lower stack and weak glass/environment remain open. A functional return test does not approve reference convergence.

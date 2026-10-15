@@ -51,3 +51,8 @@ Final original-size review, side-by-side assets and diff assets remain required.
 ## Current reconstruction increment — 2026-10-15
 
 Scope sections, retired/late row geometry, historical Focus brightness, true sibling-ID reservation, front-only caption clearance, channel collision participation and editable-model ownership now receive production fixes and mapped successor checks. Nine old world test consumers and all six navigation test consumers use the current pipeline, retaining their case counts/corpora; obsolete production source/CSS/contracts removal remains outstanding. The native scoped capture is inspected at original size against best.png and still has material/lighting/grid/typography differences. The first full 70-case run fails 65/5; targeted recovery passes all 13 affected cases. Full convergence is pending, so A–G and reference-exact completion remain unapproved. Detailed evidence and the old/new oracle mapping are in `migration/scoped-faces.md`.
+
+
+## Return evidence and Classic successors — 2026-10-15, ongoing
+
+Return provenance now follows the stricter corrected Requirements 10.4/10.8 and 17.1/17.5: actual graph edges and prefix-visible consumers authorize curves; direct legacy return destinations do not. Candidate IDs now equal source edge IDs, and the graphless fallback is removed. This resolves the identified evidence-boundary defect without claiming visual or A–G completion.

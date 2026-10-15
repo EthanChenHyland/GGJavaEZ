@@ -213,7 +213,7 @@ export interface SceneCallLink {
     callSeq: number;
 }
 export interface SceneReturnFlow {
-    id: string;
+    id: string; // source ExecutionGraph return-value edge ID
     frameId: FrameId;
     destination: {
         entityId: EntityId;

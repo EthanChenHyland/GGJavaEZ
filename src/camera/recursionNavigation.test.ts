@@ -9,6 +9,7 @@ import { cameraPosition, frontFace, projectionCamera, screenPoint, representativ
 import { cameraCollisionBoxes, constrainCameraPose, zoomPose } from './cameraConstraints'
 import { useCameraStore } from './cameraStore'
 import { camera as tokens } from '../theme/tokens'
+import { seek } from '../runtime'
 
 const trace = loadRecursionTrace(), projection = projectTrace(trace), deepest = projection.project(19)
 const cut = (scene = deepest) => planPresentation({ scene, layout: projection.layout, detailLevel: 'CLOSE', selection: null, focusTargetId: null, trace: { active: false, scope: 'relevant' } })
@@ -85,15 +86,15 @@ describe('captured recursive descent and return attention', () => {
   expect(after.entities[before.liveStack.at(-1)!].anchor).toBe(before.entities[before.liveStack.at(-1)!].anchor)
   expect(followInvocations(projection.project(36))).toEqual([])
  })
- it('retains the exact direct return destination rather than an unrelated active invocation', () => {
-  const scene = projection.project(20), flow = scene.returnFlows.find(flow => flow.frameId === deepest.order.frames.at(-1))!
-  expect(flow.destination).toEqual({ entityId: 'frame:factorial:2', slotId: 'slot:factorial:2:child' })
-  const caller = scene.entities[flow.destination.entityId]
+ it('retains exact captured caller storage without camera travel or a Flow unsupported by the graph', () => {
+  const scene = projection.project(20), transfer = seek(trace,20).returns.find(item => item.frameId === deepest.order.frames.at(-1))!
+  expect(transfer.destination).toEqual({ frameId: 'frame:factorial:2', slotId: 'slot:factorial:2:child' })
+  const caller = scene.entities[transfer.destination!.frameId]
   if (caller.kind !== 'frame') throw new Error('Expected caller')
-  expect(caller.rows.find(row => row.slotId === flow.destination.slotId)?.value.exact).toBe('1')
-  const curve = cut(scene).curves.find(curve => curve.id === flow.id)!
-  expect(curve.kind).toBe('return'); expect(curve.destinationAnchor).toBe(caller.anchor)
-  expect(curve.points.at(-1)).toEqual(caller.anchor.ports[flow.destination.slotId])
+  expect(caller.rows.find(row => row.slotId === transfer.destination!.slotId)?.value.exact).toBe('1')
+  expect(scene.returnFlows).toEqual([])
+  expect(cut(scene).curves.filter(curve=>curve.kind==='return')).toEqual([])
+  fits(framing(scene))
  })
  it('uses prescribed recursion angles and fits the four nearest actual frames during Follow', () => {
   const viewport = { width: 1540, height: 1000 }, safe = { x: 20, y: 80, width: 1500, height: 800 }

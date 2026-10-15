@@ -5,6 +5,7 @@ import { graphTransition, type FlowEndpoint } from '../motion/semanticTransition
 import { seek } from '../runtime'
 import { valueText } from './valueText'
 import {collectionEntryFace} from './collectionFace'
+import {consumingWriteDestination,recordedReturnDestination} from './returnEvidence'
 export type FlowKind='argument'|'receiver'|'local-field'|'field-read'|'assignment'|'reference'|'array-read'|'array-write'|'return'|'input'|'output'|'throw'|'unwind'|'catch'
 export interface SceneFlow {id:string;edgeIndex:number;kind:FlowKind;from:FlowEndpoint|null;to:FlowEndpoint;evidenceEventIds:readonly string[];evidenceSeqs:readonly number[];valueText:string|null}
 export interface RecordedFlow extends Omit<SceneFlow,'to'> {to:FlowEndpoint|null}
@@ -77,15 +78,13 @@ export function createFlowCatalog():FlowCatalog {
   const edge=candidate.edge,transition=graphTransition(event,edge,state,prefix,true)
   let from=transition?.from??(edge.evidence==='unknown'?null:physical(edge.originSlotId??edge.from,state)),to=transition?.to??physical(edge.to,state)
   const consumingDestination=(valueId:string)=>{
-   for(const index of prefix.outgoing[valueId]??[]){const consumed=prefix.edges[index],factEvent=events.get(consumed.eventId),storage=prefix.storage[consumed.to];if(!storage||!['ASSIGN','FIELD_WRITE','STATIC_WRITE','ARRAY_WRITE'].includes(consumed.kind)||factEvent?.type!=='EXECUTION_FACT'||factEvent.fact.kind!=='write')continue
-    const origin=factEvent.fact.origin;if(!['call_result','field_read','static_read','array_read'].includes(origin.kind))continue
-    return{kind:'slot' as const,id:storage.id}
-   }
-   return null
+   const storage=consumingWriteDestination(prefix,valueId,events)
+   return storage?{kind:'slot' as const,id:storage.id}:null
   }
   if(edge.kind==='RETURN'){
-   if(event.type==='EXECUTION_FACT'&&event.fact.kind==='return'&&!prefix.invocations[edge.from]&&!prefix.calls[edge.from]){from=state.frames[event.fact.invocationId]?{kind:'frame',id:event.fact.invocationId}:null;to=consumingDestination(edge.to)}
-   else from=null // completion is evidence, not an additional value-transfer curve
+   const returned=recordedReturnDestination(prefix,edge,event,events)
+   from=returned&&state.frames[returned.frameId]?{kind:'frame',id:returned.frameId}:null
+   to=returned?{kind:'slot',id:returned.destination.id}:null
   }else if(edge.kind==='FIELD_READ'||edge.kind==='STATIC_READ'||edge.kind==='ARRAY_READ'){from=physical(edge.from,state);to=consumingDestination(edge.to)}
   else if(edge.kind==='INPUT_CONSUME'){from=physical(edge.from,state);to=consumingDestination(edge.to)}
   if(from?.kind==='slot'&&from.id.startsWith('return:')){const id=from.id.slice('return:'.length),invocation=prefix.invocations[id];from=invocation?.returnValueId&&invocation.returnValueId===edge.from&&state.frames[id]?{kind:'frame',id}:null}

@@ -186,14 +186,6 @@ export function planPresentation(input: PlanInput, previous?: PresentationPlan):
         cellWindows.set(id, window); remainingCells -= window.visible.length; mandatoryCells.push(...window.budgetOverflow.mandatoryIds);
     }
     if (remainingCells < 0) overflow.push({ category: 'cells', nominal: budget.cells, actual: budget.cells - remainingCells, mandatoryIds: mandatoryCells, reasons: ['selected, focused or current semantic cell'] });
-    const port = (id: string, slot?: string): Vec3 | null => {
-      const node = scene.entities[id]; if (!node || !entities.has(id)) return null;
-      if (!slot) return node.anchor.bodyPort;
-      if (node.kind === 'array') return cellWindows.get(id)?.mapping.get(slot)?.port ?? null;
-      if (!rowIds(node).includes(slot)) return null;
-      if (node.kind === 'collection') { const entry = node.entries.find(entry=>entry.slotId === slot || entry.keySlotId === slot); return entry?.keySlotId === slot ? entry.keyPort ?? null : entry?.port ?? null; }
-      return node.anchor.ports[slot] ?? null;
-    };
     const bodyAnchors = new Map<string, WorldAnchor>();
     for (const id of entities.keys()) {
       const node = scene.entities[id], anchor = node.anchor;
@@ -203,7 +195,6 @@ export function planPresentation(input: PlanInput, previous?: PresentationPlan):
     }
     const cellAnchors = new Map([...cellWindows.values()].flatMap(window => [...window.mapping].map(([id, cell]) => [id, cell.anchor] as const)));
     const routeBodies = [...bodyAnchors.values(), ...cellAnchors.values(), ...scene.io.map(io => io.anchor), ...clusters.map(cluster => cluster.anchor),...(exceptionPanel?[exceptionPanelAnchor(exceptionPanel,scene.recording)]:[])];
-    const portAnchor = (id: string, slot?: string) => slot && scene.entities[id]?.kind === 'array' ? cellAnchors.get(slot) : bodyAnchors.get(id);
     const route = (input.router??createConnectorRouter()).forBodies(routeBodies);
     const relevantEntities=new Set([selected,focused,...(scene.cursorEvent?.subjects??[]).map(owner)].filter((id):id is string=>!!id));
     const traceParticipants=new Set<string>();
@@ -255,8 +246,6 @@ export function planPresentation(input: PlanInput, previous?: PresentationPlan):
       curve(flow.id, exception ? 'exception' : returned ? 'return' : 'flow', from.point, to.point, exception ? 'exception' : returned ? 'return' : flow.kind === 'input' ? 'stdin' : flow.kind === 'output' ? flow.to.kind==='io'&&flow.to.id==='stderr'?'stderr':'stdout' : 'reference', relevant, false, exception || returned, flow.valueText ?? undefined, from.anchor, to.anchor,forensicPath);
       if(relevant)participate(flow.from?.id,flow.to.id);
     }
-    if (!input.flows) for (const flow of scene.returnFlows.slice(0, budget.flows))
-      if (entities.has(flow.frameId) && entities.has(flow.destination.entityId)) curve(flow.id, 'return', port(flow.frameId), port(flow.destination.entityId, flow.destination.slotId), 'return', scene.cursorEvent?.seq === flow.returnSeq, false, true, flow.value.text, portAnchor(flow.frameId), portAnchor(flow.destination.entityId, flow.destination.slotId));
     const bundles = topology.bundles.map<PresentationPlan['bundles'][number]>(bundle=>{
       const relevant=bundle.id===selection?.id||bundle.references.some(referenceRelevant),roles=new Set(bundle.references.map(referenceRole));
       const opacity=referenceOpacity(bundle.references,relevant);

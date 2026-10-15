@@ -30,7 +30,7 @@ it('return at the cursor is returning; historical values show only without a pro
   expect(frameStatus({ ...original, frame: returned, cursorEvent: event({ type: 'EXIT_METHOD', frameId: 'f' }) })).toEqual({ kind: 'returning' })
   expect(frameStatus({ ...original, frame: returned })).toMatchObject({ kind: 'returned', value: { exact: '18' } })
   expect(frameStatus({ ...original, frame: returned, returnDestinationProven: true })).toEqual({ kind: 'returned', value: null })
-  expect(frameStatus({ ...original, frame: returned, returnTransfer: { eventId: 'return', frameId: 'f', value, destination: { frameId: 'caller', slotId: 'result' } } })).toEqual({ kind: 'returned', value: null })
+  expect(frameStatus({ ...original, frame: returned, returnTransfer: { eventId: 'return', frameId: 'f', value, destination: { frameId: 'caller', slotId: 'result' } } })).toMatchObject({ kind: 'returned', value: { exact: '18' } })
 })
 it('throw origin, propagated unwind and caught-at-cursor remain distinct, and caught emphasis clears', () => {
   const original = input()

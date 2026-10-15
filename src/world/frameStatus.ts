@@ -16,7 +16,7 @@ export interface FrameStatusInputs {
   events?: readonly TraceEvent[]
   /** Optional pre-indexed return; null explicitly means no observed return. */
   returnTransfer?: ReturnTransfer | null
-  /** A recorded graph destination can prove a transfer absent from the curated return representation. */
+  /** A prefix-visible graph return and consuming write prove the destination. */
   returnDestinationProven?: boolean
   valueOptions?: ValueTextOptions
 }
@@ -72,7 +72,7 @@ export function frameStatus(input: FrameStatusInputs): FrameStatus {
   }
   if (frame.status === 'returned' || returned || frame.returnValue !== undefined) {
     const value = returned?.value ?? frame.returnValue
-    const destinationProven = input.returnDestinationProven || !!returned?.destination
+    const destinationProven = input.returnDestinationProven === true
     return { kind: 'returned', value: !destinationProven && value !== undefined ? valueText(value, input.valueOptions) : null }
   }
   // An unwind with no captured class still remains an unwind; its class is explicitly unavailable.
