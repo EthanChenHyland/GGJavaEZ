@@ -14,6 +14,7 @@ import {faceRows} from './faceRows';
 import {referencePresentationTopology} from './referencePresentationTopology';
 import {historicalReferenceCatalog} from './historicalReference';
 import {buildFlowTopology} from './flowTopology';
+import {stackContextHeading} from './invocationContext';
 export interface PlanInput {
     scene: SceneModel;
     flows?: FlowCatalog;
@@ -61,6 +62,7 @@ export function planPresentation(input: PlanInput, previous?: PresentationPlan):
     };
     if(selection?.kind==='slot')requestRow(selection.id);
     requestRow(focusTargetId??undefined);requestRow(selectedRef?.sourceSlotId);
+    for(const slotId of scene.cursorEvent?.storageIds??[])requestRow(slotId);
     for(const flow of requiredFlows){if(flow.from?.kind==='slot')requestRow(flow.from.id);if(flow.to?.kind==='slot')requestRow(flow.to.id)}
     const flowRelevant = (flow: RecordedFlow) => flow.id === selection?.id || [flow.from, flow.to].some(point => point && (priority.selectedIds.has(point.id) || priority.focusedIds.has(point.id) || priority.currentIds.has(point.id)));
 
@@ -263,7 +265,7 @@ export function planPresentation(input: PlanInput, previous?: PresentationPlan):
       participate(exemplar.from!.id,exemplar.to.id);
     }
     if(trace.active)for(const[id,presented]of entities)if(!traceParticipants.has(id)&&!(forensicState&&mandatory.get(id)?.has('exception evidence')))entities.set(id,{...presented,opacity:Math.min(presented.opacity,world.opacity.traceDim)});
-    const headings: PresentationPlan['headings'][number][] = [{ id: 'STACK', position: layout.headings.stack, opacity: 1 }, { id: 'HEAP', position: layout.headings.heap, opacity: 1 }, ...(layout.headings.classState ? [{ id: 'CLASS STATE' as const, position: layout.headings.classState, opacity: 1 }] : [])];
+    const headings: PresentationPlan['headings'][number][] = [{ id: 'STACK', position: stackContextHeading(scene,layout.headings.stack), opacity: 1 }, { id: 'HEAP', position: layout.headings.heap, opacity: 1 }, ...(layout.headings.classState ? [{ id: 'CLASS STATE' as const, position: layout.headings.classState, opacity: 1 }] : [])];
     if (curves.some(curve=>curve.kind === 'return')) headings.push({id:'RETURNS', position:layout.headings.returns, opacity:1});
     const homeIds = [...new Set([live.at(-1) ?? scene.order.frames.at(-1), ...live.slice(-4), scene.order.frames[0], ...scene.order.objects.filter(id => layout.anchors[id].region === 'heap').slice(0, 12)])].filter((id): id is string => !!id);
     const hero = [...headings.slice(0, 2).flatMap(h => [h.position, [h.position[0] + 2.4, h.position[1] + .4, h.position[2]] as Vec3]), ...homeIds.flatMap(id => anchorCorners(scene.entities[id].anchor))];

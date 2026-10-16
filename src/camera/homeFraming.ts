@@ -4,17 +4,12 @@ import {exceptionPanelAnchor} from '../world/exceptionPanelPlacement'
 import {camera as tokens} from '../theme/tokens'
 import {anchorCorners} from '../world/presentationPlanner'
 import {fitToSafeFrame,frontFace,projectionCamera,screenPoint,type OrbitPose,type Size} from './projection'
-/** Current/deepest invocation plus three actual caller ancestors; completed worlds use most recent entry. */
-export function homeInvocations(scene:SceneModel):string[] {
- const latest=scene.liveStack.at(-1)??scene.order.frames.at(-1),ids:string[]=[]
- let id=latest
- while(id&&ids.length<4){const frame=scene.entities[id];if(frame?.kind!=='frame')break;ids.unshift(id);id=frame.callerId??undefined}
- return ids
-}
+import {contextInvocations as homeInvocations} from '../world/invocationContext'
+export {contextInvocations as homeInvocations} from '../world/invocationContext'
 export function homeFraming(scene:SceneModel,plan:PresentationPlan,safeFrame:Rect,viewport:Size,layout?:LayoutState):{pose:OrbitPose;ids:readonly string[];points:readonly Vec3[]} {
- const frames=homeInvocations(scene),frame=scene.entities[frames[0]],angles=tokens.hero
+ const frames=homeInvocations(scene),angles=tokens.hero
  const headings=plan.headings.filter(heading=>heading.id==='STACK'||heading.id==='HEAP').flatMap(heading=>{
-  const position:Vec3=heading.id==='STACK'&&frame?[frame.anchor.position[0],frame.anchor.position[1]+frame.anchor.size[1]/2+.75,frame.anchor.position[2]+frame.anchor.size[2]/2]:heading.position
+  const position=heading.position
   return[position,[position[0]+2.4,position[1]+.4,position[2]] as Vec3]
  })
  const ids=[...frames],points=[...headings,...frames.flatMap(id=>anchorCorners(scene.entities[id].anchor)),...(plan.exceptionPanel?anchorCorners(exceptionPanelAnchor(plan.exceptionPanel,scene.recording)):[])]

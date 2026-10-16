@@ -12,6 +12,7 @@ import { consoleIoSummaries, graphIoSummaries } from './ioSummary'
 import { stringValueText, valueText } from './valueText'
 import {createRecordedReferenceBindings} from './recordedReferenceBindings'
 import {recordedReturnDestination} from './returnEvidence'
+import {currentStorage} from './currentStorage'
 
 export interface ProjectionContext {
   sessionEnded: boolean
@@ -526,7 +527,7 @@ export function createSceneProjector(trace: TraceDocument): SceneProjector {
   }
   function cursorEvent(state: RuntimeState): SceneModel['cursorEvent'] {
     const event = state.cursor ? events[state.cursor - 1] : null
-    return event ? freezeValue({ id: event.eventId, seq: event.seq, summary: event.label, subjects: [...eventOwners(event, state.executionGraph)] }) : null
+    return event ? freezeValue({ id: event.eventId, seq: event.seq, summary: event.label, subjects: [...eventOwners(event, state.executionGraph)], storageIds: currentStorage(event) }) : null
   }
   function assemble(state: RuntimeState, layout: LayoutState, context: ProjectionContext, entities: Record<string, SceneEntity>, order: SceneModel['order'], references: readonly SceneReference[], links: SceneModel['callLinks'], returns: SceneModel['returnFlows']): SceneModel {
     // Freeze ordinary children separately: walking the virtual reference array here

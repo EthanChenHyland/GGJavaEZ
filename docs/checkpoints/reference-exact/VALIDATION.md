@@ -1,15 +1,15 @@
 # Validation
 
-Current implementation evidence, 2026-10-15. A–G completion is not claimed. The detailed chronological record is `docs/reports/reference-exact/VALIDATION.md`; migration ledgers live beside this file in `migration/`. Final results must be refreshed on the cleaned final commit and pushed tip.
+Current implementation evidence, 2026-10-16. A–G completion is not claimed. The detailed chronological record is `docs/reports/reference-exact/VALIDATION.md`; migration ledgers live beside this file in `migration/`. Final results must be refreshed on the cleaned final commit and pushed tip.
 
 | Gate | Command/evidence | Current result |
 | --- | --- | --- |
-| Default unit/property/regression | npm run test; unit-face-motion-classic-confirmed.log | 2027 pass, 70 explicit opt-in skips, 2097 total, 209 files; 173.03 s |
-| Source lint | npm run lint; lint-classic-confirmed.log | Pass |
-| Strict reference browser TS | npm run typecheck:reference; typecheck-reference-classic-confirmed.log | Pass |
+| Default unit/property/regression | npm run test; unit-current-storage-headings.log | 2034 pass, 70 explicit opt-in skips, 2104 total, 210 files; 182.61 s |
+| Source lint | npm run lint; lint-context-headings.log | Pass |
+| Strict reference browser TS | npm run typecheck:reference; typecheck-reference-context-headings.log | Pass |
 | Strict optional performance harness TS | tsc --project .ggjavaez/qa/reference-exact/tsconfig.perf.json; typecheck-perf-seek-profile-confirmed.log | Pass, exit 0, including extra seek profile |
-| Production typecheck/build | npm run build; build-face-motion-classic-confirmed.log | Pass; large-chunk warning preserved |
-| Full native reconstruction | playwright test e2e/reference --reporter=list | 71/71 pass, 8.9 minutes, exit 0; browser-face-motion-classic-confirmed.log |
+| Production typecheck/build | npm run build; build-current-storage-headings.log | Pass; large-chunk warning preserved |
+| Full native reconstruction | playwright test e2e/reference --reporter=list | 75/75 pass, completed in 9.4 minutes; browser-current-storage-headings.log |
 | Complete Dense native browser performance | browser-world-performance-stable-materials.json and matching log | Every stage completed, no browser errors; seek/Focus/Home budgets fail |
 | Generated actual pipeline CPU/retention | perf-command-convergence/modern-world-performance.json | 100-batch update ratio 1.091262570 passes 2×; all three 0.25 retention budgets fail; exit 1 |
 | Reference integrity | node scripts/reference/check-references.mjs | Six root/twin/baseline hashes agree; tracked/untracked ownership preserved |
@@ -84,3 +84,7 @@ AST inventory finds **630 tracked modules / 2152 literal edges / 215 production-
 ## Physical face/Classic removal confirmation — 2026-10-15
 
 Shared chip geometry, graph-owned return captions and all 52 Classic successors converge. Defaults **2027 passed / 70 explicit opt-in skips / 2097 total**, 209 files, 173.03 seconds; production typecheck/build, source lint and strict reference-browser TypeScript pass. Fresh full native reconstruction passes **71/71**, 8.9 minutes, exit 0. Cached projection passes **3/3, zero skips**, 90 seeks/270 plans with explicit GC, 1.04 seconds; four guardrail files pass **19/19**, 1.15 seconds. Actual entry is **71,931 gzip bytes**, Monaco/Cinematic split, closures **72,359/653,050** diagnostic bytes. AST: **619 modules / 2146 literal edges / 217 production-reachable / 44 remaining legacy targets / zero production-reachable legacy**. Initial failures, corrected library raw-face defect, exact case mapping and visual findings remain in [the migration ledger](migration/face-motion-classic-removal.md). Full default browser inventory is **197 cases**, including the 71 current reconstruction cases and 126 older cases still requiring migration/confirmation; the 71-case run is not the final full-browser gate. Protected semantic-core/golden/reference paths are unchanged. No A–G completion is claimed.
+
+## Current storage and visible headings — confirmed 2026-10-16
+
+The interrupted browser process is no longer running; its completed report records **75/75 passed**, 9.4 minutes. The full default suite passes **2034 / 70 explicit opt-in skips / 2104 total**, 210 files, 182.61 seconds. Production TypeScript/build, strict browser TypeScript and lint pass. Cached projection passes **3 expected/executed/passed, zero skipped**, 90 seeks/270 plans, explicit GC, 1.03 seconds; guardrails **19/19**, four files, 1.27 seconds. Actual main entry is **71,929 gzip bytes**, Monaco/Cinematic split; closures **72,357/653,419** remain diagnostics. AST: **622 modules / 2165 literal edges / 219 production-reachable / 42 remaining legacy targets / zero production-reachable legacy**. All 18 legacy text cases have current successors. Actual heading visibility is checked in all five native recursion viewports; current captured frame storage requires no selection or fabricated provenance. Failure archives and precise contract/oracle changes remain in [the migration ledger](migration/current-storage-headings.md). Semantic-core/golden/reference paths are unchanged. The broader old browser corpus, visual convergence, fixed Dense latency/retention and final A–G gates remain open.

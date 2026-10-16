@@ -270,6 +270,8 @@ export interface SceneModel {
         seq: number;
         summary: string;
         subjects: readonly EntityId[];
+        /** Exact captured storage for current face admission; not provenance. */
+        storageIds: readonly SlotId[];
     } | null;
     liveStack: readonly FrameId[]; // outermost → innermost
     recording: RecordingStatus;

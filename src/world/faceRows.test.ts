@@ -19,9 +19,11 @@ function fixture() {
     { type: 'ALLOCATE_OBJECT', objectId: 'unit/target', displayId: 1, className: 'Node', fields: [] },
     { type: 'ENTER_METHOD', frameId: 'unit/frame', callerFrameId: null, className: 'Unit', methodName: 'run', locals: ['a', 'b', 'c'].map(slot) },
     ...Array.from({ length: 20 }, (_, index) => ({ type: 'DECLARE_LOCAL', frameId: 'unit/frame', slot: slot(`late/${index}`) })),
+    // End current-storage admission independently of the selection under test.
+    { type: 'LINE_EXECUTE', frameId: 'unit/frame' },
   ]
-  const events = inputs.map((input, seq) => ({ ...input, seq, eventId: `unit/row/${seq}`, source: null, importance: 'normal', label: 'Explicit unit storage' })) as TraceEvent[]
-  const trace: TraceDocument = { schemaVersion: 2, demoId: 'unit/row-window', sourceFiles: [], events }
+  const events = inputs.map((input, seq) => ({ ...input, seq, eventId: `unit/row/${seq}`, source: input.type === 'LINE_EXECUTE' ? { fileId: 'Unit.java', line: 1 } : null, importance: 'normal', label: 'Explicit unit storage' })) as TraceEvent[]
+  const trace: TraceDocument = { schemaVersion: 2, demoId: 'unit/row-window', sourceFiles: [{ fileId: 'Unit.java', name: 'Unit.java', content: '// explicit captured unit line' }], events }
   const projection = projectTrace(trace), scene = projection.project(events.length), frame = scene.entities['unit/frame'] as SceneFrame
   return { projection, scene, frame, trace }
 }

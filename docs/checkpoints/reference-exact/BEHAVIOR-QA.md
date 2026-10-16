@@ -44,3 +44,7 @@ A new fresh-JVM recursion case verifies the actual edge ID, consuming-write pref
 ## Physical face consistency and Classic migration — 2026-10-15
 
 Scoped/late-row and Map key/value temporal emphasis now matches actual rendered chips. All 52 former Classic cases retain production successors, including sparse-array/camera/static/scope coverage. Fixed typed library reservation corrects sparse cells outside their former compact body; full default regression passes 2027/70 explicit opt-in skips/2097 total. The failed initial gate and corrected evidence are recorded in [the migration ledger](migration/face-motion-classic-removal.md). Fresh full native reconstruction confirms **71/71**, 8.9 minutes, exit 0 (`browser-face-motion-classic-confirmed.log`); the separate 126 older browser cases remain outside that passing gate.
+
+## Current row and actual heading regressions — 2026-10-15
+
+Five reproduced late-row cases now pass without selection/Focus, including request retirement and reverse restoration. All 18 old text cases have current successors. Camera/heading/text/storage integration passes 83/83. Native assertions now read actual heading visibility and Safe Frame bounds; the corrected serial six-case run passes all five recursion viewports plus recorded return provenance, with prior failures retained. Full confirmation verified 2026-10-16: defaults 2034 passed / 70 explicit skips; full native 75/75 passed. Earlier failed runs remain failures; see [the migration ledger](migration/current-storage-headings.md).

@@ -2,6 +2,7 @@ import {expect,it} from 'vitest'
 import fc from 'fast-check'
 import {PerspectiveCamera,Vector3} from 'three'
 import {placeStructuralLabels,projectStructuralLabel,structuralRectsOverlap,type StructuralLabelSpec} from './structuralLabelLayout'
+import {projectedPlaneFontPixels} from './textSystem'
 const spec=(id:string,x:number,priority=2):StructuralLabelSpec=>({id,kind:'cluster',position:[x,0,0],size:.3,localBounds:[-1,1,.08,.83],priority,count:12})
 const cameraAt=(distance:number)=>{const camera=new PerspectiveCamera(36,16/9,.05,10000);camera.position.set(0,8,distance);camera.lookAt(0,0,0);camera.updateMatrixWorld();return camera}
 it('keeps visible text at least 12 pixels on its real plane through depth and viewport changes (100 cases)',()=>{
@@ -34,6 +35,15 @@ it('measures the real glyph-axis projection at steep camera angles',()=>{
   expect(label.bounds).toBeTruthy();expect(label.minimumFontPixels).toBeGreaterThanOrEqual(12)
  }
 })
+it('keeps region cap heights in the reference band at near/far distances across all five target viewports',()=>{
+ const heading:StructuralLabelSpec={...spec('STACK',0,1),kind:'heading',size:.6,localBounds:[0,2.4,-.3,.3]}
+ for(const viewport of[{width:1728,height:1117},{width:1440,height:900},{width:1280,height:800},{width:760,height:900},{width:1440,height:650}])for(const distance of[12,30,200]){
+  const camera=cameraAt(distance),before=JSON.stringify(heading),label=projectStructuralLabel(heading,camera,viewport)
+  const centre=new Vector3(...label.position),cap=projectedPlaneFontPixels(heading.size*label.scale*.75,centre,camera,viewport)
+  expect(cap/viewport.height).toBeGreaterThanOrEqual(.025);expect(cap/viewport.height).toBeLessThanOrEqual(.033)
+  expect(label.minimumFontPixels).toBeGreaterThanOrEqual(12);expect(JSON.stringify(heading)).toBe(before)
+ }
+})
 it('omits behind-camera and clipped text without changing its anchor',()=>{
  const camera=cameraAt(20),label={...spec('behind',0),position:[0,8,50] as const},before=JSON.stringify(label)
  expect(projectStructuralLabel(label,camera,{width:1440,height:900})).toMatchObject({bounds:null,visible:false})
@@ -54,6 +64,6 @@ it('lifts a blocked region heading within two font heights on its original 3D pl
 it('omits a heading when every bounded candidate is obstructed rather than detaching it from its region',()=>{
  const camera=cameraAt(60),viewport={width:1440,height:900},safe={x:0,y:0,width:1440,height:900}
  const heading:StructuralLabelSpec={...spec('STACK',0,1),kind:'heading',size:.6,localBounds:[0,2.4,-.3,.3]}
- const blocked=[0,1,2].map(lift=>projectStructuralLabel(heading,camera,viewport,lift).bounds!)
+ const blocked=[0,1,2,3,4].map(lift=>projectStructuralLabel(heading,camera,viewport,lift).bounds!)
  expect(placeStructuralLabels([heading],camera,viewport,safe,blocked)[0].visible).toBe(false)
 })

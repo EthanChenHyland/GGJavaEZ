@@ -20,6 +20,14 @@ function fits(home: ReturnType<typeof framing>) {
 }
 
 describe('canonical recursive camera composition', () => {
+ it('renders the same nearest-context STACK heading that Home actually frames, without moving any runtime anchor',()=>{
+  const saved=JSON.stringify(projection.layout),first=deepest.entities[deepest.liveStack.slice(-4)[0]],heading=cut().headings.find(heading=>heading.id==='STACK')!
+  expect(heading.position).toEqual([first.anchor.position[0]+first.anchor.size[0]/2+.45,first.anchor.position[1]+first.anchor.size[1]/2+.75,first.anchor.position[2]+first.anchor.size[2]/2])
+  expect(heading.position).not.toEqual(projection.layout.headings.stack)
+  for(const aspect of[.8,1.1,1.54,2.4])expect(framing(deepest,aspect).points).toContainEqual(heading.position)
+  for(const id of deepest.order.frames)expect(deepest.entities[id].anchor).toBe(projection.layout.anchors[id])
+  expect(JSON.stringify(projection.layout)).toBe(saved)
+ })
  it.each([.8, 1.1, 1.54, 2.4])('fits the most recent invocation and its three actual ancestors plus headings at aspect %s', aspect => {
   const home = framing(deepest, aspect)
   expect(home.ids).toEqual(deepest.liveStack.slice(-4)); expect(home.pose.yawDeg).toBe(8); expect(home.pose.pitchDeg).toBe(-13)

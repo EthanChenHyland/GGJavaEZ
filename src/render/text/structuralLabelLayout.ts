@@ -3,6 +3,8 @@ import type {Vec3} from '../../contracts/worldV2'
 import type {Rect} from '../../shell/shellLayout'
 import type {Size} from '../../camera/projection'
 import {projectedPlaneFontPixels} from './textSystem'
+import {typographyV4} from '../../theme/tokens'
+export const regionHeadingStyle={size:.6,...typographyV4.world.heading,weight:600,viewportCapRatio:.029} as const
 export interface StructuralLabelSpec {
  id:string;kind:'cluster'|'heading'|'bundle'|'return';position:Vec3;size:number;
  localBounds:readonly[number,number,number,number];priority:number;count:number
@@ -15,11 +17,18 @@ export const structuralRectsOverlap=(a:Rect,b:Rect,gap=4)=>a.x<b.x+b.width+gap&&
 export function projectStructuralLabel(spec:StructuralLabelSpec,camera:PerspectiveCamera,viewport:Size,lift=0):ProjectedStructuralLabel {
  const centre=new Vector3(...spec.position),nominal=projectedPlaneFontPixels(spec.size,centre,camera,viewport)
  if(!(nominal>0))return{id:spec.id,position:spec.position,scale:1,bounds:null,minimumFontPixels:0,visible:false}
- let scale=Math.max(1,12.25/nominal),points:Vector3[]=[],minimumFontPixels=0
+ // The reference's region cap height is 2.9% of the viewport. At the
+ // prescribed .6 font size the .45 cap-height token gives a .75 cap ratio.
+ // Structural titles may scale down as well as up; runtime face fonts do not.
+ const capRatio=regionHeadingStyle.capHeight/regionHeadingStyle.size
+ const preferred=spec.kind==='heading'?viewport.height*regionHeadingStyle.viewportCapRatio/(capRatio*nominal):1
+ let scale=Math.max(preferred,12.25/nominal),points:Vector3[]=[],minimumFontPixels=0
  let position:Vec3=spec.position
  const [left,right,bottom,top]=spec.localBounds
  for(let iteration=0;iteration<4;iteration++){
-  position=[spec.position[0],spec.position[1]+lift*spec.size*scale,spec.position[2]]
+  // Downsizing an oversized title must not also shrink its physical clearance
+  // search. Its region plane and nominal bounded offsets remain unchanged.
+  position=[spec.position[0],spec.position[1]+lift*spec.size*Math.max(1,scale),spec.position[2]]
   points=[left,right].flatMap(x=>[bottom,top].map(y=>new Vector3(position[0]+x*scale,position[1]+y*scale,position[2])))
   minimumFontPixels=Math.min(...points.map(point=>projectedPlaneFontPixels(spec.size*scale,point,camera,viewport)))
   if(minimumFontPixels>=12||!(minimumFontPixels>0))break
@@ -36,7 +45,10 @@ export function placeStructuralLabels(specs:readonly StructuralLabelSpec[],camer
  const projected=new Map<string,ProjectedStructuralLabel>(),occupied:Rect[]=[]
  for(const spec of [...specs].sort((a,b)=>a.priority-b.priority||b.count-a.count||a.id.localeCompare(b.id))){
   let label=projectStructuralLabel(spec,camera,viewport)
-  for(const lift of spec.kind==='cluster'?[0,1,2,3,4]:[0,1,2]){
+  // Tracked region titles can need to clear both a body and another heading.
+  // Keep the same bounded world plane rather than hiding a required lane title
+  // after only the first two, still-obstructed candidates.
+  for(const lift of spec.kind==='cluster'||spec.kind==='heading'?[0,1,2,3,4]:[0,1,2]){
    if(lift)label=projectStructuralLabel(spec,camera,viewport,lift);const rect=label.bounds
    if(!rect||!inside(rect,safe)||blocked.some(area=>structuralRectsOverlap(rect,area))||occupied.some(area=>structuralRectsOverlap(rect,area)))continue
    label.visible=true;occupied.push(rect);break

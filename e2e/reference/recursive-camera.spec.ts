@@ -1,12 +1,13 @@
 import {expect,test,type Page} from '@playwright/test'
+import {writeFile} from 'node:fs/promises'
 import {browserErrors,follow,home,ready,runFixture,seekCursor,stopOwnedSession} from './harness'
 test.afterEach(async({request})=>stopOwnedSession(request))
 async function angles(page:Page){return page.evaluate(()=>{
  const{position,target}=window.__ggjavaezQA!.cameraPose(),d=position.map((v,i)=>v-target[i])
  return{yaw:Math.atan2(d[0],d[2])*180/Math.PI,pitch:-Math.atan2(d[1],Math.hypot(d[0],d[2]))*180/Math.PI}
 })}
-test('actual recursive Follow frames nearest ancestors, yields to manual input and returns to Hero angles',async({page,request})=>{
- test.setTimeout(60000)
+for(const viewport of[{width:1728,height:1117},{width:1440,height:900},{width:1280,height:800},{width:760,height:900},{width:1440,height:650}])test(`actual recursive Follow frames nearest ancestors, yields to manual input and returns to Hero angles ${viewport.width}x${viewport.height}`,async({page,request})=>{
+ test.setTimeout(60000);await page.setViewportSize(viewport)
  const errors=browserErrors(page)
  await runFixture(page,request,'recursion')
  const positions=await page.evaluate(()=>{
@@ -22,6 +23,16 @@ test('actual recursive Follow frames nearest ancestors, yields to manual input a
  expect(positions.shallow).not.toBeNull()
  await seekCursor(page,positions.deep);await home(page)
  expect(await angles(page)).toEqual({yaw:expect.closeTo(8,6),pitch:expect.closeTo(-13,6)})
+ const homeHeadings=await page.evaluate(()=>({labels:window.__ggjavaezWorld!.structuralLabels(),planned:window.__ggjavaezWorld!.plan().headings,safe:window.__ggjavaezQA!.shellRects().safeFrame,pose:window.__ggjavaezQA!.cameraPose()}))
+ await page.screenshot({path:`.ggjavaez/qa/reference-exact/recursion-home-headings-${viewport.width}x${viewport.height}.png`})
+ await writeFile(`.ggjavaez/qa/reference-exact/recursion-home-headings-${viewport.width}x${viewport.height}.json`,JSON.stringify(homeHeadings,null,2)+'\n')
+ for(const id of['STACK','HEAP']){
+  const label=homeHeadings.labels.find(label=>label.id===id)!,s=homeHeadings.safe
+  expect(label,`${id} is actually visible after Home in the deepest captured prefix`).toMatchObject({visible:true})
+  expect(label.minimumFontPixels).toBeGreaterThanOrEqual(12)
+  const r=label.bounds!;expect(r.x).toBeGreaterThanOrEqual(s.x);expect(r.y).toBeGreaterThanOrEqual(s.y)
+  expect(r.x+r.width).toBeLessThanOrEqual(s.x+s.width);expect(r.y+r.height).toBeLessThanOrEqual(s.y+s.height)
+ }
  const before=await page.evaluate(()=>({cursor:window.__ggjavaezQA!.cursor(),selection:window.__ggjavaezQA!.selection(),anchors:Object.values(window.__ggjavaezWorld!.scene().entities).map(node=>node.anchor)}))
  await follow(page)
  expect(await angles(page)).toEqual({yaw:expect.closeTo(18,6),pitch:expect.closeTo(-16,6)})
