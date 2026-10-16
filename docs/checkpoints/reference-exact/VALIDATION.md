@@ -4,12 +4,12 @@ Current implementation evidence, 2026-10-16. A–G completion is not claimed. Th
 
 | Gate | Command/evidence | Current result |
 | --- | --- | --- |
-| Default unit/property/regression | npm run test; unit-current-storage-headings.log | 2034 pass, 70 explicit opt-in skips, 2104 total, 210 files; 182.61 s |
-| Source lint | npm run lint; lint-context-headings.log | Pass |
-| Strict reference browser TS | npm run typecheck:reference; typecheck-reference-context-headings.log | Pass |
+| Default unit/property/regression | npm run test; unit-unlit-output.log | 2037 pass, 70 explicit opt-in skips, 2107 total, 211 files; 172.94 s |
+| Source lint | npm run lint; lint-unlit-output.log | Pass |
+| Strict reference browser TS | npm run typecheck:reference; typecheck-reference-unlit-shell-boundary.log | Pass |
 | Strict optional performance harness TS | tsc --project .ggjavaez/qa/reference-exact/tsconfig.perf.json; typecheck-perf-seek-profile-confirmed.log | Pass, exit 0, including extra seek profile |
-| Production typecheck/build | npm run build; build-current-storage-headings.log | Pass; large-chunk warning preserved |
-| Full native reconstruction | playwright test e2e/reference --reporter=list | 75/75 pass, completed in 9.4 minutes; browser-current-storage-headings.log |
+| Production typecheck/build | npm run build; build-unlit-output.log | Pass; large-chunk warning preserved |
+| Full native reconstruction | playwright test e2e/reference --reporter=list | 76/76 pass, zero skips, 10.6 min, exit 0; browser-unlit-shell-confirmed.log. Original 75/1 failure and targeted corrections remain archived. |
 | Complete Dense native browser performance | browser-world-performance-stable-materials.json and matching log | Every stage completed, no browser errors; seek/Focus/Home budgets fail |
 | Generated actual pipeline CPU/retention | perf-command-convergence/modern-world-performance.json | 100-batch update ratio 1.091262570 passes 2×; all three 0.25 retention budgets fail; exit 1 |
 | Reference integrity | node scripts/reference/check-references.mjs | Six root/twin/baseline hashes agree; tracked/untracked ownership preserved |
@@ -27,7 +27,7 @@ The complete fixed Dense browser measurement on `44f5bc2` executes all stages an
 
 ## Remaining delivery checks
 
-Full recorded hierarchy/lifetime grouping, legacy module/test/CSS removal, contract/token/persistence consolidation, clean-replacement guardrail, current Dense semantic/presentation memory, remaining unchanged performance limits, final original-size reference review/polish and the exhaustive final gate remain required. Semantic goldens and backend contracts remain protected; final cleanup must record their identity and map replaced presentation tests/goldens to independently reviewed successors. The final diff must exclude generated output, secrets, accidental machine-local artifacts, duplicate architecture, fixture leakage and modified/staged reference roots.
+Legacy module/test/CSS removal, contract/token/persistence consolidation, clean-replacement guardrail, current Dense semantic/presentation memory, remaining unchanged performance limits, final original-size reference review/polish and the exhaustive final gate remain required. Semantic goldens and backend contracts remain protected; final cleanup must record their identity and map replaced presentation tests/goldens to independently reviewed successors. The final diff must exclude generated output, secrets, accidental machine-local artifacts, duplicate architecture, fixture leakage and modified/staged reference roots.
 
 Final completion requires a normal push on reference-exact-rebuild, HEAD equal to origin/reference-exact-rebuild, tracked tree clean, unchanged main baseline and protected root images. No merge or history rewrite is authorized.
 

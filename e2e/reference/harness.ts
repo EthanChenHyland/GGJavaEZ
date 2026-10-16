@@ -42,6 +42,10 @@ export async function openFixture(page:Page,request:APIRequestContext,name:Fixtu
   if('breakpoint' in definition)localStorage.setItem(`ggjavaez:breakpoints:${id}`,JSON.stringify([{fileId:definition.breakpoint.path,line:definition.breakpoint.line}]))
  },{id,definition})
  await page.goto('/?qa=1')
+ // The HTML load precedes the asynchronously imported application Shell. Wait
+ // for its real published boundary before starting the editor visibility check;
+ // a cold dev module graph is not a five-second Monaco mount measurement.
+ await page.waitForFunction(()=>typeof window.__ggjavaezQA?.ready==='function')
  if(page.viewportSize()!.width<1024){
   const peek=page.getByRole('button',{name:'Show source drawer',exact:true})
   await expect(peek).toBeVisible();await expect(peek).toContainText('.java')

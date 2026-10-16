@@ -8,6 +8,7 @@ export class SelectiveBloomPass extends Pass {
   private emitters = new WebGLRenderTarget(1, 1, { type: HalfFloatType })
   private protection = new WebGLRenderTarget(1, 1, { type: HalfFloatType })
   private masks = new BloomMaskMaterials()
+  get protectionTexture() { return this.protection.texture }
   readonly bloom = new UnrealBloomPass(new Vector2(1, 1), .55, .35, 1)
   private material = new ShaderMaterial({ depthTest: false, depthWrite: false, toneMapped: false,
     uniforms: { base: { value: null }, glow: { value: null }, protectedPixels: { value: null } },

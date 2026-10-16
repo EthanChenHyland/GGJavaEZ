@@ -22,6 +22,12 @@ for(const viewport of [{width:1728,height:1117},{width:1440,height:900},{width:1
  // Select through the production spatial accessibility order, with real keys.
  for(let index=0;index<100;index++){
   await page.keyboard.press('Tab')
+  // Selection updates React before the read-only QA snapshot is published by
+  // the next world frame. Do not tab past a real cluster using a stale snapshot
+  // (or escape into the editor at the end of the catalog).
+  await page.evaluate(()=>new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve()))))
+  await ready(page)
+  await expect(page.getByRole('listbox',{name:'Runtime entities'})).toBeFocused()
   if(await page.evaluate(()=>{const selection=window.__ggjavaezQA!.selection();return selection?.kind==='cluster'&&(window.__ggjavaezWorld!.plan().clusters.find(cluster=>cluster.id===selection.id)?.members??0)>=11}))break
  }
  const cluster=await page.evaluate(()=>window.__ggjavaezWorld!.plan().clusters.find(cluster=>cluster.id===window.__ggjavaezQA!.selection()?.id))

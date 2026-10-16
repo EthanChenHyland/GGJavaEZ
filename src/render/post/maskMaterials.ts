@@ -20,11 +20,14 @@ export function createMaskMaterial(original: Material, ink: 0 | 1): Material {
   mask.toneMapped = false
   if ('transmission' in mask) Object.defineProperty(mask, 'transmission', { value: 0 })
   // Do not inherit the source material's cache identity or disposal ownership.
-  mask.customProgramCacheKey = () => `${original.customProgramCacheKey()}|runtime-mask-${ink}-v1`
+  mask.customProgramCacheKey = () => `${original.customProgramCacheKey()}|runtime-mask-${ink}-unlit-${!original.toneMapped}-v2`
   const patch: Material['onBeforeCompile'] = shader => {
     const end = shader.fragmentShader.lastIndexOf('}')
     shader.fragmentShader = shader.fragmentShader.slice(0, end) +
-      `\nif (gl_FragColor.a <= 0.0001) discard;\ngl_FragColor = vec4(vec3(${ink.toFixed(1)}), 1.0);\n` + shader.fragmentShader.slice(end)
+      // R/G remain the hard bloom exclusion, even for dim/antialiased ink.
+      // B carries visible unlit coverage for the final output transform. Lit
+      // acrylic remains protected from bloom without bypassing tone mapping.
+      `\nif (gl_FragColor.a <= 0.0001) discard;\ngl_FragColor = vec4(${ink.toFixed(1)}, ${ink.toFixed(1)}, ${ink && !original.toneMapped ? 'clamp(gl_FragColor.a, 0.0, 1.0)' : '0.0'}, 1.0);\n` + shader.fragmentShader.slice(end)
   }
   if (mask.isDerivedMaterial) {
     // DerivedMaterial's setter appends this hook after its own upgrades. Calling

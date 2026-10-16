@@ -68,3 +68,7 @@ The current renderer and temporal layer share exact visible chip geometry, inclu
 ## Current storage and visible context headings — 2026-10-15
 
 `cursorEvent.storageIds` carries only current explicitly captured storage for bounded frame-face admission, independently of owner histories and graph provenance. It supports graphless declarations/assignments/input/array-read/reference targets without changing runtime state or inventing Flows/ports. Rendering and Home now consume the same captured four-invocation context and actual planned STACK heading. Structural heading cap height tracks 0.029 H with shared weight/tracking and ≥12-pixel admission; bounded clearance preserves the physical world plane while glyphs resize. The original 18 legacy text cases now exercise current metrics/projection policy; other old renderer consumers remain. [Implementation and failed/corrected evidence](migration/current-storage-headings.md).
+
+## Protected unlit output — 2026-10-16, ongoing
+
+The existing protection pass now carries unlit coverage in B independently of its hard red-channel bloom exclusion. Final OutputPass preserves covered linear face/chip/text colours before Three's output transfer, while lit bodies keep the installed tone mapper. Pass order, depth/vertex/SDF behavior and resource ownership remain intact; no additional pass, target or draw batch is introduced. See [the evidence ledger](migration/unlit-output.md). Exact opaque palette correction is distinct from final reference/material convergence.

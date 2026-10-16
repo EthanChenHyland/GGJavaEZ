@@ -10,7 +10,7 @@ it('keeps vertex transforms and discard paths while fully excluding even dim pro
   const mask = createMaskMaterial(source, 1), shader = { ...ShaderLib.basic, uniforms: {} }
   mask.onBeforeCompile(shader as Parameters<typeof mask.onBeforeCompile>[0], renderer)
   expect(shader.vertexShader).toContain('canonical instance transform')
-  expect(shader.fragmentShader).toContain('gl_FragColor = vec4(vec3(1.0), 1.0)')
+  expect(shader.fragmentShader).toContain('gl_FragColor = vec4(1.0, 1.0, 0.0, 1.0)')
   expect(shader.fragmentShader).toContain('if (gl_FragColor.a <= 0.0001) discard')
   expect(mask.opacity).toBe(.25)
   expect(mask.uuid).not.toBe(source.uuid)
@@ -23,7 +23,7 @@ it('retains Troika batching and SDF discard without recursively deriving the mas
   mask.onBeforeCompile(shader as Parameters<typeof mask.onBeforeCompile>[0], renderer)
   expect(Reflect.get(mask, 'isTroikaTextMaterial')).toBe(true)
   expect(shader.fragmentShader).toContain('troika')
-  expect(shader.fragmentShader).toContain('gl_FragColor = vec4(vec3(0.0), 1.0)')
+  expect(shader.fragmentShader).toContain('gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0)')
   expect(shader.fragmentShader.lastIndexOf('gl_FragColor =')).toBeGreaterThan(shader.fragmentShader.lastIndexOf('troikaOrigMain'))
   expect(Reflect.get(mask, 'uniforms')).toBe(Reflect.get(source, 'uniforms'))
   mask.dispose(); text.dispose()
@@ -45,4 +45,16 @@ it('emits only explicit roles, protects all remaining surfaces, and restores mat
   })
   expect([face.material, text.material, edge.material]).toEqual(original)
   masks.dispose()
+})
+
+it('separates unlit coverage from hard bloom exclusion without transferring source ownership', () => {
+  for(const toneMapped of [true,false]){
+    const source=new MeshBasicMaterial({toneMapped,opacity:.25,transparent:true})
+    const mask=createMaskMaterial(source,1),shader={...ShaderLib.basic,uniforms:{}}
+    mask.onBeforeCompile(shader as Parameters<typeof mask.onBeforeCompile>[0],renderer)
+    expect(shader.fragmentShader).toContain(`vec4(1.0, 1.0, ${toneMapped?'0.0':'clamp(gl_FragColor.a, 0.0, 1.0)'}, 1.0)`)
+    expect(mask.customProgramCacheKey()).toContain(`unlit-${!toneMapped}-v2`)
+    expect(source.toneMapped).toBe(toneMapped)
+    mask.dispose();source.dispose()
+  }
 })
