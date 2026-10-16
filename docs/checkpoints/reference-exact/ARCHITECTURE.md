@@ -1,6 +1,6 @@
 # Architecture
 
-Current implementation, 2026-10-13. Whole-product convergence, presentation-memory approval and legacy removal are still open. This is an implementation record, not a completed milestone claim.
+Current implementation, 2026-10-15. Whole-product convergence, presentation-memory approval and legacy removal are still open. This is an implementation record, not a completed milestone claim.
 
 ## Runtime boundary
 
@@ -60,3 +60,7 @@ All nine remaining legacy world test consumers and all six navigation test consu
 ## Return evidence and Classic successors — 2026-10-15, ongoing
 
 The return projector and Flow catalog now share exact graph return/consumer resolution. Scene return candidates carry edge IDs; catalog-free planner return curves and the separate fallback port resolver are removed. A consuming-write edge invalidates the source invocation face incrementally. Legacy return values/destinations remain semantic facts without becoming graph provenance. No semantic-core/history/recorder or golden change is made.
+
+## Shared physical faces and Classic removal — 2026-10-15
+
+The current renderer and temporal layer share exact visible chip geometry, including scope offsets, promoted late locals and separate Map key/value halves. Graph-backed drawable returns have bounded captured-value captions; captured operand text is optional and never inferred. Typed arrays/known collections reserve full library-region structural bodies at allocation, with occupancy for variable footprints; ordinary external objects remain compact. Raw-field ports and typography follow the actual body footprint. All 52 Classic cases now have production successors and its renderer, stylesheet, selector and dead layout adapters are removed. Remaining old 3D/browser/CSS/contracts consumers still require migration; see [the migration ledger](migration/face-motion-classic-removal.md).

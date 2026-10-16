@@ -10,6 +10,7 @@ import {faceColumns,faceHeading,rowValueLabel} from './text/faceTypography';
 import {fitWorldText,textAdvance} from './text/textSystem';
 import {collectionEntryFace} from '../world/collectionFace';
 import {world} from '../theme/tokens';
+import {compactLibraryFace} from '../world/firstObjectPresentation';
 import {memo} from 'react';
 export { WorldText } from './FaceText';
 /** Face labels share the solid/row geometry model and one glyph batch. */
@@ -22,6 +23,7 @@ export const RuntimeSolid=memo(function RuntimeSolid({ node, presented, plan }: 
         return null;
     const { anchor } = node, [x, y, z] = anchor.position, [w, h, d] = anchor.size, top = y + h / 2, face = z + d / 2 + .085, left = x - w / 2 + .28, opacity = presented.opacity;
     const model = faceRows(node, presented);
+    const compact=compactLibraryFace(anchor);
     const identity=node.kind==='frame'?`#${node.invocationNumber}`:node.kind==='class'?'':`#${node.displayId}`;
     const heading=faceHeading(node),titleSize=heading.title.size;
     const identityWidth=identity?textAdvance(identity,500)*(heading.identity?.size??.28)+.04:0;
@@ -53,9 +55,9 @@ export const RuntimeSolid=memo(function RuntimeSolid({ node, presented, plan }: 
             const ry = faceRowPort(node,presented,row.slotId,model)?.[1] ?? top - model.header - model.pitch * (index + .5), value = row.value, mutation = node.kind === 'object' && node.mutation?.slotId === row.slotId;
             const indent=node.kind==='frame'&&'scopeDepth'in row?(row.scopeDepth??0)*world.frame.scopeIndent:0;
             return <group key={row.slotId}>
-        <WorldText position={[left+indent, ry, face + .015]} weight={500} size={node.anchor.region==='library'?.23:.32} width={Math.max(.1,columns.name-indent)} tint={color.ui.textSecondary} opacity={opacity} frameText={node.kind==='frame'?{entityId:node.id,kind:'name',slotId:row.slotId}:undefined}>{presented.detail==='MEDIUM'?`${row.name} →`:row.name}</WorldText>
-        {presented.detail!=='MEDIUM'&&<WorldText position={[left+columns.typeOffset,ry,face+.015]} size={node.anchor.region==='library'?.20:.27} width={columns.type} tint={color.ui.textMuted} opacity={opacity}>{displayType(row.type)}</WorldText>}
-        <WorldText position={[x + w / 2 - .28, ry, face + .015]} weight={600} size={node.anchor.region==='library'?.25:.34} width={columns.value} align="right" tint={mutation ? color.semantic.mutation : value.kind === 'reference' ? color.semantic.execution : value.kind === 'not-recorded' ? color.ui.textMuted : color.ui.text} opacity={opacity} frameText={node.kind==='frame'?{entityId:node.id,kind:'value',slotId:row.slotId}:undefined}>{rowValueLabel(value)}</WorldText>
+        <WorldText position={[left+indent, ry, face + .015]} weight={500} size={compact?.23:.32} width={Math.max(.1,columns.name-indent)} tint={color.ui.textSecondary} opacity={opacity} frameText={node.kind==='frame'?{entityId:node.id,kind:'name',slotId:row.slotId}:undefined}>{presented.detail==='MEDIUM'?`${row.name} →`:row.name}</WorldText>
+        {presented.detail!=='MEDIUM'&&<WorldText position={[left+columns.typeOffset,ry,face+.015]} size={compact?.20:.27} width={columns.type} tint={color.ui.textMuted} opacity={opacity}>{displayType(row.type)}</WorldText>}
+        <WorldText position={[x + w / 2 - .28, ry, face + .015]} weight={600} size={compact?.25:.34} width={columns.value} align="right" tint={mutation ? color.semantic.mutation : value.kind === 'reference' ? color.semantic.execution : value.kind === 'not-recorded' ? color.ui.textMuted : color.ui.text} opacity={opacity} frameText={node.kind==='frame'?{entityId:node.id,kind:'value',slotId:row.slotId}:undefined}>{rowValueLabel(value)}</WorldText>
       </group>;
         })}
     {(node.kind==='collection'?node.size:model.rows.length)>model.visible.length && presented.detail !== 'FAR' && <WorldText position={[left, y - h / 2 + .3, face]} size={node.kind==='collection'?.34:.22} width={w-.56} tint={color.ui.textSecondary} opacity={opacity} collectionText={node.kind==='collection'?{entityId:node.id,kind:'more'}:undefined}>{`+${(node.kind==='collection'?node.size:model.rows.length) - model.visible.length} more`}</WorldText>}

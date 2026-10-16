@@ -4,7 +4,7 @@ import type {Rect} from '../../shell/shellLayout'
 import type {Size} from '../../camera/projection'
 import {projectedPlaneFontPixels} from './textSystem'
 export interface StructuralLabelSpec {
- id:string;kind:'cluster'|'heading'|'bundle';position:Vec3;size:number;
+ id:string;kind:'cluster'|'heading'|'bundle'|'return';position:Vec3;size:number;
  localBounds:readonly[number,number,number,number];priority:number;count:number
 }
 export interface ProjectedStructuralLabel {id:string;position:Vec3;scale:number;bounds:Rect|null;minimumFontPixels:number;visible:boolean}

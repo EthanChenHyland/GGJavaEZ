@@ -81,6 +81,16 @@ function Metrics({ scene, plan, selection,trace }: {
                         labels.push({entityId:label.entityId,kind:label.kind,slotId:label.slotId,text:text.text,opacity:text.fillOpacity,fontPixels:projectedFontPixels(text.fontSize*scale,point,camera,size.height),planePixels:projectedPlaneFontPixels(text.fontSize*scale,point,camera,size),widthPixels:projectedPlaneFontPixels(text.fontSize*scale,point,camera,size,'x')});
                     });return labels;
                 },
+                returnText:()=>{
+                    const labels:ReturnType<NonNullable<Window['__ggjavaezWorld']>['returnText']>[number][]=[];
+                    if(!(camera instanceof PerspectiveCamera))return labels;
+                    world.traverse(group=>{
+                        const label=group.userData.runtimeReturnText as {flowId:string;kind:'value'|'operands';text:Text}|undefined;
+                        if(!label)return;
+                        const text=label.text,point=new Vector3().setFromMatrixPosition(text.matrix),scale=new Vector3().setFromMatrixScale(text.matrix).y;
+                        labels.push({flowId:label.flowId,kind:label.kind,text:text.text,opacity:text.fillOpacity,fontPixels:projectedFontPixels(text.fontSize*scale,point,camera,size.height)});
+                    });return labels;
+                },
                 frameText:()=>{
                     const labels:ReturnType<NonNullable<Window['__ggjavaezWorld']>['frameText']>[number][]=[];
                     if(!(camera instanceof PerspectiveCamera))return labels;

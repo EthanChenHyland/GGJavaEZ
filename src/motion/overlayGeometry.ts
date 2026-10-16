@@ -1,7 +1,7 @@
-import type { MaterialRole, PresentationPlan, PresentedCurve, SceneModel, Vec3, WorldAnchor } from '../contracts/worldV2'
+import type { MaterialRole, PresentationPlan, PresentedCurve, SceneModel, WorldAnchor } from '../contracts/worldV2'
 import type { AnimationStep, OverlayFrame } from './transitionPlayer'
-import { faceRows } from '../render/faceModel'
-import { world } from '../theme/tokens'
+import {faceRows} from '../world/faceRows'
+import {facePlate} from '../world/facePlate'
 import { referenceIdForSlot } from '../contracts/runtime'
 
 export interface MotionSubject { id: string; ownerId: string; anchor: WorldAnchor; opacity: number; referenceTarget?: string }
@@ -17,22 +17,10 @@ export function motionSubjects(scene: SceneModel, plan: PresentationPlan): Reado
       continue
     }
     const model = faceRows(node, presented)
-    const rows = node.kind === 'collection' ? node.entries.slice(0, presented.detail === 'FAR' ? 0 : presented.detail === 'MEDIUM' ? 8 : world.collection.rows * world.collection.columns) : model.visible
-    const [x, y, z] = node.anchor.position, [w, h, d] = node.anchor.size
-    for (const [rowIndex, row] of rows.entries()) {
-      const port = row.port ?? node.anchor.ports[row.slotId]
-      // A visible canonical port is required; do not invent a retired slot position.
-      if (!port || port[1] < y - h / 2 || port[1] > y + h / 2) continue
-      const position: Vec3 = [node.kind === 'collection' ? port[0] : x, port[1], z + d / 2 + .03]
-      const pitch = node.kind === 'collection' ? world.collection.pitch : model.pitch
-      const size: Vec3 = [node.kind === 'collection' ? w / world.collection.columns - .25 : w - .45, pitch * .73, .05]
-      subjects.set(row.slotId, { id: row.slotId, ownerId: id, opacity: presented.opacity, referenceTarget: row.value.kind === 'reference' ? row.value.targetId : undefined, anchor: { ...node.anchor, entityId: row.slotId, position, size, ports: {}, bodyPort: position } })
-      const entry = node.kind === 'collection' ? node.entries[rowIndex] : undefined
-      if (entry?.keySlotId && entry.keyPort) {
-        // Map key/value share a captured entry plate, but retain separate identities.
-        const valueSubject = subjects.get(row.slotId)!
-        subjects.set(entry.keySlotId, { ...valueSubject, id: entry.keySlotId, referenceTarget: entry.key?.kind === 'reference' ? entry.key.targetId : undefined, anchor: { ...valueSubject.anchor, entityId: entry.keySlotId } })
-      }
+    const rows=node.kind==='collection'?node.entries.filter(entry=>model.visible.some(row=>row.slotId===entry.slotId)).flatMap(entry=>[{slotId:entry.slotId,value:entry.value},...(entry.keySlotId&&entry.key?[{slotId:entry.keySlotId,value:entry.key}]:[])]):model.visible
+    for(const row of rows){
+      const anchor=facePlate(node,presented,row.slotId,model)
+      if(anchor)subjects.set(row.slotId,{id:row.slotId,ownerId:id,opacity:presented.opacity,referenceTarget:row.value.kind==='reference'?row.value.targetId:undefined,anchor})
     }
   }
   for (const shown of plan.io) {

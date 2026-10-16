@@ -56,3 +56,7 @@ Scope sections, retired/late row geometry, historical Focus brightness, true sib
 ## Return evidence and Classic successors — 2026-10-15, ongoing
 
 Return provenance now follows the stricter corrected Requirements 10.4/10.8 and 17.1/17.5: actual graph edges and prefix-visible consumers authorize curves; direct legacy return destinations do not. Candidate IDs now equal source edge IDs, and the graphless fallback is removed. This resolves the identified evidence-boundary defect without claiming visual or A–G completion.
+
+## Classic implementation retirement — 2026-10-15
+
+All 52 Classic cases now have production successors; the obsolete Classic renderer/CSS/selector and dead layout adapters are removed after consumer review. Shared physical chips and graph-owned return captions improve truth and consistency. Remaining old 3D primitives/browser/CSS/contracts, actual region-heading visibility, reference-level materials/composition and unchanged Dense performance failures remain open. [Migration and failed/corrected evidence](migration/face-motion-classic-removal.md).

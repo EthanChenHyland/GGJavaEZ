@@ -65,3 +65,42 @@ it('travels only on the exact currently presented reference or graph-edge curve 
   expect(motionCurve({ ...reference, transition: { ...reference.transition, to: { kind: 'object', id: 'other-identity' } } }, subjects, curves)).toBeUndefined()
   expect(motionCurve(reference, subjects, new Map())).toBeUndefined()
 })
+
+it('scoped face motion outlines coincide with the actual visible chip geometry throughout captured replay',async()=>{
+ const {loadControlTrace}=await import('../examples/traces'),{buildSolidBatch}=await import('../render/SolidBatch')
+ const trace=loadControlTrace();let compared=0
+ for(let cursor=1;cursor<=trace.events.length;cursor++){
+  const {scene,plan}=view(trace,cursor)
+  if(!Object.values(scene.entities).some(node=>node.kind==='frame'&&node.scopeDividers?.length))continue
+  const subjects=motionSubjects(scene,plan)
+  for(const solid of buildSolidBatch(scene,plan).filter(solid=>solid.role==='face'&&solid.pick.kind==='slot')){
+   expect(subjects.get(solid.pick.id)?.anchor.position).toEqual(solid.anchor.position)
+   expect(subjects.get(solid.pick.id)?.anchor.size).toEqual(solid.anchor.size);compared++
+  }
+ }
+ expect(compared).toBeGreaterThan(0)
+})
+it('a captured late row outside permanent ports receives motion emphasis on its real promoted chip',async()=>{
+ const {projectTrace}=await import('../testing/projectTrace'),{buildSolidBatch}=await import('../render/SolidBatch')
+ const payloads=[{type:'PROGRAM_START'},{type:'ENTER_METHOD',frameId:'f',callerFrameId:null,className:'Unit',methodName:'run',locals:[]},...Array.from({length:20},(_,i)=>({type:'DECLARE_LOCAL',frameId:'f',slot:{id:`late/${i}`,name:`v${i}`,javaType:'int',value:{kind:'primitive',javaType:'int',value:i}}}))]
+ const trace:TraceDocument={schemaVersion:2,demoId:'late-motion-unit',sourceFiles:[],events:payloads.map((event,seq)=>({...event,seq,eventId:`late-motion/${seq}`,source:null,label:'Recorded local',importance:'normal'})) as TraceDocument['events']}
+ const projection=projectTrace(trace),scene=projection.project(trace.events.length),plan=planPresentation({scene,layout:projection.layout,detailLevel:'CLOSE',selection:{kind:'slot',id:'late/19'},focusTargetId:null,trace:{active:false,scope:'relevant'}})
+ expect(scene.entities.f.anchor.ports['late/19']).toBeUndefined()
+ const plate=buildSolidBatch(scene,plan).find(solid=>solid.pick.id==='late/19')!
+ expect(plate).toBeDefined();expect(motionSubjects(scene,plan).get('late/19')?.anchor).toEqual(plate.anchor)
+})
+it('Map key and value motion outlines retain their separate actual half-entry plates',async()=>{
+ const {projectTrace}=await import('../testing/projectTrace'),{buildSolidBatch}=await import('../render/SolidBatch')
+ const reference={kind:'reference',javaType:'Unit',objectId:'target'}
+ const payloads=[{type:'PROGRAM_START'},{type:'ALLOCATE_OBJECT',objectId:'map',displayId:1,className:'java.util.HashMap',fields:[]},{type:'ALLOCATE_OBJECT',objectId:'target',displayId:2,className:'Unit',fields:[]},{type:'OBJECT_OBSERVE',objectId:'map',library:{kind:'MAP',size:2,entries:[{key:reference,value:reference},{key:reference,value:reference}]}}]
+ const trace:TraceDocument={schemaVersion:2,demoId:'map-motion-unit',sourceFiles:[{fileId:'Unit.java',name:'Unit.java',content:'// explicit unit records'}],events:payloads.map((event,seq)=>({...event,seq,eventId:`map-motion/${seq}`,source:{fileId:'Unit.java',line:1},label:'Recorded map',importance:'normal'})) as TraceDocument['events']}
+ const projection=projectTrace(trace),scene=projection.project(trace.events.length),plan=planPresentation({scene,layout:projection.layout,detailLevel:'CLOSE',selection:{kind:'object',id:'map'},focusTargetId:null,trace:{active:false,scope:'relevant'}}),node=scene.entities.map
+ if(node.kind!=='collection')throw new Error('Expected recorded Map')
+ expect(node.entries).toHaveLength(2)
+ const subjects=motionSubjects(scene,plan),solids=buildSolidBatch(scene,plan)
+ for(const entry of node.entries){
+  const key=solids.find(solid=>solid.pick.id===entry.keySlotId)!,value=solids.find(solid=>solid.pick.id===entry.slotId)!
+  expect(key.anchor.position[0]).toBeLessThan(value.anchor.position[0])
+  expect(subjects.get(entry.keySlotId!)?.anchor).toEqual(key.anchor);expect(subjects.get(entry.slotId)?.anchor).toEqual(value.anchor)
+ }
+})

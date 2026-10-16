@@ -6,6 +6,7 @@ import {createLayoutEngine} from './layoutEngine'
 import {createSceneProjector} from './sceneProjector'
 import {createFlowCatalog} from './flowCatalog'
 import {planPresentation} from './presentationPlanner'
+import {returnCaptions} from '../render/returnCaptions'
 function recording(consumes=true){
  const base={v:1,provenanceVersion:1,coverageVersion:1,threadId:'1',frameId:'main',className:'sample.Main',methodName:'main',descriptor:'()V',line:1,site:0} as const,int=(value:number)=>({kind:'int',value} as const)
  const events:RawRuntimeEvent[]=[
@@ -42,6 +43,7 @@ it('return destinations require prefix-visible assignment evidence, even when th
  const plan=planPresentation({...input,flows:catalog})
  expect(plan.curves.filter(curve=>curve.kind==='return').map(curve=>curve.id)).toEqual([sourceEdge.id])
  expect(plan.headings.filter(heading=>heading.id==='RETURNS')).toHaveLength(1)
+ expect(returnCaptions(scene,plan.curves)).toMatchObject([{flowId:sourceEdge.id,primary:'return 7',operands:null}])
  expect(returned[0].from).toEqual({kind:'frame',id:'jvm:frame:child'});expect(returned[0].to).toEqual({kind:'slot',id:'jvm:frame:main:local:2:2:0:999'})
  expect(query(trace.events.length).filter(flow=>flow.kind==='return')).toEqual([])
  expect(catalog.recordedProvenanceOf('jvm:frame:main:local:2:2:0:999',trace.events.length).length).toBeGreaterThan(0)

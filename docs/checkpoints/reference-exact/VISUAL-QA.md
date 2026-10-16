@@ -33,3 +33,9 @@ The root opens the actual 1440×900 scoped-face capture beside original-size bes
 ## Return evidence and Classic successors — 2026-10-15, ongoing
 
 The root opens return-provenance-native.png at 1440×900 against original 1672×941 recursion reference 08_true3d_recursion.png. Correct graph attachment is visible, but saturated opaque faces, large bright headings/halos, clipped lower stack and weak glass/environment remain open. A functional return test does not approve reference convergence.
+
+## Captured return captions — 2026-10-15, still open
+
+The root inspected the original-size 1440×900 actual-JVM return capture against the 1672×941 recursion reference. A captured `return 21` caption is visible at opacity 1 and 23.94 pixels; only recorded operand text can add a secondary line. The current capture still has opaque saturated blue faces, excessive halos, oversized headings, clipped lower stack and weak acrylic/environment treatment. The RETURNS heading is present in the model but actual visibility is not yet proved. Caption correctness does not approve visual convergence. See [the migration ledger](migration/face-motion-classic-removal.md).
+
+Fresh full-native captures from this checkpoint are preserved under ignored `face-motion-classic-captures/`. Actual return JVM session `80b09440-05b1-4bae-943c-7b4434889289` supplies 93 raw events. The root opens its new 1440×900 capture: `return 21` is visible at opacity 1 and **19.91 px**, with a second captured `return 15` at **18.16 px**; these supersede the earlier targeted capture's pixel measurements for the fresh gate. The root also opens the fresh desktop collection Focus capture and unchanged 1672×941 `best.png`. Dense foreground stack slabs and strong purple/cyan halos occlude parts of the actual collection contents. Fixed-font opacity/readability checks alone do not establish unobstructed visual readability. Both captures remain visual findings, not approvals.

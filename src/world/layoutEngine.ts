@@ -5,7 +5,7 @@ import type { LayoutState, WorldAnchor, WorldBounds, Vec3, PlacementInfo, Region
 import { world as worldLayoutTokens } from '../theme/tokens';
 import { persistentAppend, persistentPut, persistentRecord } from '../runtime/storage';
 import {ownershipObservation} from './recordedOwnership';
-import {firstObjectPresentation} from './firstObjectPresentation';
+import {firstObjectPresentation,compactLibraryFace} from './firstObjectPresentation';
 import {createClusterMembershipIndex} from './clusterMemberships';
 export type { LayoutState } from '../contracts/worldV2';
 export type WorldLayoutTokens = typeof worldLayoutTokens;
@@ -38,10 +38,11 @@ export function createLayoutEngine(t: WorldLayoutTokens = worldLayoutTokens): La
         next: number;
     }>();
     const libraryColumns = new Map<string, {
-        x: number;
+        x: number; width:number; height:number; depth:number;
         next: number;
     }>();
-    const stackOccupancy = createOccupancy(), heapOccupancy = createOccupancy();
+    let libraryExtraWidth=0;
+    const stackOccupancy = createOccupancy(), heapOccupancy = createOccupancy(),libraryOccupancy=createOccupancy();
     const regionBounds: Record<Region, WorldBounds | null> = { stack: null, heap: null, library: null, class: null, io: null };
     const lastChild = new Map<string | null, WorldAnchor>();
     const rows = new Map<string, string[]>();
@@ -61,8 +62,9 @@ export function createLayoutEngine(t: WorldLayoutTokens = worldLayoutTokens): La
             heap.push(anchor);
             heapOccupancy.add(anchor);
         }
-        else if (anchor.region === 'library')
-            library.push(anchor);
+        else if (anchor.region === 'library'){
+            library.push(anchor);libraryOccupancy.add(anchor);
+        }
         else if (anchor.region === 'class')
             classes.push(anchor);
         else
@@ -97,18 +99,27 @@ export function createLayoutEngine(t: WorldLayoutTokens = worldLayoutTokens): La
         const className = isArray ? `${event.elementType}[]` : event.className;
         const count = isArray ? event.length ?? event.elements.length : event.fields.length;
         const cols = Math.max(t.array.cellsPerRowMin, Math.min(t.array.cellsPerRowMax, count));
-        const {size,projectData}=firstObjectPresentation(event,t);
+        const {size,projectData,kind}=firstObjectPresentation(event,t);
         const region: Region = projectData ? 'heap' : 'library';
         let position: Vec3, realSize = size;
         if (region === 'library') {
+            // Arrays and known collection structures retain their typed volume;
+            // only ordinary external objects use the compact library block.
+            realSize=kind==='object'?[t.object.libraryW,2.4,1.6]:size;
             let column = libraryColumns.get(className);
             if (!column) {
-                column = { x: t.frame.w / 2 + t.regions.stackHeapGap + t.object.libraryW / 2 + libraryColumns.size * (t.object.libraryW + 1.2), next: 0 };
+                const ordinaryX=t.frame.w/2+t.regions.stackHeapGap+t.object.libraryW/2+libraryColumns.size*(t.object.libraryW+1.2);
+                column = {x:ordinaryX+libraryExtraWidth+(realSize[0]-t.object.libraryW)/2,width:realSize[0],height:realSize[1],depth:realSize[2],next:0};
+                libraryExtraWidth+=realSize[0]-t.object.libraryW;
                 libraryColumns.set(className, column);
             }
-            const slot = column.next++, front = -t.object.depth / 2 - t.regions.libraryGapZ - Math.floor(slot / 4) * 2.4;
-            realSize = [t.object.libraryW, 2.4, 1.6];
-            position = [column.x, t.regions.heapTopY - (slot % 4) * 3.2 - realSize[1] / 2, front - realSize[2] / 2];
+            let candidate:WorldAnchor;
+            do{
+                const slot=column.next++,rowPitch=column.height===2.4?3.2:column.height+.8,deckStep=column.depth===1.6?2.4:column.depth+.8;
+                const front=-t.object.depth/2-t.regions.libraryGapZ-Math.floor(slot/4)*deckStep;
+                position=[column.x+(realSize[0]-column.width)/2,t.regions.heapTopY-(slot%4)*rowPitch-realSize[1]/2,front-realSize[2]/2];
+                candidate={entityId:event.objectId,region,position,size:realSize,ports:{},bodyPort:position};
+            }while(libraryOccupancy.intersects(candidate));
         }
         else {
             let column = columns.get(className);
@@ -126,8 +137,10 @@ export function createLayoutEngine(t: WorldLayoutTokens = worldLayoutTokens): La
         }
         const anchor: WorldAnchor = { entityId: event.objectId, region, position: position!, size: realSize, ports: {}, bodyPort: [position![0] - realSize[0] / 2, position![1], position![2] + realSize[2] / 2] };
         add(anchor, event.seq, className, event.metadata?.packageName ?? className.slice(0, Math.max(0, className.lastIndexOf('.'))), event.metadata?.ownership, Math.min(count, 13));
-        if (!isArray)
-            ports(anchor,event.fields,region==='library'?2:Math.min(count,13),region==='library'?.7:t.object.header,region==='library'?.55:t.object.row);
+        if (!isArray) {
+            const compact=compactLibraryFace(anchor,t);
+            ports(anchor,event.fields,compact?2:Math.min(count,13),compact?.7:t.object.header,compact?.55:t.object.row);
+        }
         else if (isArray && count <= 128) {
             const cellPorts: Record<string, Vec3> = {};
             for (let index = 0; index < count; index++) {
@@ -178,7 +191,7 @@ export function createLayoutEngine(t: WorldLayoutTokens = worldLayoutTokens): La
                 else if (event.type === 'ALLOCATE_OBJECT' || event.type === 'ALLOCATE_ARRAY')
                     object(event);
                 else if (event.type === 'OBJECT_OBSERVE' && event.fields && anchors[event.objectId]&&!(event.library&&['LIST','SET','MAP','QUEUE','DEQUE'].includes(event.library.kind))) {
-                    const anchor=anchors[event.objectId];ports(anchor,event.fields,anchor.region==='library'?2:Math.max(0,Math.floor((anchor.size[1]-t.object.header-t.object.pad)/t.object.row)),anchor.region==='library'?.7:t.object.header,anchor.region==='library'?.55:t.object.row);
+                    const anchor=anchors[event.objectId],compact=compactLibraryFace(anchor,t);ports(anchor,event.fields,compact?2:Math.max(0,Math.floor((anchor.size[1]-t.object.header-t.object.pad)/t.object.row)),compact?.7:t.object.header,compact?.55:t.object.row);
                 }
                 else if (event.type === 'CLASS_OBSERVE' && !anchors[event.classId]) {
                     const capacity = Math.min(event.fields.length, t.classShelf.rowsMax) + 1, height = t.classShelf.header + t.frame.pad + t.classShelf.row * capacity;

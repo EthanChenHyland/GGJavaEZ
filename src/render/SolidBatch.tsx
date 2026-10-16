@@ -7,8 +7,7 @@ import { color, world } from '../theme/tokens';
 import { glassMaterial, unitBox, roundedDepthMaterial, roundedDistanceMaterial } from './RuntimeMaterials';
 import { expandRoundedBoxVertex, unitRoundedBox, unitRoundedOutline } from './geometry/roundedBox';
 import { faceRows } from './faceModel';
-import { faceRowPort } from '../world/faceRows';
-import {collectionEntryFace} from '../world/collectionFace';
+import { facePlate } from '../world/facePlate';
 import { useQualityStore, type QualityTier } from './quality/qualityStore';
 import { resolveArrayWindowPick, type ArrayWindowPick } from '../world/arrayWindow';
 import { useCameraStore } from '../camera/cameraStore';
@@ -38,26 +37,20 @@ export function buildSolidBatch(scene: SceneModel, plan: PresentationPlan): Soli
             continue;
         if (node.kind !== 'array')
             plate(id, [x, y, face - .01], [w - .18, h - .18, .035], palette.face);
+        const model=faceRows(node,presented);
+        const rowPlate=(slotId:string)=>{const anchor=facePlate(node,presented,slotId,model);if(anchor)solids.push({anchor,pick:{kind:'slot',id:slotId},pickable:presented.pickable,role:'face',opacity,tint:'chip' in palette?palette.chip:palette.face})};
         if (node.kind === 'collection') {
             const { sizeRow } = world.collection;
             const header = world.object.header, bottom = y - h / 2 + world.object.pad;
             const sizeY = top - header - sizeRow / 2;
             if (presented.detail !== 'FAR' && sizeY - sizeRow * .36 >= bottom)
                 plate(id, [x, sizeY, face + .01], [w - .45, sizeRow * .73, .05], color.heap.chip);
-            const visible=new Set(faceRows(node,presented).visible.map(row=>row.slotId));
-            for (const [index, entry] of node.entries.slice(0,world.collection.rows*world.collection.columns).entries()) {
-                if(!visible.has(entry.slotId))continue;
-                const geometry=collectionEntryFace(node.anchor,index,node.collectionKind==='Map');if(!geometry)continue;
-                plate(entry.slotId,[geometry.value[0],geometry.value[1],face+.01],[geometry.valueWidth,geometry.height,.05],color.heap.chip);
-                if(geometry.key&&entry.keySlotId)plate(entry.keySlotId,[geometry.key[0],geometry.key[1],face+.01],[geometry.valueWidth,geometry.height,.05],color.heap.chip);
+            for(const entry of node.entries)if(model.visible.some(row=>row.slotId===entry.slotId)){
+                rowPlate(entry.slotId);if(entry.keySlotId)rowPlate(entry.keySlotId);
             }
             continue;
         }
-        const model = faceRows(node, presented);
-        for (const [rowIndex, row] of model.visible.entries()) {
-            const ry = faceRowPort(node,presented,row.slotId,model)?.[1] ?? top - model.header - model.pitch * (rowIndex + .5);
-            plate(row.slotId, [x, ry, face + .01], [w - .45, model.pitch * .73, .05], 'chip' in palette ? palette.chip : palette.face);
-        }
+        for(const row of model.visible)rowPlate(row.slotId);
         if (node.kind === 'array')
             for (const [id, cell] of plan.cellWindows.get(node.id)?.mapping ?? []) {
                 const [cx, cy, cz] = cell.anchor.position;

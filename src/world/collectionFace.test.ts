@@ -33,11 +33,11 @@ describe('collection reservations and physical entry faces',()=>{
   expect(f.sceneAt(2).entities.container.kind).toBe('object');expect(f.sceneAt(2).references).toEqual([])
   const batch=createLayoutEngine();batch.append(f.events);expect(batch.state).toEqual(f.layout.state)
  })
- it('keeps first-source-unknown compact geography even when later source/ownership/summary become known',()=>{
+ it('keeps first-source-unknown library structure geography even when later source/ownership/summary become known',()=>{
   const f=fixture(false,false);f.layout.append(f.events.slice(0,2));const initial=f.layout.state.anchors.container
   f.events[3]={...f.events[3],source:{fileId:'Unit.java',line:1},metadata:{ownership:'PROJECT',runtimeType:'java.util.ArrayList',packageName:'java.util'}} as TraceEvent
-  f.layout.append(f.events);expect(f.layout.state.anchors.container).toEqual(initial);expect(initial.region).toBe('library');expect(initial.size).toEqual([4.2,2.4,1.6])
-  const node=f.sceneAt(4).entities.container;expect(faceRows(node,{detail:'CLOSE'}).visible).toEqual([])
+  f.layout.append(f.events);expect(f.layout.state.anchors.container).toEqual(initial);expect(initial.region).toBe('library');expect(initial.size).toEqual([5.2,9.93,2.3])
+  const node=f.sceneAt(4).entities.container;expect(faceRows(node,{detail:'CLOSE'}).visible).toHaveLength(24)
  })
  it.each([false,true])('draws exactly the visible List/Map chips and proven reference ports (Map=%s)',map=>{
   const f=fixture(map);f.layout.append(f.events);const scene=f.sceneAt(4),node=scene.entities.container

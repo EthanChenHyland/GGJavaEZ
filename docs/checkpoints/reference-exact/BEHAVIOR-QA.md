@@ -40,3 +40,7 @@ A first 70-case reconstruction run fails 65/5 and stays archived. The graphics c
 ## Return evidence and Classic successors — 2026-10-15, ongoing
 
 A new fresh-JVM recursion case verifies the actual edge ID, consuming-write prefix, exact caller slot terminal, one return curve/heading, stable anchors and rewind removal. Two new unit cases cover equal values without a consuming edge and incremental/rebuilt frame status. Thirteen Classic scene/deep-stack cases move to actual production primitives and retain complete replay, recorded values, pickability, bounded camera behavior and local animation evidence. Initial failures and corrected checks are mapped in migration/return-evidence.md; full confirmation passes 2020 default tests (70 explicit opt-in skips), all 71 native cases, three cached CPU probes and 19 guardrails.
+
+## Physical face consistency and Classic migration — 2026-10-15
+
+Scoped/late-row and Map key/value temporal emphasis now matches actual rendered chips. All 52 former Classic cases retain production successors, including sparse-array/camera/static/scope coverage. Fixed typed library reservation corrects sparse cells outside their former compact body; full default regression passes 2027/70 explicit opt-in skips/2097 total. The failed initial gate and corrected evidence are recorded in [the migration ledger](migration/face-motion-classic-removal.md). Fresh full native reconstruction confirms **71/71**, 8.9 minutes, exit 0 (`browser-face-motion-classic-confirmed.log`); the separate 126 older browser cases remain outside that passing gate.

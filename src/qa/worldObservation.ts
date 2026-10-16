@@ -10,8 +10,9 @@ export interface WorldObservation {
   worldProjection():WorldProjection
   runtimeHeadings():readonly {entityId:string;kind:'title'|'identity';text:string;opacity:number;fontPixels:number;planePixels:number;widthPixels:number}[]
   collectionText():readonly {entityId:string;kind:'size'|'more'|'key'|'value';slotId?:string;text:string;opacity:number;fontPixels:number;planePixels:number;widthPixels:number}[]
+  returnText():readonly {flowId:string;kind:'value'|'operands';text:string;opacity:number;fontPixels:number}[]
   frameText():readonly {entityId:string;kind:'scope'|'name'|'value';slotId?:string;text:string;position:readonly[number,number,number];opacity:number;fontPixels:number}[]
-  structuralLabels():readonly {id:string;kind:'cluster'|'heading'|'bundle';visible:boolean;minimumFontPixels:number;bounds:import('../shell/shellLayout').Rect|null}[]
+  structuralLabels():readonly {id:string;kind:'cluster'|'heading'|'bundle'|'return';visible:boolean;minimumFontPixels:number;bounds:import('../shell/shellLayout').Rect|null}[]
   projectedPoint(id: string): { x:number; y:number; visible:boolean } | null
   renderer(): {calls:number;triangles:number;geometries:number;textures:number;frame:number}
   effects():{ready:boolean;frames:number;revision:number;failure:string;cinematic:boolean}

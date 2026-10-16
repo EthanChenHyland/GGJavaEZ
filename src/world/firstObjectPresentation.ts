@@ -1,5 +1,5 @@
 import type { TraceEvent } from '../contracts/runtime'
-import type { Vec3 } from '../contracts/worldV2'
+import type { Vec3, WorldAnchor } from '../contracts/worldV2'
 import { world as worldTokens } from '../theme/tokens'
 import type { WorldLayoutTokens } from './layoutEngine'
 
@@ -38,7 +38,7 @@ const collectionClasses: ReadonlySet<string> = new Set([
 
 /** First-allocation geometry only (design 7.2/7.3, requirements 11.4/11.5).
  * `kind` selects reservation geometry; it does not create runtime collection facts.
- * Library routing and its compact block override belong to the layout caller.
+ * Library routing and ordinary-object compaction belong to the layout caller.
  */
 export function firstObjectPresentation(
   event: Extract<TraceEvent, { type: 'ALLOCATE_OBJECT' | 'ALLOCATE_ARRAY' }>,
@@ -75,4 +75,11 @@ export function firstObjectPresentation(
     tokens.object.header + tokens.object.pad + tokens.object.row * Math.min(event.fields.length, 13) + .6 * groups,
     tokens.object.depth,
   ] }
+}
+
+/** Region alone does not imply a compact face: arrays and known collection
+ * types reserve their full structural body even before contents are observed. */
+export function compactLibraryFace(anchor: Pick<WorldAnchor, 'region' | 'size'>, tokens: WorldLayoutTokens = worldTokens): boolean {
+  return anchor.region === 'library' && anchor.size[0] === tokens.object.libraryW
+    && anchor.size[1] === 2.4 && anchor.size[2] === 1.6
 }
