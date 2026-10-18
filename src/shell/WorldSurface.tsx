@@ -21,6 +21,7 @@ import { focusSourceLocation, sourceLocationFor } from './source/sourceSync';
 import {useQualityStore} from '../render/quality/qualityStore';
 import { shellStore } from '../workspace/shellStore';
 import { registerWorldCommandSurface } from '../ide/commands';
+import {canFocusWorldSelection} from '../interaction/focusTarget';
 import type {Size} from '../camera/projection';
 const fullRecording = { state: 'FULL', reason: null, budget: null, lastRecordedSeq: null, executionContinued: false } as const;
 export function WorldSurface({ trace, onSourceChange, onRuntimeChange, navigation, suppressInspector = false, execution, safeFrame,inspectorRect,pausedSource,viewport }: {
@@ -79,8 +80,8 @@ export function WorldSurface({ trace, onSourceChange, onRuntimeChange, navigatio
         for(const[id,window]of next.cellWindows)compiler.windows.set(id,window);
         return next;
     }, [compiler,scene, flows, layout, detail, selection, focus, traceState,cameraIntent,viewTile,heroViewport]);
-    const commandWorld=useRef({plan,recorded:trace.events.length>0});commandWorld.current={plan,recorded:trace.events.length>0};
-    useEffect(()=>registerWorldCommandSurface({hasRecording:()=>commandWorld.current.recorded,hasPresentedFlow:id=>commandWorld.current.plan.curves.some(curve=>curve.id===id&&['flow','return','exception','binding-history'].includes(curve.kind))}),[]);
+    const commandWorld=useRef({scene,plan,recorded:trace.events.length>0});commandWorld.current={scene,plan,recorded:trace.events.length>0};
+    useEffect(()=>registerWorldCommandSurface({hasRecording:()=>commandWorld.current.recorded,canFocusSelection:selection=>canFocusWorldSelection(commandWorld.current.scene,commandWorld.current.plan,selection),hasPresentedFlow:id=>commandWorld.current.plan.curves.some(curve=>curve.id===id&&['flow','return','exception','binding-history'].includes(curve.kind))}),[]);
     const lastNavigation = useRef(-1);
     useEffect(() => {
         if (!navigation || navigation.revision === lastNavigation.current)
@@ -98,10 +99,9 @@ export function WorldSurface({ trace, onSourceChange, onRuntimeChange, navigatio
     const select = (next: Selection) => {
         setSelection(next);
     };
-    const focusSelection = () => { if (inspectorSelection && ['frame', 'object', 'class', 'slot','cluster'].includes(inspectorSelection.kind))
-        useCameraStore.getState().focus(inspectorSelection); };
+    const focusSelection = (target=inspectorSelection) => { if (canFocusWorldSelection(scene,plan,target))useCameraStore.getState().focus(target); };
     return <section className="world-panel" aria-label="Runtime world">
-    <RuntimeCanvas trace={trace} timeline={playback.store} scene={scene} plan={plan} layout={layout} safeFrame={safeFrame} inspectorRect={suppressInspector?null:inspectorRect} selection={selection} onSelect={select} onFocus={selection=>useCameraStore.getState().focus(selection)}/>
+    <RuntimeCanvas trace={trace} timeline={playback.store} scene={scene} plan={plan} layout={layout} safeFrame={safeFrame} inspectorRect={suppressInspector?null:inspectorRect} selection={selection} onSelect={select} onFocus={focusSelection}/>
     {!suppressInspector && <Inspector selection={inspectorSelection} scene={scene} runtime={runtime} flows={flows} plan={plan} onClose={() => shellStore.setState({inspectorHidden:true})} onFocus={focusSelection} onSelectRow={id=>setSelection({kind:'slot',id})} onSelectEntity={select} onReturn={()=>useCameraStore.getState().exitFocus()}/>}
     <div className="world-timeline"><TimeDock trace={trace} playback={playback} execution={execution} settings={{reducedMotion,onReducedMotionChange:useQualityStore.getState().setReducedMotion,quality,onQualityChange:tier=>{void useQualityStore.getState().selectQuality(tier)},cinematicAvailable:cinematic.enabled,cinematicReason:cinematic.enabled?undefined:cinematic.reason}}/></div>
     {qualityNotice&&<div className="world-quality-notice glass" role="status">{qualityNotice}<button onClick={()=>useQualityStore.getState().clearNotice()} aria-label="Dismiss rendering notice">×</button></div>}

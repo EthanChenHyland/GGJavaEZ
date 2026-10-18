@@ -182,7 +182,7 @@ export const ideCommandDefinitions: Readonly<Record<IdeCommandId, CommandDefinit
 })
 
 /** The mounted World supplies its current plan, rather than a QA global or a historical graph. */
-export interface WorldCommandSurface { hasPresentedFlow(id: string): boolean; hasRecording?():boolean }
+export interface WorldCommandSurface { hasPresentedFlow(id: string): boolean; hasRecording?():boolean; canFocusSelection(selection:Selection):boolean }
 let worldCommandSurface: WorldCommandSurface | null = null
 export function registerWorldCommandSurface(surface: WorldCommandSurface): () => void {
   worldCommandSurface = surface
@@ -192,17 +192,20 @@ export function hasPresentedCommandFlow(id: string): boolean {
   return worldCommandSurface?.hasPresentedFlow(id) ?? false
 }
 export function hasMountedRecording():boolean { return worldCommandSurface?.hasRecording?.()??false }
+export function hasFocusableCommandSelection(selection:Selection):boolean { return worldCommandSurface?.canFocusSelection(selection)??false }
 export function isPresentationCommand(id: IdeCommandId): boolean {
   return id.startsWith('navigation.') || id.startsWith('view.')
 }
 export function worldCommandAvailability(id: ShellCommandId, state: {
-  worldPresent: boolean; selection: Selection; focusActive: boolean; presentedFlow: boolean
+  worldPresent: boolean; selection: Selection; focusActive: boolean; presentedFlow: boolean; focusTargetPresent:boolean
   cinematic: CommandAvailability; contextLost: boolean
 }): CommandAvailability {
   if (id === 'workbench.inspector' && !state.selection && !state.focusActive)
     return { enabled: false, reason: 'Select or Focus a runtime entity first' }
   if (id === 'navigation.focusSelection' && (!state.selection || !['frame', 'object', 'class', 'slot', 'cluster'].includes(state.selection.kind)))
     return { enabled: false, reason: 'No focusable entity is selected' }
+  if (id === 'navigation.focusSelection' && !state.focusTargetPresent)
+    return { enabled: false, reason: 'Focus target is not present at this point in time' }
   if (id === 'navigation.exitFocus' && !state.focusActive) return { enabled: false, reason: 'Focus is not active' }
   if (id === 'navigation.followPath' && (state.selection?.kind !== 'flow' || !state.presentedFlow))
     return { enabled: false, reason: 'Select a Flow presented at this point in time' }

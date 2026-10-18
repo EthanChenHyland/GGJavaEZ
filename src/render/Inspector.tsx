@@ -5,10 +5,10 @@ import type { RuntimeState } from '../contracts/runtime'
 import type { PresentationPlan, SceneModel } from '../contracts/worldV2'
 import type { FlowCatalog } from '../world/flowCatalog'
 import { frameStatusText } from '../world/frameStatus'
-import { inspectorEntity, inspectorProvenance, inspectorRows, type InspectorRow } from './inspection'
+import { inspectorEntity, inspectorRetiredLocal, inspectorProvenance, inspectorRows, type InspectorRow } from './inspection'
 import { VirtualList } from '../shell/VirtualList'
 import { arrayCellTarget } from '../world/arrayCellTarget'
-import { focusable } from '../interaction/interactionStore'
+import { canFocusWorldSelection } from '../interaction/focusTarget'
 import {historicalSceneReference} from '../world/historicalReference'
 import './inspector.css'
 export function Inspector({selection,scene,runtime,flows,plan,onClose,onFocus,onReturn,onSelectRow,onSelectEntity}:{
@@ -19,7 +19,8 @@ export function Inspector({selection,scene,runtime,flows,plan,onClose,onFocus,on
  const [historyOpen,setHistoryOpen]=useState(false)
  const [flowsOpen,setFlowsOpen]=useState(false)
  const node=useMemo(()=>inspectorEntity(scene,selection),[scene,selection])
- const rows=useMemo(()=>node?inspectorRows(node):null,[node])
+ const retired=useMemo(()=>node?null:inspectorRetiredLocal(runtime,selection),[node,runtime,selection])
+ const rows=useMemo(()=>node?inspectorRows(node):retired?{count:1,at:()=>retired.row}:null,[node,retired])
  const flow=useMemo(()=>selection?.kind==='flow'?runtime.executionGraph?.edges.find(edge=>edge.id===selection.id):undefined,[selection,runtime.executionGraph])
  const provenance=useMemo(()=>inspectorProvenance(flows,selection,node,scene.cursor,flow),[flows,selection,node,scene.cursor,flow])
  const flowEvidence=flow?provenance.find(item=>item.edgeId===flow.id):undefined
@@ -31,11 +32,11 @@ export function Inspector({selection,scene,runtime,flows,plan,onClose,onFocus,on
  const historicalBinding=selection.kind==='reference'?scene.historicalBindings.find(item=>item.id===selection.id):null
  const cluster=selection.kind==='cluster'?plan.clusters.find(item=>item.id===selection.id):null
  const bundle=selection.kind==='bundle'?plan.bundles.find(item=>item.id===selection.id):undefined
- const canFocus=focusable(selection)&&!!(node||cluster),unavailableReference=reference?(historicalBinding?plan.historicalReferencePresentation:plan.referencePresentation).unavailable.find(item=>item.id===reference.id):undefined
+ const canFocus=canFocusWorldSelection(scene,plan,selection),unavailableReference=reference?(historicalBinding?plan.historicalReferencePresentation:plan.referencePresentation).unavailable.find(item=>item.id===reference.id):undefined
  const bundleReferences=(bundle?.referenceIds??[]).flatMap(id=>referenceMap.has(id)?[referenceMap.get(id)!]:[])
- const title=flow?flow.kind:cluster?`Cluster · ${cluster.label} ×${cluster.members}`:bundle?`${bundle.count} ${bundle.kind==='connector'?'current references':bundle.kind==='binding-history'?'historical bindings':'recorded flows'}`:node?node.kind==='frame'?`${node.title} #${node.invocationNumber}`:node.kind==='class'?node.title:`${node.title} #${node.displayId}`:selection.kind==='cluster'?'Cluster':selection.kind==='bundle'?'Bundle is not in the current presentation':selection.id
- const status=node?.kind==='frame'?frameStatusText(node.status):node?.kind==='array'?`length ${node.length} · ${node.cells.length} cells captured`:node?.kind==='collection'?`size ${node.size} · ${node.recordedEntries} entries captured · ${node.size-node.recordedEntries} not recorded`:node?.kind==='object'?`${node.fieldCount} fields`:node?.kind==='class'?`static · ${node.initialization}`:flow?'Recorded graph edge':cluster?`Structural summary · ${cluster.members} recorded entities`:bundle?'Structural summary':selection.kind==='cluster'?'Cluster is not in the current presentation':'Not present at this point in time'
- const source=node?.kind==='frame'?node.sourceLine:node?.kind==='object'?node.allocationSite:flow?.context.source
+ const title=flow?flow.kind:cluster?`Cluster · ${cluster.label} ×${cluster.members}`:bundle?`${bundle.count} ${bundle.kind==='connector'?'current references':bundle.kind==='binding-history'?'historical bindings':'recorded flows'}`:node?node.kind==='frame'?`${node.title} #${node.invocationNumber}`:node.kind==='class'?node.title:`${node.title} #${node.displayId}`:retired?retired.row.name:selection.kind==='cluster'?'Cluster':selection.kind==='bundle'?'Bundle is not in the current presentation':selection.id
+ const status=node?.kind==='frame'?frameStatusText(node.status):node?.kind==='array'?`length ${node.length} · ${node.cells.length} cells captured`:node?.kind==='collection'?`size ${node.size} · ${node.recordedEntries} entries captured · ${node.size-node.recordedEntries} not recorded`:node?.kind==='object'?`${node.fieldCount} fields`:node?.kind==='class'?`static · ${node.initialization}`:retired?'Scope closed · last captured local value':flow?'Recorded graph edge':cluster?`Structural summary · ${cluster.members} recorded entities`:bundle?'Structural summary':selection.kind==='cluster'?'Cluster is not in the current presentation':'Not present at this point in time'
+ const source=node?.kind==='frame'?node.sourceLine:node?.kind==='object'?node.allocationSite:retired?.lifetime.source??flow?.context.source
  const copy=(text:string)=>void navigator.clipboard.writeText(text).then(()=>setCopyMessage('Captured text copied'),()=>setCopyMessage('Clipboard access unavailable'))
  const selectedCell=arrayCellTarget(scene,selection.kind==='slot'?selection.id:null)
  const inbound=node?scene.references.filter(item=>item.targetId===node.id):[]
@@ -56,6 +57,7 @@ export function Inspector({selection,scene,runtime,flows,plan,onClose,onFocus,on
   }}</VirtualList>}
   {source&&<p className="gg-inspector-source">{source.fileId}:{source.line}</p>}
   {node&&'ownership'in node&&<p>{node.ownership} · stable identity <span className="gg-inspector-id">{node.id}</span></p>}
+  {retired&&<p className="gg-inspector-id">Recorded lifetime · declared at {retired.lifetime.declaredAt} · last captured at {retired.lifetime.lastChangedAt} · closed at {retired.lifetime.exitedAt}</p>}
   {selection.kind==='slot'&&<p className="gg-inspector-id">Selected storage lifetime: {selection.id}</p>}
   {cluster&&<VirtualList key={cluster.id} className="inspector-values inspector-members" count={cluster.memberIds.length} rowHeight={52} label="Cluster members">{index=>{
     const member=scene.entities[cluster.memberIds[index]],kind=member.kind==='frame'?'frame':member.kind==='class'?'class':'object';
@@ -63,7 +65,7 @@ export function Inspector({selection,scene,runtime,flows,plan,onClose,onFocus,on
     return <button className="inspector-member" title={member.id} aria-label={`Select ${label}`} onClick={()=>onSelectEntity({kind,id:member.id})}><span>{label}<small>{member.kind} · {member.id}</small></span></button>;
   }}</VirtualList>}
   {!cluster&&!bundle&&<VirtualList key={selection.id} className="inspector-values" count={rows?.count??0} rowHeight={52} label="Recorded values" initialIndex={selectedCell?.index??0}>{index=>{
-    const row=rows!.at(index);return <div className="inspector-value"><span title={row.slotId}>{row.key?.exact??row.name}<small>{row.type}</small></span>{node?.kind==='array'&&<button aria-label={`Reveal index ${index}`} title={`Reveal the recorded identity of index ${index}`} onClick={()=>onSelectRow(row.slotId)}>↗</button>}<button title={`${row.value.observation}${row.value.reason?` · ${row.value.reason}`:''} · Inspect captured value`} aria-label={`Inspect ${row.name}`} onClick={()=>setExpanded(row)}>{row.value.exact}</button></div>;
+    const row=rows!.at(index);return <div className="inspector-value"><span title={row.slotId}>{row.key?.exact??row.name}<small>{row.type}</small></span>{node?.kind==='array'&&<button aria-label={`Reveal index ${index}`} title={`Reveal the recorded identity of index ${index}`} onClick={()=>onSelectRow(row.slotId)}>↗</button>}{node?.kind==='frame'&&<button aria-label={`Select ${row.name} storage`} title={`Select recorded ${row.name} storage`} aria-pressed={selection.kind==='slot'&&selection.id===row.slotId} onClick={()=>onSelectRow(row.slotId)}>↗</button>}<button title={`${row.value.observation}${row.value.reason?` · ${row.value.reason}`:''} · Inspect captured value`} aria-label={`Inspect ${row.name}`} onClick={()=>setExpanded(row)}>{row.value.exact}</button></div>;
   }}</VirtualList>}
   {expanded&&<section className="gg-inspector-expanded" aria-label={`Captured ${expanded.name}`}><strong>{expanded.name} · {expanded.value.observation}</strong><pre>{expanded.value.exact}</pre>{expanded.value.recordedLength!==undefined&&<p>Recorded length: {expanded.value.recordedLength}</p>}{expanded.value.reason&&<p>{expanded.value.reason}</p>}<button onClick={()=>copy(expanded.value.exact)} aria-label={`Copy ${expanded.name}`}><Copy size={14}/>Copy captured value</button><button onClick={()=>setExpanded(null)}>Close detail</button></section>}
   {copyMessage&&<p role="status">{copyMessage}</p>}

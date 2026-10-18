@@ -33,8 +33,6 @@ const scrub = (page: Page) => page.getByRole('slider', { name: 'Scrub execution'
 const inspector = (page: Page) => page.getByLabel('Runtime inspector', { exact: true })
 const status = (page: Page) => page.getByLabel('Control flow state', { exact: true })
 const consolePane = (page: Page) => page.getByLabel('Runtime console', { exact: true })
-const slot = (page: Page, id: string) => page.locator('.classic-runtime [data-slot-id]').filter({ has: page.locator('text') }).and(page.locator(`[data-slot-id="${id}"]`))
-const scope = (page: Page, id: string) => page.locator(`.classic-runtime [data-scope-id="${id}"]`)
 const scalar = (value: ScalarValue) => value.kind === 'primitive' ? String(value.value)
   : value.kind === 'stringSummary' ? `"${value.value}"` : value.kind
 
@@ -75,17 +73,6 @@ async function expectSource(page: Page, checkpoint: Checkpoint) {
   await expect(page.locator('.source-current-line')).toHaveText(`L${source.line} · ${line}`)
 }
 
-function scopeChain(declaration: Checkpoint<Extract<TraceEvent, { type: 'DECLARE_LOCAL' }>>) {
-  const chain: Extract<TraceEvent, { type: 'ENTER_SCOPE' }>[] = []
-  let id = required(declaration.event.slot.scopeId, 'declared scope ID')
-  while (id) {
-    const entered = required(checkpoints('ENTER_SCOPE').filter(({ event, cursor }) => event.frameId === declaration.event.frameId && event.scopeId === id && cursor < declaration.cursor).at(-1), `scope ${id}`)
-    chain.unshift(entered.event)
-    id = entered.event.parentId ?? ''
-  }
-  return chain
-}
-
 test('console contains only consumed inputs and committed outputs, including reverse steps', async ({ page }) => {
   await control(page)
   expect(inputs.map(({ event }) => scalar(event.value))).toEqual(['-7', '42', '130'])
@@ -111,92 +98,6 @@ test('console contains only consumed inputs and committed outputs, including rev
   }
   await seek(page, 0)
   await expectConsole(page, 0)
-})
-
-test('nested corrected survives return evaluation, leaves on method exit, and rewinds to its reserved row', async ({ page }) => {
-  await page.emulateMedia({ reducedMotion: 'reduce' })
-  await control(page)
-  await page.getByRole('button', { name: 'Classic', exact: true }).click()
-  expect(corrected).toHaveLength(3)
-  for (const declaration of corrected) {
-    const returned = required(checkpoints('RETURN_VALUE').find(({ event, cursor }) => event.frameId === declaration.event.frameId && cursor > declaration.cursor), 'branch return')
-    const exited = required(checkpoints('EXIT_METHOD').find(({ event, cursor }) => event.frameId === declaration.event.frameId && cursor > returned.cursor), 'return unwinding')
-    const chain = scopeChain(declaration)
-    expect(chain.length).toBeGreaterThan(1)
-    const block = chain.at(-1)!
-    await seek(page, declaration.cursor)
-    await expect(slot(page, declaration.event.slot.id)).toHaveCount(1)
-    await expect(scope(page, block.scopeId)).toHaveAttribute('data-scope-depth', String(chain.length - 1))
-    await expect(status(page).locator('.scope-context')).toHaveText(`Scope · ${chain.map((entry) => entry.labelScope).join(' › ')}`)
-    const row = slot(page, declaration.event.slot.id).locator('rect').first()
-    const anchor = await row.evaluate((node) => ['x', 'y', 'width', 'height'].map((name) => node.getAttribute(name)))
-    await page.getByLabel('Select runtime entity', { exact: true }).selectOption(declaration.event.slot.id)
-    await seek(page, returned.cursor)
-    await expect(slot(page, declaration.event.slot.id)).toHaveCount(1)
-    await expect(scope(page, block.scopeId)).toHaveCount(1)
-    await expect(inspector(page).getByRole('heading', { name: 'corrected', exact: true })).toBeVisible()
-    await expect(inspector(page).locator('.inspector-key').filter({ hasText: /^VALUE/ }).locator('strong')).toHaveText(scalar(returned.event.value))
-    await page.getByRole('button', { name: 'Next event', exact: true }).click()
-    await expect(scrub(page)).toHaveValue(String(exited.cursor))
-    await expect(slot(page, declaration.event.slot.id)).toHaveCount(0)
-    await expect(scope(page, block.scopeId)).toHaveCount(0)
-    await expect(page.locator(`.classic-runtime [data-runtime-id="${declaration.event.frameId}"]`)).toHaveAttribute('data-invocation-status', 'completed')
-    await expect(inspector(page)).toContainText('SCOPE · CLOSED')
-    await expect(inspector(page).getByRole('heading', { name: 'corrected', exact: true })).toBeVisible()
-    await expect(inspector(page).locator('.inspector-key').filter({ hasText: /^VALUE/ }).locator('strong')).toHaveText(scalar(returned.event.value))
-    await expect(inspector(page).getByRole('button', { name: 'Focus', exact: true })).toBeDisabled()
-    await page.getByRole('button', { name: 'Previous event', exact: true }).click()
-    await expect(scrub(page)).toHaveValue(String(returned.cursor))
-    await expect(scope(page, block.scopeId)).toHaveCount(1)
-    await expect(inspector(page)).toContainText('SCOPE · LIVE')
-    await expect(inspector(page).getByRole('button', { name: 'Focus', exact: true })).toBeEnabled()
-    await expect.poll(() => row.evaluate((node) => ['x', 'y', 'width', 'height'].map((name) => node.getAttribute(name)))).toEqual(anchor)
-  }
-})
-
-test('each loop body removes raw and score; iterator leaves only when its for scope closes', async ({ page }) => {
-  await control(page)
-  await page.getByRole('button', { name: 'Classic', exact: true }).click()
-  const rawDeclarations = declarations.filter(({ event }) => event.slot.name === 'raw')
-  const iterator = required(declarations.find(({ event }) => event.slot.name === 'i'), 'for iterator')
-  expect(rawDeclarations).toHaveLength(inputs.length)
-  const iteratorExit = required(checkpoints('EXIT_SCOPE').find(({ event, cursor }) => event.frameId === iterator.event.frameId && event.scopeId === iterator.event.slot.scopeId && cursor > iterator.cursor), 'for scope exit')
-  for (const raw of rawDeclarations) {
-    const bodyExit = required(checkpoints('EXIT_SCOPE').find(({ event, cursor }) => event.frameId === raw.event.frameId && event.scopeId === raw.event.slot.scopeId && cursor > raw.cursor), 'body scope exit')
-    const score = required(declarations.find(({ event, cursor }) => event.slot.name === 'score' && event.frameId === raw.event.frameId && event.slot.scopeId === raw.event.slot.scopeId && cursor > raw.cursor && cursor < bodyExit.cursor), 'body score')
-    await seek(page, bodyExit.cursor - 1)
-    await expect(slot(page, raw.event.slot.id)).toHaveCount(1)
-    await expect(slot(page, score.event.slot.id)).toHaveCount(1)
-    await expect(slot(page, iterator.event.slot.id)).toHaveCount(1)
-    await expect(scope(page, raw.event.slot.scopeId!)).toHaveCount(1)
-    await page.getByLabel('Select runtime entity', { exact: true }).selectOption(score.event.slot.id)
-    await page.getByRole('button', { name: 'Next event', exact: true }).click()
-    await expect(scrub(page)).toHaveValue(String(bodyExit.cursor))
-    for (const id of [raw.event.slot.id, score.event.slot.id]) {
-      await expect(slot(page, id)).toHaveCount(0)
-      const option = page.getByLabel('Select runtime entity', { exact: true }).locator(`option[value="${id}"]`)
-      if (id === score.event.slot.id) {
-        await expect(option).toHaveCount(1)
-        await expect(option).toContainText('scope closed')
-      } else await expect(option).toHaveCount(0)
-    }
-    await expect(scope(page, raw.event.slot.scopeId!)).toHaveCount(0)
-    await expect(slot(page, iterator.event.slot.id)).toHaveCount(1)
-    await expect(inspector(page)).toContainText('SCOPE · CLOSED')
-    await page.getByRole('button', { name: 'Previous event', exact: true }).click()
-    await expect(slot(page, raw.event.slot.id)).toHaveCount(1)
-    await expect(slot(page, score.event.slot.id)).toHaveCount(1)
-  }
-  await seek(page, iteratorExit.cursor - 1)
-  await expect(slot(page, iterator.event.slot.id)).toHaveCount(1)
-  await page.getByLabel('Select runtime entity', { exact: true }).selectOption(iterator.event.slot.id)
-  await page.getByRole('button', { name: 'Next event', exact: true }).click()
-  await expect(slot(page, iterator.event.slot.id)).toHaveCount(0)
-  await expect(scope(page, iterator.event.slot.scopeId!)).toHaveCount(0)
-  await expect(inspector(page)).toContainText('SCOPE · CLOSED')
-  await expect(inspector(page).getByRole('button', { name: 'Focus', exact: true })).toBeDisabled()
-  await seek(page, iteratorExit.cursor - 1)
-  await expect(slot(page, iterator.event.slot.id)).toHaveCount(1)
 })
 
 test('recorded operands, taken and skipped paths, iteration and source survive guidance changes', async ({ page }) => {

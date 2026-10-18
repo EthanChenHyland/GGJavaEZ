@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { createIdeCommandService, hasPresentedCommandFlow, ideCommandDefinitions, isPresentationCommand, isShellCommand, registerWorldCommandSurface, worldCommandAvailability, type CommandContext, type CommandOperations, type CommandSnapshot, type CommandTab, type DirtyDecision, type IdeCommandHost, type ResourceTarget, type ShellCommandId } from './commands'
+import { createIdeCommandService, hasFocusableCommandSelection, hasPresentedCommandFlow, ideCommandDefinitions, isPresentationCommand, isShellCommand, registerWorldCommandSurface, worldCommandAvailability, type CommandContext, type CommandOperations, type CommandSnapshot, type CommandTab, type DirtyDecision, type IdeCommandHost, type ResourceTarget, type ShellCommandId } from './commands'
 
 const tab = (path: string, changed = false): CommandTab => ({ path, content: `${path}:saved`, draft: `${path}:${changed ? 'draft' : 'saved'}`, revision: `${path}:revision` })
 function deferred<T>() {
@@ -475,7 +475,7 @@ describe('Spatial shell registry integration', () => {
 })
 
 describe('canonical World command enablement', () => {
-  const state = { worldPresent: true, selection: null, focusActive: false, presentedFlow: false, cinematic: { enabled: true } as const, contextLost: false }
+  const state = { focusTargetPresent:true, worldPresent: true, selection: null, focusActive: false, presentedFlow: false, cinematic: { enabled: true } as const, contextLost: false }
   it('keeps Inspector available on the Focus target after Selection is cleared', () => {
     expect(worldCommandAvailability('workbench.inspector', state)).toEqual({ enabled: false, reason: 'Select or Focus a runtime entity first' })
     expect(worldCommandAvailability('workbench.inspector', { ...state, focusActive: true, selection: null })).toEqual({ enabled: true })
@@ -488,6 +488,9 @@ describe('canonical World command enablement', () => {
       expect(worldCommandAvailability('navigation.focusSelection', { ...state, selection: { kind, id: 'entity' } })).toEqual({ enabled: true })
     expect(worldCommandAvailability('navigation.exitFocus', state)).toEqual({ enabled: false, reason: 'Focus is not active' })
     expect(worldCommandAvailability('navigation.exitFocus', { ...state, focusActive: true, selection: null })).toEqual({ enabled: true })
+  })
+  it('rejects type-valid selections with no current Focus owner or cluster',()=>{
+    for(const kind of ['frame','object','class','slot','cluster'] as const)expect(worldCommandAvailability('navigation.focusSelection',{...state,focusTargetPresent:false,selection:{kind,id:'retired'}})).toEqual({enabled:false,reason:'Focus target is not present at this point in time'})
   })
   it('requires a current presented Flow, rather than a historical graph edge or Connector', () => {
     const id = 'navigation.followPath'
@@ -507,15 +510,18 @@ describe('canonical World command enablement', () => {
       expect(worldCommandAvailability(id, { ...state, cinematic })).toEqual({ enabled: true })
   })
   it('reads the current mounted presentation adapter and ignores cleanup from a replaced surface', () => {
-    const first = registerWorldCommandSurface({ hasPresentedFlow: id => id === 'first' })
+    const first = registerWorldCommandSurface({ hasPresentedFlow: id => id === 'first',canFocusSelection:selection=>selection?.id==='first' })
     expect(hasPresentedCommandFlow('first')).toBe(true)
-    const visible = new Set(['second']), second = registerWorldCommandSurface({ hasPresentedFlow: id => visible.has(id) })
+    const visible = new Set(['second']), second = registerWorldCommandSurface({ hasPresentedFlow: id => visible.has(id),canFocusSelection:selection=>!!selection&&visible.has(selection.id) })
     first()
     expect(hasPresentedCommandFlow('first')).toBe(false)
     expect(hasPresentedCommandFlow('second')).toBe(true)
+    expect(hasFocusableCommandSelection({kind:'slot',id:'second'})).toBe(true)
     visible.clear()
     expect(hasPresentedCommandFlow('second')).toBe(false)
+    expect(hasFocusableCommandSelection({kind:'slot',id:'second'})).toBe(false)
     second()
     expect(hasPresentedCommandFlow('second')).toBe(false)
+    expect(hasFocusableCommandSelection({kind:'slot',id:'second'})).toBe(false)
   })
 })

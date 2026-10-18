@@ -11,7 +11,7 @@ import { bridge,draftStorageKey,persistProjectPathChange,readProjectDrafts,renam
 import { defaultClassFolder,javaClassContent,javaClassPath } from '../ide/classCreation'
 import type { ExecutionStream } from '../ide/client'
 import type { ShellCommandId } from '../ide/commands'
-import { createIdeCommandService,hasMountedRecording,hasPresentedCommandFlow,ideCommandDefinitions,isPresentationCommand,isShellCommand,worldCommandAvailability,type CommandArguments,type CommandContext,type IdeCommandHost,type IdeCommandId } from '../ide/commands'
+import { createIdeCommandService,hasFocusableCommandSelection,hasMountedRecording,hasPresentedCommandFlow,ideCommandDefinitions,isPresentationCommand,isShellCommand,worldCommandAvailability,type CommandArguments,type CommandContext,type IdeCommandHost,type IdeCommandId } from '../ide/commands'
 import type { CompileDiagnostic,ProjectEntry,ProjectFile,SourceLocation } from '../ide/contracts'
 import { defaultLaunch } from '../ide/javaProject'
 import { pathIsWithin,transitionWorkspacePaths,type WorkspacePathChange } from '../ide/pathChanges'
@@ -1070,7 +1070,7 @@ export function useWorkspace(recordingViewer = false) {
       if (id === 'navigation.explore') useCameraStore.getState().explore()
       else if (id === 'navigation.follow') useCameraStore.getState().enableFollow()
       else if (id === 'navigation.home') useCameraStore.getState().home()
-      else if (id === 'navigation.focusSelection') { const selection = useWorldInteractionStore.getState().selection; if (selection) useCameraStore.getState().focus(selection) }
+      else if (id === 'navigation.focusSelection') { const selection = useWorldInteractionStore.getState().selection; if (selection && hasFocusableCommandSelection(selection)) useCameraStore.getState().focus(selection) }
       else if (id === 'navigation.exitFocus') useCameraStore.getState().exitFocus()
       else if (id === 'navigation.traceRelevant' || id === 'navigation.traceCurrent' || id === 'navigation.traceAll') {
         useCameraStore.getState().enterTrace()
@@ -1105,7 +1105,7 @@ export function useWorkspace(recordingViewer = false) {
   const shellAvailability = (id: ShellCommandId) => {
     const interaction = useWorldInteractionStore.getState(), quality = useQualityStore.getState()
     if (isPresentationCommand(id) || id === 'workbench.inspector') return worldCommandAvailability(id, {
-      worldPresent: hasMountedRecording(), selection: interaction.selection, focusActive: !!interaction.focus,
+      focusTargetPresent:id!=='navigation.focusSelection'||hasFocusableCommandSelection(interaction.selection),worldPresent: hasMountedRecording(), selection: interaction.selection, focusActive: !!interaction.focus,
       presentedFlow: interaction.selection?.kind === 'flow' && hasPresentedCommandFlow(interaction.selection.id),
       cinematic: quality.cinematicAvailable, contextLost: quality.contextLost,
     })

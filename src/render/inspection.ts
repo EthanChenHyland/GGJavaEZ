@@ -1,8 +1,8 @@
 import type { Selection } from '../contracts/interaction'
 import type { SceneEntity, SceneModel, ValueText } from '../contracts/worldV2'
 import type { FlowCatalog, RecordedProvenance } from '../world/flowCatalog'
-import { arrayElementSlotId } from '../contracts/runtime'
-import { notRecordedValue } from '../world/valueText'
+import { arrayElementSlotId, type RuntimeState, type VariableLifetime } from '../contracts/runtime'
+import { notRecordedValue, valueText } from '../world/valueText'
 import { arrayCellTarget } from '../world/arrayCellTarget'
 import type {GraphEdge} from '../contracts/executionGraph'
 export interface InspectorRow { slotId:string; name:string; type:string; value:ValueText; key?:ValueText }
@@ -28,4 +28,19 @@ export function inspectorProvenance(catalog:FlowCatalog|undefined,selection:Sele
  const evidence=new Map<string,RecordedProvenance>()
  for(const id of ids)for(const item of catalog.recordedProvenanceOf(id,cursor))evidence.set(item.edgeId,item)
  return [...evidence.values()].sort((a,b)=>a.edgeIndex-b.edgeIndex)
+}
+
+export interface RetiredInspectorLocal { row:InspectorRow; lifetime:VariableLifetime }
+/** A closed local remains recorded history, but has no present face or Focus
+ * target. Search only the applied RuntimeState; never consult future events. */
+export function inspectorRetiredLocal(runtime:RuntimeState,selection:Selection):RetiredInspectorLocal|null {
+ if(selection?.kind!=='slot')return null
+ for(let index=runtime.variableLifetimes.length-1;index>=0;index--){
+  const lifetime=runtime.variableLifetimes[index]
+  if(lifetime.slot.id!==selection.id)continue
+  if(!lifetime.exitedAt)return null
+  const {slot}=lifetime
+  return{lifetime,row:{slotId:slot.id,name:slot.name,type:slot.javaType,value:valueText(slot.value,{context:'exact',objects:runtime.objects})}}
+ }
+ return null
 }
