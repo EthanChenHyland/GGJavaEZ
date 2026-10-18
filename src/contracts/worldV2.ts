@@ -254,6 +254,7 @@ export interface SceneModel {
     cursor: number;
     liveHead: number;
     entities: Readonly<Record<EntityId, SceneEntity>>;
+    /** Captured introduction order, independent of update priority or key spelling. */
     order: {
         frames: readonly FrameId[];
         objects: readonly ObjectId[];

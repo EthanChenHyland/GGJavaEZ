@@ -1,6 +1,6 @@
 # Performance evidence
 
-As of 2026-10-13, performance approval is incomplete. Budgets and required sample counts are unchanged. Historical and current methods are distinguished; passing a frame probe does not waive command latency or memory failures.
+As of 2026-10-17, performance approval is incomplete. Budgets and required sample counts are unchanged. Historical and current methods are distinguished; passing a frame probe does not waive command latency or memory failures.
 
 ## Complete native Dense sample
 
@@ -71,3 +71,8 @@ Current storage/heading checkpoint, verified 2026-10-16: actual main entry **71,
 Colour correction reuses the existing protection target and final OutputPass, adding one mask sample without a new render pass, target, mesh or draw batch. This is a resource/implementation fact, not a measured GPU-speed improvement. Production artifact measurement passes at **71,928 gzip bytes** for the main entry; **72,356/653,690** entry/shell static closure bytes are diagnostics. Monaco and Cinematic stay split (`production-build-unlit-output.json/log`). Existing Dense latency and generated retention failures remain unwaived; final current-tree performance measurements are still required.
 
 The existing curated-recording native frame-probe smoke observes 103 Interactive submissions with 103 resolved GPU samples, then actual Cinematic activation and 120 total submissions/119 resolved GPU samples at the final boundary. Dropped samples are zero and lifecycle-issue records are empty. The one pending boundary sample is not zero GPU time. This verifies query/render lifecycle through the change; it is neither actual-JVM Dense throughput nor sustained/performance-budget approval (`frame-performance-native.json`).
+
+
+## Timeline/catalog-order checkpoint — 2026-10-17
+
+Actual main-entry gzip is **71,930 bytes**, passing the unchanged 500,000-byte budget; entry/shell static closures **72,358/653,760** are diagnostics (`production-build-order-timeline.json/log`). Cached CPU projection passes **3 expected/executed/passed, zero skips**, 90 seeded seeks/270 plans with explicit GC, 1.02 seconds (`cached-projection-scene-order.log`, `perf-scene-order/`). Sorting touched owners preserves bounded single-LINE updates; full reconstruction sorts already materialized catalog copies. These checks do not remeasure or waive the open Dense latency and retained-memory failures.

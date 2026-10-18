@@ -261,6 +261,12 @@ export function createSceneProjector(trace: TraceDocument): SceneProjector {
     const seq = id === undefined ? undefined : byEvent.get(id)?.seq
     return seq !== undefined && seq < cursor ? seq : null
   }
+  // Keys are opaque, and update priority touches the newest frame first.
+  // Catalog order instead follows the captured introducing event witness.
+  function introduction(id: string, state: RuntimeState): number {
+    const eventId = state.frames[id]?.enteredAt ?? state.objects[id]?.allocatedAt ?? state.classes?.[id]?.observedAt
+    return eventId === undefined ? Infinity : byEvent.get(eventId)?.seq ?? Infinity
+  }
   function evidence(introduced: number | null, changed: number | null, cursor: number): Evidence {
     const first = introduced !== null && introduced < cursor ? introduced : null
     const last = changed !== null && changed < cursor ? changed : null
@@ -545,9 +551,9 @@ export function createSceneProjector(trace: TraceDocument): SceneProjector {
     const frames: string[] = [], objects: string[] = [], classes: string[] = []
     resetReferences(); dependencies.clear(); dependents.clear()
     if (state.cursor) {
-      for (const frame of Object.values(state.frames)) { const anchor = layout.anchors[frame.id]; if (anchor && seqOf(frame.enteredAt, state.cursor) !== null) { const node = frameNode(frame, anchor, state, context); entities = persistentPut(entities, frame.id, node); frames.push(frame.id) } }
-      for (const object of Object.values(state.objects)) { const anchor = layout.anchors[object.id]; if (anchor && seqOf(object.allocatedAt, state.cursor) !== null) { const node = objectNode(object, anchor, state); entities = persistentPut(entities, object.id, node); objects.push(object.id) } }
-      for (const value of Object.values(state.classes ?? {})) { const anchor = layout.anchors[value.id]; if (anchor && seqOf(value.observedAt, state.cursor) !== null) { const node = classNode(value, anchor, state); entities = persistentPut(entities, value.id, node); classes.push(value.id) } }
+      for (const frame of Object.values(state.frames).sort((a,b)=>introduction(a.id,state)-introduction(b.id,state))) { const anchor = layout.anchors[frame.id]; if (anchor && seqOf(frame.enteredAt, state.cursor) !== null) { const node = frameNode(frame, anchor, state, context); entities = persistentPut(entities, frame.id, node); frames.push(frame.id) } }
+      for (const object of Object.values(state.objects).sort((a,b)=>introduction(a.id,state)-introduction(b.id,state))) { const anchor = layout.anchors[object.id]; if (anchor && seqOf(object.allocatedAt, state.cursor) !== null) { const node = objectNode(object, anchor, state); entities = persistentPut(entities, object.id, node); objects.push(object.id) } }
+      for (const value of Object.values(state.classes ?? {}).sort((a,b)=>introduction(a.id,state)-introduction(b.id,state))) { const anchor = layout.anchors[value.id]; if (anchor && seqOf(value.observedAt, state.cursor) !== null) { const node = classNode(value, anchor, state); entities = persistentPut(entities, value.id, node); classes.push(value.id) } }
     }
     for (const id of [...frames, ...objects, ...classes]) { const node = entities[id]; indexReferences(node, refs(node)); setDependencies(id, node) }
     return assemble(state, layout, context, entities, { frames: persistentArray(frames), objects: persistentArray(objects), classes: persistentArray(classes) }, referenceSnapshot(referenceGroups), callLinks(state), returnFlows(state))
@@ -585,7 +591,7 @@ export function createSceneProjector(trace: TraceDocument): SceneProjector {
       let entities = prior.scene.entities as Record<string, SceneEntity>
       let frames = prior.scene.order.frames as string[], objects = prior.scene.order.objects as string[], classes = prior.scene.order.classes as string[]
       let referencesChanged = false, linksChanged = !priorGraph && !!graph
-      for (const id of touched) {
+      for (const id of [...touched].sort((a,b)=>introduction(a,state)-introduction(b,state))) {
         const anchor = layout.anchors[id]
         if (!anchor) continue
         let node: SceneEntity | undefined

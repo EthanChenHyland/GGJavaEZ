@@ -1,6 +1,6 @@
 # Architecture
 
-Current implementation, 2026-10-15. Whole-product convergence, presentation-memory approval and legacy removal are still open. This is an implementation record, not a completed milestone claim.
+Current implementation, 2026-10-17. Whole-product convergence, presentation-memory approval and legacy removal are still open. This is an implementation record, not a completed milestone claim.
 
 ## Runtime boundary
 
@@ -72,3 +72,10 @@ The current renderer and temporal layer share exact visible chip geometry, inclu
 ## Protected unlit output — 2026-10-16, ongoing
 
 The existing protection pass now carries unlit coverage in B independently of its hard red-channel bloom exclusion. Final OutputPass preserves covered linear face/chip/text colours before Three's output transfer, while lit bodies keep the installed tone mapper. Pass order, depth/vertex/SDF behavior and resource ownership remain intact; no additional pass, target or draw batch is introduced. See [the evidence ledger](migration/unlit-output.md). Exact opaque palette correction is distinct from final reference/material convergence.
+
+
+## Timeline retirement and catalog order — 2026-10-17
+
+Production time has one owner (`TimelineStore`, `useTimelinePlayback`, `TimeDock`). Seven unused old playback/timeline files, including 249 CSS lines, are removed with all 21 old cases preserved in reviewed production successors. The unused legacy `PlaybackState` type is removed after consumer inspection. Two original camera browser cases now use native controls/read-only observations rather than the retired Classic/Spatial/NavigationController surfaces.
+
+A demonstrated batched-forward/reverse discrepancy is fixed in SceneProjector: catalog and reference-owner insertion follow recorded introduction witnesses, independently of update priority or numeric-looking opaque IDs. This keeps the shared first-invocation STACK heading and Home inputs identical through replay. Two regressions fail before the fix and pass afterward. RuntimeState, graph, history, storage, instrumentation and canonical anchors are untouched. AST inventory reports 41 remaining legacy targets and zero production-reachable legacy modules; whole-product cleanup remains unfinished. See [the migration ledger](migration/timeline-retirement.md).

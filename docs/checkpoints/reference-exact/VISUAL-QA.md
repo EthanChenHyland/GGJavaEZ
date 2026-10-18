@@ -49,3 +49,9 @@ Checkpoint verification 2026-10-16: the completed native report passes 75/75. Th
 ## Protected face palette — 2026-10-16, ongoing
 
 An actual JVM domain run, keyboard selection and Focus expose the compositor's global tone-map override of protected unlit materials. The corrected output reuses the existing depth mask and retains the required opaque plates. All eight sampled stack/heap face/chip colours match the specified RGB values exactly in actual INTERACTIVE and CINEMATIC captures. The root opens all four captures and unchanged best.png at original resolution. Oversized cyan/purple connector halos, weak floor/environment response, crowded context and unnecessary short-name truncation remain visible findings; no reference convergence is claimed. Shader/source/failed-attempt details are preserved in [the ledger](migration/unlit-output.md).
+
+## Timeline/Home and renewed reference comparison — 2026-10-17
+
+Native migration exposes a real 1.98-pixel Home drift caused by inconsistent catalog order after batched entry/reverse seeking. The production order fix restores identical Home inputs and preserves the seven-decimal pose assertion; it does not establish whole-scene visual approval. No body dimensions or canonical anchors change.
+
+The lead reopens unchanged best.png and the native 1672×941 object-inspection twin, alongside the current native Cinematic project-object palette capture. Palette agreement does not resolve broad cyan connector halos, weak visible floor/environment response, dense neighboring context or avoidable ordinary-name truncation (`quantity`). The palette capture closes the Inspector for unobstructed color samples and therefore is not a comparable-state Focus composition approval. A fresh complete state/viewport matrix and dedicated visual/motion polish remain required.

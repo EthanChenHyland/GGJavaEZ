@@ -35,9 +35,3 @@ export interface NavigationState {
   previousPose: CameraPose | null
   detailLevel: DetailLevel
 }
-
-export interface PlaybackState {
-  cursor: number
-  playing: boolean
-  speed: 0.25 | 0.5 | 1 | 2 | 4
-}

@@ -1,15 +1,15 @@
 # Validation
 
-Current implementation evidence, 2026-10-16. A–G completion is not claimed. The detailed chronological record is `docs/reports/reference-exact/VALIDATION.md`; migration ledgers live beside this file in `migration/`. Final results must be refreshed on the cleaned final commit and pushed tip.
+Current implementation evidence, 2026-10-17. A–G completion is not claimed. The detailed chronological record is `docs/reports/reference-exact/VALIDATION.md`; migration ledgers live beside this file in `migration/`. Final results must be refreshed on the cleaned final commit and pushed tip.
 
 | Gate | Command/evidence | Current result |
 | --- | --- | --- |
-| Default unit/property/regression | npm run test; unit-unlit-output.log | 2037 pass, 70 explicit opt-in skips, 2107 total, 211 files; 172.94 s |
-| Source lint | npm run lint; lint-unlit-output.log | Pass |
-| Strict reference browser TS | npm run typecheck:reference; typecheck-reference-unlit-shell-boundary.log | Pass |
+| Default unit/property/regression | npm run test; unit-scene-order-timeline.log | 2039 pass, 70 explicit opt-in skips, 2109 total, 212 files; 175.79 s |
+| Source lint | npm run lint; lint-order-confirmed.log | Pass |
+| Strict reference browser TS | npm run typecheck:reference; typecheck-reference-order-confirmed.log | Pass |
 | Strict optional performance harness TS | tsc --project .ggjavaez/qa/reference-exact/tsconfig.perf.json; typecheck-perf-seek-profile-confirmed.log | Pass, exit 0, including extra seek profile |
-| Production typecheck/build | npm run build; build-unlit-output.log | Pass; large-chunk warning preserved |
-| Full native reconstruction | playwright test e2e/reference --reporter=list | 76/76 pass, zero skips, 10.6 min, exit 0; browser-unlit-shell-confirmed.log. Original 75/1 failure and targeted corrections remain archived. |
+| Production typecheck/build | npm run build; build-order-timeline.log | Pass; large-chunk warning preserved |
+| Full native reconstruction | playwright test e2e/reference --reporter=list | 78/78 pass, zero skips, 9.4 min, exit 0; browser-order-timeline-resumed.log. Includes two migrated native camera cases; interrupted 26-pass attempt retained. |
 | Complete Dense native browser performance | browser-world-performance-stable-materials.json and matching log | Every stage completed, no browser errors; seek/Focus/Home budgets fail |
 | Generated actual pipeline CPU/retention | perf-command-convergence/modern-world-performance.json | 100-batch update ratio 1.091262570 passes 2×; all three 0.25 retention budgets fail; exit 1 |
 | Reference integrity | node scripts/reference/check-references.mjs | Six root/twin/baseline hashes agree; tracked/untracked ownership preserved |
@@ -88,3 +88,8 @@ Shared chip geometry, graph-owned return captions and all 52 Classic successors 
 ## Current storage and visible headings — confirmed 2026-10-16
 
 The interrupted browser process is no longer running; its completed report records **75/75 passed**, 9.4 minutes. The full default suite passes **2034 / 70 explicit opt-in skips / 2104 total**, 210 files, 182.61 seconds. Production TypeScript/build, strict browser TypeScript and lint pass. Cached projection passes **3 expected/executed/passed, zero skipped**, 90 seeks/270 plans, explicit GC, 1.03 seconds; guardrails **19/19**, four files, 1.27 seconds. Actual main entry is **71,929 gzip bytes**, Monaco/Cinematic split; closures **72,357/653,419** remain diagnostics. AST: **622 modules / 2165 literal edges / 219 production-reachable / 42 remaining legacy targets / zero production-reachable legacy**. All 18 legacy text cases have current successors. Actual heading visibility is checked in all five native recursion viewports; current captured frame storage requires no selection or fabricated provenance. Failure archives and precise contract/oracle changes remain in [the migration ledger](migration/current-storage-headings.md). Semantic-core/golden/reference paths are unchanged. The broader old browser corpus, visual convergence, fixed Dense latency/retention and final A–G gates remain open.
+
+
+## Timeline retirement and recorded catalog order — 2026-10-17
+
+Focused projector/property/timeline integration passes **29/29**, four files, 6.62 seconds; two new ordering regressions fail before the production fix. Defaults pass **2039 / 2109**, with **70 explicit opt-in skips**, 212 files (205 passed/seven skipped), 175.79 seconds (`unit-scene-order-timeline.log`). All 21 old timeline/playback cases have successors; the increase of two comes from ordering regressions. Expanded strict browser TypeScript, lint and production typecheck/build pass. Guardrails **19/19**, 1.11 seconds; protected-reference integrity passes. Two native camera successors pass **2/2**, 7.9 seconds, before removing temporary read-only layout diagnostics. The original combined run is interrupted after 26 passes without a completion report; fresh final-source combined confirmation passes **78/78, zero skips, 9.4 minutes, exit 0** (`browser-order-timeline-resumed.log`). See [the ledger](migration/timeline-retirement.md).
