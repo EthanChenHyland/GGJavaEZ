@@ -1,10 +1,24 @@
 import {expect,it} from 'vitest'
 import fc from 'fast-check'
 import {PerspectiveCamera,Vector3} from 'three'
-import {placeStructuralLabels,projectStructuralLabel,structuralRectsOverlap,type StructuralLabelSpec} from './structuralLabelLayout'
+import {placeStructuralLabels,projectStructuralLabel,structuralRectsOverlap,regionHeadingSpec,type StructuralLabelSpec} from './structuralLabelLayout'
 import {projectedPlaneFontPixels} from './textSystem'
 const spec=(id:string,x:number,priority=2):StructuralLabelSpec=>({id,kind:'cluster',position:[x,0,0],size:.3,localBounds:[-1,1,.08,.83],priority,count:12})
 const cameraAt=(distance:number)=>{const camera=new PerspectiveCamera(36,16/9,.05,10000);camera.position.set(0,8,distance);camera.lookAt(0,0,0);camera.updateMatrixWorld();return camera}
+it('keeps the selected structural caption at its anchor before placing region headings',()=>{
+ const camera=cameraAt(40),viewport={width:1440,height:900},safe={x:0,y:0,width:1440,height:900}
+ const selected=spec('selected',0,-3),heading=regionHeadingSpec('HEAP',[0,0,0])
+ const labels=placeStructuralLabels([heading,selected],camera,viewport,safe)
+ expect(labels[1].visible).toBe(true);expect(labels[1].position).toEqual(selected.position)
+})
+it('keeps a lane title in front of a wholly deeper structural body while foreground geometry and UI still block it',()=>{
+ const camera=cameraAt(20),viewport={width:1440,height:900},safe={x:0,y:0,width:1440,height:900},heading=regionHeadingSpec('HEAP',[0,0,0])
+ const behind={...safe,nearDepth:100},foreground={...safe,nearDepth:1}
+ const visible=placeStructuralLabels([heading],camera,viewport,safe,[behind])[0]
+ expect(visible.visible).toBe(true);expect(visible.position).toEqual(heading.position)
+ expect(placeStructuralLabels([heading],camera,viewport,safe,[foreground])[0].visible).toBe(false)
+ expect(placeStructuralLabels([heading],camera,viewport,safe,[safe])[0].visible).toBe(false)
+})
 it('keeps visible text at least 12 pixels on its real plane through depth and viewport changes (100 cases)',()=>{
  fc.assert(fc.property(fc.integer({min:650,max:1117}),fc.integer({min:760,max:1920}),fc.integer({min:8,max:1500}),(height,width,distance)=>{
   const camera=cameraAt(distance),label=projectStructuralLabel(spec('recorded',0),camera,{width,height})

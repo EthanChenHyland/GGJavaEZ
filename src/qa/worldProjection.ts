@@ -1,7 +1,7 @@
 import {Matrix4,Vector3,type Camera,type InstancedMesh} from 'three'
 import type {WorldAnchor,Vec3,Region} from '../contracts/worldV2'
 export interface ProjectedRect {x:number;y:number;width:number;height:number;visible:boolean}
-export interface ProjectedBody {id:string;region:Region;live:boolean;bounds:ProjectedRect|null;face:ProjectedRect|null}
+export interface ProjectedBody {id:string;region:Region;live:boolean;structural?:boolean;bounds:ProjectedRect|null;face:ProjectedRect|null}
 export interface WorldProjection {entities:readonly ProjectedBody[];stack:ProjectedRect|null;liveStack:ProjectedRect|null;heap:ProjectedRect|null;exception?:{bounds:ProjectedRect|null;throwFrame:ProjectedRect|null}|null}
 export function projectRect(points:readonly Vec3[],camera:Camera,viewport:{width:number;height:number}):ProjectedRect|null {
  const values=points.map(point=>new Vector3(...point).project(camera))
@@ -27,11 +27,11 @@ export function projectInstancedBody(mesh:InstancedMesh,index:number,camera:Came
 }
 /** Accept the actual rendered bodies, including current array-window cells.
  * This observes the camera and geometry; it does not fit or move either. */
-export function projectBodies(bodies:readonly {anchor:WorldAnchor;live:boolean}[],camera:Camera,viewport:{width:number;height:number}):WorldProjection {
- const entities=bodies.map(({anchor,live})=>{
+export function projectBodies(bodies:readonly {anchor:WorldAnchor;live:boolean;structural?:boolean}[],camera:Camera,viewport:{width:number;height:number}):WorldProjection {
+ const entities=bodies.map(({anchor,live,structural})=>{
   const points=[-1,1].flatMap(x=>[-1,1].flatMap(y=>[-1,1].map(z=>anchor.position.map((value,axis)=>value+[x,y,z][axis]*anchor.size[axis]/2) as unknown as Vec3)))
   const front=points.filter(point=>point[2]===anchor.position[2]+anchor.size[2]/2)
-  return{id:anchor.entityId,region:anchor.region,live,bounds:projectRect(points,camera,viewport),face:projectRect(front,camera,viewport)}
+  return{id:anchor.entityId,region:anchor.region,live,structural:!!structural,bounds:projectRect(points,camera,viewport),face:projectRect(front,camera,viewport)}
  })
- return{entities,stack:unionProjection(entities.filter(body=>body.region==='stack').map(body=>body.bounds)),liveStack:unionProjection(entities.filter(body=>body.region==='stack'&&body.live).map(body=>body.bounds)),heap:unionProjection(entities.filter(body=>body.region==='heap').map(body=>body.bounds))}
+ return{entities,stack:unionProjection(entities.filter(body=>body.region==='stack').map(body=>body.bounds)),liveStack:unionProjection(entities.filter(body=>body.region==='stack'&&body.live).map(body=>body.bounds)),heap:unionProjection(entities.filter(body=>body.region==='heap'&&!body.structural).map(body=>body.bounds))}
 }

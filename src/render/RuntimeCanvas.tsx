@@ -111,7 +111,11 @@ function Metrics({ scene, plan, selection,trace }: {
                     });
                 },
                 worldProjection:()=>{const projection=projectBodies([
-                    ...buildSolidBatch(scene,plan).filter(solid=>solid.role!=='face').map(solid=>({anchor:solid.anchor,live:scene.entities[solid.anchor.entityId]?.kind==='frame'&&(scene.entities[solid.anchor.entityId] as {live:boolean}).live})),
+                    ...buildSolidBatch(scene,plan).filter(solid=>solid.role!=='face').map(solid=>{
+                      const cluster=solid.pick.kind==='cluster'?plan.clusters.find(cluster=>cluster.id===solid.pick.id):null;
+                      const live=cluster?cluster.memberIds.some(id=>scene.entities[id]?.kind==='frame'&&(scene.entities[id] as {live:boolean}).live):scene.entities[solid.anchor.entityId]?.kind==='frame'&&(scene.entities[solid.anchor.entityId] as {live:boolean}).live;
+                      return{anchor:solid.anchor,live,structural:solid.pick.kind==='cluster'};
+                    }),
                 ],camera,size);
                  const panel=plan.exceptionPanel,frame=panel?.content.throwFrameId?scene.entities[panel.content.throwFrameId]:null;
                  const panelBody=world.getObjectByName('exception-panel-body');

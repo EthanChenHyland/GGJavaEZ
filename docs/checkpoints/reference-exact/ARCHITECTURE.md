@@ -1,6 +1,6 @@
 # Architecture
 
-Current implementation, 2026-10-17. Whole-product convergence, presentation-memory approval and legacy removal are still open. This is an implementation record, not a completed milestone claim.
+Current implementation, 2026-10-18. Whole-product convergence, presentation-memory approval and legacy removal are still open. This is an implementation record, not a completed milestone claim.
 
 ## Runtime boundary
 
@@ -22,7 +22,7 @@ The scene is complete; PresentationPlanner chooses detail, quiet entities, resid
 
 Array windows map temporary presented cells back to canonical object/index slot IDs. Collections retain captured preview/size/observation truth, including retirement when an accepted summary replaces earlier entries. Historical references retain recorded lifetimes and event IDs; overwritten/null bindings do not become current references. Repeated observations with unchanged values still expose their latest recorded evidence.
 
-The current hierarchy indexes class, type, package, actual recorded ownership, captured collection membership, observed invocation ancestry and normalized execution-age buckets. Immutable membership intervals handle preview replacement and rewind; canonical nodes retain zero-member identity/anchors, while the presented cut excludes pins and detailed/quiet identities exactly once. Optional detail expands whole groups ranked by one-hop relevance, actual project ownership and coarse target tile. Residual groups coarsen to package and recorded ownership; live-depth labels use canonical recorded methods with innermost ties. Native convergence of this hierarchy passes all 69 current cases; `migration/cluster-hierarchy.md` records the precise contract and evidence boundary.
+The current hierarchy indexes class, type, package, actual recorded ownership, captured collection membership, observed invocation ancestry and normalized execution-age buckets. Immutable membership intervals handle preview replacement and rewind; canonical nodes retain zero-member identity/anchors, while the presented cut excludes pins and detailed/quiet identities exactly once. Optional detail expands whole groups ranked by one-hop relevance, actual project ownership and coarse target tile. Residual groups coarsen to package and recorded ownership; live-depth labels use canonical recorded methods with innermost ties. A historical native confirmation of this hierarchy passes 69 cases; `migration/cluster-hierarchy.md` records the precise contract and evidence boundary.
 
 ## Interaction, camera and time
 
@@ -84,3 +84,11 @@ A demonstrated batched-forward/reverse discrepancy is fixed in SceneProjector: c
 ## Measured text columns — 2026-10-17
 
 RuntimeSolid derives one aligned text grid from its bounded visible row list using the same Inter advances and Unicode escape policy as WorldText. Fixed fonts, semantic content, world geometry and ports are preserved; ordinary names take priority over long type spellings while values retain at least 35% of the row span. See [the migration ledger](migration/face-columns.md).
+
+## Hero admission and committed camera cuts — 2026-10-18
+
+Optional visible-row dependencies remain detailed/pickable within the remaining budget without becoming semantic mandatory camera evidence. Source-known user-level Strings and collections retain their first-assigned heap geography and recorded JDK type ownership; compact ownership collapse applies to actual library-region bodies. Selection/Focus/live/current/required-flow identities still survive budgets with explicit overflow. `PlanInput.hero` carries only the actual viewport/Safe Frame during scripted Hero requests. The planner and camera share a pure fit over represented heap groups; unadmitted groups remain exact-count clusters. One nominal object budget bounds optional trials. A short-lived lazy type/package/ownership exclusion index supplies the same proxy anchors/order without rescanning every entity for each tentative cut. Exploration keeps its original quiet budget.
+
+Renderer and camera share real Inter heading metrics, bounded lift and depth-aware obstacles. Selected cluster captions precede lane titles; lane titles precede optional captions. Home fits actual glyph corners and keys its cache/destination by the committed presentation cut, since LOD can replace a detailed library array with a cluster while travelling. A changed cut updates the destination within the existing arrival deadline; two stable arrival frames reconcile the final LOD before transient HOME clears. Manual input still cancels immediately. Hero independently refits changed represented cuts. These are presentation/camera contracts; no normalized event, semantic identity, runtime/history/graph, canonical body/port, source-proof or JVM contract changes.
+
+The 41 remaining legacy targets are still in the repository. Neither a passing targeted run nor zero production reachability claims their removal. Exact failed experiments and validation boundaries are in [the Hero ledger](migration/hero-admission.md).

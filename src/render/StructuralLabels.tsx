@@ -6,11 +6,9 @@ import type {Rect} from '../shell/shellLayout'
 import {color} from '../theme/tokens'
 import {ClusterLabels,clusterLabelParts,clusterLabelNames} from './ClusterLabels'
 import {WorldText} from './FaceText'
-import {fitWorldText,textAdvance} from './text/textSystem'
-import {placeStructuralLabels,regionHeadingStyle,type StructuralLabelSpec} from './text/structuralLabelLayout'
+import {textAdvance} from './text/textSystem'
+import {placeStructuralLabels,projectStructuralObstacle,regionHeadingSpec,regionHeadingStyle,type StructuralLabelSpec,type StructuralObstacle} from './text/structuralLabelLayout'
 import {buildSolidBatch} from './SolidBatch'
-import {anchorCorners} from '../world/presentationPlanner'
-import {screenPoint} from '../camera/projection'
 import {exceptionPanelAnchor} from '../world/exceptionPanelPlacement'
 import {returnCaptions} from './returnCaptions'
 
@@ -20,8 +18,8 @@ export function StructuralLabels({scene,plan,safeFrame,inspectorRect}:{scene:Sce
  const captions=useMemo(()=>returnCaptions(scene,plan.curves),[scene.returnFlows,plan.curves])
  const entries=useMemo<StructuralLabelSpec[]>(()=>[
   ...captions.map(caption=>({id:caption.id,kind:'return' as const,position:caption.position,size:caption.operands?caption.operandSize:caption.size,localBounds:[-.08,caption.width+.08,caption.operands?-.5:-.2,.2] as const,priority:0,count:1})),
-  ...plan.clusters.filter(cluster=>clusterLabelParts(cluster).fits).map(cluster=>{const [x,y,z]=cluster.anchor.position,[w,h,d]=cluster.anchor.size;return{id:cluster.id,kind:'cluster' as const,position:[x,y+h/2+.12,z+d/2+.085] as const,size:.3,localBounds:[-w/2+.2,w/2-.2,.08,.83] as const,priority:cluster.selected?0:2,count:cluster.members}}),
-  ...plan.headings.map(heading=>{const text=fitWorldText(heading.id,5,regionHeadingStyle.size,regionHeadingStyle.weight,regionHeadingStyle.tracking),width=textAdvance(text,regionHeadingStyle.weight,regionHeadingStyle.tracking)*regionHeadingStyle.size;return{id:heading.id,kind:'heading' as const,position:heading.position,size:regionHeadingStyle.size,localBounds:[0,width,-.3,.3] as const,priority:1,count:0}}),
+  ...plan.clusters.filter(cluster=>clusterLabelParts(cluster).fits).map(cluster=>{const [x,y,z]=cluster.anchor.position,[w,h,d]=cluster.anchor.size;return{id:cluster.id,kind:'cluster' as const,position:[x,y+h/2+.12,z+d/2+.085] as const,size:.3,localBounds:[-w/2+.2,w/2-.2,.08,.83] as const,priority:cluster.selected?-3:2,count:cluster.members}}),
+  ...plan.headings.map(heading=>regionHeadingSpec(heading.id,heading.position)),
   ...plan.bundles.map(bundle=>{const text=`${bundle.count} ${bundle.kind==='flow'?'flows':bundle.kind==='binding-history'?'past bindings':'references'}`,width=textAdvance(text,500)*.3;return{id:bundle.id,kind:'bundle' as const,position:bundle.points[Math.floor(bundle.points.length/2)],size:.3,localBounds:[-width/2,width/2,-.15,.15] as const,priority:bundle.widthPx===3.5?0:3,count:bundle.count}}),
  ],[plan.clusters,plan.headings,plan.bundles,captions])
  const bodies=useMemo(()=>[...buildSolidBatch(scene,plan).filter(solid=>solid.role!=='face').map(solid=>solid.anchor),...scene.io.map(io=>io.anchor),...(plan.exceptionPanel?[exceptionPanelAnchor(plan.exceptionPanel,scene.recording)]:[])],[scene,plan])
@@ -30,8 +28,8 @@ export function StructuralLabels({scene,plan,safeFrame,inspectorRect}:{scene:Sce
   const key=JSON.stringify([camera.matrixWorld.elements,camera.projectionMatrix.elements,size.width,size.height,safeFrame,inspectorRect])
   if(cache.current?.entries===entries&&cache.current.bodies===bodies&&cache.current.key===key)return
   cache.current={entries,bodies,key}
-  const blocked:Rect[]=inspectorRect?[inspectorRect]:[]
-  for(const body of bodies){const points=anchorCorners(body).map(point=>screenPoint(point,camera,size));if(!points.some(point=>point.z>-1&&point.z<1))continue;const xs=points.map(point=>point.x),ys=points.map(point=>point.y);blocked.push({x:Math.min(...xs),y:Math.min(...ys),width:Math.max(...xs)-Math.min(...xs),height:Math.max(...ys)-Math.min(...ys)})}
+  const blocked:StructuralObstacle[]=inspectorRect?[inspectorRect]:[]
+  for(const body of bodies){const obstacle=projectStructuralObstacle(body,camera,size);if(obstacle)blocked.push(obstacle)}
   for(const label of placeStructuralLabels(entries,camera,size,safeFrame,blocked)){
    const group=groups.current.get(label.id);if(!group)continue
    group.visible=label.visible;group.position.set(...label.position);group.scale.setScalar(label.scale);group.updateWorldMatrix(true,true)

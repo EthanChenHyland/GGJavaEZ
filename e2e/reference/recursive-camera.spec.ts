@@ -26,6 +26,16 @@ for(const viewport of[{width:1728,height:1117},{width:1440,height:900},{width:12
  const homeHeadings=await page.evaluate(()=>({labels:window.__ggjavaezWorld!.structuralLabels(),planned:window.__ggjavaezWorld!.plan().headings,safe:window.__ggjavaezQA!.shellRects().safeFrame,pose:window.__ggjavaezQA!.cameraPose()}))
  await page.screenshot({path:`.ggjavaez/qa/reference-exact/recursion-home-headings-${viewport.width}x${viewport.height}.png`})
  await writeFile(`.ggjavaez/qa/reference-exact/recursion-home-headings-${viewport.width}x${viewport.height}.json`,JSON.stringify(homeHeadings,null,2)+'\n')
+ if(homeHeadings.labels.some(label=>['STACK','HEAP'].includes(label.id)&&!label.visible)){
+  const diagnostic=await page.evaluate(async()=>{
+   const framingPath='/src/camera/homeFraming.ts',projectionPath='/src/camera/projection.ts',labelsPath='/src/render/text/structuralLabelLayout.ts',solidsPath='/src/render/SolidBatch.tsx'
+   const [{homeFraming},{projectionCamera,cameraPosition},{placeStructuralLabels,projectStructuralObstacle,regionHeadingSpec},{buildSolidBatch}]=await Promise.all([import(framingPath),import(projectionPath),import(labelsPath),import(solidsPath)])
+   const world=window.__ggjavaezWorld!,scene=world.scene(),plan=world.plan(),safe=window.__ggjavaezQA!.shellRects().safeFrame,viewport={width:innerWidth,height:innerHeight},fitted=homeFraming(scene,plan,safe,viewport),camera=projectionCamera(fitted.pose,viewport)
+   const blocked=buildSolidBatch(scene,plan).filter((solid:{role:string})=>solid.role!=='face').flatMap((solid:{anchor:import('../../src/contracts/worldV2').WorldAnchor})=>{const obstacle=projectStructuralObstacle(solid.anchor,camera,viewport);return obstacle?[obstacle]:[]})
+   return{scene,plan:{...plan,entities:[...plan.entities],pinned:[...plan.pinned],cellWindows:[...plan.cellWindows]},fitted,eye:{position:cameraPosition(fitted.pose),target:fitted.pose.target},labels:placeStructuralLabels(plan.headings.slice(0,2).map(heading=>regionHeadingSpec(heading.id,heading.position)),camera,viewport,safe,blocked)}
+  })
+  await writeFile(test.info().outputPath('home-heading-current-cut.json'),JSON.stringify(diagnostic,null,2)+'\n')
+ }
  for(const id of['STACK','HEAP']){
   const label=homeHeadings.labels.find(label=>label.id===id)!,s=homeHeadings.safe
   expect(label,`${id} is actually visible after Home in the deepest captured prefix`).toMatchObject({visible:true})

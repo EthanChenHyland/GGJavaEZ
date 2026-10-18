@@ -7,7 +7,7 @@ import type { FlowCatalog, RecordedFlow } from './flowCatalog';
 import { arrayCellTarget } from './arrayCellTarget';
 import {createConnectorRouter,type ConnectorRouter} from './connectorRouter';
 export {curvedPath} from './connectorRouting';
-import {presentationClusters,residualGroups} from './presentationClusters';
+import {presentationClusters,prepareClusterClearance,residualGroups} from './presentationClusters';
 import {clusterHierarchy} from './clusterHierarchy';
 import {recordedOwnership} from './recordedOwnership';
 import {faceRows} from './faceRows';
@@ -15,6 +15,9 @@ import {referencePresentationTopology} from './referencePresentationTopology';
 import {historicalReferenceCatalog} from './historicalReference';
 import {buildFlowTopology} from './flowTopology';
 import {stackContextHeading} from './invocationContext';
+import {anchorCorners} from './anchorGeometry';
+import {solveHeroFraming,type HeroViewport} from '../camera/heroFraming';
+export {anchorCorners} from './anchorGeometry';
 export interface PlanInput {
     scene: SceneModel;
     flows?: FlowCatalog;
@@ -25,13 +28,12 @@ export interface PlanInput {
     focusTargetId: EntityId | null;
     clusterTravelMemberId?: EntityId;
     viewTile?: Vec3; // coarse target tile only; continuous orbit does not re-plan
+    /** Scripted Hero admission only. User exploration never inherits this cut. */
+    hero?:HeroViewport;
     trace: {
         active: boolean;
         scope: TraceScope;
     };
-}
-export function anchorCorners(anchor: WorldAnchor): Vec3[] {
-    return [-1, 1].flatMap(x => [-1, 1].flatMap(y => [-1, 1].map(z => [anchor.position[0] + x * anchor.size[0] / 2, anchor.position[1] + y * anchor.size[1] / 2, anchor.position[2] + z * anchor.size[2] / 2] as Vec3)));
 }
 const category = (node: SceneEntity): 'frames' | 'objects' | 'classes' => node.kind === 'frame' ? 'frames' : node.kind === 'class' ? 'classes' : 'objects';
 const rowIds = (node: SceneEntity): readonly string[] => node.kind === 'frame' || node.kind === 'class' ? node.rows.map(r => r.slotId) : node.kind === 'object' ? node.groups.flatMap(g => g.rows.map(r => r.slotId)) : node.kind === 'array' ? node.cells.map(c => c.slotId) : node.entries.flatMap(e => e.keySlotId ? [e.slotId, e.keySlotId] : [e.slotId]);
@@ -98,20 +100,34 @@ export function planPresentation(input: PlanInput, previous?: PresentationPlan):
         for (const id of [scene.exception.throwFrameId, ...scene.exception.unwound, scene.exception.catchFrameId, scene.exception.exceptionId,...scene.exception.causes])
             pin(id, 'exception evidence');
     const recordedOwners = new Map(ids.map(id => [id, recordedOwnership(layout, id, scene.cursor)]));
-    const collapsedExternal = (id: string) => detailLevel !== 'CLOSE' && ['LIBRARY', 'JDK'].includes(recordedOwners.get(id) ?? '');
+    const collapsedExternal = (id: string) => detailLevel !== 'CLOSE' && scene.entities[id].anchor.region==='library' && ['LIBRARY', 'JDK'].includes(recordedOwners.get(id) ?? '');
     const dependencies = (id: string): string[] => {
         const node = scene.entities[id];
         if (detailLevel === 'CLOSE' || !(node.kind === 'frame' || node.kind === 'object' && recordedOwners.get(id) === 'PROJECT')) return [];
         return [...new Set(faceRows(node, {detail:id === focused ? 'CLOSE' : detailLevel==='FAR'&&rowRequests.has(id)?'MEDIUM':detailLevel,rowSlotIds:[...(rowRequests.get(id)??[])]}).visible.flatMap(row =>
             row.value.kind === 'reference' && scene.entities[row.value.targetId] && collapsedExternal(row.value.targetId) ? [row.value.targetId] : []))];
     };
-    // Correctness-required sources may exceed a nominal limit. Optional sources
-    // must fit together with their visible-row dependencies before admission.
-    for (const id of [...mandatory.keys()]) for (const target of dependencies(id)) pin(target, 'direct detailed-row reference');
+    // Optional sources and their represented dependencies share the remaining
+    // admission budget. They never expand semantic mandatory camera evidence.
     const reservedObjects = new Set(ids.filter(id => category(scene.entities[id]) === 'objects' && mandatory.has(id)));
-    const reserve = (targets: readonly string[]) => { for (const target of targets) { pin(target, 'direct detailed-row reference'); reservedObjects.add(target); } };
+    const reserve = (targets: readonly string[]) => { for (const target of targets) reservedObjects.add(target); };
     const entities = new Map<string, PresentedEntity>(), overflow: PresentationPlan['budgetOverflow'][number][] = [];
+    const heroActive=!!input.hero&&scene.liveStack.length>0&&scene.liveStack.length<4,heroSeed=scene.order.objects.find(id=>scene.entities[id].anchor.region==='heap');
+    const heroHeadings=[{id:'STACK' as const,position:stackContextHeading(scene,layout.headings.stack),opacity:1},{id:'HEAP' as const,position:layout.headings.heap,opacity:1}];
     const hierarchy=clusterHierarchy(scene,layout);
+    let clusterClearance:ReturnType<typeof prepareClusterClearance>|undefined;
+    let heroAttempts=0;
+    const heroFits=(extra:readonly string[])=>{
+      if(!heroActive||!input.hero)return true;
+      if(!extra.some(id=>scene.entities[id].anchor.region==='heap'))return true;
+      // One nominal object budget of ranked optional trials. Mandatory evidence
+      // is already admitted; arbitrary-world context cannot trigger N fits.
+      if(heroAttempts++>=budget.objects)return false;
+      const represented=new Set([...mandatory.keys(),...entities.keys(),...extra]),heapIds=[...represented].filter(id=>scene.entities[id].anchor.region==='heap');
+      clusterClearance??=prepareClusterClearance(scene,layout,ids,detailLevel,budget.clusters,hierarchy);
+      const clearance=[...[...represented].map(id=>scene.entities[id].anchor),...clusterClearance(represented)];
+      return !!solveHeroFraming(scene,mandatory.keys(),heroHeadings,heapIds,input.hero.safeFrame,input.hero.viewport,true,clearance);
+    };
     const oneHop=new Set(scene.references.flatMap(ref=>mandatory.has(ref.sourceId)?[ref.targetId]:mandatory.has(ref.targetId)?[ref.sourceId]:[]));
     const tile=input.viewTile??[0,0,0];
     const rank=(members:readonly string[])=>{
@@ -144,7 +160,7 @@ export function planPresentation(input: PlanInput, previous?: PresentationPlan):
         if (required.length > budget[cat])
             overflow.push({ category: cat, nominal: budget[cat], actual: required.length, mandatoryIds: required, reasons: [...new Set(required.flatMap(id => [...mandatory.get(id)!]))] });
         const optional = residualGroups(scene,layout,ids.filter(id => category(scene.entities[id]) === cat && !mandatory.has(id) && !collapsedExternal(id)),detailLevel)
-          .map(group=>({...group,rank:rank(group.members)})).sort((a,b)=>a.rank.hop-b.rank.hop||a.rank.project-b.rank.project||a.rank.distance-b.rank.distance||a.rank.first-b.rank.first||a.id.localeCompare(b.id));
+          .map(group=>({...group,rank:rank(group.members)})).sort((a,b)=>(heroActive?Number(b.members.includes(heroSeed!))-Number(a.members.includes(heroSeed!)):0)||a.rank.hop-b.rank.hop||a.rank.project-b.rank.project||a.rank.distance-b.rank.distance||a.rank.first-b.rank.first||a.id.localeCompare(b.id));
         let remaining = Math.max(0, budget[cat] - required.length);
         for (const group of optional) {
             if (!remaining) break;
@@ -154,6 +170,7 @@ export function planPresentation(input: PlanInput, previous?: PresentationPlan):
             const cost = additional.length + (cat === 'objects' ? members.length : 0);
             if (cost > Math.max(0, budget.objects - reservedObjects.size)) continue;
             if (cat === 'objects' && cost > remaining) continue;
+            if(!heroFits([...members,...additional]))continue;
             reserve(targets);
             for(const id of members)add(id,'detailed');
             for(const target of additional)add(target,'detailed');
@@ -164,8 +181,11 @@ export function planPresentation(input: PlanInput, previous?: PresentationPlan):
             }
         }
     }
-    for (const id of ids.filter(id => !entities.has(id) && !collapsedExternal(id)).slice(0, budget.quiet))
+    // Hero coarsens unadmitted groups as groups. Exploration retains its normal
+    // quiet-volume budget instead of retrying every declined member one by one.
+    if(!heroActive)for (const id of ids.filter(id => !entities.has(id) && !collapsedExternal(id)).slice(0, budget.quiet)){
         add(id, 'quiet');
+    }
     const residual = ids.filter(id => !entities.has(id));
     const clusters = presentationClusters(scene, layout, residual, detailLevel, budget.clusters, selection, !!focused,hierarchy);
     if(clusters.length>budget.clusters)overflow.push({category:'clusters',nominal:budget.clusters,actual:clusters.length,mandatoryIds:clusters.map(cluster=>cluster.id),reasons:['irreducible recorded ownership/region and live-depth partitions required for exact accounting']});

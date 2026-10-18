@@ -11,7 +11,7 @@ for(const viewport of [{width:1440,height:900},{width:760,height:900}])test(`act
  expect(collection.kind).toBe('collection');if(collection.kind!=='collection')throw new Error('Fixture has no captured collection')
  const allocation=initial.events.find(event=>event.type==='ALLOCATE_OBJECT'&&event.objectId===collection.id)!
  expect(allocation.source).not.toBeNull();expect(collection.anchor.region).toBe('heap');expect(collection.anchor.size).toEqual([5.2,9.93,2.3])
- const pose=await page.evaluate(()=>window.__ggjavaezQA!.cameraPose());await clickCluster(page,false,undefined,true,collection.id);await ready(page)
+ const pose=await page.evaluate(()=>window.__ggjavaezQA!.cameraPose());await clickCluster(page,false,undefined,false,collection.id);await ready(page)
  await page.getByRole('list',{name:'Cluster members'}).getByRole('button',{name:`Select ${collection.title} #${collection.displayId}`,exact:true}).click();await ready(page)
  expect(await page.evaluate(()=>window.__ggjavaezQA!.selection()?.id)).toBe(collection.id);expect(await page.evaluate(()=>window.__ggjavaezQA!.cameraPose())).toEqual(pose)
  // The narrow sheet leaves a short upper rectangle. Close it through its real

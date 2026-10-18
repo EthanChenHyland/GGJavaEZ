@@ -1,20 +1,20 @@
 # Validation
 
-Current implementation evidence, 2026-10-17. A–G completion is not claimed. The detailed chronological record is `docs/reports/reference-exact/VALIDATION.md`; migration ledgers live beside this file in `migration/`. Final results must be refreshed on the cleaned final commit and pushed tip.
+Current implementation evidence, 2026-10-18. A–G completion is not claimed. The detailed chronological record is `docs/reports/reference-exact/VALIDATION.md`; migration ledgers live beside this file in `migration/`. Final results must be refreshed on the cleaned final commit and pushed tip.
 
 | Gate | Command/evidence | Current result |
 | --- | --- | --- |
-| Default unit/property/regression | npm run test; unit-face-columns.log | 2044 pass, 70 explicit opt-in skips, 2114 total, 213 files; 169.95 s |
-| Source lint | npm run lint; lint-face-columns.log | Pass |
-| Strict reference browser TS | npm run typecheck:reference; typecheck-reference-face-columns.log | Pass |
+| Default unit/property/regression | npm test; unit-hero-home-reconciled.log | 2065 pass / 70 explicit opt-in skips / 2135 total, 214 files, 175.05 s; exit 0. |
+| Source lint | npm run lint; lint-home-cut-reconciliation.log | Pass |
+| Strict reference browser TS | npm run typecheck:reference; typecheck-home-cut-reconciliation.log | Pass |
 | Strict optional performance harness TS | tsc --project .ggjavaez/qa/reference-exact/tsconfig.perf.json; typecheck-perf-seek-profile-confirmed.log | Pass, exit 0, including extra seek profile |
-| Production typecheck/build | npm run build; build-face-columns.log | Pass; large-chunk warning preserved |
-| Full native reconstruction | playwright test e2e/reference --reporter=list | Prior ordering checkpoint: 78/78, zero skips, 9.4 min, exit 0 (browser-order-timeline-resumed.log). Current text change: 14/14 focused native cases pass, 1.6 min, exit 0 (browser-face-columns.log). |
+| Production typecheck/build | npm run build; build-hero-home-reconciled.log | Pass; actual main entry 71,930 gzip bytes, Monaco/Cinematic separate. Large-chunk warning preserved. |
+| Full native reconstruction | playwright test e2e/reference e2e/camera-controls.spec.ts e2e/refinement.spec.ts --reporter=list | Latest complete run: 65 passed / 17 failed / zero skips, 82 cases, 9.2 min, exit 1. Targeted reconciliation passes 13 cluster/collection/ownership, five recursive Home, six camera/playback and five Hero cases in separate runs. Fresh full confirmation required. |
 | Complete Dense native browser performance | browser-world-performance-stable-materials.json and matching log | Every stage completed, no browser errors; seek/Focus/Home budgets fail |
 | Generated actual pipeline CPU/retention | perf-command-convergence/modern-world-performance.json | 100-batch update ratio 1.091262570 passes 2×; all three 0.25 retention budgets fail; exit 1 |
 | Reference integrity | node scripts/reference/check-references.mjs | Six root/twin/baseline hashes agree; tracked/untracked ownership preserved |
 | Generic source scan | node scripts/reference/scan-generic.mjs | Pass; 14 source-scan/integrity guardrail tests pass in 593 ms |
-| Formal reference matrix/convergence | npm run qa:reference | Earlier 80-case/96-image evidence has 18 open findings; fresh full gate required |
+| Formal reference matrix/convergence | npm run qa:reference | Complete matrix at 24fcd66: 76 passed / four failed / zero skips, 80 JVM cases / 96 images, 8.9 min, exit 1. Diagnostic Hero updates do not constitute a new coherent matrix; fresh full gate and visual review required. |
 | Independent acceptance/JVM/torture | Explicit opt-in suites, expected/executed/success/skip accounting | Final current-tree exhaustive reruns required |
 
 ## Evidence ownership
@@ -97,3 +97,7 @@ Focused projector/property/timeline integration passes **29/29**, four files, 6.
 The four old playback browser cases also pass through current native controls: **4/4, zero skips, 21.8 seconds, exit 0**, with expanded strict reference TypeScript passing. Both natural completions retain their original six-second assertion and actual browser timers. This is separate from the passing 78-case gate; the remaining 120 older browser cases are not claimed as passed. Initial 2/2 test-oracle failures and corrections are documented in [the migration ledger](migration/playback-browser.md).
 
 Measured face columns add five regressions (four reproduce before the fix); focused typography/row integration passes **43/43** and full defaults pass **2044/70 explicit opt-in skips/2114 total**, 169.95 seconds, exit 0. Current native confirmation passes **14/14**, 1.6 minutes, exit 0. Root original-size review verifies ordinary names in both actual quality tiers. See [the ledger](migration/face-columns.md). Full comparable-state matrix/reference convergence and final whole-product gates remain open.
+
+## Hero/Home reconciliation — 2026-10-18, ongoing
+
+Final defaults pass **2065 / 2135**, with **70 explicit opt-in skips**, 214 files (207 passed/seven skipped), **175.05 seconds**, observed exit 0 (`unit-hero-home-reconciled.log`). Nine camera/renderer files pass **93/93** after five new Home regressions first reproduce hidden HEAP titles. Native targeted confirmation passes 13 cluster/collection/ownership cases, five recursive Home/Follow viewports, six camera/playback cases and five Hero cases in separate runs; no combined exhaustive pass is claimed. The prior complete 82-case run is **65 passed / 17 failed**, and the prior complete formal 80-case run is **76 passed / four failed**. Both failure sets and initial diagnostic failures remain preserved. [The migration ledger](migration/hero-admission.md) documents the shared fit, corrected optional-dependency/placement oracles, bounded index, stale Home cut proof and unchanged assertions. Final current-source build passes, along with strict browser TypeScript, lint, cached CPU projection 3/3 (90 seeks/270 plans, explicit GC, 1.02 s), all 19 guardrails (1.23 s) and reference integrity. The built main entry is 71,930 gzip bytes; entry/shell static closures 72,358/655,463 are diagnostics. Complete native confirmation and a fresh coherent 96-capture matrix remain required.

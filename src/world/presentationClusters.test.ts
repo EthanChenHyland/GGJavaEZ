@@ -4,7 +4,8 @@ import type {Ownership,WorldAnchor} from '../contracts/worldV2'
 import {seek} from '../runtime'
 import {createLayoutEngine} from './layoutEngine'
 import {createSceneProjector} from './sceneProjector'
-import {presentationClusters} from './presentationClusters'
+import {presentationClusters,prepareClusterClearance} from './presentationClusters'
+import {clusterHierarchy} from './clusterHierarchy'
 import {planPresentation} from './presentationPlanner'
 import {faceRows} from './faceRows'
 const overlap=(a:WorldAnchor,b:WorldAnchor)=>a.position.every((v,i)=>Math.abs(v-b.position[i])<(a.size[i]+b.size[i])/2-1e-6)
@@ -109,11 +110,12 @@ it('prevents optional detailed and quiet external volumes from bypassing ownersh
  }
  expect([...planFor(data,'CLOSE').entities.keys()].filter(id=>id.startsWith('external-')).length).toBe(20)
 })
-it('protects exactly the external references in visible project-object field rows, sharing renderer visibility',()=>{
+it('admits exactly the visible optional project-object dependencies without making them semantic mandatory evidence',()=>{
  const data=catalog([...Array.from({length:5},(_,i)=>allocation(i,`external-${i}`,`vendor.T${i}`,'LIBRARY')),allocation(5,'project','app.Project','PROJECT',Array.from({length:5},(_,i)=>ref('project',i,`external-${i}`))),end(6)])
  const plan=planFor(data,'MEDIUM'),node=data.at().entities.project
  expect(faceRows(node,plan.entities.get('project')!).visible.length).toBe(4)
- for(let i=0;i<4;i++)expect(plan.entities.get(`external-${i}`)).toMatchObject({mode:'detailed',pinned:true})
+ for(let i=0;i<4;i++)expect(plan.entities.get(`external-${i}`)).toMatchObject({mode:'detailed',pinned:false,pickable:true})
+ expect([...plan.pinned]).toEqual([])
  expect(plan.entities.has('external-4')).toBe(false);expect(plan.clusters.flatMap(c=>c.memberIds)).toContain('external-4')
  const far=planFor(data,'FAR');expect([...far.pinned]).toEqual([])
  expect(far.clusters.flatMap(c=>c.memberIds).sort()).toEqual(Array.from({length:5},(_,i)=>`external-${i}`))
@@ -122,7 +124,8 @@ it('protects optional historical Frame rows and expands only a focused Frame to 
  const locals=Array.from({length:5},(_,i)=>({...ref('frame',i,`external-${i}`),role:'parameter' as const}))
  const data=catalog([...Array.from({length:5},(_,i)=>allocation(i,`external-${i}`,`vendor.T${i}`,'JDK')),{...base(5),type:'ENTER_METHOD',frameId:'frame',callerFrameId:null,className:'app.Main',methodName:'run',locals},{...base(6),type:'EXIT_METHOD',frameId:'frame'},end(7)])
  const plan=planFor(data,'MEDIUM');expect(plan.entities.get('frame')?.mode).toBe('detailed')
- for(let i=0;i<4;i++)expect(plan.entities.get(`external-${i}`)?.pinned).toBe(true)
+ for(let i=0;i<4;i++)expect(plan.entities.get(`external-${i}`)).toMatchObject({mode:'detailed',pinned:false,pickable:true})
+ expect([...plan.pinned]).toEqual([])
  expect(plan.entities.has('external-4')).toBe(false)
  const focused=planFor(data,'MEDIUM','frame','frame');expect(focused.entities.get('frame')?.detail).toBe('CLOSE')
  expect(focused.entities.get('external-4')?.pinned).toBe(true)
@@ -133,7 +136,8 @@ it('admits optional sources together with their dependencies without manufacturi
  events.push(end(25));const data=catalog(events),plan=planFor(data,'MEDIUM')
  expect(plan.accounting.detailed).toBe(15);expect(plan.accounting.quiet).toBe(2);expect(plan.accounting.clustered).toBe(8)
  expect(plan.accounting.total).toBe(25);expect(plan.budgetOverflow).toEqual([])
- for(const [id,entity]of plan.entities)if(id.startsWith('source-')&&entity.mode==='detailed')for(const row of faceRows(data.at().entities[id],entity).visible)if(row.value.kind==='reference')expect(plan.entities.get(row.value.targetId)).toMatchObject({mode:'detailed',pinned:true})
+ for(const [id,entity]of plan.entities)if(id.startsWith('source-')&&entity.mode==='detailed')for(const row of faceRows(data.at().entities[id],entity).visible)if(row.value.kind==='reference')expect(plan.entities.get(row.value.targetId)).toMatchObject({mode:'detailed',pinned:false,pickable:true})
+ expect([...plan.pinned]).toEqual([])
  expect(new Set([...plan.entities.keys(),...plan.clusters.flatMap(c=>c.memberIds)]).size).toBe(25)
 })
 it('retains genuine executing-reference overflow and admits no optional object detail beyond it',()=>{
@@ -144,4 +148,32 @@ it('retains genuine executing-reference overflow and admits no optional object d
  expect(overflow.reasons).toContain('direct executing-frame reference')
  for(let i=0;i<20;i++)expect(plan.entities.get(`external-${i}`)).toMatchObject({mode:'detailed',pinned:true,pickable:true})
  expect(plan.entities.get('optional')?.mode).toBe('quiet')
+})
+it('tentative Hero proxy cuts match actual residual cuts through every coarsening level and reverse query order',()=>{
+ const data=catalog([...Array.from({length:24},(_,i)=>allocation(i,`object-${i}`,`app.package${i%4}.T${i}`,'PROJECT')),...Array.from({length:4},(_,i)=>allocation(24+i,`external-${i}`,`vendor.T${i}`,i%2?'JDK':'LIBRARY')),end(28)]),scene=data.at(),ids=scene.order.objects,hierarchy=clusterHierarchy(scene,data.layout.state)
+ for(const detail of ['FAR','MEDIUM','CLOSE'] as const)for(const limit of [1,3,8,40]){
+  const clearance=prepareClusterClearance(scene,data.layout.state,ids,detail,limit,hierarchy)
+  for(const count of [...Array.from({length:ids.length+1},(_,i)=>i),...Array.from({length:ids.length+1},(_,i)=>ids.length-i)]){
+   const represented=new Set(ids.filter((_,index)=>index<count)),residual=ids.filter(id=>!represented.has(id))
+   expect(clearance(represented)).toEqual(presentationClusters(scene,data.layout.state,residual,detail,limit,null,false,hierarchy).map(cluster=>cluster.anchor))
+  }
+ }
+})
+it('queries warmed tentative cuts without reading every scene entity again',()=>{
+ const data=catalog([...Array.from({length:1000},(_,i)=>allocation(i,`object-${i}`,`app.p${i%4}.T${i}`,'PROJECT')),end(1000)]),scene=data.at(),ids=scene.order.objects,hierarchy=clusterHierarchy(scene,data.layout.state)
+ let reads=0
+ const observed={...scene,entities:new Proxy(scene.entities,{get(target,key,receiver){reads++;return Reflect.get(target,key,receiver)}})}
+ const clearance=prepareClusterClearance(observed,data.layout.state,ids,'MEDIUM',1,hierarchy)
+ clearance(new Set());expect(reads).toBeGreaterThanOrEqual(ids.length);reads=0
+ for(let count=1;count<=100;count++)expect(clearance(new Set(ids.slice(0,count)))).toHaveLength(1)
+ expect(reads).toBe(0)
+})
+it('keeps an unadmitted large Hero group whole while ordinary exploration retains its quiet-volume budget',()=>{
+ const data=catalog([...Array.from({length:1000},(_,i)=>allocation(i,`object-${i}`,'app.Entry','PROJECT')),{...base(1000),type:'ENTER_METHOD',frameId:'frame',callerFrameId:null,className:'app.Main',methodName:'run',locals:[]},{...base(1001),source:{fileId:'Unit.java',line:1},type:'LINE_EXECUTE',frameId:'frame'}])
+ const scene=data.at(undefined,false),input={scene,layout:data.layout.state,detailLevel:'MEDIUM' as const,selection:null,focusTargetId:null,trace:{active:false,scope:'relevant' as const}}
+ const hero=planPresentation({...input,hero:{safeFrame:{x:388.8,y:90,width:1029.6,height:675},viewport:{width:1440,height:900}}})
+ expect(hero.accounting).toEqual({detailed:1,quiet:0,clustered:1000,total:1001})
+ expect(hero.entities.get('frame')).toMatchObject({pinned:true,pickable:true})
+ expect(hero.clusters.flatMap(cluster=>cluster.memberIds)).toEqual(scene.order.objects)
+ expect(planPresentation(input).accounting.quiet).toBe(512)
 })

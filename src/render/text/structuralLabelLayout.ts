@@ -1,15 +1,42 @@
 import {PerspectiveCamera,Vector3} from 'three'
-import type {Vec3} from '../../contracts/worldV2'
+import type {Vec3,WorldAnchor} from '../../contracts/worldV2'
 import type {Rect} from '../../shell/shellLayout'
 import type {Size} from '../../camera/projection'
-import {projectedPlaneFontPixels} from './textSystem'
+import {fitWorldText,projectedPlaneFontPixels,textAdvance} from './textSystem'
 import {typographyV4} from '../../theme/tokens'
+import {anchorCorners} from '../../world/anchorGeometry'
 export const regionHeadingStyle={size:.6,...typographyV4.world.heading,weight:600,viewportCapRatio:.029} as const
 export interface StructuralLabelSpec {
  id:string;kind:'cluster'|'heading'|'bundle'|'return';position:Vec3;size:number;
  localBounds:readonly[number,number,number,number];priority:number;count:number
 }
-export interface ProjectedStructuralLabel {id:string;position:Vec3;scale:number;bounds:Rect|null;minimumFontPixels:number;visible:boolean}
+export interface ProjectedStructuralLabel {id:string;position:Vec3;scale:number;bounds:Rect|null;minimumFontPixels:number;visible:boolean;farDepth?:number}
+export interface StructuralObstacle extends Rect {nearDepth?:number}
+/** Keep body depth: a proxy behind a real text plane is background, while
+ * actual foreground occlusion and screen-space UI still require clearance. */
+export function projectStructuralObstacle(anchor:WorldAnchor,camera:PerspectiveCamera,viewport:Size):StructuralObstacle|null{
+ const corners=anchorCorners(anchor).map(point=>new Vector3(...point)),projected=corners.map(point=>point.clone().project(camera))
+ if(!projected.some(point=>point.z>-1&&point.z<1))return null
+ const xs=projected.map(point=>(point.x+1)*viewport.width/2),ys=projected.map(point=>(1-point.y)*viewport.height/2)
+ return{x:Math.min(...xs),y:Math.min(...ys),width:Math.max(...xs)-Math.min(...xs),height:Math.max(...ys)-Math.min(...ys),nearDepth:Math.min(...corners.map(point=>-point.applyMatrix4(camera.matrixWorldInverse).z))}
+}
+/** Required lane titles precede optional bundle/cluster captions. Camera
+ * admission uses this same glyph footprint rather than a guessed rectangle. */
+export function regionHeadingSpec(id:string,position:Vec3):StructuralLabelSpec{
+ const text=fitWorldText(id,5,regionHeadingStyle.size,regionHeadingStyle.weight,regionHeadingStyle.tracking)
+ const width=textAdvance(text,regionHeadingStyle.weight,regionHeadingStyle.tracking)*regionHeadingStyle.size
+ return{id,kind:'heading',position,size:regionHeadingStyle.size,localBounds:[0,width,-.3,.3],priority:id==='STACK'||id==='HEAP'?-2:-1,count:0}
+}
+/** Actual world corners of each clearance-adjusted text plane. Camera fitting
+ * uses the same glyph metrics and bounded lift as rendering, before clipping. */
+export function structuralLabelFitPoints(specs:readonly StructuralLabelSpec[],bodies:readonly WorldAnchor[],camera:PerspectiveCamera,viewport:Size):Vec3[]{
+ const blocked=bodies.flatMap(body=>{const rect=projectStructuralObstacle(body,camera,viewport);return rect?[rect]:[]})
+ const labels=placeStructuralLabels(specs,camera,viewport,{x:-1e9,y:-1e9,width:2e9,height:2e9},blocked)
+ return labels.flatMap((label,index)=>{
+  const [left,right,bottom,top]=specs[index].localBounds
+  return[left,right].flatMap(x=>[bottom,top].map(y=>[label.position[0]+x*label.scale,label.position[1]+y*label.scale,label.position[2]] as Vec3))
+ })
+}
 const inside=(rect:Rect,area:Rect)=>rect.x>=area.x&&rect.y>=area.y&&rect.x+rect.width<=area.x+area.width&&rect.y+rect.height<=area.y+area.height
 export const structuralRectsOverlap=(a:Rect,b:Rect,gap=4)=>a.x<b.x+b.width+gap&&a.x+a.width+gap>b.x&&a.y<b.y+b.height+gap&&a.y+a.height+gap>b.y
 
@@ -37,20 +64,20 @@ export function projectStructuralLabel(spec:StructuralLabelSpec,camera:Perspecti
  const projected=points.map(point=>point.clone().project(camera))
  if(!(minimumFontPixels>=12)||projected.some(point=>!Number.isFinite(point.x)||!Number.isFinite(point.y)||point.z<=-1||point.z>=1))return{id:spec.id,position,scale,bounds:null,minimumFontPixels,visible:false}
  const xs=projected.map(point=>(point.x+1)*viewport.width/2),ys=projected.map(point=>(1-point.y)*viewport.height/2)
- return{id:spec.id,position,scale,minimumFontPixels,visible:false,bounds:{x:Math.min(...xs),y:Math.min(...ys),width:Math.max(...xs)-Math.min(...xs),height:Math.max(...ys)-Math.min(...ys)}}
+ return{id:spec.id,position,scale,minimumFontPixels,visible:false,farDepth:Math.max(...points.map(point=>-point.clone().applyMatrix4(camera.matrixWorldInverse).z)),bounds:{x:Math.min(...xs),y:Math.min(...ys),width:Math.max(...xs)-Math.min(...xs),height:Math.max(...ys)-Math.min(...ys)}}
 }
 
 /** A stable cut of optional structural labels, with no runtime state input/output. */
-export function placeStructuralLabels(specs:readonly StructuralLabelSpec[],camera:PerspectiveCamera,viewport:Size,safe:Rect,blocked:readonly Rect[]=[]):ProjectedStructuralLabel[] {
+export function placeStructuralLabels(specs:readonly StructuralLabelSpec[],camera:PerspectiveCamera,viewport:Size,safe:Rect,blocked:readonly StructuralObstacle[]=[]):ProjectedStructuralLabel[] {
  const projected=new Map<string,ProjectedStructuralLabel>(),occupied:Rect[]=[]
  for(const spec of [...specs].sort((a,b)=>a.priority-b.priority||b.count-a.count||a.id.localeCompare(b.id))){
   let label=projectStructuralLabel(spec,camera,viewport)
   // Tracked region titles can need to clear both a body and another heading.
   // Keep the same bounded world plane rather than hiding a required lane title
   // after only the first two, still-obstructed candidates.
-  for(const lift of spec.kind==='cluster'||spec.kind==='heading'?[0,1,2,3,4]:[0,1,2]){
+  for(const lift of spec.kind==='heading'?[0,.5,1,2,4]:spec.kind==='cluster'?[0,1,2,3,4]:[0,1,2]){
    if(lift)label=projectStructuralLabel(spec,camera,viewport,lift);const rect=label.bounds
-   if(!rect||!inside(rect,safe)||blocked.some(area=>structuralRectsOverlap(rect,area))||occupied.some(area=>structuralRectsOverlap(rect,area)))continue
+   if(!rect||!inside(rect,safe)||blocked.some(area=>(area.nearDepth===undefined||label.farDepth===undefined||area.nearDepth<=label.farDepth)&&structuralRectsOverlap(rect,area))||occupied.some(area=>structuralRectsOverlap(rect,area)))continue
    label.visible=true;occupied.push(rect);break
   }
   projected.set(spec.id,label)

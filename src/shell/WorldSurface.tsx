@@ -21,8 +21,9 @@ import { focusSourceLocation, sourceLocationFor } from './source/sourceSync';
 import {useQualityStore} from '../render/quality/qualityStore';
 import { shellStore } from '../workspace/shellStore';
 import { registerWorldCommandSurface } from '../ide/commands';
+import type {Size} from '../camera/projection';
 const fullRecording = { state: 'FULL', reason: null, budget: null, lastRecordedSeq: null, executionContinued: false } as const;
-export function WorldSurface({ trace, onSourceChange, onRuntimeChange, navigation, suppressInspector = false, execution, safeFrame,inspectorRect,pausedSource }: {
+export function WorldSurface({ trace, onSourceChange, onRuntimeChange, navigation, suppressInspector = false, execution, safeFrame,inspectorRect,pausedSource,viewport }: {
     trace: TraceDocument;
     onSourceChange?: (location: SourceLocation | null) => void;
     onRuntimeChange?: (runtime: RuntimeState, selection: Selection,recordingId:string) => void;
@@ -30,6 +31,7 @@ export function WorldSurface({ trace, onSourceChange, onRuntimeChange, navigatio
     suppressInspector?: boolean;
     execution?: EmbeddedExecution;
     safeFrame: Rect;
+    viewport:Size;
     inspectorRect?:Rect|null;
     pausedSource?:{location:SourceLocation|null};
 }) {
@@ -45,6 +47,8 @@ export function WorldSurface({ trace, onSourceChange, onRuntimeChange, navigatio
     const detail = useCameraStore(state => state.detailLevel);
     const viewTile=useCameraStore(state=>state.viewTile);
     const cameraIntent = useCameraStore(state => state.intent?.kind==='cluster'?state.intent:undefined);
+    const heroRequested=useCameraStore(state=>state.intent?.kind==='hero'||state.intent?.kind==='recording');
+    const heroViewport=useMemo(()=>heroRequested?{safeFrame,viewport}:undefined,[heroRequested,safeFrame.x,safeFrame.y,safeFrame.width,safeFrame.height,viewport.width,viewport.height]);
     const motionPreference=useQualityStore(state=>state.reducedMotion),quality=useQualityStore(state=>state.setting),cinematic=useQualityStore(state=>state.cinematicAvailable),qualityNotice=useQualityStore(state=>state.notice);
     const reducedMotion=motionPreference.os||motionPreference.inApp;
     useEffect(()=>{useCameraStore.getState().setReducedMotion(reducedMotion)},[reducedMotion]);
@@ -70,11 +74,11 @@ export function WorldSurface({ trace, onSourceChange, onRuntimeChange, navigatio
     const plan = useMemo(() => {
         const previous=compiler.previousPlan?{...compiler.previousPlan,cellWindows:compiler.windows}:undefined;
         const clusterTravelMemberId=cameraIntent?.kind==='cluster'&&cameraIntent.recordingId===scene.recordingId&&cameraIntent.cursor===scene.cursor?cameraIntent.memberId:undefined;
-        const next=planPresentation({ scene, flows, router:compiler.router, layout, detailLevel: detail, selection, focusTargetId: focus?.targetId ?? null, clusterTravelMemberId, viewTile:viewTile.split(':').map(Number) as [number,number,number], trace: traceState },previous);
+        const next=planPresentation({ scene, flows, router:compiler.router, layout, detailLevel: detail, selection, focusTargetId: focus?.targetId ?? null, clusterTravelMemberId, viewTile:viewTile.split(':').map(Number) as [number,number,number], trace: traceState,hero:heroViewport },previous);
         compiler.previousPlan=next;
         for(const[id,window]of next.cellWindows)compiler.windows.set(id,window);
         return next;
-    }, [compiler,scene, flows, layout, detail, selection, focus, traceState,cameraIntent,viewTile]);
+    }, [compiler,scene, flows, layout, detail, selection, focus, traceState,cameraIntent,viewTile,heroViewport]);
     const commandWorld=useRef({plan,recorded:trace.events.length>0});commandWorld.current={plan,recorded:trace.events.length>0};
     useEffect(()=>registerWorldCommandSurface({hasRecording:()=>commandWorld.current.recorded,hasPresentedFlow:id=>commandWorld.current.plan.curves.some(curve=>curve.id===id&&['flow','return','exception','binding-history'].includes(curve.kind))}),[]);
     const lastNavigation = useRef(-1);

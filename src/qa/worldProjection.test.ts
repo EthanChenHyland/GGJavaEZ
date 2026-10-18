@@ -33,3 +33,19 @@ it('observes a rendered instance and its parent rather than substituting planned
  expect(projectInstancedBody(mesh,1,camera,viewport)).toBeNull()
  mesh.dispose();geometry.dispose();material.dispose()
 })
+it('keeps structural heap proxies observable without counting them as semantic Heap_Object bounds',()=>{
+ const camera=new PerspectiveCamera(36,1,.05,1000);camera.position.z=20;camera.updateMatrixWorld()
+ const anchor={entityId:'object',region:'heap' as const,position:[3,0,0] as const,size:[5.2,4,2.3] as const,ports:{},bodyPort:[3,0,1.15] as const},viewport={width:900,height:900}
+ const actual=projectBodies([{anchor,live:false}],camera,viewport)
+ const withProxy=projectBodies([{anchor,live:false},{anchor:{...anchor,entityId:'proxy',position:[100,8,0]},live:false,structural:true}],camera,viewport)
+ expect(withProxy.entities).toHaveLength(2);expect(withProxy.entities[1]).toMatchObject({id:'proxy',structural:true})
+ expect(withProxy.heap).toEqual(actual.heap)
+ expect(withProxy.entities[1].bounds!.x).toBeGreaterThan(viewport.width)
+})
+it('includes a represented live-depth proxy in the live tower union',()=>{
+ const camera=new PerspectiveCamera(36,1,.05,1000);camera.position.z=20;camera.updateMatrixWorld()
+ const anchor={entityId:'live depth',region:'stack' as const,position:[-3,0,0] as const,size:[2.4,1.2,.8] as const,ports:{},bodyPort:[-3,0,.4] as const}
+ const actual=projectBodies([{anchor,live:true,structural:true}],camera,{width:900,height:900})
+ expect(actual.entities[0]).toMatchObject({id:'live depth',live:true,structural:true})
+ expect(actual.liveStack).toEqual(actual.entities[0].bounds)
+})

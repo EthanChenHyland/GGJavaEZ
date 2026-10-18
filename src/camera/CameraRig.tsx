@@ -33,7 +33,7 @@ export function orbitPoseFromEye(eye:EyePose):OrbitPose {
 export function CameraRig({scene,plan,event,layout,safeFrame,inspectorRect,input}:{scene:SceneModel;plan:PresentationPlan;event:TraceEvent|null;layout:LayoutState;safeFrame:Rect;inspectorRect?:Rect|null;input:RefObject<CameraInput|null>}) {
  const {camera,size,invalidate}=useThree(),controls=useRef<Controls>(null),intentRevision=useCameraStore(state=>state.intentRevision)
  useEffect(()=>productionClock.subscribe(invalidate),[invalidate])
- const move=useRef<(GuidedTravel&{start:number;duration:number;home:boolean;flowId?:string;flowPrefix?:{recordingId:string;cursor:number}})|null>(null)
+ const move=useRef<(GuidedTravel&{start:number;duration:number;home:boolean;homeKey?:string;settledFrames?:number;flowId?:string;flowPrefix?:{recordingId:string;cursor:number}})|null>(null)
  const initialized=useRef(false),recordingId=useRef(scene.recordingId),lastDetail=useRef(-Infinity),lastCursor=useRef(-1),lastFollow=useRef(-1)
  const followEnabled=useCameraStore(state=>state.follow),followRecursion=useRef<boolean|null>(null),followForensic=useRef(false)
  useEffect(()=>{lastFollow.current=-1;followRecursion.current=null;invalidate()},[followEnabled,invalidate])
@@ -43,6 +43,11 @@ export function CameraRig({scene,plan,event,layout,safeFrame,inspectorRect,input
  const eye=():EyePose=>({position:tuple(camera.position),target:tuple(controls.current?.target??new Vector3())})
  const previous=useRef<EyePose>(eye()),latest=useRef({scene,plan,safeFrame,boxes,limits})
  latest.current={scene,plan,safeFrame,boxes,limits}
+ // Semantic zoom may change the represented cut after Hero travel. Keep that
+ // explicit framing request valid for the bodies now rendered. Other camera
+ // commands retain their own lifecycle; user input clears the Hero intent.
+ const framingCutKey=JSON.stringify([scene.recordingId,scene.cursor,plan.detailLevel,[...plan.entities.keys()],[...plan.pinned],plan.clusters.map(cluster=>cluster.id),safeFrame,size.width,size.height])
+ const handledIntent=useRef(-1)
  const anchorForFocus=(targetId:string)=>{
   const {scene,plan}=latest.current,owner=plan.framing.focus?.targetId??targetId
   const cell=[...plan.cellWindows.values()].flatMap(window=>[...window.mapping.values()]).find(cell=>cell.anchor.entityId===targetId)
@@ -52,12 +57,12 @@ export function CameraRig({scene,plan,event,layout,safeFrame,inspectorRect,input
  const beginWaypoints=(poses:readonly OrbitPose[],duration:number,home=false,flowId?:string)=>{
   if(!poses.length)return
   const travel=guidedTravel(eye(),poses,latest.current.boxes,layout.bounds?.center,latest.current.limits)
-  move.current={...travel,start:productionClock.now(),duration:reduced()?0:duration,home,flowId,flowPrefix:flowId?{recordingId:scene.recordingId,cursor:scene.cursor}:undefined}
+  move.current={...travel,start:productionClock.now(),duration:reduced()?0:duration,home,homeKey:home?framingCutKey:undefined,flowId,flowPrefix:flowId?{recordingId:scene.recordingId,cursor:scene.cursor}:undefined}
   invalidate()
  }
  const begin=(pose:OrbitPose,duration:number,home=false)=>beginWaypoints([pose],duration,home)
  const homeCache=useRef<{scene:SceneModel;key:string;pose:OrbitPose}|null>(null)
- const home=()=>{const current=latest.current,key=JSON.stringify([current.safeFrame,size.width,size.height]);if(homeCache.current?.scene===current.scene&&homeCache.current.key===key)return homeCache.current.pose;const pose=homeFraming(current.scene,current.plan,current.safeFrame,size,layout).pose;homeCache.current={scene:current.scene,key,pose};return pose}
+ const home=()=>{const current=latest.current,key=framingCutKey;if(homeCache.current?.scene===current.scene&&homeCache.current.key===key)return homeCache.current.pose;const pose=homeFraming(current.scene,current.plan,current.safeFrame,size,layout).pose;homeCache.current={scene:current.scene,key,pose};return pose}
  const commandArea=()=>size.width<1024&&inspectorRect?{...safeFrame,height:Math.max(0,Math.min(safeFrame.y+safeFrame.height,inspectorRect.y-size.height*.01)-safeFrame.y)}:safeFrame
  useEffect(()=>{
   if(!(camera instanceof PerspectiveCamera))return
@@ -66,6 +71,8 @@ export function CameraRig({scene,plan,event,layout,safeFrame,inspectorRect,input
  },[scene.recordingId,camera])
  useEffect(()=>{
   const state=useCameraStore.getState(),intent=state.intent
+  if(handledIntent.current===intentRevision&&intent?.kind!=='hero')return
+  handledIntent.current=intentRevision
   if(!intent){move.current=null;return}
   invalidate()
   if(intent.kind==='pose'){move.current=null;camera.position.set(...cameraPosition(intent.pose));controls.current?.target.set(...intent.pose.target);previous.current=eye();return}
@@ -104,7 +111,7 @@ export function CameraRig({scene,plan,event,layout,safeFrame,inspectorRect,input
    move.current={...route,start:productionClock.now(),duration:reduced()?0:900,home:false}
    invalidate()
   }
- },[intentRevision])
+ },[intentRevision,framingCutKey])
  useEffect(()=>{
   const cancel=()=>{move.current=null;lastFollow.current=-1;useCameraStore.getState().setPose(orbitPoseFromEye(eye()));useCameraStore.getState().userInput();invalidate()}
   const orbit=()=>{
@@ -132,9 +139,16 @@ export function CameraRig({scene,plan,event,layout,safeFrame,inspectorRect,input
   }
   const flowMove=move.current
   if(flowMove?.flowId&&(selected?.kind!=='flow'||selected.id!==flowMove.flowId||flowMove.flowPrefix?.recordingId!==scene.recordingId||flowMove.flowPrefix?.cursor!==scene.cursor||!plan.curves.some(curve=>curve.id===flowMove.flowId)))move.current=null
-  const now=productionClock.now(),travel=move.current
+  const now=productionClock.now()
+  let travel=move.current
+  if(travel?.home&&travel.homeKey!==framingCutKey){
+   // LOD can replace a detailed library body with a proxy during travel. Refit
+   // that committed cut while preserving the original arrival deadline.
+   const route=guidedTravel(eye(),[home()],latest.current.boxes,layout.bounds?.center,latest.current.limits)
+   travel=move.current={...route,start:now,duration:Math.max(0,travel.start+travel.duration-now),home:true,homeKey:framingCutKey,settledFrames:0}
+  }
   cameraReadiness.moving=!!travel
-  if(travel){const t=travel.duration?Math.min(1,(now-travel.start)/travel.duration):1,pose=travelPose(travel,ease(t));camera.position.set(...pose.position);control.target.set(...pose.target);if(t===1){move.current=null;lastDetail.current=-Infinity;if(travel.home)useCameraStore.setState({mode:'EXPLORE',intent:null})}}
+  if(travel){const t=travel.duration?Math.min(1,(now-travel.start)/travel.duration):1,pose=travelPose(travel,ease(t));camera.position.set(...pose.position);control.target.set(...pose.target);if(t===1){lastDetail.current=-Infinity;if(!travel.home||(travel.settledFrames=(travel.settledFrames??0)+1)>=2){move.current=null;if(travel.home)useCameraStore.setState({mode:'EXPLORE',intent:null})}}}
   control.update()
   const safe=constrainCameraPose(eye(),previous.current,latest.current.boxes,layout.bounds?.center,latest.current.limits);camera.position.set(...safe.position);control.target.set(...safe.target);camera.lookAt(control.target);camera.updateMatrixWorld();previous.current=safe
   useCameraStore.getState().setPose(orbitPoseFromEye(safe))

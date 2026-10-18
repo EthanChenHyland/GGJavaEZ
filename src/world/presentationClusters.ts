@@ -1,5 +1,5 @@
 import type {Selection} from '../contracts/interaction'
-import type {ClusterKey,DetailLevel,LayoutState,PresentedCluster,SceneModel} from '../contracts/worldV2'
+import type {ClusterKey,DetailLevel,LayoutState,PresentedCluster,SceneModel,WorldAnchor} from '../contracts/worldV2'
 import {clusterHierarchy,clusterId,liveDepthId,liveDepthLabel,type ClusterNode} from './clusterHierarchy'
 import {recordedOwnership} from './recordedOwnership'
 
@@ -12,7 +12,7 @@ export function residualGroups(scene:SceneModel,layout:LayoutState,ids:readonly 
  const groups=new Map<string,ResidualGroup>()
  for(const id of ids){
   const entry=layout.placement[id],entity=scene.entities[id],owner=recordedOwnership(layout,id,scene.cursor)
-  const external=detail!=='CLOSE'&&(owner==='JDK'||owner==='LIBRARY')
+  const external=detail!=='CLOSE'&&entity.anchor.region==='library'&&(owner==='JDK'||owner==='LIBRARY')
   let key:ClusterKey|undefined,special:string|undefined
   if(external||coarse==='ownership')key={kind:'ownership',value:owner??'UNKNOWN'}
   if(entity.kind==='frame'&&entity.live){key={kind:'invocation-branch',value:'live stack'};special=liveDepthId}
@@ -26,6 +26,35 @@ export function residualGroups(scene:SceneModel,layout:LayoutState,ids:readonly 
   group.members.push(id);groups.set(groupId,group)
  }
  return [...groups.values()]
+}
+
+/** One short-lived planning index for many tentative Hero cuts. Exclusions are
+ * bounded represented identities; queries never rescan the full scene catalog.
+ * Reuse the exact residual grouping/coarsening policy and canonical proxies. */
+export function prepareClusterClearance(scene:SceneModel,layout:LayoutState,ids:readonly string[],detail:DetailLevel,limit:number,hierarchy:ReadonlyMap<string,ClusterNode>):(represented:ReadonlySet<string>)=>readonly WorldAnchor[]{
+ const ordinal=new Map(ids.map((id,index)=>[id,index]))
+ const levels=new Map<ClusterCutLevel,{groups:ResidualGroup[];byMember:Map<string,ResidualGroup>}>()
+ return represented=>{
+  for(const level of ['type','package','ownership'] as const){
+   let indexed=levels.get(level)
+   if(!indexed){
+    const groups=residualGroups(scene,layout,ids,detail,level)
+    indexed={groups,byMember:new Map(groups.flatMap(group=>group.members.map(id=>[id,group] as const)))};levels.set(level,indexed)
+   }
+   const excluded=new Map<ResidualGroup,number>()
+   for(const id of represented){const group=indexed.byMember.get(id);if(group)excluded.set(group,(excluded.get(group)??0)+1)}
+   const empty=new Set([...excluded].filter(([group,count])=>count===group.members.length).map(([group])=>group))
+   if(indexed.groups.length-empty.size>limit&&level!=='ownership')continue
+   // Actual residualGroups order starts at each group's first remaining
+   // member, which can change after its former first member is admitted.
+   return indexed.groups.filter(group=>!empty.has(group)).map(group=>({group,first:ordinal.get(group.members.find(id=>!represented.has(id))!)!})).sort((a,b)=>a.first-b.first).map(({group})=>{
+    const node=hierarchy.get(group.id)
+    if(!node)throw new Error(`Cluster has no canonical recorded placement: ${group.id}`)
+    return node.anchor
+   })
+  }
+  return []
+ }
 }
 
 export function presentationClusters(scene:SceneModel,layout:LayoutState,residual:readonly string[],detail:DetailLevel,limit:number,selection:Selection,focused:boolean,hierarchy:ReadonlyMap<string,ClusterNode>=clusterHierarchy(scene,layout)):PresentedCluster[]{

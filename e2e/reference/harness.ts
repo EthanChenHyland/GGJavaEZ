@@ -154,7 +154,7 @@ export async function captureComparison(page:Page,request:APIRequestContext,stat
  await page.evaluate(async()=>{await Promise.all(document.getAnimations().filter(animation=>animation.playState==='running'&&animation.effect instanceof KeyframeEffect&&animation.effect.target instanceof Element&&animation.effect.target.closest('.ide-editor-panel')).map(animation=>animation.finished.catch(()=>undefined)))})
  const observe=()=>page.evaluate(()=>{
   const qa=window.__ggjavaezQA!,world=window.__ggjavaezWorld!,scene=world.scene()
-  return{viewport:{width:innerWidth,height:innerHeight},app:qa.appState(),scene,shell:qa.shellRects(),world:qa.worldProjection()!,selection:qa.selection(),pose:qa.cameraPose(),plan:qa.planStats(),renderer:world.renderer(),effects:world.effects(),quality:world.quality(),prefix:{recordingId:scene.recordingId,cursor:scene.cursor,liveHead:scene.liveHead,eventId:scene.cursorEvent?.id??null}}
+  return{viewport:{width:innerWidth,height:innerHeight},app:qa.appState(),scene,shell:qa.shellRects(),world:qa.worldProjection()!,structuralLabels:world.structuralLabels(),runtimeHeadings:world.runtimeHeadings(),frameText:world.frameText(),selection:qa.selection(),pose:qa.cameraPose(),plan:qa.planStats(),renderer:world.renderer(),effects:world.effects(),quality:world.quality(),prefix:{recordingId:scene.recordingId,cursor:scene.cursor,liveHead:scene.liveHead,eventId:scene.cursorEvent?.id??null}}
  })
  const before=await observe(),session=(await currentSession(request))!
  expect(session?.id,'Capture belongs to the actual fixture JVM').toBe(sessionId)
@@ -192,6 +192,29 @@ export async function captureComparison(page:Page,request:APIRequestContext,stat
  await writeFile(resolve(base,'side-by-side',`${id}.png`),Buffer.from(composed.paired,'base64'))
  await writeFile(resolve(base,'diff',`${id}.png`),Buffer.from(composed.diff,'base64'))
  const misses=measurementFailures({...before,stateId:state.id})
+ if(state.id==='runtime-hero'){
+  const safe=before.shell.safeFrame
+  for(const body of before.world.entities.filter(body=>body.live||body.region==='heap'&&!body.structural)){
+   const bounds=body.bounds
+   if(!bounds||bounds.x<safe.x-1e-5||bounds.y<safe.y-1e-5||bounds.x+bounds.width>safe.x+safe.width+1e-5||bounds.y+bounds.height>safe.y+safe.height+1e-5)misses.push(`Hero body ${body.id} lies outside Safe Frame`)
+  }
+  if(before.viewport.width<1024)for(const id of before.scene.liveStack){
+   const title=before.runtimeHeadings.find(label=>label.entityId===id&&label.kind==='title')
+   if(!title||title.opacity<=0||title.planePixels<11)misses.push(`Narrow Hero live title ${id} is not readable`)
+  }
+  const labels=before.structuralLabels
+  const frames=before.world.entities.filter(body=>before.scene.entities[body.id]?.kind==='frame').flatMap(body=>body.bounds?[body.bounds]:[])
+  for(const id of ['STACK','HEAP']){
+   const label=labels.find(label=>label.id===id),bounds=label?.bounds,safe=before.shell.safeFrame
+   if(!label?.visible||!bounds){misses.push(`Hero ${id} heading is not actually visible`);continue}
+   if(label.minimumFontPixels<12)misses.push(`Hero ${id} heading is below 12 CSS px`)
+   const capHeight=label.minimumFontPixels*.75
+   if(Math.abs(capHeight-.029*before.viewport.height)>.004*before.viewport.height)misses.push(`Hero ${id} heading cap height ${capHeight} misses the reference range`)
+   if(bounds.x<safe.x-1e-5||bounds.y<safe.y-1e-5||bounds.x+bounds.width>safe.x+safe.width+1e-5||bounds.y+bounds.height>safe.y+safe.height+1e-5)misses.push(`Hero ${id} heading lies outside Safe Frame`)
+   const top=id==='STACK'?Math.min(...frames.map(frame=>frame.y)):before.world.heap?.y
+   if(top!==undefined&&bounds.y+bounds.height>top)misses.push(`Hero ${id} heading is not above its actual represented bodies`)
+  }
+ }
  if(state.id==='exception'){
   const panel=before.world.exception?.bounds,frame=before.world.exception?.throwFrame
   if(!panel?.visible)misses.push('Forensic exception panel is not visible')

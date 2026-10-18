@@ -16,7 +16,9 @@ const snapshot=(page:Page)=>page.evaluate(async()=>{
 })
 async function checkCut(page:Page){
  const data=await snapshot(page),owners=new Map(data.events.slice(0,data.scene.cursor).flatMap(event=>{const observation=ownershipObservation(event);return observation?[[observation.id,observation.value] as const]:[]}))
- const external=Object.keys(data.scene.entities).filter(id=>['JDK','LIBRARY'].includes(owners.get(id)??''))
+ // Placement ownership is first-observation geography; user-level JDK data
+ // can retain its JDK type metadata in a project heap column (design 7.2).
+ const external=Object.keys(data.scene.entities).filter(id=>data.scene.entities[id].anchor.region==='library'&&['JDK','LIBRARY'].includes(owners.get(id)??''))
  expect(external.length).toBeGreaterThan(0)
  const exempt=new Set(data.pinned)
  for(const presented of data.entities){
