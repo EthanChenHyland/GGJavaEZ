@@ -1,5 +1,5 @@
 import { expect, it, vi } from 'vitest'
-import { Group, Mesh, MeshBasicMaterial, ShaderLib, type WebGLRenderer } from 'three'
+import { Group, Mesh, MeshBasicMaterial, ShaderLib, Sprite, SpriteMaterial, type WebGLRenderer } from 'three'
 import { BatchedText } from 'troika-three-text'
 import { BloomMaskMaterials, createMaskMaterial } from './maskMaterials'
 
@@ -57,4 +57,20 @@ it('separates unlit coverage from hard bloom exclusion without transferring sour
     expect(source.toneMapped).toBe(toneMapped)
     mask.dispose();source.dispose()
   }
+})
+
+it('excludes soft atmosphere from every mask without suppressing emitters or changing its visibility after interrupted draws',()=>{
+ const scene=new Group(),material=new SpriteMaterial({opacity:.58,depthWrite:false}),haze=new Sprite(material),edge=new Mesh()
+ haze.userData.runtimeAtmosphere='HEAP';edge.userData.runtimeBloomRole='emitter';scene.add(haze,edge)
+ const masks=new BloomMaskMaterials(),original=edge.material,disposed=vi.fn();material.addEventListener('dispose',disposed)
+ for(const mode of ['emitters','protection','text'] as const)for(const visible of [true,false]){
+  haze.visible=visible
+  expect(()=>masks.render(renderer,scene,mode,()=>{
+   expect(haze.visible).toBe(false);expect(haze.material).toBe(material)
+   if(mode==='emitters')expect(edge.material).toBe(original)
+   throw new Error('interrupted mask')
+  })).toThrow('interrupted mask')
+  expect(haze.visible).toBe(visible);expect(edge.material).toBe(original);expect(renderer.shadowMap.autoUpdate).toBe(true)
+ }
+ masks.dispose();expect(disposed).not.toHaveBeenCalled();material.dispose()
 })

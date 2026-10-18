@@ -11,7 +11,7 @@ import { useInteractionStore } from '../interaction/interactionStore';
 import { RuntimeSolid, WorldText } from './RuntimeSolid';
 import { roleColor } from './RuntimeMaterials';
 import { FaceTextBatch, textReadiness } from './FaceText';
-import { ACESFilmicToneMapping, Color, DataTexture, InstancedMesh, PerspectiveCamera, RGBAFormat, SRGBColorSpace, UnsignedByteType, Vector3 } from 'three';
+import { ACESFilmicToneMapping, Color, DataTexture, InstancedMesh, PerspectiveCamera, RGBAFormat, Sprite, SRGBColorSpace, UnsignedByteType, Vector3 } from 'three';
 import type {} from '../qa/worldObservation';
 import { SolidBatch,buildSolidBatch } from './SolidBatch';
 import { ConnectorBatch } from './ConnectorBatch';
@@ -23,6 +23,7 @@ import type {TraceDocument} from '../contracts/runtime';
 import type {TimelineStore} from '../timeline/timelineStore';
 import {PostPipeline,postReadiness,postPerformance} from './post/PostPipeline';
 import {Floor} from './Floor';
+import {RegionHaze} from './RegionHaze';
 import {supportsRuntimeWebGL,graphicsRecovery} from './graphicsRecovery';
 import {ExceptionPanel} from './ExceptionPanel';
 import {projectBodies,projectInstancedBody,projectRect} from '../qa/worldProjection';
@@ -129,6 +130,14 @@ function Metrics({ scene, plan, selection,trace }: {
                 },
                 renderer: () => ({ calls: gl.info.render.calls, triangles: gl.info.render.triangles, geometries: gl.info.memory.geometries, textures: gl.info.memory.textures, frame: gl.info.render.frame }),
                 effects:()=>({...postReadiness}),
+                atmosphere:()=>{
+                    const result:ReturnType<NonNullable<Window['__ggjavaezWorld']>['atmosphere']>[number][]=[];
+                    world.getObjectByName('region-atmosphere')?.traverse(object=>{
+                        if(!(object instanceof Sprite)||!object.userData.runtimeAtmosphere)return;
+                        const material=object.material,image=material.map instanceof DataTexture?material.map.image:null;
+                        result.push({region:object.userData.runtimeAtmosphere,position:object.getWorldPosition(new Vector3()).toArray(),size:object.getWorldScale(new Vector3()).toArray(),color:`#${material.color.getHexString()}`,opacity:material.opacity,visible:object.visible,depthWrite:material.depthWrite,depthTest:material.depthTest,castShadow:object.castShadow,maxLinearTint:Math.max(material.color.r,material.color.g,material.color.b),maskSize:[image?.width??0,image?.height??0]});
+                    });return result;
+                },
                 framePerformance:()=>postPerformance?.snapshot()??null,
                 quality:()=>{const state=useQualityStore.getState();return{setting:state.setting,active:state.active,compiled:state.compiled,cinematicStatus:state.cinematicStatus,availability:state.cinematicAvailable,capabilities:state.capabilities,contextLost:state.contextLost,notice:state.notice}},
                 ready:()=>new Promise<void>((resolve,reject)=>{
@@ -223,6 +232,7 @@ export function RuntimeCanvas({ scene, plan, layout, safeFrame,inspectorRect, se
     {!supportsWebGL?<div className="world-graphics-status glass" role="status">The 3D World requires WebGL</div>:<Canvas frameloop="demand" shadows="percentage" dpr={[1, 1.5]} camera={{ fov: 36, position: [7, 5, 24], near: .05, far: 10000 }} gl={{ antialias: false, alpha: false, powerPreference: 'high-performance', toneMapping: ACESFilmicToneMapping }} onPointerMissed={() => { if (!moved.current)
         onSelect(null); }}>
       <GradientBackground/>
+      <RegionHaze headings={plan.headings} hasRecording={scene.liveHead>0}/>
       <hemisphereLight args={['#A8C8FF', '#090B22', .25]}/>
       <directionalLight position={[-10, 12, 9]} intensity={2.2} color="#9CC8FF" castShadow shadow-mapSize={quality === 'CINEMATIC' ? [2048, 2048] : [1024, 1024]} shadow-camera-left={-35} shadow-camera-right={35} shadow-camera-top={20} shadow-camera-bottom={-35}/>
       <directionalLight position={[14, 4, -9]} intensity={1.8} color="#B57BFF"/>

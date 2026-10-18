@@ -154,7 +154,7 @@ export async function captureComparison(page:Page,request:APIRequestContext,stat
  await page.evaluate(async()=>{await Promise.all(document.getAnimations().filter(animation=>animation.playState==='running'&&animation.effect instanceof KeyframeEffect&&animation.effect.target instanceof Element&&animation.effect.target.closest('.ide-editor-panel')).map(animation=>animation.finished.catch(()=>undefined)))})
  const observe=()=>page.evaluate(()=>{
   const qa=window.__ggjavaezQA!,world=window.__ggjavaezWorld!,scene=world.scene()
-  return{viewport:{width:innerWidth,height:innerHeight},app:qa.appState(),scene,shell:qa.shellRects(),world:qa.worldProjection()!,structuralLabels:world.structuralLabels(),runtimeHeadings:world.runtimeHeadings(),frameText:world.frameText(),selection:qa.selection(),pose:qa.cameraPose(),plan:qa.planStats(),renderer:world.renderer(),effects:world.effects(),quality:world.quality(),prefix:{recordingId:scene.recordingId,cursor:scene.cursor,liveHead:scene.liveHead,eventId:scene.cursorEvent?.id??null}}
+  return{viewport:{width:innerWidth,height:innerHeight},app:qa.appState(),scene,shell:qa.shellRects(),world:qa.worldProjection()!,structuralLabels:world.structuralLabels(),runtimeHeadings:world.runtimeHeadings(),frameText:world.frameText(),atmosphere:world.atmosphere(),selection:qa.selection(),pose:qa.cameraPose(),plan:qa.planStats(),renderer:world.renderer(),effects:world.effects(),quality:world.quality(),prefix:{recordingId:scene.recordingId,cursor:scene.cursor,liveHead:scene.liveHead,eventId:scene.cursorEvent?.id??null}}
  })
  const before=await observe(),session=(await currentSession(request))!
  expect(session?.id,'Capture belongs to the actual fixture JVM').toBe(sessionId)

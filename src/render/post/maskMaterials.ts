@@ -48,6 +48,7 @@ export class BloomMaskMaterials {
   private cache = new Map<Material, { black: Material; white: Material }>()
   render(renderer: WebGLRenderer, scene: Object3D, mode: 'emitters' | 'protection' | 'text', draw: () => void): void {
     const changed: Array<[Renderable, Material | Material[]]> = []
+    const hidden: Array<[Object3D,boolean]> = []
     const used = new Set<Material>()
     const substitute = (original: Material, white: boolean) => {
       used.add(original)
@@ -64,6 +65,8 @@ export class BloomMaskMaterials {
     renderer.shadowMap.autoUpdate = false
     try {
       scene.traverse(object => {
+        // Soft atmosphere is neither emissive ink nor a hard protection plane.
+        if(object.userData.runtimeAtmosphere){hidden.push([object,object.visible]);object.visible=false;return}
         if (!('material' in object)) return
         const renderable = object as Renderable, original = renderable.material
         if (!original) return
@@ -79,6 +82,7 @@ export class BloomMaskMaterials {
       draw()
     } finally {
       for (const [object, original] of changed) object.material = original
+      for(const[object,visible]of hidden)object.visible=visible
       renderer.shadowMap.autoUpdate = previousShadow
       for (const [original, pair] of this.cache) if (!used.has(original)) {
         pair.black.dispose(); pair.white.dispose(); this.cache.delete(original)
