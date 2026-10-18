@@ -79,3 +79,8 @@ The existing protection pass now carries unlit coverage in B independently of it
 Production time has one owner (`TimelineStore`, `useTimelinePlayback`, `TimeDock`). Seven unused old playback/timeline files, including 249 CSS lines, are removed with all 21 old cases preserved in reviewed production successors. The unused legacy `PlaybackState` type is removed after consumer inspection. Two original camera browser cases now use native controls/read-only observations rather than the retired Classic/Spatial/NavigationController surfaces.
 
 A demonstrated batched-forward/reverse discrepancy is fixed in SceneProjector: catalog and reference-owner insertion follow recorded introduction witnesses, independently of update priority or numeric-looking opaque IDs. This keeps the shared first-invocation STACK heading and Home inputs identical through replay. Two regressions fail before the fix and pass afterward. RuntimeState, graph, history, storage, instrumentation and canonical anchors are untouched. AST inventory reports 41 remaining legacy targets and zero production-reachable legacy modules; whole-product cleanup remains unfinished. See [the migration ledger](migration/timeline-retirement.md).
+
+
+## Measured text columns — 2026-10-17
+
+RuntimeSolid derives one aligned text grid from its bounded visible row list using the same Inter advances and Unicode escape policy as WorldText. Fixed fonts, semantic content, world geometry and ports are preserved; ordinary names take priority over long type spellings while values retain at least 35% of the row span. See [the migration ledger](migration/face-columns.md).

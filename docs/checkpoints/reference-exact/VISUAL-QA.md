@@ -55,3 +55,8 @@ An actual JVM domain run, keyboard selection and Focus expose the compositor's g
 Native migration exposes a real 1.98-pixel Home drift caused by inconsistent catalog order after batched entry/reverse seeking. The production order fix restores identical Home inputs and preserves the seven-decimal pose assertion; it does not establish whole-scene visual approval. No body dimensions or canonical anchors change.
 
 The lead reopens unchanged best.png and the native 1672×941 object-inspection twin, alongside the current native Cinematic project-object palette capture. Palette agreement does not resolve broad cyan connector halos, weak visible floor/environment response, dense neighboring context or avoidable ordinary-name truncation (`quantity`). The palette capture closes the Inspector for unobstructed color samples and therefore is not a comparable-state Focus composition approval. A fresh complete state/viewport matrix and dedicated visual/motion polish remain required.
+
+
+## Ordinary face-label recovery — 2026-10-17
+
+The lead opens all four fresh native frame/object captures at original 1440×900 resolution, covering both actual GPU quality tiers. `quantity` and the object's declared `StockItem` are now whole; the frame's `notebook` and `String[]` are also whole at their unchanged font sizes. Long frame type/value previews remain marked summaries, with exact captured values in Inspector. All eight opaque face/chip RGB samples still equal their prescribed bytes. Prior captures and the old 96-image matrix are archived under `pre-columns-2026-10-17/`. Broad connector halos, floor/environment response, neighboring-context density and flatter Cinematic sides remain open. These palette-focused captures do not approve comparable-state composition.

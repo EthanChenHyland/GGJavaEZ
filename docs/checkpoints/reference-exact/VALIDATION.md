@@ -4,12 +4,12 @@ Current implementation evidence, 2026-10-17. A–G completion is not claimed. Th
 
 | Gate | Command/evidence | Current result |
 | --- | --- | --- |
-| Default unit/property/regression | npm run test; unit-scene-order-timeline.log | 2039 pass, 70 explicit opt-in skips, 2109 total, 212 files; 175.79 s |
-| Source lint | npm run lint; lint-order-confirmed.log | Pass |
-| Strict reference browser TS | npm run typecheck:reference; typecheck-reference-order-confirmed.log | Pass |
+| Default unit/property/regression | npm run test; unit-face-columns.log | 2044 pass, 70 explicit opt-in skips, 2114 total, 213 files; 169.95 s |
+| Source lint | npm run lint; lint-face-columns.log | Pass |
+| Strict reference browser TS | npm run typecheck:reference; typecheck-reference-face-columns.log | Pass |
 | Strict optional performance harness TS | tsc --project .ggjavaez/qa/reference-exact/tsconfig.perf.json; typecheck-perf-seek-profile-confirmed.log | Pass, exit 0, including extra seek profile |
-| Production typecheck/build | npm run build; build-order-timeline.log | Pass; large-chunk warning preserved |
-| Full native reconstruction | playwright test e2e/reference --reporter=list | 78/78 pass, zero skips, 9.4 min, exit 0; browser-order-timeline-resumed.log. Includes two migrated native camera cases; interrupted 26-pass attempt retained. |
+| Production typecheck/build | npm run build; build-face-columns.log | Pass; large-chunk warning preserved |
+| Full native reconstruction | playwright test e2e/reference --reporter=list | Prior ordering checkpoint: 78/78, zero skips, 9.4 min, exit 0 (browser-order-timeline-resumed.log). Current text change: 14/14 focused native cases pass, 1.6 min, exit 0 (browser-face-columns.log). |
 | Complete Dense native browser performance | browser-world-performance-stable-materials.json and matching log | Every stage completed, no browser errors; seek/Focus/Home budgets fail |
 | Generated actual pipeline CPU/retention | perf-command-convergence/modern-world-performance.json | 100-batch update ratio 1.091262570 passes 2×; all three 0.25 retention budgets fail; exit 1 |
 | Reference integrity | node scripts/reference/check-references.mjs | Six root/twin/baseline hashes agree; tracked/untracked ownership preserved |
@@ -95,3 +95,5 @@ The interrupted browser process is no longer running; its completed report recor
 Focused projector/property/timeline integration passes **29/29**, four files, 6.62 seconds; two new ordering regressions fail before the production fix. Defaults pass **2039 / 2109**, with **70 explicit opt-in skips**, 212 files (205 passed/seven skipped), 175.79 seconds (`unit-scene-order-timeline.log`). All 21 old timeline/playback cases have successors; the increase of two comes from ordering regressions. Expanded strict browser TypeScript, lint and production typecheck/build pass. Guardrails **19/19**, 1.11 seconds; protected-reference integrity passes. Two native camera successors pass **2/2**, 7.9 seconds, before removing temporary read-only layout diagnostics. The original combined run is interrupted after 26 passes without a completion report; fresh final-source combined confirmation passes **78/78, zero skips, 9.4 minutes, exit 0** (`browser-order-timeline-resumed.log`). See [the ledger](migration/timeline-retirement.md).
 
 The four old playback browser cases also pass through current native controls: **4/4, zero skips, 21.8 seconds, exit 0**, with expanded strict reference TypeScript passing. Both natural completions retain their original six-second assertion and actual browser timers. This is separate from the passing 78-case gate; the remaining 120 older browser cases are not claimed as passed. Initial 2/2 test-oracle failures and corrections are documented in [the migration ledger](migration/playback-browser.md).
+
+Measured face columns add five regressions (four reproduce before the fix); focused typography/row integration passes **43/43** and full defaults pass **2044/70 explicit opt-in skips/2114 total**, 169.95 seconds, exit 0. Current native confirmation passes **14/14**, 1.6 minutes, exit 0. Root original-size review verifies ordinary names in both actual quality tiers. See [the ledger](migration/face-columns.md). Full comparable-state matrix/reference convergence and final whole-product gates remain open.

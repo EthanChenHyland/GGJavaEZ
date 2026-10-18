@@ -30,7 +30,8 @@ export const RuntimeSolid=memo(function RuntimeSolid({ node, presented, plan }: 
     const lengthLabel=node.kind==='array'?`length ${node.length}`:null;
     const metadataWidth=Math.max(identityWidth,lengthLabel?textAdvance(lengthLabel)*.25+.04:0);
     const titleWidth=Math.max(.1,w-.56-metadataWidth-(metadataWidth?.2:0)),title=fitWorldText(truncateFrameText(node.title),titleWidth,titleSize,600,0,28);
-    const columns=faceColumns(w,presented.detail);
+    const columns=faceColumns(w,presented.detail,model.visible.map(row=>({name:row.name,type:displayType(row.type),
+      indent:node.kind==='frame'&&'scopeDepth'in row?(row.scopeDepth??0)*world.frame.scopeIndent:0})),!!compact);
     const emphasis = presented.highlight === 'exception' ? color.semantic.exception : presented.highlight === 'mutation' ? color.semantic.mutation : color.ui.textSecondary;
     const string = node.kind === 'object' ? node.groups.flatMap(g => g.rows).find(row => row.slotId.endsWith(':captured-string')) : null;
     return <group>

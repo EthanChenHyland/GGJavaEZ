@@ -76,3 +76,8 @@ The existing curated-recording native frame-probe smoke observes 103 Interactive
 ## Timeline/catalog-order checkpoint — 2026-10-17
 
 Actual main-entry gzip is **71,930 bytes**, passing the unchanged 500,000-byte budget; entry/shell static closures **72,358/653,760** are diagnostics (`production-build-order-timeline.json/log`). Cached CPU projection passes **3 expected/executed/passed, zero skips**, 90 seeded seeks/270 plans with explicit GC, 1.02 seconds (`cached-projection-scene-order.log`, `perf-scene-order/`). Sorting touched owners preserves bounded single-LINE updates; full reconstruction sorts already materialized catalog copies. These checks do not remeasure or waive the open Dense latency and retained-memory failures.
+
+
+## Measured face-column checkpoint — 2026-10-17
+
+The main entry remains **71,930 gzip bytes**, within 500,000; entry/shell static closures are **72,358/654,010** diagnostic bytes (`production-build-face-columns.json/log`). Monaco and Cinematic remain split, with the large-chunk warning retained. Font advance measurements operate only on already bounded visible rows. No new Dense latency, retained-memory, sustained-rendering or GPU performance pass is claimed.
