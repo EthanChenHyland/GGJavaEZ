@@ -110,7 +110,10 @@ export function computeShellLayout(input: ShellLayoutInput): ShellLayout {
     } else {
       const width = Math.max(shell.inspector.w * w, shell.inspector.minPx)
       inspector = {
-        x: input.inspector.side === 'right' ? shell.inspector.rightEdge * w - width : (1 - shell.inspector.rightEdge) * w,
+        // The left half also contains Source. Prefer the available space beside
+        // it, clamped to the required opposite half; never resize Source.
+        x: input.inspector.side === 'right' ? shell.inspector.rightEdge * w - width
+          : Math.min(w/2-width,Math.max((1-shell.inspector.rightEdge)*w,source.x+source.width+.01*w)),
         y: shell.inspector.top * h, width, height: shell.inspector.maxH * h,
       }
     }

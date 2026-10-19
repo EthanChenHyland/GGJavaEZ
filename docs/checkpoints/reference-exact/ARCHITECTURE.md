@@ -177,3 +177,8 @@ The standalone App/IDE stylesheets and v3 token export/palette aliases are physi
 ## Shared Shell surfaces — 2026-10-19
 
 The active menus, Launch/path/Delete/unsaved dialogs and both search focus owners now share a parent-aware mounted surface stack. Three superseded IDE files are physically removed. Twelve filesystem/execution command operation initializers remain byte-identical to parent9e2a612. The single Picker, Header project menu, DirtyRun decision and remaining chrome cleanup are still pending. [Evidence, per-case reconciliation and scope](migration/shell-surfaces.md). Whole A–G acceptance remains open.
+
+
+## Focus Source / Inspector separation — 2026-10-19
+
+The left Inspector uses the available space beside Source while staying in its required opposite half. The shared pure layout retains frozen Source/card dimensions; existing camera fitting reserves the actual card. Side ownership, camera-input priority, runtime and canonical world geometry are unchanged. [Evidence and limits](migration/focus-source-layout.md). Whole A–G acceptance remains open.

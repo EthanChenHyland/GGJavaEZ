@@ -1,3 +1,4 @@
+import fc from 'fast-check'
 import { describe, expect, it } from 'vitest'
 import type { AppState } from '../state/appState'
 import { shell } from '../theme/tokens'
@@ -151,13 +152,15 @@ describe('transient surfaces and Safe_Frame', () => {
       expect(layout.safeFrame).toEqual(computeShellLayout(input()).safeFrame)
     },
   )
-  it('right Inspector reduces fitting width; left Inspector does not', () => {
+  it('reserves either Inspector inside its opposite viewport half for explicit camera fitting', () => {
     const right = computeShellLayout(input(1440, 900, { inspector: { open: true, side: 'right' } }))
     rect(right.inspector!, { x: 1125.6, y: 306, width: 300, height: 468 })
     expect(right.safeFrame.x + right.safeFrame.width).toBeCloseTo(1111.2)
     const left = computeShellLayout(input(1440, 900, { inspector: { open: true, side: 'left' } }))
-    expect(left.inspector!.x).toBeCloseTo(14.4)
-    expect(left.safeFrame).toEqual(computeShellLayout(input()).safeFrame)
+    expect(left.inspector!.x).toBeGreaterThanOrEqual(left.source.x+left.source.width)
+    expect(left.inspector!.x+left.inspector!.width).toBeLessThanOrEqual(720)
+    expect(left.safeFrame.x).toBeGreaterThanOrEqual(left.inspector!.x+left.inspector!.width+.01*1440)
+    expect(left.source).toEqual(computeShellLayout(input()).source)
     expect(computeShellLayout(input(1728, 1117, { inspector: { open: true, side: 'right' } })).inspector!.width).toBeCloseTo(345.6)
   })
   it('narrow Inspector is a bottom sheet independent of desktop side', () => {
@@ -208,4 +211,26 @@ describe('transient surfaces and Safe_Frame', () => {
     expect(computeShellLayout(input(1440,900,{debugActive:true,appState:state('DEBUG_PAUSED')})).sourceHeadingInset).toBe(0)
     expect(computeShellLayout(input(760,900,{debugActive:true})).sourceHeadingInset).toBe(0)
   })
+})
+
+
+describe('Focus Source and opposite-side Inspector readability',()=>{
+ it.each([[1728,1117],[1440,900],[1280,800],[1440,650]])('keeps both surfaces reachable at %i × %i',(w,h)=>{
+  const data=input(w,h,{appState:state('COMPLETED',['FOCUS']),inspector:{open:true,side:'left'}}),layout=computeShellLayout(data),card=layout.inspector!
+  expect(card.x).toBeGreaterThanOrEqual(layout.source.x+layout.source.width)
+  expect(card.x+card.width).toBeLessThanOrEqual(w/2)
+  expect(layout.safeFrame.x).toBeGreaterThanOrEqual(card.x+card.width)
+  expect(layout.source).toEqual(computeShellLayout({...data,inspector:{open:false,side:'left'}}).source)
+ })
+ it('preserves frozen dimensions and minimizes unavoidable overlap at intermediate desktop widths',()=>{
+  fc.assert(fc.property(fc.integer({min:1024,max:3840}),fc.integer({min:400,max:2160}),fc.constantFrom<AppState['execution']>('RUNNING','DEBUG_PAUSED','COMPLETED','FAILED'),(w,h,execution)=>{
+   const data=input(w,h,{appState:state(execution,['FOCUS']),inspector:{open:true,side:'left'}}),before=structuredClone(data),layout=computeShellLayout(data),card=layout.inspector!
+   expect(card.width).toBeCloseTo(Math.max(.2*w,300));expect(card.y).toBeCloseTo(.34*h)
+   expect(layout.source.width).toBeCloseTo(.22*w)
+   const sourceRight=layout.source.x+layout.source.width,unavoidable=Math.max(0,sourceRight+card.width-w/2)
+   expect(Math.max(0,sourceRight-card.x)).toBeLessThanOrEqual(unavoidable+1e-8)
+   expect(card.x+card.width).toBeLessThanOrEqual(w/2+1e-8);expect(layout.safeFrame.width).toBeGreaterThan(0)
+   expect(data).toEqual(before)
+  }),{numRuns:100,seed:20261019})
+ })
 })

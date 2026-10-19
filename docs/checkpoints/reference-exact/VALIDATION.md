@@ -220,3 +220,8 @@ Defaults2103passed/70explicit opt-in skips,225files,184.54seconds,exit0. Focused
 ## Native Java projects — 2026-10-19
 
 Five migrated original plain/Maven/Gradle/main-target/broken-POM cases pass5/5,60.82seconds,zero skips/flaky,with six distinct actual JVM sessions. Strict browser TS passes. Production is unchanged frombd30ecd; no full-unit/build rerun is claimed. [Per-case reconciliation and evidence](migration/java-project-workflows.md). Whole A–G acceptance remains open.
+
+
+## Focus Source / Inspector separation — 2026-10-19
+
+Defaults2108passed/70explicit opt-in skips,225files,181.07seconds,exit0. Focused208/208, affected native9/9 and a separate clean serial2/2 actual-JVM capture check pass. Four actual and four curated original-resolution images are root-reviewed; all current numerical capture tolerances pass. Earlier fixture assertion failures and the deliberately interrupted overlapping attempt remain recorded and are not gate passes. Main71760gzip, closures72188/663449 diagnostics. Final visual/performance/full native gates remainOPEN. [Evidence and limits](migration/focus-source-layout.md). Whole A–G acceptance remains open.
