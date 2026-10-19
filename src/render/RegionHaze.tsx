@@ -1,6 +1,6 @@
 import {useEffect,useMemo} from 'react'
 import {DataTexture,LinearFilter,RGBAFormat,SpriteMaterial,UnsignedByteType} from 'three'
-import type {PresentationPlan} from '../contracts/worldV2'
+import type {PresentationPlan} from '../contracts/world'
 import {color} from '../theme/tokens'
 
 /** Structural atmosphere uses two bounded world-space billboards. No runtime

@@ -6,7 +6,7 @@ import {BoxGeometry,InstancedMesh,type Material} from 'three'
 import {LineSegments2} from 'three/addons/lines/LineSegments2.js'
 import type {LineMaterial} from 'three/addons/lines/LineMaterial.js'
 import {afterEach,expect,it,vi} from 'vitest'
-import type {PresentedCurve,Vec3} from '../contracts/worldV2'
+import type {PresentedCurve,Vec3} from '../contracts/world'
 const state=vi.hoisted(()=>({size:{width:1440,height:900}}))
 vi.mock('@react-three/fiber',()=>({useThree:()=>state}))
 import {ConnectorBatch} from './ConnectorBatch'

@@ -1,4 +1,4 @@
-import type { PresentationPlan, PresentedEntity, SceneEntity } from '../contracts/worldV2';
+import type { PresentationPlan, PresentedEntity, SceneEntity } from '../contracts/world';
 import { color } from '../theme/tokens';
 import { frameStatusText } from '../world/frameStatus';
 import { notRecordedValue, truncateFrameText } from '../world/valueText';

@@ -2,7 +2,7 @@ import {expect,test,type Page} from '@playwright/test'
 import {writeFile} from 'node:fs/promises'
 import {PerspectiveCamera,Vector3} from 'three'
 import {ready} from './harness'
-import type {PresentedCluster} from '../../src/contracts/worldV2'
+import type {PresentedCluster} from '../../src/contracts/world'
 import type {Selection} from '../../src/contracts/interaction'
 
 export async function far(page:Page){

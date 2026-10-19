@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import fc from 'fast-check';
 import type { TraceEvent } from '../contracts/runtime';
-import type { WorldAnchor } from '../contracts/worldV2';
+import type { WorldAnchor } from '../contracts/world';
 import { loadPersonTrace } from '../examples/traces';
 import { generateRawTrace } from '../testing/traceGen';
 import { normalizeTrace } from '../instrumentation/normalize';

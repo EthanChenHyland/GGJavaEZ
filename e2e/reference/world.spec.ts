@@ -1,5 +1,5 @@
 import {expect,test,type Page} from '@playwright/test'
-import type {SceneModel} from '../../src/contracts/worldV2'
+import type {SceneModel} from '../../src/contracts/world'
 import type {Selection} from '../../src/contracts/interaction'
 type Qa={ready():Promise<void>;cameraPose():{position:number[];target:number[]};selection():Selection;scene():SceneModel}
 const qa=(page:Page)=>page.evaluate(()=>((window as unknown as {__ggjavaezQA:Qa}).__ggjavaezQA).ready())

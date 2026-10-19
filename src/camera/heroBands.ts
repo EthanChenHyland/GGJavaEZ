@@ -1,5 +1,5 @@
 import {Vector3} from 'three'
-import type {SceneModel,Vec3} from '../contracts/worldV2'
+import type {SceneModel,Vec3} from '../contracts/world'
 import type {Rect} from '../shell/shellLayout'
 import {projectionCamera,screenPoint,type OrbitPose,type Size} from './projection'
 import {anchorCorners} from '../world/anchorGeometry'

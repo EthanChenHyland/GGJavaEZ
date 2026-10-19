@@ -1,5 +1,5 @@
 import {Matrix4,Vector3,type Camera,type InstancedMesh} from 'three'
-import type {WorldAnchor,Vec3,Region} from '../contracts/worldV2'
+import type {WorldAnchor,Vec3,Region} from '../contracts/world'
 export interface ProjectedRect {x:number;y:number;width:number;height:number;visible:boolean}
 export interface ProjectedBody {id:string;region:Region;live:boolean;structural?:boolean;bounds:ProjectedRect|null;face:ProjectedRect|null}
 export interface WorldProjection {entities:readonly ProjectedBody[];stack:ProjectedRect|null;liveStack:ProjectedRect|null;heap:ProjectedRect|null;exception?:{bounds:ProjectedRect|null;throwFrame:ProjectedRect|null}|null}

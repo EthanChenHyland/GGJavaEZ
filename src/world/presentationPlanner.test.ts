@@ -7,7 +7,7 @@ import { createLayoutEngine } from './layoutEngine';
 import { createSceneProjector } from './sceneProjector';
 import { planPresentation } from './presentationPlanner';
 import { budgets } from '../theme/tokens';
-import type { DetailLevel } from '../contracts/worldV2';
+import type { DetailLevel } from '../contracts/world';
 import {clusterSize} from './clusterAnchor';
 it('presentation cut accounts for every prefix-present identity and retains required entities (100 runs)', () => {
     fc.assert(fc.property(fc.integer({ min: 1, max: 100000 }), fc.constantFrom<DetailLevel>('FAR', 'MEDIUM', 'CLOSE'), (seed, detail) => {

@@ -5,7 +5,7 @@ import { arrayElementSlotId } from '../contracts/runtime'
 import type {
   Evidence, PresentedCluster, PresentedEntity, SceneArray, SceneClass, SceneCollection,
   SceneEntity, SceneFrame, SceneModel, SceneObject, SceneReference, SceneRow, Vec3, WorldAnchor,
-} from '../contracts/worldV2'
+} from '../contracts/world'
 import { seek } from '../runtime'
 import { createLayoutEngine } from './layoutEngine'
 import { createSceneProjector } from './sceneProjector'

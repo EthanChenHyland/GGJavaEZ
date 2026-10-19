@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import fc from 'fast-check'
 import { arrayElementSlotId } from '../contracts/runtime'
-import type { WorldAnchor } from '../contracts/worldV2'
+import type { WorldAnchor } from '../contracts/world'
 import { computeArrayWindow, resolveArrayWindowPick, type ArrayWindow, type ArrayWindowInput, type ArrayWindowPick } from './arrayWindow'
 
 function anchor(length = 1000): WorldAnchor {

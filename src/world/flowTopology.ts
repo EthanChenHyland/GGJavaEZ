@@ -1,4 +1,4 @@
-import type {ArrayWindow,FlowPresentation,PresentedEntity,SceneModel,Vec3,WorldAnchor} from '../contracts/worldV2'
+import type {ArrayWindow,FlowPresentation,PresentedEntity,SceneModel,Vec3,WorldAnchor} from '../contracts/world'
 import type {FlowEndpoint} from '../motion/semanticTransition'
 import type {RecordedFlow,SceneFlow} from './flowCatalog'
 import {faceRows,faceRowPort} from './faceRows'

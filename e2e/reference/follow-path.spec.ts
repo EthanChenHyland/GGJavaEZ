@@ -1,7 +1,7 @@
 import {expect,test,type Page} from '@playwright/test'
 import {PerspectiveCamera,Vector3} from 'three'
 import {browserErrors,home,ready,runFixture,seekCursor,stopOwnedSession} from './harness'
-import type {PresentedCurve} from '../../src/contracts/worldV2'
+import type {PresentedCurve} from '../../src/contracts/world'
 test.afterEach(async({request})=>stopOwnedSession(request))
 
 async function command(page:Page,label:string){

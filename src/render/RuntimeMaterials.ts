@@ -1,5 +1,5 @@
 import { BoxGeometry, Color, EdgesGeometry, MeshDepthMaterial, MeshDistanceMaterial, MeshStandardMaterial, RGBADepthPacking } from 'three';
-import type { MaterialRole } from '../contracts/worldV2';
+import type { MaterialRole } from '../contracts/world';
 import { color } from '../theme/tokens';
 import { qualityStore, type QualityTier } from './quality/qualityStore';
 import {bodyPalette} from './quality/bodyPalette';

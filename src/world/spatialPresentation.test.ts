@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { RuntimeSlot, TraceDocument, TraceEvent } from '../contracts/runtime'
 import { arrayElementSlotId } from '../contracts/runtime'
-import type { DetailLevel, PresentationPlan } from '../contracts/worldV2'
+import type { DetailLevel, PresentationPlan } from '../contracts/world'
 import type { Selection } from '../contracts/interaction'
 import { projectTrace } from '../testing/projectTrace'
 import { seek } from '../runtime'

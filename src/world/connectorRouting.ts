@@ -1,4 +1,4 @@
-import type { Vec3, WorldAnchor } from '../contracts/worldV2'
+import type { Vec3, WorldAnchor } from '../contracts/world'
 
 export function curvedPath(from: Vec3, to: Vec3, left = false): Vec3[] {
   const reach = Math.max(.6, Math.min(3, Math.abs(to[0] - from[0]) * .35 + Math.abs(to[1] - from[1]) * .1));

@@ -1,5 +1,5 @@
 import type { ReturnTransfer, RuntimeFrame, RuntimeState, SourceLocation, TraceEvent } from '../contracts/runtime'
-import type { FrameStatus } from '../contracts/worldV2'
+import type { FrameStatus } from '../contracts/world'
 import { displayType } from './displayType'
 import { valueText, type ValueTextOptions } from './valueText'
 

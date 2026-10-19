@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { RuntimeLibrarySummary, RuntimeObject, RuntimeValue, TraceEvent } from '../contracts/runtime'
-import type { WorldAnchor } from '../contracts/worldV2'
+import type { WorldAnchor } from '../contracts/world'
 import { collectionSummary, type CollectionSummaryContext } from './collectionSummary'
 
 const int = (value: number): RuntimeValue => ({ kind: 'primitive', javaType: 'int', value })

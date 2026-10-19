@@ -1,7 +1,7 @@
 import { expect, it } from 'vitest'
 import fc from 'fast-check'
 import type { RuntimeSlot, TraceDocument, TraceEvent } from '../contracts/runtime'
-import type { PresentedEntity, SceneFrame } from '../contracts/worldV2'
+import type { PresentedEntity, SceneFrame } from '../contracts/world'
 import { projectTrace } from '../testing/projectTrace'
 import { faceRows, faceRowPort } from './faceRows'
 import { planPresentation } from './presentationPlanner'

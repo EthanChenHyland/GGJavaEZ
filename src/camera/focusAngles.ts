@@ -1,4 +1,4 @@
-import type {WorldAnchor} from '../contracts/worldV2'
+import type {WorldAnchor} from '../contracts/world'
 import {camera as tokens} from '../theme/tokens'
 
 /** Structural proxies live outside their runtime band. With no semantic

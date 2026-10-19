@@ -1,7 +1,7 @@
 import fc from 'fast-check'
 import { expect, it } from 'vitest'
 import type { RuntimeFrame, RuntimeState, TraceDocument, TraceEvent } from '../contracts/runtime'
-import type { FrameStatus } from '../contracts/worldV2'
+import type { FrameStatus } from '../contracts/world'
 import type { RawRuntimeEvent } from '../instrumentation/contracts'
 import { normalizeTrace } from '../instrumentation/normalize'
 import { applyEvent, createInitialState } from '../runtime/state'

@@ -33,3 +33,34 @@ describe('Console output ownership', () => {
     expect(html).toContain('/api/execution/session-owned/output/stderr'); expect(html).toContain('disk full')
   })
 })
+
+const prefixInput = {eventId:'captured-input',frameId:'invocation',kind:'input' as const,text:'  +009\n',value:{kind:'primitive' as const,javaType:'int' as const,value:9},source:{fileId:'Unit.java',line:12},destinationSlotId:'raw'}
+const prefixOutput = {eventId:'captured-output',frameId:'invocation',kind:'output' as const,text:'Result: 9\n',value:{kind:'primitive' as const,javaType:'int' as const,value:9},source:{fileId:'Unit.java',line:24}}
+const prefixMarkup=(entries:readonly import('../contracts/runtime').ConsoleEntry[])=>renderToStaticMarkup(<ConsoleOutput build={null} execution={null} hasRecording entries={entries}/>)
+describe('applied-prefix successors of the retired standalone ConsolePane',()=>{
+ it('renders captured input/output in recorder order with their actual channel glyphs',()=>{
+  const html=prefixMarkup([prefixInput,prefixOutput])
+  expect(html).toContain('aria-label="Recorded console rows"');expect(html).toContain('aria-label="stdin"');expect(html).toContain('aria-label="stdout"')
+  expect(html).toContain('  +009');expect(html).toContain('Result: 9');expect(html.indexOf('  +009')).toBeLessThan(html.indexOf('Result: 9'))
+ })
+ it('removes future output on reverse seek, clears reset and restores the exact replay prefix',()=>{
+  expect(prefixMarkup([prefixInput,prefixOutput])).toContain('Result: 9')
+  const reversed=prefixMarkup([prefixInput]);expect(reversed).toContain('  +009');expect(reversed).not.toContain('Result: 9')
+  const reset=prefixMarkup([]);expect(reset).toContain('0 rows');expect(reset).not.toContain('  +009');expect(reset).not.toContain('Result: 9')
+  expect(prefixMarkup([prefixInput,prefixOutput])).toContain('Result: 9')
+ })
+ it('uses supplied text rather than its scalar value and retains exact whitespace inside line previews',()=>{
+  const html=prefixMarkup([{...prefixOutput,text:'  label\t= 0009\r\nsecond line\n'}])
+  expect(html).toContain('  label\t= 0009');expect(html).toContain('second line');expect(html).not.toContain('Result: 9')
+  expect(prefixMarkup([{...prefixOutput,text:''}])).not.toContain('Result: 9')
+ })
+ it('escapes recorded markup without fabricating a missing source location',()=>{
+  const html=prefixMarkup([{...prefixOutput,text:'<script>alert("x")</script>&',source:null}])
+  expect(html).toContain('&lt;script&gt;alert(&quot;x&quot;)&lt;/script&gt;&amp;');expect(html).not.toContain('<script>');expect(html).not.toContain('Unit.java')
+ })
+ it('does not mutate frozen recorded entries or append presentation history across prefix replacements',()=>{
+  const entries=Object.freeze([Object.freeze({...prefixInput}),Object.freeze({...prefixOutput})]),before=JSON.stringify(entries)
+  prefixMarkup(entries);prefixMarkup(entries.slice(0,1));prefixMarkup([]);prefixMarkup(entries)
+  expect(JSON.stringify(entries)).toBe(before)
+ })
+})

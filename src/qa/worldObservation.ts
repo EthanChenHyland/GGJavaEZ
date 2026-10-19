@@ -1,5 +1,5 @@
 import type { Selection } from '../contracts/interaction'
-import type { SceneModel, PresentationPlan } from '../contracts/worldV2'
+import type { SceneModel, PresentationPlan } from '../contracts/world'
 import type {TraceEvent} from '../contracts/runtime'
 import type {WorldProjection} from './worldProjection'
 export interface WorldObservation {

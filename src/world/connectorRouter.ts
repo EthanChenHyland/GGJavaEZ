@@ -1,4 +1,4 @@
-import type {Vec3,WorldAnchor} from '../contracts/worldV2'
+import type {Vec3,WorldAnchor} from '../contracts/world'
 import {curvedPath,prepareConnectorFaceClearance,roundedConnectorPoints,surfaceConnectorPoints} from './connectorRouting'
 
 type Route=(from:Vec3,to:Vec3,source?:WorldAnchor,target?:WorldAnchor,left?:boolean)=>readonly Vec3[]

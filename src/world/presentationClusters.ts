@@ -1,5 +1,5 @@
 import type {Selection} from '../contracts/interaction'
-import type {ClusterKey,DetailLevel,LayoutState,PresentedCluster,SceneModel,WorldAnchor} from '../contracts/worldV2'
+import type {ClusterKey,DetailLevel,LayoutState,PresentedCluster,SceneModel,WorldAnchor} from '../contracts/world'
 import {clusterHierarchy,clusterId,liveDepthId,liveDepthLabel,type ClusterNode} from './clusterHierarchy'
 import {recordedOwnership} from './recordedOwnership'
 

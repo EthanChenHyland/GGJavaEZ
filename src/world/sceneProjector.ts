@@ -1,7 +1,7 @@
 import type { ExecutionGraph, GraphEdge, GraphIO } from '../contracts/executionGraph'
 import { arrayElementSlotId, referenceIdForSlot, type RuntimeClass, type RuntimeFrame, type RuntimeObject, type RuntimeSlot, type RuntimeState, type SourceLocation, type TraceDocument, type TraceEvent } from '../contracts/runtime'
 import type { RecordingStatus } from '../instrumentation/contracts'
-import type { Evidence, LayoutState, SceneArray, SceneCollection, SceneClass, SceneEntity, SceneExceptionPath, SceneFrame, SceneIo, SceneModel, SceneObject, SceneReference, SceneReturnFlow, SceneRow, WorldAnchor } from '../contracts/worldV2'
+import type { Evidence, LayoutState, SceneArray, SceneCollection, SceneClass, SceneEntity, SceneExceptionPath, SceneFrame, SceneIo, SceneModel, SceneObject, SceneReference, SceneReturnFlow, SceneRow, WorldAnchor } from '../contracts/world'
 import { createReductionEngine } from '../runtime/engine'
 import { freezeValue, persistentAppend, persistentArray, persistentPut, persistentRecord } from '../runtime/storage'
 import { displayType } from './displayType'

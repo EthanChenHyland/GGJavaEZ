@@ -1,5 +1,5 @@
 import type {Selection} from '../contracts/interaction'
-import type {PresentationPlan,SceneModel,Vec3} from '../contracts/worldV2'
+import type {PresentationPlan,SceneModel,Vec3} from '../contracts/world'
 import {anchorCorners} from '../world/anchorGeometry'
 import {facePlate} from '../world/facePlate'
 import {projectionCamera,screenPoint,type OrbitPose,type Size} from '../camera/projection'

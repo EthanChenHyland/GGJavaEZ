@@ -1,5 +1,5 @@
 import {expect,it} from 'vitest'
-import type {SceneExceptionPath} from '../contracts/worldV2'
+import type {SceneExceptionPath} from '../contracts/world'
 import {normalizeTrace} from '../instrumentation/normalize'
 import {seek} from '../runtime'
 import {generateRawTrace} from '../testing/traceGen'

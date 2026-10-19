@@ -1,4 +1,4 @@
-import type { DetailLevel, PresentedCluster, SceneModel, Vec3, WorldAnchor } from '../contracts/worldV2'
+import type { DetailLevel, PresentedCluster, SceneModel, Vec3, WorldAnchor } from '../contracts/world'
 import type { Rect } from '../shell/shellLayout'
 import { camera as tokens } from '../theme/tokens'
 import { cameraPosition,fitToSafeFrame,nextDetailLevel,projectionCamera,representativeFaceHeight,screenPoint,type OrbitPose,type Size } from './projection'

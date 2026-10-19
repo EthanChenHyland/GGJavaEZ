@@ -1,6 +1,6 @@
 import {useEffect,useLayoutEffect,useMemo,useRef} from 'react'
 import {BufferGeometry,Float32BufferAttribute,InstancedMesh,LineBasicMaterial,MeshBasicMaterial,Object3D,Vector3} from 'three'
-import type {PresentationPlan} from '../contracts/worldV2'
+import type {PresentationPlan} from '../contracts/world'
 import type {RecordingStatus} from '../instrumentation/contracts'
 import {color} from '../theme/tokens'
 import {WorldText} from './FaceText'

@@ -9,7 +9,7 @@ import {createSceneProjector} from '../world/sceneProjector'
 import {planPresentation} from '../world/presentationPlanner'
 import {anchorCorners} from '../world/presentationPlanner'
 import {exceptionPanelAnchor,exceptionPanelFor} from '../world/exceptionPanelPlacement'
-import type {SceneExceptionPath} from '../contracts/worldV2'
+import type {SceneExceptionPath} from '../contracts/world'
 import {followInvocations,guidedFollow,isFollowSubjectEvent} from './guidedFollow'
 import {projectionCamera,screenPoint,type OrbitPose} from './projection'
 const raw=generateRawTrace({seed:17,rawEvents:80,callRate:.95,maxDepth:9,allocateRate:.1})

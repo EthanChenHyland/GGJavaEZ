@@ -1,7 +1,7 @@
 import type {
   ArrayWindow, PresentedCluster, PresentedEntity, SceneEntity, SceneModel,
   SceneReference, Vec3, WorldAnchor,
-} from '../contracts/worldV2'
+} from '../contracts/world'
 import { faceRows,faceRowPort } from './faceRows'
 import {collectionEntryFace} from './collectionFace'
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { RuntimeSlot, TraceDocument, TraceEvent } from '../contracts/runtime'
-import type { PresentationPlan, SceneModel } from '../contracts/worldV2'
+import type { PresentationPlan, SceneModel } from '../contracts/world'
 import { loadPersonTrace } from '../examples/traces'
 import { projectTrace } from '../testing/projectTrace'
 import { planPresentation } from './presentationPlanner'

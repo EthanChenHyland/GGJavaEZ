@@ -1,6 +1,6 @@
 import {expect,it} from 'vitest'
 import fc from 'fast-check'
-import type {SceneModel} from '../contracts/worldV2'
+import type {SceneModel} from '../contracts/world'
 import {normalizeTrace} from '../instrumentation/normalize'
 import {generateRawTrace} from '../testing/traceGen'
 import {seek} from '../runtime'

@@ -1,5 +1,5 @@
 import {Box3,Vector3} from 'three'
-import type {SceneEntity,SceneModel,Vec3,WorldAnchor} from '../contracts/worldV2'
+import type {SceneEntity,SceneModel,Vec3,WorldAnchor} from '../contracts/world'
 import {cameraSegmentHit} from './cameraConstraints'
 
 /** Canonical solids conservatively rank sightlines, independently of the

@@ -1,6 +1,6 @@
 import {create} from 'zustand'
 import type {Selection} from '../contracts/interaction'
-import type {DetailLevel} from '../contracts/worldV2'
+import type {DetailLevel} from '../contracts/world'
 import type {OrbitPose} from './projection'
 import {focusable,useInteractionStore} from '../interaction/interactionStore'
 export type NavigationMode='EXPLORE'|'FOCUS'|'TRACE'|'HOME'

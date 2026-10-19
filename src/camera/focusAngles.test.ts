@@ -1,5 +1,5 @@
 import {expect,it} from 'vitest'
-import type {WorldAnchor} from '../contracts/worldV2'
+import type {WorldAnchor} from '../contracts/world'
 import {cameraPosition} from './projection'
 import {cameraCollisionBoxes,constrainCameraPose} from './cameraConstraints'
 import {focusFraming} from './focusFraming'

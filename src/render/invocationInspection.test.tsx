@@ -1,7 +1,7 @@
 import {expect,it} from 'vitest'
 import {renderToStaticMarkup} from 'react-dom/server'
 import type {RuntimeState} from '../contracts/runtime'
-import type {SceneFrame} from '../contracts/worldV2'
+import type {SceneFrame} from '../contracts/world'
 import type {ExecutionGraph,GraphInvocation} from '../contracts/executionGraph'
 import {loadPersonTrace,loadRecursionTrace} from '../examples/traces'
 import {seek} from '../runtime'

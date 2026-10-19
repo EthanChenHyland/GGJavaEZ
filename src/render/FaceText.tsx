@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useId, useLayoutEffect, useMemo, 
 import { useFrame,useThree } from '@react-three/fiber';
 import { BatchedText, Text } from 'troika-three-text';
 import { Group, MeshBasicMaterial,Vector3,type Object3D } from 'three';
-import type { Vec3 } from '../contracts/worldV2';
+import type { Vec3 } from '../contracts/world';
 import { color, runtimeFonts } from '../theme/tokens';
 import {fitWorldText,projectedFontPixels,worldTextVisible} from './text/textSystem';
 const Context = createContext<BatchedText | null>(null);

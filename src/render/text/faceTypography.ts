@@ -1,4 +1,4 @@
-import type {SceneEntity,SceneRow,Vec3} from '../../contracts/worldV2'
+import type {SceneEntity,SceneRow,Vec3} from '../../contracts/world'
 import {compactLibraryFace} from '../../world/firstObjectPresentation'
 import {localFontText,textAdvance} from './textSystem'
 /** The renderer and camera admission use the same physical title/identity

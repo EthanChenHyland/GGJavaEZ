@@ -1,5 +1,5 @@
 import { arrayElementSlotId } from '../contracts/runtime'
-import type { SceneArray, SceneModel } from '../contracts/worldV2'
+import type { SceneArray, SceneModel } from '../contracts/world'
 
 /** A recorded array length establishes cell identity even when its value was not
  * captured. Accept only the canonical ID of an in-bounds cell of a present array. */

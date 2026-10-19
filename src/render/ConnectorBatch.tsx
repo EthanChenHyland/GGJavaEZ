@@ -3,7 +3,7 @@ import { useThree } from '@react-three/fiber';
 import { Color, InstancedBufferAttribute, InstancedMesh, Object3D, Vector3 } from 'three';
 import { LineSegments2 } from 'three/addons/lines/LineSegments2.js';
 import { LineSegmentsGeometry } from 'three/addons/lines/LineSegmentsGeometry.js';
-import type { PresentedCurve } from '../contracts/worldV2';
+import type { PresentedCurve } from '../contracts/world';
 import { connectorMaterial,roleColor } from './RuntimeMaterials';
 import {instanceAlphaMaterial} from './instanceAlpha';
 function Curves({ curves, halo, onSelect }: {

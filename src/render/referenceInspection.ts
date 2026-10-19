@@ -1,5 +1,5 @@
 import type {RuntimeState} from '../contracts/runtime'
-import type {SceneModel,SceneReference} from '../contracts/worldV2'
+import type {SceneModel,SceneReference} from '../contracts/world'
 import {arrayCellTarget} from '../world/arrayCellTarget'
 import {inspectorEntityTitle} from './inspection'
 

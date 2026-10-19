@@ -1,5 +1,5 @@
 import type {Selection} from '../contracts/interaction'
-import type {PresentationPlan,SceneModel} from '../contracts/worldV2'
+import type {PresentationPlan,SceneModel} from '../contracts/world'
 import {inspectorEntity} from '../render/inspection'
 import {focusable} from './interactionStore'
 

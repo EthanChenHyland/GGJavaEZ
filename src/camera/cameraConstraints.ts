@@ -1,5 +1,5 @@
 import { Box3, Vector3 } from 'three'
-import type { SceneModel, Vec3, WorldAnchor } from '../contracts/worldV2'
+import type { SceneModel, Vec3, WorldAnchor } from '../contracts/world'
 export interface EyePose { position:Vec3;target:Vec3 }
 type CameraPose=EyePose
 const defaultHomePose:EyePose={position:[7,5,24],target:[4,-2,0]}

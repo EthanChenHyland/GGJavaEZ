@@ -1,5 +1,5 @@
 import type { Selection } from '../contracts/interaction'
-import type { SceneEntity, SceneModel, ValueText, PresentationPlan } from '../contracts/worldV2'
+import type { SceneEntity, SceneModel, ValueText, PresentationPlan } from '../contracts/world'
 import type { FlowCatalog, RecordedProvenance } from '../world/flowCatalog'
 import { arrayElementSlotId, type RuntimeState, type VariableLifetime } from '../contracts/runtime'
 import { notRecordedValue, valueText } from '../world/valueText'

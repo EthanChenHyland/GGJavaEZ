@@ -1,6 +1,6 @@
 import type {Selection} from '../contracts/interaction'
 import type {RuntimeState,SourceLocation,TraceDocument} from '../contracts/runtime'
-import type {Evidence,PresentationPlan,SceneModel} from '../contracts/worldV2'
+import type {Evidence,PresentationPlan,SceneModel} from '../contracts/world'
 import {arrayCellTarget} from '../world/arrayCellTarget'
 import {notRecordedValue,valueText} from '../world/valueText'
 import {focusSourceLocation} from '../shell/source/sourceSync'

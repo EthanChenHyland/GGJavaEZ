@@ -2,7 +2,7 @@ import {expect,test,type Page,type APIRequestContext} from '@playwright/test'
 import states from './states.json' with {type:'json'}
 import {browserErrors,captureComparison,currentSession,follow,focusSelection,home,ready,runFixture,seekCursor,selectEntity,startFixture,stopOwnedSession,type ReferenceState} from './harness'
 import type {ExecutionSession} from '../../src/execution/contracts'
-import type {DetailLevel} from '../../src/contracts/worldV2'
+import type {DetailLevel} from '../../src/contracts/world'
 // Every case drives the production shell with an instrumented JVM. No mocked
 // traces, fixture branches in production, or direct cursor/selection setters.
 test.describe.configure({timeout:90000})

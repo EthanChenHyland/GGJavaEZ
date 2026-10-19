@@ -1,4 +1,4 @@
-import type {PresentationPlan,SceneModel,Vec3,LayoutState} from '../contracts/worldV2'
+import type {PresentationPlan,SceneModel,Vec3,LayoutState} from '../contracts/world'
 import type {Rect} from '../shell/shellLayout'
 import {exceptionPanelAnchor} from '../world/exceptionPanelPlacement'
 import {camera as tokens} from '../theme/tokens'

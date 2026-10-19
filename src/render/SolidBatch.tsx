@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef,type RefObject } from 'reac
 import { BufferGeometry, Float32BufferAttribute, InstancedMesh, Object3D, Color, Vector3 } from 'three';
 import type { Intersection, Raycaster } from 'three';
 import type { Selection } from '../contracts/interaction';
-import type { PresentationPlan, SceneEntity, SceneModel, Vec3, WorldAnchor } from '../contracts/worldV2';
+import type { PresentationPlan, SceneEntity, SceneModel, Vec3, WorldAnchor } from '../contracts/world';
 import { color, world } from '../theme/tokens';
 import { glassMaterial, unitBox, roundedDepthMaterial, roundedDistanceMaterial } from './RuntimeMaterials';
 import { expandRoundedBoxVertex, unitRoundedBox, unitRoundedOutline } from './geometry/roundedBox';

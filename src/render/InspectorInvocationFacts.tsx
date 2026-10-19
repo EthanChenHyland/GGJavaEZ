@@ -1,5 +1,5 @@
 import type {RuntimeState} from '../contracts/runtime'
-import type {SceneFrame,SceneModel,ValueText} from '../contracts/worldV2'
+import type {SceneFrame,SceneModel,ValueText} from '../contracts/world'
 import {invocationInspection} from './invocationInspection'
 function Exact({value}:{value:ValueText}){
  return <span>{value.exact}<small> · {value.observation}</small>{value.reason&&<small> · {value.reason}</small>}{value.recordedLength!==undefined&&<small> · Recorded length: {value.recordedLength}</small>}</span>

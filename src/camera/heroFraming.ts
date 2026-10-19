@@ -1,4 +1,4 @@
-import type {PresentationPlan,SceneModel,Vec3,WorldAnchor} from '../contracts/worldV2'
+import type {PresentationPlan,SceneModel,Vec3,WorldAnchor} from '../contracts/world'
 import type {Rect} from '../shell/shellLayout'
 import {camera as tokens} from '../theme/tokens'
 import {anchorCorners} from '../world/anchorGeometry'

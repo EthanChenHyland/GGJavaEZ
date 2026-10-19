@@ -1,4 +1,4 @@
-import type { MaterialRole, PresentationPlan, PresentedCurve, SceneModel, WorldAnchor } from '../contracts/worldV2'
+import type { MaterialRole, PresentationPlan, PresentedCurve, SceneModel, WorldAnchor } from '../contracts/world'
 import type { AnimationStep, OverlayFrame } from './transitionPlayer'
 import {faceRows} from '../world/faceRows'
 import {facePlate} from '../world/facePlate'

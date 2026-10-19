@@ -1,5 +1,5 @@
 import {Vector3,type Box3} from 'three'
-import type {Vec3} from '../contracts/worldV2'
+import type {Vec3} from '../contracts/world'
 import {cameraPosition,type OrbitPose} from './projection'
 import {collisionSafeRoute,type CameraLimits,type EyePose} from './cameraConstraints'
 const tuple=(point:Vector3):Vec3=>[point.x,point.y,point.z]

@@ -1,5 +1,5 @@
 import {arrayElementSlotId,type RuntimeSlot,type RuntimeValue,type TraceEvent} from '../contracts/runtime'
-import type {SceneReference} from '../contracts/worldV2'
+import type {SceneReference} from '../contracts/world'
 import {createReferenceBindingHistory,type BindingObservation} from './referenceBindingHistory'
 
 /** Presentation index of accepted normalized slot facts. Graph value versions

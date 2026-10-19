@@ -1,5 +1,5 @@
 import {describe,expect,it} from 'vitest'
-import type {WorldAnchor,Vec3} from '../contracts/worldV2'
+import type {WorldAnchor,Vec3} from '../contracts/world'
 import {sparseTrace,sparseArrayId as arrayId,sparseClassId as classId,sparseInt as int} from '../testing/sparseTrace'
 import {projectTrace} from '../testing/projectTrace'
 import {arrayElementSlotId} from '../contracts/runtime'

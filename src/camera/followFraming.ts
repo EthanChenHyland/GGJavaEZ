@@ -1,5 +1,5 @@
 import {Vector3} from 'three'
-import type {Vec3} from '../contracts/worldV2'
+import type {Vec3} from '../contracts/world'
 import type {Rect} from '../shell/shellLayout'
 import {camera as tokens} from '../theme/tokens'
 import {projectionCamera,screenPoint,type OrbitPose,type Size} from './projection'

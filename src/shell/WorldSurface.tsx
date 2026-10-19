@@ -3,7 +3,7 @@ import type { RuntimeState, SourceLocation, TraceDocument } from '../contracts/r
 import type { Selection } from '../contracts/interaction';
 import type { EmbeddedExecution, RuntimeNavigation } from './runtimeContracts';
 import type { Rect } from './shellLayout';
-import type { SceneModel, PresentationPlan } from '../contracts/worldV2';
+import type { SceneModel, PresentationPlan } from '../contracts/world';
 import type { ArrayWindow } from '../world/arrayWindow';
 import { RuntimeCanvas } from '../render/RuntimeCanvas';
 import { Inspector } from '../render/Inspector';

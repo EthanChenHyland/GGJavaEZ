@@ -1,5 +1,5 @@
 import type {RuntimeState} from '../contracts/runtime'
-import type {SceneFrame,SceneModel,ValueText} from '../contracts/worldV2'
+import type {SceneFrame,SceneModel,ValueText} from '../contracts/world'
 import {valueText} from '../world/valueText'
 import {inspectorEntityTitle} from './inspection'
 

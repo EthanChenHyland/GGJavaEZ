@@ -1,6 +1,6 @@
 import type { RuntimeState, RuntimeValue, TraceDocument, TraceEvent } from '../contracts/runtime'
 import type { ExecutionGraph, GraphEdge } from '../contracts/executionGraph'
-import type { Evidence, SceneModel } from '../contracts/worldV2'
+import type { Evidence, SceneModel } from '../contracts/world'
 import { graphTransition, type FlowEndpoint } from '../motion/semanticTransition'
 import { seek } from '../runtime'
 import { valueText } from './valueText'

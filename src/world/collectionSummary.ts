@@ -1,5 +1,5 @@
 import type { RuntimeObject, RuntimeSlot, RuntimeValue, TraceEvent } from '../contracts/runtime'
-import type { Evidence, SceneCollection, ValueText, WorldAnchor } from '../contracts/worldV2'
+import type { Evidence, SceneCollection, ValueText, WorldAnchor } from '../contracts/world'
 import { displayType } from './displayType'
 import { notRecordedValue, valueText } from './valueText'
 import {collectionEntryFace} from './collectionFace'

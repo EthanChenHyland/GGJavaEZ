@@ -1,4 +1,4 @@
-import type {PresentedCurve,SceneModel,Vec3} from '../contracts/worldV2'
+import type {PresentedCurve,SceneModel,Vec3} from '../contracts/world'
 import {fitWorldText,textAdvance} from './text/textSystem'
 export const returnCaptionStyle={size:.28,operandRatio:.65,width:4.2} as const
 export function returnCaptionLines(value:string,operands:string|null,width=returnCaptionStyle.width){

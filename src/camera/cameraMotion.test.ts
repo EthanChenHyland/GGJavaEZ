@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { Vector3 } from 'three'
 import type { TraceDocument } from '../contracts/runtime'
-import type { Vec3 } from '../contracts/worldV2'
+import type { Vec3 } from '../contracts/world'
 import { projectTrace } from '../testing/projectTrace'
 import { seek } from '../runtime'
 import { createFlowCatalog } from '../world/flowCatalog'

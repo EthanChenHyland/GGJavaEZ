@@ -197,3 +197,8 @@ Complete frozen parent df4fedc native confirmation ran113planned/executed:112pas
 ## Slot evidence retention — 2026-10-19
 
 Defaults2096passed/70explicit opt-in skips,223files,180.82seconds,exit0. New100-run prefix property passes before/after; focused51/51 and affected native7/7 pass. Build/typecheck/browser TS/lint/protected/reference guards pass. Generated20k projector retention drops1.616MB, but every25% presentation-memory budget still fails (after ratios2.043/0.761/0.646); no Dense/GPU claim. Separate2case/fourcapture actual-JVM check passes with all original numerical thresholds, and root review remainsOPEN. Prior complete113case Console223.2ms failure is retained; current focused Console22.5/5.3ms and10profiled waits do not waive it. [Measured evidence and limits](migration/slot-history.md). Whole A–G acceptance remains open.
+
+
+## World contract and orphan surfaces — 2026-10-19
+
+Defaults2088passed/70explicit opt-in skips,221files,182.89seconds,exit0. Before-retirement42/42 and post-consolidation55/55 focused cases pass. Strict compiler proof preserves all old/new selector fields and assignability both ways. Build/typecheck/browser TS/lint/protected/reference guards pass. All14JS/fourCSS resources match parent2e7bb9b byte for byte; no new browser/performance approval is inferred. AST615/2154/233/zero legacy renderer targets. Root CSS/token/IDE cleanup and final convergence remain open. [Per-case dispositions, type proof and limits](migration/world-contract-consolidation.md). Whole A–G acceptance remains open.

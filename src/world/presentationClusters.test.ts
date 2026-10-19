@@ -1,6 +1,6 @@
 import {expect,it} from 'vitest'
 import type {RuntimeSlot,RuntimeTypeMetadata,TraceDocument,TraceEvent} from '../contracts/runtime'
-import type {Ownership,WorldAnchor} from '../contracts/worldV2'
+import type {Ownership,WorldAnchor} from '../contracts/world'
 import {seek} from '../runtime'
 import {createLayoutEngine} from './layoutEngine'
 import {createSceneProjector} from './sceneProjector'

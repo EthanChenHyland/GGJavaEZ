@@ -1,5 +1,5 @@
 import type {TraceEvent} from '../contracts/runtime'
-import type {LayoutState,Ownership} from '../contracts/worldV2'
+import type {LayoutState,Ownership} from '../contracts/world'
 
 /** Only recorded metadata counts. Neither region nor a type-name prefix is
  * ownership evidence; missing metadata is deliberately left unknown. */

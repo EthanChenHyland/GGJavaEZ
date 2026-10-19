@@ -1,13 +1,13 @@
 import { createOccupancy } from './occupancy';
 import type { TraceEvent, RuntimeSlot } from '../contracts/runtime';
 import { arrayElementSlotId } from '../contracts/runtime';
-import type { LayoutState, WorldAnchor, WorldBounds, Vec3, PlacementInfo, Region, Ownership } from '../contracts/worldV2';
+import type { LayoutState, WorldAnchor, WorldBounds, Vec3, PlacementInfo, Region, Ownership } from '../contracts/world';
 import { world as worldLayoutTokens } from '../theme/tokens';
 import { persistentAppend, persistentPut, persistentRecord } from '../runtime/storage';
 import {ownershipObservation} from './recordedOwnership';
 import {firstObjectPresentation,compactLibraryFace} from './firstObjectPresentation';
 import {createClusterMembershipIndex} from './clusterMemberships';
-export type { LayoutState } from '../contracts/worldV2';
+export type { LayoutState } from '../contracts/world';
 export type WorldLayoutTokens = typeof worldLayoutTokens;
 export interface LayoutEngine {
     readonly length: number;

@@ -1,5 +1,5 @@
 import type { TraceEvent } from '../contracts/runtime'
-import type { Vec3, WorldAnchor } from '../contracts/worldV2'
+import type { Vec3, WorldAnchor } from '../contracts/world'
 import { world as worldTokens } from '../theme/tokens'
 import type { WorldLayoutTokens } from './layoutEngine'
 

@@ -1,4 +1,4 @@
-import type {Vec3,WorldAnchor} from '../contracts/worldV2'
+import type {Vec3,WorldAnchor} from '../contracts/world'
 import {world} from '../theme/tokens'
 
 /** Reservation geometry only. Callers provide captured entry indices; this

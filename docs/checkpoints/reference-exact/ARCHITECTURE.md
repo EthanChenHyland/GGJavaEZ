@@ -162,3 +162,8 @@ Twenty unreachable legacy primitive/helper/test modules are physically removed a
 ## Slot evidence retention — 2026-10-19
 
 The presentation projector retains first assignment/write ordinals instead of redundant growing arrays; observation ordinals still provide exact historical changed-at evidence. All normalized/runtime/graph/history contracts remain unchanged. [Measured evidence and limits](migration/slot-history.md). Whole A–G acceptance remains open.
+
+
+## World contract and orphan surfaces — 2026-10-19
+
+The sole renderer contract now lives at src/contracts/world.ts, byte-identical to the previous worldV2 module. All119 consumer edits are exact import substitutions; the runtime reference selector owns its unchanged structural type and unchanged executable body. Eight unmounted standalone Console/Source/dropdown/flow files are removed, with13 original UI cases individually reconciled and5 current Console prefix successors. [Per-case dispositions, type proof and limits](migration/world-contract-consolidation.md). Whole A–G acceptance remains open.

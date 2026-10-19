@@ -1,4 +1,4 @@
-import type { PresentedEntity, SceneEntity,Vec3 } from '../contracts/worldV2';
+import type { PresentedEntity, SceneEntity,Vec3 } from '../contracts/world';
 import { world } from '../theme/tokens';
 import {collectionEntryFace} from './collectionFace';
 import {frameFace} from './frameFace';

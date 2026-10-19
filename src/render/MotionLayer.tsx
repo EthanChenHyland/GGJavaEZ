@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import { Box3, Color, Frustum, InstancedBufferAttribute, InstancedBufferGeometry, InstancedMesh, Matrix4, MeshBasicMaterial, Object3D, ShaderMaterial, SphereGeometry, Vector3 } from 'three'
-import type { SceneModel, PresentationPlan } from '../contracts/worldV2'
+import type { SceneModel, PresentationPlan } from '../contracts/world'
 import type { TraceDocument } from '../contracts/runtime'
 import type { TimelineStore } from '../timeline/timelineStore'
 import { useQualityStore } from './quality/qualityStore'

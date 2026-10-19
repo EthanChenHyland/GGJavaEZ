@@ -1,4 +1,4 @@
-import type { Evidence, SceneExceptionPath, Vec3 } from '../contracts/worldV2';
+import type { Evidence, SceneExceptionPath, Vec3 } from '../contracts/world';
 import type { RecordingStatus } from '../instrumentation/contracts';
 import { typographyV4, world } from '../theme/tokens';
 import { localFontText, textAdvance, type FontWeight } from './text/textSystem';

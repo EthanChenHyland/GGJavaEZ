@@ -1,5 +1,5 @@
 import {Vector3} from 'three'
-import type {PresentedCurve,Vec3,WorldAnchor} from '../contracts/worldV2'
+import type {PresentedCurve,Vec3,WorldAnchor} from '../contracts/world'
 import type {Rect} from '../shell/shellLayout'
 import {camera as tokens} from '../theme/tokens'
 import {cameraPosition,fitToSafeFrame,projectionCamera,type OrbitPose,type Size} from './projection'

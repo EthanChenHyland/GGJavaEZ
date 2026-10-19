@@ -1,4 +1,4 @@
-import type {PresentedEntity,SceneEntity,Vec3,WorldAnchor} from '../contracts/worldV2'
+import type {PresentedEntity,SceneEntity,Vec3,WorldAnchor} from '../contracts/world'
 import {faceRows,faceRowPort} from './faceRows'
 import {collectionEntryFace} from './collectionFace'
 

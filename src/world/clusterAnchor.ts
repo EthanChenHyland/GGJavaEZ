@@ -1,4 +1,4 @@
-import type {Vec3,WorldAnchor} from '../contracts/worldV2'
+import type {Vec3,WorldAnchor} from '../contracts/world'
 
 /** One structural cuboid envelope shared by routing, drawing and picking.
  * The canonical representative supplies identity/position, never runtime ports.

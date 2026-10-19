@@ -12,7 +12,7 @@ import {focusFraming} from '../camera/focusFraming'
 import {constrainCameraPose,zoomPose} from '../camera/cameraConstraints'
 import {camera as tokens} from '../theme/tokens'
 import type {Selection} from '../contracts/interaction'
-import type {SceneModel} from '../contracts/worldV2'
+import type {SceneModel} from '../contracts/world'
 const trace=loadPersonTrace(),projection=projectTrace(trace),layout=projection.layout
 const sceneAt=projection.project
 const cut=(scene:SceneModel,selection:Selection=null)=>planPresentation({scene,layout,detailLevel:'CLOSE',selection,focusTargetId:null,trace:{active:false,scope:'relevant'}})

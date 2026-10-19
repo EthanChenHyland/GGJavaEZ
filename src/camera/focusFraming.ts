@@ -1,5 +1,5 @@
 import { Vector3 } from 'three';
-import type { Vec3, WorldAnchor } from '../contracts/worldV2';
+import type { Vec3, WorldAnchor } from '../contracts/world';
 import type { Rect } from '../shell/shellLayout';
 import { frontFace, projectionCamera, screenPoint, type OrbitPose, type Size } from './projection';
 

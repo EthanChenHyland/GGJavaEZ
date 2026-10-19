@@ -1,6 +1,6 @@
 import { arrayElementSlotId, type ObjectId, type SlotId } from '../contracts/runtime'
-import type { ArrayWindow, ArrayIndexReason, ArrayEllipsis, ArrayWindowPick, ArrayWindowSlot, Vec3, WorldAnchor } from '../contracts/worldV2'
-export type { ArrayWindow, ArrayIndexReason, ArrayEllipsis, ArrayWindowPick, ArrayWindowSlot } from '../contracts/worldV2'
+import type { ArrayWindow, ArrayIndexReason, ArrayEllipsis, ArrayWindowPick, ArrayWindowSlot, Vec3, WorldAnchor } from '../contracts/world'
+export type { ArrayWindow, ArrayIndexReason, ArrayEllipsis, ArrayWindowPick, ArrayWindowSlot } from '../contracts/world'
 import { world } from '../theme/tokens'
 
 export interface ArrayWindowInput {

@@ -1,5 +1,5 @@
 import type {Selection} from '../contracts/interaction'
-import type {PresentationPlan,SceneModel,Vec3} from '../contracts/worldV2'
+import type {PresentationPlan,SceneModel,Vec3} from '../contracts/world'
 export interface AccessibleEntity {id:string;label:string;selection:NonNullable<Selection>;x:number;y:number}
 export interface Projection {x:number;y:number;visible:boolean}
 /** Exactly the actual pickable geometry in the viewport, never a synthetic test inventory. */

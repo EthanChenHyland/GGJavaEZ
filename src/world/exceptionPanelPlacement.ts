@@ -1,4 +1,4 @@
-import type {SceneModel,PresentationPlan,WorldAnchor} from '../contracts/worldV2'
+import type {SceneModel,PresentationPlan,WorldAnchor} from '../contracts/world'
 import {buildExceptionPanelModel,layoutExceptionPanel} from '../render/exceptionPanelModel'
 /** Structural evidence beside the actual throwing frame, away from +X heap.
  * This never reserves, moves or creates a runtime identity. */

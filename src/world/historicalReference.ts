@@ -1,4 +1,4 @@
-import type {SceneReference,SceneReferenceBinding} from '../contracts/worldV2'
+import type {SceneReference,SceneReferenceBinding} from '../contracts/world'
 const catalogs=new WeakMap<readonly SceneReferenceBinding[],{references:readonly SceneReference[];lifetimeExcluded:readonly {id:string;endKind:SceneReferenceBinding['endKind']}[]}>()
 
 /** Retirement and missing capture are queryable history, not proof of an

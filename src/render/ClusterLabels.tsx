@@ -1,4 +1,4 @@
-import type {PresentedCluster} from '../contracts/worldV2'
+import type {PresentedCluster} from '../contracts/world'
 import {color} from '../theme/tokens'
 import {WorldText} from './FaceText'
 import {fitWorldText,textAdvance} from './text/textSystem'

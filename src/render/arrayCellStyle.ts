@@ -1,4 +1,4 @@
-import type {ArrayWindow,PresentedEntity} from '../contracts/worldV2'
+import type {ArrayWindow,PresentedEntity} from '../contracts/world'
 
 /** Whole-array emphasis includes its cells; a physical cell selection/Focus
  * emphasizes that index only. Access and required-flow pins stay distinct. */

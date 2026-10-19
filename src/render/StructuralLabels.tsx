@@ -1,7 +1,7 @@
 import {useMemo,useRef} from 'react'
 import {useFrame,useThree} from '@react-three/fiber'
 import {Group,PerspectiveCamera} from 'three'
-import type {PresentationPlan,SceneModel} from '../contracts/worldV2'
+import type {PresentationPlan,SceneModel} from '../contracts/world'
 import type {Rect} from '../shell/shellLayout'
 import {color} from '../theme/tokens'
 import {ClusterLabels,clusterLabelParts,clusterLabelNames} from './ClusterLabels'

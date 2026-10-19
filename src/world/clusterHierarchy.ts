@@ -1,4 +1,4 @@
-import type {ClusterKey,LayoutState,SceneModel,Vec3,WorldAnchor} from '../contracts/worldV2'
+import type {ClusterKey,LayoutState,SceneModel,Vec3,WorldAnchor} from '../contracts/world'
 import {clusterAnchor,clusterSize} from './clusterAnchor'
 import {createOccupancy} from './occupancy'
 import {recordedOwnership} from './recordedOwnership'

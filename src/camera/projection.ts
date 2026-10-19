@@ -1,8 +1,8 @@
 import { PerspectiveCamera, Vector3 } from 'three';
-import type { Vec3, WorldAnchor } from '../contracts/worldV2';
+import type { Vec3, WorldAnchor } from '../contracts/world';
 import type { Rect } from '../shell/shellLayout';
 import { camera as tokens, detailLevel as bands } from '../theme/tokens';
-import type { DetailLevel, SceneModel } from '../contracts/worldV2';
+import type { DetailLevel, SceneModel } from '../contracts/world';
 export interface OrbitPose {
     target: Vec3;
     distance: number;

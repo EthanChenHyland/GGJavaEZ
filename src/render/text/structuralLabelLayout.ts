@@ -1,5 +1,5 @@
 import {PerspectiveCamera,Vector3} from 'three'
-import type {Vec3,WorldAnchor} from '../../contracts/worldV2'
+import type {Vec3,WorldAnchor} from '../../contracts/world'
 import type {Rect} from '../../shell/shellLayout'
 import type {Size} from '../../camera/projection'
 import {fitWorldText,projectedPlaneFontPixels,textAdvance} from './textSystem'

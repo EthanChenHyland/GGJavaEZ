@@ -1,4 +1,4 @@
-import type { LayoutState, PresentationPlan, SceneModel, Vec3 } from '../contracts/worldV2'
+import type { LayoutState, PresentationPlan, SceneModel, Vec3 } from '../contracts/world'
 import type { QualityTier } from './quality/qualityStore'
 
 /** Floor-specific values from corrected design §19.5 / task 8.2. */

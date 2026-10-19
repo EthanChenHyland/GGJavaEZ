@@ -1,5 +1,5 @@
 import { referenceIdForSlot, type RuntimeValue } from '../contracts/runtime'
-import type { SceneReference, SceneReferenceBinding } from '../contracts/worldV2'
+import type { SceneReference, SceneReferenceBinding } from '../contracts/world'
 
 /** Root-proved normalized slot observations, not raw events or inferred Java operations. */
 export interface BindingObservation {

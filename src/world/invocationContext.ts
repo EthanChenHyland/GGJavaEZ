@@ -1,4 +1,4 @@
-import type {SceneModel,Vec3} from '../contracts/worldV2'
+import type {SceneModel,Vec3} from '../contracts/world'
 
 /** Current/deepest invocation plus three recorded caller ancestors; completed
  * worlds use the most recently entered invocation. No synthetic parent chain. */

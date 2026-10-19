@@ -3,7 +3,7 @@ import {loadArrayTrace,loadPersonTrace} from '../examples/traces'
 import {seek} from '../runtime'
 import {createLayoutEngine} from '../world/layoutEngine'
 import {createSceneProjector} from '../world/sceneProjector'
-import type {SceneEntity,Vec3} from '../contracts/worldV2'
+import type {SceneEntity,Vec3} from '../contracts/world'
 import type {TraceDocument} from '../contracts/runtime'
 import {createMemberVisibility} from './memberVisibility'
 

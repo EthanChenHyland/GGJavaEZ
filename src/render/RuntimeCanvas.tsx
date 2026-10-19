@@ -2,7 +2,7 @@ import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Environment, Lightformer } from '@react-three/drei';
 import type { Selection } from '../contracts/interaction';
-import type { LayoutState, PresentationPlan, SceneModel } from '../contracts/worldV2';
+import type { LayoutState, PresentationPlan, SceneModel } from '../contracts/world';
 import type { Rect } from '../shell/shellLayout';
 import { CameraRig, cameraReadiness, type CameraInput } from '../camera/CameraRig';
 import { color } from '../theme/tokens';

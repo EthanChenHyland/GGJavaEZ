@@ -1,7 +1,7 @@
 import type { SourceLocation, TraceDocument, TraceEvent,RuntimeState } from '../../contracts/runtime'
 import type { DebugPause,DebugSession } from '../../debugger/contracts'
 import type { InstrumentationSourceManifest } from '../../instrumentation/normalize'
-import type { SceneModel } from '../../contracts/worldV2'
+import type { SceneModel } from '../../contracts/world'
 import { arrayCellTarget } from '../../world/arrayCellTarget'
 export interface SourceFileProof {sessionId:string;fileId:string;path:string;content:string}
 

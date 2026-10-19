@@ -1,5 +1,5 @@
 import type {RuntimeLibrarySummary,TraceEvent} from '../contracts/runtime'
-import type {ClusterMembership,PlacementInfo} from '../contracts/worldV2'
+import type {ClusterMembership,PlacementInfo} from '../contracts/world'
 
 /** Index only recorded relationships. A collection preview replaces the prior
  * captured membership; omitted entries are unknown, never retained as current.

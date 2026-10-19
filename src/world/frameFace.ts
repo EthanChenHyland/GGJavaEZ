@@ -1,4 +1,4 @@
-import type { SceneFrame, SceneRow } from '../contracts/worldV2'
+import type { SceneFrame, SceneRow } from '../contracts/world'
 import { world } from '../theme/tokens'
 export interface FrameDivider { beforeSlotId: string; label: string; depth: number; offset: number }
 export interface FrameFace { dividers: readonly FrameDivider[]; offsets: ReadonlyMap<string, number>; extraHeight: number }

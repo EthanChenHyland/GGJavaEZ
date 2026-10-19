@@ -1,5 +1,5 @@
 import type {RuntimeState} from '../contracts/runtime'
-import type {SceneModel,SceneReference} from '../contracts/worldV2'
+import type {SceneModel,SceneReference} from '../contracts/world'
 import type {Selection} from '../contracts/interaction'
 import {VirtualList} from '../shell/VirtualList'
 import {referenceInspection} from './referenceInspection'

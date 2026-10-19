@@ -1,7 +1,7 @@
 import {expect,it} from 'vitest'
 import {loadPersonTrace} from '../examples/traces'
 import {seek} from '../runtime'
-import type {SceneModel} from '../contracts/worldV2'
+import type {SceneModel} from '../contracts/world'
 import type {TraceDocument} from '../contracts/runtime'
 import {createLayoutEngine} from './layoutEngine'
 import {createSceneProjector,type ProjectionContext} from './sceneProjector'

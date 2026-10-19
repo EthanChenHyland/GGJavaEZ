@@ -1,5 +1,5 @@
 import {expect,it} from 'vitest'
-import type {Evidence,SceneExceptionPath} from '../contracts/worldV2'
+import type {Evidence,SceneExceptionPath} from '../contracts/world'
 import {buildExceptionPanelModel,layoutExceptionPanel,wrapExceptionPanelText} from './exceptionPanelModel'
 import {localFontText,textAdvance} from './text/textSystem'
 const observed:Evidence={kind:'observed',introducedSeq:2,changedSeq:2,eventIds:['throw']}

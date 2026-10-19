@@ -1,6 +1,6 @@
 import {create} from 'zustand'
 import type {Selection} from '../contracts/interaction'
-import type {TraceScope} from '../contracts/worldV2'
+import type {TraceScope} from '../contracts/world'
 import type {OrbitPose} from '../camera/projection'
 import type {NavigationMode} from '../camera/cameraStore'
 export interface InteractionState {

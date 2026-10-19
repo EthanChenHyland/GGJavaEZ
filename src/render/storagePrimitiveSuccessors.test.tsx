@@ -3,7 +3,7 @@
 import {renderToStaticMarkup} from 'react-dom/server'
 import {afterEach,beforeEach,expect,it,vi} from 'vitest'
 import type {RuntimeSlot,TraceDocument,TraceEvent} from '../contracts/runtime'
-import type {SceneEntity,DetailLevel,SceneModel,PresentationPlan} from '../contracts/worldV2'
+import type {SceneEntity,DetailLevel,SceneModel,PresentationPlan} from '../contracts/world'
 import {projectTrace} from '../testing/projectTrace'
 import {planPresentation} from '../world/presentationPlanner'
 import {faceRows,faceRowPort} from '../world/faceRows'

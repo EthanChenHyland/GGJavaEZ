@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { Box3, Vector3 } from 'three'
 import type { TraceDocument, TraceEvent, RuntimeSlot } from '../contracts/runtime'
-import type { Vec3, WorldAnchor } from '../contracts/worldV2'
+import type { Vec3, WorldAnchor } from '../contracts/world'
 import { seek } from '../runtime'
 import { createFlowCatalog } from '../world/flowCatalog'
 import { projectTrace } from '../testing/projectTrace'

@@ -1,6 +1,6 @@
 import {expect,it} from 'vitest'
 import fc from 'fast-check'
-import type {Vec3,WorldAnchor} from '../contracts/worldV2'
+import type {Vec3,WorldAnchor} from '../contracts/world'
 import {createConnectorRouter} from './connectorRouter'
 import {connectorClearsFaces} from './connectorRouting'
 const anchor=(id:string,position:Vec3):WorldAnchor=>({entityId:id,position,size:[4,3,1.7],region:'heap',ports:{},bodyPort:position})

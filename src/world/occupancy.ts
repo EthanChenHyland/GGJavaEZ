@@ -1,4 +1,4 @@
-import type { Vec3, WorldAnchor } from '../contracts/worldV2';
+import type { Vec3, WorldAnchor } from '../contracts/world';
 /** Region-local spatial hash; collision work depends on nearby reservations. */
 export function createOccupancy(cellSize = 4.8) {
     const buckets = new Map<string, Set<WorldAnchor>>();

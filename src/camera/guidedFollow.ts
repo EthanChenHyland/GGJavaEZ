@@ -1,5 +1,5 @@
 import type {TraceEvent} from '../contracts/runtime'
-import type {PresentationPlan,SceneModel,Vec3} from '../contracts/worldV2'
+import type {PresentationPlan,SceneModel,Vec3} from '../contracts/world'
 import type {Rect} from '../shell/shellLayout'
 import {camera as tokens} from '../theme/tokens'
 import {anchorCorners} from '../world/presentationPlanner'

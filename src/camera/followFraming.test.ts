@@ -1,7 +1,7 @@
 import {expect,it} from 'vitest'
 import {followFraming} from './followFraming'
 import {projectionCamera,screenPoint,type OrbitPose} from './projection'
-import type {Vec3} from '../contracts/worldV2'
+import type {Vec3} from '../contracts/world'
 const viewport={width:1440,height:900},safe={x:450,y:100,width:850,height:650}
 const pose:OrbitPose={target:[0,0,0],distance:24,yawDeg:8,pitchDeg:-13}
 it('leaves an already included subject untouched',()=>{expect(followFraming([[0,0,0]],pose,safe,viewport)).toBeNull()})

@@ -1,5 +1,5 @@
 import type { RuntimeObject, RuntimeValue } from '../contracts/runtime'
-import type { ValueObservation, ValueText } from '../contracts/worldV2'
+import type { ValueObservation, ValueText } from '../contracts/world'
 import { displayType, type DisplayTypeOptions } from './displayType'
 
 export interface ValueTextOptions {

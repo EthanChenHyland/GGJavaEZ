@@ -1,7 +1,7 @@
 import { expect, it } from 'vitest'
 import fc from 'fast-check'
 import type { RuntimeLibrarySummary, RuntimeObject, RuntimeValue } from '../contracts/runtime'
-import type { WorldAnchor } from '../contracts/worldV2'
+import type { WorldAnchor } from '../contracts/world'
 import { collectionSummary } from './collectionSummary'
 import { valueText } from './valueText'
 

@@ -1,6 +1,6 @@
 import type {AppState} from '../../src/state/appState'
 import type {Rect} from '../../src/shell/shellLayout'
-import type {SceneModel} from '../../src/contracts/worldV2'
+import type {SceneModel} from '../../src/contracts/world'
 import type {WorldProjection} from '../../src/qa/worldProjection'
 export interface CaptureMeasurements {
  viewport:{width:number;height:number};stateId:string;app:Pick<AppState,'execution'|'overlays'>;scene:Pick<SceneModel,'entities'>

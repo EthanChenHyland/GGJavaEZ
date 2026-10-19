@@ -1,6 +1,6 @@
 import {expect,it} from 'vitest'
 import fc from 'fast-check'
-import type {PresentedCurve,Vec3,WorldAnchor} from '../contracts/worldV2'
+import type {PresentedCurve,Vec3,WorldAnchor} from '../contracts/world'
 import {anchorCorners} from '../world/presentationPlanner'
 import {projectionCamera,screenPoint} from './projection'
 import {followPathFraming,sampleFlowPath} from './followPathFraming'
