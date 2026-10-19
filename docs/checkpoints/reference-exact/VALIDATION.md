@@ -215,3 +215,8 @@ Complete frozen confirmation on pushed9e2a612a3d6fa6ba82b33a2862d9a77c4b8eab6f e
 ## Shared Shell surfaces — 2026-10-19
 
 Defaults2103passed/70explicit opt-in skips,225files,184.54seconds,exit0. Focused87/87 and final affected native12/12 pass; earlier failures and the independently reproduced40px narrow chooser defect remain recorded. Build/typecheck/browser TS/lint/reference/protected guards pass; main71763gzip, closures72191/663441 diagnostic bytes. Eight original-resolution UI captures are root-reviewed with populated World approval stillOPEN. No new complete native, formal capture, Dense or memory approval is inferred. [Evidence, per-case reconciliation and scope](migration/shell-surfaces.md). Whole A–G acceptance remains open.
+
+
+## Native Java projects — 2026-10-19
+
+Five migrated original plain/Maven/Gradle/main-target/broken-POM cases pass5/5,60.82seconds,zero skips/flaky,with six distinct actual JVM sessions. Strict browser TS passes. Production is unchanged frombd30ecd; no full-unit/build rerun is claimed. [Per-case reconciliation and evidence](migration/java-project-workflows.md). Whole A–G acceptance remains open.

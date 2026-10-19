@@ -2,15 +2,17 @@ import { expect, test, type APIRequestContext, type Page } from '@playwright/tes
 import { randomUUID } from 'node:crypto'
 import { readFile, readdir } from 'node:fs/promises'
 import { join, relative, resolve } from 'node:path'
-import type { ExecutionSession } from '../src/execution/contracts'
-import type { BuildResult } from '../src/ide/contracts'
-import type { JavaProject } from '../src/ide/javaProject'
-import { normalizeTrace } from '../src/instrumentation/normalize'
+import type { ExecutionSession } from '../../src/execution/contracts'
+import type { BuildResult } from '../../src/ide/contracts'
+import type { JavaProject } from '../../src/ide/javaProject'
+import { normalizeTrace } from '../../src/instrumentation/normalize'
 
 // Real bridge, JDT LS, build tools and JVM. Run only in the root's serialized QA window.
 test.describe.configure({ timeout: 180_000, mode: 'serial' })
 const fixtureRoot = resolve('fixtures/projects-m9')
 const imported = new Set<string>()
+const browserFailures=new WeakMap<Page,string[]>()
+test.beforeEach(({page})=>{const errors:string[]=[];browserFailures.set(page,errors);page.on('pageerror',error=>errors.push(error.message))})
 
 type ImportFile = { path: string; content: string; encoding?: 'base64' }
 async function fixtureFiles(name: string): Promise<ImportFile[]> {
@@ -42,7 +44,7 @@ async function importFixture(request: APIRequestContext, name: string) {
 }
 async function openProject(page: Page, id: string) {
   await page.addInitScript((projectId) => localStorage.setItem('ggjavaez:project', projectId), id)
-  await page.goto('/ide')
+  await page.goto('/?qa=1')
   await expect(page.locator('.monaco-editor')).toBeVisible()
   await expect(page.getByRole('button', { name: 'Run', exact: true })).toBeEnabled()
   await expect(page.locator('.ide-project-status')).toHaveCount(0)
@@ -81,8 +83,12 @@ async function semantic<T>(request: APIRequestContext, id: string, method: strin
   return response.json() as Promise<T>
 }
 async function openFile(page: Page, path: string) {
-  await page.locator('.ide-tree-name').filter({ hasText: path.split('/').at(-1)! }).last().click()
+  await page.keyboard.press('ControlOrMeta+p')
+  const picker=page.getByRole('dialog',{name:'Quick Open',exact:true})
+  await picker.getByRole('combobox',{name:'Search project files',exact:true}).fill(path)
+  await picker.getByRole('option').filter({hasText:path}).first().click()
   await expect(page.locator('.ide-tab.is-active')).toContainText(path.split('/').at(-1)!)
+  await expect.poll(()=>page.evaluate(()=>window.__ggjavaezQA!.source()?.modelUri)).toContain('/'+path)
 }
 async function clickWord(page: Page, lineText: string, word: string) {
   const line = page.locator('.monaco-editor .view-line').filter({ hasText: lineText }).first()
@@ -144,6 +150,7 @@ async function runFromUI(page: Page, request: APIRequestContext, id: string) {
   expect(completed.id).toBe(started.id)
   expect(completed.build?.success, completed.build?.rawOutput).toBe(true)
   expect(completed.exitCode).toBe(0)
+  test.info().annotations.push({type:'actual-jvm-session',description:completed.id})
   return completed
 }
 async function debugFromUI(page: Page, id: string) {
@@ -154,6 +161,7 @@ async function debugFromUI(page: Page, id: string) {
   expect(response.request().postDataJSON()).toMatchObject({ kind: 'debug' })
   const started = await response.json() as ExecutionSession
   expect(started.projectId).toBe(id)
+  test.info().annotations.push({type:'actual-jvm-session',description:started.id})
   return started
 }
 async function paused(request: APIRequestContext, expected: Partial<NonNullable<ExecutionSession['pause']>>, after = -1) {
@@ -167,7 +175,8 @@ async function paused(request: APIRequestContext, expected: Partial<NonNullable<
   return (await (await request.get('/api/execution/current')).json()) as ExecutionSession
 }
 
-test.afterEach(async ({ request }) => {
+test.afterEach(async ({ request,page }) => {
+  expect(browserFailures.get(page)??[]).toEqual([])
   const response = await request.get('/api/execution/current')
   if (response.ok()) {
     const session = await response.json() as ExecutionSession | null
@@ -188,7 +197,7 @@ test('plain Java stays one-step build, visualizing Run and Debug', async ({ page
   expect(build.mainClasses.length).toBeGreaterThan(0)
   const capture = await runFromUI(page, request, id)
   expect(capture.rawEvents.length).toBeGreaterThan(0)
-  await expect(page.locator('.spatial-view canvas')).toBeVisible()
+  await expect(page.locator('.world-canvas canvas')).toBeVisible()
   const debug = await debugFromUI(page, id)
   expect((await paused(request, { reason: 'entry' })).id).toBe(debug.id)
   await expect(page.locator('.debug-paused-line')).toBeVisible()
@@ -250,11 +259,11 @@ test('Maven people app resolves semantic Java and cross-package execution', asyn
   expect(capture.terminalStatus).toBe('complete')
   expect(capture.sourceManifest.classes.some((entry) => entry.className === 'com.example.model.Person' && entry.fileId === person.path)).toBe(true)
   expect(capture.rawEvents.some((event) => event.className === 'com.example.service.PersonService')).toBe(true)
-  await expect(page.locator('.spatial-view canvas')).toBeVisible()
+  await expect(page.locator('.world-canvas canvas')).toBeVisible()
   const replay = normalizeTrace(capture.rawEvents, capture.sourceManifest, { status: capture.terminalStatus!, exitCode: capture.exitCode, diagnostic: capture.diagnostic })
   const personStep = replay.trace.events.findIndex((event) => event.source?.fileId === person.path && event.source.line > 0)
   expect(personStep).toBeGreaterThanOrEqual(0)
-  await page.getByRole('slider', { name: 'Scrub execution' }).fill(String(personStep + 1))
+  await page.getByRole('slider', { name: 'Recorded execution position' }).fill(String(personStep + 1))
   await expect(page.locator('.ide-tab.is-active')).toContainText('Person.java')
   await expect(page.locator('.executing-line')).toBeVisible()
 
@@ -308,13 +317,18 @@ test('multiple mains and program arguments use one selected launch target', asyn
   await dialog.getByLabel('Main class').selectOption(target)
   await dialog.getByLabel('Program arguments').fill('["M9_TARGET_ARG"]')
   await dialog.getByRole('button', { name: 'Save configuration' }).click()
-  await expect(page.getByRole('combobox', { name: 'Main class' })).toHaveValue(target)
+  // Reopening the real Launch dialog proves the saved selection; no persistent main-class combobox remains.
+  await paletteCommand(page,'workbench.launch')
+  await expect(page.getByRole('dialog',{name:'Launch configuration'}).getByLabel('Main class',{exact:true})).toHaveValue(target)
+  await page.screenshot({path:'.ggjavaez/qa/reference-exact/shell-launch-selected-1440x900.png'})
+  await page.keyboard.press('Escape')
   const pending = page.waitForResponse((response) => new URL(response.url()).pathname === `/api/projects/${id}/execution` && response.request().method() === 'POST')
   await page.getByRole('button', { name: 'Run', exact: true }).click()
   const response = await pending
   expect(response.ok(), await response.text()).toBe(true)
   expect(response.request().postDataJSON()).toMatchObject({ kind: 'run', mainClass: target, programArgs: ['M9_TARGET_ARG'] })
   const started = await response.json() as ExecutionSession
+  test.info().annotations.push({type:'actual-jvm-session',description:started.id})
   const capture = await waitExecution(request, id)
   expect(capture.id).toBe(started.id)
   expect(capture.exitCode).toBe(0)
