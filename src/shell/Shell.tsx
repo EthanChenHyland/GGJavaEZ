@@ -7,12 +7,15 @@ import { ErrorExplorer } from '../debugger/ErrorExplorer'
 import { bridge } from '../ide/bridge'
 import { ideCommandDefinitions,type IdeCommandId } from '../ide/commands'
 import { tabMenuCommands } from '../ide/contextMenus'
-import { LaunchDialog } from '../ide/LaunchDialog'
+import { LaunchConfigDialog } from './dialogs/LaunchConfigDialog'
+import {PathInputDialog} from './dialogs/PathInputDialog'
+import {DeleteConfirmDialog} from './dialogs/DeleteConfirmDialog'
+import {UnsavedChangesDialog} from './dialogs/UnsavedChangesDialog'
 import { ProblemsPanel } from '../ide/ProblemsPanel'
 import { ProjectExplorer } from '../ide/ProjectExplorer'
 import { formatShortcut,ideShortcuts } from '../ide/shortcuts'
 import { SymbolSearch } from '../ide/SymbolSearch'
-import { WorkspaceMenu } from '../ide/WorkspaceMenu'
+import { CommandMenu } from './dialogs/CommandMenu'
 import { WorkspacePicker } from '../ide/WorkspacePicker'
 import { useInteractionStore } from '../interaction/interactionStore'
 import { useAppState } from '../state/useAppState'
@@ -33,8 +36,9 @@ const idleTrace: TraceDocument = { schemaVersion: 2, demoId: 'ide:ready', source
 const EditableJavaEditor=lazy(async()=>{await loadJavaEditorRuntime();const module=await import('../ide/EditableJavaEditor');return{default:module.EditableJavaEditor}})
 
 
-import { filename,trapDialogTab,useWorkspace } from '../workspace/useWorkspace'
+import { filename,useWorkspace } from '../workspace/useWorkspace'
 import './shell.css'
+import './explorer.css'
 export interface ShellProps { recording?: TraceDocument; recordingChoices?: React.ReactNode }
 export function Shell({ recording, recordingChoices }: ShellProps) {
   const workspace = useWorkspace(!!recording)
@@ -72,7 +76,7 @@ export function Shell({ recording, recordingChoices }: ShellProps) {
   const readyTop=Math.max(layout.safeFrame.y+viewport.height*.08,layout.debugBar?layout.debugBar.y+layout.debugBar.height+12:layout.header.height+12)
   const geometry = { ...rectangle('header', layout.header), ...rectangle('source', layout.source), ...rectangle('timeline', layout.timeDock), ...rectangle('drawer', layout.dockDrawer), ...rectangle('inspector', layout.inspector), ...rectangle('explorer', layout.explorer), ...rectangle('debug', layout.debugBar), '--source-heading-inset':layout.sourceHeadingInset+'px', '--ready-x':(readyLeft+(readyRight-readyLeft-readyWidth)/2)+'px','--ready-y':readyTop+'px','--ready-width':readyWidth+'px' }
 
-const { projects, projectId, tree, tabs, active, setActive, jdk, setJdk, jdkInput, setJdkInput, showJdk, build, execution, timelineLens, setTimelineLens, tool, setTool, bottomPinned, inspectorHidden, bottomOpen, setBottomOpen, picker, setPicker, tabMenu, setTabMenu, input, setInput, notice, setNotice, busy, pending, projectDialog, setProjectDialog, nav, mainClass, setMainClass, javaProject, projectStatus, launch, setLaunch, showLaunch, setShowLaunch, showSymbols, setShowSymbols, languageClient, languageSnapshot, visualization, runtimeExpanded, runtime, runtimeSelection, runtimeNavigation, recordedView, setRecordedView, mappedExecutingSource, setCwdInvalid, commands, setBottomHeight, collapsed, platform, shellRef, contentRef, upperRef, importRef, confirmRef, projectDialogRef, activeRef, launchRef, mainClassRef, cwdInvalidRef, displayedBreakpoints, activeTab, entries, diagnostics, languageProblems, problems, exception, debugSession, recordingIsCurrent, recordedPhase, traceStale, fail, refreshTree, switchProject, edit, commandContext, requestDecision, resolveDecision, invoke, closeTab, action, navigateRuntime, handleRuntimeChange, toggleBreakpoint, removeBreakpoint, handleExecutingSource, sendInput, newEntry, cancelProjectDialog, submitProjectDialog, importFiles, openDiagnostic, divider, toggleTreeEntry, treeAction, projectOptions, pickerItems, choosePicker, showTabMenu, activeExecution, availableTools, targets } = workspace
+const { projects, projectId, tree, tabs, active, setActive, jdk, setJdk, jdkInput, setJdkInput, showJdk, build, execution, timelineLens, setTimelineLens, tool, setTool, bottomPinned, inspectorHidden, bottomOpen, setBottomOpen, picker, setPicker, tabMenu, setTabMenu, input, setInput, notice, setNotice, busy, pending, projectDialog, setProjectDialog, nav, mainClass, setMainClass, javaProject, projectStatus, launch, setLaunch, showLaunch, setShowLaunch, showSymbols, setShowSymbols, languageClient, languageSnapshot, visualization, runtimeExpanded, runtime, runtimeSelection, runtimeNavigation, recordedView, setRecordedView, mappedExecutingSource, setCwdInvalid, commands, setBottomHeight, collapsed, platform, shellRef, contentRef, upperRef, importRef, activeRef, launchRef, mainClassRef, cwdInvalidRef, displayedBreakpoints, activeTab, entries, diagnostics, languageProblems, problems, exception, debugSession, recordingIsCurrent, recordedPhase, traceStale, fail, refreshTree, switchProject, edit, commandContext, requestDecision, resolveDecision, invoke, closeTab, action, navigateRuntime, handleRuntimeChange, toggleBreakpoint, removeBreakpoint, handleExecutingSource, sendInput, newEntry, cancelProjectDialog, submitProjectDialog, importFiles, openDiagnostic, divider, toggleTreeEntry, treeAction, projectOptions, pickerItems, choosePicker, showTabMenu, activeExecution, availableTools, targets } = workspace
 const pause=recording?null:sourcePauseFor(debugSession,visualization?.sessionId??null)
 const pausedAtHead=!!pause&&(!visualization||runtime?.cursor===visualization.trace.events.length)
 const sourceMark=focusTargetId?'focus':pausedAtHead?'paused':recording||runtime&&visualization&&runtime.cursor<visualization.trace.events.length?'history':'running'
@@ -159,21 +163,16 @@ return <div className={`shell ide-shell ${debugSession&&activeExecution?'shell--
       <details className="ide-shortcuts"><summary>Shortcuts</summary><div>{Object.values(ideCommandDefinitions).filter((definition) => definition.bindings.length).map((definition) => <p key={definition.id}><kbd>{formatShortcut(definition.bindings[0], platform)}</kbd> {definition.title}</p>)}<p>F9 Toggle breakpoint · F1 Editor commands</p></div></details>
 
     </footer>
-    {tabMenu && <WorkspaceMenu label={`Tab actions for ${tabMenu.context.target?.path}`} x={tabMenu.x} y={tabMenu.y}
+    {tabMenu && <CommandMenu label={`Tab actions for ${tabMenu.context.target?.path}`} x={tabMenu.x} y={tabMenu.y}
       items={tabMenuCommands.map((id) => ({ id, label: id === 'resource.rename' ? 'Rename' : ideCommandDefinitions[id].title, ...(busy ? { enabled: false as const, reason: 'Wait for the current operation' } : commands.availability(id, tabMenu.context)) }))}
       onClose={() => setTabMenu(null)} onChoose={(id) => { const context = tabMenu.context; setTabMenu(null); setNotice(''); requestAnimationFrame(() => { void commands.execute(id as IdeCommandId, context, {}).catch(fail) }) }}/>}
     {picker && <WorkspacePicker key={picker.mode} mode={picker.mode} items={pickerItems} onClose={() => setPicker(null)} onChoose={choosePicker}/>}
-    {showLaunch && <LaunchDialog value={{ ...launch, mainClass }} targets={targets} onClose={() => setShowLaunch(false)} onSave={(configuration) => { launchRef.current = configuration; setLaunch(configuration); mainClassRef.current = configuration.mainClass; setMainClass(configuration.mainClass); cwdInvalidRef.current = false; setCwdInvalid(false); setShowLaunch(false) }}/>}
+    {showLaunch && <LaunchConfigDialog value={{ ...launch, mainClass }} targets={targets} onClose={() => setShowLaunch(false)} onSave={(configuration) => { launchRef.current = configuration; setLaunch(configuration); mainClassRef.current = configuration.mainClass; setMainClass(configuration.mainClass); cwdInvalidRef.current = false; setCwdInvalid(false); setShowLaunch(false) }}/>}
     {showSymbols && <SymbolSearch client={languageClient} onClose={() => setShowSymbols(false)} onOpen={(location) => commands.execute('file.open', commandContext(location.path), { location }).then(() => {})}/>}
-    {projectDialog && <div className="ide-confirm-backdrop"><form className="ide-confirm ide-project-dialog" ref={projectDialogRef} role="dialog" aria-modal="true" aria-labelledby="ide-project-dialog-title" onSubmit={(event) => { event.preventDefault(); void submitProjectDialog() }} onKeyDown={(event) => { if (event.key === 'Escape') { event.preventDefault(); cancelProjectDialog() } else trapDialogTab(event) }}>
-      <h2 id="ide-project-dialog-title">{projectDialog.kind === 'class' ? 'New Java Class' : projectDialog.kind === 'file' ? 'New File' : projectDialog.kind === 'folder' ? 'New Folder' : projectDialog.kind === 'rename' ? 'Rename' : projectDialog.kind === 'delete' ? 'Delete' : projectDialog.kind === 'open' ? 'Open File' : 'New Project'}</h2>
-      {projectDialog.kind === 'delete' ? <p>Delete <strong>{projectDialog.path}</strong> from this project?{!!projectDialog.dirtyPaths?.length && <> {projectDialog.dirtyPaths.length} unsaved files will be discarded unless saved first.</>}</p> : <label>{projectDialog.kind === 'project' ? 'Project name' : projectDialog.kind === 'class' ? 'Class name' : 'Path relative to project root'}<input value={projectDialog.value} onChange={(event) => setProjectDialog({ ...projectDialog, value: event.target.value })} spellCheck={false} required /></label>}
-      {notice && <p className="ide-dialog-notice" role="alert">{notice}</p>}
-      <div><button type="button" onClick={cancelProjectDialog}>Cancel</button><>{projectDialog.kind === 'delete' && !!projectDialog.dirtyPaths?.length && <button type="button" disabled={busy} onClick={() => { const resolve = projectDialog.resolveDelete; setProjectDialog(null); resolve?.('save') }}>Save and delete</button>}</><button type="submit" className="ide-primary" disabled={busy}>{projectDialog.kind === 'delete' ? 'Delete' : projectDialog.kind === 'rename' ? 'Rename' : projectDialog.kind === 'open' ? 'Open' : 'Create'}</button></div>
-    </form></div>}
-    {pending && <div className="ide-confirm-backdrop"><div className="ide-confirm" ref={confirmRef} onKeyDown={(event) => {
-      if (event.key === 'Escape') { event.preventDefault(); void resolveDecision('cancel') }
-      else trapDialogTab(event)
-    }} role="dialog" aria-modal="true" aria-labelledby="ide-confirm-title"><h2 id="ide-confirm-title">Unsaved changes</h2><p>Save {pending.paths.length} changed {pending.paths.length === 1 ? 'file' : 'files'} before {pending.label}?</p><div><button disabled={busy} onClick={() => void resolveDecision('cancel')}>Cancel</button><button disabled={busy} onClick={() => void resolveDecision('discard')}>Discard</button><button disabled={busy} className="ide-primary" onClick={() => void resolveDecision('save')}>Save and continue</button></div></div></div>}
+    {projectDialog && (projectDialog.kind==='delete'
+      ? <DeleteConfirmDialog path={projectDialog.path} dirtyPaths={projectDialog.dirtyPaths??[]} busy={busy} error={notice} onClose={cancelProjectDialog} onDelete={()=>void submitProjectDialog()} onSaveAndDelete={()=>{const resolve=projectDialog.resolveDelete;setProjectDialog(null);resolve?.('save')}}/>
+      : <PathInputDialog key={projectDialog.kind} kind={projectDialog.kind} value={projectDialog.value} busy={busy} error={notice} onChange={value=>{setNotice('');setProjectDialog({...projectDialog,value})}} onClose={cancelProjectDialog} onSubmit={()=>void submitProjectDialog()}/>)}
+    {pending && <UnsavedChangesDialog label={pending.label} paths={pending.paths} busy={busy} error={notice} onDecision={choice=>void resolveDecision(choice)}/>}
+
   </div>
 }

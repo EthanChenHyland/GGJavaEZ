@@ -10,10 +10,15 @@ async function openProject(page: Page, request: APIRequestContext, files: { path
   expect(response.ok(), await response.text()).toBe(true)
   const { id } = await response.json() as { id: string }
   await page.addInitScript((projectId) => localStorage.setItem('ggjavaez:project', projectId), id)
-  await page.goto('/ide')
+  await page.goto('/?qa=1')
+  await expect(page.getByRole('button',{name:'Run',exact:true})).toBeEnabled()
+  await page.keyboard.press('Alt+Shift+e')
   await expect(page.getByRole('tree', { name: 'Project explorer' })).toBeVisible()
   await expect(page.locator('.ide-first-use')).toHaveCount(0)
   await expect(page.locator('.monaco-editor')).toBeVisible()
+  // The DOM precedes @monaco-editor/react's onMount. Observe the actual
+  // mounted Source owner before typing; this never creates or edits a model.
+  await expect.poll(()=>page.evaluate(()=>window.__ggjavaezQA?.source()?.modelUri)).toBe(`inmemory://ggjavaez/${id}/${files[0].path}`)
   return id
 }
 
@@ -30,20 +35,25 @@ test('first use stays unselected and offers project actions on a narrow screen',
       localStorage.removeItem('ggjavaez:project')
       sessionStorage.setItem('first-use-initialized', 'yes')
     }
-    localStorage.setItem('ggjavaez:m8:explorer', 'closed')
   })
-  await page.goto('/ide')
+  await page.goto('/?qa=1')
 
   const firstUse = page.locator('.ide-first-use')
+  await expect(firstUse).toBeVisible()
+  expect((await firstUse.boundingBox())!.width).toBeGreaterThanOrEqual(430)
+  for(const button of await firstUse.getByRole('button').all()){const rect=await button.boundingBox();expect(rect!.width).toBeGreaterThanOrEqual(24);expect(rect!.height).toBeGreaterThanOrEqual(24);expect(rect!.x).toBeGreaterThanOrEqual(0);expect(rect!.x+rect!.width).toBeLessThanOrEqual(760)}
   await expect(firstUse.getByRole('heading', { name: 'Open Project' })).toBeVisible()
   await expect(firstUse.getByRole('button', { name: 'Import folder (copy)' })).toBeVisible()
   await expect(firstUse.getByRole('button', { name: 'New Project' })).toBeVisible()
   await expect(firstUse.getByRole('combobox', { name: 'Open existing project' })).toContainText('First use')
+  await page.screenshot({path:'.ggjavaez/qa/reference-exact/shell-first-use-760x720.png'})
   await firstUse.getByRole('button', { name: 'New Project' }).click()
   await expect(page.getByRole('dialog', { name: 'New Project' })).toBeVisible()
+  await page.screenshot({path:'.ggjavaez/qa/reference-exact/shell-new-project-760x720.png'})
   await page.getByRole('dialog', { name: 'New Project' }).getByRole('button', { name: 'Cancel' }).click()
 
   await firstUse.getByRole('combobox', { name: 'Open existing project' }).selectOption(id)
+  await page.getByRole('button',{name:'Show source drawer',exact:true}).click()
   await expect(page.locator('.monaco-editor')).toBeVisible()
   await page.evaluate(() => localStorage.setItem('ggjavaez:project', 'missing-project'))
   await page.reload()
@@ -85,7 +95,8 @@ test('root-level creation suggests existing parents and import explains its copy
 test('dirty file deletion requires a decision and Cancel preserves the draft', async ({ page, request }) => {
   const id = await openProject(page, request, [{ path: 'Main.java', content: 'class Main {}' }])
   await expect(page.locator('.monaco-editor')).toBeVisible()
-  await page.locator('.monaco-editor').click()
+  await page.getByRole('textbox',{name:'Editor content',exact:true}).focus()
+  await expect(page.getByRole('textbox',{name:'Editor content',exact:true})).toBeFocused()
   await page.keyboard.press('ControlOrMeta+A')
   await page.keyboard.insertText('class Main { int changed = 1; }')
   await expect(page.locator('.ide-dirty')).toBeVisible()
@@ -93,6 +104,7 @@ test('dirty file deletion requires a decision and Cancel preserves the draft', a
   const row = page.locator('.ide-tree-name[title="Main.java"]')
   await row.press('Delete')
   await expect(page.getByRole('dialog', { name: 'Delete' })).toContainText('unsaved files')
+  await expect(page.getByRole('list',{name:'Affected unsaved files'}).getByRole('listitem')).toHaveText(['Main.java'])
   await page.getByRole('dialog', { name: 'Delete' }).getByRole('button', { name: 'Cancel' }).click()
   await expect(row).toBeVisible()
   await expect(page.locator('.ide-dirty')).toBeVisible()
@@ -107,7 +119,8 @@ test('dirty file deletion requires a decision and Cancel preserves the draft', a
 test('folder deletion covers dirty descendants and menu keys wrap through actions', async ({ page, request }) => {
   const id = await openProject(page, request, [{ path: 'src/Main.java', content: 'class Main {}' }])
   await expect(page.locator('.monaco-editor')).toBeVisible()
-  await page.locator('.monaco-editor').click()
+  await page.getByRole('textbox',{name:'Editor content',exact:true}).focus()
+  await expect(page.getByRole('textbox',{name:'Editor content',exact:true})).toBeFocused()
   await page.keyboard.press('ControlOrMeta+A')
   await page.keyboard.insertText('class Main { int saved = 2; }')
   await expect(page.locator('.ide-dirty')).toBeVisible()
@@ -116,6 +129,7 @@ test('folder deletion covers dirty descendants and menu keys wrap through action
   await folder.click({ button: 'right' })
   const menu = page.getByRole('menu', { name: 'Actions for src' })
   await expect(menu.getByRole('menuitem', { name: 'New File' })).toBeFocused()
+  await page.screenshot({path:'.ggjavaez/qa/reference-exact/shell-explorer-menu-1440x900.png'})
   await menu.getByRole('menuitem', { name: 'New File' }).press('End')
   await expect(menu.getByRole('menuitem', { name: 'Reveal in Explorer' })).toBeFocused()
   await menu.getByRole('menuitem', { name: 'Reveal in Explorer' }).press('ArrowDown')
@@ -125,6 +139,8 @@ test('folder deletion covers dirty descendants and menu keys wrap through action
 
   await folder.press('Delete')
   await expect(page.getByRole('dialog', { name: 'Delete' })).toContainText('unsaved files')
+  await expect(page.getByRole('list',{name:'Affected unsaved files'}).getByRole('listitem')).toHaveText(['src/Main.java'])
+  await page.screenshot({path:'.ggjavaez/qa/reference-exact/shell-delete-descendants-1440x900.png'})
   const saved = page.waitForRequest(request => request.method() === 'PUT' && request.url().includes(`/api/projects/${id}/files`))
   await page.getByRole('dialog', { name: 'Delete' }).getByRole('button', { name: 'Save and delete' }).click()
   expect((await saved).postDataJSON().content).toBe('class Main { int saved = 2; }')

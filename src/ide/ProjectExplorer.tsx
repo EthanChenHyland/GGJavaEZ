@@ -1,10 +1,9 @@
 import { useMemo, useRef, useState } from 'react'
 import { ChevronDown, ChevronRight } from 'lucide-react'
 import type { ProjectEntry } from './contracts'
-import { WorkspaceMenu } from './WorkspaceMenu'
+import { CommandMenu } from '../shell/dialogs/CommandMenu'
 import { explorerMenuCommands } from './contextMenus'
 import { ideCommandDefinitions, type CommandAvailability, type CommandContext, type IdeCommandId } from './commands'
-import './ProjectExplorer.css'
 export { menuTargetIndex } from './contextMenus'
 
 export type TreeAction = 'class' | 'file' | 'folder' | 'rename' | 'delete' | 'reveal' | 'copy' | 'open' | 'refresh'
@@ -64,7 +63,7 @@ export function ProjectExplorer({ tree, active, collapsed, onToggle, onOpen, onA
       <button className="ide-entry-more" aria-label={`Actions for ${row.entry.path}`} title="File actions" onClick={(event) => { const rect = event.currentTarget.getBoundingClientRect(); menuAt(row.entry, rect.left, rect.bottom) }}>···</button>
     </div>)}
     {!tree.length && <p className="ide-empty">Create a Java class or open a project.</p>}
-    {menu && <WorkspaceMenu label={menu.entry ? `Actions for ${menu.entry.path}` : 'Project actions'} x={menu.x} y={menu.y}
+    {menu && <CommandMenu label={menu.entry ? `Actions for ${menu.entry.path}` : 'Project actions'} x={menu.x} y={menu.y}
       items={explorerMenuCommands(menu.entry?.kind ?? null).map((id) => ({ id, label: id === 'resource.rename' ? 'Rename' : ideCommandDefinitions[id].title, ...(availability?.(id, menu.entry, menu.context) ?? { enabled: true }) }))}
       onClose={() => setMenu(null)} onChoose={(id) => {
         const kinds: Partial<Record<IdeCommandId, TreeAction>> = { 'file.open': 'open', 'file.new': 'file', 'java.newClass': 'class', 'folder.new': 'folder', 'resource.rename': 'rename', 'resource.delete': 'delete', 'resource.copyPath': 'copy', 'explorer.reveal': 'reveal' }

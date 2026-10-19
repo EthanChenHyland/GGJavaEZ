@@ -1,3 +1,5 @@
+import {SurfacePortal} from '../shell/dialogs/SurfacePortal'
+import {ShellSurfaceParent,useShellSurface} from '../shell/dialogs/useShellSurface'
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import { Search, X } from 'lucide-react'
 import { rankPickerItems, type SearchableItem } from './fuzzy'
@@ -12,21 +14,14 @@ export function WorkspacePicker({ mode, items, onChoose, onClose }: {
   const [selected, setSelected] = useState(0)
   const input = useRef<HTMLInputElement>(null)
   const list = useRef<HTMLDivElement>(null)
-  const id = useId()
+  const id = useId(),surfaceRef=useRef<HTMLDivElement>(null),surface=useShellSurface(surfaceRef,onClose,true)
   const results = useMemo(() => rankPickerItems(items, query.replace(/^>/, '')).slice(0, 100), [items, query])
   const index = Math.min(selected, Math.max(0, results.length - 1))
   const title = mode === 'files' ? 'Quick Open' : 'Command Palette'
-  useEffect(() => {
-    const previous = document.activeElement as HTMLElement | null
-    input.current?.focus()
-    return () => { if (previous?.isConnected) previous.focus() }
-  }, [])
   useEffect(() => { list.current?.children[index]?.scrollIntoView?.({ block: 'nearest' }) }, [index, query])
-  return <div className="ide-picker-backdrop" onPointerDown={(event) => { if (event.target === event.currentTarget) onClose() }}>
-    <div className="ide-picker" role="dialog" aria-modal="true" aria-label={title} onKeyDown={(event) => {
+  return <SurfacePortal><ShellSurfaceParent.Provider value={surface.id}><div className="ide-picker-backdrop" style={{zIndex:surface.zIndex}} onPointerDown={(event) => { if (event.target === event.currentTarget) surface.dismissFromPointer() }}>
+    <div ref={surfaceRef} tabIndex={-1} className="ide-picker glass" role="dialog" aria-modal="true" aria-label={title} onKeyDown={(event) => {
       event.stopPropagation()
-      if (event.key === 'Escape') { event.preventDefault(); onClose(); return }
-      if (event.key === 'Tab') { event.preventDefault(); input.current?.focus(); return }
       const next = menuTargetIndex(event.key, index, results.length)
       if (next !== null) { event.preventDefault(); setSelected(next) }
       if (event.key === 'Enter' && results[index]?.enabled) { event.preventDefault(); onChoose(results[index].id) }
@@ -38,5 +33,5 @@ export function WorkspacePicker({ mode, items, onChoose, onClose }: {
       {!results.length && <p className="ide-picker-empty">{mode === 'files' ? 'No matching project files' : 'No matching commands'}</p>}
       <div className="ide-picker-foot"><span>{results.length} {mode === 'files' ? 'files' : 'commands'}</span><span>↑ ↓ Navigate · ↵ {mode === 'files' ? 'Open' : 'Run'} · Esc Close</span></div>
     </div>
-  </div>
+  </div></ShellSurfaceParent.Provider></SurfacePortal>
 }

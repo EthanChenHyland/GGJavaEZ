@@ -49,7 +49,7 @@ for(const viewport of [{width:1440,height:900},{width:760,height:900}])test(`edi
  await expect(page.getByRole('dialog',{name:'Unsaved changes'})).toBeVisible()
  await page.getByRole('button',{name:'Cancel',exact:true}).click()
  expect((await inventory(page)).modelUris).toContain(documentUri(first.id,'Main.java'))
- await page.getByRole('button',{name:'Close Main.java',exact:true}).click();await page.getByRole('button',{name:'Discard',exact:true}).click()
+ await page.getByRole('button',{name:'Close Main.java',exact:true}).click();await page.getByRole('button',{name:"Don't Save",exact:true}).click()
  await expect.poll(async()=>(await inventory(page)).modelUris).toEqual([]);expect((await inventory(page)).viewUris).toEqual([])
  await openFile(page,'Main.java');await openFile(page,'Aux.java')
  await page.getByRole('button',{name:'Show project explorer',exact:true}).click()

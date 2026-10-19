@@ -69,15 +69,6 @@ function runtimeEditorWidth() {
 }
 export const filename = (path: string) => path.split('/').at(-1) || path
 const errorText = (error: unknown) => error instanceof Error ? error.message : String(error)
-export function trapDialogTab(event: React.KeyboardEvent<HTMLElement>) {
-  if (event.key !== 'Tab') return
-  const controls = Array.from(event.currentTarget.querySelectorAll<HTMLElement>('input:not(:disabled), button:not(:disabled), select:not(:disabled), textarea:not(:disabled)'))
-  const first = controls[0], last = controls.at(-1)
-  if (!first || !last) return
-  if (!event.currentTarget.contains(document.activeElement)) { event.preventDefault(); (event.shiftKey ? last : first).focus() }
-  else if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus() }
-  else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus() }
-}
 
 export function useWorkspace(recordingViewer = false) {
   const [projects, setProjects] = useStoreField(workspaceStore, 'projects')
@@ -167,8 +158,6 @@ export function useWorkspace(recordingViewer = false) {
   const upperRef = useRef<HTMLDivElement>(null)
   const importRef = useRef<HTMLInputElement>(null)
   const eventSourceRef = useRef<ExecutionStream | null>(null)
-  const confirmRef = useRef<HTMLDivElement>(null)
-  const projectDialogRef = useRef<HTMLFormElement>(null)
   const tabsRef = useRef<Tab[]>([])
   const languagePaths = useRef(new Set<string>())
   tabsRef.current = tabs
@@ -289,22 +278,6 @@ export function useWorkspace(recordingViewer = false) {
     languagePaths.current = next
   }, [languageClient, projectId, tabs])
   useEffect(() => () => languageClient.dispose(), [languageClient])
-
-  useEffect(() => {
-    if (!pending) return
-    const previous = document.activeElement as HTMLElement | null
-    confirmRef.current?.querySelector('button')?.focus()
-    return () => previous?.focus()
-  }, [pending])
-  useEffect(() => {
-    if (!projectDialog) return
-    const previous = document.activeElement as HTMLElement | null
-    const first = projectDialogRef.current?.querySelector<HTMLInputElement>('input')
-      ?? projectDialogRef.current?.querySelector<HTMLButtonElement>('button')
-    first?.focus()
-    if (first instanceof HTMLInputElement) first.select()
-    return () => previous?.focus()
-  }, [projectDialog?.kind])
 
   const openFile = useCallback(async (id: string, path: string, location?: SourceLocation, isCurrent:()=>boolean=()=>true) => {
     if (!path) return
@@ -1223,7 +1196,7 @@ export function useWorkspace(recordingViewer = false) {
 
   useEffect(() => {
     const shortcuts = (event: KeyboardEvent) => {
-      if (projectDialog || picker || tabMenu || showLaunch || showSymbols || pending || event.isComposing || event.target instanceof HTMLElement && event.target.closest('.ide-workspace-menu')) return
+      if (projectDialog || picker || tabMenu || showLaunch || showSymbols || pending || event.isComposing || event.target instanceof HTMLElement && event.target.closest('[data-shell-menu]')) return
       if (!event.defaultPrevented) {
         const target = event.target instanceof HTMLElement ? event.target : null
         const focus: ShortcutFocus = {
@@ -1276,5 +1249,5 @@ export function useWorkspace(recordingViewer = false) {
   const acceptsInput = !!execution && ['RUNNING', 'WAITING_FOR_INPUT', 'PAUSED'].includes(execution.phase)
   const availableTools: Tool[] = ['console', 'problems', 'debugger', ...(recordingIsCurrent && visualization.trace.events.some((event) => event.type === 'THROW_EXCEPTION') || exception ? ['errors'] as Tool[] : [])]
   const targets = build?.mainClasses ?? javaProject?.runnableTargets ?? []
-  return { consoleInputState, worldExecution, endedAt, projects, projectId, tree, tabs, active, setActive, jdk, setJdk, jdkInput, setJdkInput, showJdk, build, execution, timelineLens, setTimelineLens, tool, setTool, bottomPinned, workspaceMode, explorerOpen, inspectorHidden, inspectorSide, bottomOpen, setBottomOpen, focusSourceOpen, sourceOpen, picker, setPicker, tabMenu, setTabMenu, input, setInput, notice, setNotice, busy, pending, projectDialog, setProjectDialog, nav, mainClass, setMainClass, javaProject, projectStatus, launch, setLaunch, showLaunch, setShowLaunch, showSymbols, setShowSymbols, languageClient, languageSnapshot, visualization, runtimeExpanded, breakpoints, runtime, runtimeRecordingId, runtimeSelection, runtimeNavigation, recordedView, setRecordedView, mappedExecutingSource, sourceUnavailable, sourceFileProof, setCwdInvalid, commands, projectWidth, editorWidth, bottomHeight, setBottomHeight, collapsed, platform, shellRef, contentRef, upperRef, importRef, confirmRef, projectDialogRef, activeRef, launchRef, mainClassRef, cwdInvalidRef, displayedBreakpoints, activeTab, entries, diagnostics, languageProblems, problems, allEvents, exception, debugSession, debugInspection, recordingIsCurrent, previousRecording, recordedPhase, traceStale, fail, refreshTree, switchProject, edit, commandContext, requestDecision, resolveDecision, invoke, closeTab, action, navigateRuntime, handleRuntimeChange, runProject, debugProject, debugCommand, toggleBreakpoint, removeBreakpoint, handleExecutingSource, stopRun, sendInput, newEntry, cancelProjectDialog, submitProjectDialog, importFiles, openDiagnostic, divider, toggleTreeEntry, treeAction, projectOptions, pickerItems, choosePicker, showTabMenu, activeExecution, acceptsInput, availableTools, targets }
+  return { consoleInputState, worldExecution, endedAt, projects, projectId, tree, tabs, active, setActive, jdk, setJdk, jdkInput, setJdkInput, showJdk, build, execution, timelineLens, setTimelineLens, tool, setTool, bottomPinned, workspaceMode, explorerOpen, inspectorHidden, inspectorSide, bottomOpen, setBottomOpen, focusSourceOpen, sourceOpen, picker, setPicker, tabMenu, setTabMenu, input, setInput, notice, setNotice, busy, pending, projectDialog, setProjectDialog, nav, mainClass, setMainClass, javaProject, projectStatus, launch, setLaunch, showLaunch, setShowLaunch, showSymbols, setShowSymbols, languageClient, languageSnapshot, visualization, runtimeExpanded, breakpoints, runtime, runtimeRecordingId, runtimeSelection, runtimeNavigation, recordedView, setRecordedView, mappedExecutingSource, sourceUnavailable, sourceFileProof, setCwdInvalid, commands, projectWidth, editorWidth, bottomHeight, setBottomHeight, collapsed, platform, shellRef, contentRef, upperRef, importRef, activeRef, launchRef, mainClassRef, cwdInvalidRef, displayedBreakpoints, activeTab, entries, diagnostics, languageProblems, problems, allEvents, exception, debugSession, debugInspection, recordingIsCurrent, previousRecording, recordedPhase, traceStale, fail, refreshTree, switchProject, edit, commandContext, requestDecision, resolveDecision, invoke, closeTab, action, navigateRuntime, handleRuntimeChange, runProject, debugProject, debugCommand, toggleBreakpoint, removeBreakpoint, handleExecutingSource, stopRun, sendInput, newEntry, cancelProjectDialog, submitProjectDialog, importFiles, openDiagnostic, divider, toggleTreeEntry, treeAction, projectOptions, pickerItems, choosePicker, showTabMenu, activeExecution, acceptsInput, availableTools, targets }
 }

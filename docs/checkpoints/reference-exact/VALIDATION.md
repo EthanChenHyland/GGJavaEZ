@@ -207,3 +207,11 @@ Defaults2088passed/70explicit opt-in skips,221files,182.89seconds,exit0. Before-
 ## Style and token compatibility retirement — 2026-10-19
 
 Defaults2091passed/70explicit opt-in skips,223files,182.73seconds,exit0. Build/typecheck/browser TS/lint/protected/reference guards pass. Main71756gzip bytes, closures72184/662605 diagnostics, Monaco/Cinematic split. Initial20case native run has19passes/one stale stylesheet-import failure, not a20case pass. A new CSS resource guard reproduces that failure; after the import-only fixture fix, guard/preferences3/3 and the original isolated test1/1 pass. Four archived original-resolution screenshots are root-reviewed and remainOPEN for visual convergence. Inventory113native/214default/101older. No new complete native/Dense/memory/visual approval is inferred. [Evidence, failure and scope](migration/styles-tokens.md). Whole A–G acceptance remains open.
+
+
+Complete frozen confirmation on pushed9e2a612a3d6fa6ba82b33a2862d9a77c4b8eab6f executes **113/113passed, zero skips/failures/flaky**,749.02seconds,exit0 (run9717daad-7593-4786-8cc6-1d3b6fb2a8bc). `validation-styles-tokens-full-run.json` checks source/branch/remote/main guards before and after. Both real-JVM Console cases pass with the unchanged200ms/two-RAF boundary; the previous223.2ms failed run remains recorded. This is the native functional/curated+actual-JVM mix, not113new JVM sessions, the formal80-session capture gate, or final visual/performance approval.
+
+
+## Shared Shell surfaces — 2026-10-19
+
+Defaults2103passed/70explicit opt-in skips,225files,184.54seconds,exit0. Focused87/87 and final affected native12/12 pass; earlier failures and the independently reproduced40px narrow chooser defect remain recorded. Build/typecheck/browser TS/lint/reference/protected guards pass; main71763gzip, closures72191/663441 diagnostic bytes. Eight original-resolution UI captures are root-reviewed with populated World approval stillOPEN. No new complete native, formal capture, Dense or memory approval is inferred. [Evidence, per-case reconciliation and scope](migration/shell-surfaces.md). Whole A–G acceptance remains open.

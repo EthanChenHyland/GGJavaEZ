@@ -172,3 +172,8 @@ The sole renderer contract now lives at src/contracts/world.ts, byte-identical t
 ## Style and token compatibility retirement — 2026-10-19
 
 The standalone App/IDE stylesheets and v3 token export/palette aliases are physically removed. A six-rule document base remains; Shell/Editor own active pointer/gutter styles. Current CSS and Monaco bind directly to the frozen design groups. Bootstrap retires only the four obsolete preference keys, preserving project/draft/source/recording data. [Evidence, failure and scope](migration/styles-tokens.md). Whole A–G acceptance remains open.
+
+
+## Shared Shell surfaces — 2026-10-19
+
+The active menus, Launch/path/Delete/unsaved dialogs and both search focus owners now share a parent-aware mounted surface stack. Three superseded IDE files are physically removed. Twelve filesystem/execution command operation initializers remain byte-identical to parent9e2a612. The single Picker, Header project menu, DirtyRun decision and remaining chrome cleanup are still pending. [Evidence, per-case reconciliation and scope](migration/shell-surfaces.md). Whole A–G acceptance remains open.

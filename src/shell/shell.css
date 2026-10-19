@@ -106,6 +106,7 @@
 .shell--narrow .shell-run-cluster button,.shell--narrow .shell-modes button {width:40px;height:40px;padding:0}
 .shell--narrow .shell-modes {gap:5px}
 .shell--narrow .shell-header button span {display:none}
+.shell--narrow .ide-first-use {left:48px;width:calc(100vw - 56px)}
 .shell--narrow .ide-first-use-content {padding:18px}
 .shell--source-controls-inset .ide-source-heading {height:calc(32px + var(--source-heading-inset));padding-top:var(--source-heading-inset)}
 @media(prefers-reduced-motion:reduce) { .ide-editor-panel {transition:none} }
