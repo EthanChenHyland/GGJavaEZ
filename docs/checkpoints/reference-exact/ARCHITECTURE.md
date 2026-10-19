@@ -127,3 +127,8 @@ Ten audited, isolated old renderer/navigation modules are physically removed, wh
 ## Array facts and Inspector placement — 2026-10-18
 
 Array window reasons now preserve existing selection/Focus/access semantics through one planner and shared cell style. Captured array operations remain Inspector facts; only proven graph edges route in the World. Inspector side resolves from actual projected geometry once per open item, remains fixed through navigation and reconsiders on reopen. ArraySolid and its unused geometry helper are removed after all 14 expanded unit successors and five browser successors pass. [Migration and limits](migration/array-placement.md).
+
+
+## Isolated presentation retirement — 2026-10-18
+
+Seven unused old renderer/planner helpers are removed after complete parent 97-case confirmation; all 14 production JS resources remain byte-identical. Current ownership is documented in the root coverage guide. The old Person file has six passing native successors, while the remaining six primitive test files stay untouched. AST becomes 624/2167/228, with 20 legacy targets and zero active legacy modules. [Evidence and verification limits](migration/presentation-retirement.md).

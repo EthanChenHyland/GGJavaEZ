@@ -1,10 +1,25 @@
 # Java visualization coverage
 
-## Current coverage — v12 Phase 4
+## Current production presentation — reference reconstruction, 2026-10-18
+
+The preserved semantic coverage ratings below still describe bounded recorder/runtime support. The visible application now uses one persistent 3D World with the floating Shell; the older presentation descriptions and measurements in this document are historical checkpoint evidence, not current renderer entry points or new performance approval.
+
+| Responsibility | Current production source |
+| --- | --- |
+| Append-only XYZ reservations and prefix projection | [layoutEngine.ts](src/world/layoutEngine.ts), [sceneProjector.ts](src/world/sceneProjector.ts) |
+| Bounded detail, quiet geometry, real-member clusters and array windows | [presentationPlanner.ts](src/world/presentationPlanner.ts), [presentationClusters.ts](src/world/presentationClusters.ts), [arrayWindow.ts](src/world/arrayWindow.ts) |
+| Instanced bodies, physical cells, face text and structural labels | [RuntimeCanvas.tsx](src/render/RuntimeCanvas.tsx), [SolidBatch.tsx](src/render/SolidBatch.tsx), [RuntimeSolid.tsx](src/render/RuntimeSolid.tsx), [StructuralLabels.tsx](src/render/StructuralLabels.tsx) |
+| Proven current/historical references and graph flows | [referencePresentationTopology.ts](src/world/referencePresentationTopology.ts), [flowCatalog.ts](src/world/flowCatalog.ts), [WorldSurface.tsx](src/shell/WorldSurface.tsx) |
+| Camera ownership, Focus and representative Home | [CameraRig.tsx](src/camera/CameraRig.tsx), [homeFraming.ts](src/camera/homeFraming.ts), [heroFraming.ts](src/camera/heroFraming.ts) |
+| Exact captured values, sparse-index access and historical local inspection | [Inspector.tsx](src/render/Inspector.tsx), [inspection.ts](src/render/inspection.ts), [valueText.ts](src/world/valueText.ts) |
+
+Old ArchiveSolids/ClusterSolid/WorldOverviewLabels, isolatedScene, callStructure, runtimeHeadings and spatialPresentation are retired after their production replacements are validated. Existing primitive regression corpora remain until their own successors are verified. Recorded runtime IDs, graph evidence, source-proof safeguards and backend coverage are unchanged. Visual convergence, fixed Dense latency/retention and final whole-product gates remain open; passing functional tests does not close them. See [current validation](docs/checkpoints/reference-exact/VALIDATION.md) for commit-bound results.
+
+## Preserved semantic coverage — v12 Phase 4
 
 This section supersedes the historical matrices below. **FULL means the explicitly bounded observed concept in this row, not universal Java support or complete library instrumentation.** Java runs locally without a sandbox; Maven/Gradle execute build logic. Observation limits stop visualization, never restart or terminate a valid application. The canonical Console and actual exit status remain authoritative.
 
-Phase 4 adds exact primitive values, separate class storage, bounded generic arrays, stable String identities, structural JDK collection adapters, ownership metadata, successful file-operation evidence, and canonical IDE commands. RuntimeState/ExecutionGraph contain no camera, material or XYZ fields. Existing stable world anchors, completed calls and immutable history remain. [best.png](best.png) is the immediate Spatial 2.0 hierarchy/composition reference; the shell/camera/material rewrite is deferred.
+Phase 4 adds exact primitive values, separate class storage, bounded generic arrays, stable String identities, structural JDK collection adapters, ownership metadata, successful file-operation evidence, and canonical IDE commands. RuntimeState/ExecutionGraph contain no camera, material or XYZ fields. Existing stable world anchors, completed calls and immutable history remain. [best.png](best.png) is the immediate Spatial 2.0 hierarchy/composition reference; the shell/camera/material rewrite was deferred at that checkpoint and is now implemented through the current production modules listed above; final convergence remains open.
 
 | Construct | Coverage | Observed semantics, responsible layer and remaining limit |
 | --- | --- | --- |
@@ -87,7 +102,7 @@ The execution column describes the available launch architecture, **not a claim 
 
 This matrix concerns real JVM capture into the normal runtime world. Richer hand-authored fixture events do not establish arbitrary Java support. In particular, fixture scopes, named loop iterations, exact array operand origins, Scanner destination bindings, and caller return destinations are not generally emitted by the JVM normalizer.
 
-## Repository evidence key
+## Historical repository evidence key
 
 Line numbers identify this audit snapshot; named symbols remain the primary locator as concurrent edits land.
 
@@ -177,7 +192,7 @@ Unsupported values are generally normalized to unavailable (`uninitialized`, ren
 
 [IdeWorkspace.tsx](src/ide/IdeWorkspace.tsx) now provides a **Capture limits** disclosure whenever the recording belongs to the current execution, including successful recordings. It states project-only recording, absent library internals/static fields/object arrays, unavailable values and last-observed-value limitations, and displays up to three capability diagnostics. This explanatory UI does not alter the `FULL` enum or the recorder's numeric bounds.
 
-## Runtime presentation and measured scale
+## Historical runtime presentation and measured scale
 
 The current working diff projects every retained invocation in `buildSceneModel`, including completed/unwound frames while other frames are still active. `EXIT_METHOD` already retains frame records in S. W now emits explicit invocation status and uses subdued historical faces/edges; heap data remains normal object data. The measured workflows retain the world through completion and failure. Values remain last observed; mutations outside project probes can leave them stale.
 

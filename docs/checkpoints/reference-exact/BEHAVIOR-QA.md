@@ -102,3 +102,8 @@ Ten audited, isolated old renderer/navigation modules are physically removed, wh
 ## Native arrays and stable inspection — 2026-10-18
 
 Selected array cells receive individual emphasis and exact-value Copy. Applied-prefix array comparisons, indexed writes, origin/destination storage and causal history remain truthful through reverse stepping. All 14 old primitive cases have current successors; five old browser workflows pass through the one persistent World under original limits. A new real-orbit test confirms opposite-side Inspector placement, no movement while open and reconsideration on reopen. Six-case integration passes; final fixed-commit 97-case run remains pending. Left-card overlap with lower Source stays an OPEN composition issue. [Evidence](migration/array-placement.md).
+
+
+## Native Person corpus — 2026-10-18
+
+All six Person workflows pass using genuine body/curve picking, native camera controls, exact reverse values/source, registered Interactive/Follow actions, reduced motion and local-only assets. Original30-second limits remain. Obsolete Focus-source/Trace-label/Explore assertions are reconciled with captured allocation evidence and current orthogonal camera behavior. Complete parent 97 passes with frozen source; removal leaves all 14 built JS resources identical. Remaining primitive tests are unchanged. [Corpus and evidence](migration/presentation-retirement.md).
