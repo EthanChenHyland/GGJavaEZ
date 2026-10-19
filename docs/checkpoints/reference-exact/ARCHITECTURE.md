@@ -147,3 +147,8 @@ Inspector Reveal/Copy are registered presentation commands backed by the current
 ## Unmounted trace-table retirement — 2026-10-19
 
 Three explicitly superseded developer-table files are physically removed after a no-consumer audit. All **14 JS/four CSS production resources remain byte-identical** to clean parent 0cc97f7, whose full defaults and affected native checks pass. Five table-only unit cases are retired with explicit dispositions; semantic tests and all 69 remaining primitive cases are unchanged. Build/typecheck, strict browser TS, lint and protected/reference guards pass. AST **636/2228/234/20/0**; no new full-unit/browser/performance execution is inferred. [Evidence and limits](migration/trace-table-retirement.md). The active legacy surfaces and final A–G gates remain open.
+
+
+## Paused debugger and Dock consolidation — 2026-10-19
+
+The Shell DebugDrawer reads one existing ingested pause head independently of World history, with exact session/raw-watermark/frame/thread evidence and bounded lists. The old DebugPanel/shared stylesheet are removed; Source and Dock own their active styles. Closed Dock visibility no longer overrides open child layout. A deterministically reproduced pre-flush polling race in DebugManager receives one guarded fresh read before the unchanged exact watermark check. [Contracts, red/green evidence and limits](migration/debug-drawer.md).

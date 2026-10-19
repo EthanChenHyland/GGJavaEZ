@@ -47,8 +47,7 @@
 .inspector :is(h3,.inspector-type,.inspector-key span,.reference-list button) {font-size:12px}
 .ide-bottom-panel { position:absolute;left:var(--timeline-x);bottom:0;width:var(--timeline-width);height:24px;z-index:3;display:flex;flex-direction:column;border-radius:6px 6px 0 0;overflow:hidden }
 .shell--drawer-open .ide-bottom-panel { left:var(--drawer-x);top:var(--drawer-y);width:var(--drawer-width);height:var(--drawer-height);bottom:auto }
-.ide-bottom-panel>*:not(.ide-tool-tabs) { display:none }
-.shell--drawer-open .ide-bottom-panel>*:not(.ide-tool-tabs) {display:flex}
+.shell:not(.shell--drawer-open) .ide-bottom-panel>*:not(.ide-tool-tabs) { display:none }
 .ide-tool-tabs { height:24px;min-height:24px;border:0 }
 .ide-tool-tabs button { min-height:24px;font-size:12px!important;font-weight:500;letter-spacing:0 }
 .ide-console-stderr,.ide-console-full-stderr { color:#FF8A5B }

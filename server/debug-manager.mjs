@@ -272,6 +272,9 @@ export class DebugManager {
       || !Number.isSafeInteger(message.line) || message.line < 1
       || !Number.isSafeInteger(message.rawEventCount) || message.rawEventCount < 0) throw new Error('Invalid debugger pause');
     await this.#refresh(run);
+    // The first await can join a polling read started before the JVM flushed
+    // this pause. Read once after that read settles before judging its watermark.
+    if (run.dto.rawEventCount !== message.rawEventCount && run.dto.recording.state === 'FULL') await this.#refresh(run);
     if (run.dto.rawEventCount !== message.rawEventCount) {
       if (run.dto.recording.state === 'FULL') this.#stopObservation(run, 'Pause watermark does not match flushed Recorder prefix');
       // Keep the actual control watermark; an older/malformed observer prefix may be shorter.

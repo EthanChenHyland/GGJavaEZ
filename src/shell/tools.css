@@ -38,3 +38,77 @@
 .ide-console-output .ide-console-stdout,.ide-console-output .ide-console-stderr{display:inline}
 .ide-console-output .ide-console-exit{display:block}
 .ide-console-input:focus-within{box-shadow:inset 0 1px var(--color-execution)}
+
+/* The Dock owns paused inspection independently of the World history cursor. */
+.shell-debug-drawer{display:grid;flex:1;min-width:0;min-height:0;overflow:hidden;grid-template-columns:minmax(170px,.9fr) minmax(170px,1fr) minmax(210px,1.2fr) minmax(170px,.9fr);font-size:12px}
+.shell-debug-drawer>div{min-width:0;min-height:0;padding:12px;overflow:auto}
+.shell-debug-drawer>div+div{border-left:1px solid var(--color-border)}
+.shell-debug-drawer h3{margin:0 0 8px;font-size:11px;color:var(--color-textSecondary)}
+.shell-debug-drawer h3 span,.shell-debug-drawer small{font-weight:400;color:var(--color-textMuted)}
+.shell-debug-drawer p{margin:6px 0;overflow-wrap:anywhere;color:var(--color-textSecondary)}
+.shell-debug-drawer summary{cursor:pointer}
+.shell-debug-stack,.shell-debug-values,.shell-debug-breakpoints{display:flex;flex-direction:column}
+.shell-debug-drawer .virtual-list{flex:1;min-height:0}
+.shell-debug-row{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;height:100%;padding:6px 4px;border:0;border-bottom:1px solid var(--color-border);background:transparent;text-align:left}
+.shell-debug-row:hover{background:var(--color-panelRaised)}
+.shell-debug-row span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.shell-debug-row small{display:block;overflow:hidden;text-overflow:ellipsis;font-size:10px}
+.shell-debug-row code{max-width:55%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.shell-debug-exact{flex:0 1 auto;max-height:55%;overflow:auto;padding-top:8px;border-top:1px solid var(--color-border)}
+.shell-debug-exact pre{white-space:pre-wrap;overflow-wrap:anywhere;margin:6px 0}
+@media(max-width:1000px){.shell-debug-drawer{grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:minmax(0,1fr) minmax(0,1fr);grid-template-areas:'status values' 'stack breakpoints'}.shell-debug-status{grid-area:status}.shell-debug-stack{grid-area:stack}.shell-debug-values{grid-area:values}.shell-debug-breakpoints{grid-area:breakpoints}.shell-debug-stack,.shell-debug-breakpoints{border-top:1px solid var(--color-border)}}
+
+/* Active Error Explorer rules, owned by the Dock. */
+.debug-action{border:1px solid var(--color-borderStrong);border-radius:4px;background:var(--color-panelRaised);color:var(--color-text);padding:5px 9px;font:600 11px/1.4 Inter,system-ui,sans-serif;cursor:pointer}
+.debug-action:disabled{opacity:.4;cursor:default}
+.error-explorer{display:grid;flex:1;min-width:0;min-height:0;overflow:hidden;color:var(--color-text);font-size:12px}
+.error-explorer{grid-template-columns:minmax(220px,.95fr) minmax(230px,1.1fr) minmax(230px,1.1fr)}
+.error-explorer>div{min-width:0;min-height:0;overflow:auto;padding:12px 15px 18px;scrollbar-color:var(--color-borderStrong) transparent}
+.error-explorer>div+div{border-left:1px solid var(--color-border)}
+.error-explorer h3{font-size:10px;line-height:1.35;letter-spacing:.08em;color:var(--color-textSecondary);margin:0 0 8px;text-transform:uppercase}
+.error-cause-target{color:var(--color-text);font-weight:600;letter-spacing:0;text-transform:none}
+.error-explorer h2{font-size:19px;line-height:1.16;letter-spacing:-.02em;margin:6px 0;color:var(--color-exception);overflow-wrap:anywhere}
+.error-explorer p{margin:5px 0 9px;line-height:1.45;color:var(--color-textSecondary)}
+.debug-eyebrow{font-size:9px;font-weight:700;letter-spacing:.1em;color:var(--color-exception)}
+.debug-empty,.debug-limit{font-size:11px!important;color:var(--color-textMuted)!important;line-height:1.45}
+.error-summary .debug-action{margin:4px 0 7px}
+.error-summary select{display:block;width:100%;padding:5px 6px;background:var(--color-panelRaised);color:var(--color-text);border:1px solid var(--color-borderStrong);border-radius:4px;margin-top:7px}
+.debug-value,.debug-source,.cause-list button,.exception-path button{display:flex;justify-content:space-between;gap:9px;align-items:center;text-align:left;width:100%;border:0;border-bottom:1px solid var(--color-border);background:transparent;color:var(--color-text);padding:6px 5px;cursor:pointer;font:inherit}
+.debug-value:hover,.debug-source:hover,.cause-list button:hover,.exception-path button:hover{background:var(--color-panelRaised)}
+.debug-value.is-selected,.cause-list [aria-current=step],.exception-path [aria-current=step]{box-shadow:inset 2px 0 var(--color-execution);background:var(--color-panelRaised)}
+.debug-value>span{min-width:0;overflow-wrap:anywhere}
+.debug-value small,.debug-source code,.cause-list small,.exception-path small{display:block;font-size:10px;color:var(--color-textMuted);margin-top:2px}
+.debug-value code{flex:none;max-width:55%;font-size:12px;color:var(--color-text);overflow-wrap:anywhere;text-align:right}
+.debug-value code.is-null{color:var(--color-null)}
+.debug-source,.cause-list button,.exception-path button{display:block}
+.debug-source{padding:6px 0;margin-bottom:5px;color:var(--color-execution)}
+.debug-source code{color:var(--color-textSecondary);white-space:pre-wrap;font-size:11px}
+.error-explorer details{margin:5px 0}
+.error-explorer summary,.debug-notes summary{cursor:pointer;color:var(--color-textSecondary);font-size:11px}
+.error-stack summary{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.error-stack summary button{border:0;background:none;color:var(--color-text);cursor:pointer;padding:3px 0;font:inherit}
+.error-stack summary span{color:var(--color-exception);font-size:10px;white-space:nowrap}
+.error-stack h3:not(:first-child){margin-top:13px}
+.error-explorer pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:10px;color:var(--color-textSecondary);max-height:180px;overflow:auto}
+.cause-list{margin:8px 0 0;padding-left:19px;border-left:1px solid var(--color-borderStrong)}
+.cause-list li{padding-left:2px}
+.cause-list strong{font-size:11px;font-weight:550;line-height:1.4}
+.exception-path{display:grid;gap:2px}
+.exception-path button{padding-left:8px;border-left:2px solid var(--color-exception)}
+.debug-notes{margin-top:8px;color:var(--color-textMuted)}
+.debug-notes p{font-size:10px;line-height:1.45}
+.error-section-nav{display:none}
+.error-explorer button:focus-visible,.error-explorer summary:focus-visible,.error-explorer select:focus-visible{outline:2px solid var(--color-execution);outline-offset:-2px}
+@media(max-width:1000px){.error-explorer>div{overflow:visible}
+.error-explorer{grid-template-columns:minmax(0,1fr) minmax(0,1fr);overflow:auto}
+.error-causes{grid-column:1/-1;border-left:0!important;border-top:1px solid var(--color-border)}}
+@media(max-width:800px){.error-explorer{grid-template-columns:minmax(0,1fr);grid-template-rows:32px minmax(0,1fr);overflow:hidden}
+.error-section-nav{display:flex;grid-row:1;grid-column:1;border-bottom:1px solid var(--color-border);overflow-x:auto}
+.error-section-nav button{flex:1;min-width:max-content;padding:0 12px;border:0;border-bottom:2px solid transparent;background:transparent;color:var(--color-textMuted);font:600 11px Inter,system-ui,sans-serif}
+.error-section-nav button[aria-pressed=true]{border-bottom-color:var(--color-execution);color:var(--color-text)}
+.error-explorer>div{grid-row:2;grid-column:1;display:none;overflow:auto;padding:10px 12px 15px;border:0!important}
+.error-explorer[data-section=failure] .error-summary,.error-explorer[data-section=stack] .error-stack,.error-explorer[data-section=cause] .error-causes{display:block}
+.error-explorer pre{max-height:120px}}
+.ide-console-terminal{display:block;margin:8px 0;color:var(--color-textMuted);font-size:10px}
+.ide-console-terminal summary{cursor:pointer;margin-bottom:6px}
+.ide-console-full-stderr{color:var(--color-mutation)}

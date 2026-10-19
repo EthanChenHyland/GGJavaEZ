@@ -2,7 +2,7 @@ import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useRef, useSta
 import { exposeQaBridge } from '../qa/qaBridge'
 import { ChevronLeft,FolderOpen,Maximize2,PanelBottom,Plus,Save,Upload,X } from 'lucide-react'
 import type { SourceLocation, TraceDocument } from '../contracts/runtime'
-import { DebugPanel } from '../debugger/DebugPanel'
+import {DebugDrawer} from './DebugDrawer'
 import { ErrorExplorer } from '../debugger/ErrorExplorer'
 import { bridge } from '../ide/bridge'
 import { ideCommandDefinitions,type IdeCommandId } from '../ide/commands'
@@ -131,7 +131,7 @@ return <div className={`shell ide-shell ${debugSession&&activeExecution?'shell--
             {availableTools.map((item) => <button key={item} className={tool === item && bottomOpen ? 'is-active' : ''} onClick={() => { bottomPinned.current = true; setBottomOpen(true); setTool(item); if (item === 'errors' || item === 'debugger') setBottomHeight(35) }}>{item === 'errors' ? 'ERROR EXPLORER' : item.toUpperCase()}{item === 'problems' && problems.length > 0 && <span className="ide-badge">{problems.length}</span>}</button>)}
             <span className="ide-status-spacer"/>
           </div>
-          {tool === 'debugger' ? <DebugPanel session={debugSession} runtime={runtime} breakpoints={displayedBreakpoints} onInspect={(selection) => navigateRuntime(runtime?.cursor ?? 0, selection)} onRemove={removeBreakpoint}/>
+          {tool === 'debugger' ? <DebugDrawer session={debugSession} inspection={workspace.debugInspection} worldSessionId={visualization?.sessionId??null} breakpoints={displayedBreakpoints} onInspect={navigateRuntime} onRemove={removeBreakpoint}/>
           : tool === 'errors' ? recordingIsCurrent ? <ErrorExplorer key={visualization!.trace.demoId} trace={visualization!.trace} runtime={runtime} selection={runtimeSelection} stderr={execution?.stderr ?? ''} onNavigate={navigateRuntime}/> : <div className="debug-empty">{exception ? <><strong>{exception.type}: {exception.message}</strong><pre>{exception.rawStackTrace}</pre></> : <p>No recorded exception.</p>}</div>
           : tool === 'problems' ? <ProblemsPanel build={build} language={languageProblems} onOpen={openDiagnostic}/>
           : <div className="ide-console">

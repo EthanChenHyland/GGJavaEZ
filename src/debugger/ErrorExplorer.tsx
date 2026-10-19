@@ -5,7 +5,6 @@ import { seek } from '../runtime'
 import { formatValue } from './formatValue'
 import { causeHistory, type CauseTarget } from './causality'
 import { committedExceptionCursor } from './exceptionCursor'
-import './debugger.css'
 
 export function ErrorExplorer({ trace, runtime, selection, stderr, onNavigate }: {
   trace: TraceDocument; runtime: RuntimeState | null; selection: Selection; stderr: string

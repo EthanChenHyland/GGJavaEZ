@@ -117,3 +117,8 @@ Current cards show captured caller/receiver/return facts and readable inbound/ou
 ## Inspector actions and captured Source — 2026-10-19
 
 Affected integration passes **23/23**, zero skips, including Inspector actions at desktop/narrow sizes, real JVM captured-source/draft preservation, repeated temporary-model release, arrays, Person, editor ownership and Source/debugger scrolling at all five viewports. Disabled keyboard and physical pointer activation preserve all state. Initial new test assumptions and corrections are retained in [the action ledger](migration/inspector-actions.md). Final defaults pass **2124/2194 with 70 explicit opt-in skips**, **178.90 seconds**, exit 0; image review remains OPEN for world convergence.
+
+
+## Paused debugger and Dock consolidation — 2026-10-19
+
+Actual JVM debugger cases retain paused values through World rewind and update them on Step Over in HISTORY while Cursor stays zero. Final ownership confirmation passes 2/2; source/Inspector integration 13/13 and Console/Problems/Error Explorer Dock regression 13/13 pass with unchanged existing timeouts. The complete focused debugger-manager/drawer/source/layout integration passes 103/103 before two final drawer guard cases. Four archived captures are reviewed at original resolution; world visual convergence remains OPEN. [Detailed run boundaries and preserved failures](migration/debug-drawer.md).
