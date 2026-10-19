@@ -142,3 +142,8 @@ Invocation details use applied runtime/graph evidence, distinguish opaque ancest
 ## Inspector actions and captured Source — 2026-10-19
 
 Inspector Reveal/Copy are registered presentation commands backed by the current mounted World. Applied-prefix source evidence creates a transient captured-file receipt; the existing read-only Source view owns its temporary Monaco model. Explicit reveal has a distinct marker and never mutates executing-source bindings or editable drafts. Focus/Return remains contextual. [Implementation and evidence](migration/inspector-actions.md).
+
+
+## Unmounted trace-table retirement — 2026-10-19
+
+Three explicitly superseded developer-table files are physically removed after a no-consumer audit. All **14 JS/four CSS production resources remain byte-identical** to clean parent 0cc97f7, whose full defaults and affected native checks pass. Five table-only unit cases are retired with explicit dispositions; semantic tests and all 69 remaining primitive cases are unchanged. Build/typecheck, strict browser TS, lint and protected/reference guards pass. AST **636/2228/234/20/0**; no new full-unit/browser/performance execution is inferred. [Evidence and limits](migration/trace-table-retirement.md). The active legacy surfaces and final A–G gates remain open.
