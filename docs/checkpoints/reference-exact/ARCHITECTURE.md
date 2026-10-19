@@ -132,3 +132,8 @@ Array window reasons now preserve existing selection/Focus/access semantics thro
 ## Isolated presentation retirement — 2026-10-18
 
 Seven unused old renderer/planner helpers are removed after complete parent 97-case confirmation; all 14 production JS resources remain byte-identical. Current ownership is documented in the root coverage guide. The old Person file has six passing native successors, while the remaining six primitive test files stay untouched. AST becomes 624/2167/228, with 20 legacy targets and zero active legacy modules. [Evidence and verification limits](migration/presentation-retirement.md).
+
+
+## Captured Inspector details — 2026-10-19
+
+Invocation details use applied runtime/graph evidence, distinguish opaque ancestors from callers and preserve returns after their consumers. Reference descriptions name actual storage; inbound/outbound counts remain exact and historical bindings never borrow current redeclared names. A shared title formatter keeps identities consistent. The Inspector's at most ten lists share a 20-row cap, including overscan, for a 200-row total; logical index access remains paged. [Implementation, tests and remaining action gaps](migration/inspector-details.md).

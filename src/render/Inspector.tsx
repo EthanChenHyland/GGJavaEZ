@@ -5,13 +5,15 @@ import type { RuntimeState } from '../contracts/runtime'
 import type { PresentationPlan, SceneModel } from '../contracts/worldV2'
 import type { FlowCatalog } from '../world/flowCatalog'
 import { frameStatusText } from '../world/frameStatus'
-import { inspectorEntity, inspectorRetiredLocal, inspectorProvenance, inspectorRows, type InspectorRow } from './inspection'
-import { VirtualList } from '../shell/VirtualList'
+import { inspectorEntity, inspectorEntityTitle, inspectorRetiredLocal, inspectorProvenance, inspectorRows, type InspectorRow } from './inspection'
+import { VirtualList,VirtualListRowLimit } from '../shell/VirtualList'
 import { arrayCellTarget } from '../world/arrayCellTarget'
 import { canFocusWorldSelection } from '../interaction/focusTarget'
 import {historicalSceneReference} from '../world/historicalReference'
 import {InspectorControlFacts} from './InspectorControlFacts'
 import {InspectorArrayFacts} from './InspectorArrayFacts'
+import {InspectorInvocationFacts} from './InspectorInvocationFacts'
+import {InspectorReferenceFact,InspectorReferences} from './InspectorReferences'
 import './inspector.css'
 export function Inspector({selection,scene,runtime,flows,plan,onClose,onFocus,onReturn,onSelectRow,onSelectEntity}:{
  selection:Selection;scene:SceneModel;runtime:RuntimeState;flows?:FlowCatalog;plan:PresentationPlan
@@ -37,16 +39,17 @@ export function Inspector({selection,scene,runtime,flows,plan,onClose,onFocus,on
  const canFocus=canFocusWorldSelection(scene,plan,selection),unavailableReference=reference?(historicalBinding?plan.historicalReferencePresentation:plan.referencePresentation).unavailable.find(item=>item.id===reference.id):undefined
  const bundleReferences=(bundle?.referenceIds??[]).flatMap(id=>referenceMap.has(id)?[referenceMap.get(id)!]:[])
  const selectedCell=arrayCellTarget(scene,selection.kind==='slot'?selection.id:null)
- const title=flow?flow.kind:cluster?`Cluster · ${cluster.label} ×${cluster.members}`:bundle?`${bundle.count} ${bundle.kind==='connector'?'current references':bundle.kind==='binding-history'?'historical bindings':'recorded flows'}`:node?node.kind==='frame'?`${node.title} #${node.invocationNumber}`:node.kind==='class'?node.title:`${node.title} #${node.displayId}`:retired?retired.row.name:selection.kind==='cluster'?'Cluster':selection.kind==='bundle'?'Bundle is not in the current presentation':selection.id
+ const title=flow?flow.kind:cluster?`Cluster · ${cluster.label} ×${cluster.members}`:bundle?`${bundle.count} ${bundle.kind==='connector'?'current references':bundle.kind==='binding-history'?'historical bindings':'recorded flows'}`:node?inspectorEntityTitle(node):retired?retired.row.name:selection.kind==='cluster'?'Cluster':selection.kind==='bundle'?'Bundle is not in the current presentation':selection.id
  const status=node?.kind==='frame'?frameStatusText(node.status):node?.kind==='array'?`${selectedCell?`index ${selectedCell.index} · `:''}length ${node.length} · ${node.cells.length} cells captured`:node?.kind==='collection'?`size ${node.size} · ${node.recordedEntries} entries captured · ${node.size-node.recordedEntries} not recorded`:node?.kind==='object'?`${node.fieldCount} fields`:node?.kind==='class'?`static · ${node.initialization}`:retired?'Scope closed · last captured local value':flow?'Recorded graph edge':cluster?`Structural summary · ${cluster.members} recorded entities`:bundle?'Structural summary':selection.kind==='cluster'?'Cluster is not in the current presentation':'Not present at this point in time'
  const source=node?.kind==='frame'?node.sourceLine:node?.kind==='object'?node.allocationSite:retired?.lifetime.source??flow?.context.source
  const copy=(text:string)=>void navigator.clipboard.writeText(text).then(()=>setCopyMessage('Captured text copied'),()=>setCopyMessage('Clipboard access unavailable'))
- const inbound=node?scene.references.filter(item=>item.targetId===node.id):[]
- return <aside className="inspector glass gg-inspector" aria-label="Selection inspector" onKeyDown={event=>{if(event.key==='Escape'){event.preventDefault();event.stopPropagation();onClose()}}}>
+ // At most ten lists coexist (eight base lists plus loops/scopes). A shared
+ // per-list cap includes overscan, keeping the complete Inspector <=200 rows.
+ return <VirtualListRowLimit.Provider value={20}><aside className="inspector glass gg-inspector" aria-label="Selection inspector" onKeyDown={event=>{if(event.key==='Escape'){event.preventDefault();event.stopPropagation();onClose()}}}>
   <div className="inspector-heading"><strong className={cluster?'inspector-cluster-title':undefined} title={title}>{cluster?<><span>Cluster · {cluster.label}</span><span> ×{cluster.members}</span></>:title}</strong><button aria-label="Close inspector" title="Close inspector" onClick={onClose}><X size={16}/></button></div>
   <p>{status}</p>
   <div className="inspector-actions"><button aria-label="Focus selection" title={canFocus?'Focus selection':'Select a present runtime entity or cluster to Focus'} aria-disabled={!canFocus} onClick={()=>{if(canFocus)onFocus()}}><Crosshair size={14}/>Focus</button><button onClick={onReturn}><CornerUpLeft size={14}/>Return to World</button><button onClick={()=>copy(selectedCell&&rows?rows.at(selectedCell.index).value.exact:title)}><Copy size={14}/>Copy</button></div>
-  {reference&&<p className="gg-inspector-id">Recorded reference · {reference.sourceSlotId} → {reference.targetId}</p>}
+  {reference&&<><p className="gg-inspector-id">Recorded reference · {reference.sourceSlotId} → {reference.targetId}</p><InspectorReferenceFact runtime={runtime} scene={scene} reference={reference} historical={!!historicalBinding}/></>}
   {historicalBinding&&<p className="gg-inspector-id">Historical binding · introduced at Event {historicalBinding.introducedSeq} · {historicalBinding.endKind} at Event {historicalBinding.endSeq}</p>}
   {unavailableReference&&<p>{unavailableReference.reason}</p>}
   {flow&&<details open><summary>Recorded flow</summary><p className="gg-inspector-id">{flow.from} → {flow.to}</p><p>{flow.evidence}{flowEvidence&&` · Event ${flowEvidence.evidence.introducedSeq}`} · {flow.eventId}</p>{!plan.curves.some(curve=>curve.id===flow.id)&&<p>Recorded evidence has no presented semantic ports at this point in time.</p>}</details>}
@@ -61,6 +64,7 @@ export function Inspector({selection,scene,runtime,flows,plan,onClose,onFocus,on
   {node&&'ownership'in node&&<p>{node.ownership} · stable identity <span className="gg-inspector-id">{node.id}</span></p>}
   {retired&&<p className="gg-inspector-id">Recorded lifetime · declared at {retired.lifetime.declaredAt} · last captured at {retired.lifetime.lastChangedAt} · closed at {retired.lifetime.exitedAt}</p>}
   {selection.kind==='slot'&&<p className="gg-inspector-id">Selected storage lifetime: {selection.id}</p>}
+  {node?.kind==='frame'&&<InspectorInvocationFacts runtime={runtime} scene={scene} node={node}/>}
   {(node?.kind==='frame'||retired)&&<InspectorControlFacts runtime={runtime} frameId={node?.kind==='frame'?node.id:retired!.lifetime.frameId}/>}
   {node?.kind==='array'&&<InspectorArrayFacts runtime={runtime} objectId={node.id} index={selectedCell?.index??null}/>}
   {cluster&&<VirtualList key={cluster.id} className="inspector-values inspector-members" count={cluster.memberIds.length} rowHeight={52} label="Cluster members">{index=>{
@@ -73,7 +77,7 @@ export function Inspector({selection,scene,runtime,flows,plan,onClose,onFocus,on
   }}</VirtualList>}
   {expanded&&<section className="gg-inspector-expanded" aria-label={`Captured ${expanded.name}`}><strong>{expanded.name} · {expanded.value.observation}</strong><pre>{expanded.value.exact}</pre>{expanded.value.recordedLength!==undefined&&<p>Recorded length: {expanded.value.recordedLength}</p>}{expanded.value.reason&&<p>{expanded.value.reason}</p>}<button onClick={()=>copy(expanded.value.exact)} aria-label={`Copy ${expanded.name}`}><Copy size={14}/>Copy captured value</button><button onClick={()=>setExpanded(null)}>Close detail</button></section>}
   {copyMessage&&<p role="status">{copyMessage}</p>}
-  {node&&<details><summary>{inbound.length} inbound recorded references</summary><VirtualList count={inbound.length} rowHeight={52} label="Inbound references" className="gg-inspector-inbound">{index=><p className="gg-inspector-id">{inbound[index].sourceSlotId} → {inbound[index].targetId}</p>}</VirtualList></details>}
+  {node&&<InspectorReferences runtime={runtime} scene={scene} entityId={node.id} onSelect={onSelectEntity}/>}
   {!cluster&&!bundle&&<details><summary>Recorded evidence · {provenance.length} graph records</summary>
    {node&&<><p>{node.evidence.kind} · applied prefix {runtime.cursor}</p><VirtualList count={node.evidence.eventIds.length} rowHeight={32} label="Event evidence" className="gg-inspector-events">{index=><p className="gg-inspector-id">{node.evidence.eventIds[index]}</p>}</VirtualList></>}
    {!runtime.executionGraph&&<p>This recording contains no execution graph. Captured runtime values remain available above.</p>}
@@ -92,5 +96,5 @@ export function Inspector({selection,scene,runtime,flows,plan,onClose,onFocus,on
    {flowsOpen&&<><p>{plan.flowPresentation.counts.individual} individual · {plan.flowPresentation.counts.bundled} aggregated · {plan.flowPresentation.counts.unavailable} unavailable · {plan.flowPresentation.counts.scopeExcluded} outside the current scope or context budget</p>
    <VirtualList count={plan.flowPresentation.unavailable.length} rowHeight={76} label="Unavailable flow ports" className="gg-inspector-provenance">{index=>{const item=plan.flowPresentation.unavailable[index];return <button className="inspector-member" aria-label={`Inspect unavailable flow ${item.id}`} onClick={()=>onSelectEntity({kind:'flow',id:item.id})}><span>{item.id}<small>{item.reason}</small></span></button>}}</VirtualList></>}
   </details>
- </aside>
+ </aside></VirtualListRowLimit.Provider>
 }

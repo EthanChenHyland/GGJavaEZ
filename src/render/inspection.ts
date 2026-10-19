@@ -44,3 +44,7 @@ export function inspectorRetiredLocal(runtime:RuntimeState,selection:Selection):
  }
  return null
 }
+
+export function inspectorEntityTitle(node:SceneEntity):string {
+ return node.kind==='frame'?`${node.title} #${node.invocationNumber}`:node.kind==='class'?node.title:`${node.title} #${node.displayId}`
+}

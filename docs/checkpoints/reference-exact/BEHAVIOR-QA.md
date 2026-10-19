@@ -107,3 +107,8 @@ Selected array cells receive individual emphasis and exact-value Copy. Applied-p
 ## Native Person corpus — 2026-10-18
 
 All six Person workflows pass using genuine body/curve picking, native camera controls, exact reverse values/source, registered Interactive/Follow actions, reduced motion and local-only assets. Original30-second limits remain. Obsolete Focus-source/Trace-label/Explore assertions are reconciled with captured allocation evidence and current orthogonal camera behavior. Complete parent 97 passes with frozen source; removal leaves all 14 built JS resources identical. Remaining primitive tests are unchanged. [Corpus and evidence](migration/presentation-retirement.md).
+
+
+## Invocation and reference inspection — 2026-10-19
+
+Current cards show captured caller/receiver/return facts and readable inbound/outbound reference holders. Missing, static and void evidence remain distinct; reverse stepping removes values/bindings before their first recorded evidence. Focused tests pass 41/41 and browser integration 14/14, including fresh JVM return provenance. Full defaults/current-source native confirmation are pending. Original-resolution images remain OPEN for visual convergence. [Details and preserved draft failures](migration/inspector-details.md).

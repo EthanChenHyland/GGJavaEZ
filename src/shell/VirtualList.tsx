@@ -1,5 +1,7 @@
-import { useLayoutEffect, useRef, useState, type ReactNode } from 'react'
+import { createContext, useContext, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { virtualPageRows, virtualRange } from './virtualRange'
+
+export const VirtualListRowLimit=createContext(200)
 
 /** Bounded physical scroll pages preserve reachability even for a JVM-sized
  * logical array. Rows are fetched lazily; no count-sized values are allocated. */
@@ -10,7 +12,8 @@ export function VirtualList({count,rowHeight,label,initialIndex=0,children,class
   const host=useRef<HTMLDivElement>(null),[scroll,setScroll]=useState(0),[height,setHeight]=useState(260);
   const [pageIndex,setPageIndex]=useState(initialIndex),[jump,setJump]=useState(String(initialIndex));
   const [revealRevision,setRevealRevision]=useState(0);
-  const range=virtualRange(count,rowHeight,pageIndex,scroll,height);
+  const rowLimit=useContext(VirtualListRowLimit);
+  const range=virtualRange(count,rowHeight,pageIndex,scroll,height,2,rowLimit);
   useLayoutEffect(()=>{
     const node=host.current;if(!node)return;
     const observer=new ResizeObserver(()=>setHeight(node.clientHeight));observer.observe(node);

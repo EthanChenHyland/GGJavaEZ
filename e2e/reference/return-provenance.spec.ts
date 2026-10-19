@@ -1,6 +1,6 @@
 import {expect,test} from '@playwright/test'
 import {writeFile} from 'node:fs/promises'
-import {browserErrors,home,ready,runFixture,seekCursor,stopOwnedSession} from './harness'
+import {browserErrors,home,ready,runFixture,seekCursor,selectEntity,stopOwnedSession} from './harness'
 
 test.afterEach(async({request})=>stopOwnedSession(request))
 test('actual JVM returns draw only the recorded return edge after its consuming write',async({page,request})=>{
@@ -18,7 +18,7 @@ test('actual JVM returns draw only the recorded return edge after its consuming 
     return candidate.to===flow.destination.slotId&&event?.type==='EXECUTION_FACT'&&event.fact.kind==='write'&&event.fact.origin.kind==='call_result'
    })
    const event=write&&events.find(event=>event.eventId===write.eventId)
-   if(event)return {flow,edge,writeSeq:event.seq,writeId:event.eventId,returnEvent:events.find(event=>event.eventId===edge.eventId),anchors:Object.fromEntries(Object.entries(world.scene().entities).map(([id,node])=>[id,node.anchor]))}
+   if(event)return {firstReturnSeq:events.find(item=>item.type==='RETURN_VALUE'&&item.frameId===flow.frameId||item.type==='EXECUTION_FACT'&&item.fact.kind==='return'&&item.fact.invocationId===flow.frameId)!.seq,flow,edge,writeSeq:event.seq,writeId:event.eventId,returnEvent:events.find(event=>event.eventId===edge.eventId),anchors:Object.fromEntries(Object.entries(world.scene().entities).map(([id,node])=>[id,node.anchor]))}
   }
   return null
  },session.sourceManifest.sources)
@@ -51,6 +51,20 @@ test('actual JVM returns draw only the recorded return edge after its consuming 
  const heading=actual.structuralLabels.find(label=>label.id==='RETURNS')
  expect(heading,'The real return lane heading is visible, rather than merely present in the model').toMatchObject({visible:true})
  expect(heading!.minimumFontPixels).toBeGreaterThanOrEqual(12)
+ // The face stops duplicating a return once the consumer is proven; its
+ // exact captured value remains inspectable through real keyboard selection.
+ await selectEntity(page,evidence.flow.frameId)
+ const details=page.getByRole('region',{name:'Recorded invocation details'})
+ await expect(details).toContainText(`Return: ${evidence.flow.value.exact}`)
+ await expect(details).toContainText('Caller:')
+ await expect(details).toContainText('Receiver: No receiver · recorded static call')
+ await page.screenshot({path:'.ggjavaez/qa/reference-exact/invocation-return-consumed-native.png'})
+ await seekCursor(page,evidence.firstReturnSeq)
+ await expect(details).not.toContainText(`Return: ${evidence.flow.value.exact}`)
+ await seekCursor(page,evidence.firstReturnSeq+1)
+ await expect(details).toContainText(`Return: ${evidence.flow.value.exact}`)
+ await seekCursor(page,evidence.writeSeq+1)
+ await expect(details).toContainText(`Return: ${evidence.flow.value.exact}`)
  await seekCursor(page,evidence.writeSeq)
  expect(await page.evaluate(id=>window.__ggjavaezWorld!.plan().curves.some(curve=>curve.id===id),evidence.flow.id)).toBe(false)
  expect(errors).toEqual([])

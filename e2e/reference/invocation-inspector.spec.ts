@@ -1,0 +1,47 @@
+import {expect,test} from '@playwright/test'
+import {browserErrors,home,seekCursor,selectEntity} from './harness'
+test('captured caller and constructor receiver stay exact through native inspection and reverse stepping',async({page})=>{
+ const errors=browserErrors(page);await page.emulateMedia({reducedMotion:'reduce'});await page.goto('/examples?qa=1')
+ await seekCursor(page,10);await home(page);await selectEntity(page,'frame:person-constructor:1')
+ const details=page.getByRole('region',{name:'Recorded invocation details'})
+ await expect(details).toContainText('Caller: Main.main(');await expect(details).toContainText('#1');await expect(details).toContainText('Receiver: Person #17')
+ const before=await page.evaluate(()=>window.__ggjavaezQA!.cameraPose())
+ for(const cursor of[12,10,12,10]){await seekCursor(page,cursor);await expect(details).toContainText('Receiver: Person #17');expect(await page.evaluate(()=>window.__ggjavaezQA!.cameraPose())).toEqual(before)}
+ await seekCursor(page,18);await home(page);await selectEntity(page,'frame:person-setAge:1')
+ await expect(details).toContainText('Caller: Main.main(');await expect(details).toContainText('Receiver: Person #17')
+ const inspector=page.getByRole('complementary',{name:'Selection inspector'})
+ await expect(inspector.getByRole('button',{name:'Inspect age',exact:true})).toHaveText('18')
+ await page.screenshot({path:'.ggjavaez/qa/reference-exact/invocation-receiver-native.png'})
+ await seekCursor(page,19);await expect(details).toContainText('Return: Value not recorded')
+ await seekCursor(page,18);await expect(details.locator('p').filter({hasText:/^Return:/})).toHaveCount(0)
+ await expect(inspector.getByRole('button',{name:'Inspect age',exact:true})).toHaveText('18')
+ expect(errors).toEqual([])
+})
+
+test('named inbound and outbound references use actual storage and disappear before their recorded binding',async({page})=>{
+ const errors=browserErrors(page);await page.emulateMedia({reducedMotion:'reduce'});await page.goto('/examples?qa=1')
+ await seekCursor(page,18);await home(page);await selectEntity(page,'object:person:17')
+ const inspector=page.getByRole('complementary',{name:'Selection inspector'})
+ await expect(inspector.locator('summary').filter({hasText:'3 inbound recorded references'})).toHaveCount(1)
+ await expect(inspector.locator('summary').filter({hasText:'0 outbound recorded references'})).toHaveCount(1)
+ await inspector.locator('summary').filter({hasText:'3 inbound recorded references'}).click()
+ const holder=inspector.getByRole('list',{name:'Inbound references'}).getByRole('button',{name:/^Inspect reference from Frame Main\.main\(.*local p$/})
+ await expect(holder).toHaveCount(1);await holder.click()
+ const selection=await page.evaluate(()=>window.__ggjavaezQA!.selection()),pose=await page.evaluate(()=>window.__ggjavaezQA!.cameraPose())
+ expect(selection?.kind).toBe('reference')
+ await expect(inspector).toContainText('Frame Main.main() #1 → local p → Person #17')
+ await inspector.locator('summary').filter({hasText:'1 outbound recorded references'}).click()
+ await expect(inspector.getByRole('list',{name:'Outbound references'}).getByRole('button')).toHaveCount(1)
+ await page.screenshot({path:'.ggjavaez/qa/reference-exact/reference-holders-native.png'})
+ await seekCursor(page,13);await expect(inspector).toContainText('Not present at this point in time')
+ expect(await page.evaluate(()=>window.__ggjavaezQA!.selection())).toEqual(selection)
+ await seekCursor(page,18);await expect(inspector).toContainText('Frame Main.main() #1 → local p → Person #17')
+ expect(await page.evaluate(()=>window.__ggjavaezQA!.cameraPose())).toEqual(pose)
+ const summaries=inspector.locator('details > summary')
+ for(let index=0;index<await summaries.count();index++){
+  const summary=summaries.nth(index)
+  if(!(await summary.evaluate(node=>(node.parentElement as HTMLDetailsElement).open)))await summary.click()
+ }
+ expect(await inspector.getByRole('listitem').count()).toBeLessThanOrEqual(200)
+ expect(errors).toEqual([])
+})
