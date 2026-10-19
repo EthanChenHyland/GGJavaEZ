@@ -137,3 +137,8 @@ Seven unused old renderer/planner helpers are removed after complete parent 97-c
 ## Captured Inspector details — 2026-10-19
 
 Invocation details use applied runtime/graph evidence, distinguish opaque ancestors from callers and preserve returns after their consumers. Reference descriptions name actual storage; inbound/outbound counts remain exact and historical bindings never borrow current redeclared names. A shared title formatter keeps identities consistent. The Inspector's at most ten lists share a 20-row cap, including overscan, for a 200-row total; logical index access remains paged. [Implementation, tests and remaining action gaps](migration/inspector-details.md).
+
+
+## Inspector actions and captured Source — 2026-10-19
+
+Inspector Reveal/Copy are registered presentation commands backed by the current mounted World. Applied-prefix source evidence creates a transient captured-file receipt; the existing read-only Source view owns its temporary Monaco model. Explicit reveal has a distinct marker and never mutates executing-source bindings or editable drafts. Focus/Return remains contextual. [Implementation and evidence](migration/inspector-actions.md).

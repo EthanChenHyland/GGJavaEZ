@@ -1,5 +1,5 @@
 import type { Selection } from '../contracts/interaction'
-import type { SceneEntity, SceneModel, ValueText } from '../contracts/worldV2'
+import type { SceneEntity, SceneModel, ValueText, PresentationPlan } from '../contracts/worldV2'
 import type { FlowCatalog, RecordedProvenance } from '../world/flowCatalog'
 import { arrayElementSlotId, type RuntimeState, type VariableLifetime } from '../contracts/runtime'
 import { notRecordedValue, valueText } from '../world/valueText'
@@ -18,6 +18,7 @@ export function inspectorRows(node:SceneEntity):{count:number;at(index:number):I
 export function inspectorEntity(scene:SceneModel,selection:Selection):SceneEntity|null {
  if(!selection||selection.kind==='flow'||selection.kind==='cluster'||selection.kind==='bundle')return null
  const reference=selection.kind==='reference'?scene.references.find(reference=>reference.id===selection.id)??scene.historicalBindings.find(binding=>binding.id===selection.id):null
+ if(selection.kind==='reference'&&!reference)return null
  const id=reference?.sourceId??selection.id
  return scene.entities[id]??arrayCellTarget(scene,id)?.array??Object.values(scene.entities).find(node=>entitySlotIds(node).includes(id))??null
 }
@@ -47,4 +48,13 @@ export function inspectorRetiredLocal(runtime:RuntimeState,selection:Selection):
 
 export function inspectorEntityTitle(node:SceneEntity):string {
  return node.kind==='frame'?`${node.title} #${node.invocationNumber}`:node.kind==='class'?node.title:`${node.title} #${node.displayId}`
+}
+
+/** The visible header and Copy Value use the same recorded identity text. */
+export function inspectorSelectionTitle(selection:NonNullable<Selection>,node:SceneEntity|null,details:{
+ flowKind?:string;cluster?:Pick<PresentationPlan['clusters'][number],'label'|'members'>|null
+ bundle?:Pick<PresentationPlan['bundles'][number],'count'|'kind'>;retiredName?:string
+}={}):string{
+ const {flowKind,cluster,bundle,retiredName}=details
+ return flowKind??(cluster?`Cluster · ${cluster.label} ×${cluster.members}`:bundle?`${bundle.count} ${bundle.kind==='connector'?'current references':bundle.kind==='binding-history'?'historical bindings':'recorded flows'}`:node?inspectorEntityTitle(node):retiredName??(selection.kind==='cluster'?'Cluster':selection.kind==='bundle'?'Bundle is not in the current presentation':selection.id))
 }

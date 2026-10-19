@@ -118,7 +118,7 @@ test('3D cell picking and guidance changes preserve committed values and indexed
  await page.addInitScript(()=>Object.defineProperty(navigator,'clipboard',{value:{writeText:async(text:string)=>{(window as unknown as {arrayCopiedText?:string}).arrayCopiedText=text}},configurable:true}))
  await open(page);await seekCursor(page,comparison.seq+1);await home(page);await pickCell(page,1)
  await expect(inspector(page).getByRole('button',{name:'Inspect [1]',exact:true})).toHaveText('3')
- await inspector(page).getByRole('button',{name:'Copy',exact:true}).click()
+ await inspector(page).getByRole('button',{name:'Copy Value',exact:true}).click()
  await expect.poll(()=>page.evaluate(()=>(window as unknown as {arrayCopiedText?:string}).arrayCopiedText)).toBe('3')
  await follow(page);await expect(rail(page)).toHaveAttribute('aria-valuenow',String(comparison.seq+1))
  await page.locator('.world-canvas').focus();await page.keyboard.press('+');await ready(page)

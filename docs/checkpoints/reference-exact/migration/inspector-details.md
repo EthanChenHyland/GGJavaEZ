@@ -16,3 +16,8 @@ Lead original-resolution review of all three current native images is hash-bound
 
 
 Full defaults pass **2107 /2177 with 70 explicit opt-in skips**, 223 files (216 passed/seven skipped), **173.66 seconds**, observed exit 0 (`unit-inspector-details-full.log`). No existing unit/provenance/golden/performance oracle is removed or weakened. Final production build/typecheck, strict browser TypeScript, lint and protected/reference checks pass. Complete fixed-commit 105-case native confirmation remains pending.
+
+
+## Frozen complete Inspector native confirmation — 2026-10-19
+
+Clean pushed commit `3f9ad852ae0b2490a044763ea4b6b2f107d6cb2b` passes **105 expected /105 executed /105 passed /zero skipped /zero flaky /zero unexpected**, **739.68 seconds (12.3 minutes)**, observed exit 0. Run `4dd3ce59-5722-4495-873b-6fe1c5b79e3d` verifies unchanged HEAD/origin, tracked source and protected main before/after. Evidence: `validation-inspector-details-run.json/log`, `browser-inspector-details-confirmed.json/log` and unique `native-inspector-details-confirmed-results/`. This is the complete current curated/native and actual-JVM functional mix, not 105 fresh JVM sessions, the formal 80-session matrix or all 206 default browser cases. Three fresh native Inspector PNGs are copied into `native-inspector-details-confirmed-captures/`, with run-time bounds and SHA-256 manifests checked before later captures can overwrite generic paths. The lead opens all three archived images at original resolution; their hash-bound `review.json` remains OPEN for visual convergence. Remaining actions, old-browser/module cleanup, world typography/material/glow composition, Dense failures and final A–G gates remain open.

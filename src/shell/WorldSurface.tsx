@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { RuntimeState, SourceLocation, TraceDocument } from '../contracts/runtime';
 import type { Selection } from '../contracts/interaction';
 import type { EmbeddedExecution, RuntimeNavigation } from './runtimeContracts';
@@ -21,12 +21,15 @@ import {createConnectorRouter} from '../world/connectorRouter';
 import { focusSourceLocation, sourceLocationFor } from './source/sourceSync';
 import {useQualityStore} from '../render/quality/qualityStore';
 import { shellStore } from '../workspace/shellStore';
-import { registerWorldCommandSurface } from '../ide/commands';
+import { registerWorldCommandSurface,executeInspectorCommand,inspectorCommandAvailability,worldCommandAvailability,type InspectorCommandId } from '../ide/commands';
+import {inspectorActionTarget} from '../render/inspectorActions';
+import type {SourceRevealRequest} from './source/sourceReveal';
 import {canFocusWorldSelection} from '../interaction/focusTarget';
 import type {Size} from '../camera/projection';
 const fullRecording = { state: 'FULL', reason: null, budget: null, lastRecordedSeq: null, executionContinued: false } as const;
-export function WorldSurface({ trace, onSourceChange, onRuntimeChange, navigation, suppressInspector = false, execution, safeFrame,inspectorRect,pausedSource,viewport }: {
+export function WorldSurface({ trace, onSourceChange, onRevealSource, onRuntimeChange, navigation, suppressInspector = false, execution, safeFrame,inspectorRect,pausedSource,viewport }: {
     trace: TraceDocument;
+    onRevealSource?:(request:SourceRevealRequest)=>void;
     onSourceChange?: (location: SourceLocation | null) => void;
     onRuntimeChange?: (runtime: RuntimeState, selection: Selection,recordingId:string) => void;
     navigation?: RuntimeNavigation | null;
@@ -91,8 +94,29 @@ export function WorldSurface({ trace, onSourceChange, onRuntimeChange, navigatio
       // Wait for a missing prefix target to exist. Once placed, pose, LOD,
       // scrubbing and viewport changes cannot move the current item's card.
     },[scene,plan,inspectorSelection,suppressInspector,viewport]);
-    const commandWorld=useRef({scene,plan,recorded:trace.events.length>0});commandWorld.current={scene,plan,recorded:trace.events.length>0};
-    useEffect(()=>registerWorldCommandSurface({hasRecording:()=>commandWorld.current.recorded,canFocusSelection:selection=>canFocusWorldSelection(commandWorld.current.scene,commandWorld.current.plan,selection),hasPresentedFlow:id=>commandWorld.current.plan.curves.some(curve=>curve.id===id&&['flow','return','exception','binding-history'].includes(curve.kind))}),[]);
+    const inspection=useMemo(()=>inspectorActionTarget(trace,runtime,scene,plan,inspectorSelection),[trace,runtime,scene,plan,inspectorSelection]);
+    const [inspectionNotice,setInspectionNotice]=useState('');
+    useEffect(()=>setInspectionNotice(''),[inspection.key]);
+    const inspectionRef=useRef({target:inspection,selection:inspectorSelection,onRevealSource});
+    inspectionRef.current={target:inspection,selection:inspectorSelection,onRevealSource};
+    const inspectionState={present:inspection.present,sourceAvailable:!!inspection.source&&!!onRevealSource,copyAvailable:inspection.copyText!==null};
+    const activateInspection=async(id:InspectorCommandId)=>{
+      const {target,selection,onRevealSource:reveal}=inspectionRef.current;
+      if(id==='view.revealSource'){
+        if(target.source&&selection)reveal?.({recordingId:scene.recordingId,cursor:scene.cursor,targetId:selection.id,location:target.source});
+        return;
+      }
+      if(target.copyText===null)return;
+      try{
+        await navigator.clipboard.writeText(target.copyText);
+        if(inspectionRef.current.target.key===target.key)setInspectionNotice(target.copyObservation==='OBSERVED'?'Captured text copied':`Captured text copied · ${target.copyObservation.toLowerCase().replaceAll('_',' ')}`);
+      }catch{
+        if(inspectionRef.current.target.key===target.key)setInspectionNotice('Clipboard access unavailable');
+      }
+    };
+    const commandWorld=useRef({scene,plan,recorded:trace.events.length>0,inspectionState,activateInspection});
+    commandWorld.current={scene,plan,recorded:trace.events.length>0,inspectionState,activateInspection};
+    useEffect(()=>registerWorldCommandSurface({inspection:{state:()=>commandWorld.current.inspectionState,execute:id=>commandWorld.current.activateInspection(id)},hasRecording:()=>commandWorld.current.recorded,canFocusSelection:selection=>canFocusWorldSelection(commandWorld.current.scene,commandWorld.current.plan,selection),hasPresentedFlow:id=>commandWorld.current.plan.curves.some(curve=>curve.id===id&&['flow','return','exception','binding-history'].includes(curve.kind))}),[]);
     const lastNavigation = useRef(-1);
     useEffect(() => {
         if (!navigation || navigation.revision === lastNavigation.current)
@@ -110,10 +134,15 @@ export function WorldSurface({ trace, onSourceChange, onRuntimeChange, navigatio
     const select = (next: Selection) => {
         setSelection(next);
     };
+    const inspectionFocus=worldCommandAvailability(focus?'navigation.exitFocus':'navigation.focusSelection',{
+      worldPresent:trace.events.length>0,selection:inspectorSelection,focusActive:!!focus,
+      focusTargetPresent:canFocusWorldSelection(scene,plan,inspectorSelection),presentedFlow:inspectorSelection?.kind==='flow'&&plan.curves.some(curve=>curve.id===inspectorSelection.id),
+      cinematic,contextLost:useQualityStore.getState().contextLost,
+    });
     const focusSelection = (target=inspectorSelection) => { if (canFocusWorldSelection(scene,plan,target))useCameraStore.getState().focus(target); };
     return <section className="world-panel" aria-label="Runtime world">
     <RuntimeCanvas trace={trace} timeline={playback.store} scene={scene} plan={plan} layout={layout} safeFrame={safeFrame} inspectorRect={suppressInspector?null:inspectorRect} selection={selection} onSelect={select} onFocus={focusSelection}/>
-    {!suppressInspector && <Inspector selection={inspectorSelection} scene={scene} runtime={runtime} flows={flows} plan={plan} onClose={() => shellStore.setState({inspectorHidden:true})} onFocus={focusSelection} onSelectRow={id=>setSelection({kind:'slot',id})} onSelectEntity={select} onReturn={()=>useCameraStore.getState().exitFocus()}/>}
+    {!suppressInspector && <Inspector actions={{focusActive:!!focus,focus:inspectionFocus,reveal:inspectorCommandAvailability('view.revealSource',inspectionState),copy:inspectorCommandAvailability('view.copyValue',inspectionState),activate:executeInspectorCommand,notice:inspectionNotice}} selection={inspectorSelection} scene={scene} runtime={runtime} flows={flows} plan={plan} onClose={() => shellStore.setState({inspectorHidden:true})} onFocus={focusSelection} onSelectRow={id=>setSelection({kind:'slot',id})} onSelectEntity={select} onReturn={()=>useCameraStore.getState().exitFocus()}/>}
     <div className="world-timeline"><TimeDock trace={trace} playback={playback} execution={execution} settings={{reducedMotion,onReducedMotionChange:useQualityStore.getState().setReducedMotion,quality,onQualityChange:tier=>{void useQualityStore.getState().selectQuality(tier)},cinematicAvailable:cinematic.enabled,cinematicReason:cinematic.enabled?undefined:cinematic.reason}}/></div>
     {qualityNotice&&<div className="world-quality-notice glass" role="status">{qualityNotice}<button onClick={()=>useQualityStore.getState().clearNotice()} aria-label="Dismiss rendering notice">×</button></div>}
     {traceState.active && <div className="world-settings glass" role="group" aria-label="Trace scope">{(['relevant', 'current', 'all'] as const).map(item => <button key={item} aria-pressed={scope === item} onClick={() => setScope(item)}>{item[0].toUpperCase() + item.slice(1)}</button>)}</div>}

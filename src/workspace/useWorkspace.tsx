@@ -11,7 +11,7 @@ import { bridge,draftStorageKey,persistProjectPathChange,readProjectDrafts,renam
 import { defaultClassFolder,javaClassContent,javaClassPath } from '../ide/classCreation'
 import type { ExecutionStream } from '../ide/client'
 import type { ShellCommandId } from '../ide/commands'
-import { createIdeCommandService,hasFocusableCommandSelection,hasMountedRecording,hasPresentedCommandFlow,ideCommandDefinitions,isPresentationCommand,isShellCommand,worldCommandAvailability,type CommandArguments,type CommandContext,type IdeCommandHost,type IdeCommandId } from '../ide/commands'
+import { createIdeCommandService,executeInspectorCommand,hasFocusableCommandSelection,hasMountedRecording,hasPresentedCommandFlow,ideCommandDefinitions,isPresentationCommand,isShellCommand,worldCommandAvailability,type CommandArguments,type CommandContext,type IdeCommandHost,type IdeCommandId } from '../ide/commands'
 import type { CompileDiagnostic,ProjectEntry,ProjectFile,SourceLocation } from '../ide/contracts'
 import { defaultLaunch } from '../ide/javaProject'
 import { pathIsWithin,transitionWorkspacePaths,type WorkspacePathChange } from '../ide/pathChanges'
@@ -1078,6 +1078,7 @@ export function useWorkspace(recordingViewer = false) {
         useWorldInteractionStore.getState().setTraceScope(id === 'navigation.traceCurrent' ? 'current' : id === 'navigation.traceAll' ? 'all' : 'relevant')
       }
       else if (id === 'navigation.followPath') { const selection = useWorldInteractionStore.getState().selection; if (selection?.kind === 'flow' && hasPresentedCommandFlow(selection.id)) useCameraStore.getState().followPath(selection.id) }
+      else if(id==='view.revealSource'||id==='view.copyValue')await executeInspectorCommand(id)
       else if (id === 'view.qualityInteractive' || id === 'view.qualityCinematic') await useQualityStore.getState().selectQuality(id === 'view.qualityInteractive' ? 'INTERACTIVE' : 'CINEMATIC')
       else if (id === 'view.reducedMotion') { const quality = useQualityStore.getState(); quality.setReducedMotion(!quality.reducedMotion.inApp) }
       else if (id === 'execution.run' || id === 'execution.runWithoutVisualization') await commandIO(() => performExecution('run', id === 'execution.runWithoutVisualization', context))

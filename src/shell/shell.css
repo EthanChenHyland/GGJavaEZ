@@ -134,3 +134,6 @@
 .world-quality-notice button { min-width:24px;min-height:24px;margin-left:8px }
 .world-graphics-status{position:absolute;left:50%;top:45%;transform:translate(-50%,-50%);display:flex;align-items:center;gap:12px;border-radius:8px;padding:16px;color:inherit;font-size:14px;pointer-events:auto}
 .world-graphics-status button{min-width:56px;min-height:28px}
+
+.gg-source-reveal-line {background:color-mix(in srgb,var(--color-execution) 16%,transparent)!important;outline:1px solid color-mix(in srgb,var(--color-execution) 70%,transparent);outline-offset:-1px}
+.gg-source-reveal-gutter::before {content:"↗";color:var(--color-execution);font-size:12px;position:absolute;left:0}

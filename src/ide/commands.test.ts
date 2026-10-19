@@ -75,7 +75,7 @@ describe('canonical command definitions and target enforcement', () => {
       'workbench.restartJava', 'workbench.importProject', 'workbench.newProject',
       'navigation.explore', 'navigation.follow', 'navigation.focusSelection', 'navigation.exitFocus',
       'navigation.traceRelevant', 'navigation.traceCurrent', 'navigation.traceAll', 'navigation.followPath', 'navigation.home',
-      'view.qualityInteractive', 'view.qualityCinematic', 'view.reducedMotion',
+      'view.qualityInteractive', 'view.qualityCinematic', 'view.reducedMotion', 'view.revealSource', 'view.copyValue',
     ])
     expect(ideCommandDefinitions['java.renameSymbol']).toMatchObject({ scope: 'editor', bindings: [{ code: 'F2' }] })
     expect(ideCommandDefinitions['resource.rename'].bindings).toEqual([])
@@ -84,6 +84,8 @@ describe('canonical command definitions and target enforcement', () => {
     expect(ideCommandDefinitions['workbench.commandPalette'].bindings).toEqual([{ code: 'KeyP', primary: true, shift: true }, { code: 'F1' }])
     expect(ideCommandDefinitions['navigation.focusSelection']).toMatchObject({ category: 'Navigation', scope: 'workspace', bindings: [{ code: 'KeyF', alt: true, shift: true }] })
     expect(ideCommandDefinitions['navigation.home']).toMatchObject({ category: 'Navigation', scope: 'world', bindings: [{ code: 'KeyH' }] })
+    expect(ideCommandDefinitions['view.revealSource']).toMatchObject({category:'View',scope:'world',title:'Reveal Source',bindings:[]})
+    expect(ideCommandDefinitions['view.copyValue']).toMatchObject({category:'View',scope:'world',title:'Copy Value',bindings:[]})
     for (const id of ['navigation.traceRelevant', 'navigation.traceCurrent', 'navigation.traceAll', 'navigation.followPath', 'navigation.follow', 'navigation.exitFocus', 'navigation.explore'] as const)
       expect(ideCommandDefinitions[id].bindings).toEqual([])
     expect(Object.isFrozen(ideCommandDefinitions)).toBe(true)
@@ -405,7 +407,7 @@ describe('Spatial shell registry integration', () => {
     f.set({ projectId: '', tabs: [], resources: [], closedDrafts: [], activePath: null, editorPath: null })
     f.host.operations.shell = shell
     const ids = Object.values(ideCommandDefinitions).filter(definition => isPresentationCommand(definition.id)).map(definition => definition.id)
-    expect(ids).toHaveLength(12)
+    expect(ids).toHaveLength(14)
     for (const id of ids) {
       expect(isShellCommand(id)).toBe(true)
       expect(f.service.availability(id, f.context())).toEqual({ enabled: true })

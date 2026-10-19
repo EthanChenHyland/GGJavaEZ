@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Crosshair, Copy, X, CornerUpLeft } from 'lucide-react'
+import { Crosshair, Copy, X, CornerUpLeft, FileSearch } from 'lucide-react'
 import type { Selection } from '../contracts/interaction'
 import type { RuntimeState } from '../contracts/runtime'
 import type { PresentationPlan, SceneModel } from '../contracts/worldV2'
 import type { FlowCatalog } from '../world/flowCatalog'
 import { frameStatusText } from '../world/frameStatus'
-import { inspectorEntity, inspectorEntityTitle, inspectorRetiredLocal, inspectorProvenance, inspectorRows, type InspectorRow } from './inspection'
+import { inspectorEntity, inspectorSelectionTitle, inspectorRetiredLocal, inspectorProvenance, inspectorRows, type InspectorRow } from './inspection'
 import { VirtualList,VirtualListRowLimit } from '../shell/VirtualList'
 import { arrayCellTarget } from '../world/arrayCellTarget'
 import { canFocusWorldSelection } from '../interaction/focusTarget'
@@ -14,9 +14,14 @@ import {InspectorControlFacts} from './InspectorControlFacts'
 import {InspectorArrayFacts} from './InspectorArrayFacts'
 import {InspectorInvocationFacts} from './InspectorInvocationFacts'
 import {InspectorReferenceFact,InspectorReferences} from './InspectorReferences'
+import type {CommandAvailability,InspectorCommandId} from '../ide/commands'
 import './inspector.css'
-export function Inspector({selection,scene,runtime,flows,plan,onClose,onFocus,onReturn,onSelectRow,onSelectEntity}:{
- selection:Selection;scene:SceneModel;runtime:RuntimeState;flows?:FlowCatalog;plan:PresentationPlan
+export interface InspectorActions {
+ focusActive:boolean;focus:CommandAvailability;reveal:CommandAvailability;copy:CommandAvailability;notice:string
+ activate(id:InspectorCommandId):Promise<void>
+}
+export function Inspector({actions,selection,scene,runtime,flows,plan,onClose,onFocus,onReturn,onSelectRow,onSelectEntity}:{
+ actions?:InspectorActions;selection:Selection;scene:SceneModel;runtime:RuntimeState;flows?:FlowCatalog;plan:PresentationPlan
  onClose():void;onFocus():void;onReturn():void;onSelectRow(slotId:string):void;onSelectEntity(selection:NonNullable<Selection>):void
 }) {
  const [expanded,setExpanded]=useState<InspectorRow|null>(null),[copyMessage,setCopyMessage]=useState('');
@@ -39,16 +44,30 @@ export function Inspector({selection,scene,runtime,flows,plan,onClose,onFocus,on
  const canFocus=canFocusWorldSelection(scene,plan,selection),unavailableReference=reference?(historicalBinding?plan.historicalReferencePresentation:plan.referencePresentation).unavailable.find(item=>item.id===reference.id):undefined
  const bundleReferences=(bundle?.referenceIds??[]).flatMap(id=>referenceMap.has(id)?[referenceMap.get(id)!]:[])
  const selectedCell=arrayCellTarget(scene,selection.kind==='slot'?selection.id:null)
- const title=flow?flow.kind:cluster?`Cluster · ${cluster.label} ×${cluster.members}`:bundle?`${bundle.count} ${bundle.kind==='connector'?'current references':bundle.kind==='binding-history'?'historical bindings':'recorded flows'}`:node?inspectorEntityTitle(node):retired?retired.row.name:selection.kind==='cluster'?'Cluster':selection.kind==='bundle'?'Bundle is not in the current presentation':selection.id
+ const title=inspectorSelectionTitle(selection,node,{flowKind:flow?.kind,cluster,bundle,retiredName:retired?.row.name})
  const status=node?.kind==='frame'?frameStatusText(node.status):node?.kind==='array'?`${selectedCell?`index ${selectedCell.index} · `:''}length ${node.length} · ${node.cells.length} cells captured`:node?.kind==='collection'?`size ${node.size} · ${node.recordedEntries} entries captured · ${node.size-node.recordedEntries} not recorded`:node?.kind==='object'?`${node.fieldCount} fields`:node?.kind==='class'?`static · ${node.initialization}`:retired?'Scope closed · last captured local value':flow?'Recorded graph edge':cluster?`Structural summary · ${cluster.members} recorded entities`:bundle?'Structural summary':selection.kind==='cluster'?'Cluster is not in the current presentation':'Not present at this point in time'
  const source=node?.kind==='frame'?node.sourceLine:node?.kind==='object'?node.allocationSite:retired?.lifetime.source??flow?.context.source
  const copy=(text:string)=>void navigator.clipboard.writeText(text).then(()=>setCopyMessage('Captured text copied'),()=>setCopyMessage('Clipboard access unavailable'))
+ const focusActive=actions?.focusActive??false
+ const focusAvailability=actions?.focus??(canFocus?{enabled:true as const}:{enabled:false as const,reason:'Focus target is not present at this point in time'})
+ const disconnected={enabled:false as const,reason:'Inspector actions are not connected'}
+ const revealAvailability=actions?.reveal??disconnected,copyAvailability=actions?.copy??disconnected
+ const activate=(id:InspectorCommandId)=>{
+  const availability=id==='view.revealSource'?revealAvailability:copyAvailability
+  if(!availability.enabled||!actions)return
+  setCopyMessage('')
+  void actions.activate(id).catch(error=>setCopyMessage(error instanceof Error?error.message:String(error)))
+ }
  // At most ten lists coexist (eight base lists plus loops/scopes). A shared
  // per-list cap includes overscan, keeping the complete Inspector <=200 rows.
  return <VirtualListRowLimit.Provider value={20}><aside className="inspector glass gg-inspector" aria-label="Selection inspector" onKeyDown={event=>{if(event.key==='Escape'){event.preventDefault();event.stopPropagation();onClose()}}}>
   <div className="inspector-heading"><strong className={cluster?'inspector-cluster-title':undefined} title={title}>{cluster?<><span>Cluster · {cluster.label}</span><span> ×{cluster.members}</span></>:title}</strong><button aria-label="Close inspector" title="Close inspector" onClick={onClose}><X size={16}/></button></div>
   <p>{status}</p>
-  <div className="inspector-actions"><button aria-label="Focus selection" title={canFocus?'Focus selection':'Select a present runtime entity or cluster to Focus'} aria-disabled={!canFocus} onClick={()=>{if(canFocus)onFocus()}}><Crosshair size={14}/>Focus</button><button onClick={onReturn}><CornerUpLeft size={14}/>Return to World</button><button onClick={()=>copy(selectedCell&&rows?rows.at(selectedCell.index).value.exact:title)}><Copy size={14}/>Copy</button></div>
+  <div className="inspector-actions">
+   <button aria-label={focusActive?'Return to World':'Focus selection'} title={focusAvailability.enabled?focusActive?'Return to World':'Focus selection':focusAvailability.reason} aria-description={focusAvailability.enabled?undefined:focusAvailability.reason} aria-disabled={!focusAvailability.enabled} onClick={()=>{if(focusAvailability.enabled){if(focusActive)onReturn();else onFocus()}}}>{focusActive?<CornerUpLeft size={14}/>:<Crosshair size={14}/>} {focusActive?'Return to World':'Focus'}</button>
+   <button title={revealAvailability.enabled?'Reveal Source':revealAvailability.reason} aria-description={revealAvailability.enabled?undefined:revealAvailability.reason} aria-disabled={!revealAvailability.enabled} onClick={()=>activate('view.revealSource')}><FileSearch size={14}/>Reveal Source</button>
+   <button title={copyAvailability.enabled?'Copy Value':copyAvailability.reason} aria-description={copyAvailability.enabled?undefined:copyAvailability.reason} aria-disabled={!copyAvailability.enabled} onClick={()=>activate('view.copyValue')}><Copy size={14}/>Copy Value</button>
+  </div>
   {reference&&<><p className="gg-inspector-id">Recorded reference · {reference.sourceSlotId} → {reference.targetId}</p><InspectorReferenceFact runtime={runtime} scene={scene} reference={reference} historical={!!historicalBinding}/></>}
   {historicalBinding&&<p className="gg-inspector-id">Historical binding · introduced at Event {historicalBinding.introducedSeq} · {historicalBinding.endKind} at Event {historicalBinding.endSeq}</p>}
   {unavailableReference&&<p>{unavailableReference.reason}</p>}
@@ -76,7 +95,7 @@ export function Inspector({selection,scene,runtime,flows,plan,onClose,onFocus,on
     const row=rows!.at(index);return <div className="inspector-value"><span title={row.slotId}>{row.key?.exact??row.name}<small>{row.type}</small></span>{node?.kind==='array'&&<button aria-label={`Reveal index ${index}`} title={`Reveal the recorded identity of index ${index}`} onClick={()=>onSelectRow(row.slotId)}>↗</button>}{node?.kind==='frame'&&<button aria-label={`Select ${row.name} storage`} title={`Select recorded ${row.name} storage`} aria-pressed={selection.kind==='slot'&&selection.id===row.slotId} onClick={()=>onSelectRow(row.slotId)}>↗</button>}<button title={`${row.value.observation}${row.value.reason?` · ${row.value.reason}`:''} · Inspect captured value`} aria-label={`Inspect ${row.name}`} onClick={()=>setExpanded(row)}>{row.value.exact}</button></div>;
   }}</VirtualList>}
   {expanded&&<section className="gg-inspector-expanded" aria-label={`Captured ${expanded.name}`}><strong>{expanded.name} · {expanded.value.observation}</strong><pre>{expanded.value.exact}</pre>{expanded.value.recordedLength!==undefined&&<p>Recorded length: {expanded.value.recordedLength}</p>}{expanded.value.reason&&<p>{expanded.value.reason}</p>}<button onClick={()=>copy(expanded.value.exact)} aria-label={`Copy ${expanded.name}`}><Copy size={14}/>Copy captured value</button><button onClick={()=>setExpanded(null)}>Close detail</button></section>}
-  {copyMessage&&<p role="status">{copyMessage}</p>}
+  {(copyMessage||actions?.notice)&&<p role="status">{copyMessage||actions?.notice}</p>}
   {node&&<InspectorReferences runtime={runtime} scene={scene} entityId={node.id} onSelect={onSelectEntity}/>}
   {!cluster&&!bundle&&<details><summary>Recorded evidence · {provenance.length} graph records</summary>
    {node&&<><p>{node.evidence.kind} · applied prefix {runtime.cursor}</p><VirtualList count={node.evidence.eventIds.length} rowHeight={32} label="Event evidence" className="gg-inspector-events">{index=><p className="gg-inspector-id">{node.evidence.eventIds[index]}</p>}</VirtualList></>}

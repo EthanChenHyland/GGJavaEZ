@@ -1,4 +1,4 @@
-export type SourceMark = 'running' | 'paused' | 'history' | 'focus'
+export type SourceMark = 'running' | 'paused' | 'history' | 'focus' | 'reveal'
 export interface SourceScrollTarget { mark: SourceMark; line: number | null; key: string }
 export interface VisibleSourceLines { first: number; last: number }
 export type SourceScrollAction = 'middle-third' | 'reveal' | 'none'

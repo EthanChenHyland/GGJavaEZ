@@ -112,3 +112,8 @@ All six Person workflows pass using genuine body/curve picking, native camera co
 ## Invocation and reference inspection — 2026-10-19
 
 Current cards show captured caller/receiver/return facts and readable inbound/outbound reference holders. Missing, static and void evidence remain distinct; reverse stepping removes values/bindings before their first recorded evidence. Focused tests pass 41/41 and browser integration 14/14, including fresh JVM return provenance. Full defaults/current-source native confirmation are pending. Original-resolution images remain OPEN for visual convergence. [Details and preserved draft failures](migration/inspector-details.md).
+
+
+## Inspector actions and captured Source — 2026-10-19
+
+Affected integration passes **23/23**, zero skips, including Inspector actions at desktop/narrow sizes, real JVM captured-source/draft preservation, repeated temporary-model release, arrays, Person, editor ownership and Source/debugger scrolling at all five viewports. Disabled keyboard and physical pointer activation preserve all state. Initial new test assumptions and corrections are retained in [the action ledger](migration/inspector-actions.md). Final defaults pass **2124/2194 with 70 explicit opt-in skips**, **178.90 seconds**, exit 0; image review remains OPEN for world convergence.

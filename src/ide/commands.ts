@@ -33,7 +33,7 @@ export type ShellCommandId = 'execution.run' | 'execution.runWithoutVisualizatio
   | 'workbench.launch' | 'workbench.symbols' | 'workbench.jdk' | 'workbench.restartJava' | 'workbench.importProject' | 'workbench.newProject'
   | 'navigation.explore' | 'navigation.follow' | 'navigation.focusSelection' | 'navigation.exitFocus'
   | 'navigation.traceRelevant' | 'navigation.traceCurrent' | 'navigation.traceAll' | 'navigation.followPath' | 'navigation.home'
-  | 'view.qualityInteractive' | 'view.qualityCinematic' | 'view.reducedMotion'
+  | 'view.qualityInteractive' | 'view.qualityCinematic' | 'view.reducedMotion' | 'view.revealSource' | 'view.copyValue'
 type ShellCommandArguments = { [K in ShellCommandId]: Record<string, never> }
 export interface CommandArguments extends ShellCommandArguments {
   'file.open': { location?: SourceLocation }
@@ -179,10 +179,17 @@ export const ideCommandDefinitions: Readonly<Record<IdeCommandId, CommandDefinit
   'view.qualityInteractive': definition('view.qualityInteractive', 'Quality: Interactive', 'View'),
   'view.qualityCinematic': definition('view.qualityCinematic', 'Quality: Cinematic', 'View'),
   'view.reducedMotion': definition('view.reducedMotion', 'Toggle Reduced Motion', 'View'),
+  'view.revealSource': definition('view.revealSource', 'Reveal Source', 'View', [], 'world'),
+  'view.copyValue': definition('view.copyValue', 'Copy Value', 'View', [], 'world'),
 })
 
 /** The mounted World supplies its current plan, rather than a QA global or a historical graph. */
-export interface WorldCommandSurface { hasPresentedFlow(id: string): boolean; hasRecording?():boolean; canFocusSelection(selection:Selection):boolean }
+export type InspectorCommandId='view.revealSource'|'view.copyValue'
+export interface InspectorActionState {present:boolean;sourceAvailable:boolean;copyAvailable:boolean}
+export interface WorldCommandSurface {
+ hasPresentedFlow(id:string):boolean;hasRecording?():boolean;canFocusSelection(selection:Selection):boolean
+ inspection?:{state():InspectorActionState;execute(id:InspectorCommandId):void|Promise<void>}
+}
 let worldCommandSurface: WorldCommandSurface | null = null
 export function registerWorldCommandSurface(surface: WorldCommandSurface): () => void {
   worldCommandSurface = surface
@@ -193,6 +200,17 @@ export function hasPresentedCommandFlow(id: string): boolean {
 }
 export function hasMountedRecording():boolean { return worldCommandSurface?.hasRecording?.()??false }
 export function hasFocusableCommandSelection(selection:Selection):boolean { return worldCommandSurface?.canFocusSelection(selection)??false }
+export function inspectorCommandAvailability(id:InspectorCommandId,state=worldCommandSurface?.inspection?.state()):CommandAvailability {
+ if(!state?.present)return{enabled:false,reason:'Item is not present at this point in time'}
+ if(id==='view.revealSource'&&!state.sourceAvailable)return{enabled:false,reason:'No source line was recorded for this item'}
+ if(id==='view.copyValue'&&!state.copyAvailable)return{enabled:false,reason:'No captured text is available for this item'}
+ return{enabled:true}
+}
+export async function executeInspectorCommand(id:InspectorCommandId):Promise<void>{
+ const availability=inspectorCommandAvailability(id)
+ if(!availability.enabled)throw new CommandUnavailable(availability.reason)
+ await worldCommandSurface!.inspection!.execute(id)
+}
 export function isPresentationCommand(id: IdeCommandId): boolean {
   return id.startsWith('navigation.') || id.startsWith('view.')
 }
@@ -200,6 +218,7 @@ export function worldCommandAvailability(id: ShellCommandId, state: {
   worldPresent: boolean; selection: Selection; focusActive: boolean; presentedFlow: boolean; focusTargetPresent:boolean
   cinematic: CommandAvailability; contextLost: boolean
 }): CommandAvailability {
+  if(id==='view.revealSource'||id==='view.copyValue')return inspectorCommandAvailability(id)
   if (id === 'workbench.inspector' && !state.selection && !state.focusActive)
     return { enabled: false, reason: 'Select or Focus a runtime entity first' }
   if (id === 'navigation.focusSelection' && (!state.selection || !['frame', 'object', 'class', 'slot', 'cluster'].includes(state.selection.kind)))
