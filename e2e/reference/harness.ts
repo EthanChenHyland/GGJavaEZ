@@ -113,6 +113,13 @@ export async function seekCursor(page:Page,cursor:number):Promise<void>{
  await expect(slider).toHaveAttribute('aria-valuenow',String(cursor));await ready(page)
 }
 export async function home(page:Page):Promise<void>{await page.getByRole('button',{name:'Home',exact:true}).click();await ready(page)}
+export async function focusSelection(page:Page):Promise<void>{
+ await page.locator('.world-canvas').focus();await page.keyboard.press('F1')
+ await page.getByRole('combobox',{name:'Search commands'}).fill('Focus Selection')
+ await page.getByRole('option').filter({has:page.getByText('Navigation: Focus Selection',{exact:true})}).click()
+ await expect(page.getByRole('dialog',{name:'Command Palette'})).toHaveCount(0)
+ await ready(page)
+}
 export async function follow(page:Page):Promise<void>{
  await page.locator('.world-canvas').focus();await page.keyboard.press('F1')
  await page.getByRole('combobox',{name:'Search commands'}).fill('Follow')

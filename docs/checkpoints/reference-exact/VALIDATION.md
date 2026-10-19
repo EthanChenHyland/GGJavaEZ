@@ -192,3 +192,8 @@ An initial replacement mistakenly used the Header Focus toggle as a Focus Select
 ## Legacy primitive closure — 2026-10-19
 
 Complete frozen parent df4fedc native confirmation ran113planned/executed:112passed/onefailed/zero skipped/flaky,744.71seconds,exit1. Desktop Console focus succeeds but the unchanged two-RAF readiness boundary is223.2ms against200ms; no waiver or complete-gate pass is claimed. After20 unreachable primitive removals and31 new current successor cases, full defaults pass2095/2165 with70opt-in skips,222files,176.54seconds,exit0. All69 old cases passed before deletion; current successor integration139/139 passes. Build/typecheck, browser TS, lint and guards pass; all14JS/fourCSS resources match the parent byte for byte. AST622/2169/234/zero legacy renderer targets. No new native/Dense/visual approval is inferred. [Per-case reconciliation, evidence and limits](migration/primitives-retirement.md). Whole A–G acceptance remains open.
+
+
+## Slot evidence retention — 2026-10-19
+
+Defaults2096passed/70explicit opt-in skips,223files,180.82seconds,exit0. New100-run prefix property passes before/after; focused51/51 and affected native7/7 pass. Build/typecheck/browser TS/lint/protected/reference guards pass. Generated20k projector retention drops1.616MB, but every25% presentation-memory budget still fails (after ratios2.043/0.761/0.646); no Dense/GPU claim. Separate2case/fourcapture actual-JVM check passes with all original numerical thresholds, and root review remainsOPEN. Prior complete113case Console223.2ms failure is retained; current focused Console22.5/5.3ms and10profiled waits do not waive it. [Measured evidence and limits](migration/slot-history.md). Whole A–G acceptance remains open.

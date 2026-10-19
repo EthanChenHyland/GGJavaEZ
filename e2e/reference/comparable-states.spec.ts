@@ -1,6 +1,6 @@
 import {expect,test,type Page,type APIRequestContext} from '@playwright/test'
 import states from './states.json' with {type:'json'}
-import {browserErrors,captureComparison,currentSession,follow,home,ready,runFixture,seekCursor,selectEntity,startFixture,stopOwnedSession,type ReferenceState} from './harness'
+import {browserErrors,captureComparison,currentSession,follow,focusSelection,home,ready,runFixture,seekCursor,selectEntity,startFixture,stopOwnedSession,type ReferenceState} from './harness'
 import type {ExecutionSession} from '../../src/execution/contracts'
 import type {DetailLevel} from '../../src/contracts/worldV2'
 // Every case drives the production shell with an instrumented JVM. No mocked
@@ -106,7 +106,9 @@ for(const definition of states.states){
    // references stay cropped only in the comparison, not in application capture.
    if(viewport===states.viewports[0]){
     await page.setViewportSize(state.native);await ready(page)
-    if(['focus','object-inspection'].includes(state.id)){await page.getByRole('button',{name:'Focus selection',exact:true}).click();await ready(page)}else if(state.id==='runtime-hero'){await page.evaluate(()=>window.__ggjavaezQA!.frameHero());await ready(page)}else if(!['far','medium','close','free'].includes(state.id))await home(page)
+    // The card is already in FOCUS and offers Return to World. Reframe the
+    // same selected target through its explicit command after native resize.
+    if(['focus','object-inspection'].includes(state.id)){await focusSelection(page)}else if(state.id==='runtime-hero'){await page.evaluate(()=>window.__ggjavaezQA!.frameHero());await ready(page)}else if(!['far','medium','close','free'].includes(state.id))await home(page)
     if(['far','medium','close'].includes(state.id))await zoom(page,state.id.toUpperCase() as DetailLevel)
     if(state.id==='recursion')await follow(page)
     try{await captureComparison(page,request,state,session.id,'native')}catch(error){captureErrors.push(error)}

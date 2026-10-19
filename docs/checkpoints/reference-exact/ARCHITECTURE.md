@@ -157,3 +157,8 @@ The Shell DebugDrawer reads one existing ingested pause head independently of Wo
 ## Legacy primitive closure — 2026-10-19
 
 Twenty unreachable legacy primitive/helper/test modules are physically removed after all69 original cases are individually reconciled with current successors or explicit spec-replaced visual policies. Production assets are byte-identical; semantic contracts are unchanged. No src/scene or src/navigation source remains. The current world contract still has its temporary worldV2 name, and active old IDE chrome/persistence cleanup remains open. [Per-case reconciliation, evidence and limits](migration/primitives-retirement.md). Whole A–G acceptance remains open.
+
+
+## Slot evidence retention — 2026-10-19
+
+The presentation projector retains first assignment/write ordinals instead of redundant growing arrays; observation ordinals still provide exact historical changed-at evidence. All normalized/runtime/graph/history contracts remain unchanged. [Measured evidence and limits](migration/slot-history.md). Whole A–G acceptance remains open.
