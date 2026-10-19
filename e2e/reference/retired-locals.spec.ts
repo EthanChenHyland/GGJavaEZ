@@ -7,7 +7,19 @@ const trace:TraceDocument=JSON.parse(readFileSync('src/examples/demos/control/tr
 const declarations=trace.events.filter((event):event is Extract<TraceEvent,{type:'DECLARE_LOCAL'}>=>event.type==='DECLARE_LOCAL')
 const inspector=(page:Page)=>page.getByRole('complementary',{name:'Selection inspector'})
 const rail=(page:Page)=>page.getByRole('slider',{name:'Recorded execution position'})
-const focus=(page:Page)=>inspector(page).getByRole('button',{name:'Focus selection',exact:true})
+// Focus Selection stays an explicit command while both contextual buttons
+// become Exit Focus. Inspect that command without changing the existing Focus.
+async function expectFocusSelection(page:Page,enabled:boolean){
+ const before=await page.evaluate(()=>({cursor:window.__ggjavaezQA!.cursor(),pose:window.__ggjavaezQA!.cameraPose(),selection:window.__ggjavaezQA!.selection(),focus:window.__ggjavaezQA!.focusTarget()}))
+ await page.locator('.world-canvas').focus();await page.keyboard.press('F1')
+ await page.getByRole('combobox',{name:'Search commands'}).fill('Focus Selection')
+ const option=page.getByRole('option').filter({has:page.getByText('Navigation: Focus Selection',{exact:true})})
+ await expect(option).toHaveAttribute('aria-disabled',String(!enabled))
+ if(!enabled){await page.keyboard.press('Enter');await expect(page.getByRole('dialog',{name:'Command Palette'})).toBeVisible()}
+ await page.keyboard.press('Escape')
+ expect(await page.evaluate(()=>({cursor:window.__ggjavaezQA!.cursor(),pose:window.__ggjavaezQA!.cameraPose(),selection:window.__ggjavaezQA!.selection(),focus:window.__ggjavaezQA!.focusTarget()}))).toEqual(before)
+}
+const leaveFocus=(page:Page)=>inspector(page).getByRole('button',{name:'Return to World',exact:true})
 async function open(page:Page){
  await page.goto('/examples?qa=1');await page.getByRole('combobox',{name:'Runtime example'}).selectOption('control')
  await expect(rail(page)).toHaveAttribute('aria-valuenow','0');await ready(page)
@@ -37,6 +49,7 @@ async function pickLocal(page:Page,frameId:string,slotId:string){
  expect(Math.abs(point.x)).toBeLessThan(1);expect(Math.abs(point.y)).toBeLessThan(1)
  await page.mouse.click((point.x+1)*viewport.width/2,(1-point.y)*viewport.height/2);await ready(page)
  expect(await page.evaluate(()=>window.__ggjavaezQA!.selection())).toEqual({kind:'slot',id:slotId})
+ await expect(leaveFocus(page)).toHaveAttribute('aria-disabled','false')
 }
 function exits(event:Extract<TraceEvent,{type:'DECLARE_LOCAL'}>){
  const returned=trace.events.find(item=>item.type==='RETURN_VALUE'&&item.frameId===event.frameId&&item.seq>event.seq)
@@ -62,7 +75,7 @@ test('nested corrected survives return evaluation, leaves on method exit, and re
   expect(initial.port).not.toBeNull();expect(initial.chip).not.toBeNull()
   await seekCursor(page,returned.seq+1)
   await expect(inspector(page).getByRole('button',{name:'Inspect corrected',exact:true})).toHaveText(value)
-  await expect(focus(page)).toHaveAttribute('aria-disabled','false')
+  await expectFocusSelection(page,true)
   expect((await face(page,declaration.frameId,declaration.slot.id)).port).toEqual(initial.port)
   await page.getByRole('button',{name:'Next Event',exact:true}).click();await ready(page)
   await expect(rail(page)).toHaveAttribute('aria-valuenow',String(exited.seq+1))
@@ -72,9 +85,19 @@ test('nested corrected survives return evaluation, leaves on method exit, and re
   await expect(inspector(page)).toContainText('Scope closed · last captured local value')
   await expect(inspector(page).locator('.inspector-heading strong')).toHaveText('corrected')
   await expect(inspector(page).getByRole('button',{name:'Inspect corrected',exact:true})).toHaveText(value)
-  await expect(focus(page)).toHaveAttribute('aria-disabled','true')
+  await expectFocusSelection(page,false)
   if(declaration===corrected[0]){
+   await expect(leaveFocus(page)).toHaveAttribute('aria-disabled','false')
    await page.screenshot({path:'.ggjavaez/qa/reference-exact/retired-corrected-native.png'})
+   await leaveFocus(page).click();await ready(page)
+   expect(await page.evaluate(()=>window.__ggjavaezQA!.focusTarget())).toBeNull()
+   expect(await page.evaluate(()=>window.__ggjavaezQA!.selection())).toEqual({kind:'slot',id:declaration.slot.id})
+   const cardFocus=inspector(page).getByRole('button',{name:'Focus selection',exact:true})
+   await expect(cardFocus).toHaveAttribute('aria-disabled','true')
+   const returnedPose=await page.evaluate(()=>window.__ggjavaezQA!.cameraPose())
+   await cardFocus.focus();await page.keyboard.press('Enter');await ready(page)
+   expect(await page.evaluate(()=>window.__ggjavaezQA!.cameraPose())).toEqual(returnedPose)
+   expect(await page.evaluate(()=>window.__ggjavaezQA!.focusTarget())).toBeNull()
    await home(page)
    const headerFocus=page.getByRole('button',{name:'Focus',exact:true})
    await expect(headerFocus).toHaveAttribute('aria-disabled','true')
@@ -89,7 +112,7 @@ test('nested corrected survives return evaluation, leaves on method exit, and re
   await seekCursor(page,exited.seq+1)
   await page.getByRole('button',{name:'Previous Event',exact:true}).click();await ready(page)
   await expect(rail(page)).toHaveAttribute('aria-valuenow',String(returned.seq+1))
-  await expect(focus(page)).toHaveAttribute('aria-disabled','false')
+  await expectFocusSelection(page,true)
   if(declaration===corrected[0])await expect(page.getByRole('button',{name:'Focus',exact:true})).toHaveAttribute('aria-disabled','false')
   expect((await face(page,declaration.frameId,declaration.slot.id)).port).toEqual(initial.port)
   expect((await face(page,declaration.frameId,declaration.slot.id)).chip).toEqual(initial.chip)
@@ -120,7 +143,7 @@ test('each loop body removes raw and score; iterator leaves only when its for sc
   expect(closed.rows.some(row=>row.slotId===iterator.slot.id)).toBe(true)
   await expect(inspector(page)).toContainText('Scope closed')
   await expect(inspector(page).getByRole('button',{name:'Inspect score',exact:true})).toHaveText(String([0,42,100][index]))
-  await expect(focus(page)).toHaveAttribute('aria-disabled','true')
+  await expectFocusSelection(page,false);await expect(leaveFocus(page)).toHaveAttribute('aria-disabled','false')
   expect(await page.evaluate(()=>window.__ggjavaezQA!.selection())).toEqual({kind:'slot',id:score.slot.id})
   if(index===0)await page.screenshot({path:'.ggjavaez/qa/reference-exact/retired-score-native.png'})
   await page.getByRole('button',{name:'Previous Event',exact:true}).click();await ready(page)
@@ -133,7 +156,7 @@ test('each loop body removes raw and score; iterator leaves only when its for sc
  const original=(await face(page,iterator.frameId,iterator.slot.id)).port
  await page.getByRole('button',{name:'Next Event',exact:true}).click();await ready(page)
  expect((await face(page,iterator.frameId,iterator.slot.id)).port).toBeNull()
- await expect(inspector(page)).toContainText('Scope closed');await expect(focus(page)).toHaveAttribute('aria-disabled','true')
+ await expect(inspector(page)).toContainText('Scope closed');await expectFocusSelection(page,false)
  await seekCursor(page,iteratorExit.seq);expect((await face(page,iterator.frameId,iterator.slot.id)).port).toEqual(original)
  expect(errors).toEqual([])
 })
