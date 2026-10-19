@@ -16,6 +16,7 @@ import { ProjectExplorer } from '../ide/ProjectExplorer'
 import { formatShortcut,ideShortcuts } from '../ide/shortcuts'
 import { CommandMenu } from './dialogs/CommandMenu'
 import { Picker } from './picker/Picker'
+import {DirtyRunDialog} from './dialogs/DirtyRunDialog'
 import { useInteractionStore } from '../interaction/interactionStore'
 import { useAppState } from '../state/useAppState'
 import { RecordedSourceView } from './source/RecordedSourceView'
@@ -171,7 +172,9 @@ return <div className={`shell ide-shell ${debugSession&&activeExecution?'shell--
     {projectDialog && (projectDialog.kind==='delete'
       ? <DeleteConfirmDialog path={projectDialog.path} dirtyPaths={projectDialog.dirtyPaths??[]} busy={busy} error={notice} onClose={cancelProjectDialog} onDelete={()=>void submitProjectDialog()} onSaveAndDelete={()=>{const resolve=projectDialog.resolveDelete;setProjectDialog(null);resolve?.('save')}}/>
       : <PathInputDialog key={projectDialog.kind} kind={projectDialog.kind} value={projectDialog.value} busy={busy} error={notice} onChange={value=>{setNotice('');setProjectDialog({...projectDialog,value})}} onClose={cancelProjectDialog} onSubmit={()=>void submitProjectDialog()}/>)}
-    {pending && <UnsavedChangesDialog label={pending.label} paths={pending.paths} busy={busy} error={notice} onDecision={choice=>void resolveDecision(choice)}/>}
+    {pending && (pending.kind === 'run'
+      ? <DirtyRunDialog paths={pending.paths} busy={busy} error={notice} onSave={()=>void resolveDecision('save')} onCancel={()=>void resolveDecision('cancel')}/>
+      : <UnsavedChangesDialog label={pending.label} paths={pending.paths} busy={busy} error={notice} onDecision={choice=>void resolveDecision(choice)}/>)}
 
   </div>
 }

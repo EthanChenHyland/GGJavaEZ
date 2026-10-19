@@ -24,6 +24,7 @@ import { useInteractionStore as useWorldInteractionStore } from '../interaction/
 import { useQualityStore } from '../render/quality/qualityStore'
 import { bindRenamedSources,projectSessionBreakpoints,recordedBreakpointPath,restoreSourceBindings,unbindDeletedSources,verifiedWorkspaceSource,type SourceBindings } from '../ide/sourceBindings'
 import { type PickerItem } from '../shell/picker/Picker'
+import {dirtyRunPaths,saveDirtyRun} from './dirtyRun'
 import { LanguageClient } from '../language/client'
 import { getLoadedJavaEditorRuntime,loadJavaEditorRuntime,onJavaEditorRuntimeLoaded } from '../language/editorRuntime'
 import {exceptionSourceLocation} from '../shell/source/sourceSync'
@@ -526,6 +527,18 @@ export function useWorkspace(recordingViewer = false) {
   }
   const resolveDecision = async (choice: 'save' | 'discard' | 'cancel') => {
     if (!pending) return
+    if (pending.kind === 'run') {
+      if (busy) return
+      if (choice === 'cancel') { setPending(null); pending.resolve?.('cancel'); return }
+      if (choice !== 'save') return
+      setBusy(true); setNotice('')
+      try { await pending.action?.() }
+      catch (error) {
+        fail(error)
+        setPending(current => current === pending ? { ...current, paths: dirtyRunPaths(commandHost.current.snapshot()) } : current)
+      } finally { setBusy(false) }
+      return
+    }
     if (pending.resolve) { const resolve = pending.resolve; setPending(null); resolve(choice); return }
     if (choice === 'cancel') { setPending(null); return }
     setBusy(true)
@@ -899,6 +912,22 @@ export function useWorkspace(recordingViewer = false) {
     setBusy(true)
     try { await work() } finally { setBusy(false) }
   }
+  const requestRun = async (context: CommandContext, withoutVisualization: boolean) => {
+    checkContext(context)
+    const paths = dirtyRunPaths(commandHost.current.snapshot())
+    if (!paths.length) { await commandIO(() => performExecution('run', withoutVisualization, context)); return }
+    await new Promise<void>(resolve => {
+      setPending({ kind: 'run', label: 'running', paths, resolve: () => resolve(), action: async () => {
+        const decision = shellStore.getState().pending
+        if (decision?.kind !== 'run') throw new Error('Run decision is no longer available')
+        await saveDirtyRun(decision.paths, { checkContext: () => checkContext(context), paths: () => dirtyRunPaths(commandHost.current.snapshot()), saveAll: () => saveAll(context) })
+        setPending(null)
+        // Keep the proven execution transaction, including its final Save All
+        // and source-proof barriers, unchanged after explicit approval.
+        try { await performExecution('run', withoutVisualization, context) } finally { resolve() }
+      } })
+    })
+  }
   commandHost.current.snapshot = () => {
     const id = projectIdRef.current, session = executionRef.current
     const activeDebug = session?.kind === 'debug' && ['BUILDING', 'STARTING', 'RUNNING', 'WAITING_FOR_INPUT', 'PAUSED'].includes(session.phase)
@@ -1056,7 +1085,7 @@ export function useWorkspace(recordingViewer = false) {
       else if(id==='view.revealSource'||id==='view.copyValue')await executeInspectorCommand(id)
       else if (id === 'view.qualityInteractive' || id === 'view.qualityCinematic') await useQualityStore.getState().selectQuality(id === 'view.qualityInteractive' ? 'INTERACTIVE' : 'CINEMATIC')
       else if (id === 'view.reducedMotion') { const quality = useQualityStore.getState(); quality.setReducedMotion(!quality.reducedMotion.inApp) }
-      else if (id === 'execution.run' || id === 'execution.runWithoutVisualization') await commandIO(() => performExecution('run', id === 'execution.runWithoutVisualization', context))
+      else if (id === 'execution.run' || id === 'execution.runWithoutVisualization') await requestRun(context, id === 'execution.runWithoutVisualization')
       else if (id === 'execution.build') await buildProject()
       else if (id === 'execution.stop') await commandIO(async () => { const session = executionRef.current; if (session) { const next = await bridge.executionStop(session.id); checkContext(context); acceptExecution(next) } })
       else if (id === 'workbench.explorer') toggleExplorer()

@@ -187,3 +187,8 @@ The left Inspector uses the available space beside Source while staying in its r
 ## Unified Shell Picker — 2026-10-19
 
 Quick Open, Command Palette and workspace symbols use one Picker with virtualized complete file/command results, shared surface focus and single activation. JDT owns symbol matching and exact source locations; unavailable positions are disabled and stale replies cannot replace current results. Three old search/alias components and their style owners are physically removed; all16 original unit cases move unchanged. The workspace hook changes only its erased type import/annotation. [Evidence, per-case reconciliation and limits](migration/picker.md). DirtyRun, Header/Dock, remaining chrome and whole A–G acceptance stay open.
+
+
+## Dirty-file Run decision — 2026-10-19
+
+Run and Run Without Visualization now require an explicit decision for changed open/inactive and persisted closed drafts. Approval uses the existing Save All owner, retains errors/retry inside the dialog and releases the unchanged execution transaction only after every save succeeds and no dirty path remains. Cancel retains files and the prior World. Eleven protected operation initializers and generic dirty-decision behavior compare exactly with parent0b685a0 outside the new Run branch. [Browser reconciliation, faults and limits](migration/dirty-run.md). Header transition timing, remaining Shell cleanup and whole A–G acceptance remain open.

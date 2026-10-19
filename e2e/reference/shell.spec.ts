@@ -30,6 +30,7 @@ test('real Run and failed rebuild preserve canvas, recording, history and runtim
   await page.getByRole('button',{name:'Run',exact:true}).click()
   await expect(page.locator('.shell-state')).toContainText('Completed',{timeout:45000})
   const completed = await (await request.get('/api/execution/current')).json()
+  test.info().annotations.push({type:'actual-jvm-session',description:completed.id})
   await expect(page.locator('.world-canvas canvas')).toHaveAttribute('data-same-canvas','verified')
   const timeline=page.getByRole('slider',{name:'Recorded execution position'})
   // Process completion metadata can arrive before retained raw pages publish.
@@ -46,6 +47,7 @@ test('real Run and failed rebuild preserve canvas, recording, history and runtim
   await page.keyboard.press('ControlOrMeta+A')
   await page.keyboard.insertText('public class Main { invalid syntax }\n')
   await page.getByRole('button',{name:'Run',exact:true}).click()
+  await page.getByRole('dialog',{name:'Unsaved changes before Run',exact:true}).getByRole('button',{name:'Save All and Run',exact:true}).click()
   await expect(page.locator('.shell-state')).toContainText('Build failed',{timeout:45000})
   await expect(timeline).toHaveAttribute('aria-valuenow','2')
   await expect(timeline).toHaveAttribute('aria-valuemax',String(count))

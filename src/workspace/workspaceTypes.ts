@@ -10,5 +10,5 @@ export type BreakpointProjection = {
 }
 export type Tool = 'console' | 'problems' | 'debugger' | 'errors'
 export type WorkspaceMode = 'code' | 'visualize' | 'debug'
-export type PendingDecision = { label: string; paths: string[]; action?: () => void | Promise<void>; resolve?: (choice: DirtyDecision) => void } | null
+export type PendingDecision = { kind?: 'run'; label: string; paths: string[]; action?: () => void | Promise<void>; resolve?: (choice: DirtyDecision) => void } | null
 export type ProjectDialog = { kind: 'class' | 'file' | 'folder' | 'rename' | 'delete' | 'project' | 'open'; path: string; value: string; resolve?: (value: string | null) => void; resolveDelete?: (value: DirtyDecision) => void; dirtyPaths?: readonly string[] } | null
