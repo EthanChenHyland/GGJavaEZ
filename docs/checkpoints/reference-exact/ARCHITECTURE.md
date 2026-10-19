@@ -182,3 +182,8 @@ The active menus, Launch/path/Delete/unsaved dialogs and both search focus owner
 ## Focus Source / Inspector separation — 2026-10-19
 
 The left Inspector uses the available space beside Source while staying in its required opposite half. The shared pure layout retains frozen Source/card dimensions; existing camera fitting reserves the actual card. Side ownership, camera-input priority, runtime and canonical world geometry are unchanged. [Evidence and limits](migration/focus-source-layout.md). Whole A–G acceptance remains open.
+
+
+## Unified Shell Picker — 2026-10-19
+
+Quick Open, Command Palette and workspace symbols use one Picker with virtualized complete file/command results, shared surface focus and single activation. JDT owns symbol matching and exact source locations; unavailable positions are disabled and stale replies cannot replace current results. Three old search/alias components and their style owners are physically removed; all16 original unit cases move unchanged. The workspace hook changes only its erased type import/annotation. [Evidence, per-case reconciliation and limits](migration/picker.md). DirtyRun, Header/Dock, remaining chrome and whole A–G acceptance stay open.

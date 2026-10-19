@@ -1,6 +1,7 @@
 @import './editor.css';
 @import './tools.css';
 @import './dialogs.css';
+@import './picker/picker.css';
 .shell { position:fixed; inset:0; overflow:hidden; color:#EEF4FF; font:13px/1.4 Inter,system-ui,sans-serif; background:linear-gradient(#080C20,#03050C); isolation:isolate }
 .shell button,.shell select,.shell input { font:inherit; color:inherit }
 .shell button { cursor:pointer; min-height:24px }

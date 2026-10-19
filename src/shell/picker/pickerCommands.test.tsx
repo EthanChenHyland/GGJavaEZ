@@ -1,11 +1,11 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
-import { fuzzyScore, rankPickerItems } from './fuzzy'
-import { defaultClassFolder, javaClassContent, javaClassPath } from './classCreation'
-import { explorerMenuCommands, menuTargetIndex, tabMenuCommands } from './contextMenus'
-import { WorkspacePicker } from './WorkspacePicker'
-import { ideCommandDefinitions } from './commands'
-import type { JavaProject } from './javaProject'
+import { fuzzyScore, rankPickerItems } from '../../ide/fuzzy'
+import { defaultClassFolder, javaClassContent, javaClassPath } from '../../ide/classCreation'
+import { explorerMenuCommands, menuTargetIndex, tabMenuCommands } from '../../ide/contextMenus'
+import { Picker } from './Picker'
+import { ideCommandDefinitions } from '../../ide/commands'
+import type { JavaProject } from '../../ide/javaProject'
 
 const project = (sourceRoots: string[], testSourceRoots: string[] = []): JavaProject => ({
   projectId: 'test', revision: '1', buildSystem: 'plain', status: 'ready', diagnostic: null,
@@ -49,7 +49,7 @@ describe('shell fuzzy lookup', () => {
   it('matches command categories and preserves disabled reasons in the keyboard list', () => {
     const items = [{ id: 'debug.stepInto', label: 'Debug: Step Into', enabled: false, reason: 'Stepping requires a paused debugger', shortcut: 'F11' }]
     expect(rankPickerItems(items, 'dsi')).toEqual(items)
-    const html = renderToStaticMarkup(<WorkspacePicker mode="commands" items={items} onChoose={() => {}} onClose={() => {}}/>)
+    const html = renderToStaticMarkup(<Picker mode="commands" items={items} onChoose={() => {}} onClose={() => {}}/>)
     expect(html).toContain('role="combobox"')
     expect(html).toContain('role="listbox"')
     expect(html).toContain('aria-disabled="true"')

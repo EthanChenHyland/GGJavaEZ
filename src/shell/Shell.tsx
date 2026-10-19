@@ -14,9 +14,8 @@ import {UnsavedChangesDialog} from './dialogs/UnsavedChangesDialog'
 import { ProblemsPanel } from '../ide/ProblemsPanel'
 import { ProjectExplorer } from '../ide/ProjectExplorer'
 import { formatShortcut,ideShortcuts } from '../ide/shortcuts'
-import { SymbolSearch } from '../ide/SymbolSearch'
 import { CommandMenu } from './dialogs/CommandMenu'
-import { WorkspacePicker } from '../ide/WorkspacePicker'
+import { Picker } from './picker/Picker'
 import { useInteractionStore } from '../interaction/interactionStore'
 import { useAppState } from '../state/useAppState'
 import { RecordedSourceView } from './source/RecordedSourceView'
@@ -166,9 +165,9 @@ return <div className={`shell ide-shell ${debugSession&&activeExecution?'shell--
     {tabMenu && <CommandMenu label={`Tab actions for ${tabMenu.context.target?.path}`} x={tabMenu.x} y={tabMenu.y}
       items={tabMenuCommands.map((id) => ({ id, label: id === 'resource.rename' ? 'Rename' : ideCommandDefinitions[id].title, ...(busy ? { enabled: false as const, reason: 'Wait for the current operation' } : commands.availability(id, tabMenu.context)) }))}
       onClose={() => setTabMenu(null)} onChoose={(id) => { const context = tabMenu.context; setTabMenu(null); setNotice(''); requestAnimationFrame(() => { void commands.execute(id as IdeCommandId, context, {}).catch(fail) }) }}/>}
-    {picker && <WorkspacePicker key={picker.mode} mode={picker.mode} items={pickerItems} onClose={() => setPicker(null)} onChoose={choosePicker}/>}
+    {picker && <Picker key={picker.mode} mode={picker.mode} items={pickerItems} onClose={() => setPicker(null)} onChoose={choosePicker}/>}
     {showLaunch && <LaunchConfigDialog value={{ ...launch, mainClass }} targets={targets} onClose={() => setShowLaunch(false)} onSave={(configuration) => { launchRef.current = configuration; setLaunch(configuration); mainClassRef.current = configuration.mainClass; setMainClass(configuration.mainClass); cwdInvalidRef.current = false; setCwdInvalid(false); setShowLaunch(false) }}/>}
-    {showSymbols && <SymbolSearch client={languageClient} onClose={() => setShowSymbols(false)} onOpen={(location) => commands.execute('file.open', commandContext(location.path), { location }).then(() => {})}/>}
+    {showSymbols && <Picker mode="symbols" client={languageClient} onClose={() => setShowSymbols(false)} onOpen={(location) => commands.execute('file.open', commandContext(location.path), { location }).then(() => {})}/>}
     {projectDialog && (projectDialog.kind==='delete'
       ? <DeleteConfirmDialog path={projectDialog.path} dirtyPaths={projectDialog.dirtyPaths??[]} busy={busy} error={notice} onClose={cancelProjectDialog} onDelete={()=>void submitProjectDialog()} onSaveAndDelete={()=>{const resolve=projectDialog.resolveDelete;setProjectDialog(null);resolve?.('save')}}/>
       : <PathInputDialog key={projectDialog.kind} kind={projectDialog.kind} value={projectDialog.value} busy={busy} error={notice} onChange={value=>{setNotice('');setProjectDialog({...projectDialog,value})}} onClose={cancelProjectDialog} onSubmit={()=>void submitProjectDialog()}/>)}

@@ -225,3 +225,8 @@ Five migrated original plain/Maven/Gradle/main-target/broken-POM cases pass5/5,6
 ## Focus Source / Inspector separation — 2026-10-19
 
 Defaults2108passed/70explicit opt-in skips,225files,181.07seconds,exit0. Focused208/208, affected native9/9 and a separate clean serial2/2 actual-JVM capture check pass. Four actual and four curated original-resolution images are root-reviewed; all current numerical capture tolerances pass. Earlier fixture assertion failures and the deliberately interrupted overlapping attempt remain recorded and are not gate passes. Main71760gzip, closures72188/663449 diagnostics. Final visual/performance/full native gates remainOPEN. [Evidence and limits](migration/focus-source-layout.md). Whole A–G acceptance remains open.
+
+
+## Unified Shell Picker — 2026-10-19
+
+Defaults2118passed/70explicit opt-in skips,227files,180.99seconds,exit0. Focused108/108 passes; the combined native20/20 run is followed by final Picker3/3 after path-order/readability polish. All earlier failures remain recorded. Six distinct actual JVM sessions occur in the20-case Java workflows; actual JDT confirms exact symbol navigation. Build/typecheck/browser TS/lint/reference/protected guards pass. Main71761gzip, closures72189/664015 diagnostic bytes. Seven original-resolution UI captures are root-reviewed and source-hash bound through validation. Isolated5,000-file query timings34.50/23.90ms do not establish full-app file-search or Dense performance. Native inventory134/45; default226/65. [Evidence, all16 original-case dispositions and limits](migration/picker.md). Whole A–G acceptance remains open.

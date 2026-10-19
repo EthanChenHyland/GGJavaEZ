@@ -23,7 +23,7 @@ import { useCameraStore } from '../camera/cameraStore'
 import { useInteractionStore as useWorldInteractionStore } from '../interaction/interactionStore'
 import { useQualityStore } from '../render/quality/qualityStore'
 import { bindRenamedSources,projectSessionBreakpoints,recordedBreakpointPath,restoreSourceBindings,unbindDeletedSources,verifiedWorkspaceSource,type SourceBindings } from '../ide/sourceBindings'
-import { type WorkspacePickerItem } from '../ide/WorkspacePicker'
+import { type PickerItem } from '../shell/picker/Picker'
 import { LanguageClient } from '../language/client'
 import { getLoadedJavaEditorRuntime,loadJavaEditorRuntime,onJavaEditorRuntimeLoaded } from '../language/editorRuntime'
 import {exceptionSourceLocation} from '../shell/source/sourceSync'
@@ -1234,7 +1234,7 @@ export function useWorkspace(recordingViewer = false) {
   // Project membership changes independently of trace publication. Reuse these
   // options while raw catch-up and historical navigation update the workspace.
   const projectOptions = useMemo(() => projects.map(project => <option key={project.id} value={project.id}>{project.name}</option>), [projects])
-  const pickerItems: WorkspacePickerItem[] = !picker ? [] : picker.mode === 'files'
+  const pickerItems: PickerItem[] = !picker ? [] : picker.mode === 'files'
     ? entries.filter((entry) => entry.kind === 'file').sort((a, b) => Number(b.path === active) - Number(a.path === active)).map((entry) => ({ id: entry.path, label: entry.name, detail: entry.path, enabled: true }))
     : Object.values(ideCommandDefinitions).map((definition) => ({ id: definition.id, label: `${definition.category}: ${definition.title}`, keywords: definition.id, shortcut: definition.bindings[0] ? formatShortcut(definition.bindings[0], platform) : undefined, ...commands.availability(definition.id, pickerContext(definition.id)) }))
   const choosePicker = (id: string) => {
