@@ -152,3 +152,8 @@ Three explicitly superseded developer-table files are physically removed after a
 ## Paused debugger and Dock consolidation — 2026-10-19
 
 The Shell DebugDrawer reads one existing ingested pause head independently of World history, with exact session/raw-watermark/frame/thread evidence and bounded lists. The old DebugPanel/shared stylesheet are removed; Source and Dock own their active styles. Closed Dock visibility no longer overrides open child layout. A deterministically reproduced pre-flush polling race in DebugManager receives one guarded fresh read before the unchanged exact watermark check. [Contracts, red/green evidence and limits](migration/debug-drawer.md).
+
+
+## Legacy primitive closure — 2026-10-19
+
+Twenty unreachable legacy primitive/helper/test modules are physically removed after all69 original cases are individually reconciled with current successors or explicit spec-replaced visual policies. Production assets are byte-identical; semantic contracts are unchanged. No src/scene or src/navigation source remains. The current world contract still has its temporary worldV2 name, and active old IDE chrome/persistence cleanup remains open. [Per-case reconciliation, evidence and limits](migration/primitives-retirement.md). Whole A–G acceptance remains open.
