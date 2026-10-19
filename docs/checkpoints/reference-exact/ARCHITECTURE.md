@@ -167,3 +167,8 @@ The presentation projector retains first assignment/write ordinals instead of re
 ## World contract and orphan surfaces — 2026-10-19
 
 The sole renderer contract now lives at src/contracts/world.ts, byte-identical to the previous worldV2 module. All119 consumer edits are exact import substitutions; the runtime reference selector owns its unchanged structural type and unchanged executable body. Eight unmounted standalone Console/Source/dropdown/flow files are removed, with13 original UI cases individually reconciled and5 current Console prefix successors. [Per-case dispositions, type proof and limits](migration/world-contract-consolidation.md). Whole A–G acceptance remains open.
+
+
+## Style and token compatibility retirement — 2026-10-19
+
+The standalone App/IDE stylesheets and v3 token export/palette aliases are physically removed. A six-rule document base remains; Shell/Editor own active pointer/gutter styles. Current CSS and Monaco bind directly to the frozen design groups. Bootstrap retires only the four obsolete preference keys, preserving project/draft/source/recording data. [Evidence, failure and scope](migration/styles-tokens.md). Whole A–G acceptance remains open.

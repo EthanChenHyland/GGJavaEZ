@@ -202,3 +202,8 @@ Defaults2096passed/70explicit opt-in skips,223files,180.82seconds,exit0. New100-
 ## World contract and orphan surfaces — 2026-10-19
 
 Defaults2088passed/70explicit opt-in skips,221files,182.89seconds,exit0. Before-retirement42/42 and post-consolidation55/55 focused cases pass. Strict compiler proof preserves all old/new selector fields and assignability both ways. Build/typecheck/browser TS/lint/protected/reference guards pass. All14JS/fourCSS resources match parent2e7bb9b byte for byte; no new browser/performance approval is inferred. AST615/2154/233/zero legacy renderer targets. Root CSS/token/IDE cleanup and final convergence remain open. [Per-case dispositions, type proof and limits](migration/world-contract-consolidation.md). Whole A–G acceptance remains open.
+
+
+## Style and token compatibility retirement — 2026-10-19
+
+Defaults2091passed/70explicit opt-in skips,223files,182.73seconds,exit0. Build/typecheck/browser TS/lint/protected/reference guards pass. Main71756gzip bytes, closures72184/662605 diagnostics, Monaco/Cinematic split. Initial20case native run has19passes/one stale stylesheet-import failure, not a20case pass. A new CSS resource guard reproduces that failure; after the import-only fixture fix, guard/preferences3/3 and the original isolated test1/1 pass. Four archived original-resolution screenshots are root-reviewed and remainOPEN for visual convergence. Inventory113native/214default/101older. No new complete native/Dense/memory/visual approval is inferred. [Evidence, failure and scope](migration/styles-tokens.md). Whole A–G acceptance remains open.

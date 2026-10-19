@@ -88,7 +88,7 @@ export default function RecordedSourceEditor({ file, location, onChooseLine, mar
         glyphMargin: false,
         folding: false,
         scrollBeyondLastLine: false,
-        fontFamily: typography.code,
+        fontFamily: `${typography.code.family}, SFMono-Regular, Consolas, monospace`,
         fontSize: Math.max(12,viewportHeight*.016),
         lineHeight: Math.max(20,viewportHeight*.029),
         lineNumbersMinChars: 2,

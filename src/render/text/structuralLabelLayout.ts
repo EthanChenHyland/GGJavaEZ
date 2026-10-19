@@ -3,9 +3,9 @@ import type {Vec3,WorldAnchor} from '../../contracts/world'
 import type {Rect} from '../../shell/shellLayout'
 import type {Size} from '../../camera/projection'
 import {fitWorldText,projectedPlaneFontPixels,textAdvance} from './textSystem'
-import {typographyV4} from '../../theme/tokens'
+import {typography} from '../../theme/tokens'
 import {anchorCorners} from '../../world/anchorGeometry'
-export const regionHeadingStyle={size:.6,...typographyV4.world.heading,weight:600,viewportCapRatio:.029} as const
+export const regionHeadingStyle={size:.6,...typography.world.heading,weight:600,viewportCapRatio:.029} as const
 export interface StructuralLabelSpec {
  id:string;kind:'cluster'|'heading'|'bundle'|'return';position:Vec3;size:number;
  localBounds:readonly[number,number,number,number];priority:number;count:number

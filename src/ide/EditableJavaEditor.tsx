@@ -153,7 +153,7 @@ export function EditableJavaEditor({ projectId, path, value, onChange, diagnosti
     options={{
       automaticLayout: true,
       minimap: { enabled: false },
-      fontFamily: typography.code,
+      fontFamily: `${typography.code.family}, SFMono-Regular, Consolas, monospace`,
       fontSize: Math.max(12, viewportHeight*.016),
       lineHeight: Math.max(20, viewportHeight*.029),
       lineNumbersMinChars: 3,

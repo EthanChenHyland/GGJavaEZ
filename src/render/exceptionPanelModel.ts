@@ -1,6 +1,6 @@
 import type { Evidence, SceneExceptionPath, Vec3 } from '../contracts/world';
 import type { RecordingStatus } from '../instrumentation/contracts';
-import { typographyV4, world } from '../theme/tokens';
+import { typography, world } from '../theme/tokens';
 import { localFontText, textAdvance, type FontWeight } from './text/textSystem';
 
 export interface ExceptionPanelModel {
@@ -136,9 +136,9 @@ export const exceptionPanelDepth = world.array.titlePlate;
 export function layoutExceptionPanel(model: ExceptionPanelModel): ExceptionPanelLayout {
     const padding = world.frame.pad;
     const textWidth = exceptionPanelWidth - padding * 2;
-    const titleSize = typographyV4.world.title[0];
-    const messageSize = typographyV4.world.row[0];
-    const captionSize = typographyV4.world.type[0];
+    const titleSize = typography.world.title[0];
+    const messageSize = typography.world.row[0];
+    const captionSize = typography.world.type[0];
     const pitch = world.frame.row;
     const lines: Array<Omit<ExceptionPanelLine, 'position'> & { y: number }> = [];
     let height = padding, truncated = false, escaped = false;

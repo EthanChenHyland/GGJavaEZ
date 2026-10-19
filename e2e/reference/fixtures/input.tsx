@@ -3,7 +3,7 @@ import { flushSync } from 'react-dom'
 import { ConsoleInput } from '../../../src/shell/ConsoleInput'
 import { emptyConsoleInput } from '../../../src/workspace/consoleInput'
 import type { ExecutionSession } from '../../../src/execution/contracts'
-import '../../../src/ide/ide.css'
+import '../../../src/app/base.css'
 import '../../../src/shell/shell.css'
 declare global {interface Window {inputFixture:{set(phase:ExecutionSession['phase'],active?:boolean):void}}}
 const root=createRoot(document.getElementById('input-test')!)
