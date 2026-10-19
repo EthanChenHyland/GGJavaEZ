@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import type { RuntimeState, SourceLocation, TraceDocument } from '../contracts/runtime';
 import type { Selection } from '../contracts/interaction';
 import type { EmbeddedExecution, RuntimeNavigation } from './runtimeContracts';
@@ -7,6 +7,7 @@ import type { SceneModel, PresentationPlan } from '../contracts/worldV2';
 import type { ArrayWindow } from '../world/arrayWindow';
 import { RuntimeCanvas } from '../render/RuntimeCanvas';
 import { Inspector } from '../render/Inspector';
+import {inspectorSideForTarget} from '../render/inspectorPlacement';
 import { TimeDock } from './time/TimeDock';
 import { useTimelinePlayback } from '../timeline/useTimelinePlayback';
 import { createFlowCatalog } from '../world/flowCatalog';
@@ -80,6 +81,16 @@ export function WorldSurface({ trace, onSourceChange, onRuntimeChange, navigatio
         for(const[id,window]of next.cellWindows)compiler.windows.set(id,window);
         return next;
     }, [compiler,scene, flows, layout, detail, selection, focus, traceState,cameraIntent,viewTile,heroViewport]);
+    const placedInspector=useRef<string|null>(null);
+    useLayoutEffect(()=>{
+      if(suppressInspector||!inspectorSelection){placedInspector.current=null;return}
+      const key=JSON.stringify([scene.recordingId,inspectorSelection.kind,inspectorSelection.id]);
+      if(placedInspector.current===key)return;
+      const side=inspectorSideForTarget(scene,plan,inspectorSelection,useCameraStore.getState().pose,viewport);
+      if(side){placedInspector.current=key;shellStore.setState({inspectorSide:side})}
+      // Wait for a missing prefix target to exist. Once placed, pose, LOD,
+      // scrubbing and viewport changes cannot move the current item's card.
+    },[scene,plan,inspectorSelection,suppressInspector,viewport]);
     const commandWorld=useRef({scene,plan,recorded:trace.events.length>0});commandWorld.current={scene,plan,recorded:trace.events.length>0};
     useEffect(()=>registerWorldCommandSurface({hasRecording:()=>commandWorld.current.recorded,canFocusSelection:selection=>canFocusWorldSelection(commandWorld.current.scene,commandWorld.current.plan,selection),hasPresentedFlow:id=>commandWorld.current.plan.curves.some(curve=>curve.id===id&&['flow','return','exception','binding-history'].includes(curve.kind))}),[]);
     const lastNavigation = useRef(-1);

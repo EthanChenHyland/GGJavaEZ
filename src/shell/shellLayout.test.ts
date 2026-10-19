@@ -40,6 +40,13 @@ describe('viewportClass', () => {
 })
 
 describe('computeShellLayout reference rectangles', () => {
+  it('reserves the actual left Inspector as well as source chrome without moving the narrow World',()=>{
+    const desktop=computeShellLayout(input(1440,900,{inspector:{open:true,side:'left'}}))
+    expect(desktop.inspector!.x+desktop.inspector!.width).toBeLessThan(720)
+    expect(desktop.safeFrame.x).toBeGreaterThanOrEqual(desktop.inspector!.x+desktop.inspector!.width+.01*1440)
+    const closed=computeShellLayout(input(760,900)),opened=computeShellLayout(input(760,900,{inspector:{open:true,side:'left'}}))
+    expect(opened.safeFrame).toEqual(closed.safeFrame)
+  })
   it.each([
     { w: 1728, h: 1117, headerH: 76, sourceW: 432, sourceH: 625.52, timeY: 977.075, timeH: 112,
       safe: { x: 466.56, y: 111.7, width: 1235.52, height: 837.75 } },

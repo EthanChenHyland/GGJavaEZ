@@ -12,6 +12,7 @@ import {collectionEntryFace} from '../world/collectionFace';
 import {world} from '../theme/tokens';
 import {compactLibraryFace} from '../world/firstObjectPresentation';
 import {memo} from 'react';
+import {arrayCellTargeted} from './arrayCellStyle';
 export { WorldText } from './FaceText';
 /** Face labels share the solid/row geometry model and one glyph batch. */
 export const RuntimeSolid=memo(function RuntimeSolid({ node, presented, plan }: {
@@ -23,6 +24,8 @@ export const RuntimeSolid=memo(function RuntimeSolid({ node, presented, plan }: 
         return null;
     const { anchor } = node, [x, y, z] = anchor.position, [w, h, d] = anchor.size, top = y + h / 2, face = z + d / 2 + .085, left = x - w / 2 + .28, opacity = presented.opacity;
     const model = faceRows(node, presented);
+    const arrayWindow=node.kind==='array'?plan.cellWindows.get(node.id):undefined;
+    const targeted=arrayWindow?arrayCellTargeted(presented,arrayWindow):()=>false;
     const compact=compactLibraryFace(anchor);
     const identity=node.kind==='frame'?`#${node.invocationNumber}`:node.kind==='class'?'':`#${node.displayId}`;
     const heading=faceHeading(node),titleSize=heading.title.size;
@@ -63,10 +66,10 @@ export const RuntimeSolid=memo(function RuntimeSolid({ node, presented, plan }: 
         })}
     {(node.kind==='collection'?node.size:model.rows.length)>model.visible.length && presented.detail !== 'FAR' && <WorldText position={[left, y - h / 2 + .3, face]} size={node.kind==='collection'?.34:.22} width={w-.56} tint={color.ui.textSecondary} opacity={opacity} collectionText={node.kind==='collection'?{entityId:node.id,kind:'more'}:undefined}>{`+${(node.kind==='collection'?node.size:model.rows.length) - model.visible.length} more`}</WorldText>}
     {node.kind === 'object' && node.summaryUnavailable && <WorldText position={[left, top - 1.2, face]} size={.23} tint={color.ui.textMuted} opacity={opacity}>summary not recorded</WorldText>}
-    {node.kind === 'array' && [...(plan.cellWindows.get(node.id)?.mapping ?? [])].map(([id, cell]) => {
+    {node.kind === 'array' && [...(arrayWindow?.mapping ?? [])].map(([id, cell]) => {
             const captured = node.cells.find(c => c.index === cell.index), value = captured?.value ?? notRecordedValue(), [cx, cy, cz] = cell.anchor.position;
             const activity=node.activity?.index===cell.index?node.activity.kind:null;
-            const activityTint=activity==='write'?color.semantic.mutation:activity==='read'?color.semantic.execution:null;
+            const activityTint=targeted(id)?color.semantic.execution:activity==='write'?color.semantic.mutation:activity==='read'?color.semantic.execution:null;
             return <group key={id}>
         <WorldText position={[cx, cy + .38, cz + .83]} size={.28} width={1.3} align="center" tint={activityTint??color.ui.textSecondary} opacity={opacity}>{`[${cell.index}]${activity==='write'?' ←':activity==='read'?' →':''}`}</WorldText>
         <WorldText position={[cx, cy - .1, cz + .83]} size={.34} width={1.3} align="center" tint={activityTint??(value.kind === 'reference' ? color.semantic.execution : color.ui.text)} opacity={opacity}>{value.text}</WorldText>

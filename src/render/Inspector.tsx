@@ -11,6 +11,7 @@ import { arrayCellTarget } from '../world/arrayCellTarget'
 import { canFocusWorldSelection } from '../interaction/focusTarget'
 import {historicalSceneReference} from '../world/historicalReference'
 import {InspectorControlFacts} from './InspectorControlFacts'
+import {InspectorArrayFacts} from './InspectorArrayFacts'
 import './inspector.css'
 export function Inspector({selection,scene,runtime,flows,plan,onClose,onFocus,onReturn,onSelectRow,onSelectEntity}:{
  selection:Selection;scene:SceneModel;runtime:RuntimeState;flows?:FlowCatalog;plan:PresentationPlan
@@ -35,16 +36,16 @@ export function Inspector({selection,scene,runtime,flows,plan,onClose,onFocus,on
  const bundle=selection.kind==='bundle'?plan.bundles.find(item=>item.id===selection.id):undefined
  const canFocus=canFocusWorldSelection(scene,plan,selection),unavailableReference=reference?(historicalBinding?plan.historicalReferencePresentation:plan.referencePresentation).unavailable.find(item=>item.id===reference.id):undefined
  const bundleReferences=(bundle?.referenceIds??[]).flatMap(id=>referenceMap.has(id)?[referenceMap.get(id)!]:[])
+ const selectedCell=arrayCellTarget(scene,selection.kind==='slot'?selection.id:null)
  const title=flow?flow.kind:cluster?`Cluster · ${cluster.label} ×${cluster.members}`:bundle?`${bundle.count} ${bundle.kind==='connector'?'current references':bundle.kind==='binding-history'?'historical bindings':'recorded flows'}`:node?node.kind==='frame'?`${node.title} #${node.invocationNumber}`:node.kind==='class'?node.title:`${node.title} #${node.displayId}`:retired?retired.row.name:selection.kind==='cluster'?'Cluster':selection.kind==='bundle'?'Bundle is not in the current presentation':selection.id
- const status=node?.kind==='frame'?frameStatusText(node.status):node?.kind==='array'?`length ${node.length} · ${node.cells.length} cells captured`:node?.kind==='collection'?`size ${node.size} · ${node.recordedEntries} entries captured · ${node.size-node.recordedEntries} not recorded`:node?.kind==='object'?`${node.fieldCount} fields`:node?.kind==='class'?`static · ${node.initialization}`:retired?'Scope closed · last captured local value':flow?'Recorded graph edge':cluster?`Structural summary · ${cluster.members} recorded entities`:bundle?'Structural summary':selection.kind==='cluster'?'Cluster is not in the current presentation':'Not present at this point in time'
+ const status=node?.kind==='frame'?frameStatusText(node.status):node?.kind==='array'?`${selectedCell?`index ${selectedCell.index} · `:''}length ${node.length} · ${node.cells.length} cells captured`:node?.kind==='collection'?`size ${node.size} · ${node.recordedEntries} entries captured · ${node.size-node.recordedEntries} not recorded`:node?.kind==='object'?`${node.fieldCount} fields`:node?.kind==='class'?`static · ${node.initialization}`:retired?'Scope closed · last captured local value':flow?'Recorded graph edge':cluster?`Structural summary · ${cluster.members} recorded entities`:bundle?'Structural summary':selection.kind==='cluster'?'Cluster is not in the current presentation':'Not present at this point in time'
  const source=node?.kind==='frame'?node.sourceLine:node?.kind==='object'?node.allocationSite:retired?.lifetime.source??flow?.context.source
  const copy=(text:string)=>void navigator.clipboard.writeText(text).then(()=>setCopyMessage('Captured text copied'),()=>setCopyMessage('Clipboard access unavailable'))
- const selectedCell=arrayCellTarget(scene,selection.kind==='slot'?selection.id:null)
  const inbound=node?scene.references.filter(item=>item.targetId===node.id):[]
  return <aside className="inspector glass gg-inspector" aria-label="Selection inspector" onKeyDown={event=>{if(event.key==='Escape'){event.preventDefault();event.stopPropagation();onClose()}}}>
   <div className="inspector-heading"><strong className={cluster?'inspector-cluster-title':undefined} title={title}>{cluster?<><span>Cluster · {cluster.label}</span><span> ×{cluster.members}</span></>:title}</strong><button aria-label="Close inspector" title="Close inspector" onClick={onClose}><X size={16}/></button></div>
   <p>{status}</p>
-  <div className="inspector-actions"><button aria-label="Focus selection" title={canFocus?'Focus selection':'Select a present runtime entity or cluster to Focus'} aria-disabled={!canFocus} onClick={()=>{if(canFocus)onFocus()}}><Crosshair size={14}/>Focus</button><button onClick={onReturn}><CornerUpLeft size={14}/>Return to World</button><button onClick={()=>copy(title)}><Copy size={14}/>Copy</button></div>
+  <div className="inspector-actions"><button aria-label="Focus selection" title={canFocus?'Focus selection':'Select a present runtime entity or cluster to Focus'} aria-disabled={!canFocus} onClick={()=>{if(canFocus)onFocus()}}><Crosshair size={14}/>Focus</button><button onClick={onReturn}><CornerUpLeft size={14}/>Return to World</button><button onClick={()=>copy(selectedCell&&rows?rows.at(selectedCell.index).value.exact:title)}><Copy size={14}/>Copy</button></div>
   {reference&&<p className="gg-inspector-id">Recorded reference · {reference.sourceSlotId} → {reference.targetId}</p>}
   {historicalBinding&&<p className="gg-inspector-id">Historical binding · introduced at Event {historicalBinding.introducedSeq} · {historicalBinding.endKind} at Event {historicalBinding.endSeq}</p>}
   {unavailableReference&&<p>{unavailableReference.reason}</p>}
@@ -61,6 +62,7 @@ export function Inspector({selection,scene,runtime,flows,plan,onClose,onFocus,on
   {retired&&<p className="gg-inspector-id">Recorded lifetime · declared at {retired.lifetime.declaredAt} · last captured at {retired.lifetime.lastChangedAt} · closed at {retired.lifetime.exitedAt}</p>}
   {selection.kind==='slot'&&<p className="gg-inspector-id">Selected storage lifetime: {selection.id}</p>}
   {(node?.kind==='frame'||retired)&&<InspectorControlFacts runtime={runtime} frameId={node?.kind==='frame'?node.id:retired!.lifetime.frameId}/>}
+  {node?.kind==='array'&&<InspectorArrayFacts runtime={runtime} objectId={node.id} index={selectedCell?.index??null}/>}
   {cluster&&<VirtualList key={cluster.id} className="inspector-values inspector-members" count={cluster.memberIds.length} rowHeight={52} label="Cluster members">{index=>{
     const member=scene.entities[cluster.memberIds[index]],kind=member.kind==='frame'?'frame':member.kind==='class'?'class':'object';
     const label=member.kind==='frame'?`${member.title} #${member.invocationNumber}`:member.kind==='class'?`${member.title} static state`:`${member.title} #${member.displayId}`;

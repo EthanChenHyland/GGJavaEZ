@@ -1,6 +1,6 @@
 import {exceptionPanelFor,exceptionPanelAnchor} from './exceptionPanelPlacement'
 import type { Selection } from '../contracts/interaction';
-import type { DetailLevel, EntityId, LayoutState, MaterialRole, PresentationPlan, PresentedCurve, PresentedEntity, SceneEntity, SceneModel, TraceScope, Vec3, WorldAnchor } from '../contracts/worldV2';
+import type { ArrayIndexReason, DetailLevel, EntityId, LayoutState, MaterialRole, PresentationPlan, PresentedCurve, PresentedEntity, SceneEntity, SceneModel, TraceScope, Vec3, WorldAnchor } from '../contracts/worldV2';
 import { budgets, world } from '../theme/tokens';
 import { computeArrayWindow, type ArrayWindow } from './arrayWindow';
 import type { FlowCatalog, RecordedFlow } from './flowCatalog';
@@ -191,19 +191,27 @@ export function planPresentation(input: PlanInput, previous?: PresentationPlan):
     if(clusters.length>budget.clusters)overflow.push({category:'clusters',nominal:budget.clusters,actual:clusters.length,mandatoryIds:clusters.map(cluster=>cluster.id),reasons:['irreducible recorded ownership/region and live-depth partitions required for exact accounting']});
     const cellWindows = new Map<string, ArrayWindow>();
     const arrayRequests = new Map<string, Set<number>>();
-    const request = (slotId: string | undefined) => { const cell = arrayCellTarget(scene,slotId); if (!cell) return; const indices = arrayRequests.get(cell.array.id) ?? new Set<number>(); indices.add(cell.index); arrayRequests.set(cell.array.id, indices); };
-    if (selection?.kind === 'slot') request(selection.id);
-    request(focusTargetId ?? undefined); request(selectedRef?.sourceSlotId);
+    const arrayReasons = new Map<string, Map<number, Set<ArrayIndexReason>>>();
+    const requestIndex = (id:string,index:number,reason:ArrayIndexReason) => {
+      const indices=arrayRequests.get(id)??new Set<number>();indices.add(index);arrayRequests.set(id,indices);
+      const reasons=arrayReasons.get(id)??new Map<number,Set<ArrayIndexReason>>(),entry=reasons.get(index)??new Set<ArrayIndexReason>();
+      entry.add(reason);reasons.set(index,entry);arrayReasons.set(id,reasons);
+    };
+    const request = (slotId: string | undefined,reason:ArrayIndexReason='requested') => { const cell = arrayCellTarget(scene,slotId); if(cell)requestIndex(cell.array.id,cell.index,reason); };
+    if (selection?.kind === 'slot') request(selection.id,'selected');
+    request(focusTargetId ?? undefined,'focused'); request(selectedRef?.sourceSlotId);
     for (const flow of requiredFlows) { if (flow.from?.kind === 'slot') request(flow.from.id); if (flow.to.kind === 'slot') request(flow.to.id); }
-    for (const [id, presented] of entities) { const node = scene.entities[id]; if (node.kind === 'array' && presented.mode === 'detailed' && node.activity) { const indices = arrayRequests.get(id) ?? new Set<number>(); indices.add(node.activity.index); arrayRequests.set(id, indices); } }
+    for (const [id, presented] of entities) { const node = scene.entities[id]; if (node.kind === 'array' && presented.mode === 'detailed' && node.activity) requestIndex(id,node.activity.index,'current'); }
     let remainingCells = budget.cells, remainingMandatory = [...arrayRequests.values()].reduce((sum,indices)=>sum+indices.size,0);
     const mandatoryCells: string[] = [];
     for (const [id, presented] of entities) {
         const node = scene.entities[id];
         if (node.kind !== 'array' || presented.mode !== 'detailed') continue;
         const requested = [...(arrayRequests.get(id) ?? [])]; remainingMandatory -= requested.length;
+        const reasons=(reason:ArrayIndexReason)=>requested.filter(index=>arrayReasons.get(id)?.get(index)?.has(reason));
         const window = computeArrayWindow({ recordingId: scene.recordingId, arrayId: id, recordedLength: node.length, anchor: node.anchor,
-            nominalCellBudget: Math.max(requested.length, remainingCells - remainingMandatory), requestedIndices: requested,
+            nominalCellBudget: Math.max(requested.length, remainingCells - remainingMandatory), requestedIndices: reasons('requested'),
+            selectedIndices:reasons('selected'),focusedIndices:reasons('focused'),currentIndices:reasons('current'),
             previous: previous?.cellWindows.get(id) as ArrayWindow | undefined });
         cellWindows.set(id, window); remainingCells -= window.visible.length; mandatoryCells.push(...window.budgetOverflow.mandatoryIds);
     }

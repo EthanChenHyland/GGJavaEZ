@@ -9,6 +9,7 @@ export interface ShellState {
   workspaceMode: WorkspaceMode
   explorerOpen: boolean
   inspectorHidden: boolean
+  inspectorSide: 'left' | 'right'
   bottomOpen: boolean
   focusSourceOpen: boolean
   sourceOpen: boolean
@@ -34,6 +35,7 @@ export const shellStore = createStore<ShellState>(() => ({
   workspaceMode: 'code',
   explorerOpen: false,
   inspectorHidden: false,
+  inspectorSide: 'right',
   bottomOpen: false,
   focusSourceOpen: false,
   sourceOpen: true,

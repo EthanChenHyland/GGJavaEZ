@@ -127,7 +127,8 @@ export function computeShellLayout(input: ShellLayoutInput): ShellLayout {
 
   // Narrow framing always reserves the collapsed peek rail, even while its
   // transient drawer/sheet is open; opening them does not refit the World.
-  const left = narrow ? peekWidth : source.x + source.width + 0.014 * w
+  const sourceLeft = narrow ? peekWidth : source.x + source.width + 0.014 * w
+  const left = !narrow&&inspector&&input.inspector.side==='left'?Math.max(sourceLeft,inspector.x+inspector.width+0.01*w):sourceLeft
   const right = !narrow && inspector && input.inspector.side === 'right'
     ? inspector.x - 0.01 * w : narrow ? w : shell.safeFrame.x[1] * w
   const top = narrow ? header.height : shell.safeFrame.y[0] * h

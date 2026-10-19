@@ -44,7 +44,7 @@ export function Shell({ recording, recordingChoices }: ShellProps) {
   const focusTargetId = useInteractionStore(state => state.focus?.targetId ?? null)
   const worldSelection = useInteractionStore(state => state.selection)
   const appState = useAppState(workspace, focusTargetId, recording)
-  const layout = computeShellLayout({ viewport, appState, hasRuntimeWorld: !!recording || !!workspace.visualization, sourceExpanded: !recording && workspace.workspaceMode === 'code', narrowDrawerOpen: workspace.focusSourceOpen, explorerOpen: workspace.explorerOpen, inspector: { open: !!(worldSelection||focusTargetId) && !workspace.inspectorHidden, side: 'right' }, dockDrawer: { open: workspace.bottomOpen, heightRatio: workspace.bottomHeight / 100 }, debugActive: workspace.execution?.kind === 'debug' && workspace.activeExecution })
+  const layout = computeShellLayout({ viewport, appState, hasRuntimeWorld: !!recording || !!workspace.visualization, sourceExpanded: !recording && workspace.workspaceMode === 'code', narrowDrawerOpen: workspace.focusSourceOpen, explorerOpen: workspace.explorerOpen, inspector: { open: !!(worldSelection||focusTargetId) && !workspace.inspectorHidden, side: workspace.inspectorSide }, dockDrawer: { open: workspace.bottomOpen, heightRatio: workspace.bottomHeight / 100 }, debugActive: workspace.execution?.kind === 'debug' && workspace.activeExecution })
   const editorVisible=layout.source.size!=='DRAWER_COLLAPSED'&&!!(recording?recordedFile:workspace.recordedView??workspace.activeTab)
   const [sourceEditorOpened,setSourceEditorOpened]=useState(editorVisible)
   const mountSourceEditor=sourceEditorOpened||layout.source.size!=='DRAWER_COLLAPSED'
