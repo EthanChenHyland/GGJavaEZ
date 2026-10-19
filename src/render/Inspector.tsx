@@ -10,6 +10,7 @@ import { VirtualList } from '../shell/VirtualList'
 import { arrayCellTarget } from '../world/arrayCellTarget'
 import { canFocusWorldSelection } from '../interaction/focusTarget'
 import {historicalSceneReference} from '../world/historicalReference'
+import {InspectorControlFacts} from './InspectorControlFacts'
 import './inspector.css'
 export function Inspector({selection,scene,runtime,flows,plan,onClose,onFocus,onReturn,onSelectRow,onSelectEntity}:{
  selection:Selection;scene:SceneModel;runtime:RuntimeState;flows?:FlowCatalog;plan:PresentationPlan
@@ -59,6 +60,7 @@ export function Inspector({selection,scene,runtime,flows,plan,onClose,onFocus,on
   {node&&'ownership'in node&&<p>{node.ownership} · stable identity <span className="gg-inspector-id">{node.id}</span></p>}
   {retired&&<p className="gg-inspector-id">Recorded lifetime · declared at {retired.lifetime.declaredAt} · last captured at {retired.lifetime.lastChangedAt} · closed at {retired.lifetime.exitedAt}</p>}
   {selection.kind==='slot'&&<p className="gg-inspector-id">Selected storage lifetime: {selection.id}</p>}
+  {(node?.kind==='frame'||retired)&&<InspectorControlFacts runtime={runtime} frameId={node?.kind==='frame'?node.id:retired!.lifetime.frameId}/>}
   {cluster&&<VirtualList key={cluster.id} className="inspector-values inspector-members" count={cluster.memberIds.length} rowHeight={52} label="Cluster members">{index=>{
     const member=scene.entities[cluster.memberIds[index]],kind=member.kind==='frame'?'frame':member.kind==='class'?'class':'object';
     const label=member.kind==='frame'?`${member.title} #${member.invocationNumber}`:member.kind==='class'?`${member.title} static state`:`${member.title} #${member.displayId}`;

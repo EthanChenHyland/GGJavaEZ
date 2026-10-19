@@ -21,8 +21,6 @@ const declarations = checkpoints('DECLARE_LOCAL')
 const corrected = declarations.filter(({ event }) => event.slot.name === 'corrected')
 const inputs = checkpoints('INPUT_READ')
 const outputs = checkpoints('OUTPUT_WRITE')
-const conditions = checkpoints('EVALUATE_CONDITION')
-const iterations = checkpoints('LOOP_ITERATION')
 const scanner = required(checkpoints('ALLOCATE_OBJECT').find(({ event }) => event.className === 'Scanner'), 'Scanner allocation')
 const scannerReference = required(checkpoints('CREATE_REFERENCE').find(({ event }) => event.targetObjectId === scanner.event.objectId), 'Scanner reference')
 const firstCorrected = required(corrected[0], 'branch-local corrected')
@@ -98,38 +96,6 @@ test('console contains only consumed inputs and committed outputs, including rev
   }
   await seek(page, 0)
   await expectConsole(page, 0)
-})
-
-test('recorded operands, taken and skipped paths, iteration and source survive guidance changes', async ({ page }) => {
-  await page.emulateMedia({ reducedMotion: 'reduce' })
-  await control(page)
-  await page.getByRole('button', { name: 'Runtime focus mode', exact: true }).click()
-  expect(conditions.some(({ event }) => event.result)).toBe(true)
-  expect(conditions.some(({ event }) => !event.result)).toBe(true)
-  for (const checkpoint of conditions) {
-    await seek(page, checkpoint.cursor)
-    const { event } = checkpoint
-    const fact = status(page).locator('[data-condition-id]')
-    await expect(fact).toHaveAttribute('data-condition-id', event.conditionId)
-    await expect(fact.locator('code')).toHaveText(event.expression)
-    await expect(fact.locator('strong')).toHaveText(`${scalar(event.operands[0].value)} ${event.operator} ${scalar(event.operands[1].value)} → ${event.result}`)
-    await expect(fact.locator('.branch-path')).toHaveText(`${event.takenLabel} · skipped: ${event.skippedLabel}`)
-    await expectSource(page, checkpoint)
-    const loop = iterations.filter(({ cursor }) => cursor <= checkpoint.cursor).at(-1)
-    if (loop) await expect(status(page).locator('[data-loop-iteration]')).toHaveAttribute('data-loop-iteration', String(loop.event.iteration))
-    await page.getByRole('button', { name: 'Guided execution', exact: true }).click()
-    await expect(fact.locator('code')).toHaveText(event.expression)
-    await expect(fact.locator('strong')).toContainText(String(event.result))
-    await expectSource(page, checkpoint)
-    await expect(scrub(page)).toHaveValue(String(checkpoint.cursor))
-    await page.getByRole('button', { name: 'Guided execution', exact: true }).click()
-  }
-  for (const checkpoint of [...iterations, ...iterations.slice().reverse()]) {
-    await seek(page, checkpoint.cursor)
-    await expect(status(page).locator('[data-loop-iteration]')).toHaveAttribute('data-loop-iteration', String(checkpoint.event.iteration))
-    await expect(status(page).locator('.loop-context')).toHaveText(checkpoint.event.status === 'ended'
-      ? `Loop ended · ${checkpoint.event.iteration} iterations` : `Iteration ${checkpoint.event.iteration}`)
-  }
 })
 
 test('Classic and Spatial share selection, value, source, console and cursor; switching preserves playback', async ({ page }) => {

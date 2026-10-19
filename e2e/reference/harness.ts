@@ -121,8 +121,15 @@ export async function follow(page:Page):Promise<void>{
  await ready(page)
 }
 export async function selectEntity(page:Page,id:string):Promise<void>{
- await page.locator('.world-canvas').focus();await page.keyboard.press('Tab')
  const list=page.getByRole('listbox',{name:'Runtime entities'})
+ // Re-enter from the end in the opposite direction: Tab at the final entity
+ // intentionally leaves the World. A selected singleton already is the target.
+ const selectedOption=list.locator('[aria-selected="true"]')
+ const hasSelection=await selectedOption.count()>0
+ const position=hasSelection?Number(await selectedOption.getAttribute('aria-posinset')):0
+ const total=hasSelection?Number(await selectedOption.getAttribute('aria-setsize')):0
+ if(total===1&&await page.evaluate(()=>window.__ggjavaezQA!.selection()?.id)===id)return
+ await page.locator('.world-canvas').focus();await page.keyboard.press(total>1&&position===total?'Shift+Tab':'Tab')
  await expect(list).toBeFocused()
  // The accessible list follows real pickability and projection. Never select an
  // off-screen/hidden identity through a store setter.
