@@ -1,5 +1,8 @@
-import type {SceneEntity,SceneRow,Vec3} from '../../contracts/world'
+import type {PresentedEntity,SceneEntity,SceneRow,Vec3} from '../../contracts/world'
 import {compactLibraryFace} from '../../world/firstObjectPresentation'
+import {faceRows} from '../../world/faceRows'
+import {displayType} from '../../world/displayType'
+import {world} from '../../theme/tokens'
 import {localFontText,textAdvance} from './textSystem'
 /** The renderer and camera admission use the same physical title/identity
  * planes. These sizes never depend on the semantic zoom metric. */
@@ -14,6 +17,11 @@ export function rowValueLabel(value:SceneRow['value']):string{
  return value.text
 }
 export interface FaceColumnRow {name:string;type:string;indent?:number}
+/** Text and value-chip geometry share the same measured, scoped column grid. */
+export function faceRowColumns(node:SceneEntity,presented:Pick<PresentedEntity,'detail'>&Partial<Pick<PresentedEntity,'rowSlotIds'>>,model=faceRows(node,presented)){
+ return faceColumns(node.anchor.size[0],presented.detail,model.visible.map(row=>({name:row.name,type:displayType(row.type),
+  indent:node.kind==='frame'&&'scopeDepth'in row?(row.scopeDepth??0)*world.frame.scopeIndent:0})),!!compactLibraryFace(node.anchor))
+}
 export function faceColumns(width:number,detail:'FAR'|'MEDIUM'|'CLOSE'='CLOSE',rows:readonly FaceColumnRow[]=[],compact=false){
  const available=Math.max(.2,width-.56)
  if(rows.length&&available>=2){

@@ -12,6 +12,7 @@ import { useQualityStore, type QualityTier } from './quality/qualityStore';
 import { resolveArrayWindowPick, type ArrayWindowPick } from '../world/arrayWindow';
 import { useCameraStore } from '../camera/cameraStore';
 import {arrayCellTargeted} from './arrayCellStyle';
+import {faceRowColumns} from './text/faceTypography';
 type Pick = NonNullable<Selection>;
 interface SolidPress {pick:Pick;arrayPick?:ArrayWindowPick;recordingId:string}
 interface Solid {
@@ -23,8 +24,12 @@ interface Solid {
     tint: string;
     edge?: string;
     arrayPick?: ArrayWindowPick;
+    part?: 'reference-chip-rim' | 'reference-chip';
 }
 function entityPick(node: SceneEntity): Pick { return { kind: node.kind === 'frame' ? 'frame' : node.kind === 'class' ? 'class' : 'object', id: node.id }; }
+// Pre-composite a subdued rim from the existing palette, keeping opaque value
+// chips in the same face batch and outside the bloom emitter mask.
+const chipRims=Object.fromEntries((['stack','heap','class'] as const).map(role=>{const palette=color[role];return[role,`#${new Color('chip' in palette?palette.chip:palette.face).lerp(new Color(palette.edge),.28).getHexString()}`]}));
 export function buildSolidBatch(scene: SceneModel, plan: PresentationPlan): Solid[] {
     const solids: Solid[] = [];
     for (const [id, presented] of plan.entities) {
@@ -33,7 +38,7 @@ export function buildSolidBatch(scene: SceneModel, plan: PresentationPlan): Soli
         const pick = entityPick(node), opacity = presented.opacity;
         const edge = presented.highlight === 'exception' ? color.semantic.exception : presented.highlight === 'mutation' ? color.semantic.mutation : presented.highlight ? color.semantic.execution : palette.edge;
         solids.push({ anchor: node.kind === 'array' ? { ...node.anchor, position: [x, top - .45, z], size: [w, .9, .12] } : node.anchor, pick, pickable: presented.pickable, role, opacity, tint: palette.core, edge });
-        const plate = (slot: string, position: Vec3, size: Vec3, tint: string, plateOpacity = opacity, arrayPick?: ArrayWindowPick) => solids.push({ anchor: { ...node.anchor, entityId: slot, position, size, ports: {}, bodyPort: position }, pick: slot === id ? pick : { kind: 'slot', id: slot }, pickable: presented.pickable, role: 'face', opacity: plateOpacity, tint, arrayPick });
+        const plate = (slot: string, position: Vec3, size: Vec3, tint: string, plateOpacity = opacity, arrayPick?: ArrayWindowPick,part?:Solid['part']) => solids.push({ anchor: { ...node.anchor, entityId: slot, position, size, ports: {}, bodyPort: position }, pick: slot === id ? pick : { kind: 'slot', id: slot }, pickable: presented.pickable, role: 'face', opacity: plateOpacity, tint, arrayPick,part });
         if (presented.mode !== 'detailed')
             continue;
         if (node.kind !== 'array')
@@ -51,7 +56,18 @@ export function buildSolidBatch(scene: SceneModel, plan: PresentationPlan): Soli
             }
             continue;
         }
-        for(const row of model.visible)rowPlate(row.slotId);
+        const columns=faceRowColumns(node,presented,model);
+        for(const row of model.visible){
+            rowPlate(row.slotId);
+            if(row.value.kind!=='reference'||row.value.observation==='UNAVAILABLE'||!scene.entities[row.value.targetId])continue;
+            const background=facePlate(node,presented,row.slotId,model);
+            if(!background)continue;
+            // Whole-row hit/mutation bounds remain unchanged. Only the actual
+            // reference's value column receives this inset, below its text.
+            const centre=x+w/2-.28-columns.value/2,height=model.pitch*.62;
+            plate(row.slotId,[centre,background.position[1],face+.042],[columns.value+.12,height+.08,.012],chipRims[role],opacity,undefined,'reference-chip-rim');
+            plate(row.slotId,[centre,background.position[1],face+.050],[columns.value+.04,height,.012],'chip' in palette?palette.chip:palette.face,opacity,undefined,'reference-chip');
+        }
         if (node.kind === 'array') {
             const window=plan.cellWindows.get(node.id);
             const targeted=window?arrayCellTargeted(presented,window):()=>false;
@@ -90,7 +106,7 @@ function Instances({ items, onSelect, onFocus, tier, plan, recordingId, cursor,p
     cursor: number;
     press:RefObject<SolidPress|null>;
 }) {
-    const ref = useRef<InstancedMesh>(null), role = items[0].role, opacity = items[0].opacity;
+    const ref = useRef<InstancedMesh>(null), role = items[0].role, opacity = items[0].opacity, inset = !!items[0].part;
     const validPress=(item:Solid|undefined)=>{
         const started=press.current;
         if(!item?.pickable||!started||started.recordingId!==recordingId||started.pick.kind!==item.pick.kind||started.pick.id!==item.pick.id)return false;
@@ -114,7 +130,7 @@ function Instances({ items, onSelect, onFocus, tier, plan, recordingId, cursor,p
             mesh.instanceColor.needsUpdate = true;
         mesh.computeBoundingSphere();
     }, [items, role]);
-    return <instancedMesh ref={ref} args={[undefined, undefined, capacity]} geometry={role === 'face' ? unitBox : unitRoundedBox} material={role === 'face' ? undefined : glassMaterial(role, opacity, tier)} userData={{runtimeBloomRole:'protected'}} customDepthMaterial={role === 'face' ? undefined : roundedDepthMaterial()} customDistanceMaterial={role === 'face' ? undefined : roundedDistanceMaterial()} dispose={null} castShadow={role !== 'face'} receiveShadow raycast={items.some(item => item.pickable) ? canonicalSolidRaycast : noRaycast} onPointerDown={event=>{const item=items[event.instanceId??-1];press.current=item?.pickable?{pick:item.pick,arrayPick:item.arrayPick,recordingId}:null;if(item?.pickable)event.stopPropagation()}} onClick={event => { const item = items[event.instanceId ?? -1]; if (validPress(item)) {
+    return <instancedMesh ref={ref} args={[undefined, undefined, capacity]} renderOrder={inset?1:0} geometry={role === 'face' ? unitBox : unitRoundedBox} material={role === 'face' ? undefined : glassMaterial(role, opacity, tier)} userData={{runtimeBloomRole:'protected'}} customDepthMaterial={role === 'face' ? undefined : roundedDepthMaterial()} customDistanceMaterial={role === 'face' ? undefined : roundedDistanceMaterial()} dispose={null} castShadow={role !== 'face'} receiveShadow raycast={items.some(item => item.pickable) ? canonicalSolidRaycast : noRaycast} onPointerDown={event=>{const item=items[event.instanceId??-1];press.current=item?.pickable?{pick:item.pick,arrayPick:item.arrayPick,recordingId}:null;if(item?.pickable)event.stopPropagation()}} onClick={event => { const item = items[event.instanceId ?? -1]; if (validPress(item)) {
         event.stopPropagation();
         onSelect(item!.pick);
     } }} onDoubleClick={event => { const item = items[event.instanceId ?? -1]; if (validPress(item)) {
@@ -122,7 +138,10 @@ function Instances({ items, onSelect, onFocus, tier, plan, recordingId, cursor,p
         if(item!.pick.kind==='cluster')useCameraStore.getState().travelCluster(item!.pick.id,recordingId,cursor);
         else onFocus(item!.pick);
     } }}>
-    {role === 'face' && <meshBasicMaterial color="white" transparent={opacity<1} opacity={opacity} depthWrite={opacity>=1} toneMapped={false}/>}
+    {/* Insets test against the owning opaque face but never write a depth
+        between that face and its SDF text. Their sub-unit offsets otherwise
+        approach depth-buffer precision in a distant Hero view. */}
+    {role === 'face' && <meshBasicMaterial color="white" transparent={opacity<1} opacity={opacity} depthWrite={opacity>=1&&!inset} toneMapped={false}/>}
   </instancedMesh>;
 }
 function Edges({ items }: {
@@ -163,7 +182,7 @@ export function SolidBatch({ scene, plan, onSelect, onFocus }: {
     const batches = useMemo(() => {
         const groups = new Map<string, Solid[]>(), edges = new Map<number, Solid[]>();
         for (const item of buildSolidBatch(scene, plan)) {
-            const key = `${item.role}:${item.opacity}`, group = groups.get(key) ?? [];
+            const key = `${item.role}:${item.opacity}:${item.part?'inset':'surface'}`, group = groups.get(key) ?? [];
             group.push(item);
             groups.set(key, group);
             if (item.edge) {

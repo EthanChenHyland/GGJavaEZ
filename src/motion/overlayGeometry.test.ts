@@ -66,14 +66,14 @@ it('travels only on the exact currently presented reference or graph-edge curve 
   expect(motionCurve(reference, subjects, new Map())).toBeUndefined()
 })
 
-it('scoped face motion outlines coincide with the actual visible chip geometry throughout captured replay',async()=>{
+it('scoped face motion outlines coincide with the actual whole-row geometry throughout captured replay',async()=>{
  const {loadControlTrace}=await import('../examples/traces'),{buildSolidBatch}=await import('../render/SolidBatch')
  const trace=loadControlTrace();let compared=0
  for(let cursor=1;cursor<=trace.events.length;cursor++){
   const {scene,plan}=view(trace,cursor)
   if(!Object.values(scene.entities).some(node=>node.kind==='frame'&&node.scopeDividers?.length))continue
   const subjects=motionSubjects(scene,plan)
-  for(const solid of buildSolidBatch(scene,plan).filter(solid=>solid.role==='face'&&solid.pick.kind==='slot')){
+  for(const solid of buildSolidBatch(scene,plan).filter(solid=>solid.role==='face'&&solid.pick.kind==='slot'&&!solid.part)){
    expect(subjects.get(solid.pick.id)?.anchor.position).toEqual(solid.anchor.position)
    expect(subjects.get(solid.pick.id)?.anchor.size).toEqual(solid.anchor.size);compared++
   }

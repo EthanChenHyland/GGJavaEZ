@@ -212,3 +212,8 @@ The Dock now owns its fixed strip, one floating resizable drawer and workspace s
 ## Closest camera fit — 2026-10-20
 
 The shared perspective fit now solves image-plane pan intervals directly, without its unconditional 3% distance margin. Home converges on the actual structural glyph footprint. Canonical anchors, fixed fonts/FOV, camera ownership and collision/zoom constraints retain their owners and values. [Derivation, RED evidence, source-bound captures and remaining visual gap](migration/camera.md#closest-perspective-fit--2026-10-20). This closes the unnecessary zoom-out defect; Hero typography and whole A–G acceptance remain open.
+
+
+## Reference value chips — 2026-10-20
+
+Observed references now use inset value chips measured by the same scoped column initializer as the text. Whole-row pick, Inspector and motion geometry remains unchanged; only the new decorative parts occupy a separate depth-tested batch before the SDF labels, with depth writes disabled. No semantic ID, value, port, canonical anchor, fixed font or camera changes. [846 replay comparisons, exact owner proof, native evidence and open visual limits](migration/reference-chips.md).
