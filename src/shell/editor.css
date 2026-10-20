@@ -3,10 +3,6 @@
 .ide-panel-actions{display:flex;gap:2px}
 .ide-panel-actions button{display:flex;align-items:center;justify-content:center;width:25px;height:25px;padding:4px;border:0;border-radius:4px;background:transparent;color:var(--color-ui-text-secondary)}
 .ide-panel-actions button:hover:not(:disabled){background:var(--color-ui-glass-fill);color:var(--color-ui-text)}
-.ide-project-select{flex:none;width:calc(100% - 24px);height:29px;margin:10px 12px 6px;padding:0 7px;border:1px solid var(--color-ui-glass-border);border-radius:4px;background:var(--color-ui-glass-fill);color:var(--color-ui-text);font-size:12px!important}
-.ide-new-project,.ide-reveal-active{display:flex;align-items:center;gap:6px;margin:4px 12px;padding:3px 0;border:0;background:none;color:var(--color-ui-text-muted);font-size:11px!important}
-.ide-new-project:hover,.ide-reveal-active:hover{color:var(--color-ui-text)}
-.ide-open-project{display:flex;align-items:center;gap:7px;width:calc(100% - 24px);margin:4px 12px;padding:6px 8px;border:1px solid var(--color-ui-mode-active-border);border-radius:4px;background:var(--color-ui-glass-fill);color:var(--color-ui-text);font-size:11px!important}
 .ide-project-foot{flex:none;padding:8px 12px;border-top:1px solid var(--color-ui-glass-border);color:var(--color-ui-text-muted);font-size:10px}
 .ide-tree{flex:1;min-height:0;overflow:auto;padding:5px 0}
 .ide-tree-row{display:flex;align-items:center;gap:2px;height:28px;padding-right:5px}

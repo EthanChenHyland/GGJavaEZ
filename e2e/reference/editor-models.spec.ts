@@ -1,3 +1,4 @@
+import {selectProject} from './menuActions'
 import {expect,test,type Page} from '@playwright/test'
 import {browserErrors} from './harness'
 import {documentUri} from '../../src/language/protocol'
@@ -53,10 +54,10 @@ for(const viewport of [{width:1440,height:900},{width:760,height:900}])test(`edi
  await expect.poll(async()=>(await inventory(page)).modelUris).toEqual([]);expect((await inventory(page)).viewUris).toEqual([])
  await openFile(page,'Main.java');await openFile(page,'Aux.java')
  await page.getByRole('button',{name:'Show project explorer',exact:true}).click()
- await page.getByRole('combobox',{name:'Project',exact:true}).selectOption(second.id)
- await expect(page.getByRole('combobox',{name:'Project',exact:true})).toBeEnabled()
+ await selectProject(page,second.id)
+ await expect(page.getByRole('button',{name:'Project menu',exact:true})).toHaveAttribute('aria-disabled','false')
  await page.keyboard.press('Alt+Shift+e')
- await expect(page.getByRole('combobox',{name:'Project',exact:true})).toBeHidden()
+ await expect(page.getByRole('tree',{name:'Project explorer',exact:true})).toBeHidden()
  if(viewport.width<1024)await page.getByRole('button',{name:'Show source drawer',exact:true}).click()
  await expect.poll(()=>page.evaluate(()=>window.__ggjavaezQA!.source()?.modelUri)).toMatch(new RegExp(`/${second.id}/`))
  await expect.poll(async()=>(await inventory(page)).modelUris).toEqual([documentUri(second.id,'Main.java')])
@@ -79,10 +80,10 @@ for(const viewport of [{width:1440,height:900},{width:760,height:900}])test(`edi
  // Repeated project replacement cannot accumulate the previous project's
  // models or view caches, even when the original files are opened again.
  await page.getByRole('button',{name:'Show project explorer',exact:true}).click()
- await page.getByRole('combobox',{name:'Project',exact:true}).selectOption(first.id)
- await expect(page.getByRole('combobox',{name:'Project',exact:true})).toBeEnabled()
+ await selectProject(page,first.id)
+ await expect(page.getByRole('button',{name:'Project menu',exact:true})).toHaveAttribute('aria-disabled','false')
  await page.keyboard.press('Alt+Shift+e')
- await expect(page.getByRole('combobox',{name:'Project',exact:true})).toBeHidden()
+ await expect(page.getByRole('tree',{name:'Project explorer',exact:true})).toBeHidden()
  if(viewport.width<1024)await page.getByRole('button',{name:'Show source drawer',exact:true}).click()
  await expect.poll(()=>page.evaluate(()=>window.__ggjavaezQA!.source()?.modelUri)).toMatch(new RegExp(`/${first.id}/`))
  expect((await inventory(page)).modelUris).toEqual([(await page.evaluate(()=>window.__ggjavaezQA!.source()!)).modelUri])

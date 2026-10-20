@@ -1,9 +1,10 @@
+import {selectRecording} from './reference/menuActions'
 import { expect, test } from '@playwright/test'
 
 const cursor = (page: import('@playwright/test').Page) => page.getByRole('slider', { name: 'Scrub execution' })
 async function recursion(page: import('@playwright/test').Page) {
   await page.goto('/examples')
-  await page.getByLabel('Runtime example').selectOption('recursion')
+  await selectRecording(page,'recursion')
   await expect(page.locator('.vj-timeline__count')).toContainText('0 / 36')
 }
 
@@ -101,7 +102,7 @@ test('returned invocation remains inspectable; example switching restores Person
   await page.getByRole('button', { name: 'Close inspector', exact: true }).click()
   await expect(page.getByLabel('Runtime inspector')).toHaveCount(0)
   await page.setViewportSize({ width: 1440, height: 900 })
-  await page.getByLabel('Runtime example').selectOption('person')
+  await selectRecording(page,'person')
   await expect(cursor(page)).toHaveValue('0')
   await expect(page.getByLabel('Runtime inspector')).toHaveCount(0)
   await cursor(page).fill('18')

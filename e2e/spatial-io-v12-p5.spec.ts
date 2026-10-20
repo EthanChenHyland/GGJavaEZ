@@ -1,10 +1,11 @@
+import {selectRecording} from './reference/menuActions'
 import { expect, test } from '@playwright/test'
 import { mkdir, readFile } from 'node:fs/promises'
 
 test('authored graphless input and output keep mounted causal paths in the shared 3D world', async ({ page }) => {
   await page.addInitScript(() => { window.__VJ_QA_RENDER_METRICS__ = true })
   await page.goto('/examples')
-  await page.getByRole('combobox', { name: 'Runtime example' }).selectOption('control')
+  await selectRecording(page,'control')
   // Retained causal paths are an explicit display choice while this authored
   // program is in progress; Relevant flow reserves that state for animation.
   await page.getByRole('combobox', { name: 'Flow history' }).selectOption('all')

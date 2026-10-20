@@ -15,10 +15,11 @@
 .shell-launch-dialog {width:min(600px,100%)}
 .shell-command-menu {position:fixed;width:max-content;display:flex;flex-direction:column;gap:2px;min-width:210px;max-width:calc(100vw - 16px);max-height:calc(100dvh - 16px);padding:6px;overflow:auto;color:var(--color-ui-text);font:400 13px/1.4 Inter,system-ui,sans-serif}
 .shell-command-menu button {display:flex;justify-content:space-between;align-items:center;gap:20px;min-height:32px;padding:6px 8px;text-align:left;border:0;border-radius:4px;background:transparent;color:inherit;font:inherit;cursor:pointer}
-.shell-command-menu button[aria-disabled=true] {opacity:.55;cursor:default}
+.shell-command-menu button[aria-disabled=true] {color:var(--color-ui-text-muted);cursor:default}
 .shell-command-menu button:hover:not([aria-disabled=true]) {background:var(--color-ui-mode-active-fill)}
 .shell-command-menu small {display:block;max-width:300px;color:var(--color-ui-text-secondary);font-size:12px}
 .shell-command-menu kbd {color:var(--color-ui-text-muted);font:inherit;font-size:12px}
+.shell-command-tooltip {position:fixed;z-index:100;max-width:min(420px,calc(100vw - 16px));padding:7px 10px;overflow-wrap:anywhere;color:var(--color-ui-text);font:400 12px/1.4 Inter,system-ui,sans-serif;pointer-events:none}
 .shell-command-menu button:focus-visible,.shell-command-menu:focus-visible {outline:2px solid var(--color-ui-focus-ring);outline-offset:-2px}
 
 .ide-shell :is(button,select,a):focus-visible{outline:2px solid var(--color-ui-focus-ring);outline-offset:2px}

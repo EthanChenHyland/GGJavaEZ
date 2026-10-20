@@ -4,5 +4,5 @@ import { curatedExampleOptions, curatedExampleTraces, type CuratedExampleId } fr
 export function AppRoot() {
   const [recording, setRecording] = useState<CuratedExampleId>(curatedExampleOptions[0].id)
   if (window.location.pathname !== '/examples') return <Shell/>
-  return <Shell recording={curatedExampleTraces[recording]} recordingChoices={<><select aria-label="Runtime example" value={recording} onChange={event => setRecording(event.target.value as CuratedExampleId)}>{curatedExampleOptions.map(option => <option key={option.id} value={option.id}>{option.label}</option>)}</select><a href="/">Workspace</a></>}/>
+  return <Shell recording={curatedExampleTraces[recording]} recordingChoices={{value:recording,options:curatedExampleOptions,onSelect:id=>setRecording(id as CuratedExampleId)}}/>
 }

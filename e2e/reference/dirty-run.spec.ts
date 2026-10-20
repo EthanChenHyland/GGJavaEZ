@@ -35,7 +35,9 @@ function gate(){let release!:()=>void;const promise=new Promise<void>(resolve=>{
 for(const viewport of [{width:1440,height:900},{width:760,height:900}])test(`dirty Run waits for Cancel or every required save ${viewport.width}x${viewport.height}`,async({page,request})=>{
  test.setTimeout(60000);await page.setViewportSize(viewport);const errors=browserErrors(page),{id,baseline}=await setup(page,request)
  const markers={'Main.java':'// changed main\n','Aux.java':'// changed auxiliary\n'}
+ await expect(page.locator('.shell-source-changed')).toHaveCount(0)
  for(const [path,marker]of Object.entries(markers))await edit(page,path,marker)
+ await expect(page.locator('.shell-source-changed')).toHaveText('Source changed since this run')
  const before=await world(page),attempts:string[]=[]
  page.on('request',request=>{if(request.method()==='POST'&&new URL(request.url()).pathname===`/api/projects/${id}/execution`)attempts.push(request.url())})
  const run=page.getByRole('button',{name:'Run',exact:true}),dialog=page.getByRole('dialog',{name:'Unsaved changes before Run',exact:true})
@@ -60,7 +62,7 @@ for(const viewport of [{width:1440,height:900},{width:760,height:900}])test(`dir
   await expect.poll(async()=>{const session=await currentSession(request);return session?.id!==baseline.id?session?.phase:null},{timeout:30000}).toBe('COMPLETED')
   const completed=(await currentSession(request))!;expect(completed.stdout).toBe('VALUE 7\n');expect(completed.rawEvents.length).toBeGreaterThan(0);test.info().annotations.push({type:'actual-jvm-session',description:completed.id})
   for(const path of Object.keys(original)as(keyof typeof original)[])expect((await file(request,id,path)).content).toBe(markers[path]+original[path])
-  await expect(page.locator('.ide-dirty')).toHaveCount(0);await expect(page.locator('.world-canvas canvas')).toHaveAttribute('data-dirty-run-canvas','retained');expect(errors).toEqual([])
+  await expect(page.locator('.ide-dirty')).toHaveCount(0);await expect(page.locator('.shell-source-changed')).toHaveCount(0);await expect(page.locator('.world-canvas canvas')).toHaveAttribute('data-dirty-run-canvas','retained');expect(errors).toEqual([])
  }finally{Object.values(gates).forEach(g=>g.release())}
 })
 test('dirty Run reports a failed open save, still saves a closed draft, and retries before launch',async({page,request})=>{

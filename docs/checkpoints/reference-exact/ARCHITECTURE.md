@@ -192,3 +192,8 @@ Quick Open, Command Palette and workspace symbols use one Picker with virtualize
 ## Dirty-file Run decision — 2026-10-19
 
 Run and Run Without Visualization now require an explicit decision for changed open/inactive and persisted closed drafts. Approval uses the existing Save All owner, retains errors/retry inside the dialog and releases the unchanged execution transaction only after every save succeeds and no dirty path remains. Cancel retains files and the prior World. Eleven protected operation initializers and generic dirty-decision behavior compare exactly with parent0b685a0 outside the new Run branch. [Browser reconciliation, faults and limits](migration/dirty-run.md). Header transition timing, remaining Shell cleanup and whole A–G acceptance remain open.
+
+
+## Header project menu and command presentation — 2026-10-20
+
+Managed projects and curated recordings use the Header project menu and the same registry/dirty-decision owners. The workspace hook is byte-identical to parent6970f5e. AppStateBadge renders the existing derived label, eight glyphs, Building progress and source-proof flag; Header buttons use bounded launch presentation, accessible disabled reasons and shared focus/hover tooltips. Explorer's superseded project controls and styles are removed. Tooltip Escape precedes global navigation, and pointer-transparent descriptions retain hover without blocking underlying controls. [Per-case reconciliation, retained failures and validation](migration/header-controls.md). Global keyboard/Dock/status consolidation, Header transition timing and whole A–G acceptance remain open.

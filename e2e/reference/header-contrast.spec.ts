@@ -7,7 +7,7 @@ const viewports=[{width:1728,height:1117},{width:1440,height:900},{width:1280,he
 
 async function contrast(page:Page){
  const header=page.locator('.shell-header'),clip=(await header.boundingBox())!
- const runs=await header.evaluate(root=>Array.from(root.querySelectorAll<HTMLElement>('.shell-brand strong,.shell-brand small,.shell-state,button span,button svg')).flatMap(element=>{
+ const runs=await header.evaluate(root=>Array.from(root.querySelectorAll<HTMLElement>('.shell-brand strong,.shell-brand small,.shell-state-label,.shell-source-changed,.shell-state-icon svg,button span,button svg')).flatMap(element=>{
   const button=element.closest('button');if(button?.getAttribute('aria-disabled')==='true'||button?.disabled)return[]
   const style=getComputedStyle(element),box=element.getBoundingClientRect()
   if(style.display==='none'||style.visibility==='hidden'||!box.width||!box.height)return[]

@@ -1,3 +1,4 @@
+import {selectRecording} from './menuActions'
 import {expect,test,type Page} from '@playwright/test'
 import {readFileSync} from 'node:fs'
 import type {TraceDocument,TraceEvent} from '../../src/contracts/runtime'
@@ -15,7 +16,7 @@ const consolePane=(page:Page)=>page.getByLabel('Program console',{exact:true})
 const play=(page:Page)=>page.getByRole('button',{name:'Play recorded execution',exact:true})
 const pause=(page:Page)=>page.getByRole('button',{name:'Pause playback',exact:true})
 async function open(page:Page){
- await page.goto('/examples?qa=1');await page.getByRole('combobox',{name:'Runtime example'}).selectOption('control')
+ await page.goto('/examples?qa=1');await selectRecording(page,'control')
  await expect(rail(page)).toHaveAttribute('aria-valuenow','0');await ready(page)
 }
 async function showConsole(page:Page){if(!await consolePane(page).isVisible())await page.getByRole('button',{name:'CONSOLE',exact:true}).click();await expect(consolePane(page)).toBeVisible()}

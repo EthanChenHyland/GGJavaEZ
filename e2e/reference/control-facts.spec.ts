@@ -1,3 +1,4 @@
+import {selectRecording} from './menuActions'
 import {expect,test,type Page} from '@playwright/test'
 import {readFileSync} from 'node:fs'
 import type {TraceDocument,TraceEvent} from '../../src/contracts/runtime'
@@ -28,7 +29,7 @@ async function condition(page:Page,event:typeof conditions[number]){
 // The shared status now lives in the selected invocation's current Inspector.
 test('recorded operands, taken and skipped paths, iteration and source survive guidance changes',async({page})=>{
  await page.emulateMedia({reducedMotion:'reduce'});const errors=browserErrors(page)
- await page.goto('/examples?qa=1');await page.getByRole('combobox',{name:'Runtime example'}).selectOption('control')
+ await page.goto('/examples?qa=1');await selectRecording(page,'control')
  await expect(rail(page)).toHaveAttribute('aria-valuenow','0');await ready(page)
  expect(conditions.some(event=>event.result)).toBe(true);expect(conditions.some(event=>!event.result)).toBe(true)
  for(const event of conditions){

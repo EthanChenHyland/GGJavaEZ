@@ -1,3 +1,4 @@
+import {selectRecording} from './menuActions'
 import {expect,test,type Page} from '@playwright/test'
 import {readFileSync} from 'node:fs'
 import {PerspectiveCamera,Vector3} from 'three'
@@ -21,7 +22,7 @@ async function expectFocusSelection(page:Page,enabled:boolean){
 }
 const leaveFocus=(page:Page)=>inspector(page).getByRole('button',{name:'Return to World',exact:true})
 async function open(page:Page){
- await page.goto('/examples?qa=1');await page.getByRole('combobox',{name:'Runtime example'}).selectOption('control')
+ await page.goto('/examples?qa=1');await selectRecording(page,'control')
  await expect(rail(page)).toHaveAttribute('aria-valuenow','0');await ready(page)
 }
 async function face(page:Page,frameId:string,slotId:string){

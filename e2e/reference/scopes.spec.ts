@@ -1,3 +1,4 @@
+import {selectRecording} from './menuActions'
 import { expect, test } from '@playwright/test'
 import { PerspectiveCamera, Vector3 } from 'three'
 import { readFile, writeFile } from 'node:fs/promises'
@@ -10,7 +11,7 @@ test('captured scopes render inside immutable frame faces and chip picking follo
   const trace = JSON.parse(await readFile('src/examples/demos/control/trace.json', 'utf8')) as TraceDocument
   const errors = browserErrors(page)
   await page.goto('/examples?qa=1')
-  await page.getByRole('combobox', { name: 'Runtime example' }).selectOption('control')
+  await selectRecording(page,'control')
   await seekCursor(page, trace.events.length)
   const anchors = await page.evaluate(() => Object.fromEntries(Object.values(window.__ggjavaezWorld!.scene().entities).map(node => [node.id, node.anchor])))
   let target: { cursor: number; frameId: string; slotId: string } | undefined

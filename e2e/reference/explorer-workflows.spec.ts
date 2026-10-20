@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { expect, test, type APIRequestContext, type Page } from '@playwright/test'
+import {projectCommand} from './menuActions'
 
 test.describe.configure({ mode: 'serial' })
 
@@ -62,8 +63,11 @@ test('first use stays unselected and offers project actions on a narrow screen',
 
 test('root-level creation suggests existing parents and import explains its copy', async ({ page, request }) => {
   await openProject(page, request, [{ path: 'Main.java', content: 'class Main {}' }])
-  await expect(page.getByRole('button', { name: 'Import folder (copy)' })).toBeVisible()
-  await expect(page.locator('.ide-import-note')).toContainText('originals stay in place')
+  await page.getByRole('button',{name:'Project menu',exact:true}).click()
+  const importAction=page.getByRole('menuitem').and(page.locator('[data-menu-action="workbench.importProject"]'))
+  await expect(importAction).toBeVisible()
+  await expect(importAction.locator('small')).toContainText('originals stay in place')
+  await page.keyboard.press('Escape')
 
   await page.getByRole('button', { name: 'Create File' }).click()
   const fileDialog = page.getByRole('dialog', { name: 'New File' })
@@ -81,7 +85,7 @@ test('root-level creation suggests existing parents and import explains its copy
   await folderDialog.getByRole('button', { name: 'Create' }).click()
   await expect(page.getByRole('treeitem', { name: 'new-folder' })).toBeVisible()
 
-  await page.getByRole('button', { name: 'New project' }).click()
+  await projectCommand(page,'workbench.newProject')
   await page.getByRole('dialog', { name: 'New Project' }).getByRole('textbox').fill(`Empty ${randomUUID()}`)
   await page.getByRole('dialog', { name: 'New Project' }).getByRole('button', { name: 'Create' }).click()
   await expect(page.locator('.ide-tree .ide-empty')).toBeVisible()
