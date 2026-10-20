@@ -43,34 +43,41 @@ export function fitToSafeFrame(points: readonly Vec3[], angles: {
             max[i] = Math.max(max[i], point[i]);
         }
     const center = min.map((v, i) => (v + max[i]) / 2) as unknown as Vec3;
-    const poseAt = (distance: number) => {
-        let pose: OrbitPose = { target: center, distance, yawDeg: angles.yaw, pitchDeg: angles.pitch };
-        for (let refine = 0; refine < 2; refine++) {
-            const camera = projectionCamera(pose, viewport), projected = points.map(p => screenPoint(p, camera, viewport));
-            const x = (Math.min(...projected.map(p => p.x)) + Math.max(...projected.map(p => p.x))) / 2;
-            const y = (Math.min(...projected.map(p => p.y)) + Math.max(...projected.map(p => p.y))) / 2;
-            const pixel = 2 * distance * Math.tan(radians(tokens.fov / 2)) / viewport.height;
-            const right = new Vector3().setFromMatrixColumn(camera.matrixWorld, 0), up = new Vector3().setFromMatrixColumn(camera.matrixWorld, 1);
-            const shift = right.multiplyScalar((x - safe.x - safe.width / 2) * pixel).add(up.multiplyScalar((safe.y + safe.height / 2 - y) * pixel));
-            pose = { ...pose, target: pose.target.map((v, i) => v + shift.getComponent(i)) as unknown as Vec3 };
-        }
-        return pose;
-    };
-    const fits = (pose: OrbitPose) => {
-        const camera = projectionCamera(pose, viewport);
-        return points.every(point => { const p = screenPoint(point, camera, viewport); return p.z > -1 && p.z < 1 && p.x >= safe.x && p.x <= safe.x + safe.width && p.y >= safe.y && p.y <= safe.y + safe.height; });
-    };
-    let lo = tokens.minDistance, hi = Math.max(24, Math.hypot(...max.map((v, i) => v - min[i])) * 4);
-    while (!fits(poseAt(hi)) && hi < 100000)
-        hi *= 2;
-    for (let iteration = 0; iteration < 36; iteration++) {
-        const mid = (lo + hi) / 2;
-        if (fits(poseAt(mid)))
-            hi = mid;
-        else
-            lo = mid;
+    // Express the actual corners in the camera's orthonormal basis about the
+    // fixed world centre. At depth d, safe-frame edges bound image-plane pan:
+    // max(x + R*z) - R*d <= panX <= min(x + L*z) - L*d.
+    // The two intervals first overlap at the closest possible fit. Solving them
+    // directly avoids iterative pans and an arbitrary zoom-out margin.
+    const yaw = radians(angles.yaw), pitch = radians(-angles.pitch);
+    const right = new Vector3(Math.cos(yaw), 0, -Math.sin(yaw));
+    const up = new Vector3(-Math.sin(yaw) * Math.sin(pitch), Math.cos(pitch), -Math.cos(yaw) * Math.sin(pitch));
+    const back = new Vector3(Math.sin(yaw) * Math.cos(pitch), Math.sin(pitch), Math.cos(yaw) * Math.cos(pitch));
+    const tangent = Math.tan(radians(tokens.fov / 2)), aspect = viewport.width / viewport.height;
+    const left = (2 * safe.x / viewport.width - 1) * tangent * aspect;
+    const rightEdge = (2 * (safe.x + safe.width) / viewport.width - 1) * tangent * aspect;
+    const bottom = (1 - 2 * (safe.y + safe.height) / viewport.height) * tangent;
+    const top = (1 - 2 * safe.y / viewport.height) * tangent;
+    let xUpper = Infinity, xLower = -Infinity, yUpper = Infinity, yLower = -Infinity, nearest = -Infinity;
+    const offset = new Vector3();
+    for (const point of points) {
+        offset.set(point[0] - center[0], point[1] - center[1], point[2] - center[2]);
+        const x = offset.dot(right), y = offset.dot(up), z = offset.dot(back);
+        xUpper = Math.min(xUpper, x + left * z);
+        xLower = Math.max(xLower, x + rightEdge * z);
+        yUpper = Math.min(yUpper, y + bottom * z);
+        yLower = Math.max(yLower, y + top * z);
+        nearest = Math.max(nearest, z + .01);
     }
-    return poseAt(hi * 1.03);
+    // A numerical guard, not a perceptible composition margin. It keeps exact
+    // boundary points inside after the world-to-camera matrix round trip.
+    const closest = Math.max(tokens.minDistance, nearest, (xLower - xUpper) / (rightEdge - left), (yLower - yUpper) / (top - bottom));
+    const distance = closest + Math.max(1, closest) * 1e-10;
+    const panX = (xLower + xUpper - (rightEdge + left) * distance) / 2;
+    const panY = (yLower + yUpper - (top + bottom) * distance) / 2;
+    return {
+        target: center.map((value, axis) => value + right.getComponent(axis) * panX + up.getComponent(axis) * panY) as unknown as Vec3,
+        distance, yawDeg: angles.yaw, pitchDeg: angles.pitch,
+    };
 }
 export function frontFace(anchor: WorldAnchor): Vec3[] {
     const [x, y, z] = anchor.position, [w, h, d] = anchor.size;

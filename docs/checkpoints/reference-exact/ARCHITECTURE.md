@@ -207,3 +207,8 @@ The global keyboard listener now delegates to one Shell dispatcher. Exact physic
 ## Dock drawers and workspace status — 2026-10-20
 
 The Dock now owns its fixed strip, one floating resizable drawer and workspace status popover. Counts follow the canonical Console groups, merged diagnostics, paused debugger lists and recorded exception episodes. Existing Console JSX, Debug body and operation owners compare exactly with parent 97441e4 except the two retired automatic height resets. The old tool/footer/JDK banner and style owners are physically replaced; Configure JDK uses the existing dialog stack and detect action. [Ownership, case reconciliation and limits](migration/dock.md). Header fit at 1024, remaining Shell polish and whole A–G acceptance remain open.
+
+
+## Closest camera fit — 2026-10-20
+
+The shared perspective fit now solves image-plane pan intervals directly, without its unconditional 3% distance margin. Home converges on the actual structural glyph footprint. Canonical anchors, fixed fonts/FOV, camera ownership and collision/zoom constraints retain their owners and values. [Derivation, RED evidence, source-bound captures and remaining visual gap](migration/camera.md#closest-perspective-fit--2026-10-20). This closes the unnecessary zoom-out defect; Hero typography and whole A–G acceptance remain open.

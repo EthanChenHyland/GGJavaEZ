@@ -14,8 +14,13 @@ export function homeFraming(scene:SceneModel,plan:PresentationPlan,safeFrame:Rec
  const bodies=[...[...plan.entities.keys()].map(id=>scene.entities[id].anchor),...plan.clusters.map(cluster=>cluster.anchor),...scene.io.map(io=>io.anchor),...(plan.exceptionPanel?[exceptionPanelAnchor(plan.exceptionPanel,scene.recording)]:[])]
  const fit=(points:readonly Vec3[])=>{
   let pose=fitToSafeFrame(points,angles,safeFrame,viewport),fitted=[...points]
-  for(let refine=0;refine<4;refine++){
-   fitted=[...points,...structuralLabelFitPoints(specs,bodies,projectionCamera(pose,viewport),viewport)]
+  // Structural glyphs retain their projected size as the camera moves, so
+  // their physical footprint changes with distance. Converge on the actual
+  // new footprint instead of relying on extra zoom-out to conceal clipping.
+  for(let refine=0;refine<16;refine++){
+   const camera=projectionCamera(pose,viewport)
+   fitted=[...points,...structuralLabelFitPoints(specs,bodies,camera,viewport)]
+   if(fitted.every(point=>{const p=screenPoint(point,camera,viewport);return p.z>-1&&p.z<1&&p.x>=safeFrame.x&&p.x<=safeFrame.x+safeFrame.width&&p.y>=safeFrame.y&&p.y<=safeFrame.y+safeFrame.height}))break
    pose=fitToSafeFrame(fitted,angles,safeFrame,viewport)
   }
   return{pose,points:fitted}
