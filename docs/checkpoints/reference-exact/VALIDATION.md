@@ -245,3 +245,8 @@ Defaults2126passed/70explicit opt-in skips,229files,178.61seconds,exit0. Focused
 ## Completion-label fit — 2026-10-20
 
 A preserved native RED measures177px text in97px at1280. After the Header-only CSS correction, affected native14/14 pass,58.19seconds,five actual JVM sessions; full completion labels fit both axes at Home/orbit in all five viewports while4.5 contrast, control bounds and runtime/camera assertions remain unchanged. Root reviewed five updated original Home captures. Strict browser TS, fresh build/typecheck and reference/protected guards pass. All unit/production TypeScript are byte-identical to0c470c5; its2126/70 unit result is reused, with no full-unit rerun claimed. [Evidence and remaining limits](migration/header-controls.md#completion-label-fit-follow-up--2026-10-20). Whole A–G acceptance remains open.
+
+
+## Shell keyboard dispatcher — 2026-10-20
+
+Defaults 2,139 passed/70 explicit opt-in skips, 230 files, 176.75 seconds, exit 0. Focused 89/89 and integrated native 24/24 pass, 126.53 seconds, zero skips/failures/flaky, with 12 distinct actual JVM sessions. Earlier Home-lifecycle and observer fixture failures remain recorded. Build/typecheck, browser TypeScript, lint/reference/protected guards pass; all 929 source files remain unchanged through validation. AST 648/2237/250/zero superseded targets; native 147/48, default 239/68, 92 older cases. [Evidence, comparison and limits](migration/keyboard.md). Dock/status, visual/performance convergence and whole A–G acceptance remain open.

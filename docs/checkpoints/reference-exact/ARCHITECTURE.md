@@ -197,3 +197,8 @@ Run and Run Without Visualization now require an explicit decision for changed o
 ## Header project menu and command presentation — 2026-10-20
 
 Managed projects and curated recordings use the Header project menu and the same registry/dirty-decision owners. The workspace hook is byte-identical to parent6970f5e. AppStateBadge renders the existing derived label, eight glyphs, Building progress and source-proof flag; Header buttons use bounded launch presentation, accessible disabled reasons and shared focus/hover tooltips. Explorer's superseded project controls and styles are removed. Tooltip Escape precedes global navigation, and pointer-transparent descriptions retain hover without blocking underlying controls. [Per-case reconciliation, retained failures and validation](migration/header-controls.md). Global keyboard/Dock/status consolidation, Header transition timing and whole A–G acceptance remain open.
+
+
+## Shell keyboard dispatcher — 2026-10-20
+
+The global keyboard listener now delegates to one Shell dispatcher. Exact physical matching and availability/invocation retain their existing registry and workspace owners; composition, menus, text input and consumed Escape keep their established priority. An AST comparison proves the remainder of the workspace source byte-identical to parent b4ed018. [Evidence and preserved behavior](migration/keyboard.md). Dock/status and whole A–G acceptance remain open.

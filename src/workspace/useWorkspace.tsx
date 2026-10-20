@@ -18,7 +18,8 @@ import { defaultLaunch } from '../ide/javaProject'
 import { pathIsWithin,transitionWorkspacePaths,type WorkspacePathChange } from '../ide/pathChanges'
 import { mergeProblems } from '../ide/problems'
 import { type TreeAction } from '../ide/ProjectExplorer'
-import { commandForShortcut,currentPlatform,formatShortcut,worldEscapeCommand,type ShortcutFocus } from '../ide/shortcuts'
+import {currentPlatform,formatShortcut} from '../ide/shortcuts'
+import {createShellKeyboardHandler} from '../shell/keyboard'
 import { useCameraStore } from '../camera/cameraStore'
 import { useInteractionStore as useWorldInteractionStore } from '../interaction/interactionStore'
 import { useQualityStore } from '../render/quality/qualityStore'
@@ -1224,29 +1225,11 @@ export function useWorkspace(recordingViewer = false) {
   }
 
   useEffect(() => {
-    const shortcuts = (event: KeyboardEvent) => {
-      if (projectDialog || picker || tabMenu || showLaunch || showSymbols || pending || event.isComposing || event.target instanceof HTMLElement && event.target.closest('[data-shell-menu]')) return
-      if (!event.defaultPrevented) {
-        const target = event.target instanceof HTMLElement ? event.target : null
-        const focus: ShortcutFocus = {
-          editor: !!target?.closest('.monaco-editor'),
-          textInput: !!target?.closest('input, textarea, select, [contenteditable]:not([contenteditable="false"]), [role="textbox"]'),
-          world: !!target?.closest('.world-canvas'),
-          inspector: !!target?.closest('.inspector, .gg-inspector'),
-          shellSurface: !!target?.closest('.shell-source, .ide-source-pane, .ide-editor-panel, .shell-source-peek, .ide-jdk, .gg-inspector, .world-timeline, .world-settings, [role="dialog"], [role="menu"]'),
-        }
-        const interaction = useWorldInteractionStore.getState()
-        const escape = worldEscapeCommand(event, focus, { inspectorOpen: !shellStore.getState().inspectorHidden && !!(interaction.selection || interaction.focus), focusActive: !!interaction.focus, traceActive: interaction.trace.active })
-        if (escape) { event.preventDefault(); event.stopPropagation(); invoke(escape, {}); return }
-        const canonical = commandForShortcut(event, Object.values(ideCommandDefinitions), platform, focus)
-        if (canonical) {
-          event.preventDefault(); event.stopPropagation()
-          if ((!busy || isPresentationCommand(canonical.id) || canonical.id === 'workbench.quickOpen' || canonical.id === 'workbench.commandPalette') && commands.availability(canonical.id, commandContext()).enabled) invoke(canonical.id, {})
-          return
-        }
-      }
-
-    }
+    const shortcuts=createShellKeyboardHandler({platform,blocked:!!(projectDialog||picker||tabMenu||showLaunch||showSymbols||pending),busy,
+      navigation:()=>{const interaction=useWorldInteractionStore.getState();return{inspectorOpen:!shellStore.getState().inspectorHidden&&!!(interaction.selection||interaction.focus),focusActive:!!interaction.focus,traceActive:interaction.trace.active}},
+      available:id=>commands.availability(id,commandContext()).enabled,
+      invoke:id=>invoke(id,{}),
+    })
     window.addEventListener('keydown', shortcuts, true)
     return () => window.removeEventListener('keydown', shortcuts, true)
   })
