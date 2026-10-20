@@ -12,7 +12,8 @@
 .shell-state { display:flex;flex-direction:column;justify-content:center;min-width:0;max-width:200px;white-space:nowrap;color:var(--color-ui-text-secondary);font-size:12px;line-height:1.35;margin-right:auto }
 .shell-state-primary {display:flex;align-items:center;gap:6px;min-width:0}
 .shell-state-icon {display:inline-flex;flex:none}
-.shell-state-label {overflow:hidden;text-overflow:ellipsis}
+.shell-state-label {overflow:hidden;text-overflow:ellipsis;white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+@media(min-width:1280px){.shell-state {min-width:200px}}
 .shell-source-changed {font-size:12px;color:var(--color-ui-text-muted);overflow:hidden;text-overflow:ellipsis}
 .shell-state [role=progressbar] svg {animation:shell-build-spin 1s linear infinite}
 .shell-state[data-reduced-motion=true] [role=progressbar] svg {animation:none}

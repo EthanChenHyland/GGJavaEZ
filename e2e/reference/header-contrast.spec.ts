@@ -48,10 +48,16 @@ for(const viewport of viewports)test(`actual JVM Header contrast during native o
    for(let i=0;i<4;i++){await page.keyboard.press('ArrowUp');await ready(page)}
   }
   const pose=await page.evaluate(()=>window.__ggjavaezQA!.cameraPose()),runs=await contrast(page)
+  const label=await page.locator('.shell-state-label').evaluate(node=>({text:node.textContent,width:node.clientWidth,scrollWidth:node.scrollWidth,height:node.clientHeight,scrollHeight:node.scrollHeight})),expectedLabel=await page.evaluate(()=>window.__ggjavaezQA!.appState().label)
+  expect(label.text).toBe(expectedLabel);expect(expectedLabel).toMatch(/^Completed · \d+\.\d{2} s · Exit code 0$/)
+  expect(label.scrollWidth,`${state}: full completion label fits horizontally`).toBeLessThanOrEqual(label.width)
+  expect(label.scrollHeight,`${state}: full completion label fits vertically`).toBeLessThanOrEqual(label.height)
+  const badge=(await page.locator('.shell-state').boundingBox())!,header=(await page.locator('.shell-header').boundingBox())!
+  expect(badge.y).toBeGreaterThanOrEqual(header.y);expect(badge.y+badge.height).toBeLessThanOrEqual(header.y+header.height)
   expect(runs.length).toBeGreaterThan(3)
   for(const run of runs)expect(run.minimum,`${state}: ${run.label} over its actual background`).toBeGreaterThanOrEqual(4.5)
   expect(await facts()).toEqual(before);expect(await page.evaluate(()=>window.__ggjavaezQA!.cameraPose())).toEqual(pose)
-  measurements.push({state,pose,runs})
+  measurements.push({state,pose,runs,label,badge})
   await page.screenshot({path:`.ggjavaez/qa/reference-exact/header-contrast-${viewport.width}x${viewport.height}-${state}.png`})
  }
  await writeFile(`.ggjavaez/qa/reference-exact/header-contrast-${viewport.width}x${viewport.height}.json`,JSON.stringify({realJvmExecuted:true,sessionId:session.id,viewport,measurements},null,2)+'\n')
