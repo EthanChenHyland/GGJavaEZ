@@ -50,7 +50,7 @@ export function CommandTooltip({root}:{root:RefObject<HTMLElement|null>}){
  useLayoutEffect(()=>{
   if(!active||!tip.current)return
   const anchor=active.getBoundingClientRect(),box=tip.current.getBoundingClientRect()
-  setPosition({left:Math.max(8,Math.min(anchor.left+(anchor.width-box.width)/2,innerWidth-box.width-8)),top:Math.max(8,Math.min(anchor.bottom+8,innerHeight-box.height-8))})
+  setPosition({left:Math.max(8,Math.min(anchor.left+(anchor.width-box.width)/2,innerWidth-box.width-8)),top:Math.max(8,anchor.bottom+8+box.height>innerHeight-8?anchor.top-box.height-8:anchor.bottom+8)})
   const previous=active.getAttribute('aria-describedby'),descriptions=new Set((previous??'').split(/\s+/).filter(Boolean));descriptions.add(id);active.setAttribute('aria-describedby',[...descriptions].join(' '))
   return()=>{const remaining=(active.getAttribute('aria-describedby')??'').split(/\s+/).filter(value=>value&&value!==id);if(remaining.length)active.setAttribute('aria-describedby',remaining.join(' '));else active.removeAttribute('aria-describedby')}
  },[active,id])

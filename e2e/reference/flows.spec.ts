@@ -1,3 +1,4 @@
+import {openDock} from './dockActions'
 import {expect,test} from '@playwright/test'
 import {browserErrors,currentSession,ready,runFixture,stopOwnedSession} from './harness'
 test.afterEach(async({request})=>stopOwnedSession(request))
@@ -13,7 +14,7 @@ test('uncaught failure keeps forensic evidence visible, opens Errors explicitly,
  await ready(page)
  await page.screenshot({path:'.ggjavaez/qa/reference-exact/source-exception-terminal.png'})
  await expect(page.getByRole('region',{name:'Error Explorer',exact:true})).not.toBeVisible()
- await page.getByRole('button',{name:'ERROR EXPLORER',exact:true}).click()
+ await openDock(page,'Errors')
  const explorer=page.getByRole('region',{name:'Error Explorer',exact:true})
  await expect(explorer).toBeVisible()
  await expect(explorer.getByRole('heading',{name:'IllegalStateException',exact:true})).toBeVisible()

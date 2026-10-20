@@ -1,9 +1,9 @@
 import {useState} from 'react'
-import type {Selection} from '../contracts/interaction'
-import type {DebugSession,ResolvedBreakpoint,SourceBreakpoint} from '../debugger/contracts'
-import type {DebugInspection} from './debugInspection'
-import {VirtualList} from './VirtualList'
-import {valueText} from '../world/valueText'
+import type {Selection} from '../../contracts/interaction'
+import type {DebugSession,ResolvedBreakpoint,SourceBreakpoint} from '../../debugger/contracts'
+import type {DebugInspection} from '../debugInspection'
+import {VirtualList} from '../VirtualList'
+import {valueText} from '../../world/valueText'
 export function DebugDrawer({session,inspection,worldSessionId=null,breakpoints,onInspect,onRemove}:{
  session:DebugSession|null;inspection:DebugInspection|null;worldSessionId?:string|null;breakpoints:ResolvedBreakpoint[]
  onInspect(cursor:number,selection:Selection):void;onRemove(point:SourceBreakpoint):void

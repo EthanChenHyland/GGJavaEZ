@@ -38,6 +38,7 @@ for(const viewport of[{width:1440,height:900},{width:760,height:900}])test(`paus
  await page.getByRole('button',{name:'Inspect debugger',exact:true}).click()
  const drawer=page.getByRole('region',{name:'Debugger inspection'}),stack=drawer.getByRole('list',{name:'Paused call stack'}),variables=drawer.getByRole('list',{name:'Paused variables'})
  await expect(drawer).toBeVisible();await expect(stack.getByRole('listitem')).toHaveCount(2)
+ const listedCount=await drawer.getByRole('list').evaluateAll(lists=>lists.reduce((count,list)=>count+Number(list.querySelector('[aria-setsize]')?.getAttribute('aria-setsize')??0),0));await expect(page.locator('[data-dock-tool=debugger] .shell-dock-count')).toHaveText(String(listedCount))
  const geometry=await drawer.evaluate(node=>({display:getComputedStyle(node).display,columns:getComputedStyle(node).gridTemplateColumns.split(' ').length,width:node.clientWidth,scrollWidth:node.scrollWidth,children:Array.from(node.children).map(child=>{const r=child.getBoundingClientRect();return{x:r.x,y:r.y,width:r.width,height:r.height}})}))
  expect(geometry.display).toBe('grid');expect(geometry.columns).toBe(viewport.width<1024?2:4);expect(geometry.scrollWidth).toBeLessThanOrEqual(geometry.width)
  for(let index=0;index<geometry.children.length;index++)for(const other of geometry.children.slice(index+1)){

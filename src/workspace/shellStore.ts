@@ -51,6 +51,6 @@ export const shellStore = createStore<ShellState>(() => ({
   runtimeExpanded: false,
   projectWidth: 14,
   editorWidth: 38,
-  bottomHeight: 29,
+  bottomHeight: 30,
   collapsed: new Set(),
 }))

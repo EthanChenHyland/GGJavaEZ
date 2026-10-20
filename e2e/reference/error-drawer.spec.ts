@@ -1,3 +1,4 @@
+import {openDock} from './dockActions'
 import {expect,test} from '@playwright/test'
 import {normalizeTrace} from '../../src/instrumentation/normalize'
 import {seek} from '../../src/runtime'
@@ -11,9 +12,9 @@ for(const viewport of[{width:1440,height:900},{width:760,height:900}])test(`Erro
  if(event.type!=='THROW_EXCEPTION')throw new Error('Actual JVM supplied no throw')
  const cursor=committedExceptionCursor(trace,index),state=seek(trace,cursor),failure=state.exceptions.find(item=>item.eventId===event.eventId)!
  const before=await page.evaluate(()=>({prefix:window.__ggjavaezQA!.cursor(),recordingId:window.__ggjavaezWorld!.scene().recordingId,anchors:Object.values(window.__ggjavaezWorld!.scene().entities).map(node=>node.anchor)}))
- await page.getByRole('button',{name:'ERROR EXPLORER',exact:true}).click();await ready(page)
+ await openDock(page,'Errors');await ready(page)
  const drawer=page.getByRole('region',{name:'Error Explorer',exact:true})
- await expect(drawer).toBeVisible();expect(await drawer.evaluate(node=>getComputedStyle(node).display)).toBe('grid')
+ await expect(drawer).toBeVisible();await expect(page.locator('[data-dock-tool=errors] .shell-dock-count')).toHaveText(String(seek(trace,trace.events.length).exceptions.length));expect(await drawer.evaluate(node=>getComputedStyle(node).display)).toBe('grid')
  expect(await drawer.evaluate(node=>node.scrollWidth)).toBeLessThanOrEqual(await drawer.evaluate(node=>node.clientWidth))
  expect(await page.evaluate(()=>({prefix:window.__ggjavaezQA!.cursor(),recordingId:window.__ggjavaezWorld!.scene().recordingId,anchors:Object.values(window.__ggjavaezWorld!.scene().entities).map(node=>node.anchor)}))).toEqual(before)
  await expect(drawer.getByRole('heading',{name:event.className.split('.').at(-1),exact:true})).toBeVisible()

@@ -1,9 +1,11 @@
 import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { exposeQaBridge } from '../qa/qaBridge'
-import { ChevronLeft,FolderOpen,Maximize2,PanelBottom,Plus,Save,Upload,X } from 'lucide-react'
+import { ChevronLeft,FolderOpen,Maximize2,Plus,Save,Upload,X } from 'lucide-react'
 import type { SourceLocation, TraceDocument } from '../contracts/runtime'
-import {DebugDrawer} from './DebugDrawer'
-import { ErrorExplorer } from '../debugger/ErrorExplorer'
+import {DebugDrawer} from './dock/DebugDrawer'
+import {Dock} from './dock/Dock'
+import {JdkDialog} from './dock/JdkDialog'
+import {ErrorsDrawer} from './dock/ErrorsDrawer'
 import { bridge } from '../ide/bridge'
 import { ideCommandDefinitions,type IdeCommandId } from '../ide/commands'
 import { tabMenuCommands } from '../ide/contextMenus'
@@ -11,9 +13,8 @@ import { LaunchConfigDialog } from './dialogs/LaunchConfigDialog'
 import {PathInputDialog} from './dialogs/PathInputDialog'
 import {DeleteConfirmDialog} from './dialogs/DeleteConfirmDialog'
 import {UnsavedChangesDialog} from './dialogs/UnsavedChangesDialog'
-import { ProblemsPanel } from '../ide/ProblemsPanel'
+import { ProblemsDrawer } from './dock/ProblemsDrawer'
 import { ProjectExplorer } from '../ide/ProjectExplorer'
-import { formatShortcut,ideShortcuts } from '../ide/shortcuts'
 import { CommandMenu } from './dialogs/CommandMenu'
 import { Picker } from './picker/Picker'
 import {DirtyRunDialog} from './dialogs/DirtyRunDialog'
@@ -25,9 +26,7 @@ import { loadJavaEditorRuntime } from '../language/editorRuntime'
 import { Header } from './Header'
 import type {RecordingChoices} from './HeaderProjectMenu'
 import { DebugBar } from './DebugBar'
-import { BoundConsoleOutput } from './BoundConsoleOutput'
-import { ConsoleInput } from './ConsoleInput'
-import { emptyConsoleInput } from '../workspace/consoleInput'
+import {ConsoleDrawer} from './dock/ConsoleDrawer'
 import { computeShellLayout } from './shellLayout'
 import { useViewport } from './useViewport'
 import { WorldSurface } from './WorldSurface'
@@ -75,9 +74,9 @@ export function Shell({ recording, recordingChoices }: ShellProps) {
   const readyLeft=Math.max(layout.safeFrame.x,layout.source.x+layout.source.width+12,layout.explorer?layout.explorer.x+layout.explorer.width+12:0)
   const readyRight=layout.safeFrame.x+layout.safeFrame.width-12,readyWidth=Math.min(260,Math.max(0,readyRight-readyLeft))
   const readyTop=Math.max(layout.safeFrame.y+viewport.height*.08,layout.debugBar?layout.debugBar.y+layout.debugBar.height+12:layout.header.height+12)
-  const geometry = { ...rectangle('header', layout.header), ...rectangle('source', layout.source), ...rectangle('timeline', layout.timeDock), ...rectangle('drawer', layout.dockDrawer), ...rectangle('inspector', layout.inspector), ...rectangle('explorer', layout.explorer), ...rectangle('debug', layout.debugBar), '--source-heading-inset':layout.sourceHeadingInset+'px', '--ready-x':(readyLeft+(readyRight-readyLeft-readyWidth)/2)+'px','--ready-y':readyTop+'px','--ready-width':readyWidth+'px' }
+  const geometry = { ...rectangle('header', layout.header), ...rectangle('source', layout.source), ...rectangle('timeline', layout.timeDock), ...rectangle('drawer', layout.dockDrawer), ...rectangle('dock',layout.dockStrip), ...rectangle('inspector', layout.inspector), ...rectangle('explorer', layout.explorer), ...rectangle('debug', layout.debugBar), '--source-heading-inset':layout.sourceHeadingInset+'px', '--ready-x':(readyLeft+(readyRight-readyLeft-readyWidth)/2)+'px','--ready-y':readyTop+'px','--ready-width':readyWidth+'px' }
 
-const { projects, projectId, tree, tabs, active, setActive, jdk, setJdk, jdkInput, setJdkInput, showJdk, build, execution, timelineLens, setTimelineLens, tool, setTool, bottomPinned, inspectorHidden, bottomOpen, setBottomOpen, picker, setPicker, tabMenu, setTabMenu, input, setInput, notice, setNotice, busy, pending, projectDialog, setProjectDialog, nav, mainClass, setMainClass, javaProject, projectStatus, launch, setLaunch, showLaunch, setShowLaunch, showSymbols, setShowSymbols, languageClient, languageSnapshot, visualization, runtimeExpanded, runtime, runtimeSelection, runtimeNavigation, recordedView, setRecordedView, mappedExecutingSource, setCwdInvalid, commands, setBottomHeight, collapsed, platform, shellRef, contentRef, upperRef, importRef, activeRef, launchRef, mainClassRef, cwdInvalidRef, displayedBreakpoints, activeTab, entries, diagnostics, languageProblems, problems, exception, debugSession, recordingIsCurrent, recordedPhase, fail, refreshTree, switchProject, edit, commandContext, resolveDecision, invoke, closeTab, action, navigateRuntime, handleRuntimeChange, toggleBreakpoint, removeBreakpoint, handleExecutingSource, sendInput, newEntry, cancelProjectDialog, submitProjectDialog, importFiles, openDiagnostic, divider, toggleTreeEntry, treeAction, projectOptions, pickerItems, choosePicker, showTabMenu, activeExecution, availableTools, targets } = workspace
+const { projects, projectId, tree, tabs, active, setActive, jdk, setJdk, jdkInput, setJdkInput, showJdk, build, execution, timelineLens, setTimelineLens, tool, inspectorHidden, bottomOpen, picker, setPicker, tabMenu, setTabMenu, notice, setNotice, busy, pending, projectDialog, setProjectDialog, nav, mainClass, setMainClass, launch, setLaunch, showLaunch, setShowLaunch, showSymbols, setShowSymbols, languageClient, visualization, runtimeExpanded, runtime, runtimeNavigation, recordedView, setRecordedView, mappedExecutingSource, setCwdInvalid, commands, collapsed, shellRef, contentRef, upperRef, importRef, activeRef, launchRef, mainClassRef, cwdInvalidRef, displayedBreakpoints, activeTab, entries, diagnostics, languageProblems, debugSession, recordingIsCurrent, recordedPhase, fail, refreshTree, switchProject, edit, commandContext, resolveDecision, invoke, closeTab, action, navigateRuntime, handleRuntimeChange, toggleBreakpoint, removeBreakpoint, handleExecutingSource, newEntry, cancelProjectDialog, submitProjectDialog, importFiles, openDiagnostic, divider, toggleTreeEntry, treeAction, projectOptions, pickerItems, choosePicker, showTabMenu, activeExecution, targets } = workspace
 const pause=recording?null:sourcePauseFor(debugSession,visualization?.sessionId??null)
 const pausedAtHead=!!pause&&(!visualization||runtime?.cursor===visualization.trace.events.length)
 const sourceMark=focusTargetId?'focus':pausedAtHead?'paused':recording||runtime&&visualization&&runtime.cursor<visualization.trace.events.length?'history':'running'
@@ -97,7 +96,7 @@ return <div className={`shell ide-shell ${debugSession&&activeExecution?'shell--
             </div>
           </section>
 <Header workspace={workspace} appState={appState} recordingChoices={recordingChoices}/>
-    {showJdk && <div className="ide-jdk"><label>JDK home <input value={jdkInput} placeholder="Auto-detect from PATH" onChange={(event) => setJdkInput(event.target.value)} /></label><button onClick={() => action(async () => setJdk(await bridge.detectJdk(jdkInput || null)))}>Use JDK</button><span>{jdk?.error}</span></div>}
+    {showJdk && <JdkDialog value={jdkInput} error={jdk?.error??null} busy={busy} onChange={setJdkInput} onClose={()=>invoke('workbench.jdk',{})} onSubmit={()=>action(async()=>setJdk(await bridge.detectJdk(jdkInput||null)))}/>}
     {debugSession && activeExecution && <DebugBar workspace={workspace}/>}
     <button className="shell-source-peek glass" onClick={() => invoke('workbench.source', {})} aria-label="Show source drawer" title={sourcePeekLabel}>{sourcePeekLabel}</button>
     <div className="ide-main" ref={contentRef}>
@@ -126,39 +125,14 @@ return <div className={`shell ide-shell ${debugSession&&activeExecution?'shell--
           <div className="ide-divider ide-divider--vertical" role="separator" aria-label="Resize runtime pane" tabIndex={0} {...divider('runtime')}/>
           
         </div>
-        <div className="ide-divider ide-divider--horizontal" role="separator" aria-label="Resize bottom panel" tabIndex={0} {...divider('bottom')}/>
-        <section className="ide-bottom-panel">
-          <div className="ide-tool-tabs"><button className="ide-bottom-toggle" onClick={() => invoke('workbench.tools', {})} aria-label={bottomOpen ? 'Collapse bottom panel' : 'Expand bottom panel'} title={`Toggle bottom panel (${formatShortcut(ideShortcuts.tools, platform)})`}><PanelBottom size={15}/></button>
-            {availableTools.map((item) => <button key={item} className={tool === item && bottomOpen ? 'is-active' : ''} onClick={() => { bottomPinned.current = true; setBottomOpen(true); setTool(item); if (item === 'errors' || item === 'debugger') setBottomHeight(35) }}>{item === 'errors' ? 'ERROR EXPLORER' : item.toUpperCase()}{item === 'problems' && problems.length > 0 && <span className="ide-badge">{problems.length}</span>}</button>)}
-            <span className="ide-status-spacer"/>
-          </div>
+        <Dock workspace={workspace} recording={recording} drawerBottom={layout.timeDock.y} viewportHeight={viewport.height}>
           {tool === 'debugger' ? <DebugDrawer session={debugSession} inspection={workspace.debugInspection} worldSessionId={visualization?.sessionId??null} breakpoints={displayedBreakpoints} onInspect={navigateRuntime} onRemove={removeBreakpoint}/>
-          : tool === 'errors' ? recordingIsCurrent ? <ErrorExplorer key={visualization!.trace.demoId} trace={visualization!.trace} runtime={runtime} selection={runtimeSelection} stderr={execution?.stderr ?? ''} onNavigate={navigateRuntime}/> : <div className="debug-empty">{exception ? <><strong>{exception.type}: {exception.message}</strong><pre>{exception.rawStackTrace}</pre></> : <p>No recorded exception.</p>}</div>
-          : tool === 'problems' ? <ProblemsPanel build={build} language={languageProblems} onOpen={openDiagnostic}/>
-          : <div className="ide-console">
-            <div className="ide-console-output" aria-label="Program console">
-              <BoundConsoleOutput recording={recording} visualization={visualization} runtimeRecordingId={workspace.runtimeRecordingId}
-                entries={runtime?.console ?? []} worldExecution={workspace.worldExecution} execution={execution} build={build} submissions={workspace.consoleInputState.submissions}/>
-              {exception && <div className="ide-stack"><strong>{exception.type}: {exception.message}</strong><details><summary>Raw JVM stack trace</summary><pre>{exception.rawStackTrace}</pre></details>{exception.frames.map((frame, index) => <button key={index} disabled={!frame.location} onClick={() => frame.location && handleExecutingSource({ fileId: frame.location.path, line: frame.location.line })}>{frame.raw}</button>)}</div>}
-            </div>
-            <ConsoleInput execution={recording?null:execution} active={bottomOpen&&tool==='console'} value={recording?'':input} onChange={setInput} onSubmit={sendInput} state={recording?emptyConsoleInput:workspace.consoleInputState}/>
-          </div>}
-        </section>
+          : tool === 'errors' ? <ErrorsDrawer workspace={workspace} recording={recording}/>
+          : tool === 'problems' ? <ProblemsDrawer build={build} language={languageProblems} onOpen={openDiagnostic}/>
+          : <ConsoleDrawer workspace={workspace} recording={recording}/>}
+        </Dock>
       </section>}
     </div>
-    <footer className="ide-status-line" aria-label="Workspace status">
-      {!jdk?.available && <span className="is-error">JDK unavailable</span>}
-      {(projectStatus.startsWith('Resolving') || javaProject?.status !== 'ready') && <span className="ide-project-status" title={javaProject?.diagnostic ?? projectStatus}>{projectStatus}</span>}
-      {(["failed", "unavailable"].includes(languageSnapshot.status) || languageSnapshot.metrics.classpathMismatch === 1) && <span className={languageSnapshot.metrics.classpathMismatch === 1 ? 'is-warning' : 'is-error'} title={languageSnapshot.message ?? 'Java language service'}>Java {languageSnapshot.metrics.classpathMismatch === 1 ? 'classpath differs' : languageSnapshot.status}</span>}
-      {["failed", "unavailable"].includes(languageSnapshot.status) && <button className="ide-language-restart" onClick={() => invoke('workbench.restartJava', {})}>Retry Java</button>}
-      {execution && <span className="ide-execution-status" aria-live="polite">{execution.phase === 'FAILED' && execution.failureKind === 'build' ? 'BUILD FAILED' : execution.phase.replaceAll('_', ' ')}{execution.support === 'RUN_ONLY' && (execution.supportReason !== 'No verified runtime events yet' || ['COMPLETED', 'FAILED'].includes(execution.phase)) && execution.phase !== 'BUILDING' ? ' · console only' : ''}</span>}
-      {execution?.supportReason && (execution.support === 'RUN_ONLY' && execution.supportReason !== 'No verified runtime events yet' || execution.support === 'PARTIAL' && ['COMPLETED', 'FAILED', 'STOPPED'].includes(execution.phase)) && <details className="ide-support-detail"><summary>Visualization {execution.support.toLowerCase().replace('_', ' ')}</summary><p>{execution.supportReason}</p></details>}
-      {recordingIsCurrent && <details className="ide-support-detail"><summary>Capture limits</summary><p>Recording stops at 20,000 raw events, 8 MiB, 256 identities or 128 live frames; Java continues. The 30-second active watchdog excludes input waits and Debug pauses; a 10-minute hard safety deadline applies in all states. Project code is recorded. Primitive and reference arrays have bounded summaries; class statics are available in the inspector. Library internals are collapsed. — means unavailable. Values and effects are last observed; changes outside recorded code may be absent.{visualization!.capability.diagnostics.length > 0 && <><br/>{visualization!.capability.diagnostics.slice(0, 3).join(' · ')}</>}</p></details>}
-      <span className="ide-status-spacer"/><span>{notice}</span>
-      <span className="ide-status-language" title={jdk?.version ?? 'JDK unavailable'}>{jdk?.available ? `Java ${jdk.version ?? ''}`.trim() : 'No JDK'} · {javaProject?.buildSystem ?? 'project'} · {languageSnapshot.status === 'ready' ? 'JDT ready' : `JDT ${languageSnapshot.status}`}</span>
-      <details className="ide-shortcuts"><summary>Shortcuts</summary><div>{Object.values(ideCommandDefinitions).filter((definition) => definition.bindings.length).map((definition) => <p key={definition.id}><kbd>{formatShortcut(definition.bindings[0], platform)}</kbd> {definition.title}</p>)}<p>F9 Toggle breakpoint · F1 Editor commands</p></div></details>
-
-    </footer>
     {tabMenu && <CommandMenu label={`Tab actions for ${tabMenu.context.target?.path}`} x={tabMenu.x} y={tabMenu.y}
       items={tabMenuCommands.map((id) => ({ id, label: id === 'resource.rename' ? 'Rename' : ideCommandDefinitions[id].title, ...(busy ? { enabled: false as const, reason: 'Wait for the current operation' } : commands.availability(id, tabMenu.context)) }))}
       onClose={() => setTabMenu(null)} onChoose={(id) => { const context = tabMenu.context; setTabMenu(null); setNotice(''); requestAnimationFrame(() => { void commands.execute(id as IdeCommandId, context, {}).catch(fail) }) }}/>}

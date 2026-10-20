@@ -1,3 +1,4 @@
+import {openDock} from './dockActions'
 import {expect,test} from '@playwright/test'
 import {browserErrors} from './harness'
 const observeFallback=(page:Parameters<typeof browserErrors>[0])=>{
@@ -74,7 +75,7 @@ test('without WebGL the IDE still runs actual Java and retains its process outpu
  await expect(page.getByRole('status').filter({hasText:'The 3D World requires WebGL'})).toBeVisible()
  await page.getByRole('button',{name:'Run',exact:true}).click()
  await expect(page.locator('.shell-state')).toContainText('Completed',{timeout:45000})
- await page.getByRole('button',{name:'CONSOLE',exact:true}).click()
+ await openDock(page,'Console')
  await expect(page.getByLabel('Program console')).toContainText('FALLBACK_OK')
  await expect.poll(async()=>Number(await page.getByRole('slider',{name:'Recorded execution position'}).getAttribute('aria-valuemax'))).toBeGreaterThan(0)
  await expect(page.locator('.world-canvas canvas')).toHaveCount(0)

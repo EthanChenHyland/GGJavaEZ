@@ -233,7 +233,7 @@ export async function captureComparison(page:Page,request:APIRequestContext,stat
   const panel=before.world.exception?.bounds,frame=before.world.exception?.throwFrame
   if(!panel?.visible)misses.push('Forensic exception panel is not visible')
   if(panel&&frame&&panel.x<frame.x+frame.width&&panel.x+panel.width>frame.x&&panel.y<frame.y+frame.height&&panel.y+panel.height>frame.y)misses.push('Forensic exception panel overlaps its actual throwing frame projection')
-  const occluders=await page.evaluate(()=>['.shell-header','.ide-editor-panel','.world-timeline','.ide-bottom-panel','.inspector','.debug-toolbar'].flatMap(selector=>{const node=document.querySelector(selector);if(!node||getComputedStyle(node).visibility==='hidden')return[];const rect=node.getBoundingClientRect();return[{selector,x:rect.x,y:rect.y,width:rect.width,height:rect.height}]}))
+  const occluders=await page.evaluate(()=>['.shell-header','.ide-editor-panel','.world-timeline','.shell-dock-drawer','.shell-dock-strip','.inspector','.debug-toolbar'].flatMap(selector=>{const node=document.querySelector(selector);if(!node||getComputedStyle(node).visibility==='hidden')return[];const rect=node.getBoundingClientRect();return[{selector,x:rect.x,y:rect.y,width:rect.width,height:rect.height}]}))
   for(const target of [{label:'panel',rect:panel},{label:'throwing frame',rect:frame}]){
    if(!target.rect){misses.push(`Forensic ${target.label} projection missing`);continue}
    const rect=target.rect,safe=before.shell.safeFrame

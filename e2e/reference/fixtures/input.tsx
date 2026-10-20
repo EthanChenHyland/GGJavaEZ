@@ -1,3 +1,4 @@
+import {color} from '../../../src/theme/tokens'
 import { createRoot } from 'react-dom/client'
 import { flushSync } from 'react-dom'
 import { ConsoleInput } from '../../../src/shell/ConsoleInput'
@@ -6,6 +7,9 @@ import type { ExecutionSession } from '../../../src/execution/contracts'
 import '../../../src/app/base.css'
 import '../../../src/shell/shell.css'
 declare global {interface Window {inputFixture:{set(phase:ExecutionSession['phase'],active?:boolean):void}}}
+// Use the production frozen palette in this isolated renderer fixture.
+const kebab=(name:string)=>name.replace(/[A-Z]/g,letter=>`-${letter.toLowerCase()}`)
+for(const [role,palette]of Object.entries(color))for(const [name,value]of Object.entries(palette))document.documentElement.style.setProperty(`--color-${kebab(role)}-${kebab(name)}`,value)
 const root=createRoot(document.getElementById('input-test')!)
 let revision=0
 window.inputFixture={set(phase,active=true){

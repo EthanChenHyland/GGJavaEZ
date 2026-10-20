@@ -621,12 +621,12 @@ export function useWorkspace(recordingViewer = false) {
       setWorkspaceMode(emphasis); setEditorWidth(runtimeEditorWidth())
       if (!explorerOverride.current) setExplorerOpen(false)
     }
-    if (session.phase === 'PAUSED' && session.pause?.reason === 'exception') { setTool('errors'); setBottomOpen(true); setBottomHeight(35) }
+    if (session.phase === 'PAUSED' && session.pause?.reason === 'exception') { setTool('errors'); setBottomOpen(true) }
     if (session.phase === 'FAILED' && normalized.trace.events.some(event => event.type === 'THROW_EXCEPTION') && !shownFailure.current) {
       // The World owns the default forensic view. Keep Errors ready in the
       // Dock; preserve an explicitly pinned drawer instead of covering the
       // throwing frame and its evidence panel with automatic console output.
-      shownFailure.current = true; setTool('errors'); setBottomOpen(bottomPinned.current); setBottomHeight(35)
+      shownFailure.current = true; setTool('errors'); setBottomOpen(bottomPinned.current)
     }
   }, [])
   useEffect(() => {
@@ -1179,22 +1179,16 @@ export function useWorkspace(recordingViewer = false) {
     requestDecision('opening the imported project', tabsRef.current.map((tab) => tab.path), () => switchProject(created.id))
   })
   const openDiagnostic = (item: CompileDiagnostic) => invoke('file.open', { location: item.location }, item.location.path)
-  const setDivider = (kind: 'project' | 'runtime' | 'bottom', clientX: number, clientY: number) => {
+  const setDivider = (kind: 'project' | 'runtime', clientX: number) => {
     userLayoutOverride.current = true
-    if (kind === 'bottom') {
-      bottomPinned.current = true
-      const bounds = contentRef.current?.getBoundingClientRect()
-      if (bounds) setBottomHeight(Math.max(16, Math.min(55, (bounds.bottom - clientY) / bounds.height * 100)))
-    } else {
-      const bounds = kind === 'project' ? shellRef.current?.getBoundingClientRect() : upperRef.current?.getBoundingClientRect()
-      if (bounds) {
-        const pct = (clientX - bounds.left) / bounds.width * 100
-        if (kind === 'project') setProjectWidth(Math.max(13, Math.min(28, pct)))
-        else { const width = Math.max(24, Math.min(80, pct)); if (workspaceMode !== 'code') localStorage.setItem(manualRuntimeWidthKey, String(width)); setEditorWidth(width) }
-      }
+    const bounds = kind === 'project' ? shellRef.current?.getBoundingClientRect() : upperRef.current?.getBoundingClientRect()
+    if (bounds) {
+      const pct = (clientX - bounds.left) / bounds.width * 100
+      if (kind === 'project') setProjectWidth(Math.max(13, Math.min(28, pct)))
+      else { const width = Math.max(24, Math.min(80, pct)); if (workspaceMode !== 'code') localStorage.setItem(manualRuntimeWidthKey, String(width)); setEditorWidth(width) }
     }
   }
-  const divider = (kind: 'project' | 'runtime' | 'bottom') => ({
+  const divider = (kind: 'project' | 'runtime') => ({
     onKeyDown: (event: React.KeyboardEvent<HTMLDivElement>) => {
       const amount = event.key === 'ArrowRight' || event.key === 'ArrowDown' ? 2 : event.key === 'ArrowLeft' || event.key === 'ArrowUp' ? -2 : 0
       if (!amount) return
@@ -1202,10 +1196,9 @@ export function useWorkspace(recordingViewer = false) {
       userLayoutOverride.current = true
       if (kind === 'project') setProjectWidth((value) => Math.max(13, Math.min(28, value + amount)))
       else if (kind === 'runtime') setEditorWidth((value) => { const width = Math.max(24, Math.min(80, value + amount)); if (workspaceMode !== 'code') localStorage.setItem(manualRuntimeWidthKey, String(width)); return width })
-      else { bottomPinned.current = true; setBottomHeight((value) => Math.max(16, Math.min(55, value - amount))) }
     },
     onPointerDown: (event: React.PointerEvent<HTMLDivElement>) => event.currentTarget.setPointerCapture(event.pointerId),
-    onPointerMove: (event: React.PointerEvent<HTMLDivElement>) => { if (event.currentTarget.hasPointerCapture(event.pointerId)) setDivider(kind, event.clientX, event.clientY) },
+    onPointerMove: (event: React.PointerEvent<HTMLDivElement>) => { if (event.currentTarget.hasPointerCapture(event.pointerId)) setDivider(kind, event.clientX) },
   })
   const toggleTreeEntry = (path: string) => setCollapsed((previous) => { const next = new Set(previous); if (next.has(path)) next.delete(path); else next.add(path); return next })
   const revealEntry = (path: string) => {
@@ -1225,7 +1218,7 @@ export function useWorkspace(recordingViewer = false) {
   }
 
   useEffect(() => {
-    const shortcuts=createShellKeyboardHandler({platform,blocked:!!(projectDialog||picker||tabMenu||showLaunch||showSymbols||pending),busy,
+    const shortcuts=createShellKeyboardHandler({platform,blocked:!!(projectDialog||picker||tabMenu||showLaunch||showSymbols||showJdk||pending),busy,
       navigation:()=>{const interaction=useWorldInteractionStore.getState();return{inspectorOpen:!shellStore.getState().inspectorHidden&&!!(interaction.selection||interaction.focus),focusActive:!!interaction.focus,traceActive:interaction.trace.active}},
       available:id=>commands.availability(id,commandContext()).enabled,
       invoke:id=>invoke(id,{}),
@@ -1259,7 +1252,6 @@ export function useWorkspace(recordingViewer = false) {
   const showTabMenu = (path: string, x: number, y: number) => setTabMenu({ context: commandContext(path), x, y })
   const activeExecution = !!execution && ['BUILDING', 'STARTING', 'RUNNING', 'WAITING_FOR_INPUT', 'PAUSED'].includes(execution.phase)
   const acceptsInput = !!execution && ['RUNNING', 'WAITING_FOR_INPUT', 'PAUSED'].includes(execution.phase)
-  const availableTools: Tool[] = ['console', 'problems', 'debugger', ...(recordingIsCurrent && visualization.trace.events.some((event) => event.type === 'THROW_EXCEPTION') || exception ? ['errors'] as Tool[] : [])]
   const targets = build?.mainClasses ?? javaProject?.runnableTargets ?? []
-  return { consoleInputState, worldExecution, endedAt, projects, projectId, tree, tabs, active, setActive, jdk, setJdk, jdkInput, setJdkInput, showJdk, build, execution, timelineLens, setTimelineLens, tool, setTool, bottomPinned, workspaceMode, explorerOpen, inspectorHidden, inspectorSide, bottomOpen, setBottomOpen, focusSourceOpen, sourceOpen, picker, setPicker, tabMenu, setTabMenu, input, setInput, notice, setNotice, busy, pending, projectDialog, setProjectDialog, nav, mainClass, setMainClass, javaProject, projectStatus, launch, setLaunch, showLaunch, setShowLaunch, showSymbols, setShowSymbols, languageClient, languageSnapshot, visualization, runtimeExpanded, breakpoints, runtime, runtimeRecordingId, runtimeSelection, runtimeNavigation, recordedView, setRecordedView, mappedExecutingSource, sourceUnavailable, sourceFileProof, setCwdInvalid, commands, projectWidth, editorWidth, bottomHeight, setBottomHeight, collapsed, platform, shellRef, contentRef, upperRef, importRef, activeRef, launchRef, mainClassRef, cwdInvalidRef, displayedBreakpoints, activeTab, entries, diagnostics, languageProblems, problems, allEvents, exception, debugSession, debugInspection, recordingIsCurrent, previousRecording, recordedPhase, traceStale, fail, refreshTree, switchProject, edit, commandContext, requestDecision, resolveDecision, invoke, closeTab, action, navigateRuntime, handleRuntimeChange, runProject, debugProject, debugCommand, toggleBreakpoint, removeBreakpoint, handleExecutingSource, stopRun, sendInput, newEntry, cancelProjectDialog, submitProjectDialog, importFiles, openDiagnostic, divider, toggleTreeEntry, treeAction, projectOptions, pickerItems, choosePicker, showTabMenu, activeExecution, acceptsInput, availableTools, targets }
+  return { consoleInputState, worldExecution, endedAt, projects, projectId, tree, tabs, active, setActive, jdk, setJdk, jdkInput, setJdkInput, showJdk, build, execution, timelineLens, setTimelineLens, tool, setTool, bottomPinned, workspaceMode, explorerOpen, inspectorHidden, inspectorSide, bottomOpen, setBottomOpen, focusSourceOpen, sourceOpen, picker, setPicker, tabMenu, setTabMenu, input, setInput, notice, setNotice, busy, pending, projectDialog, setProjectDialog, nav, mainClass, setMainClass, javaProject, projectStatus, launch, setLaunch, showLaunch, setShowLaunch, showSymbols, setShowSymbols, languageClient, languageSnapshot, visualization, runtimeExpanded, breakpoints, runtime, runtimeRecordingId, runtimeSelection, runtimeNavigation, recordedView, setRecordedView, mappedExecutingSource, sourceUnavailable, sourceFileProof, setCwdInvalid, commands, projectWidth, editorWidth, bottomHeight, setBottomHeight, collapsed, platform, shellRef, contentRef, upperRef, importRef, activeRef, launchRef, mainClassRef, cwdInvalidRef, displayedBreakpoints, activeTab, entries, diagnostics, languageProblems, problems, allEvents, exception, debugSession, debugInspection, recordingIsCurrent, previousRecording, recordedPhase, traceStale, fail, refreshTree, switchProject, edit, commandContext, requestDecision, resolveDecision, invoke, closeTab, action, navigateRuntime, handleRuntimeChange, runProject, debugProject, debugCommand, toggleBreakpoint, removeBreakpoint, handleExecutingSource, stopRun, sendInput, newEntry, cancelProjectDialog, submitProjectDialog, importFiles, openDiagnostic, divider, toggleTreeEntry, treeAction, projectOptions, pickerItems, choosePicker, showTabMenu, activeExecution, acceptsInput, targets }
 }

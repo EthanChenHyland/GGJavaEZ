@@ -62,7 +62,7 @@ async function languageReady(page: Page, request: APIRequestContext, id: string)
     if (['failed', 'unavailable'].includes(snapshot.status)) throw new Error(`Java language service ${snapshot.status}: ${snapshot.message}`)
     return snapshot.status
   }, { timeout: 90_000, intervals: [1000, 2000, 3000] }).toBe('ready')
-  await expect(page.locator('.ide-status-line .is-error, .ide-status-line .is-warning')).toHaveCount(0)
+  await expect(page.locator('.shell-dock-status[data-status-problem="true"]')).toHaveCount(0)
 }
 function source(files: ImportFile[], suffix: string) {
   const matches = files.filter((file) => file.path.endsWith(suffix))
@@ -348,6 +348,6 @@ test('broken Maven POM exposes useful build output in Problems', async ({ page, 
   const build = await buildFromUI(page, id)
   expect(build.success).toBe(false)
   expect(build.rawOutput || build.diagnostics.map((entry) => entry.message).join(' ')).toMatch(/pom|xml|Maven|project/i)
-  await expect(page.getByRole('button', { name: /^PROBLEMS/ })).toBeVisible()
+  await expect(page.getByRole('button', { name: /^Problems/ })).toBeVisible()
   await expect(page.locator('.ide-problems')).toContainText(/pom|xml|Maven|project/i)
 })

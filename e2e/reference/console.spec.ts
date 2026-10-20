@@ -1,3 +1,4 @@
+import {openDock} from './dockActions'
 import { expect, test } from '@playwright/test'
 import { writeFile } from 'node:fs/promises'
 import { browserErrors, currentSession } from './harness'
@@ -75,7 +76,7 @@ for (const viewport of [{ width: 1440, height: 900 }, { width: 760, height: 900 
   expect(waitFocus.elapsed).toBeLessThanOrEqual(200)
   await writeFile(`.ggjavaez/qa/reference-exact/console-wait-${viewport.width}x${viewport.height}.json`,JSON.stringify({realJvm:true,measurement:'frontend wait status commit through two animation frames',viewport,...waitFocus},null,2)+'\n')
   await page.screenshot({path:`.ggjavaez/qa/reference-exact/console-wait-${viewport.width}x${viewport.height}.png`})
-  await page.getByRole('button', {name:'CONSOLE',exact:true}).click()
+  await openDock(page,'Console')
   const console = page.getByLabel('Program console', {exact:true})
   await expect(console).toContainText('prompt ready'); await expect(console).toContainText('warning only')
   const session = await currentSession(request)
@@ -83,7 +84,7 @@ for (const viewport of [{ width: 1440, height: 900 }, { width: 760, height: 900 
   await page.getByLabel('Console input', {exact:true}).fill('Ada & <exact>')
   await page.getByLabel('Console input', {exact:true}).press('Enter')
   await expect.poll(async () => { const current = await currentSession(request); return current?.id === session!.id ? current.phase : null }).toBe('COMPLETED')
-  await page.getByRole('button', {name:'CONSOLE',exact:true}).click()
+  await openDock(page,'Console')
   await expect(console).toContainText('Hello Ada & <exact>')
   await expect(page.locator('.console-input-status')).not.toContainText('Program is waiting for input')
   await expect(console.getByRole('list',{name:'Submitted input rows'})).toContainText('Ada & <exact>')

@@ -1,3 +1,4 @@
+import {openDock} from './dockActions'
 import {selectRecording} from './menuActions'
 import {expect,test,type Page} from '@playwright/test'
 import {readFileSync} from 'node:fs'
@@ -19,7 +20,7 @@ async function open(page:Page){
  await page.goto('/examples?qa=1');await selectRecording(page,'control')
  await expect(rail(page)).toHaveAttribute('aria-valuenow','0');await ready(page)
 }
-async function showConsole(page:Page){if(!await consolePane(page).isVisible())await page.getByRole('button',{name:'CONSOLE',exact:true}).click();await expect(consolePane(page)).toBeVisible()}
+async function showConsole(page:Page){if(!await consolePane(page).isVisible())await openDock(page,'Console');await expect(consolePane(page)).toBeVisible()}
 async function source(page:Page,event:TraceEvent){
  if(!event.source)throw new Error('Expected captured source')
  const text=trace.sourceFiles.find(file=>file.fileId===event.source!.fileId)!.content.split(/\r?\n/)[event.source.line-1].trim()
@@ -165,7 +166,7 @@ test('exploration cancels Follow while advancing; Focus, Home and Trace use the 
 test('narrow console expansion is keyboard accessible and inspector dismissal preserves execution',async({page})=>{
  const errors=browserErrors(page);await page.setViewportSize({width:760,height:900});await open(page);await seekCursor(page,returned.seq+1)
  await source(page,returned)
- const consoleTab=page.getByRole('button',{name:'CONSOLE',exact:true})
+ const consoleTab=page.getByRole('button',{name:'Console',exact:true})
  await consoleTab.focus();await page.keyboard.press('Enter');await expect(consolePane(page)).toBeVisible();await capturedConsole(page,returned.seq+1,true)
  const rows=consolePane(page).getByRole('list',{name:'Recorded console rows'});await rows.focus();await expect(rows).toBeFocused()
  await pickCorrected(page)
@@ -173,7 +174,7 @@ test('narrow console expansion is keyboard accessible and inspector dismissal pr
  await expect(inspector(page)).toHaveCount(0);await expect(rail(page)).toHaveAttribute('aria-valuenow',String(returned.seq+1))
  await source(page,returned);await capturedConsole(page,returned.seq+1)
  await page.screenshot({path:'.ggjavaez/qa/reference-exact/control-narrow-console-native.png'})
- await page.getByRole('button',{name:'Collapse bottom panel',exact:true}).focus();await page.keyboard.press('Enter');await expect(consolePane(page)).toBeHidden()
- await page.getByRole('button',{name:'Expand bottom panel',exact:true}).focus();await page.keyboard.press('Enter');await expect(consolePane(page)).toBeVisible()
+ await page.getByRole('button',{name:'Console',exact:true}).focus();await page.keyboard.press('Enter');await expect(consolePane(page)).toBeHidden()
+ await page.getByRole('button',{name:'Console',exact:true}).focus();await page.keyboard.press('Enter');await expect(consolePane(page)).toBeVisible()
  await seekCursor(page,inputs[0].seq);await capturedConsole(page,inputs[0].seq);expect(errors).toEqual([])
 })

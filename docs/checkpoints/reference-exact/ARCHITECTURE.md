@@ -202,3 +202,8 @@ Managed projects and curated recordings use the Header project menu and the same
 ## Shell keyboard dispatcher — 2026-10-20
 
 The global keyboard listener now delegates to one Shell dispatcher. Exact physical matching and availability/invocation retain their existing registry and workspace owners; composition, menus, text input and consumed Escape keep their established priority. An AST comparison proves the remainder of the workspace source byte-identical to parent b4ed018. [Evidence and preserved behavior](migration/keyboard.md). Dock/status and whole A–G acceptance remain open.
+
+
+## Dock drawers and workspace status — 2026-10-20
+
+The Dock now owns its fixed strip, one floating resizable drawer and workspace status popover. Counts follow the canonical Console groups, merged diagnostics, paused debugger lists and recorded exception episodes. Existing Console JSX, Debug body and operation owners compare exactly with parent 97441e4 except the two retired automatic height resets. The old tool/footer/JDK banner and style owners are physically replaced; Configure JDK uses the existing dialog stack and detect action. [Ownership, case reconciliation and limits](migration/dock.md). Header fit at 1024, remaining Shell polish and whole A–G acceptance remain open.

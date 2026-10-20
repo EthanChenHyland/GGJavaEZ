@@ -1,3 +1,4 @@
+import {openDock} from './dockActions'
 import { expect,test } from '@playwright/test'
 import { writeFile } from 'node:fs/promises'
 import { browserErrors,currentSession } from './harness'
@@ -35,7 +36,7 @@ for(const viewport of [{width:1440,height:900},{width:760,height:900}])test(`rea
   await page.getByRole('button',{name:'Run',exact:true}).click()
   await expect.poll(async()=>{const s=await currentSession(request);return s&&s.projectId===id?s.phase:null}).toBe('WAITING_FOR_INPUT')
   const input=page.getByLabel('Console input',{exact:true}),send=page.getByRole('button',{name:'Send ↵',exact:true})
-  await expect(input).toBeFocused();await page.getByRole('button',{name:'CONSOLE',exact:true}).click()
+  await expect(input).toBeFocused();await openDock(page,'Console')
   let acknowledgeFirst!:()=>void,writeSecond!:()=>void
   const firstAck=new Promise<void>(resolve=>{acknowledgeFirst=resolve}),secondWrite=new Promise<void>(resolve=>{writeSecond=resolve})
   const writes:string[]=[]
@@ -58,7 +59,7 @@ for(const viewport of [{width:1440,height:900},{width:760,height:900}])test(`rea
   await expect(input).toHaveValue('keep after exit');await expect(input).toBeDisabled()
   expect(writes).toEqual(['\n','  & <exact> 😀  \n'])
   const session=await currentSession(request);expect(session?.stdout).toBe('first\nfirst length 0\nsecond [  & <exact> 😀  ]\n')
-  await page.getByRole('button',{name:'CONSOLE',exact:true}).click()
+  await openDock(page,'Console')
   const console=page.getByLabel('Program console',{exact:true}),submitted=console.getByRole('list',{name:'Submitted input rows'})
   await expect(submitted.getByRole('listitem')).toHaveCount(2)
   await console.getByRole('button',{name:'Open Submitted input row 1',exact:true}).click()

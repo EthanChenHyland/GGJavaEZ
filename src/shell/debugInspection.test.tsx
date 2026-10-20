@@ -5,7 +5,7 @@ import type {DebugSession} from '../debugger/contracts'
 import type {RawRuntimeEvent} from '../instrumentation/contracts'
 import {ExecutionIngest} from '../execution/ingest'
 import {pausedDebugInspection} from './debugInspection'
-import {DebugDrawer} from './DebugDrawer'
+import {DebugDrawer} from './dock/DebugDrawer'
 const content=Array.from({length:12},(_,i)=>`// line ${i+1}`).join('\n'),sha='6d034b5c1b5234946d763510f5b16096532ff3db17857451b790107a2fae54b9'
 const manifest={sources:[{fileId:'Main.java',name:'Main.java',content,sha256:sha}],classes:[{className:'Main',sourceFile:'Main.java',fileId:'Main.java',sourceSha256:sha,status:'resolved',candidates:['Main.java']}]}
 const context={v:1 as const,threadId:'thread-actual',className:'Main',methodName:'main',descriptor:'()V',line:2,site:null}

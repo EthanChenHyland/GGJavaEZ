@@ -1,3 +1,4 @@
+import {openDock} from './dockActions'
 import { expect, test } from '@playwright/test'
 const sizes = [{width:1728,height:1117},{width:1440,height:900},{width:1280,height:800},{width:760,height:900},{width:1440,height:650}]
 test('one viewport world and token shell geometry recompose at all five target sizes', async ({page}) => {
@@ -55,7 +56,7 @@ test('real Run and failed rebuild preserve canvas, recording, history and runtim
   await expect(page.getByRole('status').filter({hasText:'Previous run'})).toBeVisible()
   const failed = await (await request.get('/api/execution/current')).json()
   expect(failed.id).not.toBe(completed.id); expect(failed.failureKind).toBe('build')
-  await page.getByRole('button',{name:'CONSOLE',exact:true}).click()
+  await openDock(page,'Console')
   const oldConsole=page.getByRole('region',{name:'Previous run console',exact:true})
   const attempt=page.getByRole('region',{name:'Current attempt console',exact:true})
   await expect(oldConsole).toHaveAttribute('data-console-session',completed.id)
