@@ -3,7 +3,7 @@ import {writeFile} from 'node:fs/promises'
 import {browserErrors,home,ready,runFixture,stopOwnedSession} from './harness'
 
 test.afterEach(async({request})=>stopOwnedSession(request))
-const viewports=[{width:1728,height:1117},{width:1440,height:900},{width:1280,height:800},{width:760,height:900},{width:1440,height:650}]
+const viewports=[{width:1728,height:1117},{width:1440,height:900},{width:1280,height:800},{width:760,height:900},{width:1440,height:650},{width:1024,height:768},{width:1024,height:650}]
 
 async function contrast(page:Page){
  const header=page.locator('.shell-header'),clip=(await header.boundingBox())!

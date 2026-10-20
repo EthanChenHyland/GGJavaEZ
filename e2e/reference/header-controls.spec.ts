@@ -4,7 +4,7 @@ import {browserErrors,ready} from './harness'
 import {selectRecording} from './menuActions'
 const launchName='AnIntentionallyLongJavaApplicationLaunchTargetForHeaderTruncation'
 const source=`public class ${launchName} { public static void main(String[] args) { System.out.println("HEADER"); } }\n`
-const viewports=[{width:1728,height:1117},{width:1440,height:900},{width:1280,height:800},{width:760,height:900},{width:1440,height:650}]
+const viewports=[{width:1728,height:1117},{width:1440,height:900},{width:1280,height:800},{width:760,height:900},{width:1440,height:650},{width:1024,height:768},{width:1024,height:650}]
 async function project(request:APIRequestContext,name:string){
  const response=await request.post('/api/projects/import',{data:{name:`Header ${name} ${Date.now()}`,files:[{path:launchName+'.java',content:source}]}})
  expect(response.ok()).toBe(true);return (await response.json()).id as string
