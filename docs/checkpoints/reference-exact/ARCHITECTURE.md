@@ -222,3 +222,8 @@ Observed references now use inset value chips measured by the same scoped column
 ## Camera visibility-graph work — 2026-10-21
 
 The existing shortest-path owner checks whether a candidate distance improves the current entry before testing collision visibility. All admitted edges retain the exact full-solid swept test; the graph, tie order, escape/fallback and emitted camera poses remain unchanged. No hierarchy, new cache or semantic/backend owner is introduced. [Exact parent/source comparison, 279 complete route comparisons, actual native checks and open performance/visual gates](migration/camera.md#avoid-redundant-collision-queries--2026-10-21).
+
+
+## Connector and flow-planning work — 2026-10-21
+
+Whole-path bounds reject irrelevant face checks before exact segment clipping. Valid array-window ports use a temporary observed-ID lookup, and one ranked flow order supplies the unchanged mandatory/optional/bundle partition. All working tables stay within one call; public contracts, camera, values, provenance and runtime/backend retain their owners. [Operation-count REDs, 2,673 route and 336 complete-plan comparisons, native captures and fixed-budget results](migration/connector-route-cache.md#path-bounds-and-bounded-flow-planning-work--2026-10-21).

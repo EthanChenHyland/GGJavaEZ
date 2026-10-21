@@ -23,7 +23,10 @@ export function presentedFlowPorts(scene:SceneModel,entities:ReadonlyMap<string,
   if(presented.mode!=='detailed')continue
   if(node.kind==='array'){
    const window=windows.get(id)
-   if(window?.recordingId===scene.recordingId&&window.arrayId===id)for(const[slot,cell]of window.mapping)if(node.cells.some(c=>c.slotId===slot))slots.set(slot,{point:cell.port,anchor:cell.anchor})
+   if(window?.recordingId===scene.recordingId&&window.arrayId===id&&window.mapping.size){
+    const observed=new Set(node.cells.map(cell=>cell.slotId))
+    for(const[slot,cell]of window.mapping)if(observed.has(slot))slots.set(slot,{point:cell.port,anchor:cell.anchor})
+   }
   }else{
    const model=faceRows(node,presented),visible=model.visible
    if(node.kind==='collection'){
@@ -64,11 +67,13 @@ export function buildFlowTopology(input:FlowTopologyInput){
   if(!from||!to){unavailable.push({id:flow.id,reason:!flow.from?'Recorded evidence has no proved semantic source':!flow.to?'Recorded evidence has no prefix-proved semantic destination':!from?'Source port is absent, retired, quiet or hidden in the current presentation':'Destination port is absent, retired, quiet or hidden in the current presentation'});continue}
   available.push({flow:flow as SceneFlow,from,to})
  }
- const compare=(a:DrawableFlow,b:DrawableFlow)=>input.priority(a.flow)-input.priority(b.flow)||(b.flow.evidenceSeqs[0]??-1)-(a.flow.evidenceSeqs[0]??-1)||(a.flow.id<b.flow.id?-1:a.flow.id>b.flow.id?1:0)
- const mandatory=available.filter(item=>input.mandatoryIds.has(item.flow.id)).sort(compare),optional=available.filter(item=>!input.mandatoryIds.has(item.flow.id)).sort(compare)
+ // Priority is a pure policy for this cut; evaluate it once per drawable edge.
+ const ranks=new Map(available.map(item=>[item,input.priority(item.flow)]))
+ const compare=(a:DrawableFlow,b:DrawableFlow)=>ranks.get(a)!-ranks.get(b)!||(b.flow.evidenceSeqs[0]??-1)-(a.flow.evidenceSeqs[0]??-1)||(a.flow.id<b.flow.id?-1:a.flow.id>b.flow.id?1:0)
+ const ordered=available.sort(compare),mandatory=ordered.filter(item=>input.mandatoryIds.has(item.flow.id)),optional=ordered.filter(item=>!input.mandatoryIds.has(item.flow.id))
  const individual=[...mandatory,...optional.slice(0,Math.max(0,input.limit-mandatory.length))],emitted=new Set(individual.map(item=>item.flow.id))
  const groups=new Map<string,{id:string;from:FlowPort;to:FlowPort;flows:SceneFlow[]}>()
- for(const item of available.slice().sort(compare))if(!emitted.has(item.flow.id)){
+ for(const item of ordered)if(!emitted.has(item.flow.id)){
   if(!input.aggregate){scopeExcluded.push(item.flow.id);continue}
   const flow=item.flow,id=`presentation:flow-bundle:${JSON.stringify([input.scene.recordingId,flow.from!.kind,flow.from!.id,flow.to.kind,flow.to.id,flow.kind])}`
   const group=groups.get(id)??{id,from:item.from,to:item.to,flows:[]};group.flows.push(flow);groups.set(id,group)

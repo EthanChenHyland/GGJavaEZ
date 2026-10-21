@@ -92,3 +92,26 @@ it('accounts every supported accepted graph edge exactly once across cuts, scope
   }
  }),{numRuns:100})
 })
+
+it('maps a tail array window with a linear number of captured-cell reads',()=>{
+ const f=fixture(),array=f.scene.entities.array
+ if(array.kind!=='array')throw new Error('Expected array')
+ const cells=Array.from({length:1000},(_,index)=>({...array.cells[0],index,slotId:`array:element:${index}`}))
+ let reads=0
+ const counted=new Proxy(cells,{get(target,key,receiver){if(typeof key==='string'&&/^\d+$/.test(key))reads++;return Reflect.get(target,key,receiver)}})
+ const scene={...f.scene,entities:{...f.scene.entities,array:{...array,cells:counted}}},windows=new Map(f.plan.cellWindows)
+ const window=computeArrayWindow({recordingId:scene.recordingId,arrayId:'array',recordedLength:1000,anchor:array.anchor,nominalCellBudget:128,requestedIndices:[999]})
+ windows.set('array',window)
+ const port=presentedFlowPorts(scene,f.plan.entities,windows)
+ for(const[id,cell]of window.mapping)expect(port({kind:'slot',id})?.point).toEqual(cell.port)
+ expect(port({kind:'slot',id:'array:element:1000'})).toBeNull()
+ expect(reads).toBeLessThanOrEqual(cells.length+window.mapping.size*4)
+})
+
+it('bounds priority-policy queries to one per drawable flow while preserving the complete partition',()=>{
+ const f=fixture(),flows=Array.from({length:256},(_,i)=>f.flow(`edge/${i}`)),calls=new Map<string,number>(),before=JSON.stringify(flows)
+ const result=buildFlowTopology({...f.input,flows,mandatoryIds:new Set(flows.slice(0,5).map(flow=>flow.id)),priority(flow){calls.set(flow.id,(calls.get(flow.id)??0)+1);return Number(flow.id.slice(5))%4}})
+ assertPartition(result,flows.map(flow=>flow.id));expect(result.individual).toHaveLength(5)
+ expect([...calls.values()].reduce((sum,count)=>sum+count,0)).toBeLessThanOrEqual(flows.length)
+ expect(JSON.stringify(flows)).toBe(before)
+})

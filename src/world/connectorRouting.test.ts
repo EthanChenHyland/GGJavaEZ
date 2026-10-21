@@ -88,3 +88,19 @@ describe('exterior connector routes', () => {
     expect(JSON.stringify(bodies)).toBe(before)
   })
 })
+
+
+it('whole-path face rejection agrees with testing every segment across 4,000 generated polylines', () => {
+  const point = fc.tuple(fc.integer({ min: -400, max: 400 }), fc.integer({ min: -400, max: 400 }), fc.integer({ min: -400, max: 400 }))
+    .map(values => values.map(value => value / 10) as unknown as Vec3)
+  const source = anchor('source', [-80, 80, -80]), target = anchor('target', [80, 80, -80])
+  fc.assert(fc.property(fc.array(point, { maxLength: 24 }), fc.array(fc.array(point, { minLength: 2, maxLength: 20 }), { minLength: 40, maxLength: 40 }), (centres, paths) => {
+    // Terminal identities are separate from these blockers, so clearance of a
+    // polyline is precisely the conjunction of its individual segment tests.
+    const bodies = centres.map((position, i) => anchor(`blocker-${i}`, position)), before = JSON.stringify(bodies)
+    for (const points of paths) expect(connectorClearsFaces(points, source, target, bodies)).toBe(
+      points.slice(1).every((to, i) => connectorClearsFaces([points[i], to], source, target, bodies)),
+    )
+    expect(JSON.stringify(bodies)).toBe(before)
+  }), { numRuns: 100, seed: 20261021 })
+})

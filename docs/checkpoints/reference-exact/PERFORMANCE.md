@@ -132,3 +132,45 @@ The complete unchanged browser method reran on the 942-file camera-guard source 
 These are separate fresh runs, not paired samples; the evidence supports the measured command reduction without attributing all variation to the guard. All five 30-second orbit windows pass: medians 16.7 ms, p95 17.5 / 17.5 / 17.0 / 17.2 / 17.6 ms, CPU p95 2.6 / 2.7 / 2.7 / 2.7 / 3.5 ms, maximum 123 calls. The 60-second soak passes at 0% median frame drift and 0.1296% whole-frontend post-GC heap growth. Real asynchronous GPU samples and pending-query counts remain in the raw report; no semantic-memory attribution is inferred from whole-frontend heap growth. External retention/single-event/build fields remain NOT_MEASURED by the browser method, and the generated retention failures remain open.
 
 Raw report, exact session, optional profiles, command log and source snapshot are archived with hashes in `.ggjavaez/qa/reference-exact/performance-camera-relaxation/manifest.json`. The current browser gate is **FAIL** and whole-product performance approval **INCOMPLETE**. The build separately measures 71,765 main-entry gzip bytes, with Monaco/Cinematic chunks split. This checkpoint does not close the latency, retained-memory, visual or whole A–G gates.
+
+
+The additional seek profile also places most sampled `recordKeys` self-time below React development component-prop diffing (`addObjectDiffToProperties`), rather than a reducer call. That diagnostic stack does not isolate its contribution to the fixed command samples or establish a runtime reducer defect. The protected runtime remains unchanged; no React logging or benchmark boundaries are disabled for performance runs (`performance-camera-relaxation-profile-summary.json`).
+
+
+## Actual Dense after path and flow-planning bounds — 2026-10-21
+
+All ten stages complete on source map `e53b9768aeb92291ea013dc6b1c91cd8c8431a67d30e5e0ea0b14728e4fb1113`, fresh actual JVM `a04493c3-50f3-4f53-ad96-3ec1befee8f2`, run `897680b1-b963-4f82-8dde-bc9236f0e5af`. The same Java source hash, 7,492 raw / 9,852 normalized events, FULL recording, successful exit and exact stdout are retained. The method, JDT, 100 spread seeks, 50 distinct captured Focus/Home pairs, five cold loads, five continuous orbit windows and soak are unchanged.
+
+| Measurement | Camera guard run | Current | Budget | Current result |
+| --- | ---: | ---: | ---: | --- |
+| Seek p50 | 99.622 ms | 98.256 ms | 55 ms | FAIL |
+| Seek p95 | 120.170 ms | 99.956 ms | 112 ms | PASS |
+| Focus p95 | 150.426 ms | 134.409 ms | 125 ms | FAIL |
+| Home p95 | 182.679 ms | 151.487 ms | 152 ms | PASS |
+| Five cold loads, median | 4,181.682 ms | 4,060.694 ms | 5,300 ms | PASS |
+
+All five 30-second orbit windows pass: median submission intervals 16.7 ms, p95 17.4 / 17.5 / 17.5 / 17.5 / 17.3 ms, CPU p95 2.6 / 2.6 / 2.6 / 2.6 / 3.5 ms, maximum 123 calls. The 60-second soak passes at 0% median frame drift and 0.1343% whole-frontend post-GC heap growth. These separate fresh runs have no statistical confidence claim; the earlier failures remain preserved. Home has limited margin in this run. The fixed final browser-budget assertion exits 1 because seek p50 and Focus still fail; the gate remains **FAIL**, with overall performance approval **INCOMPLETE**.
+
+Actual asynchronous whole-render-owner GPU queries are retained as diagnostics, with no GPU budget or physical-display FPS pass inferred:
+
+| Viewport | Resolved samples | Pending at final boundary | GPU p50 / p95 |
+| --- | ---: | ---: | ---: |
+| 1728×1117 | 1,829 | 1 | 4.498 / 22.054 ms |
+| 1440×900 | 1,831 | 1 | 3.607 / 28.487 ms |
+| 1280×800 | 1,830 | 1 | 2.647 / 24.912 ms |
+| 760×900 | 1,831 | 1 | 2.671 / 22.840 ms |
+| 1440×650 | 1,819 | 1 | 2.848 / 26.750 ms |
+
+Report, raw actual session, log, optional profiles and exact 942-file source snapshot are archived with hashes in `performance-world-route-costs/manifest.json` under the QA evidence directory. Build artifacts separately pass at 71,762 main-entry gzip bytes, with Monaco/Cinematic split; static entry/Shell sums of 72,190 / 669,208 bytes are diagnostics.
+
+The exact unchanged Phase 5.5 paired rich-graph method executes 1/1 with zero skips, explicit GC and all four original sizes. Both baseline and enriched graph digests/counts match the old evidence. Its largest controlled case contains 190,031 semantic events, 6,814 invocations, 6,813 calls, 67,849 values and 110,408 edges, retaining **354.625 MiB ≤ 390 MiB**. The original process-delta boundary includes enriched raw facts, semantic events, graph and checkpoint roots, with generator input held outside the measurement. This is synthetic controlled retention, not actual JVM or isolated GPU/SceneModel memory (`perf-world-route-costs-rich/performance.json`, `comparison.json`).
+
+The unchanged modern Node method also completes all three configured corpora and the counterbalanced single-LINE scaling probe, executing 1/1 with zero skips. The 20k/1k actual-object update ratio is **1.03235 ≤ 2**, using 100 measured batches per size after 20 warmup batches. Presentation-retention ratios still fail the 0.25 limit:
+
+| Raw target | Semantic retained delta | Presentation retained delta | Ratio | Result |
+| --- | ---: | ---: | ---: | --- |
+| 200 | 927,960 bytes | 1,639,648 bytes | 1.76694 | FAIL |
+| 5,000 | 12,372,744 bytes | 9,325,152 bytes | 0.75369 | FAIL |
+| 20,000 | 55,805,520 bytes | 35,869,048 bytes | 0.64275 | FAIL |
+
+That test exits 1 at the unchanged retained-memory budget assertion, with all stages completed. Small differences from previous heap samples are not claimed as a material memory improvement. `perf-world-route-costs-modern/modern-world-performance.json` preserves stage deltas, exact input hashes, timings, ownership checks and failures; `performance-world-route-costs-external.json` links these independent gates without altering the browser report's NOT_MEASURED fields. Seek p50, Focus, presentation retention, visual convergence and whole A–G acceptance remain OPEN.

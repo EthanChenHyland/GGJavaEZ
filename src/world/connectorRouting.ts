@@ -52,14 +52,18 @@ export function prepareConnectorFaceClearance(bodies:readonly WorldAnchor[]){
   let departure = 1, arrival = points.length - 1
   while (departure < points.length - 1 && inside(points[departure], sourceRect)) departure++
   while (arrival > 1 && inside(points[arrival - 1], targetRect)) arrival--
-  const bounds=new Float64Array(Math.max(0,points.length-1)*6)
+  const bounds=new Float64Array(Math.max(0,points.length-1)*6),extent=[Infinity,-Infinity,Infinity,-Infinity,Infinity,-Infinity]
   for(let i=1;i<points.length;i++){
     const a=points[i-1],b=points[i],offset=(i-1)*6
     bounds[offset]=Math.min(a[0],b[0]);bounds[offset+1]=Math.max(a[0],b[0])
     bounds[offset+2]=Math.min(a[1],b[1]);bounds[offset+3]=Math.max(a[1],b[1])
     bounds[offset+4]=Math.min(a[2],b[2]);bounds[offset+5]=Math.max(a[2],b[2])
+    for(let axis=0;axis<6;axis++)extent[axis]=axis%2?Math.max(extent[axis],bounds[offset+axis]):Math.min(extent[axis],bounds[offset+axis])
   }
+  // Reject only faces outside the entire path; overlapping faces still use
+  // the exact segment clipping and terminal rules below.
   for (const rect of faces) {
+    if(rect.front<extent[4]||rect.back>extent[5]||extent[0]>=rect.right||extent[1]<=rect.left||extent[2]>=rect.top||extent[3]<=rect.bottom)continue
     for (let i = 1; i < points.length; i++) {
       const offset=(i-1)*6
       if (rect.front < bounds[offset+4] || rect.back > bounds[offset+5]) continue
