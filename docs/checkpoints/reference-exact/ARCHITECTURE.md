@@ -217,3 +217,8 @@ The shared perspective fit now solves image-plane pan intervals directly, withou
 ## Reference value chips — 2026-10-20
 
 Observed references now use inset value chips measured by the same scoped column initializer as the text. Whole-row pick, Inspector and motion geometry remains unchanged; only the new decorative parts occupy a separate depth-tested batch before the SDF labels, with depth writes disabled. No semantic ID, value, port, canonical anchor, fixed font or camera changes. [846 replay comparisons, exact owner proof, native evidence and open visual limits](migration/reference-chips.md).
+
+
+## Camera visibility-graph work — 2026-10-21
+
+The existing shortest-path owner checks whether a candidate distance improves the current entry before testing collision visibility. All admitted edges retain the exact full-solid swept test; the graph, tie order, escape/fallback and emitted camera poses remain unchanged. No hierarchy, new cache or semantic/backend owner is introduced. [Exact parent/source comparison, 279 complete route comparisons, actual native checks and open performance/visual gates](migration/camera.md#avoid-redundant-collision-queries--2026-10-21).

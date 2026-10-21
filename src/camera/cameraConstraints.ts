@@ -175,9 +175,10 @@ export function collisionSafeRoute(from: CameraPose, to: CameraPose, boxes: read
     if (nearest === 1) break
     visited.add(nearest)
     for (let i = 0; i < nodes.length; i++) {
-      if (visited.has(i) || !visible(nodes[nearest], nodes[i])) continue
+      if (visited.has(i)) continue
       const cost = ranges[nearest] + nodes[nearest].distanceTo(nodes[i])
-      if (cost < ranges[i]) { ranges[i] = cost; parents[i] = nearest }
+      // A path that cannot improve the settled distance needs no collision query.
+      if (cost < ranges[i] && visible(nodes[nearest], nodes[i])) { ranges[i] = cost; parents[i] = nearest }
     }
   }
   if (parents[1] < 0) return [constrainCameraPose(to, from, boxes, center, limits)]
