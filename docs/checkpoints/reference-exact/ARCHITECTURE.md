@@ -227,3 +227,8 @@ The existing shortest-path owner checks whether a candidate distance improves th
 ## Connector and flow-planning work — 2026-10-21
 
 Whole-path bounds reject irrelevant face checks before exact segment clipping. Valid array-window ports use a temporary observed-ID lookup, and one ranked flow order supplies the unchanged mandatory/optional/bundle partition. All working tables stay within one call; public contracts, camera, values, provenance and runtime/backend retain their owners. [Operation-count REDs, 2,673 route and 336 complete-plan comparisons, native captures and fixed-budget results](migration/connector-route-cache.md#path-bounds-and-bounded-flow-planning-work--2026-10-21).
+
+
+## Compact flow indexes — 2026-10-21
+
+Flow candidates reuse the existing opaque-ID index and accepted graph ordinals; the redundant ordinal Map is removed. Event adjacency stores a singleton until fanout requires a list. Public APIs, semantic roots and recording lifetime remain unchanged. [Exact parent API comparisons, memory deltas, native behavior and remaining gates](migration/flow-partition.md#compact-catalog-indexes--2026-10-21).

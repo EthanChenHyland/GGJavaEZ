@@ -41,7 +41,9 @@ export function createFlowCatalog():FlowCatalog {
   currentPrefix={trace:acceptedTrace,cursor,length,state}
   return state
  }
- const events=new Map<string,TraceEvent>(),candidates=new Map<number,Candidate>(),byId=new Map<string,Candidate>(),byEvent=new Map<string,Candidate[]>()
+ // Edge ordinals already resolve through the accepted graph and opaque edge ID.
+ // Keep one candidate owner; most events need no separately allocated list.
+ const events=new Map<string,TraceEvent>(),byId=new Map<string,Candidate>(),byEvent=new Map<string,Candidate|Candidate[]>()
  let prefixCache:{scene:SceneModel;cursor:number;indexedEdges:number;items:readonly RecordedFlow[]}|undefined
  const physical=(id:string,state:RuntimeState):FlowEndpoint|null=>{
   const storage=state.executionGraph?.storage[id]
@@ -100,6 +102,7 @@ export function createFlowCatalog():FlowCatalog {
    for(let i=Math.max(0,lo-tail);i<lo;i++)result.add(indices[i])
   }
  }
+ const candidateAt=(index:number):Candidate|undefined=>{const edge=graph?.edges[index];return edge?byId.get(edge.id):undefined}
  const api:FlowCatalog={
   extend(next,trace){
    if(next.edges.length<indexedEdges||trace.events.length<indexedEvents)throw new Error('FlowCatalog requires one append-only accepted recording')
@@ -112,25 +115,28 @@ export function createFlowCatalog():FlowCatalog {
     if(!kind)continue
     const capturedValue=next.values[edge.from]?.value??next.values[edge.to]?.value??(event.type==='EXECUTION_FACT'&&'value'in event.fact?event.fact.value:undefined)
     const candidate:Candidate={edgeIndex:indexedEdges,edge,seq:event.seq,kind,value:capturedValue}
-    candidates.set(indexedEdges,candidate);byId.set(edge.id,candidate)
-    const eventItems=byEvent.get(event.eventId)??[];eventItems.push(candidate);byEvent.set(event.eventId,eventItems)
+    byId.set(edge.id,candidate)
+    const prior=byEvent.get(event.eventId)
+    if(!prior)byEvent.set(event.eventId,candidate)
+    else if(Array.isArray(prior))prior.push(candidate)
+    else byEvent.set(event.eventId,[prior,candidate])
    }
   },
   query({cursor,scene,priority,limit}){
    lastScene=scene
    if(limit<=0)return[]
    const tiers=[priority.selectedIds,priority.focusedIds,priority.currentIds],seen=new Set<number>(),result:SceneFlow[]=[]
-   const add=(indices:Iterable<number>)=>{for(const index of[...indices].sort((a,b)=>b-a)){if(seen.has(index))continue;seen.add(index);const candidate=candidates.get(index);if(candidate&&candidate.seq<cursor&&drawable(candidate,scene)){const flow=formatted(candidate,scene);if(flow)result.push(flow)}if(result.length>=limit)return}}
+   const add=(indices:Iterable<number>)=>{for(const index of[...indices].sort((a,b)=>b-a)){if(seen.has(index))continue;seen.add(index);const candidate=candidateAt(index);if(candidate&&candidate.seq<cursor&&drawable(candidate,scene)){const flow=formatted(candidate,scene);if(flow)result.push(flow)}if(result.length>=limit)return}}
    for(const ids of tiers){const indices=new Set<number>();for(const id of ids){const candidate=byId.get(id);if(candidate)indices.add(candidate.edgeIndex)}adjacency(ids,indices,128,cursor);add(indices);if(result.length>=limit)return result.slice(0,limit)}
    if(graph){let lo=0,hi=graph.edges.length;while(lo<hi){const mid=(lo+hi)>>>1;if(events.get(graph.edges[mid].eventId)!.seq<cursor)lo=mid+1;else hi=mid}add(Array.from({length:Math.min(256,lo)},(_,i)=>lo-1-i))}
    return result.slice(0,Math.max(0,limit))
   },
-  atEvent(cursor,scene){lastScene=scene;if(!cursor||!scene.cursorEvent)return[];return(byEvent.get(scene.cursorEvent.id)??[]).filter(c=>c.seq===cursor-1&&drawable(c,scene)).flatMap(c=>{const flow=formatted(c,scene);return flow?[flow]:[]})},
+  atEvent(cursor,scene){lastScene=scene;if(!cursor||!scene.cursorEvent)return[];const entry=byEvent.get(scene.cursorEvent.id),items=entry?Array.isArray(entry)?entry:[entry]:[];return items.filter(c=>c.seq===cursor-1&&drawable(c,scene)).flatMap(c=>{const flow=formatted(c,scene);return flow?[flow]:[]})},
   prefix(cursor,scene){
    lastScene=scene
    if(prefixCache?.scene===scene&&prefixCache.cursor===cursor&&prefixCache.indexedEdges===indexedEdges)return prefixCache.items
    const items:RecordedFlow[]=[]
-   for(const candidate of candidates.values()){
+   for(const candidate of byId.values()){
     if(candidate.seq>=cursor)break
     const points=resolve(candidate,cursor),flow=formatted(candidate,scene)
     items.push(flow??{id:candidate.edge.id,edgeIndex:candidate.edgeIndex,kind:candidate.kind,from:points.from,to:points.to,evidenceEventIds:[candidate.edge.eventId],evidenceSeqs:[candidate.seq],valueText:null})
@@ -153,11 +159,11 @@ export function createFlowCatalog():FlowCatalog {
    const indices=new Set<number>();adjacency(new Set([id]),indices,Infinity)
    return[...indices].sort((a,b)=>a-b).flatMap(index=>{
     const edge=graph!.edges[index],event=events.get(edge.eventId);if(!event||event.seq>=cursor)return[]
-    const candidate=candidates.get(index),canDraw=!!candidate&&lastScene?.cursor===cursor&&drawable(candidate,lastScene)
+    const candidate=byId.get(edge.id),canDraw=!!candidate&&lastScene?.cursor===cursor&&drawable(candidate,lastScene)
     return[{edgeId:edge.id,edgeIndex:index,kind:edge.kind,from:edge.from,to:edge.to,originSlotId:edge.originSlotId??null,eventId:edge.eventId,graphEvidence:edge.evidence,evidence:{kind:edge.evidence==='observed'?'observed' as const:edge.evidence==='bytecode-derived'?'derived' as const:'unavailable' as const,introducedSeq:event.seq,changedSeq:event.seq,eventIds:[edge.eventId],...(edge.evidence==='unknown'?{unavailableReason:'Recorder marks provenance unknown'}:{})},spatial:{drawable:canDraw,reason:canDraw?null:'Recorded evidence has no evaluated drawable mapping at this prefix'}}]
    })
   },
-  drawableFlowsOf(id,cursor,scene){lastScene=scene;const indices=new Set<number>();adjacency(new Set([id]),indices,Infinity);return[...indices].sort((a,b)=>b-a).flatMap(index=>{const candidate=candidates.get(index);if(!candidate||candidate.seq>=cursor||!drawable(candidate,scene))return[];const flow=formatted(candidate,scene);return flow?[flow]:[]})},
+  drawableFlowsOf(id,cursor,scene){lastScene=scene;const indices=new Set<number>();adjacency(new Set([id]),indices,Infinity);return[...indices].sort((a,b)=>b-a).flatMap(index=>{const candidate=candidateAt(index);if(!candidate||candidate.seq>=cursor||!drawable(candidate,scene))return[];const flow=formatted(candidate,scene);return flow?[flow]:[]})},
  }
  return api
 }

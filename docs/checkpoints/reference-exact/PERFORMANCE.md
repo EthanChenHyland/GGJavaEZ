@@ -174,3 +174,18 @@ The unchanged modern Node method also completes all three configured corpora and
 | 20,000 | 55,805,520 bytes | 35,869,048 bytes | 0.64275 | FAIL |
 
 That test exits 1 at the unchanged retained-memory budget assertion, with all stages completed. Small differences from previous heap samples are not claimed as a material memory improvement. `perf-world-route-costs-modern/modern-world-performance.json` preserves stage deltas, exact input hashes, timings, ownership checks and failures; `performance-world-route-costs-external.json` links these independent gates without altering the browser report's NOT_MEASURED fields. Seek p50, Focus, presentation retention, visual convergence and whole A–G acceptance remain OPEN.
+
+
+## Compact FlowCatalog retention — 2026-10-21
+
+The unchanged explicit-GC generated method reruns all three raw targets and both 100-batch/20-warmup single-event sizes on source `858181a953fcba357cf6cf61f851444f607308aac27a797342cbb966b4c58902`. All raw hashes, graph counts and normalized event counts match 06695fc. Only the FlowCatalog implementation differs among 942 application/test/config files.
+
+| Raw target | Flow index before / after | Whole presentation before / after | Current ratio | Result against 0.25 |
+| --- | ---: | ---: | ---: | --- |
+| 200 | 68,400 / 45,184 bytes | 1,639,648 / 1,623,400 bytes | 1.75427 | FAIL |
+| 5,000 | 1,479,208 / 1,014,360 bytes | 9,325,152 / 8,936,272 bytes | 0.71967 | FAIL |
+| 20,000 | 5,888,408 / 4,073,712 bytes | 35,869,048 / 34,185,248 bytes | 0.61403 | FAIL |
+
+The largest Flow index delta is 1,814,696 bytes lower (30.8%); total presentation delta is 1,683,800 bytes lower (4.69%). These single-construction process deltas do not establish statistical confidence or isolated object bytes. Single-event scaling passes at 1.05977 against 2. The test executes 1/1 with zero skips, completes every stage, and exits 1 at the three unchanged memory-budget failures. Raw reports and the exact comparison are in `perf-flow-catalog-compact-modern/` and `flow-catalog-compact-memory-comparison.json` under the QA evidence directory.
+
+The 06695fc actual Dense/quality/rich results above keep their original source boundary; no new browser command latency, GPU or Cinematic claim is made for this internal-index checkpoint. Build artifacts independently pass at 71,763 main-entry gzip bytes, entry/Shell static sums 72,191 / 669,231 diagnostic bytes, with Monaco/Cinematic separate. Seek p50, Focus, presentation retention and whole-product approval remain OPEN.
