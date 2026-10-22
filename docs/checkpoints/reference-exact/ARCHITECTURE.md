@@ -232,3 +232,8 @@ Whole-path bounds reject irrelevant face checks before exact segment clipping. V
 ## Compact flow indexes — 2026-10-21
 
 Flow candidates reuse the existing opaque-ID index and accepted graph ordinals; the redundant ordinal Map is removed. Event adjacency stores a singleton until fanout requires a list. Public APIs, semantic roots and recording lifetime remain unchanged. [Exact parent API comparisons, memory deltas, native behavior and remaining gates](migration/flow-partition.md#compact-catalog-indexes--2026-10-21).
+
+
+## Unlit text mask composition — 2026-10-22
+
+White unlit Troika masks accumulate coverage with MAX blending so antialiased glyphs cannot erase an opaque face beneath them. Source shaders/material ownership, depth, ordinary/black masks and render-pass/target counts remain unchanged. [Regression and compositing limits](migration/unlit-output.md#preserve-face-coverage-under-glyphs--2026-10-22).

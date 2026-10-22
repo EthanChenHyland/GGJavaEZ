@@ -1,8 +1,8 @@
-import { Material, MeshBasicMaterial, type Object3D, type WebGLRenderer } from 'three'
+import { CustomBlending, Material, MaxEquation, MeshBasicMaterial, type Object3D, type WebGLRenderer } from 'three'
 
 export type BloomRole = 'emitter' | 'protected'
 type Renderable = Object3D & { material: Material | Material[] }
-type Derived = Material & { isDerivedMaterial?: boolean }
+type Derived = Material & { isDerivedMaterial?: boolean; isTroikaTextMaterial?: boolean }
 
 /** Preserve the original vertex program, instancing and Troika SDF discard path.
  * Replacing those with a generic black material would mask the wrong pixels. */
@@ -18,6 +18,12 @@ export function createMaskMaterial(original: Material, ink: 0 | 1): Material {
   })
   mask.name = `runtime-mask:${ink}:${original.name}`
   mask.toneMapped = false
+  // SDF edge alpha must not replace the opaque unlit face already in B.
+  // R/G remain hard exclusion; MAX retains coverage through overlapping ink.
+  if (ink && (original as Derived).isTroikaTextMaterial && !original.toneMapped) {
+    mask.blending = CustomBlending
+    mask.blendEquation = MaxEquation
+  }
   if ('transmission' in mask) Object.defineProperty(mask, 'transmission', { value: 0 })
   // Do not inherit the source material's cache identity or disposal ownership.
   mask.customProgramCacheKey = () => `${original.customProgramCacheKey()}|runtime-mask-${ink}-unlit-${!original.toneMapped}-v2`

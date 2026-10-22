@@ -285,3 +285,8 @@ Two RED operation counts and 4,000 generated polylines guard bounded work withou
 ### Compact flow indexes — 2026-10-21
 
 All 16 focused cases and exact parent results for 1,278 prefixes / 31,416 API queries pass. Two incorrect diagnostic-fixture assumptions are retained and explained. Full defaults: 2,151 passed / 70 existing opt-in skips, 232 files, 172.45 seconds. Native 11/11, 68.210 seconds, zero skips/failures/flaky, seven attached JVM sessions plus the verified recovery execution; three originals are root-reviewed. Build/typechecks/lint/reference/protected checks pass; only one of 942 source files differs from 06695fc. The unchanged generated probe completes, passes 1.05977 scaling, and lowers its largest presentation delta to 34,185,248 bytes, but all three retained-memory ratios still fail. Parent-source Dense and quality results are not relabelled as fresh. [Evidence and limitations](migration/flow-partition.md#compact-catalog-indexes--2026-10-21). Whole A–G acceptance remains OPEN.
+
+
+## Glyph coverage regression — 2026-10-22
+
+Full defaults pass 2,152 / 2,222 with 70 existing opt-in skips, 232 files, 186.79 seconds. Typechecks/lint/build/integrity/protected checks pass. Native 21/21, zero skips/failures/flaky, 145.156 seconds; thirteen attached actual JVM sessions plus recovery identify fourteen distinct IDs. Byte and production half-float GPU cases preserve opaque coverage through actual glyphs; hardware Cinematic, exact eight-sample palette, context restoration/fallback and lifecycle smoke pass. All nineteen originals are root-reviewed. [Source-bound evidence and limits](migration/unlit-output.md#preserve-face-coverage-under-glyphs--2026-10-22). Visual, Dense and whole A–G gates remain OPEN.

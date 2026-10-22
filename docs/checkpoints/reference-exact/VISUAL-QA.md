@@ -81,3 +81,8 @@ Two owned world-space haze sprites implement the specified region colours with e
 ## Routing/planning validation captures — 2026-10-21
 
 All 21 originals from the 29-case native run are archived, source/report-bound and root-reviewed: six Hero, six object inspection, five recursive Home, two captured reference-slot picks, Interactive and hardware Cinematic. The source snapshot and report hashes are in `.ggjavaez/qa/reference-exact/world-route-costs-captures/manifest.json`. The optimizations preserve complete plans/points in saved-input comparisons and introduce no intended visual change. Small or absent text, matte fronts, dominant connector glow/crossings, dense grid, heading hierarchy and clipped peripheral topology remain visible against `best.png`; World/Cinematic acceptance is OPEN. This targeted set does not replace the formal full matrix, motion review or final visual gate.
+
+
+## Text coverage correction — 2026-10-22
+
+Nineteen original-size captures are archived, source/report-bound and root-reviewed: six Hero, six Focus, four palette, two quality and one terminal exception. Parent/new 1440×900 Focus pose, projected bounds, heading and frame-text observations match. Corrected mask coverage improves lettering, while small/cutoff text, dominant glow, matte fronts/flat Cinematic sides, weak reflections, dense grid, clipped context and blank forensic annotation remain OPEN. [Evidence](migration/unlit-output.md#preserve-face-coverage-under-glyphs--2026-10-22). This is not a new full reference matrix or visual completion.

@@ -1,5 +1,5 @@
 import { expect, it, vi } from 'vitest'
-import { Group, Mesh, MeshBasicMaterial, ShaderLib, Sprite, SpriteMaterial, type WebGLRenderer } from 'three'
+import { CustomBlending, MaxEquation, Group, Mesh, MeshBasicMaterial, ShaderLib, Sprite, SpriteMaterial, type WebGLRenderer } from 'three'
 import { BatchedText } from 'troika-three-text'
 import { BloomMaskMaterials, createMaskMaterial } from './maskMaterials'
 
@@ -73,4 +73,17 @@ it('excludes soft atmosphere from every mask without suppressing emitters or cha
   expect(haze.visible).toBe(visible);expect(edge.material).toBe(original);expect(renderer.shadowMap.autoUpdate).toBe(true)
  }
  masks.dispose();expect(disposed).not.toHaveBeenCalled();material.dispose()
+})
+
+it('accumulates unlit Troika protection while leaving source, black and ordinary masks unchanged', () => {
+  const text = new BatchedText()
+  text.material = new MeshBasicMaterial({ color: 'white', transparent: true, depthWrite: false, toneMapped: false })
+  const source = text.material, originalBlend = source.blending, originalEquation = source.blendEquation
+  const white = createMaskMaterial(source, 1), black = createMaskMaterial(source, 0)
+  expect(white.blending).toBe(CustomBlending); expect(white.blendEquation).toBe(MaxEquation)
+  expect(black.blending).toBe(originalBlend); expect(black.blendEquation).toBe(originalEquation)
+  expect(source.blending).toBe(originalBlend); expect(source.blendEquation).toBe(originalEquation)
+  const ordinary = new MeshBasicMaterial({ toneMapped: false }), ordinaryMask = createMaskMaterial(ordinary, 1)
+  expect(ordinaryMask.blending).toBe(ordinary.blending); expect(ordinaryMask.blendEquation).toBe(ordinary.blendEquation)
+  white.dispose(); black.dispose(); ordinaryMask.dispose(); ordinary.dispose(); text.dispose()
 })

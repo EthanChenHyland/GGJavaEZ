@@ -189,3 +189,8 @@ The unchanged explicit-GC generated method reruns all three raw targets and both
 The largest Flow index delta is 1,814,696 bytes lower (30.8%); total presentation delta is 1,683,800 bytes lower (4.69%). These single-construction process deltas do not establish statistical confidence or isolated object bytes. Single-event scaling passes at 1.05977 against 2. The test executes 1/1 with zero skips, completes every stage, and exits 1 at the three unchanged memory-budget failures. Raw reports and the exact comparison are in `perf-flow-catalog-compact-modern/` and `flow-catalog-compact-memory-comparison.json` under the QA evidence directory.
 
 The 06695fc actual Dense/quality/rich results above keep their original source boundary; no new browser command latency, GPU or Cinematic claim is made for this internal-index checkpoint. Build artifacts independently pass at 71,763 main-entry gzip bytes, entry/Shell static sums 72,191 / 669,231 diagnostic bytes, with Monaco/Cinematic separate. Seek p50, Focus, presentation retention and whole-product approval remain OPEN.
+
+
+## Glyph coverage fix boundary — 2026-10-22
+
+The mask blend correction adds no passes or render targets. Actual build: main-entry 71,763 gzip bytes; entry/Shell static closure diagnostics 72,191 / 669,274. Native render-probe lifecycle smoke passes with actual GPU queries and no lifecycle errors; it does not approve Dense sustained rendering or GPU budgets. Earlier Dense/memory results retain their original source boundaries and failures. [Evidence and limits](migration/unlit-output.md#preserve-face-coverage-under-glyphs--2026-10-22).
