@@ -199,3 +199,8 @@ The mask blend correction adds no passes or render targets. Actual build: main-e
 ## Forensic footprint boundary — 2026-10-22
 
 Camera-aware structural evidence reuses the existing body/face/outline and text batch without adding passes or render targets. Current main-entry gzip is 71,764 bytes; entry/Shell closure diagnostics are 72,192 / 670,068. Ordinary Home/Hero/Follow outputs match the parent in 1,325 comparisons. This correctness evidence is not fresh Dense, retained-memory or sustained GPU-budget approval; earlier failures retain their source boundaries. [Implementation and limits](migration/forensic.md#readable-structural-evidence--2026-10-22).
+
+
+## Inline ordinal histories — 2026-10-22
+
+The unchanged serial generated probe observes largest projector retention 9,612,680 → 8,794,320 bytes and complete presentation 34,011,128 → 33,220,784 bytes. All three unchanged 0.25 ratios still FAIL; LINE scaling passes at 1.08694 against 2. This single pair is not statistical, JVM, WebGL or Dense latency approval. [Source boundaries, all sizes and limits](migration/slot-history.md#inline-ordinal-histories--2026-10-22).

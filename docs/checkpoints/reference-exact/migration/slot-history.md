@@ -23,3 +23,24 @@ Affected native checks pass **7/7**, zero skips,37.8seconds (`browser-slot-histo
 Two separate actual-JVM comparable-state cases pass **2/2**,30.4seconds, with four native/1728 captures and no numerical layout misses. Their existing native-resize re-Focus step is moved from an absent contextual card button to the explicit registered Focus Selection command; the90-second limits, runtime checks and capture thresholds remain. Four archived originals in `focus-native-capture-context-confirmed-captures/` are hash-bound to their two session IDs and reviewed by the lead at original size against best.png. Review remains **OPEN** for Source/Inspector overlap, excessive wire glow, opaque fronts, weak reflected grounding and cramped/truncated row text. This is not the complete80-session96-capture matrix. The initial incorrectly anchored focused grep discovered zero tests and exited1; `browser-focus-native-capture-context.log` is retained, never counted as validation. The corrected inventory lists exactly2 before execution.
 
 No whole-product milestone is approved. Remaining memory/latency, visual convergence, old-source/browser cleanup and final A–G gates remain open.
+
+
+## Inline ordinal histories — 2026-10-22
+
+Private slot observations and owner changes now keep an empty history as `undefined`, a singleton as a number, and repeated observations as the same ordered list. Every ordinal, including repeats, survives. The strict-before cursor rule, caught-exception clearing and complete public scene outputs are unchanged. RuntimeSlot timestamps are deliberately not substituted: a rejected diagnostic loses changed-at evidence in all 33 checked workloads. Only `src/world/sceneProjector.ts` changes production code; no existing test, schema, reducer, layout, camera or rendering owner changes.
+
+Exact comparisons against 7c64b26 pass 32,794 complete scenes over 6,603 append batches, using one saved actual Dense JVM trace, 32 generated workloads and four curated fixtures. That corpus has no caught prefixes, so a separate finally/catch/continuation fixture checks 119 complete scenes, including five caught and ten cleared prefixes and captured parameters without slot timestamps. Inputs remain unchanged. These are saved/protocol comparisons, not fresh JVM executions.
+
+Full defaults pass 2,155 cases with 70 existing opt-in skips (2,225 total), 233 files, 175.01 seconds. Typechecks, lint, build, reference integrity and protected-source checks pass. All 948 source hashes remain stable through validation/native capture; fingerprint `f8b804b5b0154672116c81ef98a359b29c78b78b2ca742301b423579a357f65b`. Build main-entry gzip is 71,761 bytes; entry/Shell static closures are 72,189 / 670,151 diagnostic bytes. AST inventory: 667 tracked modules, 2,324 literal edges, 259 production-reachable modules, no retirement targets, 35 nonliteral imports.
+
+Native checks pass 21/21, zero skips/failures/flaky, 139.393 seconds. Eight distinct attached actual JVM IDs plus the verified recovery annotation identify nine known IDs; curated array cases are not actual JVM runs. Hero/Focus, historical bindings, collection/array picking, retired locals, scopes, provenance, Inspector and hardware Cinematic forensic evidence pass. All thirteen originals in `.ggjavaez/qa/reference-exact/ordinal-history-captures/` are hash-bound and root-reviewed against best.png. Small/cutoff text, dominant glow/crossings, matte fronts, flat Cinematic sides, dense grid, weak reflections and clipped context remain OPEN.
+
+Two serial runs of the unchanged explicit-GC generated Node probe complete all stages, each 1/1 executed with zero skips, and both exit 1 at the unchanged 0.25 presentation/semantic budget. Digests and graph counts match. The after probe precedes only the final comment clarification; executable code is identical.
+
+| Actual raw / normalized records | Projector before / after bytes | Presentation before / after bytes | After ratio | Budget result |
+| --- | ---: | ---: | ---: | --- |
+| 208 / 367 | 177,616 / 165,704 | 1,620,784 / 1,618,480 | 1.74399 | FAIL |
+| 5,024 / 8,875 | 2,107,752 / 1,898,368 | 8,884,112 / 8,682,656 | 0.69754 | FAIL |
+| 20,018 / 35,346 | 9,612,680 / 8,794,320 | 34,011,128 / 33,220,784 | 0.59554 | FAIL |
+
+The largest pair observes 818,360 fewer projector bytes (8.5%) and 790,344 fewer complete presentation bytes (2.3%); these process deltas establish neither statistical confidence nor isolated allocation sizes. LINE scaling passes at 1.08694 against 2. Generated retention/scaling evidence does not replace actual Dense latency, WebGL/GPU or sustained rendering. Earlier Dense seek p50/Focus failures retain their own source boundary. Whole A–G acceptance remains OPEN. Raw reports, exact proofs, rejected diagnostic, source snapshot and checksums are retained in `.ggjavaez/qa/reference-exact/ordinal-history-evidence.json` and its referenced files.

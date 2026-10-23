@@ -295,3 +295,8 @@ Full defaults pass 2,152 / 2,222 with 70 existing opt-in skips, 232 files, 186.7
 ## Forensic readability — 2026-10-22
 
 Full defaults: 2,155 passed / 70 existing opt-in skips, 233 files, 189.63 seconds. All existing tests retain their bytes; 156 focused cases and 1,325 exact parent camera-output comparisons pass. Build/typechecks/lint/reference/protected checks pass on 948 hash-bound source files. Native 35/35, zero skips/failures/flaky, 212.219 seconds, twenty-seven attached actual JVM IDs plus verified recovery. Actual screenshot ink, minimum font size, bounds, non-overlap and hardware Cinematic checks pass. A prior size-only candidate is retained as a visual failure due to floor occlusion. All twenty final originals are root-reviewed. [Evidence and limitations](migration/forensic.md#readable-structural-evidence--2026-10-22). Whole A–G acceptance remains OPEN.
+
+
+## Inline ordinal histories — 2026-10-22
+
+Full defaults: 2,155 passed / 70 existing opt-in skips, 233 files, 175.01 seconds. Build/typechecks/lint/reference/protected checks pass on 948 source hashes. Exact parent comparisons pass 32,794 complete scenes plus 119 catch/continuation scenes. Native 21/21, zero skips/failures/flaky, 139.393 seconds, eight attached JVM IDs plus recovery; curated arrays are counted separately. Memory budgets and whole A–G acceptance remain OPEN. [Evidence and limitations](migration/slot-history.md#inline-ordinal-histories--2026-10-22).

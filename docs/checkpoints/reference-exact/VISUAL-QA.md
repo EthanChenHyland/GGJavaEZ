@@ -91,3 +91,8 @@ Nineteen original-size captures are archived, source/report-bound and root-revie
 ## Readable forensic panel — 2026-10-22
 
 All twenty originals from the 35-case native run are archived, source/report-bound and root-reviewed against the unchanged exception sheet and earlier blank/floor-occluded views. Captured class/message/captions are visible above the floor in Home and terminal failure; all seven lines retain at least 12 px and visible screenshot ink in the five Home viewports and hardware Cinematic. Runtime text, glow, glass depth, grid/reflection response and clipped context remain OPEN. [Failed candidate, evidence and limits](migration/forensic.md#readable-structural-evidence--2026-10-22). This is a targeted set, not a new full matrix or whole-product visual approval.
+
+
+## Inline ordinal histories — 2026-10-22
+
+All thirteen originals from the 21-case native run are archived, source/report-bound and root-reviewed against best.png: Hero/Focus, terminal failure, Home/Cinematic forensic text, two arrays, four historical/flow views and two retired-local views. No intended visual change. Small/cutoff text, dominant glow, matte fronts, flat Cinematic sides, dense grid, weak reflections and clipped context remain OPEN. [Evidence](migration/slot-history.md#inline-ordinal-histories--2026-10-22). This targeted set does not replace the full matrix or whole-product visual gate.

@@ -26,16 +26,29 @@ export interface SceneProjector {
   project(state: RuntimeState, layout: LayoutState, context: ProjectionContext): SceneModel
 }
 
-// Admission and local ordering need only the first assignment/write. Keep the
-// observation sequence for exact changed-at evidence through arbitrary seeks.
-interface SlotHistory { introduced: number; firstAssignment: number; observations: number[]; firstWrite: number }
-interface OwnerHistory { introduced: number; changes: number[]; sources: { seq: number; source: SourceLocation }[]; slots: Map<string, SlotHistory>; invocationNumber: number }
+// Admission/local ordering need the first assignment/write. Retain every
+// observation ordinal for exact seek evidence; keep singletons inline and
+// allocate a list only when observations repeat.
+type OrdinalHistory = number | number[] | undefined
+interface SlotHistory { introduced: number; firstAssignment: number; observations: OrdinalHistory; firstWrite: number }
+interface OwnerHistory { introduced: number; changes: OrdinalHistory; sources: { seq: number; source: SourceLocation }[]; slots: Map<string, SlotHistory>; invocationNumber: number }
 interface CachedNode<T> { anchor: WorldAnchor; signature: string; dependencies: readonly (RuntimeObject | undefined)[]; node: T }
 interface LineSummary { breaks: number; partial: boolean; pendingCR: boolean; current: string; last: string; first: string; changed: string }
 type Channels = Map<SceneIo['id'], LineSummary>
 const unavailable = (reason: string): Evidence => ({ kind: 'unavailable', introducedSeq: null, changedSeq: null, eventIds: [], unavailableReason: reason })
 
-function lastBefore(values: readonly number[], cursor: number): number | null {
+function appendOrdinal(values: OrdinalHistory, ordinal: number): OrdinalHistory {
+  if (values === undefined) return ordinal
+  if (typeof values === 'number') return [values, ordinal]
+  values.push(ordinal)
+  return values
+}
+function ordinalValues(values: OrdinalHistory): readonly number[] {
+  return values === undefined ? [] : typeof values === 'number' ? [values] : values
+}
+function lastBefore(values: number | readonly number[] | undefined, cursor: number): number | null {
+  if (values === undefined) return null
+  if (typeof values === 'number') return values < cursor ? values : null
   let low = 0, high = values.length
   while (low < high) { const mid = (low + high) >>> 1; if (values[mid] < cursor) low = mid + 1; else high = mid }
   return low ? values[low - 1] : null
@@ -171,21 +184,21 @@ export function createSceneProjector(trace: TraceDocument): SceneProjector {
 
   function owner(id: string, seq: number): OwnerHistory {
     let value = owners.get(id)
-    if (!value) { value = { introduced: seq, changes: [], sources: [], slots: new Map(), invocationNumber: 0 }; owners.set(id, value) }
+    if (!value) { value = { introduced: seq, changes: undefined, sources: [], slots: new Map(), invocationNumber: 0 }; owners.set(id, value) }
     return value
   }
   function observeSlot(id: string, slot: RuntimeSlot, seq: number, written: boolean, assigned = written) {
     const history = owner(id, seq)
     let record = history.slots.get(slot.id)
-    if (!record) { record = { introduced: seq, firstAssignment: Infinity, observations: [], firstWrite: Infinity }; history.slots.set(slot.id, record) }
+    if (!record) { record = { introduced: seq, firstAssignment: Infinity, observations: undefined, firstWrite: Infinity }; history.slots.set(slot.id, record) }
     slotOwners.set(slot.id, id)
-    record.observations.push(seq)
+    record.observations = appendOrdinal(record.observations, seq)
     if (written) record.firstWrite = Math.min(record.firstWrite, seq)
     if (assigned && slot.value.kind !== 'uninitialized') record.firstAssignment = Math.min(record.firstAssignment, seq)
   }
   function updateSlot(id: string, slotId: string, seq: number, written = true) {
     const record = owner(id, seq).slots.get(slotId)
-    if (record) { record.observations.push(seq); if (written) record.firstWrite = Math.min(record.firstWrite, seq); record.firstAssignment = Math.min(record.firstAssignment, seq) }
+    if (record) { record.observations = appendOrdinal(record.observations, seq); if (written) record.firstWrite = Math.min(record.firstWrite, seq); record.firstAssignment = Math.min(record.firstAssignment, seq) }
   }
   function eventOwners(event: TraceEvent, graph?: ExecutionGraph): Set<string> {
     const result = new Set<string>()
@@ -219,7 +232,7 @@ export function createSceneProjector(trace: TraceDocument): SceneProjector {
       byEvent.set(event.eventId, event)
       for (const id of eventOwners(event)) {
         const history = owner(id, event.seq)
-        history.changes.push(event.seq)
+        history.changes = appendOrdinal(history.changes, event.seq)
       }
       const frameId = 'frameId' in event ? event.frameId : event.type === 'EXECUTION_FACT' ? event.fact.context.frameId : null
       if (frameId && event.source) owner(frameId, event.seq).sources.push({ seq: event.seq, source: event.source })
@@ -452,7 +465,7 @@ export function createSceneProjector(trace: TraceDocument): SceneProjector {
     if (!fact) return null
     const seq = seqOf(fact.eventId, state.cursor)
     if (seq === null) return null
-    if(fact.caughtBy){const caught=lastBefore(owners.get(fact.caughtBy)?.changes.filter(index=>events[index].type==='CATCH_EXCEPTION'&& (events[index] as Extract<TraceEvent,{type:'CATCH_EXCEPTION'}>).exceptionId===fact.exceptionId)??[],state.cursor);if(caught!==null&&state.cursor>caught+1)return null}
+    if(fact.caughtBy){const caught=lastBefore(ordinalValues(owners.get(fact.caughtBy)?.changes).filter(index=>events[index].type==='CATCH_EXCEPTION'&& (events[index] as Extract<TraceEvent,{type:'CATCH_EXCEPTION'}>).exceptionId===fact.exceptionId)??[],state.cursor);if(caught!==null&&state.cursor>caught+1)return null}
     const ids = [fact.eventId]
     // Retain recorded unwind/catch graph evidence by identity, including opaque crossings.
     const graph = state.executionGraph

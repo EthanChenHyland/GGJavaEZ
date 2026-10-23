@@ -242,3 +242,8 @@ White unlit Troika masks accumulate coverage with MAX blending so antialiased gl
 ## Camera-aware forensic evidence — 2026-10-22
 
 The structural exception panel shares one camera-aware footprint between rendering and Hero/Home/Follow fitting. It grows left/up to preserve readable captured text, keeping the right/bottom edges, depth, runtime anchors and semantic identity fixed. Existing rounded geometry and the shared text batch are updated in place. The runtime layout and captured-content model are unchanged. [Ownership, bounded fallback and proof](migration/forensic.md#readable-structural-evidence--2026-10-22).
+
+
+## Inline ordinal histories — 2026-10-22
+
+Private observation/change histories store singleton ordinals inline, promoting only on repetition. All ordinals and strict-before evidence remain intact; runtime timestamps are not interchangeable. Only the projector changes. [Ownership and exact scene comparisons](migration/slot-history.md#inline-ordinal-histories--2026-10-22).
