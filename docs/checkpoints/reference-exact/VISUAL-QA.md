@@ -101,3 +101,8 @@ All thirteen originals from the 21-case native run are archived, source/report-b
 ## Canonical source-event ordinals — 2026-10-22
 
 Thirteen originals from the 21-case native run are archived and hash-bound. Four are opened by the lead against best.png: Hero, Focus, hardware Cinematic forensic evidence and narrow historical binding. The remaining nine are archived, not root-approved. No intended visual change; cutoff text, excessive glow, matte fronts, flat Cinematic sides, dense grid, weak reflections and clipped context remain OPEN. [Evidence](migration/slot-history.md#canonical-source-event-ordinals--2026-10-22). This does not replace the full matrix.
+
+
+## Visible recording/liveness badges — 2026-10-23
+
+Forty-three original-size captures are archived and hash-bound. The lead opens ten: all seven changed-source partial Header states, Hero, Focus and wide orbit contrast. Partial recording and Process alive are visibly present at 12 px; the four-line status fits inside even the 56 px short Header. Full long reasons and narrow source-change captions still ellipsize; World grid/glow/materials/clipping remain OPEN. The other thirty-three captures are not root-approved. [Native RED, corrected regressions and limits](migration/header-controls.md#visible-independent-recordingliveness-facts--2026-10-23). This is not full-matrix approval.

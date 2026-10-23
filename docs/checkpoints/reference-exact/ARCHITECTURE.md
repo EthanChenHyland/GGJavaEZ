@@ -252,3 +252,8 @@ Private observation/change histories store singleton ordinals inline, promoting 
 ## Canonical source-event ordinals — 2026-10-22
 
 Owner source histories retain ordinal references into the accepted event catalog, removing per-observation wrapper objects while preserving the same captured locations and cursor boundary. Only the private projector index changes. [Exact comparisons and ownership](migration/slot-history.md#canonical-source-event-ordinals--2026-10-22).
+
+
+## Visible recording/liveness badges — 2026-10-23
+
+The Header now renders independent AppState badges beneath its primary label, deduplicating only facts already present there. Existing derived state, lifecycle/commands, source-change status and full title remain unchanged. Production scope is the status component and Header stylesheet. [Native RED and ownership](migration/header-controls.md#visible-independent-recordingliveness-facts--2026-10-23).

@@ -209,3 +209,8 @@ The unchanged serial generated probe observes largest projector retention 9,612,
 ## Canonical source-event ordinals — 2026-10-22
 
 The unchanged generated probe observes largest projector retention 8,800,016 → 7,729,728 bytes and complete presentation 33,284,360 → 32,128,344. All three 0.25 ratios still FAIL; LINE scaling passes at 1.09919 against 2. The smallest presentation delta increases; no universal/statistical or fresh Dense/GPU claim is made. A spatial-bucket candidate is rejected for no useful measured gain. [All sizes and source boundaries](migration/slot-history.md#canonical-source-event-ordinals--2026-10-22).
+
+
+## Visible recording/liveness badges — 2026-10-23
+
+Small actual-JVM timing passes at three sizes: native Run pointerup → Building 59.8–68 ms; observed lifecycle store → Header commit 6.7–12.4 ms, against 100 ms. This is not global/Dense timing approval. The unchanged generated retention ratios remain 1.76615 / 0.67571 / 0.57739, all FAIL 0.25; optional heap attribution follows the fixed checkpoint. Build main-entry 71,761 gzip bytes, Shell closure 670,171 diagnostic bytes. [Methods and boundaries](migration/header-controls.md#visible-independent-recordingliveness-facts--2026-10-23).

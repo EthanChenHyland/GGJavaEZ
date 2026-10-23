@@ -305,3 +305,8 @@ Full defaults: 2,155 passed / 70 existing opt-in skips, 233 files, 175.01 second
 ## Canonical source-event ordinals — 2026-10-22
 
 Full defaults: 2,155 passed / 70 existing opt-in skips, 233 files, 176.47 seconds. Build/typechecks/lint/reference/protected checks pass on 948 stable source hashes. Exact parent comparisons pass 32,794 scenes plus 119 catch/continuation scenes. Native 21/21, zero skips/failures/flaky, 139.227 seconds, eight attached JVM IDs plus recovery; curated arrays counted separately. Four of thirteen archived originals are root-reviewed. Retention, visual and whole A–G gates remain OPEN. [Evidence and rejected candidate](migration/slot-history.md#canonical-source-event-ordinals--2026-10-22).
+
+
+## Visible recording/liveness badges — 2026-10-23
+
+Full defaults: 2,156 passed / 70 existing opt-in skips, 233 files, 180.75 seconds. Build/typechecks/lint/reference/protected checks pass on 949 stable source hashes. Native 30/30, zero skips/failures/flaky, 140.784 seconds, sixteen attached actual JVM IDs. Seven badge viewports include source edits and real input/Stop after recording stops. Separate lifecycle timing passes 3/3. Ten of forty-three originals are root-reviewed. Diagnostic fixture/drawer errors are retained separately. [Evidence and remaining gates](migration/header-controls.md#visible-independent-recordingliveness-facts--2026-10-23). Whole A–G acceptance remains OPEN.
