@@ -204,3 +204,8 @@ Camera-aware structural evidence reuses the existing body/face/outline and text 
 ## Inline ordinal histories — 2026-10-22
 
 The unchanged serial generated probe observes largest projector retention 9,612,680 → 8,794,320 bytes and complete presentation 34,011,128 → 33,220,784 bytes. All three unchanged 0.25 ratios still FAIL; LINE scaling passes at 1.08694 against 2. This single pair is not statistical, JVM, WebGL or Dense latency approval. [Source boundaries, all sizes and limits](migration/slot-history.md#inline-ordinal-histories--2026-10-22).
+
+
+## Canonical source-event ordinals — 2026-10-22
+
+The unchanged generated probe observes largest projector retention 8,800,016 → 7,729,728 bytes and complete presentation 33,284,360 → 32,128,344. All three 0.25 ratios still FAIL; LINE scaling passes at 1.09919 against 2. The smallest presentation delta increases; no universal/statistical or fresh Dense/GPU claim is made. A spatial-bucket candidate is rejected for no useful measured gain. [All sizes and source boundaries](migration/slot-history.md#canonical-source-event-ordinals--2026-10-22).

@@ -300,3 +300,8 @@ Full defaults: 2,155 passed / 70 existing opt-in skips, 233 files, 189.63 second
 ## Inline ordinal histories — 2026-10-22
 
 Full defaults: 2,155 passed / 70 existing opt-in skips, 233 files, 175.01 seconds. Build/typechecks/lint/reference/protected checks pass on 948 source hashes. Exact parent comparisons pass 32,794 complete scenes plus 119 catch/continuation scenes. Native 21/21, zero skips/failures/flaky, 139.393 seconds, eight attached JVM IDs plus recovery; curated arrays are counted separately. Memory budgets and whole A–G acceptance remain OPEN. [Evidence and limitations](migration/slot-history.md#inline-ordinal-histories--2026-10-22).
+
+
+## Canonical source-event ordinals — 2026-10-22
+
+Full defaults: 2,155 passed / 70 existing opt-in skips, 233 files, 176.47 seconds. Build/typechecks/lint/reference/protected checks pass on 948 stable source hashes. Exact parent comparisons pass 32,794 scenes plus 119 catch/continuation scenes. Native 21/21, zero skips/failures/flaky, 139.227 seconds, eight attached JVM IDs plus recovery; curated arrays counted separately. Four of thirteen archived originals are root-reviewed. Retention, visual and whole A–G gates remain OPEN. [Evidence and rejected candidate](migration/slot-history.md#canonical-source-event-ordinals--2026-10-22).

@@ -247,3 +247,8 @@ The structural exception panel shares one camera-aware footprint between renderi
 ## Inline ordinal histories — 2026-10-22
 
 Private observation/change histories store singleton ordinals inline, promoting only on repetition. All ordinals and strict-before evidence remain intact; runtime timestamps are not interchangeable. Only the projector changes. [Ownership and exact scene comparisons](migration/slot-history.md#inline-ordinal-histories--2026-10-22).
+
+
+## Canonical source-event ordinals — 2026-10-22
+
+Owner source histories retain ordinal references into the accepted event catalog, removing per-observation wrapper objects while preserving the same captured locations and cursor boundary. Only the private projector index changes. [Exact comparisons and ownership](migration/slot-history.md#canonical-source-event-ordinals--2026-10-22).

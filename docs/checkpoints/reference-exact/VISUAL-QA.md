@@ -96,3 +96,8 @@ All twenty originals from the 35-case native run are archived, source/report-bou
 ## Inline ordinal histories — 2026-10-22
 
 All thirteen originals from the 21-case native run are archived, source/report-bound and root-reviewed against best.png: Hero/Focus, terminal failure, Home/Cinematic forensic text, two arrays, four historical/flow views and two retired-local views. No intended visual change. Small/cutoff text, dominant glow, matte fronts, flat Cinematic sides, dense grid, weak reflections and clipped context remain OPEN. [Evidence](migration/slot-history.md#inline-ordinal-histories--2026-10-22). This targeted set does not replace the full matrix or whole-product visual gate.
+
+
+## Canonical source-event ordinals — 2026-10-22
+
+Thirteen originals from the 21-case native run are archived and hash-bound. Four are opened by the lead against best.png: Hero, Focus, hardware Cinematic forensic evidence and narrow historical binding. The remaining nine are archived, not root-approved. No intended visual change; cutoff text, excessive glow, matte fronts, flat Cinematic sides, dense grid, weak reflections and clipped context remain OPEN. [Evidence](migration/slot-history.md#canonical-source-event-ordinals--2026-10-22). This does not replace the full matrix.

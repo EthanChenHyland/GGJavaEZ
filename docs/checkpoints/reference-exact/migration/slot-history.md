@@ -44,3 +44,28 @@ Two serial runs of the unchanged explicit-GC generated Node probe complete all s
 | 20,018 / 35,346 | 9,612,680 / 8,794,320 | 34,011,128 / 33,220,784 | 0.59554 | FAIL |
 
 The largest pair observes 818,360 fewer projector bytes (8.5%) and 790,344 fewer complete presentation bytes (2.3%); these process deltas establish neither statistical confidence nor isolated allocation sizes. LINE scaling passes at 1.08694 against 2. Generated retention/scaling evidence does not replace actual Dense latency, WebGL/GPU or sustained rendering. Earlier Dense seek p50/Focus failures retain their own source boundary. Whole A–G acceptance remains OPEN. Raw reports, exact proofs, rejected diagnostic, source snapshot and checksums are retained in `.ggjavaez/qa/reference-exact/ordinal-history-evidence.json` and its referenced files.
+
+
+## Canonical source-event ordinals — 2026-10-22
+
+Owner source histories now retain accepted source-event ordinals rather than separate `{seq, source}` wrapper objects. The accepted append-only event catalog owns captured locations. The same strict-before lookup resolves the captured location at the selected cursor; no source is inferred from runtime slot timestamps. Only `src/world/sceneProjector.ts` changes production code. Existing tests, imports, runtime/backend contracts, layout, camera and rendering stay byte-identical.
+
+Exact parent comparisons against ecf60be pass 32,794 complete scenes over 6,603 append batches on the saved actual Dense trace, 32 generated workloads and four curated fixtures. A separate catch/finally fixture passes 119 complete scenes (five caught, ten cleared prefixes), retaining evidence for captured parameters with missing slot timestamps. All inputs remain unchanged. The after-memory probe and parent comparison precede only the final explanatory comment; executable code is identical.
+
+Full defaults pass 2,155 / 2,225 with 70 existing opt-in skips, 233 files, 176.47 seconds. Typechecks, lint, build, references and protected-source checks pass. All 948 source hashes remain stable during validation and native execution; fingerprint `3e2014b27626afe852d941a8fa9542c17f2e5672dce641179eefd3b10e3a4fea`. Build main-entry gzip: 71,761 bytes; entry/Shell closure diagnostics 72,189 / 670,116. AST: 667 tracked modules, 2,324 literal edges, 259 production-reachable, no retirement targets, 35 nonliteral imports.
+
+Native 21/21, zero skips/failures/flaky, 139.227 seconds: eight attached actual JVM IDs plus the verified recovery execution identify nine known IDs. Curated array cases remain separately classified. Replay, array/collection picking, history, retired locals, scopes, provenance, source/Inspector and hardware Cinematic forensic checks pass. Thirteen originals are archived in `.ggjavaez/qa/reference-exact/source-ordinals-captures/`; the lead opens four (Hero, Focus, Cinematic forensic and narrow historical binding) against best.png. The other nine are archived but not root-approved. No intended visual change; existing glow, clipping, cutoff text, flat materials and weak reflection findings remain OPEN. This is not a full-matrix visual gate.
+
+The unchanged serial explicit-GC generated Node probe completes all stages, 1/1 executed and zero skips before/after; both runs exit 1 at all three retained-memory failures. The before report is `perf-occupancy-before/` from the clean ecf60be source, before the separately rejected occupancy experiment. Digests/graph counts match.
+
+| Actual raw / normalized records | Projector before / after bytes | Presentation before / after bytes | After ratio / 0.25 budget |
+| --- | ---: | ---: | --- |
+| 208 / 367 | 162,424 / 152,792 | 1,604,552 / 1,607,992 | 1.71785 FAIL |
+| 5,024 / 8,875 | 1,902,256 / 1,663,064 | 8,674,976 / 8,393,440 | 0.67999 FAIL |
+| 20,018 / 35,346 | 8,800,016 / 7,729,728 | 33,284,360 / 32,128,344 | 0.57550 FAIL |
+
+Largest observed deltas are 1,070,288 fewer projector bytes (12.2%) and 1,156,016 fewer complete presentation bytes (3.5%). The smallest presentation delta increases. These process measurements do not establish statistical confidence or universal memory reduction. Single-event scaling passes at 1.09919 against 2 (before 1.01123). Actual Dense latency, sustained GPU and final retention/whole-product gates remain OPEN; older actual browser results retain their source boundaries.
+
+A singleton spatial-bucket candidate is rejected and restored byte-for-byte to ecf60be. It matches 36,000 collision answers over 1,200 additions at three cell sizes and 6,603 complete immutable layouts, but shows no useful retention gain: largest layout delta increases 6,602,816 → 6,637,168 bytes and complete presentation 33,284,360 → 33,319,640. The rejected candidate/diff, comparison and decision remain ignored QA evidence; no optimization claim or production change is made from it.
+
+Checksums and raw evidence are indexed by `.ggjavaez/qa/reference-exact/source-ordinals-evidence.json`. Whole A–G acceptance remains OPEN.

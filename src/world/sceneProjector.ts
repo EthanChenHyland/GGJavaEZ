@@ -31,7 +31,7 @@ export interface SceneProjector {
 // allocate a list only when observations repeat.
 type OrdinalHistory = number | number[] | undefined
 interface SlotHistory { introduced: number; firstAssignment: number; observations: OrdinalHistory; firstWrite: number }
-interface OwnerHistory { introduced: number; changes: OrdinalHistory; sources: { seq: number; source: SourceLocation }[]; slots: Map<string, SlotHistory>; invocationNumber: number }
+interface OwnerHistory { introduced: number; changes: OrdinalHistory; sources: OrdinalHistory; slots: Map<string, SlotHistory>; invocationNumber: number }
 interface CachedNode<T> { anchor: WorldAnchor; signature: string; dependencies: readonly (RuntimeObject | undefined)[]; node: T }
 interface LineSummary { breaks: number; partial: boolean; pendingCR: boolean; current: string; last: string; first: string; changed: string }
 type Channels = Map<SceneIo['id'], LineSummary>
@@ -184,7 +184,7 @@ export function createSceneProjector(trace: TraceDocument): SceneProjector {
 
   function owner(id: string, seq: number): OwnerHistory {
     let value = owners.get(id)
-    if (!value) { value = { introduced: seq, changes: undefined, sources: [], slots: new Map(), invocationNumber: 0 }; owners.set(id, value) }
+    if (!value) { value = { introduced: seq, changes: undefined, sources: undefined, slots: new Map(), invocationNumber: 0 }; owners.set(id, value) }
     return value
   }
   function observeSlot(id: string, slot: RuntimeSlot, seq: number, written: boolean, assigned = written) {
@@ -235,7 +235,7 @@ export function createSceneProjector(trace: TraceDocument): SceneProjector {
         history.changes = appendOrdinal(history.changes, event.seq)
       }
       const frameId = 'frameId' in event ? event.frameId : event.type === 'EXECUTION_FACT' ? event.fact.context.frameId : null
-      if (frameId && event.source) owner(frameId, event.seq).sources.push({ seq: event.seq, source: event.source })
+      if (frameId && event.source) { const history = owner(frameId, event.seq); history.sources = appendOrdinal(history.sources, event.seq) }
       switch (event.type) {
         case 'ENTER_METHOD': {
           const history = owner(event.frameId, event.seq)
@@ -297,11 +297,10 @@ export function createSceneProjector(trace: TraceDocument): SceneProjector {
     const history = owners.get(ownerId)?.slots.get(slot.id)
     return evidence(history?.introduced ?? seqOf(slot.observedAt, cursor), history ? lastBefore(history.observations, cursor) : seqOf(slot.changedAt ?? slot.observedAt, cursor), cursor)
   }
+  // Accepted events own captured locations; histories retain only their ordinals.
   function sourceAt(id: string, cursor: number): SourceLocation | null {
-    const sources = owners.get(id)?.sources ?? []
-    let low = 0, high = sources.length
-    while (low < high) { const mid = (low + high) >>> 1; if (sources[mid].seq < cursor) low = mid + 1; else high = mid }
-    return low ? sources[low - 1].source : null
+    const seq = lastBefore(owners.get(id)?.sources, cursor)
+    return seq === null ? null : events[seq].source
   }
   function row(slot: RuntimeSlot, role: SceneRow['role'], id: string, state: RuntimeState, anchor: WorldAnchor): SceneRow {
     return { slotId: slot.id, name: slot.name, type: displayType(slot.javaType), role,
