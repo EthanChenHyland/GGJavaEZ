@@ -257,3 +257,8 @@ Owner source histories retain ordinal references into the accepted event catalog
 ## Visible recording/liveness badges — 2026-10-23
 
 The Header now renders independent AppState badges beneath its primary label, deduplicating only facts already present there. Existing derived state, lifecycle/commands, source-change status and full title remain unchanged. Production scope is the status component and Header stylesheet. [Native RED and ownership](migration/header-controls.md#visible-independent-recordingliveness-facts--2026-10-23).
+
+
+## Compact forward dependencies — 2026-10-23
+
+Forward target dependencies omit empty entries and keep single targets inline, promoting only for distinct targets. Reverse invalidation remains exact through duplicate bindings, clearing and rebinding; empty incoming buckets are removed. Public/runtime/backend/camera/rendering contracts remain unchanged. [Heap evidence and exact parent/heap-owner checks](migration/slot-history.md#compact-forward-dependency-targets--2026-10-23).

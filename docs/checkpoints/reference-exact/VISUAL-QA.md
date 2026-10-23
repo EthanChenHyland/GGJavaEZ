@@ -106,3 +106,8 @@ Thirteen originals from the 21-case native run are archived and hash-bound. Four
 ## Visible recording/liveness badges — 2026-10-23
 
 Forty-three original-size captures are archived and hash-bound. The lead opens ten: all seven changed-source partial Header states, Hero, Focus and wide orbit contrast. Partial recording and Process alive are visibly present at 12 px; the four-line status fits inside even the 56 px short Header. Full long reasons and narrow source-change captions still ellipsize; World grid/glow/materials/clipping remain OPEN. The other thirty-three captures are not root-approved. [Native RED, corrected regressions and limits](migration/header-controls.md#visible-independent-recordingliveness-facts--2026-10-23). This is not full-matrix approval.
+
+
+## Compact forward dependencies — 2026-10-23
+
+Thirteen original-size images from the 27-case native run are archived and source/report-bound. The lead opens Hero, Focus, hardware Cinematic forensic and narrow historical binding against best.png. Other nine are archived, not root-approved. This private-index change introduces no intended visual change; prior typography, glow, matte fronts, grid/reflection and clipping findings remain OPEN. [Source-bound evidence](migration/slot-history.md#compact-forward-dependency-targets--2026-10-23). No full-matrix approval is inferred.

@@ -214,3 +214,8 @@ The unchanged generated probe observes largest projector retention 8,800,016 →
 ## Visible recording/liveness badges — 2026-10-23
 
 Small actual-JVM timing passes at three sizes: native Run pointerup → Building 59.8–68 ms; observed lifecycle store → Header commit 6.7–12.4 ms, against 100 ms. This is not global/Dense timing approval. The unchanged generated retention ratios remain 1.76615 / 0.67571 / 0.57739, all FAIL 0.25; optional heap attribution follows the fixed checkpoint. Build main-entry 71,761 gzip bytes, Shell closure 670,171 diagnostic bytes. [Methods and boundaries](migration/header-controls.md#visible-independent-recordingliveness-facts--2026-10-23).
+
+
+## Compact forward dependencies — 2026-10-23
+
+The unchanged comparable generated probes observe largest presentation retention 32,208,832 → 31,755,920 bytes (1.4% lower in this pair). Every 0.25 ratio still FAILS; LINE scaling passes 1.24307 against 2. Heap census confirms measured empty/singleton forward Sets are absent; shallow container counts are not dominator retention. An unprofiled after run is retained separately. [All sizes, source boundary and limits](migration/slot-history.md#compact-forward-dependency-targets--2026-10-23). Actual Dense failures remain OPEN.

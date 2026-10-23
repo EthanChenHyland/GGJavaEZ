@@ -32,6 +32,9 @@ export interface SceneProjector {
 type OrdinalHistory = number | number[] | undefined
 interface SlotHistory { introduced: number; firstAssignment: number; observations: OrdinalHistory; firstWrite: number }
 interface OwnerHistory { introduced: number; changes: OrdinalHistory; sources: OrdinalHistory; slots: Map<string, SlotHistory>; invocationNumber: number }
+type DependencyTargets = string | ReadonlySet<string>
+const dependencyValues = (value: DependencyTargets | undefined): Iterable<string> => typeof value === 'string' ? [value] : value ?? []
+const hasDependency = (value: DependencyTargets | undefined, id: string): boolean => typeof value === 'string' ? value === id : value?.has(id) ?? false
 interface CachedNode<T> { anchor: WorldAnchor; signature: string; dependencies: readonly (RuntimeObject | undefined)[]; node: T }
 interface LineSummary { breaks: number; partial: boolean; pendingCR: boolean; current: string; last: string; first: string; changed: string }
 type Channels = Map<SceneIo['id'], LineSummary>
@@ -179,7 +182,8 @@ export function createSceneProjector(trace: TraceDocument): SceneProjector {
     refsByOwner = persistentPut(refsByOwner, node.id, values)
   }
   // Reverse dependencies keep target String/collection summaries fresh without scanning every owner.
-  const dependents = new Map<string, Set<string>>(), dependencies = new Map<string, Set<string>>()
+  // Empty forward lists need no entry; singleton targets need no Set.
+  const dependents = new Map<string, Set<string>>(), dependencies = new Map<string, DependencyTargets>()
   let returnIndex: Record<string, RuntimeState['returns'][number]> = persistentRecord({}), indexedReturns: RuntimeState['returns'] | null = null
 
   function owner(id: string, seq: number): OwnerHistory {
@@ -430,10 +434,21 @@ export function createSceneProjector(trace: TraceDocument): SceneProjector {
     referencesCache.set(node, freezeValue(result)); return result
   }
   function setDependencies(id: string, node: SceneEntity) {
-    const old = dependencies.get(id) ?? new Set<string>(), next = new Set(refs(node).map(ref => ref.targetId))
-    for (const target of old) if (!next.has(target)) dependents.get(target)?.delete(id)
-    for (const target of next) if (!old.has(target)) { const incoming = dependents.get(target) ?? new Set(); incoming.add(id); dependents.set(target, incoming) }
-    dependencies.set(id, next)
+    const old = dependencies.get(id)
+    let next: string | Set<string> | undefined
+    for (const ref of refs(node)) {
+      if (next === undefined) next = ref.targetId
+      else if (typeof next === 'string') { if (next !== ref.targetId) next = new Set([next, ref.targetId]) }
+      else next.add(ref.targetId)
+    }
+    for (const target of dependencyValues(old)) if (!hasDependency(next, target)) {
+      const incoming = dependents.get(target)
+      incoming?.delete(id)
+      if (!incoming?.size) dependents.delete(target)
+    }
+    for (const target of dependencyValues(next)) if (!hasDependency(old, target)) { const incoming = dependents.get(target) ?? new Set<string>(); incoming.add(id); dependents.set(target, incoming) }
+    if (next === undefined) dependencies.delete(id)
+    else dependencies.set(id, next)
   }
   function callLinks(state: RuntimeState): SceneModel['callLinks'] {
     const links: SceneModel['callLinks'][number][] = [], graph = state.executionGraph

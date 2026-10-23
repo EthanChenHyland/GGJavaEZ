@@ -119,3 +119,52 @@ describe('complete prefix scene catalog', () => {
     }), { numRuns: 100 })
   })
 })
+
+it('keeps duplicate and distinct reference targets fresh as bindings are removed, restored and rewound',()=>{
+const events:TraceEvent[]=[
+ {type:'PROGRAM_START'},
+ {type:'ENTER_METHOD',frameId:'main',callerFrameId:null,className:'Main',methodName:'main',locals:['a','b','c'].map(id=>({id,name:id,javaType:'String',role:'parameter',value:{kind:'null'}}))},
+ {type:'ALLOCATE_OBJECT',objectId:'A',displayId:1,className:'java.lang.String',fields:[]},
+ {type:'OBJECT_OBSERVE',objectId:'A',string:{value:'A0',length:2,truncated:false}},
+ {type:'ALLOCATE_OBJECT',objectId:'B',displayId:2,className:'java.lang.String',fields:[]},
+ {type:'OBJECT_OBSERVE',objectId:'B',string:{value:'B0',length:2,truncated:false}},
+ ...(['a','b','c'] as const).map(id=>({type:'CREATE_REFERENCE',sourceSlot:{kind:'frame',frameId:'main',slotId:id},targetObjectId:id==='c'?'B':'A',javaType:'String'})),
+ {type:'OBJECT_OBSERVE',objectId:'A',string:{value:'A1',length:2,truncated:false}},
+ {type:'CLEAR_REFERENCE',sourceSlot:{kind:'frame',frameId:'main',slotId:'a'}},
+ {type:'OBJECT_OBSERVE',objectId:'A',string:{value:'A2',length:2,truncated:false}},
+ {type:'CLEAR_REFERENCE',sourceSlot:{kind:'frame',frameId:'main',slotId:'b'}},
+ {type:'OBJECT_OBSERVE',objectId:'A',string:{value:'A3',length:2,truncated:false}},
+ {type:'CLEAR_REFERENCE',sourceSlot:{kind:'frame',frameId:'main',slotId:'c'}},
+ {type:'OBJECT_OBSERVE',objectId:'B',string:{value:'B1',length:2,truncated:false}},
+ ...(['a','b','c'] as const).map(id=>({type:'CREATE_REFERENCE',sourceSlot:{kind:'frame',frameId:'main',slotId:id},targetObjectId:id==='c'?'A':'B',javaType:'String'})),
+ {type:'OBJECT_OBSERVE',objectId:'B',string:{value:'B2',length:2,truncated:false}},
+ {type:'CLEAR_REFERENCE',sourceSlot:{kind:'frame',frameId:'main',slotId:'a'}},
+ {type:'OBJECT_OBSERVE',objectId:'B',string:{value:'B3',length:2,truncated:false}},
+ {type:'CLEAR_REFERENCE',sourceSlot:{kind:'frame',frameId:'main',slotId:'b'}},
+ {type:'OBJECT_OBSERVE',objectId:'B',string:{value:'B4',length:2,truncated:false}},
+ {type:'OBJECT_OBSERVE',objectId:'A',string:{value:'A4',length:2,truncated:false}},
+ {type:'CLEAR_REFERENCE',sourceSlot:{kind:'frame',frameId:'main',slotId:'c'}},
+ {type:'OBJECT_OBSERVE',objectId:'A',string:{value:'A5',length:2,truncated:false}},
+ {type:'EXIT_METHOD',frameId:'main'},
+ {type:'PROGRAM_END'},
+].map((event,seq)=>({...event,seq,eventId:`opaque/dependency/${seq}`,source:{fileId:'Main.java',line:1},label:'Captured statement',importance:'quiet'} as TraceEvent))
+const trace:TraceDocument={schemaVersion:2,demoId:'dependency-rebinding',sourceFiles:[{fileId:'Main.java',name:'Main.java',content:'class Main {}'}],events}
+ const layout=createLayoutEngine();layout.append(events)
+ const projector=createSceneProjector(trace),reconstructed=createSceneProjector(trace)
+ let previous=0,first:SceneModel|undefined
+ for(let cursor=0;cursor<=events.length;cursor++){
+  const scene=projector.advance(seek(trace,cursor),layout.state,events,previous,cursor,context(trace));previous=cursor
+  expect(comparable(scene)).toEqual(comparable(reconstructed.project(seek(trace,cursor),layout.state,context(trace))))
+  const frame=scene.entities.main
+  if(frame?.kind!=='frame')continue
+  const exact=(id:string)=>frame.rows.find(row=>row.slotId===id)!.value.exact
+  if(cursor===10){first=scene;expect(exact('a')).toContain('A1');expect(exact('b')).toContain('A1')}
+  if(cursor===12)expect(exact('b')).toContain('A2')
+  if(cursor===20){expect(exact('a')).toContain('B2');expect(exact('b')).toContain('B2')}
+  if(cursor===22)expect(exact('b')).toContain('B3')
+  if(cursor===25)expect(exact('c')).toContain('A4')
+ }
+ for(const cursor of[10,22,0,25,events.length,12]){const scene=projector.advance(seek(trace,cursor),layout.state,events,previous,cursor,context(trace));previous=cursor;expect(comparable(scene)).toEqual(comparable(reconstructed.project(seek(trace,cursor),layout.state,context(trace))))}
+ const original=first!.entities.main;if(original.kind!=='frame')throw new Error('Missing captured frame')
+ expect(original.rows.find(row=>row.slotId==='b')!.value.exact).toContain('A1')
+})

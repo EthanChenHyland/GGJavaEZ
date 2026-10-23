@@ -310,3 +310,8 @@ Full defaults: 2,155 passed / 70 existing opt-in skips, 233 files, 176.47 second
 ## Visible recording/liveness badges — 2026-10-23
 
 Full defaults: 2,156 passed / 70 existing opt-in skips, 233 files, 180.75 seconds. Build/typechecks/lint/reference/protected checks pass on 949 stable source hashes. Native 30/30, zero skips/failures/flaky, 140.784 seconds, sixteen attached actual JVM IDs. Seven badge viewports include source edits and real input/Stop after recording stops. Separate lifecycle timing passes 3/3. Ten of forty-three originals are root-reviewed. Diagnostic fixture/drawer errors are retained separately. [Evidence and remaining gates](migration/header-controls.md#visible-independent-recordingliveness-facts--2026-10-23). Whole A–G acceptance remains OPEN.
+
+
+## Compact forward dependencies — 2026-10-23
+
+Full defaults: 2,157 passed / 70 existing opt-in skips, 233 files, 181.98 seconds. Build/typechecks/lint/reference/protected checks pass on 949 stable source hashes. Exact parent checks pass 32,794 scenes, 119 caught/cleared scenes and 36/37 frame/heap-owner rebinding scenes; existing assertions are unchanged. Native 27/27, zero skips/failures/flaky, 157.658 seconds, eight attached actual JVM IDs plus recovery; Person/array curated cases classified separately. Four of thirteen originals are root-reviewed. [Evidence and limitations](migration/slot-history.md#compact-forward-dependency-targets--2026-10-23). Whole A–G acceptance remains OPEN.
