@@ -86,3 +86,8 @@ All 21 originals from the 29-case native run are archived, source/report-bound a
 ## Text coverage correction — 2026-10-22
 
 Nineteen original-size captures are archived, source/report-bound and root-reviewed: six Hero, six Focus, four palette, two quality and one terminal exception. Parent/new 1440×900 Focus pose, projected bounds, heading and frame-text observations match. Corrected mask coverage improves lettering, while small/cutoff text, dominant glow, matte fronts/flat Cinematic sides, weak reflections, dense grid, clipped context and blank forensic annotation remain OPEN. [Evidence](migration/unlit-output.md#preserve-face-coverage-under-glyphs--2026-10-22). This is not a new full reference matrix or visual completion.
+
+
+## Readable forensic panel — 2026-10-22
+
+All twenty originals from the 35-case native run are archived, source/report-bound and root-reviewed against the unchanged exception sheet and earlier blank/floor-occluded views. Captured class/message/captions are visible above the floor in Home and terminal failure; all seven lines retain at least 12 px and visible screenshot ink in the five Home viewports and hardware Cinematic. Runtime text, glow, glass depth, grid/reflection response and clipped context remain OPEN. [Failed candidate, evidence and limits](migration/forensic.md#readable-structural-evidence--2026-10-22). This is a targeted set, not a new full matrix or whole-product visual approval.

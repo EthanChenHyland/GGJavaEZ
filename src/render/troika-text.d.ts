@@ -12,6 +12,7 @@ declare module 'troika-three-text' {
     anchorY: string
     color: ColorRepresentation
     fillOpacity: number
+    readonly textRenderInfo: { blockBounds: readonly number[]; glyphBounds: Float32Array } | null
     material: Material
     sync(callback?: () => void): void
     dispose(): void

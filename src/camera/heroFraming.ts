@@ -3,6 +3,7 @@ import type {Rect} from '../shell/shellLayout'
 import {camera as tokens} from '../theme/tokens'
 import {anchorCorners} from '../world/anchorGeometry'
 import {exceptionPanelAnchor} from '../world/exceptionPanelPlacement'
+import {fitForensicFraming} from './forensicFraming'
 import {alignHeroBands} from './heroBands'
 import {fitToSafeFrame,frontFace,projectionCamera,screenPoint,type OrbitPose,type Size} from './projection'
 import {Vector3} from 'three'
@@ -59,5 +60,5 @@ export function heroFraming(scene:SceneModel,plan:PresentationPlan,safe:Rect,vie
  // Forensic framing retains its actual panel. Physically incompatible mandatory
  // worlds retain the truthful fit; only optional admission uses rejection.
  const clearance=[...[...plan.entities.keys()].map(id=>scene.entities[id].anchor),...plan.clusters.map(cluster=>cluster.anchor)]
- return plan.exceptionPanel?base:solveHeroFraming(scene,plan.pinned,plan.headings,heapIds,safe,viewport,false,clearance)??base
+ return plan.exceptionPanel?fitForensicFraming(points,plan.exceptionPanel,scene.recording,base,safe,viewport,(points,pose)=>fitToSafeFrame(points,{yaw:pose.yawDeg,pitch:pose.pitchDeg},safe,viewport)).pose:solveHeroFraming(scene,plan.pinned,plan.headings,heapIds,safe,viewport,false,clearance)??base
 }

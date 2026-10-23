@@ -290,3 +290,8 @@ All 16 focused cases and exact parent results for 1,278 prefixes / 31,416 API qu
 ## Glyph coverage regression — 2026-10-22
 
 Full defaults pass 2,152 / 2,222 with 70 existing opt-in skips, 232 files, 186.79 seconds. Typechecks/lint/build/integrity/protected checks pass. Native 21/21, zero skips/failures/flaky, 145.156 seconds; thirteen attached actual JVM sessions plus recovery identify fourteen distinct IDs. Byte and production half-float GPU cases preserve opaque coverage through actual glyphs; hardware Cinematic, exact eight-sample palette, context restoration/fallback and lifecycle smoke pass. All nineteen originals are root-reviewed. [Source-bound evidence and limits](migration/unlit-output.md#preserve-face-coverage-under-glyphs--2026-10-22). Visual, Dense and whole A–G gates remain OPEN.
+
+
+## Forensic readability — 2026-10-22
+
+Full defaults: 2,155 passed / 70 existing opt-in skips, 233 files, 189.63 seconds. All existing tests retain their bytes; 156 focused cases and 1,325 exact parent camera-output comparisons pass. Build/typechecks/lint/reference/protected checks pass on 948 hash-bound source files. Native 35/35, zero skips/failures/flaky, 212.219 seconds, twenty-seven attached actual JVM IDs plus verified recovery. Actual screenshot ink, minimum font size, bounds, non-overlap and hardware Cinematic checks pass. A prior size-only candidate is retained as a visual failure due to floor occlusion. All twenty final originals are root-reviewed. [Evidence and limitations](migration/forensic.md#readable-structural-evidence--2026-10-22). Whole A–G acceptance remains OPEN.

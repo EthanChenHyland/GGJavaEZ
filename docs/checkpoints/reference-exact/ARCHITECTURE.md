@@ -237,3 +237,8 @@ Flow candidates reuse the existing opaque-ID index and accepted graph ordinals; 
 ## Unlit text mask composition — 2026-10-22
 
 White unlit Troika masks accumulate coverage with MAX blending so antialiased glyphs cannot erase an opaque face beneath them. Source shaders/material ownership, depth, ordinary/black masks and render-pass/target counts remain unchanged. [Regression and compositing limits](migration/unlit-output.md#preserve-face-coverage-under-glyphs--2026-10-22).
+
+
+## Camera-aware forensic evidence — 2026-10-22
+
+The structural exception panel shares one camera-aware footprint between rendering and Hero/Home/Follow fitting. It grows left/up to preserve readable captured text, keeping the right/bottom edges, depth, runtime anchors and semantic identity fixed. Existing rounded geometry and the shared text batch are updated in place. The runtime layout and captured-content model are unchanged. [Ownership, bounded fallback and proof](migration/forensic.md#readable-structural-evidence--2026-10-22).

@@ -194,3 +194,8 @@ The 06695fc actual Dense/quality/rich results above keep their original source b
 ## Glyph coverage fix boundary — 2026-10-22
 
 The mask blend correction adds no passes or render targets. Actual build: main-entry 71,763 gzip bytes; entry/Shell static closure diagnostics 72,191 / 669,274. Native render-probe lifecycle smoke passes with actual GPU queries and no lifecycle errors; it does not approve Dense sustained rendering or GPU budgets. Earlier Dense/memory results retain their original source boundaries and failures. [Evidence and limits](migration/unlit-output.md#preserve-face-coverage-under-glyphs--2026-10-22).
+
+
+## Forensic footprint boundary — 2026-10-22
+
+Camera-aware structural evidence reuses the existing body/face/outline and text batch without adding passes or render targets. Current main-entry gzip is 71,764 bytes; entry/Shell closure diagnostics are 72,192 / 670,068. Ordinary Home/Hero/Follow outputs match the parent in 1,325 comparisons. This correctness evidence is not fresh Dense, retained-memory or sustained GPU-budget approval; earlier failures retain their source boundaries. [Implementation and limits](migration/forensic.md#readable-structural-evidence--2026-10-22).

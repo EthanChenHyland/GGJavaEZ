@@ -11,7 +11,7 @@ export function exceptionPanelFor(scene:SceneModel):PresentationPlan['exceptionP
  const position=anchor?[anchor.position[0]-anchor.size[0]/2-.8-size[0]/2,anchor.position[1],anchor.position[2]+anchor.size[2]/2-size[2]/2] as const:[-5,0,0] as const
  return{position,content}
 }
-export function exceptionPanelAnchor(panel:NonNullable<PresentationPlan['exceptionPanel']>,recording:SceneModel['recording']):WorldAnchor{
+export function exceptionPanelAnchor(panel:NonNullable<PresentationPlan['exceptionPanel']>,recording:Pick<SceneModel['recording'],'state'>):WorldAnchor{
  const size=layoutExceptionPanel(buildExceptionPanelModel(panel.content,recording.state)).size
  return{entityId:'structural:exception-panel',region:'stack',position:panel.position,size,ports:{},bodyPort:panel.position}
 }

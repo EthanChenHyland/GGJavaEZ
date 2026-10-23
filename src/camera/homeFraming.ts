@@ -1,6 +1,8 @@
 import type {PresentationPlan,SceneModel,Vec3,LayoutState} from '../contracts/world'
 import type {Rect} from '../shell/shellLayout'
 import {exceptionPanelAnchor} from '../world/exceptionPanelPlacement'
+import {buildExceptionPanelModel,layoutExceptionPanel} from '../render/exceptionPanelModel'
+import {projectExceptionPanel} from '../render/exceptionPanelPresentation'
 import {camera as tokens} from '../theme/tokens'
 import {anchorCorners} from '../world/anchorGeometry'
 import {fitToSafeFrame,frontFace,projectionCamera,screenPoint,type OrbitPose,type Size} from './projection'
@@ -12,14 +14,17 @@ export function homeFraming(scene:SceneModel,plan:PresentationPlan,safeFrame:Rec
  const requiredHeadings=plan.headings.filter(heading=>heading.id==='STACK'||heading.id==='HEAP')
  const specs=requiredHeadings.map(heading=>regionHeadingSpec(heading.id,heading.position))
  const bodies=[...[...plan.entities.keys()].map(id=>scene.entities[id].anchor),...plan.clusters.map(cluster=>cluster.anchor),...scene.io.map(io=>io.anchor),...(plan.exceptionPanel?[exceptionPanelAnchor(plan.exceptionPanel,scene.recording)]:[])]
+ const evidence=plan.exceptionPanel?{anchor:exceptionPanelAnchor(plan.exceptionPanel,scene.recording),layout:layoutExceptionPanel(buildExceptionPanelModel(plan.exceptionPanel.content,scene.recording.state))}:null
  const fit=(points:readonly Vec3[])=>{
   let pose=fitToSafeFrame(points,angles,safeFrame,viewport),fitted=[...points]
   // Structural glyphs retain their projected size as the camera moves, so
   // their physical footprint changes with distance. Converge on the actual
   // new footprint instead of relying on extra zoom-out to conceal clipping.
-  for(let refine=0;refine<16;refine++){
+  for(let refine=0;refine<(evidence?32:16);refine++){
    const camera=projectionCamera(pose,viewport)
-   fitted=[...points,...structuralLabelFitPoints(specs,bodies,camera,viewport)]
+   const presented=evidence?projectExceptionPanel(evidence.anchor,evidence.layout,camera,viewport,safeFrame):null
+   const clearance=presented?bodies.map(body=>body.entityId===presented.anchor.entityId?presented.anchor:body):bodies
+   fitted=[...points,...(presented?anchorCorners(presented.anchor):[]),...structuralLabelFitPoints(specs,clearance,camera,viewport)]
    if(fitted.every(point=>{const p=screenPoint(point,camera,viewport);return p.z>-1&&p.z<1&&p.x>=safeFrame.x&&p.x<=safeFrame.x+safeFrame.width&&p.y>=safeFrame.y&&p.y<=safeFrame.y+safeFrame.height}))break
    pose=fitToSafeFrame(fitted,angles,safeFrame,viewport)
   }

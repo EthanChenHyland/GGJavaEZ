@@ -102,6 +102,17 @@ function Metrics({ scene, plan, selection,trace }: {
                         labels.push({entityId:label.entityId,kind:label.kind,slotId:label.slotId,text:text.text,position:point.toArray() as [number,number,number],opacity:text.fillOpacity,fontPixels:projectedFontPixels(text.fontSize*scale,point,camera,size.height)});
                     });return labels;
                 },
+                exceptionText:()=>{
+                    const labels:ReturnType<NonNullable<Window['__ggjavaezWorld']>['exceptionText']>[number][]=[];
+                    world.getObjectByName('exception-panel')?.traverse(group=>{
+                        const label=group.userData.runtimeExceptionText as {text:Text}|undefined;
+                        if(!label)return;
+                        const text=label.text,point=new Vector3().setFromMatrixPosition(text.matrix),scale=new Vector3().setFromMatrixScale(text.matrix).y;
+                        const block=text.textRenderInfo?.blockBounds;
+                        const points=block?[block[0],block[2]].flatMap(x=>[block[1],block[3]].map(y=>new Vector3(x,y,0).applyMatrix4(text.matrix).toArray() as [number,number,number])):[];
+                        labels.push({text:text.text,position:point.toArray() as [number,number,number],opacity:text.fillOpacity,fontPixels:projectedFontPixels(text.fontSize*scale,point,camera,size.height),bounds:projectRect(points,camera,size)});
+                    });return labels;
+                },
                 structuralLabels:()=>{
                     const host=world.getObjectByName('structural-labels');if(!host||!(camera instanceof PerspectiveCamera))return[];
                     return host.children.map(group=>{
@@ -252,7 +263,7 @@ export function RuntimeCanvas({ scene, plan, layout, safeFrame,inspectorRect, se
         <ConnectorBatch curves={curves} onSelect={id => { if(plan.bundles.some(bundle=>bundle.id===id))select({kind:'bundle',id}); else if (scene.references.some(ref => ref.id === id)||scene.historicalBindings.some(binding=>binding.id===id))
         select({ kind: 'reference', id }); else if(plan.curves.some(curve=>curve.id===id)) select({kind:'flow',id}); }}/>
         {plan.structural.map(item => <WorldText key={item.id} position={item.position} size={.3} width={5} tint={color.ui.textSecondary}>{item.text}</WorldText>)}
-        <ExceptionPanel panel={plan.exceptionPanel} recordingState={scene.recording.state}/>
+        <ExceptionPanel panel={plan.exceptionPanel} recordingState={scene.recording.state} safeFrame={safeFrame}/>
         {scene.io.map(io => <group key={io.id} position={[...io.anchor.position]}><mesh><boxGeometry args={[...io.anchor.size]}/><meshStandardMaterial color={roleColor[io.id]} emissive={roleColor[io.id]} emissiveIntensity={.2}/></mesh><WorldText position={[-.75, .02, .17]} size={.2} width={1.5}>{`${io.id} · ${io.lines}`}</WorldText></group>)}
         </FaceTextBatch>
       </Suspense>

@@ -4,6 +4,7 @@ import type {Rect} from '../shell/shellLayout'
 import {camera as tokens} from '../theme/tokens'
 import {anchorCorners} from '../world/presentationPlanner'
 import {exceptionPanelAnchor} from '../world/exceptionPanelPlacement'
+import {fitForensicFraming} from './forensicFraming'
 import {followFraming} from './followFraming'
 import {fitToSafeFrame,type OrbitPose,type Size} from './projection'
 
@@ -46,9 +47,14 @@ export function guidedFollow(
  if(plan.exceptionPanel)points.push(...anchorCorners(exceptionPanelAnchor(plan.exceptionPanel,scene.recording)))
  if(!points.length)return{pose:null,recursion,ids:[...ids],points}
  const angles=recursion?tokens.recursion:tokens.hero
+ const finish=(pose:OrbitPose|null)=>{
+  if(!plan.exceptionPanel)return{pose,recursion,ids:[...ids],points}
+  const fitted=fitForensicFraming(points,plan.exceptionPanel,scene.recording,pose??current,safe,viewport,(points,pose)=>followFraming(points,pose,safe,viewport)??pose)
+  return{pose:fitted.pose===current?null:fitted.pose,recursion,ids:[...ids],points:fitted.points}
+ }
  if(recursion&&(previousRecursion!==true||Math.abs(current.yawDeg-angles.yaw)>.001||Math.abs(current.pitchDeg-angles.pitch)>.001))
-  return{pose:fitToSafeFrame(points,angles,safe,viewport),recursion,ids:[...ids],points}
+  return finish(fitToSafeFrame(points,angles,safe,viewport))
  const resetAngles=!recursion&&previousRecursion===true
  const oriented=resetAngles?{...current,yawDeg:angles.yaw,pitchDeg:angles.pitch}:current
- return{pose:followFraming(points,oriented,safe,viewport)??(resetAngles?oriented:null),recursion,ids:[...ids],points}
+ return finish(followFraming(points,oriented,safe,viewport)??(resetAngles?oriented:null))
 }
