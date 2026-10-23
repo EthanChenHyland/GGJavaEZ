@@ -111,3 +111,8 @@ Forty-three original-size captures are archived and hash-bound. The lead opens t
 ## Compact forward dependencies — 2026-10-23
 
 Thirteen original-size images from the 27-case native run are archived and source/report-bound. The lead opens Hero, Focus, hardware Cinematic forensic and narrow historical binding against best.png. Other nine are archived, not root-approved. This private-index change introduces no intended visual change; prior typography, glow, matte fronts, grid/reflection and clipping findings remain OPEN. [Source-bound evidence](migration/slot-history.md#compact-forward-dependency-targets--2026-10-23). No full-matrix approval is inferred.
+
+
+## Full-app 5,000-file search — 2026-10-23
+
+Both final desktop/narrow full-project Picker captures are opened at original size and source/report-bound. Focused query, actual generated paths and the complete 5,000-file counter are readable in the production Shell. This approves those two search captures; it does not approve World materials, typography, glow, reflection, clipping or the full reference matrix. [Evidence](migration/picker.md#full-production-project-with-5000-files--2026-10-23).

@@ -262,3 +262,8 @@ The Header now renders independent AppState badges beneath its primary label, de
 ## Compact forward dependencies — 2026-10-23
 
 Forward target dependencies omit empty entries and keep single targets inline, promoting only for distinct targets. Reverse invalidation remains exact through duplicate bindings, clearing and rebinding; empty incoming buckets are removed. Public/runtime/backend/camera/rendering contracts remain unchanged. [Heap evidence and exact parent/heap-owner checks](migration/slot-history.md#compact-forward-dependency-targets--2026-10-23).
+
+
+## Full-app 5,000-file search — 2026-10-23
+
+A permanent browser regression exercises the actual 5,000-Java-file managed project through production Shell/Editor/Explorer/WebGL. It reuses only verified generated QA projects, observes native shortcut/focus/input events and opens real source. Production and existing unit inputs are unchanged. [Scope and correct capture boundary](migration/picker.md#full-production-project-with-5000-files--2026-10-23).

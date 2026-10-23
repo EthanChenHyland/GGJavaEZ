@@ -315,3 +315,8 @@ Full defaults: 2,156 passed / 70 existing opt-in skips, 233 files, 180.75 second
 ## Compact forward dependencies — 2026-10-23
 
 Full defaults: 2,157 passed / 70 existing opt-in skips, 233 files, 181.98 seconds. Build/typechecks/lint/reference/protected checks pass on 949 stable source hashes. Exact parent checks pass 32,794 scenes, 119 caught/cleared scenes and 36/37 frame/heap-owner rebinding scenes; existing assertions are unchanged. Native 27/27, zero skips/failures/flaky, 157.658 seconds, eight attached actual JVM IDs plus recovery; Person/array curated cases classified separately. Four of thirteen originals are root-reviewed. [Evidence and limitations](migration/slot-history.md#compact-forward-dependency-targets--2026-10-23). Whole A–G acceptance remains OPEN.
+
+
+## Full-app 5,000-file search — 2026-10-23
+
+Permanent full-project file-search native regression passes 2/2, zero skips/failures/flaky, 9.325 seconds. Both originals are root-reviewed. All prior 949 source files, full unit inputs and fourteen production JS artifacts are byte-identical; prior full 2,157/70 result is reused explicitly because the new browser file is excluded from Vitest. Typechecks/browser TS/lint/build/reference/protected checks pass again on 950 source hashes. [Actual 5,000-source project, timing values and limits](migration/picker.md#full-production-project-with-5000-files--2026-10-23). Whole A–G remains OPEN.

@@ -219,3 +219,8 @@ Small actual-JVM timing passes at three sizes: native Run pointerup → Building
 ## Compact forward dependencies — 2026-10-23
 
 The unchanged comparable generated probes observe largest presentation retention 32,208,832 → 31,755,920 bytes (1.4% lower in this pair). Every 0.25 ratio still FAILS; LINE scaling passes 1.24307 against 2. Heap census confirms measured empty/singleton forward Sets are absent; shallow container counts are not dominator retention. An unprofiled after run is retained separately. [All sizes, source boundary and limits](migration/slot-history.md#compact-forward-dependency-targets--2026-10-23). Actual Dense failures remain OPEN.
+
+
+## Full-app 5,000-file search — 2026-10-23
+
+Full-app Quick Open now has measured desktop/narrow 5,000-file evidence: opening 67.8 / 81.4 ms; six query samples 28.6–93.1 ms, all within the unchanged 200 ms boundary. Maximum twelve mounted rows, last match reachable and real source opened. This is after-load sampled file-search evidence, not cold/JDT startup, symbols, Dense or JVM approval. [Methods and retained invalid diagnostics](migration/picker.md#full-production-project-with-5000-files--2026-10-23). Other performance failures remain OPEN.
