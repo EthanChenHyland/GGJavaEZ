@@ -121,3 +121,8 @@ Both final desktop/narrow full-project Picker captures are opened at original si
 ## Static environment capture ownership — 2026-10-23
 
 Twenty-three source/report/hash-bound native originals are archived; the lead opens nine, including all five responsive Hero views, Focus, curated Cinematic, actual forensic Cinematic and actual context recovery. Fourteen remain unreviewed. All eight actual opaque face/chip palette samples pass across both tiers. Comparison with best.png retains OPEN findings for excessive crossing-route glow, matte fronts/flat Cinematic sides, deep text cutoff, weak reflection and clipped optional context. A separate panel-angle candidate was rejected for lacking demonstrated visual benefit. [Ownership, native evidence and limits](migration/static-environment.md). Whole-product A–G acceptance remains OPEN.
+
+
+## Completed-stream ownership — 2026-10-24
+
+Thirty-two original-size captures are source/report/hash-bound; the lead opens six: Hero, I/O, paused debug/history, short partial-recording/source draft, completed world and hardware Cinematic forensic. Twenty-six remain unreviewed. The stream change preserves recorded worlds; typography, route glow, matte fronts, weak reflection, clipping and long Header reason truncation remain OPEN. [Lifecycle policy, reproduced failures and evidence](migration/stream-retirement.md). Whole-product A–G remains OPEN.

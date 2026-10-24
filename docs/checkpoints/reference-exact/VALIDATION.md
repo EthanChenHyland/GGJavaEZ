@@ -330,3 +330,8 @@ Full defaults pass 2,157 with 70 explicit opt-in skips (2,227 total), 233 files,
 ## Inspector mount ownership — 2026-10-23
 
 One production guard passes full defaults 2,157 with 70 explicit opt-in skips, 233 files, 179.37 seconds. Typechecks/lint/build/reference/protected checks pass on 952 source hashes. Existing native Inspector/history/array/provenance/replay/recovery cases pass 28/28, zero skips/failures/flaky, 171.472 seconds. Four of fourteen original-size images are root-reviewed; ten remain unapproved. Two fresh actual-JVM diagnostic profiles verify removal of React persistent-record enumeration while no Inspector target exists. [Evidence, lifecycle scope and limitations](migration/idle-inspector.md). Whole A–G acceptance remains OPEN.
+
+
+## Completed-stream ownership — 2026-10-24
+
+Full defaults pass 2,169 with 70 explicit opt-in skips, 233 files, 182.49 seconds. Typechecks, lint, build and reference/protected checks pass on 953 stable source hashes. Native integration passes 29/29, zero skips/failures/flaky, 153.916 seconds, identifying 25 actual JVMs. The new shutdown case observes OPEN during the stop request, then CLOSED after 31 raw / 54 normalized events and final metadata. Initial premature-stop and error-retry candidates remain archived separately. The complete Dense case finishes all ten stages with zero browser errors but exits 1 on three fixed latency budgets; rendering, cold loads and soak pass. [Lifecycle policy, reproduced failures and evidence](migration/stream-retirement.md). Whole-product A–G remains OPEN.

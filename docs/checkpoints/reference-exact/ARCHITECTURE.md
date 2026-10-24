@@ -272,3 +272,8 @@ A permanent browser regression exercises the actual 5,000-Java-file managed proj
 ## Static environment capture ownership — 2026-10-23
 
 The static environment now has one memoized owner. Runtime, selection and quality rerenders retain its panels/cube map; actual context loss remounts it. All panel settings and protected semantic/camera contracts remain unchanged. A read-only QA counter and permanent native regression cover capture identity/version through public interactions and recovery. [Ownership, native evidence and limits](migration/static-environment.md). Whole-product A–G acceptance remains OPEN.
+
+
+## Completed-stream ownership — 2026-10-24
+
+Execution delta streams now retire after the confirmed process end and complete committed raw prefix. Stop-request metadata is distinguished from child exit. Partial recording, input waits, debugger pauses and raw-processing recovery retain observation. Existing backend/runtime/ingestion/command contracts and transport bounds are unchanged. [Lifecycle policy, reproduced failures and evidence](migration/stream-retirement.md). Whole-product A–G remains OPEN.

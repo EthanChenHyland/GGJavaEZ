@@ -122,3 +122,8 @@ Affected integration passes **23/23**, zero skips, including Inspector actions a
 ## Paused debugger and Dock consolidation — 2026-10-19
 
 Actual JVM debugger cases retain paused values through World rewind and update them on Step Over in HISTORY while Cursor stays zero. Final ownership confirmation passes 2/2; source/Inspector integration 13/13 and Console/Problems/Error Explorer Dock regression 13/13 pass with unchanged existing timeouts. The complete focused debugger-manager/drawer/source/layout integration passes 103/103 before two final drawer guard cases. Four archived captures are reviewed at original resolution; world visual convergence remains OPEN. [Detailed run boundaries and preserved failures](migration/debug-drawer.md).
+
+
+## Completed-stream ownership — 2026-10-24
+
+Actual Java verifies ordinary completion, multiple-page catch-up, stdin waits, seven partial-recording cuts, debug pauses/steps, user Stop with delayed shutdown output, dirty-save decisions and retained history. A terminal phase alone never discards queued raw pages; a stop request remains observed until its real end signal. Permanent native tests and transport/ingestion tests cover these boundaries. [Lifecycle policy, reproduced failures and evidence](migration/stream-retirement.md). Whole-product A–G remains OPEN.

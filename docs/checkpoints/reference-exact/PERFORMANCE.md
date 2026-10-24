@@ -234,3 +234,8 @@ The actual environment capture counter previously rose 34 → 94 through fourtee
 ## Inspector mount ownership — 2026-10-23
 
 The Inspector now mounts only when its resolved selection/Focus target exists. In two fresh actual-JVM, thirty-seek CPU diagnostics, React prop-diff self time falls 131.084 → 13.325 ms and sampled seek p50 98.596 → 83.294 ms. This removes invisible work without changing runtime storage or disabling diagnostics; it does not pass or replace the formal 55/112 ms seek gate. The latest full Dense report remains the parent 0c10d14 boundary with four latency failures and one suspended event stream. [Evidence, lifecycle scope and limitations](migration/idle-inspector.md). Whole A–G acceptance remains OPEN.
+
+
+## Completed-stream ownership — 2026-10-24
+
+Closed Java recordings previously retained open event streams. Native RED and corrected cases verify retirement after the accepted raw head; stop ordering and raw-error retry remain truthful. The corrected full Dense gate completes all ten stages with zero browser errors/suspended requests. Seek p95 passes 99.577 ms; seek p50 82.597 ms, Focus p95 134.798 ms and Home p95 165.740 ms still fail 55/125/152. Cold loads, all five orbit windows and soak pass. Earlier retention failures remain OPEN. No isolated/statistical latency gain is attributed to SSE retirement. Main-entry gzip 71,759 bytes passes; shell static closure 670,412 is diagnostic. [Lifecycle policy, reproduced failures and evidence](migration/stream-retirement.md). Whole-product A–G remains OPEN.
