@@ -127,3 +127,6 @@ Actual JVM debugger cases retain paused values through World rewind and update t
 ## Completed-stream ownership — 2026-10-24
 
 Actual Java verifies ordinary completion, multiple-page catch-up, stdin waits, seven partial-recording cuts, debug pauses/steps, user Stop with delayed shutdown output, dirty-save decisions and retained history. A terminal phase alone never discards queued raw pages; a stop request remains observed until its real end signal. Permanent native tests and transport/ingestion tests cover these boundaries. [Lifecycle policy, reproduced failures and evidence](migration/stream-retirement.md). Whole-product A–G remains OPEN.
+## Array-window identity — 2026-10-24
+
+The native regression confirms that an unrelated Trace plan reuses an unchanged array window; Focus adds actual index evidence without mutating the earlier window; forward/backward writes retain truthful values. The 23-case integration also exercises picking, navigation, quality switching and recovery. [Evidence and boundaries](migration/array-window-identity.md). Global motion, torture and final acceptance remain OPEN.

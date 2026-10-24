@@ -134,6 +134,36 @@ describe('array index windows', () => {
     expect(resolveArrayWindowPick(second, pick(first, 2))).not.toBeNull()
     expect('value' in second.mapping.get(arrayElementSlotId('a', 2))!).toBe(false)
   })
+  it('retains the exact window when equivalent inputs leave geometry and all evidence unchanged', () => {
+    for (const length of [0, 3, 128, 1000, 2_147_483_647]) {
+      const data = input({ recordedLength: length, anchor: anchor(length), selectedIndices: length ? [length - 1] : [] })
+      const first = computeArrayWindow(data), before = structuredClone(first)
+      const repeat = computeArrayWindow({ ...data, anchor: structuredClone(data.anchor),
+        selectedIndices: length ? [length - 1, length - 1, -1, length] : [-1], previous: first })
+      expect(repeat).toBe(first)
+      expect(first).toEqual(before)
+      for (const index of first.visible) expect(resolveArrayWindowPick(repeat, pick(first, index)))
+        .toBe(first.mapping.get(arrayElementSlotId(first.arrayId, index)))
+    }
+  })
+  it('does not reuse unchanged geometry when reasons, budget or recording identity change', () => {
+    const data = input({ recordedLength: 3, anchor: anchor(3), nominalCellBudget: 8 })
+    const first = computeArrayWindow(data), before = structuredClone(first)
+    const changes: Partial<ArrayWindowInput>[] = [
+      { selectedIndices: [1] }, { focusedIndices: [1] }, { currentIndices: [1] }, { requestedIndices: [1] },
+      { nominalCellBudget: 9 }, { recordingId: 'run-2' }, { arrayId: 'other-array' },
+      { anchor: { ...data.anchor, region: 'library' } },
+      { anchor: { ...data.anchor, position: [11, -5, 3] } },
+      { anchor: { ...data.anchor, size: [data.anchor.size[0] + 1, data.anchor.size[1], data.anchor.size[2]] } },
+      { recordedLength: 2 },
+    ]
+    for (const change of changes) {
+      const next = computeArrayWindow({ ...data, ...change, previous: first })
+      expect(next).not.toBe(first)
+      expect({ ...next, windowRevision: 1 }).toEqual(computeArrayWindow({ ...data, ...change }))
+      expect(first).toEqual(before)
+    }
+  })
   it('uses 1.55 cells and .08 gaps in 4–16 columns with front-face ports', () => {
     const window = computeArrayWindow(input({ nominalCellBudget: 48 }))
     const cell0 = window.mapping.get(arrayElementSlotId('a', 0))!
@@ -197,6 +227,7 @@ describe('Array structure and windows — Property 39 (100 runs each)', () => {
       const first = computeArrayWindow(data)
       const repeat = computeArrayWindow({ ...data, selectedIndices: [...indices].reverse(), previous: first })
       expect(repeat.windowRevision).toBe(first.windowRevision)
+      expect(repeat).toBe(first)
       for (const index of first.visible) {
         const valid = pick(first, index)
         const resolved = resolveArrayWindowPick(repeat, valid)!

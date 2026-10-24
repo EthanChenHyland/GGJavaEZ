@@ -83,6 +83,25 @@ test('two indexed writes are truthful and reverse scrubs restore values in fixed
  expect(await geometry(page)).toEqual(original)
  await page.screenshot({path:'.ggjavaez/qa/reference-exact/array-indexed-writes-native.png'});expect(errors).toEqual([])
 })
+test('unrelated Trace plans retain array windows while Focus updates index evidence',async({page})=>{
+ const errors=browserErrors(page);await open(page);await seekCursor(page,comparison.seq+1);await home(page);await selectEntity(page,slot(1))
+ const before=await page.evaluateHandle(id=>({plan:window.__ggjavaezWorld!.plan(),window:window.__ggjavaezWorld!.plan().cellWindows.get(id)!}),objectId)
+ await page.getByRole('button',{name:'Trace',exact:true}).click();await ready(page)
+ expect(await page.evaluate(({id,before})=>{
+  const plan=window.__ggjavaezWorld!.plan();return {newPlan:plan!==before.plan,sameWindow:plan.cellWindows.get(id)===before.window}
+ },{id:objectId,before})).toEqual({newPlan:true,sameWindow:true})
+ await values(page,['8','3','6','1','5'])
+ await page.getByRole('button',{name:'Focus',exact:true}).click();await ready(page)
+ expect(await page.evaluate(({id,before})=>{
+  const next=window.__ggjavaezWorld!.plan().cellWindows.get(id)!
+  return {sameWindow:next===before.window,sameRevision:next.windowRevision===before.window.windowRevision,
+   reasons:next.budgetOverflow.reasons.get(`${id}:element:1`)?.filter(reason=>reason==='selected'||reason==='focused'),
+   previous:before.window.budgetOverflow.reasons.get(`${id}:element:1`)?.filter(reason=>reason==='selected'||reason==='focused')}
+ },{id:objectId,before})).toEqual({sameWindow:false,sameRevision:true,reasons:['selected','focused'],previous:['selected']})
+ await home(page);await seekCursor(page,writes[0].seq+1);await values(page,['3','3','6','1','5'])
+ await seekCursor(page,comparison.seq+1);await values(page,['8','3','6','1','5'])
+ await before.dispose();expect(errors).toEqual([])
+})
 test('sorting finishes naturally and Replay restarts once without looping',async({page})=>{
  const errors=browserErrors(page);await open(page);await seekCursor(page,trace.events.length-4);await home(page);await selectEntity(page,objectId)
  await page.getByLabel('Playback speed',{exact:true}).filter({visible:true}).selectOption('4');await play(page).click()

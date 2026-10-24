@@ -277,3 +277,6 @@ The static environment now has one memoized owner. Runtime, selection and qualit
 ## Completed-stream ownership — 2026-10-24
 
 Execution delta streams now retire after the confirmed process end and complete committed raw prefix. Stop-request metadata is distinguished from child exit. Partial recording, input waits, debugger pauses and raw-processing recovery retain observation. Existing backend/runtime/ingestion/command contracts and transport bounds are unchanged. [Lifecycle policy, reproduced failures and evidence](migration/stream-retirement.md). Whole-product A–G remains OPEN.
+## Array-window ownership — 2026-10-24
+
+Deterministic windows retain identity when topology, budget and normalized admission reasons are unchanged. Geometry changes retain the existing revision rule; changed selection/Focus/current/requested reasons still replace the window so emphasis updates. This shares the previous bounded window without adding a cache or retaining runtime values. [Proof and validation](migration/array-window-identity.md).

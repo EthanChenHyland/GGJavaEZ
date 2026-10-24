@@ -126,11 +126,18 @@ export function computeArrayWindow(input: ArrayWindowInput): ArrayWindow {
       reasons: new Map(mandatory.map(index => [arrayElementSlotId(input.arrayId, index), reasons.get(index)!])),
     },
   }
-  return {
-    ...next,
-    windowRevision: input.previous
-      ? input.previous.windowRevision + (sameTopology(input.previous, next) ? 0 : 1) : 1,
-  }
+  const previous = input.previous, unchanged = previous && sameTopology(previous, next)
+  // These windows contain only deterministic topology and admission evidence.
+  // Equal topology, budget and reasons also imply equal gaps, row counts and
+  // overflow accounting. Retain identity so unrelated plans do not rebuild all
+  // of an unchanged array's labels. Changed reasons must still update emphasis.
+  if (unchanged && previous.budgetOverflow.nominal === budget
+    && previous.budgetOverflow.reasons.size === next.budgetOverflow.reasons.size
+    && [...next.budgetOverflow.reasons].every(([id, reasons]) => {
+      const prior = previous.budgetOverflow.reasons.get(id)
+      return prior?.length === reasons.length && prior.every((reason, index) => reason === reasons[index])
+    })) return previous
+  return { ...next, windowRevision: previous ? previous.windowRevision + (unchanged ? 0 : 1) : 1 }
 }
 
 /** A hidden index, ellipsis or stale slot must never masquerade as an endpoint. */

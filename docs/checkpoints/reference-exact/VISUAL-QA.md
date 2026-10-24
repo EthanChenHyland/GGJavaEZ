@@ -126,3 +126,6 @@ Twenty-three source/report/hash-bound native originals are archived; the lead op
 ## Completed-stream ownership — 2026-10-24
 
 Thirty-two original-size captures are source/report/hash-bound; the lead opens six: Hero, I/O, paused debug/history, short partial-recording/source draft, completed world and hardware Cinematic forensic. Twenty-six remain unreviewed. The stream change preserves recorded worlds; typography, route glow, matte fronts, weak reflection, clipping and long Header reason truncation remain OPEN. [Lifecycle policy, reproduced failures and evidence](migration/stream-retirement.md). Whole-product A–G remains OPEN.
+## Array-window integration captures — 2026-10-24
+
+Twenty-one current originals are archived in `array-window-captures/`; six were reviewed at full size (Hero wide/narrow, object Focus, selected array cell, narrow collection Focus and Cinematic Person). The separate Dense original is also reviewed. Typography, crossing glow, matte faces, floor/reflection balance and clipping remain OPEN; the other fifteen integration originals are unreviewed. [Source-bound evidence](migration/array-window-identity.md). Passing the 23 native cases is not reference convergence approval.
