@@ -229,3 +229,8 @@ Full-app Quick Open now has measured desktop/narrow 5,000-file evidence: opening
 ## Static environment capture ownership — 2026-10-23
 
 The actual environment capture counter previously rose 34 → 94 through fourteen public interaction checkpoints and increased again after recovery. The fixed owner stays at 1 throughout; recovery creates a new resource that stays at 1. This proves removal of repeated cube captures, not a measured command-latency gain. Main-entry gzip 71,761 bytes passes; shell static closure 670,269 bytes is diagnostic. The unchanged full Dense gate completes all ten stages but FAILS seek p50/p95 98.745/114.889 ms, Focus p95 134.283 ms and Home p95 165.676 ms against 55/112/125/152. Cold loads, all five orbit windows and the soak pass. One `ERR_NETWORK_IO_SUSPENDED` browser error also fails the runner. No command-latency benefit is demonstrated; Dense and separate retention failures remain OPEN. [Ownership, native evidence and limits](migration/static-environment.md). Whole-product A–G acceptance remains OPEN.
+
+
+## Inspector mount ownership — 2026-10-23
+
+The Inspector now mounts only when its resolved selection/Focus target exists. In two fresh actual-JVM, thirty-seek CPU diagnostics, React prop-diff self time falls 131.084 → 13.325 ms and sampled seek p50 98.596 → 83.294 ms. This removes invisible work without changing runtime storage or disabling diagnostics; it does not pass or replace the formal 55/112 ms seek gate. The latest full Dense report remains the parent 0c10d14 boundary with four latency failures and one suspended event stream. [Evidence, lifecycle scope and limitations](migration/idle-inspector.md). Whole A–G acceptance remains OPEN.

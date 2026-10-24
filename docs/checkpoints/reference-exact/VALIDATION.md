@@ -325,3 +325,8 @@ Permanent full-project file-search native regression passes 2/2, zero skips/fail
 ## Static environment capture ownership — 2026-10-23
 
 Full defaults pass 2,157 with 70 explicit opt-in skips (2,227 total), 233 files, 174.05 seconds. Typechecks, browser types, lint, build and reference/protected checks pass on 952 stable source hashes. Confirmed native RED becomes GREEN; broader graphics/replay passes 21/21, zero skips/failures/flaky, 133.597 seconds. Ten actual JVM IDs are identified, plus a separate actual Java fallback case without an attached ID. Curated cases remain separate. The separate unchanged full Dense case executes all ten stages without skipping but records four failed latency budgets and exits 1 on a saved `ERR_NETWORK_IO_SUSPENDED` browser-error assertion; rendering/soak/cold-load checks pass. [Ownership, native evidence and limits](migration/static-environment.md). Whole-product A–G acceptance remains OPEN.
+
+
+## Inspector mount ownership — 2026-10-23
+
+One production guard passes full defaults 2,157 with 70 explicit opt-in skips, 233 files, 179.37 seconds. Typechecks/lint/build/reference/protected checks pass on 952 source hashes. Existing native Inspector/history/array/provenance/replay/recovery cases pass 28/28, zero skips/failures/flaky, 171.472 seconds. Four of fourteen original-size images are root-reviewed; ten remain unapproved. Two fresh actual-JVM diagnostic profiles verify removal of React persistent-record enumeration while no Inspector target exists. [Evidence, lifecycle scope and limitations](migration/idle-inspector.md). Whole A–G acceptance remains OPEN.
