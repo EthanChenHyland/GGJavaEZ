@@ -130,3 +130,7 @@ Actual Java verifies ordinary completion, multiple-page catch-up, stdin waits, s
 ## Array-window identity — 2026-10-24
 
 The native regression confirms that an unrelated Trace plan reuses an unchanged array window; Focus adds actual index evidence without mutating the earlier window; forward/backward writes retain truthful values. The 23-case integration also exercises picking, navigation, quality switching and recovery. [Evidence and boundaries](migration/array-window-identity.md). Global motion, torture and final acceptance remain OPEN.
+
+## Qualified frame-title behavior — 2026-10-24
+
+Actual Java desktop/narrow tests retain full ordinary signatures and stable invocation IDs, separate title ink from status/identity, and preserve recording/cursor/anchors through Focus/Home. The 31-case integration also passes ownership travel, five-size recursion, reduced motion, quality and recovery. Narrow selected-frame Home and recursion Home still have undersized captions. [Evidence and limits](migration/frame-title-layout.md).

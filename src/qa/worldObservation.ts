@@ -1,5 +1,5 @@
 import type { Selection } from '../contracts/interaction'
-import type { SceneModel, PresentationPlan } from '../contracts/world'
+import type { SceneModel, PresentationPlan, Vec3 } from '../contracts/world'
 import type {TraceEvent} from '../contracts/runtime'
 import type {WorldProjection} from './worldProjection'
 export interface WorldObservation {
@@ -8,7 +8,7 @@ export interface WorldObservation {
   selection(): Selection
   recordedEvents():readonly TraceEvent[]
   worldProjection():WorldProjection
-  runtimeHeadings():readonly {entityId:string;kind:'title'|'identity';text:string;opacity:number;fontPixels:number;planePixels:number;widthPixels:number}[]
+  runtimeHeadings():readonly {entityId:string;kind:'title'|'identity';text:string;opacity:number;fontPixels:number;planePixels:number;widthPixels:number;position:Vec3;localInkBounds:readonly[number,number,number,number]|null}[]
   collectionText():readonly {entityId:string;kind:'size'|'more'|'key'|'value';slotId?:string;text:string;opacity:number;fontPixels:number;planePixels:number;widthPixels:number}[]
   returnText():readonly {flowId:string;kind:'value'|'operands';text:string;opacity:number;fontPixels:number}[]
   frameText():readonly {entityId:string;kind:'scope'|'name'|'value';slotId?:string;text:string;position:readonly[number,number,number];opacity:number;fontPixels:number}[]

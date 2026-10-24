@@ -243,3 +243,7 @@ Closed Java recordings previously retained open event streams. Native RED and co
 ## Stable array-window ownership — 2026-10-24
 
 Unchanged array windows now retain identity while changed geometry, budgets or admission evidence invalidate it. All 288 compared Dense plans remain equal; the actual component comparator admits 39,756 → 23,650 potential array labels. The complete fresh-JVM browser gate still FAILS seek p50 82.373 ms, Focus p95 135.067 ms and Home p95 165.825 ms. Seek p95 99.727 ms, cold loads, all five orbit windows and soak pass with zero browser errors. This removes redundant work without demonstrating command-latency improvement. Earlier presentation-retention failures and whole-product acceptance remain OPEN. [Proof, full metrics and source boundaries](migration/array-window-identity.md).
+
+## Qualified frame-title layout — 2026-10-24
+
+The two-line title layout keeps one batched text object per title. Main-entry gzip 71,761 bytes passes; Shell closure 670,910 is diagnostic. The unchanged complete actual-JVM Dense gate still FAILS seek p50 82.293 ms, Focus p95 135.221 ms and Home p95 166.041 ms. Seek p95 98.403 ms, cold loads, all five orbit windows and soak pass with zero browser errors. No command-latency gain is demonstrated; earlier presentation-retention failures remain OPEN. [Full metrics, source boundary and evidence](migration/frame-title-layout.md).

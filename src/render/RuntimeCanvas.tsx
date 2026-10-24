@@ -70,7 +70,7 @@ function Metrics({ scene, plan, selection,trace }: {
                         const heading=group.userData.runtimeHeading as {entityId:string;kind:'title'|'identity';text:Text}|undefined;
                         if(!heading)return;
                         const text=heading.text,point=new Vector3().setFromMatrixPosition(text.matrix),scale=new Vector3().setFromMatrixScale(text.matrix).y;
-                        headings.push({entityId:heading.entityId,kind:heading.kind,text:text.text,opacity:text.fillOpacity,fontPixels:projectedFontPixels(text.fontSize*scale,point,camera,size.height),planePixels:projectedPlaneFontPixels(text.fontSize*scale,point,camera,size),widthPixels:projectedPlaneFontPixels(text.fontSize*scale,point,camera,size,'x')});
+                        headings.push({entityId:heading.entityId,kind:heading.kind,text:text.text,opacity:text.fillOpacity,fontPixels:projectedFontPixels(text.fontSize*scale,point,camera,size.height),planePixels:projectedPlaneFontPixels(text.fontSize*scale,point,camera,size),widthPixels:projectedPlaneFontPixels(text.fontSize*scale,point,camera,size,'x'),position:point.toArray() as [number,number,number],localInkBounds:text.textRenderInfo?.visibleBounds??null});
                     });return headings;
                 },
                 collectionText:()=>{

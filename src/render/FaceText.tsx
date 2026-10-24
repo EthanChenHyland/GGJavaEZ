@@ -24,7 +24,7 @@ export function FaceTextBatch({ children }: {
     useFrame(({ gl }) => { textReadiness.lastUploadFrame = gl.info.render.frame; });
     return <Context.Provider value={batch}><primitive object={batch}/>{children}</Context.Provider>;
 }
-export function WorldText({ children, position, size = .25, tint = color.ui.text, width = 4, align = 'left', opacity = 1, weight=400, tracking=0, minimumPixels=11, heading,collectionText,frameText,returnText,exceptionText }: {
+export function WorldText({ children, position, size = .25, tint = color.ui.text, width = 4, align = 'left', opacity = 1, weight=400, tracking=0, minimumPixels=11, lines, heading,collectionText,frameText,returnText,exceptionText }: {
     children: string;
     position: Vec3;
     size?: number;
@@ -35,6 +35,7 @@ export function WorldText({ children, position, size = .25, tint = color.ui.text
     weight?:400|500|600;
     tracking?:number;
     minimumPixels?:11|12;
+    lines?:readonly string[];
     heading?:{entityId:string;kind:'title'|'identity'};
     exceptionText?:boolean;
     returnText?:{flowId:string;kind:'value'|'operands'};
@@ -45,8 +46,9 @@ export function WorldText({ children, position, size = .25, tint = color.ui.text
     const invalidate=useThree(state=>state.invalidate);
     const {camera,size:viewport}=useThree(),projection=useMemo(()=>({point:new Vector3(),scratch:new Vector3()}),[]);
     useLayoutEffect(() => {
-        const content=fitWorldText(children,width,size,weight,tracking);
-        const key=JSON.stringify([content,runtimeFonts[weight],tracking,size,width,align]);
+        const content=lines?lines.map(line=>fitWorldText(line,width,size,weight,tracking)).join('\n'):fitWorldText(children,width,size,weight,tracking);
+        const lineHeight=lines&&lines.length>1?.9:'normal';
+        const key=JSON.stringify([content,runtimeFonts[weight],tracking,size,width,align,lineHeight]);
         if(lastLayout.current===key)return;
         lastLayout.current=key;
         const generation=++syncGeneration.current;
@@ -56,12 +58,13 @@ export function WorldText({ children, position, size = .25, tint = color.ui.text
         text.text = content;
         text.maxWidth = width;
         text.whiteSpace = 'nowrap';
+        text.lineHeight = lineHeight;
         text.anchorX = align;
         text.anchorY = 'middle';
         text.matrixAutoUpdate = false;
         textReadiness.pending.add(id);
         text.sync(() => { if(generation===syncGeneration.current)textReadiness.pending.delete(id); textReadiness.lastSync = performance.now(); invalidate(); });
-    }, [text, children, size, width, align, id, weight, tracking,invalidate]);
+    }, [text, children, size, width, align, id, weight, tracking,lines,invalidate]);
     useLayoutEffect(()=>{text.color=tint;text.fillOpacity=opacity},[text,tint,opacity]);
     useLayoutEffect(() => { batch?.addText(text); return () => { batch?.removeText(text); textReadiness.pending.delete(id); text.dispose(); }; }, [batch, text, id]);
     useFrame(() => { if (anchor.current) {

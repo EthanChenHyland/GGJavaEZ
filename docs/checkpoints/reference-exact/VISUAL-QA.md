@@ -129,3 +129,7 @@ Thirty-two original-size captures are source/report/hash-bound; the lead opens s
 ## Array-window integration captures — 2026-10-24
 
 Twenty-one current originals are archived in `array-window-captures/`; six were reviewed at full size (Hero wide/narrow, object Focus, selected array cell, narrow collection Focus and Cinematic Person). The separate Dense original is also reviewed. Typography, crossing glow, matte faces, floor/reflection balance and clipping remain OPEN; the other fifteen integration originals are unreviewed. [Source-bound evidence](migration/array-window-identity.md). Passing the 23 native cases is not reference convergence approval.
+
+## Qualified frame-title polish — 2026-10-24
+
+Captured declaring type, method and parameter text now fit ordinary Hero/Focus headers without smaller fonts or larger slabs. Thirty-six current originals are archived; six were reviewed at original size, plus the separate Dense image. The remaining thirty are unreviewed. Global font hierarchy, narrow selected Home, recursion Home, crossing glow, matte surfaces, floor/reflections and clipping remain OPEN. [Source-bound review and failed/corrected glyph-bound checks](migration/frame-title-layout.md).

@@ -280,3 +280,7 @@ Execution delta streams now retire after the confirmed process end and complete 
 ## Array-window ownership — 2026-10-24
 
 Deterministic windows retain identity when topology, budget and normalized admission reasons are unchanged. Geometry changes retain the existing revision rule; changed selection/Focus/current/requested reasons still replace the window so emphasis updates. This shares the previous bounded window without adding a cache or retaining runtime values. [Proof and validation](migration/array-window-identity.md).
+
+## Qualified frame headers — 2026-10-24
+
+Ordinary qualified signatures can use two lines within the existing fixed header. The shared heading helper owns metadata reserve and title position, including the 0.06-unit lift; existing camera admission reads the same plane. Other labels retain their single-line path. Read-only QA uses actual visible glyph-path bounds. [Design, fidelity boundary and evidence](migration/frame-title-layout.md).

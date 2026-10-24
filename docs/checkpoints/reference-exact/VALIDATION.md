@@ -338,3 +338,7 @@ Full defaults pass 2,169 with 70 explicit opt-in skips, 233 files, 182.49 second
 ## Unchanged array-window identity — 2026-10-24
 
 Source `b00adb247ed9e78c7e43a16ff3146640f0817301e15ef4d2c5fe6c1653363508` passes 2,171 unit/property tests with 70 explicit opt-in skips (2,241 total), all type/lint/build/reference/protected checks, and 23/23 native cases with zero skips/failures/flaky results. Sixteen actual JVM IDs are attached; six curated array workflows remain separately classified. All 288 saved Dense plans match the parent. The complete actual-JVM Dense run still fails three unchanged latency budgets. [Commands, counts, source inventories, rejected candidates and evidence](migration/array-window-identity.md). This does not complete final exhaustive A–G acceptance.
+
+## Qualified frame-title validation — 2026-10-24
+
+Source `7113f14766238762f141e445d5f2d1971bafc9f04c8c8c23b62a2405277d0b62` passes 2,173 unit/property tests with 70 explicit opt-in skips (2,243 total), all type/lint/build/reference/protected checks and 31/31 native cases with zero skips/failures/flaky results. Twenty-six distinct JVM IDs are attached; another actual Java fallback case lacks its attached ID, and four cases are curated. All ten Dense stages complete without browser errors, but three unchanged latency budgets still fail. [Commands, counts, source inventory and limitations](migration/frame-title-layout.md). This is not final exhaustive A–G acceptance.

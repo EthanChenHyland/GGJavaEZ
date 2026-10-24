@@ -7,7 +7,7 @@ import { faceRows } from './faceModel';
 import {faceRowPort} from '../world/faceRows';
 import { displayType } from '../world/displayType';
 import {faceRowColumns,faceHeading,rowValueLabel} from './text/faceTypography';
-import {fitWorldText,textAdvance} from './text/textSystem';
+import {fitWorldText} from './text/textSystem';
 import {collectionEntryFace} from '../world/collectionFace';
 import {world} from '../theme/tokens';
 import {compactLibraryFace} from '../world/firstObjectPresentation';
@@ -29,15 +29,14 @@ export const RuntimeSolid=memo(function RuntimeSolid({ node, presented, plan }: 
     const compact=compactLibraryFace(anchor);
     const identity=node.kind==='frame'?`#${node.invocationNumber}`:node.kind==='class'?'':`#${node.displayId}`;
     const heading=faceHeading(node),titleSize=heading.title.size;
-    const identityWidth=identity?textAdvance(identity,500)*(heading.identity?.size??.28)+.04:0;
+    const {identityWidth,metadataWidth}=heading;
     const lengthLabel=node.kind==='array'?`length ${node.length}`:null;
-    const metadataWidth=Math.max(identityWidth,lengthLabel?textAdvance(lengthLabel)*.25+.04:0);
-    const titleWidth=Math.max(.1,w-.56-metadataWidth-(metadataWidth?.2:0)),title=fitWorldText(truncateFrameText(node.title),titleWidth,titleSize,600,0,28);
+    const titleWidth=heading.title.width,titleLines=heading.title.lines,title=titleLines?.join('')??fitWorldText(truncateFrameText(node.title),titleWidth,titleSize,600,0,28);
     const columns=faceRowColumns(node,presented,model);
     const emphasis = presented.highlight === 'exception' ? color.semantic.exception : presented.highlight === 'mutation' ? color.semantic.mutation : color.ui.textSecondary;
     const string = node.kind === 'object' ? node.groups.flatMap(g => g.rows).find(row => row.slotId.endsWith(':captured-string')) : null;
     return <group>
-    <WorldText position={heading.title.position} weight={600} size={titleSize} width={titleWidth} opacity={opacity} heading={{entityId:node.id,kind:'title'}}>{title}</WorldText>
+    <WorldText position={heading.title.position} weight={600} size={titleSize} width={titleWidth} lines={titleLines} opacity={opacity} heading={{entityId:node.id,kind:'title'}}>{title}</WorldText>
     {identity&&heading.identity&&<WorldText position={heading.identity.position} weight={500} size={heading.identity.size} align="right" width={identityWidth} opacity={opacity} heading={{entityId:node.id,kind:'identity'}}>{identity}</WorldText>}
     {node.kind === 'frame' && <WorldText position={[left, top - .94, face]} size={.25} tint={emphasis} opacity={opacity}>{frameStatusText(node.status)}</WorldText>}
     {node.kind === 'class' && <WorldText position={[left, top - .85, face]} size={.23} tint={color.ui.textSecondary} opacity={opacity}>{`static · ${node.initialization}`}</WorldText>}

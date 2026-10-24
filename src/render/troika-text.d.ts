@@ -8,11 +8,12 @@ declare module 'troika-three-text' {
     fontWeight: number
     maxWidth: number
     whiteSpace: string
+    lineHeight: number | 'normal'
     anchorX: string
     anchorY: string
     color: ColorRepresentation
     fillOpacity: number
-    readonly textRenderInfo: { blockBounds: readonly number[]; glyphBounds: Float32Array } | null
+    readonly textRenderInfo: { blockBounds: readonly number[]; visibleBounds: readonly [number, number, number, number]; glyphBounds: Float32Array } | null
     material: Material
     sync(callback?: () => void): void
     dispose(): void
