@@ -224,3 +224,8 @@ The unchanged comparable generated probes observe largest presentation retention
 ## Full-app 5,000-file search — 2026-10-23
 
 Full-app Quick Open now has measured desktop/narrow 5,000-file evidence: opening 67.8 / 81.4 ms; six query samples 28.6–93.1 ms, all within the unchanged 200 ms boundary. Maximum twelve mounted rows, last match reachable and real source opened. This is after-load sampled file-search evidence, not cold/JDT startup, symbols, Dense or JVM approval. [Methods and retained invalid diagnostics](migration/picker.md#full-production-project-with-5000-files--2026-10-23). Other performance failures remain OPEN.
+
+
+## Static environment capture ownership — 2026-10-23
+
+The actual environment capture counter previously rose 34 → 94 through fourteen public interaction checkpoints and increased again after recovery. The fixed owner stays at 1 throughout; recovery creates a new resource that stays at 1. This proves removal of repeated cube captures, not a measured command-latency gain. Main-entry gzip 71,761 bytes passes; shell static closure 670,269 bytes is diagnostic. The unchanged full Dense gate completes all ten stages but FAILS seek p50/p95 98.745/114.889 ms, Focus p95 134.283 ms and Home p95 165.676 ms against 55/112/125/152. Cold loads, all five orbit windows and the soak pass. One `ERR_NETWORK_IO_SUSPENDED` browser error also fails the runner. No command-latency benefit is demonstrated; Dense and separate retention failures remain OPEN. [Ownership, native evidence and limits](migration/static-environment.md). Whole-product A–G acceptance remains OPEN.

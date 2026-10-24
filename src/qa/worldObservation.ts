@@ -16,6 +16,7 @@ export interface WorldObservation {
   structuralLabels():readonly {id:string;kind:'cluster'|'heading'|'bundle'|'return';visible:boolean;minimumFontPixels:number;bounds:import('../shell/shellLayout').Rect|null}[]
   projectedPoint(id: string): { x:number; y:number; visible:boolean } | null
   renderer(): {calls:number;triangles:number;geometries:number;textures:number;frame:number}
+  environment():{id:string;captureVersion:number}|null
   effects():{ready:boolean;frames:number;revision:number;failure:string;cinematic:boolean}
   atmosphere():readonly {region:string;position:readonly[number,number,number];size:readonly[number,number,number];color:string;opacity:number;visible:boolean;depthWrite:boolean;depthTest:boolean;castShadow:boolean;maxLinearTint:number;maskSize:readonly[number,number]}[]
   framePerformance():import('./framePerformance').FramePerformanceObservation|null

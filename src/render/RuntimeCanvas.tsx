@@ -1,6 +1,6 @@
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { Environment, Lightformer } from '@react-three/drei';
+import { EnvironmentRig } from './EnvironmentRig';
 import type { Selection } from '../contracts/interaction';
 import type { LayoutState, PresentationPlan, SceneModel } from '../contracts/world';
 import type { Rect } from '../shell/shellLayout';
@@ -62,6 +62,7 @@ function Metrics({ scene, plan, selection,trace }: {
         if (import.meta.env.DEV||import.meta.env.VITE_QA==='1')
             window.__ggjavaezWorld={ scene: () => scene, plan: () => plan, selection:()=>selection,
                 recordedEvents:()=>trace.events,
+                environment:()=>world.environment?{id:world.environment.uuid,captureVersion:world.environment.pmremVersion}:null,
                 runtimeHeadings:()=>{
                     const headings:ReturnType<NonNullable<Window['__ggjavaezWorld']>['runtimeHeadings']>[number][]=[];
                     if(!(camera instanceof PerspectiveCamera))return headings;
@@ -249,12 +250,7 @@ export function RuntimeCanvas({ scene, plan, layout, safeFrame,inspectorRect, se
       <directionalLight position={[14, 4, -9]} intensity={1.8} color="#B57BFF"/>
       <directionalLight position={[lightTarget.x, lightTarget.y + 10, 8]} intensity={.6} color="#C9D6FF"/>
       <Suspense fallback={null}>
-        {!contextLost&&<Environment resolution={256} frames={1}>
-          <Lightformer form="rect" position={[-6, 10, 8]} rotation={[Math.PI / 4, 0, 0]} scale={[12, 4, 1]} color="#65ACFF" intensity={2.2}/>
-          <Lightformer form="rect" position={[14, 7, -8]} rotation={[0, Math.PI, 0]} scale={[8, 12, 1]} color="#B777FF" intensity={1.8}/>
-          <Lightformer form="rect" position={[2, 14, 0]} rotation={[Math.PI / 2, 0, 0]} scale={[14, 2, 1]} color="#EEF4FF" intensity={1}/>
-          <Lightformer form="rect" position={[2, -12, 0]} rotation={[-Math.PI / 2, 0, 0]} scale={[18, 18, 1]} color="#0A1230" intensity={.15}/>
-        </Environment>}
+        {!contextLost&&<EnvironmentRig/>}
         <Floor layout={layout} plan={plan} scene={scene} quality={quality}/>
         <SolidBatch scene={scene} plan={plan} onSelect={select} onFocus={onFocus}/>
         <FaceTextBatch>

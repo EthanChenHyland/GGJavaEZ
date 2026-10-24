@@ -116,3 +116,8 @@ Thirteen original-size images from the 27-case native run are archived and sourc
 ## Full-app 5,000-file search — 2026-10-23
 
 Both final desktop/narrow full-project Picker captures are opened at original size and source/report-bound. Focused query, actual generated paths and the complete 5,000-file counter are readable in the production Shell. This approves those two search captures; it does not approve World materials, typography, glow, reflection, clipping or the full reference matrix. [Evidence](migration/picker.md#full-production-project-with-5000-files--2026-10-23).
+
+
+## Static environment capture ownership — 2026-10-23
+
+Twenty-three source/report/hash-bound native originals are archived; the lead opens nine, including all five responsive Hero views, Focus, curated Cinematic, actual forensic Cinematic and actual context recovery. Fourteen remain unreviewed. All eight actual opaque face/chip palette samples pass across both tiers. Comparison with best.png retains OPEN findings for excessive crossing-route glow, matte fronts/flat Cinematic sides, deep text cutoff, weak reflection and clipped optional context. A separate panel-angle candidate was rejected for lacking demonstrated visual benefit. [Ownership, native evidence and limits](migration/static-environment.md). Whole-product A–G acceptance remains OPEN.

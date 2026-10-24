@@ -320,3 +320,8 @@ Full defaults: 2,157 passed / 70 existing opt-in skips, 233 files, 181.98 second
 ## Full-app 5,000-file search — 2026-10-23
 
 Permanent full-project file-search native regression passes 2/2, zero skips/failures/flaky, 9.325 seconds. Both originals are root-reviewed. All prior 949 source files, full unit inputs and fourteen production JS artifacts are byte-identical; prior full 2,157/70 result is reused explicitly because the new browser file is excluded from Vitest. Typechecks/browser TS/lint/build/reference/protected checks pass again on 950 source hashes. [Actual 5,000-source project, timing values and limits](migration/picker.md#full-production-project-with-5000-files--2026-10-23). Whole A–G remains OPEN.
+
+
+## Static environment capture ownership — 2026-10-23
+
+Full defaults pass 2,157 with 70 explicit opt-in skips (2,227 total), 233 files, 174.05 seconds. Typechecks, browser types, lint, build and reference/protected checks pass on 952 stable source hashes. Confirmed native RED becomes GREEN; broader graphics/replay passes 21/21, zero skips/failures/flaky, 133.597 seconds. Ten actual JVM IDs are identified, plus a separate actual Java fallback case without an attached ID. Curated cases remain separate. The separate unchanged full Dense case executes all ten stages without skipping but records four failed latency budgets and exits 1 on a saved `ERR_NETWORK_IO_SUSPENDED` browser-error assertion; rendering/soak/cold-load checks pass. [Ownership, native evidence and limits](migration/static-environment.md). Whole-product A–G acceptance remains OPEN.

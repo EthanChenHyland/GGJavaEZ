@@ -267,3 +267,8 @@ Forward target dependencies omit empty entries and keep single targets inline, p
 ## Full-app 5,000-file search — 2026-10-23
 
 A permanent browser regression exercises the actual 5,000-Java-file managed project through production Shell/Editor/Explorer/WebGL. It reuses only verified generated QA projects, observes native shortcut/focus/input events and opens real source. Production and existing unit inputs are unchanged. [Scope and correct capture boundary](migration/picker.md#full-production-project-with-5000-files--2026-10-23).
+
+
+## Static environment capture ownership — 2026-10-23
+
+The static environment now has one memoized owner. Runtime, selection and quality rerenders retain its panels/cube map; actual context loss remounts it. All panel settings and protected semantic/camera contracts remain unchanged. A read-only QA counter and permanent native regression cover capture identity/version through public interactions and recovery. [Ownership, native evidence and limits](migration/static-environment.md). Whole-product A–G acceptance remains OPEN.
