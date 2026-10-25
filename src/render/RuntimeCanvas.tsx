@@ -14,7 +14,7 @@ import { FaceTextBatch, textReadiness } from './FaceText';
 import { ACESFilmicToneMapping, Color, DataTexture, InstancedMesh, PerspectiveCamera, RGBAFormat, Sprite, SRGBColorSpace, UnsignedByteType, Vector3 } from 'three';
 import type {} from '../qa/worldObservation';
 import { SolidBatch,buildSolidBatch } from './SolidBatch';
-import { ConnectorBatch } from './ConnectorBatch';
+import { ConnectorTooltip,InteractiveConnectors } from './ConnectorInteraction';
 import {accessibleEntities,type AccessibleEntity} from '../interaction/accessibleEntities';
 import { QualityRuntime } from './quality/QualityRuntime';
 import { useQualityStore } from './quality/qualityStore';
@@ -217,7 +217,7 @@ export function RuntimeCanvas({ scene, plan, layout, safeFrame,inspectorRect, se
     },[])
     const select = (next: Selection) => { if (!moved.current)
         onSelect(next); };
-    return <div ref={worldElement} className="world-canvas" role="application" tabIndex={0} aria-label="Three-dimensional Java runtime world" onContextMenu={event => event.preventDefault()} onPointerDownCapture={event => { event.currentTarget.focus(); pointer.current = { x: event.clientX, y: event.clientY,button:event.button,orbitStarted:false }; moved.current = false; input.current?.shift(event.shiftKey); input.current?.cancel(); }} onPointerMoveCapture={event => {
+    return <div ref={worldElement} className="world-canvas" role="application" tabIndex={0} aria-label="Three-dimensional Java runtime world" onContextMenu={event => event.preventDefault()} onPointerLeave={()=>useInteractionStore.getState().setHover(null)} onPointerDownCapture={event => { useInteractionStore.getState().setHover(null);event.currentTarget.focus(); pointer.current = { x: event.clientX, y: event.clientY,button:event.button,orbitStarted:false }; moved.current = false; input.current?.shift(event.shiftKey); input.current?.cancel(); }} onPointerMoveCapture={event => {
         const gesture=pointer.current;if(!gesture)return;
         const distance=Math.hypot(event.clientX-gesture.x,event.clientY-gesture.y);
         if(distance>0&&!gesture.orbitStarted&&gesture.button===0&&(event.buttons&1)&&!event.shiftKey){input.current?.orbit();gesture.orbitStarted=true}
@@ -256,7 +256,7 @@ export function RuntimeCanvas({ scene, plan, layout, safeFrame,inspectorRect, se
         <FaceTextBatch>
         {[...plan.entities].map(([id, presented]) => <RuntimeSolid key={id} node={scene.entities[id]} presented={presented} plan={plan}/>)}
         <StructuralLabels scene={scene} plan={plan} safeFrame={safeFrame} inspectorRect={inspectorRect}/>
-        <ConnectorBatch curves={curves} onSelect={id => { if(plan.bundles.some(bundle=>bundle.id===id))select({kind:'bundle',id}); else if (scene.references.some(ref => ref.id === id)||scene.historicalBindings.some(binding=>binding.id===id))
+        <InteractiveConnectors scene={scene} plan={plan} curves={curves} onSelect={id => { if(plan.bundles.some(bundle=>bundle.id===id))select({kind:'bundle',id}); else if (scene.references.some(ref => ref.id === id)||scene.historicalBindings.some(binding=>binding.id===id))
         select({ kind: 'reference', id }); else if(plan.curves.some(curve=>curve.id===id)) select({kind:'flow',id}); }}/>
         {plan.structural.map(item => <WorldText key={item.id} position={item.position} size={.3} width={5} tint={color.ui.textSecondary}>{item.text}</WorldText>)}
         <ExceptionPanel panel={plan.exceptionPanel} recordingState={scene.recording.state} safeFrame={safeFrame}/>
@@ -270,6 +270,7 @@ export function RuntimeCanvas({ scene, plan, layout, safeFrame,inspectorRect, se
       <Metrics scene={scene} plan={plan} selection={selection} trace={trace}/>
       <PostPipeline/>
     </Canvas>}
+    {!contextLost&&supportsWebGL&&<ConnectorTooltip scene={scene} plan={plan}/>}
     {contextLost&&<div className="world-graphics-status glass" role="alert">{notice??'Restoring the World…'}{notice==='The World could not be restored'&&<button onClick={()=>graphicsRecovery.retry?.()}>Retry</button>}</div>}
     <div ref={list} className="gg-world-entities" role="listbox" tabIndex={-1} aria-label="Runtime entities" aria-activedescendant={selection&&activeIndex>=0?`world-entity-${encodeURIComponent(selection.id)}`:undefined}>
       {accessible.slice(Math.max(0,activeIndex-20),Math.max(40,activeIndex+21)).map((item,index)=><div key={item.id} id={`world-entity-${encodeURIComponent(item.id)}`} role="option" aria-selected={selection?.id===item.id} aria-posinset={Math.max(0,activeIndex-20)+index+1} aria-setsize={accessible.length}>{item.label}</div>)}

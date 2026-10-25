@@ -138,3 +138,7 @@ Actual Java desktop/narrow tests retain full ordinary signatures and stable invo
 ## Primitive and reference inset picking — 2026-10-24
 
 Four actual-JVM native cases click projected inset coordinates at desktop/narrow sizes, requiring the captured slot, exact primitive Inspector value, unchanged Focus/camera, recording, cursor and world contents. Integration 41/41 additionally preserves array replay, qualified headers, ownership travel, recursive camera override, quality switching and context recovery. [Evidence and old row-count reconciliation](migration/rounded-value-insets.md).
+
+## Captured connector hover — 2026-10-25
+
+Desktop/narrow actual-JVM pointer cases verify frame/field origins, target identity, 3 px halo-offset coverage, viewport bounds, <=200 ms show/hide observations, unchanged selection/cursor/camera, wheel/keyboard clearing and preserved core clicks. Full integration passes 45/45, including existing object/reference picking and manual camera override. Static/array/shadowed origins have unit metadata coverage. [Scope and evidence](migration/connector-hover.md).

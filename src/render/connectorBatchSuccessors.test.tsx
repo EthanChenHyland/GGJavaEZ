@@ -2,7 +2,7 @@
 // React hook cleanup without a browser, GPU or a second renderer implementation.
 import {createContext,type ReactNode} from 'react'
 import Reconciler from '@react-three/fiber/react-reconciler/index.js'
-import {BoxGeometry,InstancedMesh,type Material} from 'three'
+import {BoxGeometry,InstancedMesh,Matrix4,Vector3,type InstancedBufferAttribute,type Material} from 'three'
 import {LineSegments2} from 'three/addons/lines/LineSegments2.js'
 import type {LineMaterial} from 'three/addons/lines/LineMaterial.js'
 import {afterEach,expect,it,vi} from 'vitest'
@@ -84,6 +84,31 @@ it('picks the actual segment owner while halo and invalid segment hits cannot se
  click({faceIndex:2,stopPropagation:stop});expect(choose).toHaveBeenCalledExactlyOnceWith('ref/b');expect(stop).toHaveBeenCalledOnce()
  click({faceIndex:-1,stopPropagation:stop});expect(choose).toHaveBeenCalledTimes(1)
  expect(lines(view).find(item=>(line(item).material as LineMaterial).linewidth===8)!.props!.onClick).toBeUndefined()
+})
+it('covers the core and halo with one hover owner, rejecting obscured paths and active camera gestures',()=>{
+ const hover=vi.fn(),stop=vi.fn(),view=render(<ConnectorBatch curves={[curve(),curve('ref/b')]} onSelect={()=>{}} onHover={hover}/>),halo=lines(view).find(node=>(line(node).material as LineMaterial).linewidth===8)!
+ const move=halo.props!.onPointerMove as (event:{faceIndex:number;buttons:number;distance:number;intersections:{distance:number;object:{userData:Record<string,unknown>}}[];clientX:number;clientY:number;stopPropagation():void})=>void
+ const event={faceIndex:2,buttons:0,distance:2,intersections:[],clientX:200,clientY:300,stopPropagation:stop}
+ move(event);expect(hover).toHaveBeenLastCalledWith('ref/b',[200,300]);expect(stop).toHaveBeenCalledOnce()
+ move({...event,buttons:1});expect(hover).toHaveBeenLastCalledWith(null)
+ move({...event,intersections:[{distance:1,object:{userData:{runtimeBloomRole:'protected'}}}]});expect(hover).toHaveBeenLastCalledWith(null);expect(stop).toHaveBeenCalledOnce()
+ ;(halo.props!.onPointerOut as ()=>void)();expect(hover).toHaveBeenLastCalledWith(null)
+ expect(core(view).props!.onPointerMove).toBeUndefined();expect(halo.props!.onClick).toBeUndefined()
+})
+it('highlights only both hovered ports and restores them without rebuilding line geometry or moving terminals',()=>{
+ const input=[curve(),curve('ref/b',{opacity:.35})],view=render(<ConnectorBatch curves={input} onSelect={()=>{}}/>),first=line(core(view)),matrix=new Matrix4(),scale=new Vector3(),position=new Vector3()
+ const ports=()=>view.nodes().find(node=>(node.props?.userData as {runtimeConnectorPorts?:boolean})?.runtimeConnectorPorts)!
+ const alpha=()=>view.nodes().filter(node=>node.props?.attach==='attributes-runtimeAlpha')[0].props!.object as InstancedBufferAttribute
+ view.rerender(<ConnectorBatch curves={input} onSelect={()=>{}} hoverId="ref/b"/>);expect(line(core(view))).toBe(first)
+ for(let index=0;index<4;index++){
+  ports().publicInstance!.getMatrixAt(index,matrix);scale.setFromMatrixScale(matrix);position.setFromMatrixPosition(matrix)
+  expect(scale.toArray()).toEqual(Array(3).fill(index<2?1:1.5));expect(alpha().getX(index)).toBe(1)
+  expect(position.toArray()).toEqual((index%2?input[Math.floor(index/2)].points.at(-1)!:input[Math.floor(index/2)].points[0]).map(Math.fround))
+ }
+ view.rerender(<ConnectorBatch curves={input} onSelect={()=>{}}/>);expect(line(core(view))).toBe(first)
+ for(let index=0;index<4;index++){
+  ports().publicInstance!.getMatrixAt(index,matrix);expect(scale.setFromMatrixScale(matrix).toArray()).toEqual([1,1,1]);expect(alpha().getX(index)).toBeCloseTo(index<2?1:.35)
+ }
 })
 it('reuses material programs across equivalent coordinate wrappers and disposes each replaced batch geometry',()=>{
  const input=curve(),view=render(<ConnectorBatch curves={[input]} onSelect={()=>{}}/>),first=line(core(view)),disposed=vi.fn(),materialDisposed=vi.fn()

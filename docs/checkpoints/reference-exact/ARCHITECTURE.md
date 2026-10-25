@@ -288,3 +288,7 @@ Ordinary qualified signatures can use two lines within the existing fixed header
 ## Rounded value insets and floor fade — 2026-10-24
 
 Captured primitive rows gain a value-column inset; valid reference insets share an actually extruded rounded XY template with fixed physical corners. Renderer-owned face-band materials survive temporary batch retirement and dispose once with the renderer; mask proxies retain the same outline. Canonical row hit/mutation bounds, ports, IDs and values remain unchanged. The grid uses a quadratic distance fade with existing spacing/colors/reflection settings. [Ownership and preservation proof](migration/rounded-value-insets.md).
+
+## Connector hover ownership — 2026-10-25
+
+The existing interaction hover state now carries a pointer and presentation generation. Narrow subscribers separate port emphasis from tooltip coordinates; camera pose/intent and scene-generation changes retire stale hover. Captions resolve captured metadata and canonical indices. Core click mapping and runtime state are unchanged. [Ownership and lifecycle](migration/connector-hover.md).

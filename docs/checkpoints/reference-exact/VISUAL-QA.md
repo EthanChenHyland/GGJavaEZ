@@ -137,3 +137,7 @@ Captured declaring type, method and parameter text now fit ordinary Hero/Focus h
 ## Rounded value insets and softer distant grid — 2026-10-24
 
 Primitive values and represented references share rounded geometry inside existing measured value columns. Far grid lines fade more strongly. Six of forty-two current integration originals were reviewed at full size; thirty-six remain unreviewed. Four of eleven preflight originals were separately reviewed. Fonts/cutoff, crossing glow, matte faces, reflections and clipping remain OPEN. [Source-bound review and cost tradeoff](migration/rounded-value-insets.md).
+
+## Captured hover captions and ports — 2026-10-25
+
+All four native hover originals, narrow Hero and Cinematic Person were reviewed at full size. Captured captions fit both viewports and distinguish declaring field types; the port highlight remains in the existing visual vocabulary. Six of forty-six integration originals are reviewed, forty remain unreviewed. Two of four separate final preflight originals were reviewed. Typography/cutoff, glow, matte faces, reflections and clipping remain OPEN. [Source-bound evidence](migration/connector-hover.md).

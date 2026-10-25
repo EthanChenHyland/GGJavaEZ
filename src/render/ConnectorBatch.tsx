@@ -1,15 +1,17 @@
 import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
-import { useThree } from '@react-three/fiber';
+import { useThree,type ThreeEvent } from '@react-three/fiber';
 import { Color, InstancedBufferAttribute, InstancedMesh, Object3D, Vector3 } from 'three';
 import { LineSegments2 } from 'three/addons/lines/LineSegments2.js';
 import { LineSegmentsGeometry } from 'three/addons/lines/LineSegmentsGeometry.js';
 import type { PresentedCurve } from '../contracts/world';
 import { connectorMaterial,roleColor } from './RuntimeMaterials';
 import {instanceAlphaMaterial} from './instanceAlpha';
-function Curves({ curves, halo, onSelect }: {
+type Hover=(id:string|null,pointer?:readonly[number,number])=>void;
+function Curves({ curves, halo, onSelect,onHover }: {
     curves: readonly PresentedCurve[];
     halo: boolean;
     onSelect(id: string): void;
+    onHover?:Hover;
 }) {
     const { size } = useThree();
     const widthPx=halo?2.5:curves[0].widthPx;
@@ -37,7 +39,12 @@ function Curves({ curves, halo, onSelect }: {
     }, [curves, material]);
     useLayoutEffect(() => { data.material.resolution.set(size.width, size.height); }, [data, size.width, size.height]);
     useEffect(() => () => data.geometry.dispose(), [data]);
-    return <primitive object={data.line} onClick={halo ? undefined : (event: {
+    return <primitive object={data.line} onPointerMove={halo&&onHover?(event:ThreeEvent<PointerEvent>)=>{
+        const id=data.ids[event.faceIndex??-1];
+        const obscured=event.intersections.some(hit=>hit.distance+1e-4<event.distance&&hit.object.userData.runtimeBloomRole==='protected');
+        if(event.buttons||!id||obscured){onHover(null);return;}
+        event.stopPropagation();onHover(id,[event.clientX,event.clientY]);
+    }:undefined} onPointerOut={halo&&onHover?()=>onHover(null):undefined} onClick={halo ? undefined : (event: {
         faceIndex?: number | null;
         stopPropagation(): void;
     }) => { const id = data.ids[event.faceIndex ?? -1]; if (id) {
@@ -45,19 +52,21 @@ function Curves({ curves, halo, onSelect }: {
         onSelect(id);
     } }}/>;
 }
-function Endpoints({ curves }: {
+function Endpoints({ curves,hoverId }: {
     curves: readonly PresentedCurve[];
+    hoverId?:string|null;
 }) {
     const ref = useRef<InstancedMesh>(null);
     const material=useMemo(instanceAlphaMaterial,[]);
-    const alpha=useMemo(()=>new InstancedBufferAttribute(new Float32Array(curves.flatMap(curve=>[curve.opacity,curve.opacity])),1),[curves]);
+    const alpha=useMemo(()=>new InstancedBufferAttribute(new Float32Array(curves.flatMap(curve=>curve.id===hoverId?[1,1]:[curve.opacity,curve.opacity])),1),[curves,hoverId]);
     useEffect(()=>()=>material.dispose(),[material]);
     useLayoutEffect(() => {
         const mesh = ref.current;
         if (!mesh)
             return;
         const transform = new Object3D(), color = new Color();
-        curves.forEach((curve, index) => { color.set(roleColor[curve.colorRole]).multiplyScalar(1.1); for (const [side, point] of [curve.points[0], curve.points.at(-1)!].entries()) {
+        curves.forEach((curve, index) => { color.set(roleColor[curve.colorRole]).multiplyScalar(curve.id===hoverId?1.65:1.1); for (const [side, point] of [curve.points[0], curve.points.at(-1)!].entries()) {
+            transform.scale.setScalar(curve.id===hoverId?1.5:1);
             transform.position.set(...point);
             transform.updateMatrix();
             mesh.setMatrixAt(index * 2 + side, transform.matrix);
@@ -67,8 +76,8 @@ function Endpoints({ curves }: {
         if (mesh.instanceColor)
             mesh.instanceColor.needsUpdate = true;
         mesh.computeBoundingSphere();
-    }, [curves]);
-    return <instancedMesh userData={{runtimeBloomRole:'emitter'}} ref={ref} material={material} args={[undefined, undefined, curves.length * 2]} raycast={() => undefined}><sphereGeometry args={[.08, 8, 6]}><primitive object={alpha} attach="attributes-runtimeAlpha"/></sphereGeometry></instancedMesh>;
+    }, [curves,hoverId]);
+    return <instancedMesh userData={{runtimeBloomRole:'emitter',runtimeConnectorPorts:true}} ref={ref} material={material} args={[undefined, undefined, curves.length * 2]} raycast={() => undefined}><sphereGeometry args={[.08, 8, 6]}><primitive object={alpha} attach="attributes-runtimeAlpha"/></sphereGeometry></instancedMesh>;
 }
 function Arrows({ curves }: {
     curves: readonly PresentedCurve[];
@@ -93,9 +102,11 @@ function Arrows({ curves }: {
     return <instancedMesh userData={{runtimeBloomRole:'emitter'}} ref={ref} material={material} args={[undefined, undefined, items.length]} raycast={() => undefined}><coneGeometry args={[.08, .24, 6]}><primitive object={alpha} attach="attributes-runtimeAlpha"/></coneGeometry></instancedMesh>;
 }
 /** Pixel-width cores and halos are merged by three bounded emphasis bands. */
-export function ConnectorBatch({ curves, onSelect }: {
+export function ConnectorBatch({ curves, onSelect,onHover,hoverId }: {
     curves: readonly PresentedCurve[];
     onSelect(id: string): void;
+    onHover?:Hover;
+    hoverId?:string|null;
 }) {
     const bands = useMemo(() => {
         const groups = new Map<string, PresentedCurve[]>();
@@ -106,5 +117,5 @@ export function ConnectorBatch({ curves, onSelect }: {
         }
         return [...groups];
     }, [curves]);
-    return <>{curves.length > 0 && <Curves curves={curves} halo onSelect={onSelect}/>} {bands.map(([key, group]) => <Curves key={key} curves={group} halo={false} onSelect={onSelect}/>)}{curves.length > 0 && <><Endpoints curves={curves}/><Arrows curves={curves}/></>}</>;
+    return <>{curves.length > 0 && <Curves curves={curves} halo onSelect={onSelect} onHover={onHover}/>} {bands.map(([key, group]) => <Curves key={key} curves={group} halo={false} onSelect={onSelect}/>)}{curves.length > 0 && <><Endpoints curves={curves} hoverId={hoverId}/><Arrows curves={curves}/></>}</>;
 }
