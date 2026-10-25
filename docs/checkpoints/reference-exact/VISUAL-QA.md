@@ -145,3 +145,7 @@ All four native hover originals, narrow Hero and Cinematic Person were reviewed 
 ## Static and virtualized connector origins — 2026-10-25
 
 Four of ten integration originals were reviewed at original resolution: static/array connector captions at 1440×900 and 760×900. All four separate preflight originals were reviewed too. Captions show captured `shared`/`[6500]` and target identities within the viewport. Array captures use Home/native dolly; they do not establish immediate Focus framing or distant cell readability. Six integration originals remain unreviewed. [Source-bound captures and visible limitations](migration/connector-origins.md). Final reference convergence remains OPEN.
+
+## Focus anchor reconciliation — 2026-10-25
+
+Six of 54 latest native originals are root reviewed at full size: four desktop/narrow cell Focus cases including reduced motion, narrow Hero and curated Cinematic Person. Forty-eight remain unreviewed; the separate Dense original was also reviewed. Cell `[6500]` now fits its actual free rectangle, including above the narrow Inspector sheet. Small distant text, strong route glow, matte faces, structural-heading limits and optional clipping remain visible. The combined gate still fails one source-editor loading case. [Captures and limits](migration/focus-anchor-reconciliation.md). This is not final reference or motion acceptance.

@@ -16,6 +16,49 @@ test.afterEach(async({request})=>{
  }
 })
 
+for(const viewport of[{width:1440,height:900},{width:760,height:900}])for(const reducedMotion of[false,true])test(`actual virtualized array Focus contains canonical cell ${viewport.width}x${viewport.height}${reducedMotion?' reduced motion':''}`,async({page,request})=>{
+ test.setTimeout(90000);const errors=browserErrors(page);await page.setViewportSize(viewport)
+ await page.emulateMedia({reducedMotion:reducedMotion?'reduce':'no-preference'})
+ const session=await runOrigins(page,request)
+ const arrayId=await page.evaluate(()=>Object.values(window.__ggjavaezWorld!.scene().entities).find(node=>node.kind==='array'&&node.length===10001)!.id)
+ await selectArrayThroughCatalog(page,arrayId)
+ const inspector=page.getByRole('complementary',{name:'Selection inspector',exact:true})
+ await inspector.getByRole('spinbutton',{name:'Recorded values index',exact:true}).fill('6500');await page.keyboard.press('Enter')
+ await inspector.getByRole('button',{name:'Reveal index 6500',exact:true}).click();await ready(page)
+ const slotId=`${arrayId}:element:6500`
+ const before=await page.evaluate(({arrayId,slotId})=>({pose:window.__ggjavaezQA!.cameraPose(),cell:window.__ggjavaezWorld!.plan().cellWindows.get(arrayId)!.mapping.get(slotId),cursor:window.__ggjavaezWorld!.scene().cursor}),{arrayId,slotId})
+ await focusSelection(page)
+ const after=await page.evaluate(({arrayId,slotId})=>({pose:window.__ggjavaezQA!.cameraPose(),cell:window.__ggjavaezWorld!.plan().cellWindows.get(arrayId)!.mapping.get(slotId),cursor:window.__ggjavaezWorld!.scene().cursor,shell:window.__ggjavaezQA!.shellRects(),focus:window.__ggjavaezQA!.focusTarget(),selection:window.__ggjavaezQA!.selection(),point:window.__ggjavaezWorld!.projectedPoint(slotId),framing:window.__ggjavaezWorld!.plan().framing,detail:window.__ggjavaezWorld!.plan().detailLevel}),{arrayId,slotId})
+ const camera=new PerspectiveCamera(36,viewport.width/viewport.height,.05,10000);camera.position.set(...after.pose.position);camera.lookAt(...after.pose.target);camera.updateMatrixWorld()
+ const anchor=after.cell!.anchor,points=[-1,1].flatMap(x=>[-1,1].map(y=>new Vector3(anchor.position[0]+x*anchor.size[0]/2,anchor.position[1]+y*anchor.size[1]/2,anchor.position[2]+anchor.size[2]/2).project(camera)))
+ const face={left:Math.min(...points.map(p=>(p.x+1)*viewport.width/2)),right:Math.max(...points.map(p=>(p.x+1)*viewport.width/2)),top:Math.min(...points.map(p=>(1-p.y)*viewport.height/2)),bottom:Math.max(...points.map(p=>(1-p.y)*viewport.height/2))}
+ const capture=`array6500-focus-${viewport.width}x${viewport.height}${reducedMotion?'-reduced':''}`
+ await page.screenshot({path:`.ggjavaez/qa/reference-exact/${capture}.png`})
+ await writeFile(`.ggjavaez/qa/reference-exact/${capture}.json`,JSON.stringify({sessionId:session.id,before,after,face,errors},null,2)+'\n')
+ expect(after.selection).toEqual({kind:'slot',id:slotId});expect(after.focus?.targetId).toBe(slotId);expect(after.cursor).toBe(before.cursor)
+ expect(after.point?.visible,'The focused canonical cell must be in the viewport').toBe(true)
+ expect(after.point!.x).toBeGreaterThanOrEqual(after.shell.safeFrame.x);expect(after.point!.x).toBeLessThanOrEqual(after.shell.safeFrame.x+after.shell.safeFrame.width)
+ const bottom=viewport.width<1024&&after.shell.inspector?after.shell.inspector.y:after.shell.safeFrame.y+after.shell.safeFrame.height
+ expect(after.point!.y).toBeGreaterThanOrEqual(after.shell.safeFrame.y);expect(after.point!.y).toBeLessThanOrEqual(bottom)
+ expect(after.cell!.index).toBe(6500)
+ expect(face.left).toBeGreaterThanOrEqual(after.shell.safeFrame.x);expect(face.right).toBeLessThanOrEqual(after.shell.safeFrame.x+after.shell.safeFrame.width)
+ expect(face.top).toBeGreaterThanOrEqual(after.shell.safeFrame.y);expect(face.bottom).toBeLessThanOrEqual(bottom)
+ expect(face.bottom-face.top).toBeGreaterThanOrEqual(viewport.height*.38-1);expect(face.bottom-face.top).toBeLessThanOrEqual(viewport.height*.52+1)
+ // A later LOD change caused by real input belongs to the user. Focus identity
+ // remains, but the completed scripted request must not pull the camera back.
+ await page.mouse.move(after.shell.safeFrame.x+after.shell.safeFrame.width*.7,after.shell.safeFrame.y+25)
+ await page.mouse.wheel(0,3000);await ready(page);await page.waitForTimeout(250)
+ await page.locator('.world-canvas').focus();await page.keyboard.press('-');await ready(page)
+ const explored=await page.evaluate(()=>({pose:window.__ggjavaezQA!.cameraPose(),selection:window.__ggjavaezQA!.selection(),focus:window.__ggjavaezQA!.focusTarget(),detail:window.__ggjavaezWorld!.plan().detailLevel,cursor:window.__ggjavaezWorld!.scene().cursor}))
+ expect(explored.detail).not.toBe(after.detail);expect(explored.selection).toEqual(after.selection);expect(explored.focus).toEqual(after.focus);expect(explored.cursor).toBe(after.cursor)
+ const distance=(pose:typeof after.pose)=>Math.hypot(...pose.position.map((coordinate,index)=>coordinate-pose.target[index]))
+ expect(distance(explored.pose)).toBeGreaterThan(distance(after.pose)*3)
+ await page.waitForTimeout(250);await ready(page)
+ expect(await page.evaluate(()=>window.__ggjavaezQA!.cameraPose())).toEqual(explored.pose)
+ await writeFile(`.ggjavaez/qa/reference-exact/${capture}.json`,JSON.stringify({sessionId:session.id,before,after,face,explored,errors},null,2)+'\n')
+ expect(errors).toEqual([])
+})
+
 async function runOrigins(page:Page,request:APIRequestContext):Promise<ExecutionSession>{
  const previous=await currentSession(request)
  expect(previous===null||!activePhases.includes(previous.phase),'Do not interrupt another active JVM').toBe(true)

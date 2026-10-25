@@ -48,6 +48,7 @@ export function CameraRig({scene,plan,event,layout,safeFrame,inspectorRect,input
  // commands retain their own lifecycle; user input clears the Hero intent.
  const framingCutKey=JSON.stringify([scene.recordingId,scene.cursor,plan.detailLevel,[...plan.entities.keys()],[...plan.pinned],plan.clusters.map(cluster=>cluster.id),safeFrame,size.width,size.height])
  const handledIntent=useRef(-1)
+ const focusRequest=useRef<{revision:number;anchorKey:string;deadline:number}|null>(null)
  const anchorForFocus=(targetId:string)=>{
   const {scene,plan}=latest.current,owner=plan.framing.focus?.targetId??targetId
   const cell=[...plan.cellWindows.values()].flatMap(window=>[...window.mapping.values()]).find(cell=>cell.anchor.entityId===targetId)
@@ -64,6 +65,9 @@ export function CameraRig({scene,plan,event,layout,safeFrame,inspectorRect,input
  const homeCache=useRef<{scene:SceneModel;key:string;pose:OrbitPose}|null>(null)
  const home=()=>{const current=latest.current,key=framingCutKey;if(homeCache.current?.scene===current.scene&&homeCache.current.key===key)return homeCache.current.pose;const pose=homeFraming(current.scene,current.plan,current.safeFrame,size,layout).pose;homeCache.current={scene:current.scene,key,pose};return pose}
  const commandArea=()=>size.width<1024&&inspectorRect?{...safeFrame,height:Math.max(0,Math.min(safeFrame.y+safeFrame.height,inspectorRect.y-size.height*.01)-safeFrame.y)}:safeFrame
+ const focusIntent=useCameraStore.getState().intent
+ const focusAnchor=focusIntent?.kind==='focus'?anchorForFocus(focusIntent.targetId):null
+ const focusAnchorKey=focusAnchor?JSON.stringify([focusAnchor.entityId,focusAnchor.region,focusAnchor.position,focusAnchor.size]):null
  useEffect(()=>{
   if(!(camera instanceof PerspectiveCamera))return
   camera.fov=tokens.fov;camera.near=.05;camera.far=10000;camera.updateProjectionMatrix()
@@ -71,8 +75,12 @@ export function CameraRig({scene,plan,event,layout,safeFrame,inspectorRect,input
  },[scene.recordingId,camera])
  useEffect(()=>{
   const state=useCameraStore.getState(),intent=state.intent
-  if(handledIntent.current===intentRevision&&intent?.kind!=='hero')return
+  const sameIntent=handledIntent.current===intentRevision
+  const refitFocus=sameIntent&&intent?.kind==='focus'&&focusAnchorKey!==null
+   &&focusRequest.current?.revision===intentRevision&&focusRequest.current.anchorKey!==focusAnchorKey
+  if(sameIntent&&intent?.kind!=='hero'&&!refitFocus)return
   handledIntent.current=intentRevision
+  if(intent?.kind!=='focus')focusRequest.current=null
   if(!intent){move.current=null;return}
   invalidate()
   if(intent.kind==='pose'){move.current=null;camera.position.set(...cameraPosition(intent.pose));controls.current?.target.set(...intent.pose.target);previous.current=eye();return}
@@ -85,7 +93,12 @@ export function CameraRig({scene,plan,event,layout,safeFrame,inspectorRect,input
    // Focus request uses the free rectangle above that actual visible sheet.
    const area=commandArea()
    const neighbours=(plan.framing.focus?.neighbours??[]).flatMap(id=>scene.entities[id]?[scene.entities[id].anchor]:[])
-   begin(focusFraming(anchor,focusAngles(anchor,neighbours,useInteractionStore.getState().focus?.kind==='cluster'),area,size),motion.focusMs)
+   // Semantic zoom can repack a virtualized cell during this command. Follow
+   // its current anchor without extending the original arrival deadline.
+   // User input clears the intent, so later exploration never triggers refits.
+   const deadline=refitFocus?focusRequest.current!.deadline:productionClock.now()+(reduced()?0:motion.focusMs)
+   focusRequest.current={revision:intentRevision,anchorKey:focusAnchorKey!,deadline}
+   begin(focusFraming(anchor,focusAngles(anchor,neighbours,useInteractionStore.getState().focus?.kind==='cluster'),area,size),Math.max(0,deadline-productionClock.now()))
   }
   if(intent.kind==='exitFocus')begin(intent.pose,motion.exitFocusMs)
   if(intent.kind==='zoom'){move.current=null;const pivot=controls.current?.target??new Vector3();camera.position.sub(pivot).multiplyScalar(intent.factor).add(pivot)}
@@ -111,7 +124,7 @@ export function CameraRig({scene,plan,event,layout,safeFrame,inspectorRect,input
    move.current={...route,start:productionClock.now(),duration:reduced()?0:900,home:false}
    invalidate()
   }
- },[intentRevision,framingCutKey])
+ },[intentRevision,framingCutKey,focusAnchorKey])
  useEffect(()=>{
   const cancel=()=>{move.current=null;lastFollow.current=-1;useCameraStore.getState().setPose(orbitPoseFromEye(eye()));useCameraStore.getState().userInput();invalidate()}
   const orbit=()=>{

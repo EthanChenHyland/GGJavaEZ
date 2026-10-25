@@ -146,3 +146,7 @@ Desktop/narrow actual-JVM pointer cases verify frame/field origins, target ident
 ## Static and virtualized connector origins — 2026-10-25
 
 New actual-JVM desktop/narrow cases verify `shared` and large-array `[6500]` hover through native catalog/Inspector/Reveal/Focus/Home/dolly navigation. The window maps semantic index 6500 to presented slot 63; captions preserve 6500 and captured targets. Hover preserves prefix, selection and camera. Combined hover/array integration passes 10/10 with four actual JVMs and six curated workflows. Immediate large-cell Focus framing remains a follow-up; array hover is captured after Home/exploration. [Evidence and boundary](migration/connector-origins.md).
+
+## Focus anchor reconciliation — 2026-10-25
+
+Actual `[6500]` Focus previously followed presented slot 23 after semantic zoom moved the canonical cell to slot 63. Four desktop/narrow normal/reduced-motion cases now require whole-face containment, the existing height band, unchanged prefix/selection and native zoom cancellation through FAR detail. All four pass. The latest combined native gate remains FAILED: 50 pass, one curated array case fails source-editor module loading. Earlier suspension/timeout attempts and passing isolated reruns remain separately recorded. [Exact cases and evidence](migration/focus-anchor-reconciliation.md).

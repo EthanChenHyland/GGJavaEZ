@@ -354,3 +354,7 @@ Source `585ee9f72d8768ae673e4a39d045ee1b4d87571a7e6a19b6f2521870d18806b0` passes
 ## Static and virtualized connector origins — 2026-10-25
 
 Source `ae5a19c0de4d4a824a4e7ab2a6969b7f560286b136c4a0bfc4848a8513b2cfeb` passes seven fresh type/lint/build/reference/protected gates and 10/10 native integration cases, zero skips/failures/flaky, 71.914 seconds. Four actual JVM IDs are attached; six array workflows are curated. All 960 prior inputs and fourteen production JS resources are byte-identical, so the parent's 2,184/70 default result is reused explicitly. Four of ten current originals are root reviewed. [Native workflows, diagnostics and limits](migration/connector-origins.md). A–G remains OPEN.
+
+## Focus anchor reconciliation — 2026-10-25
+
+Source `6bb9bfd548110be09420296ad718fafe7e7a66e1a5fc29482d633486d674ccc1` passes 2,184 defaults with 70 explicit opt-in skips (2,254 total, 235 files), typechecks/lint/build/reference checks and protected checks allowing only the demonstrated CameraRig exception. Stronger native preflight passes 4/4. The latest complete native attempt is 50 passed / one source-loading failure / zero skips or flaky cases; 38 attached actual-JVM cases and the separate actual Java fallback pass. Dense completes all ten stages without browser errors but FAILS three fixed latency budgets. [All three combined attempts, isolated traces and limitations](migration/focus-anchor-reconciliation.md). Whole A–G remains OPEN.

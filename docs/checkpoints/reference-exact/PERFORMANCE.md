@@ -259,3 +259,7 @@ The unchanged ten-stage actual-JVM Dense run completes with zero browser errors.
 ## Test-only origin coverage — 2026-10-25
 
 Static/large-array native coverage changes no production file: all 960 prior inputs and fourteen built JS resources match `91f1161`. Entry gzip stays 71,759 bytes; entry/Shell static closures stay 72,187/673,164 diagnostic bytes. No new timing or retention approval is claimed. The parent's three Dense latency failures and prior independent retention failures remain OPEN. [Source/build proof and checks](migration/connector-origins.md).
+
+## Focus anchor reconciliation — 2026-10-25
+
+Frozen source `6bb9bfd548110be09420296ad718fafe7e7a66e1a5fc29482d633486d674ccc1` completes all ten unchanged Dense stages with zero browser errors/suspended requests. Actual JVM `3fc5b4ba-edfd-4961-a3e4-8012b8eae182` is FULL, 7,492 raw / 9,852 normalized, completed exit 0. Seek p50 82.614 ms, Focus p95 150.605 ms and Home p95 166.599 ms still FAIL 55/125/152 ms. Seek p95 99.854 ms and cold median 4,112.216 ms pass; all orbit/soak budgets pass. Individual frame maxima still reach 207.6/364.7 ms. Whole-frontend post-GC heap growth is -0.02067%; this is not independent presentation-retention approval. Entry gzip is 71,760 bytes. [Complete measurements and limits](migration/focus-anchor-reconciliation.md). Overall performance approval remains FAILED.

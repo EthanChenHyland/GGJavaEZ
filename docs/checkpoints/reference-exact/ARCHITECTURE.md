@@ -292,3 +292,7 @@ Captured primitive rows gain a value-column inset; valid reference insets share 
 ## Connector hover ownership — 2026-10-25
 
 The existing interaction hover state now carries a pointer and presentation generation. Narrow subscribers separate port emphasis from tooltip coordinates; camera pose/intent and scene-generation changes retire stale hover. Captions resolve captured metadata and canonical indices. Core click mapping and runtime state are unchanged. [Ownership and lifecycle](migration/connector-hover.md).
+
+## Focus anchor reconciliation — 2026-10-25
+
+CameraRig tracks the current geometry and original deadline of an active Focus intent. A virtualized array-window repack refits that destination without extending arrival time; existing user-input cancellation clears the intent and prevents a later pullback. No new store, command or runtime contract is introduced. CameraRig is the sole, demonstrated camera-boundary exception. [Native RED/GREEN proof and integration limits](migration/focus-anchor-reconciliation.md).
