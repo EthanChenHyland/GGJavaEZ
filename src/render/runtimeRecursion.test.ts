@@ -20,8 +20,9 @@ describe('production deep-stack successors',()=>{
   expect(scene.order.frames).toHaveLength(6)
   for(const [index,id]of scene.order.frames.entries()){
    const node=scene.entities[id];if(node.kind!=='frame')throw new Error('Expected invocation')
-   const model=faceRows(node,plan.entities.get(id)!),chips=buildSolidBatch(scene,plan).filter(solid=>solid.role==='face'&&model.visible.some(row=>row.slotId===solid.pick.id))
-   expect(chips).toHaveLength(model.visible.length)
+   const model=faceRows(node,plan.entities.get(id)!),surfaces=buildSolidBatch(scene,plan).filter(solid=>solid.role==='face'&&model.visible.some(row=>row.slotId===solid.pick.id))
+   expect(surfaces.filter(solid=>!solid.part)).toHaveLength(model.visible.length)
+   for(const row of model.visible)expect(surfaces.filter(solid=>solid.pick.id===row.slotId&&solid.part?.startsWith('primitive-chip'))).toHaveLength(row.value.kind==='primitive'?2:0)
    for(const row of model.visible){const port=faceRowPort(node,plan.entities.get(id)!,row.slotId)!;expect(port[1]).toBeLessThan(node.anchor.position[1]+node.anchor.size[1]/2);expect(port[1]).toBeGreaterThan(node.anchor.position[1]-node.anchor.size[1]/2)}
    if(index)expect(node.rows.find(row=>row.name==='n')?.value.exact).toBe(String(6-index))
    if(index>0&&index<5)expect(Object.values(state.frames[id].locals).find(slot=>slot.name==='child')?.value.kind).toBe('uninitialized')

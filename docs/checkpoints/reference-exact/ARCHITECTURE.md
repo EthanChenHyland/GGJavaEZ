@@ -284,3 +284,7 @@ Deterministic windows retain identity when topology, budget and normalized admis
 ## Qualified frame headers — 2026-10-24
 
 Ordinary qualified signatures can use two lines within the existing fixed header. The shared heading helper owns metadata reserve and title position, including the 0.06-unit lift; existing camera admission reads the same plane. Other labels retain their single-line path. Read-only QA uses actual visible glyph-path bounds. [Design, fidelity boundary and evidence](migration/frame-title-layout.md).
+
+## Rounded value insets and floor fade — 2026-10-24
+
+Captured primitive rows gain a value-column inset; valid reference insets share an actually extruded rounded XY template with fixed physical corners. Renderer-owned face-band materials survive temporary batch retirement and dispose once with the renderer; mask proxies retain the same outline. Canonical row hit/mutation bounds, ports, IDs and values remain unchanged. The grid uses a quadratic distance fade with existing spacing/colors/reflection settings. [Ownership and preservation proof](migration/rounded-value-insets.md).

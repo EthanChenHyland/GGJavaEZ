@@ -4,7 +4,7 @@ import type { Intersection, Raycaster } from 'three';
 import type { Selection } from '../contracts/interaction';
 import type { PresentationPlan, SceneEntity, SceneModel, Vec3, WorldAnchor } from '../contracts/world';
 import { color, world } from '../theme/tokens';
-import { glassMaterial, unitBox, roundedDepthMaterial, roundedDistanceMaterial } from './RuntimeMaterials';
+import { faceMaterial, glassMaterial, unitBox, roundedDepthMaterial, roundedDistanceMaterial } from './RuntimeMaterials';
 import { expandRoundedBoxVertex, unitRoundedBox, unitRoundedOutline } from './geometry/roundedBox';
 import { faceRows } from './faceModel';
 import { facePlate } from '../world/facePlate';
@@ -13,6 +13,7 @@ import { resolveArrayWindowPick, type ArrayWindowPick } from '../world/arrayWind
 import { useCameraStore } from '../camera/cameraStore';
 import {arrayCellTargeted} from './arrayCellStyle';
 import {faceRowColumns} from './text/faceTypography';
+import {unitRoundedChip} from './geometry/roundedChip';
 type Pick = NonNullable<Selection>;
 interface SolidPress {pick:Pick;arrayPick?:ArrayWindowPick;recordingId:string}
 interface Solid {
@@ -24,7 +25,7 @@ interface Solid {
     tint: string;
     edge?: string;
     arrayPick?: ArrayWindowPick;
-    part?: 'reference-chip-rim' | 'reference-chip';
+    part?: 'reference-chip-rim' | 'reference-chip' | 'primitive-chip-rim' | 'primitive-chip';
 }
 function entityPick(node: SceneEntity): Pick { return { kind: node.kind === 'frame' ? 'frame' : node.kind === 'class' ? 'class' : 'object', id: node.id }; }
 // Pre-composite a subdued rim from the existing palette, keeping opaque value
@@ -59,14 +60,15 @@ export function buildSolidBatch(scene: SceneModel, plan: PresentationPlan): Soli
         const columns=faceRowColumns(node,presented,model);
         for(const row of model.visible){
             rowPlate(row.slotId);
-            if(row.value.kind!=='reference'||row.value.observation==='UNAVAILABLE'||!scene.entities[row.value.targetId])continue;
+            const reference=row.value.kind==='reference'&&row.value.observation!=='UNAVAILABLE'&&!!scene.entities[row.value.targetId];
+            if(!reference&&row.value.kind!=='primitive')continue;
             const background=facePlate(node,presented,row.slotId,model);
             if(!background)continue;
             // Whole-row hit/mutation bounds remain unchanged. Only the actual
-            // reference's value column receives this inset, below its text.
+            // captured value column receives this inset, below its text.
             const centre=x+w/2-.28-columns.value/2,height=model.pitch*.62;
-            plate(row.slotId,[centre,background.position[1],face+.042],[columns.value+.12,height+.08,.012],chipRims[role],opacity,undefined,'reference-chip-rim');
-            plate(row.slotId,[centre,background.position[1],face+.050],[columns.value+.04,height,.012],'chip' in palette?palette.chip:palette.face,opacity,undefined,'reference-chip');
+            plate(row.slotId,[centre,background.position[1],face+.042],[columns.value+.12,height+.08,.012],chipRims[role],opacity,undefined,reference?'reference-chip-rim':'primitive-chip-rim');
+            plate(row.slotId,[centre,background.position[1],face+.050],[columns.value+.04,height,.012],'chip' in palette?palette.chip:palette.face,opacity,undefined,reference?'reference-chip':'primitive-chip');
         }
         if (node.kind === 'array') {
             const window=plan.cellWindows.get(node.id);
@@ -130,7 +132,7 @@ function Instances({ items, onSelect, onFocus, tier, plan, recordingId, cursor,p
             mesh.instanceColor.needsUpdate = true;
         mesh.computeBoundingSphere();
     }, [items, role]);
-    return <instancedMesh ref={ref} args={[undefined, undefined, capacity]} renderOrder={inset?1:0} geometry={role === 'face' ? unitBox : unitRoundedBox} material={role === 'face' ? undefined : glassMaterial(role, opacity, tier)} userData={{runtimeBloomRole:'protected'}} customDepthMaterial={role === 'face' ? undefined : roundedDepthMaterial()} customDistanceMaterial={role === 'face' ? undefined : roundedDistanceMaterial()} dispose={null} castShadow={role !== 'face'} receiveShadow raycast={items.some(item => item.pickable) ? canonicalSolidRaycast : noRaycast} onPointerDown={event=>{const item=items[event.instanceId??-1];press.current=item?.pickable?{pick:item.pick,arrayPick:item.arrayPick,recordingId}:null;if(item?.pickable)event.stopPropagation()}} onClick={event => { const item = items[event.instanceId ?? -1]; if (validPress(item)) {
+    return <instancedMesh ref={ref} args={[undefined, undefined, capacity]} renderOrder={inset?1:0} geometry={role === 'face' ? inset?unitRoundedChip:unitBox : unitRoundedBox} material={role === 'face' ? faceMaterial(opacity,inset) : glassMaterial(role, opacity, tier)} userData={{runtimeBloomRole:'protected'}} customDepthMaterial={role === 'face' ? undefined : roundedDepthMaterial()} customDistanceMaterial={role === 'face' ? undefined : roundedDistanceMaterial()} dispose={null} castShadow={role !== 'face'} receiveShadow raycast={items.some(item => item.pickable) ? canonicalSolidRaycast : noRaycast} onPointerDown={event=>{const item=items[event.instanceId??-1];press.current=item?.pickable?{pick:item.pick,arrayPick:item.arrayPick,recordingId}:null;if(item?.pickable)event.stopPropagation()}} onClick={event => { const item = items[event.instanceId ?? -1]; if (validPress(item)) {
         event.stopPropagation();
         onSelect(item!.pick);
     } }} onDoubleClick={event => { const item = items[event.instanceId ?? -1]; if (validPress(item)) {
@@ -141,7 +143,6 @@ function Instances({ items, onSelect, onFocus, tier, plan, recordingId, cursor,p
     {/* Insets test against the owning opaque face but never write a depth
         between that face and its SDF text. Their sub-unit offsets otherwise
         approach depth-buffer precision in a distant Hero view. */}
-    {role === 'face' && <meshBasicMaterial color="white" transparent={opacity<1} opacity={opacity} depthWrite={opacity>=1&&!inset} toneMapped={false}/>}
   </instancedMesh>;
 }
 function Edges({ items }: {

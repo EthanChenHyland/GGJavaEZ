@@ -54,13 +54,23 @@ it.each(['frame','object','class']as const)('keeps surviving canonical %s row po
  if(!changed)throw new Error('Expected captured storage')
  for(const row of faceRows(changed,presented).visible){expect(faceRowPort(changed,presented,row.slotId)).toEqual(faceRowPort(node,presented,row.slotId));expect(original.rows.some(item=>item.slotId===row.slotId)).toBe(true)}
  const modified:SceneModel={...scene,entities:{...scene.entities,[node.id]:changed}},detailed={...plan,entities:new Map([...plan.entities].map(([id,cut])=>[id,{...cut,mode:'detailed' as const,detail:'CLOSE' as const}]))},oldPlates=buildSolidBatch(scene,detailed),newPlates=buildSolidBatch(modified,detailed)
- for(const plate of newPlates.filter(item=>item.role==='face'&&item.pick.kind==='slot'&&item.pick.id.startsWith(kind+'/')))expect(plate.anchor).toEqual(oldPlates.find(item=>item.pick.id===plate.pick.id)!.anchor)
+ for(const plate of newPlates.filter(item=>item.role==='face'&&!item.part&&item.pick.kind==='slot'&&item.pick.id.startsWith(kind+'/')))expect(plate.anchor).toEqual(oldPlates.find(item=>item.pick.id===plate.pick.id&&!item.part)!.anchor)
+ // Value insets follow the existing measured column grid; the canonical row
+ // hit/mutation plate and Port remain fixed when that grid gains/removes rows.
+ for(const inset of newPlates.filter(item=>item.part==='primitive-chip')){
+  const row=newPlates.find(item=>item.role==='face'&&!item.part&&item.pick.id===inset.pick.id)!
+  expect(inset.anchor.position[1]).toBe(row.anchor.position[1])
+  expect(inset.anchor.position[0]-inset.anchor.size[0]/2).toBeGreaterThan(row.anchor.position[0]-row.anchor.size[0]/2)
+  expect(inset.anchor.position[0]+inset.anchor.size[0]/2).toBeLessThan(row.anchor.position[0]+row.anchor.size[0]/2)
+ }
  expect(JSON.stringify(node)).toBe(before)
 })
 it.each(['object','class']as const)('keeps real %s values distinguishable without fabricating canonical ports or duplicate fallback chips',kind=>{
  const {scene,plan}=fixture(6),original=scene.entities[kind==='class'?'jvm:class:pkg.Registry':kind],node={...original,anchor:{...original.anchor,ports:{}}},modified:SceneModel={...scene,entities:{...scene.entities,[node.id]:node}},before=JSON.stringify(node)
- const presented=render(node,plan),rows=faceRows(node,presented),plates=buildSolidBatch(modified,plan).filter(item=>item.role==='face'&&item.pick.kind==='slot'&&item.pick.id.startsWith(kind+'/'))
+ const presented=render(node,plan),rows=faceRows(node,presented),all=buildSolidBatch(modified,plan).filter(item=>item.role==='face'&&item.pick.kind==='slot'&&item.pick.id.startsWith(kind+'/')),plates=all.filter(item=>!item.part)
  expect(plates).toHaveLength(rows.visible.length);expect(new Set(plates.map(plate=>plate.anchor.position.join(','))).size).toBe(plates.length)
+ expect(all.filter(item=>item.part==='primitive-chip')).toHaveLength(rows.visible.length)
+ expect(all.filter(item=>item.part==='primitive-chip-rim')).toHaveLength(rows.visible.length)
  for(const row of rows.visible){expect(faceRowPort(node,presented,row.slotId)).toBeNull();expect(presentedFlowPorts(modified,plan.entities,plan.cellWindows)({kind:'slot',id:row.slotId})).toBeNull();expect(inspectorEntity(modified,{kind:'slot',id:row.slotId})).toBe(node)}
  expect(inspectorRows(node).count).toBe(6);expect(inspectorRows(node).at(5).value.exact).toBe('5');expect(JSON.stringify(node)).toBe(before)
 })

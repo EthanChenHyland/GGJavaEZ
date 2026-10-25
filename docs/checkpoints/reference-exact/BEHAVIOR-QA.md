@@ -134,3 +134,7 @@ The native regression confirms that an unrelated Trace plan reuses an unchanged 
 ## Qualified frame-title behavior — 2026-10-24
 
 Actual Java desktop/narrow tests retain full ordinary signatures and stable invocation IDs, separate title ink from status/identity, and preserve recording/cursor/anchors through Focus/Home. The 31-case integration also passes ownership travel, five-size recursion, reduced motion, quality and recovery. Narrow selected-frame Home and recursion Home still have undersized captions. [Evidence and limits](migration/frame-title-layout.md).
+
+## Primitive and reference inset picking — 2026-10-24
+
+Four actual-JVM native cases click projected inset coordinates at desktop/narrow sizes, requiring the captured slot, exact primitive Inspector value, unchanged Focus/camera, recording, cursor and world contents. Integration 41/41 additionally preserves array replay, qualified headers, ownership travel, recursive camera override, quality switching and context recovery. [Evidence and old row-count reconciliation](migration/rounded-value-insets.md).

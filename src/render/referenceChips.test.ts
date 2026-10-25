@@ -30,7 +30,12 @@ it('leaves null, primitive and unavailable values as ordinary row surfaces witho
  const {scene,plan}=fixture(),node=scene.entities['first-record'];if(node.kind!=='object')throw new Error('Object fixture')
  const groups=node.groups.map(group=>({...group,rows:group.rows.map(row=>row.name==='label'?{...row,value:{kind:'not-recorded' as const,text:'⟨not recorded⟩' as const,exact:'⟨not recorded⟩' as const,observation:'UNAVAILABLE' as const}}:['tags','related'].includes(row.name)?{...row,value:{kind:'null' as const,text:'null',exact:'null',observation:'OBSERVED' as const}}:row)}))
  const absent:SceneModel={...scene,entities:{...scene.entities,[node.id]:{...node,groups}}},solids=buildSolidBatch(absent,plan)
- for(const name of ['label','quantity','tags','related'])expect(solids.filter(item=>item.pick.kind==='slot'&&item.pick.id===`${node.id}/${name}`)).toHaveLength(1)
+ for(const name of ['label','quantity','tags','related']){
+  const row=solids.filter(item=>item.pick.kind==='slot'&&item.pick.id===`${node.id}/${name}`)
+  expect(row.filter(item=>!item.part)).toHaveLength(1)
+  expect(row.filter(item=>item.part?.startsWith('reference-chip'))).toHaveLength(0)
+  expect(row.filter(item=>item.part?.startsWith('primitive-chip'))).toHaveLength(name==='quantity'?2:0)
+ }
 })
 it('does not turn a reference to an absent target into a visible chip',()=>{
  const {scene,plan}=fixture(),entities={...scene.entities};delete entities['first-label']

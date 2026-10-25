@@ -133,3 +133,7 @@ Twenty-one current originals are archived in `array-window-captures/`; six were 
 ## Qualified frame-title polish — 2026-10-24
 
 Captured declaring type, method and parameter text now fit ordinary Hero/Focus headers without smaller fonts or larger slabs. Thirty-six current originals are archived; six were reviewed at original size, plus the separate Dense image. The remaining thirty are unreviewed. Global font hierarchy, narrow selected Home, recursion Home, crossing glow, matte surfaces, floor/reflections and clipping remain OPEN. [Source-bound review and failed/corrected glyph-bound checks](migration/frame-title-layout.md).
+
+## Rounded value insets and softer distant grid — 2026-10-24
+
+Primitive values and represented references share rounded geometry inside existing measured value columns. Far grid lines fade more strongly. Six of forty-two current integration originals were reviewed at full size; thirty-six remain unreviewed. Four of eleven preflight originals were separately reviewed. Fonts/cutoff, crossing glow, matte faces, reflections and clipping remain OPEN. [Source-bound review and cost tradeoff](migration/rounded-value-insets.md).

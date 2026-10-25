@@ -3,17 +3,17 @@ import {PerspectiveCamera,Vector3} from 'three'
 import {writeFile} from 'node:fs/promises'
 import {browserErrors,focusSelection,home,ready,runFixture,selectEntity,stopOwnedSession} from './harness'
 test.afterEach(async({request})=>stopOwnedSession(request))
-for(const viewport of[{width:1440,height:900},{width:760,height:900}])test(`actual reference value inset selects its captured slot and preserves Focus ${viewport.width}x${viewport.height}`,async({page,request})=>{
+for(const kind of ['reference','primitive']as const)for(const viewport of[{width:1440,height:900},{width:760,height:900}])test(`actual ${kind} value inset selects its captured slot and preserves Focus ${viewport.width}x${viewport.height}`,async({page,request})=>{
  const errors=browserErrors(page);await page.setViewportSize(viewport)
  const session=await runFixture(page,request,'domain');await home(page)
- const target=await page.evaluate(()=>{
+ const target=await page.evaluate(kind=>{
   const scene=window.__ggjavaezWorld!.scene()
   for(const node of Object.values(scene.entities))if(node.kind==='object'&&node.ownership==='PROJECT'){
-   const row=node.groups.flatMap(group=>group.rows).find(row=>row.value.kind==='reference'&&scene.entities[row.value.targetId])
-   if(row)return{ownerId:node.id,slotId:row.slotId}
+   const row=node.groups.flatMap(group=>group.rows).find(row=>row.value.kind===kind&&(row.value.kind!=='reference'||scene.entities[row.value.targetId]))
+   if(row)return{ownerId:node.id,slotId:row.slotId,name:row.name,exact:row.value.exact}
   }
-  throw new Error('Actual execution has no project-owned reference field')
- })
+  throw new Error(`Actual execution has no project-owned ${kind} field`)
+ },kind)
  await selectEntity(page,target.ownerId);await focusSelection(page);await ready(page)
  const before=await page.evaluate(async target=>{
   const columnsPath='/src/render/text/faceTypography.ts',rowsPath='/src/world/faceRows.ts'
@@ -33,7 +33,8 @@ for(const viewport of[{width:1440,height:900},{width:760,height:900}])test(`actu
  expect(after.scene.recordingId).toBe(before.scene.recordingId);expect(after.scene.cursor).toBe(before.scene.cursor)
  expect(after.scene.entities).toEqual(before.scene.entities);expect(after.scene.references).toEqual(before.scene.references)
  await expect(page.getByRole('button',{name:'Focus',exact:true})).toHaveAttribute('aria-pressed','true')
- await page.screenshot({path:`.ggjavaez/qa/reference-exact/reference-chip-picked-${viewport.width}x${viewport.height}.png`})
- await writeFile(test.info().outputPath('reference-chip-pick.json'),JSON.stringify({sessionId:session.id,target,point,before,after},null,2)+'\n')
+ if(kind==='primitive')await expect(page.getByRole('complementary',{name:'Selection inspector'}).getByRole('button',{name:`Inspect ${target.name}`,exact:true})).toHaveText(target.exact)
+ await page.screenshot({path:`.ggjavaez/qa/reference-exact/${kind}-chip-picked-${viewport.width}x${viewport.height}.png`})
+ await writeFile(test.info().outputPath(`${kind}-chip-pick.json`),JSON.stringify({sessionId:session.id,target,point,before,after},null,2)+'\n')
  expect(errors).toEqual([])
 })

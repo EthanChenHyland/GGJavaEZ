@@ -1,10 +1,11 @@
-import { BoxGeometry, Color, EdgesGeometry, MeshDepthMaterial, MeshDistanceMaterial, MeshStandardMaterial, RGBADepthPacking } from 'three';
+import { BoxGeometry, Color, EdgesGeometry, MeshBasicMaterial, MeshDepthMaterial, MeshDistanceMaterial, MeshStandardMaterial, RGBADepthPacking } from 'three';
 import type { MaterialRole } from '../contracts/world';
 import { color } from '../theme/tokens';
 import { qualityStore, type QualityTier } from './quality/qualityStore';
 import {bodyPalette} from './quality/bodyPalette';
 import type { BodyRole } from './quality/materialTypes';
 import { applyRoundedBoxMaterial } from './geometry/roundedBox';
+import { applyRoundedChipMaterial } from './geometry/roundedChip';
 import {LineMaterial} from 'three/addons/lines/LineMaterial.js';
 import {curveAlphaShaders} from './curveAlpha';
 export const unitBox = new BoxGeometry(1, 1, 1);
@@ -20,6 +21,18 @@ export function connectorMaterial(halo:boolean,widthPx:2.5|3.5):LineMaterial {
     return material;
 }
 const materials = new Map<string, MeshStandardMaterial>();
+const faces = new Map<string, MeshBasicMaterial>();
+/** Fixed planner opacity bands share programs across Focus/Home batch retirement.
+ * The renderer owns these materials, just as it owns the acrylic body bands. */
+export function faceMaterial(opacity:number,inset:boolean):MeshBasicMaterial {
+    const key=`${opacity}:${inset}`,existing=faces.get(key);
+    if(existing)return existing;
+    const material=new MeshBasicMaterial({color:'white',transparent:opacity<1,opacity,depthWrite:opacity>=1&&!inset,toneMapped:false});
+    material.name=`runtime:face:${key}`;
+    if(inset)applyRoundedChipMaterial(material);
+    faces.set(key,material);
+    return material;
+}
 let roundedDepth: MeshDepthMaterial | null = null;
 let roundedDistance: MeshDistanceMaterial | null = null;
 export function roundedDepthMaterial() {
@@ -68,6 +81,8 @@ outgoingLight = outgoingLight * mix(0.62, 1.0, acrylicRim * edgeBand) + runtimeE
 }
 /** Renderer lifetime resources; never dispose them merely because a tier changes. */
 export function disposeRuntimeMaterials(): void {
+    for (const material of faces.values()) material.dispose();
+    faces.clear();
     for (const material of materials.values()) material.dispose();
     materials.clear();
     roundedDepth?.dispose();

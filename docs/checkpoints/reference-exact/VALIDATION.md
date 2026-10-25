@@ -342,3 +342,7 @@ Source `b00adb247ed9e78c7e43a16ff3146640f0817301e15ef4d2c5fe6c1653363508` passes
 ## Qualified frame-title validation — 2026-10-24
 
 Source `7113f14766238762f141e445d5f2d1971bafc9f04c8c8c23b62a2405277d0b62` passes 2,173 unit/property tests with 70 explicit opt-in skips (2,243 total), all type/lint/build/reference/protected checks and 31/31 native cases with zero skips/failures/flaky results. Twenty-six distinct JVM IDs are attached; another actual Java fallback case lacks its attached ID, and four cases are curated. All ten Dense stages complete without browser errors, but three unchanged latency budgets still fail. [Commands, counts, source inventory and limitations](migration/frame-title-layout.md). This is not final exhaustive A–G acceptance.
+
+## Rounded inset validation — 2026-10-24
+
+Source `ccf6fc32eed7017ee3b5974c36877e6da1228e2942d3f8ae6c918ee43dc355a3` passes 2,176 default tests with 70 explicit opt-in skips (2,246 total, 234 files), all type/lint/build/reference/protected checks and 41/41 native cases with zero skips/failures/flaky. Thirty actual JVM IDs are attached; the separate no-WebGL actual Java case and ten curated cases are classified explicitly. All 846 saved parent-batch comparisons pass. The complete Dense run still fails three fixed latency budgets, while orbit/cold-load/soak pass. [Commands, test migrations and limits](migration/rounded-value-insets.md). Whole A–G remains OPEN.

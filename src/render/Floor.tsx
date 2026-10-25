@@ -67,7 +67,7 @@ export function Floor({ layout, plan, scene, quality }: { layout: LayoutState; p
     </mesh>
     <Grid ref={grid} name="runtime-floor-grid" position={[floor.position[0],floor.position[1]+floorStyle.gridLift,floor.position[2]]} args={[floor.extent,floor.extent]}
       cellSize={floorStyle.minorSpacing} sectionSize={floorStyle.majorSpacing} cellThickness={.5} sectionThickness={.8}
-      cellColor={floorStyle.minor} sectionColor={floorStyle.major} fadeDistance={floor.extent*floorStyle.gridFadeExtent} fadeStrength={1} infiniteGrid={false}
+      cellColor={floorStyle.minor} sectionColor={floorStyle.major} fadeDistance={floor.extent*floorStyle.gridFadeExtent} fadeStrength={floorStyle.gridFadeStrength} infiniteGrid={false}
       userData={{runtimeBloomRole:'protected',runtimeFloorOverlay:true}} material-depthWrite={false}/>
     {contact ? <mesh rotation={[-Math.PI/2,0,0]} position={[floor.position[0],floor.position[1]+floorStyle.contactLift,floor.position[2]]}
       userData={{runtimeBloomRole:'protected',runtimeFloorOverlay:true}} raycast={()=>undefined}>
