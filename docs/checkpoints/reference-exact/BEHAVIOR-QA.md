@@ -142,3 +142,7 @@ Four actual-JVM native cases click projected inset coordinates at desktop/narrow
 ## Captured connector hover — 2026-10-25
 
 Desktop/narrow actual-JVM pointer cases verify frame/field origins, target identity, 3 px halo-offset coverage, viewport bounds, <=200 ms show/hide observations, unchanged selection/cursor/camera, wheel/keyboard clearing and preserved core clicks. Full integration passes 45/45, including existing object/reference picking and manual camera override. Static/array/shadowed origins have unit metadata coverage. [Scope and evidence](migration/connector-hover.md).
+
+## Static and virtualized connector origins — 2026-10-25
+
+New actual-JVM desktop/narrow cases verify `shared` and large-array `[6500]` hover through native catalog/Inspector/Reveal/Focus/Home/dolly navigation. The window maps semantic index 6500 to presented slot 63; captions preserve 6500 and captured targets. Hover preserves prefix, selection and camera. Combined hover/array integration passes 10/10 with four actual JVMs and six curated workflows. Immediate large-cell Focus framing remains a follow-up; array hover is captured after Home/exploration. [Evidence and boundary](migration/connector-origins.md).

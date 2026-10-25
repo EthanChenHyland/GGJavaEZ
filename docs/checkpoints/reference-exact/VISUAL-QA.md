@@ -141,3 +141,7 @@ Primitive values and represented references share rounded geometry inside existi
 ## Captured hover captions and ports — 2026-10-25
 
 All four native hover originals, narrow Hero and Cinematic Person were reviewed at full size. Captured captions fit both viewports and distinguish declaring field types; the port highlight remains in the existing visual vocabulary. Six of forty-six integration originals are reviewed, forty remain unreviewed. Two of four separate final preflight originals were reviewed. Typography/cutoff, glow, matte faces, reflections and clipping remain OPEN. [Source-bound evidence](migration/connector-hover.md).
+
+## Static and virtualized connector origins — 2026-10-25
+
+Four of ten integration originals were reviewed at original resolution: static/array connector captions at 1440×900 and 760×900. All four separate preflight originals were reviewed too. Captions show captured `shared`/`[6500]` and target identities within the viewport. Array captures use Home/native dolly; they do not establish immediate Focus framing or distant cell readability. Six integration originals remain unreviewed. [Source-bound captures and visible limitations](migration/connector-origins.md). Final reference convergence remains OPEN.

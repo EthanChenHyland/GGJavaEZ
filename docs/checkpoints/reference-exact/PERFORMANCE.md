@@ -255,3 +255,7 @@ Final source `ccf6fc32eed7017ee3b5974c36877e6da1228e2942d3f8ae6c918ee43dc355a3` 
 ## Connector hover cost gate — 2026-10-25
 
 The unchanged ten-stage actual-JVM Dense run completes with zero browser errors. Seek p50 82.306, Focus p95 150.269 and Home p95 166.177 ms fail 55/125/152 ms; seek p95, cold loads, all five sustained orbit windows and soak pass. Focus tail is higher than the preceding run, so no latency non-regression is claimed. Renderer calls remain 102 during orbit; CPU p95 is 2.4/2.4/2.5/2.4/3.2 ms. [All budgets, profiles, source boundaries and retained limitations](migration/connector-hover.md). Presentation-retention and final whole-product gates remain OPEN.
+
+## Test-only origin coverage — 2026-10-25
+
+Static/large-array native coverage changes no production file: all 960 prior inputs and fourteen built JS resources match `91f1161`. Entry gzip stays 71,759 bytes; entry/Shell static closures stay 72,187/673,164 diagnostic bytes. No new timing or retention approval is claimed. The parent's three Dense latency failures and prior independent retention failures remain OPEN. [Source/build proof and checks](migration/connector-origins.md).

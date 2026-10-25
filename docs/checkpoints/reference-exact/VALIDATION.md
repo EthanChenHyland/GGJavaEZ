@@ -350,3 +350,7 @@ Source `ccf6fc32eed7017ee3b5974c36877e6da1228e2942d3f8ae6c918ee43dc355a3` passes
 ## Connector hover validation — 2026-10-25
 
 Source `585ee9f72d8768ae673e4a39d045ee1b4d87571a7e6a19b6f2521870d18806b0` passes 2,184 default tests with 70 explicit opt-in skips (2,254 total, 235 files), typechecks/lint/build/reference/protected checks, 20 focused cases, 846 saved parent-batch comparisons and 45/45 native cases with zero skips/failures/flaky. Thirty-two actual JVM IDs are attached; the additional actual Java fallback and twelve curated cases are classified separately. The complete Dense run still fails three latency budgets. [Commands, counts and limitations](migration/connector-hover.md). Whole A–G remains OPEN.
+
+## Static and virtualized connector origins — 2026-10-25
+
+Source `ae5a19c0de4d4a824a4e7ab2a6969b7f560286b136c4a0bfc4848a8513b2cfeb` passes seven fresh type/lint/build/reference/protected gates and 10/10 native integration cases, zero skips/failures/flaky, 71.914 seconds. Four actual JVM IDs are attached; six array workflows are curated. All 960 prior inputs and fourteen production JS resources are byte-identical, so the parent's 2,184/70 default result is reused explicitly. Four of ten current originals are root reviewed. [Native workflows, diagnostics and limits](migration/connector-origins.md). A–G remains OPEN.
