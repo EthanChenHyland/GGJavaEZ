@@ -26,6 +26,9 @@
 .ide-editor-empty span{font-size:10px;letter-spacing:.1em;color:var(--color-stack-edge)}
 .ide-editor-empty h2{font-size:18px;font-weight:500;color:var(--color-ui-text-secondary)}
 .ide-editor-empty p{max-width:240px;font-size:12px}
+.recorded-source-fallback{display:flex;flex-direction:column;height:100%;min-height:0;color:var(--color-ui-text)}
+.recorded-source-fallback p{flex:none;margin:0;padding:10px 12px;border-bottom:1px solid var(--color-ui-glass-border);color:var(--color-ui-text-secondary);font-size:12px;line-height:1.5}
+.recorded-source-fallback pre{flex:1;min-height:0;overflow:auto;margin:0;padding:12px;font-size:12px;line-height:1.6;tab-size:4}
 
 /* Captured pause and breakpoint glyphs belong to Source. */
 .debug-paused-line{background:color-mix(in srgb,var(--color-semantic-execution) 16%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--color-semantic-execution) 25%,transparent)}

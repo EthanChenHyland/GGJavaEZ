@@ -64,3 +64,7 @@ All 52 Classic cases now have production successors; the obsolete Classic render
 ## Focus anchor reconciliation — 2026-10-25
 
 Two actual native failures established stale Focus geometry after array-window repacking. The camera correction now passes four whole-face/cancellation cases at desktop/narrow widths with normal/reduced motion. The latest 51-case combined gate still has one source-editor loading failure; the unchanged Dense benchmark still fails three latency budgets. [Source, reviewed captures and failed-gate accounting](migration/focus-anchor-reconciliation.md). Whole-product A–G and final reference convergence remain OPEN.
+
+## Recorded source containment — 2026-10-25
+
+Recorded-editor asset failure is now contained within Source instead of removing the workbench and runtime World. Two controlled failures and normal source/debugger/navigation/rendering workflows pass in a 63-case native gate. Eight of 77 originals are reviewed; final reference/motion convergence and three Dense latency budgets remain OPEN. [Scope and evidence](migration/recorded-source-containment.md).

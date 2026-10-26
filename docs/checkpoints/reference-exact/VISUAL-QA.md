@@ -149,3 +149,7 @@ Four of ten integration originals were reviewed at original resolution: static/a
 ## Focus anchor reconciliation — 2026-10-25
 
 Six of 54 latest native originals are root reviewed at full size: four desktop/narrow cell Focus cases including reduced motion, narrow Hero and curated Cinematic Person. Forty-eight remain unreviewed; the separate Dense original was also reviewed. Cell `[6500]` now fits its actual free rectangle, including above the narrow Inspector sheet. Small distant text, strong route glow, matte faces, structural-heading limits and optional clipping remain visible. The combined gate still fails one source-editor loading case. [Captures and limits](migration/focus-anchor-reconciliation.md). This is not final reference or motion acceptance.
+
+## Recorded source containment — 2026-10-25
+
+Eight of 77 current native originals are root reviewed at full size: four settled source-failure views, two normal actual-debugger narrow Source views, narrow Hero and curated Cinematic Person. Sixty-nine remain unreviewed; the separate Dense image was reviewed too. An earlier narrow capture during a CSS transition is retained as an intermediate, not settled-layout proof. [Captures and scope](migration/recorded-source-containment.md). Final reference/motion acceptance remains OPEN.

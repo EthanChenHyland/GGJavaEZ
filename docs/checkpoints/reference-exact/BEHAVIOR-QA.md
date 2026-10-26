@@ -150,3 +150,7 @@ New actual-JVM desktop/narrow cases verify `shared` and large-array `[6500]` hov
 ## Focus anchor reconciliation — 2026-10-25
 
 Actual `[6500]` Focus previously followed presented slot 23 after semantic zoom moved the canonical cell to slot 63. Four desktop/narrow normal/reduced-motion cases now require whole-face containment, the existing height band, unchanged prefix/selection and native zoom cancellation through FAR detail. All four pass. The latest combined native gate remains FAILED: 50 pass, one curated array case fails source-editor module loading. Earlier suspension/timeout attempts and passing isolated reruns remain separately recorded. [Exact cases and evidence](migration/focus-anchor-reconciliation.md).
+
+## Recorded source containment — 2026-10-25
+
+Two reproduced editor-asset failures previously removed the shell/World. Both now retain the UI, exact current source, native replay/Home and recording switching at desktop/narrow widths. Combined integration passes 63/63, zero skips/failures/flaky, with 43 attached actual JVM IDs, a separately classified actual fallback and 19 curated cases. Expected fault errors remain scoped to the two deliberate asset-failure cases. [Native evidence and limits](migration/recorded-source-containment.md).

@@ -358,3 +358,7 @@ Source `ae5a19c0de4d4a824a4e7ab2a6969b7f560286b136c4a0bfc4848a8513b2cfeb` passes
 ## Focus anchor reconciliation — 2026-10-25
 
 Source `6bb9bfd548110be09420296ad718fafe7e7a66e1a5fc29482d633486d674ccc1` passes 2,184 defaults with 70 explicit opt-in skips (2,254 total, 235 files), typechecks/lint/build/reference checks and protected checks allowing only the demonstrated CameraRig exception. Stronger native preflight passes 4/4. The latest complete native attempt is 50 passed / one source-loading failure / zero skips or flaky cases; 38 attached actual-JVM cases and the separate actual Java fallback pass. Dense completes all ten stages without browser errors but FAILS three fixed latency budgets. [All three combined attempts, isolated traces and limitations](migration/focus-anchor-reconciliation.md). Whole A–G remains OPEN.
+
+## Recorded source containment — 2026-10-25
+
+Final source `5d53f47c432d4c15aee37b03dd9e1568bccea2b325f3a5e9b335233b451674dc` has 963 files. Full defaults pass 2,184/70 explicit skips/2,254 total on identical production/unit/fixture inputs; subsequent excluded browser capture/ID changes are recorded explicitly. Final type/lint/build/reference/protected gates pass. Native integration passes 63/63, zero skips/failures/flaky, 465.171 seconds. All ten Dense stages complete without browser errors, but three fixed latency budgets still FAIL. [Exact source equivalence, commands and counts](migration/recorded-source-containment.md). Whole A–G remains OPEN.

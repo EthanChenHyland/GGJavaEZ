@@ -296,3 +296,7 @@ The existing interaction hover state now carries a pointer and presentation gene
 ## Focus anchor reconciliation — 2026-10-25
 
 CameraRig tracks the current geometry and original deadline of an active Focus intent. A virtualized array-window repack refits that destination without extending arrival time; existing user-input cancellation clears the intent and prevents a later pullback. No new store, command or runtime contract is introduced. CameraRig is the sole, demonstrated camera-boundary exception. [Native RED/GREEN proof and integration limits](migration/focus-anchor-reconciliation.md).
+
+## Recorded source containment — 2026-10-25
+
+RecordedSourceView contains its lazy editor failure locally and shows the current captured file as a disclosed, focusable read-only view. Its single failure flag leaves the recording, workbench, source binding and normal Monaco lifecycle with their existing owners. [Scope and native fault evidence](migration/recorded-source-containment.md).

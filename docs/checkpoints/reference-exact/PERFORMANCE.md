@@ -263,3 +263,7 @@ Static/large-array native coverage changes no production file: all 960 prior inp
 ## Focus anchor reconciliation — 2026-10-25
 
 Frozen source `6bb9bfd548110be09420296ad718fafe7e7a66e1a5fc29482d633486d674ccc1` completes all ten unchanged Dense stages with zero browser errors/suspended requests. Actual JVM `3fc5b4ba-edfd-4961-a3e4-8012b8eae182` is FULL, 7,492 raw / 9,852 normalized, completed exit 0. Seek p50 82.614 ms, Focus p95 150.605 ms and Home p95 166.599 ms still FAIL 55/125/152 ms. Seek p95 99.854 ms and cold median 4,112.216 ms pass; all orbit/soak budgets pass. Individual frame maxima still reach 207.6/364.7 ms. Whole-frontend post-GC heap growth is -0.02067%; this is not independent presentation-retention approval. Entry gzip is 71,760 bytes. [Complete measurements and limits](migration/focus-anchor-reconciliation.md). Overall performance approval remains FAILED.
+
+## Recorded source containment — 2026-10-25
+
+The exact-source Dense run completes all ten stages with zero browser errors/suspended requests. Seek p50 81.381 ms, Focus p95 134.830 ms and Home p95 166.094 ms still FAIL 55/125/152 ms; seek p95 99.281 ms and cold median 4,112.070 ms pass. All orbit/soak budgets pass, while individual frames still reach 400/486.3/488.4 ms. Whole-frontend post-GC heap growth is +0.12075%; this is not independent presentation-retention approval. Entry gzip is 71,763 bytes. [Complete source-bound measurements](migration/recorded-source-containment.md). Overall performance approval remains FAILED.

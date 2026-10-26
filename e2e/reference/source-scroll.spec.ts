@@ -88,6 +88,9 @@ for(const viewport of [{width:1728,height:1117},{width:1440,height:900},{width:1
  await expect.poll(async()=>{const session=await currentSession(request);return session&&session.projectId===id&&session.phase==='PAUSED'?session.pause?.reason:null},{timeout:15000}).toBe('entry')
  await page.getByRole('button',{name:'Continue',exact:true}).click()
  await expect.poll(async()=>{const session=await currentSession(request);return session&&session.projectId===id&&session.phase==='PAUSED'?session.pause?.line:null},{timeout:15000}).toBe(91)
+ const observed=(await currentSession(request))!
+ expect(observed.projectId).toBe(id);expect(observed.build?.success).toBe(true)
+ await test.info().attach('actual-jvm-session',{body:JSON.stringify({id:observed.id,rawEvents:observed.rawEvents.length,buildSuccess:observed.build?.success,phase:observed.phase}),contentType:'application/json'})
  if(viewport.width<1024&&await page.locator('.monaco-editor').isHidden())await page.getByRole('button',{name:'Show source drawer',exact:true}).click()
  await ready(page);await sourceSettled(page)
  await expect.poll(async()=>(await editorView(page))?.target).toEqual({mark:'paused',line:91})
