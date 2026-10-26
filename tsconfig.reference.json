@@ -10,6 +10,7 @@
     "e2e/reference",
     "e2e/camera-controls.spec.ts",
     "e2e/refinement.spec.ts",
+    "e2e/commands-v12-p4.spec.ts",
     "playwright.reference.config.ts",
     "scripts/reference/validation.d.mts",
     "src/**/*.d.ts"

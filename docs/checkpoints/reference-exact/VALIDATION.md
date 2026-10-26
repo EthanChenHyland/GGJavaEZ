@@ -370,3 +370,7 @@ Frozen 964-file source a3dd54ca31963a6c759d3f06cf9bcf86b020e29fcc3d8e2a58df37032
 ## Complete Frame value insets — 2026-10-25
 
 Frozen 965-file source 6bcbe87a946af033d7fe75469f25c556591b0a7f43486ccf48336f0bbc290eb3 passes 2,192 defaults /70 explicit skips/2,262 total (236 files, 172.93 seconds), eight validation gates and 67/67 native cases (468.591 seconds). Full Dense completes without browser errors but fails three fixed latency budgets. [Evidence, boundaries and remaining failures](migration/frame-value-chips.md). Whole A–G remains OPEN.
+
+## Command receipt browser successors — 2026-10-26
+
+Browser-only migration passes seven fresh checks and 17/17 native integration, 95.541 seconds. Production/unit/fixture inputs and fourteen production JS artifacts are byte-identical to f262899, so its 2,192/70 default and failing Dense evidence are explicitly reused. Two older cases migrate; ninety remain. [Preserved assertions, failures and evidence](migration/command-receipts.md). Whole A–G remains OPEN.

@@ -161,3 +161,7 @@ Five of 77 native originals plus the separate Dense original are root reviewed a
 ## Complete Frame value insets — 2026-10-25
 
 Five of 79 integrated native originals plus the separate Dense original are reviewed at original size. New null Frame insets are readable and pick their exact slots. Existing null-row provenance Flow markers require a separate Port audit; route glow, cutoff text, face/side treatment and optional clipping remain OPEN. [Evidence, boundaries and remaining failures](migration/frame-value-chips.md). Whole A–G remains OPEN.
+
+## Command receipt browser successors — 2026-10-26
+
+One of sixteen current source/workspace originals is reviewed at full resolution, with moved file path and history highlight verified. Known layout/text/material issues remain OPEN; not reference or motion acceptance. [Preserved assertions, failures and evidence](migration/command-receipts.md). Whole A–G remains OPEN.

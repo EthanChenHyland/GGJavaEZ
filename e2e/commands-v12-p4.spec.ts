@@ -1,7 +1,9 @@
 import { expect, test, type Page } from '@playwright/test'
 import { mkdir } from 'node:fs/promises'
+import {ready,seekCursor} from './reference/harness'
+import {projectCommand} from './reference/menuActions'
 
-const output = `${process.env.VJ_QA_OUTPUT_ROOT ?? 'docs/checkpoints/v12-p4'}/commands`
+const output = `${process.env.VJ_QA_OUTPUT_ROOT ?? '.ggjavaez/qa/reference-exact'}/commands`
 async function rename(page: Page, from: string, to: string) {
   const showExplorer = page.getByRole('button', { name: 'Show project explorer', exact: true })
   if (await showExplorer.isVisible()) await showExplorer.click()
@@ -11,6 +13,10 @@ async function rename(page: Page, from: string, to: string) {
   await dialog.getByRole('textbox').fill(to)
   await dialog.getByRole('button', { name: 'Rename', exact: true }).click()
   await expect(page.locator(`.ide-tree-name[title="${to}"]`)).toBeVisible()
+  // Explorer overlays Source in the current shell. Close it before tab/editor input.
+  await expect(dialog).toHaveCount(0)
+  await projectCommand(page,'workbench.explorer')
+  await expect(page.getByRole('tree', {name:'Project explorer',exact:true})).toBeHidden()
 }
 
 test('canonical Save All includes closed drafts; lost rename response preserves the dirty editor', async ({ page, request }) => {
@@ -24,7 +30,7 @@ test('canonical Save All includes closed drafts; lost rename response preserves 
     localStorage.setItem('ggjavaez:project', id)
     localStorage.setItem(`ggjavaez:draft:${id}:notes.txt`, JSON.stringify({ revision, draft: 'closed unsaved text' }))
   }, { id, revision: note.revision })
-  await page.goto('/ide')
+  await page.goto('/?qa=1')
   await expect(page.locator('.monaco-editor')).toBeVisible()
   // Phase5 exposes canonical Save All in the workspace palette; closed-draft assertions stay intact.
   await page.keyboard.press('ControlOrMeta+Shift+P')
@@ -36,7 +42,7 @@ test('canonical Save All includes closed drafts; lost rename response preserves 
   await search.press('Enter')
   await expect(palette).toHaveCount(0)
   await expect.poll(async () => (await (await request.get(`/api/projects/${id}/files?path=notes.txt`)).json()).content).toBe('closed unsaved text')
-  await page.locator('.monaco-editor').click()
+  await page.getByRole('textbox',{name:'Editor content',exact:true}).focus()
   await page.keyboard.press('ControlOrMeta+A')
   await page.keyboard.insertText('class Main { int unsaved = 7; }')
   await expect(page.locator('.ide-dirty')).toBeVisible()
@@ -56,7 +62,7 @@ test('canonical Save All includes closed drafts; lost rename response preserves 
   await page.getByRole('button', { name: 'Close Moved.java', exact: true }).click()
   await page.getByRole('dialog', { name: 'Unsaved changes' }).getByRole('button', { name: 'Cancel' }).click()
   await expect(page.locator('.ide-tab')).toContainText('Moved.java')
-  await page.locator('.monaco-editor').click()
+  await page.getByRole('textbox',{name:'Editor content',exact:true}).focus()
   await page.keyboard.press('ControlOrMeta+S')
   await expect.poll(async () => (await (await request.get(`/api/projects/${id}/files?path=Moved.java`)).json()).content).toBe('class Main { int unsaved = 7; }')
   await expect(page.locator('.ide-dirty')).toHaveCount(0)
@@ -68,12 +74,14 @@ test('folder rename keeps captured sources immutable and proves the new highligh
   const imported = await request.post('/api/projects/import', { data: { name: 'Phase4 source binding', files: [{ path: 'src/Main.java', content: source }] } })
   const { id } = await imported.json()
   await page.addInitScript(id => localStorage.setItem('ggjavaez:project', id), id)
-  await page.goto('/ide')
+  await page.goto('/?qa=1')
   await page.getByRole('button', { name: 'Run', exact: true }).click()
   const current = async () => (await request.get('/api/execution/current')).json()
   await expect.poll(async () => { const session = await current(); return session?.projectId === id ? session.phase : 'other' }, { timeout: 45000 }).toBe('COMPLETED')
   const captured = await current()
   expect(captured.stdout).toBe('12\n')
+  expect(captured.build.success).toBe(true);expect(captured.recording.state).toBe('FULL');expect(captured.exitCode).toBe(0)
+  await test.info().attach('actual-jvm-session',{body:JSON.stringify({id:captured.id,rawEvents:captured.rawEvents.length,buildSuccess:captured.build.success}),contentType:'application/json'})
   const cursor = await page.evaluate(async session => {
     const modulePath = '/src/instrumentation/normalize.ts'
     const { TraceNormalizer } = await import(modulePath)
@@ -84,7 +92,8 @@ test('folder rename keeps captured sources immutable and proves the new highligh
     normalizer.history.dispose()
     return line.seq + 1
   }, captured)
-  await page.getByRole('slider', { name: 'Scrub execution' }).fill(String(cursor))
+  await expect.poll(()=>page.evaluate(()=>window.__ggjavaezWorld?.scene().recordingId)).toBe(`execution:${captured.id}`)
+  await seekCursor(page,cursor);await ready(page)
   await expect(page.locator('.monaco-editor .executing-line')).toBeVisible()
   await rename(page, 'src', 'moved')
   await expect(page.locator('.ide-editor-foot')).toContainText('moved/Main.java')
@@ -96,7 +105,7 @@ test('folder rename keeps captured sources immutable and proves the new highligh
   expect((await (await request.get(`/api/projects/${id}/files?path=moved%2FMain.java`)).json()).content).toBe(source)
   await mkdir(output, { recursive: true })
   await page.screenshot({ path: `${output}/rename-history-1440x900.png` })
-  await page.locator('.monaco-editor').click()
+  await page.getByRole('textbox',{name:'Editor content',exact:true}).focus()
   await page.keyboard.press('ControlOrMeta+A')
   await page.keyboard.insertText(source.replace('12', '99'))
   await expect(page.locator('.ide-dirty')).toBeVisible()

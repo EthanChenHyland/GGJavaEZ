@@ -162,3 +162,7 @@ Six component lifetime cases and 65/65 native cases pass, zero native skips/fail
 ## Complete Frame value insets — 2026-10-25
 
 Two new actual-Java desktop/narrow cases verify null parameter/local chips, exact native slot picking and unchanged recording/cursor/camera/entities/references. Heap null fields have no inset. Full native integration passes 67/67, zero skips/failures/flaky; 45 JVM IDs are attached, with other evidence classes distinguished. [Evidence, boundaries and remaining failures](migration/frame-value-chips.md). Whole A–G remains OPEN.
+
+## Command receipt browser successors — 2026-10-26
+
+Both original command-receipt cases retain all behavioral assertions while using native current Shell/TimeDock/Explorer interactions. Combined source/workspace integration passes 17/17, zero skips/failures/flaky, with twelve distinct recorded JVM IDs. [Preserved assertions, failures and evidence](migration/command-receipts.md). Whole A–G remains OPEN.
