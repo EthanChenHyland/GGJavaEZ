@@ -308,3 +308,7 @@ WorldText skips equivalent drawing/semantic wrappers while preserving every anno
 ## Complete Frame value insets — 2026-10-25
 
 Every remaining visible Frame value now uses the existing rounded inset batch, including null, unavailable and captured String summaries. Generic value-chip metadata does not reclassify Java values or change runtime/shared schemas. Heap null fields remain plain text. [Evidence, boundaries and remaining failures](migration/frame-value-chips.md). Whole A–G remains OPEN.
+
+## Retained recording handoff — 2026-10-26
+
+The existing source/path comparison now applies to a retained visualization, correcting suppressed source-change labels after a failed build. Only the session guard changes; runtime, source-proof, camera and store contracts remain unchanged. [Evidence, semantic disposition and remaining gates](migration/recording-handoff.md). Whole A–G remains OPEN.

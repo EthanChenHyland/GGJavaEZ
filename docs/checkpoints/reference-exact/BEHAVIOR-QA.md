@@ -166,3 +166,7 @@ Two new actual-Java desktop/narrow cases verify null parameter/local chips, exac
 ## Command receipt browser successors — 2026-10-26
 
 Both original command-receipt cases retain all behavioral assertions while using native current Shell/TimeDock/Explorer interactions. Combined source/workspace integration passes 17/17, zero skips/failures/flaky, with twelve distinct recorded JVM IDs. [Preserved assertions, failures and evidence](migration/command-receipts.md). Whole A–G remains OPEN.
+
+## Retained recording handoff — 2026-10-26
+
+The older handoff case now checks the current Shell and requirement 1.21: labelled prior output survives, current-attempt output is isolated, selected prior Frame/camera/cursor survive failed and run-only attempts, and prior seeks restore exact state. The exact prior-label RED exposes a one-line production fix. Combined native integration passes 38/38. [Evidence, semantic disposition and remaining gates](migration/recording-handoff.md). Whole A–G remains OPEN.

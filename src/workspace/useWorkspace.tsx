@@ -223,7 +223,7 @@ export function useWorkspace(recordingViewer = false) {
   const recordedPhase: ExecutionSession['phase'] = recordedTerminal === 'PROGRAM_END' ? 'COMPLETED'
     : recordedTerminal === 'PROGRAM_ABORT' ? 'FAILED' : 'STOPPED'
   const currentBindings = visualization ? sourceBindings.current.get(visualization.sessionId) : undefined
-  const traceStale = recordingIsCurrent && visualization.trace.sourceFiles.some((file) => {
+  const traceStale = !!visualization && visualization.trace.sourceFiles.some((file) => {
     const bound = currentBindings?.sources.find((source) => source.fileId === file.fileId)
     const path = bound ? bound.workspacePath : file.fileId
     return !entries.some((entry) => entry.kind === 'file' && entry.path === path) || tabs.some((tab) => tab.path === path && tab.draft !== file.content)

@@ -374,3 +374,7 @@ Frozen 965-file source 6bcbe87a946af033d7fe75469f25c556591b0a7f43486ccf48336f0bb
 ## Command receipt browser successors — 2026-10-26
 
 Browser-only migration passes seven fresh checks and 17/17 native integration, 95.541 seconds. Production/unit/fixture inputs and fourteen production JS artifacts are byte-identical to f262899, so its 2,192/70 default and failing Dense evidence are explicitly reused. Two older cases migrate; ninety remain. [Preserved assertions, failures and evidence](migration/command-receipts.md). Whole A–G remains OPEN.
+
+## Retained recording handoff — 2026-10-26
+
+Frozen 965-file source 05860f5d7a52802064a5f968f7c21979b34728d85d912643c193b65205672f2b passes 2,192 defaults /70 explicit skips/2,262 total (236 files, 185.58 seconds), eight checks and 38/38 native cases (172.684 seconds), zero native skips/failures/flaky. Twenty-one JVM IDs are known; compile failure is not counted as JVM execution. Eighty-nine older browser cases remain. [Evidence, semantic disposition and remaining gates](migration/recording-handoff.md). Whole A–G remains OPEN.
