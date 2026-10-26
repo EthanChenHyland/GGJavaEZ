@@ -158,3 +158,7 @@ Two reproduced editor-asset failures previously removed the shell/World. Both no
 ## Stable World text renders — 2026-10-25
 
 Six component lifetime cases and 65/65 native cases pass, zero native skips/failures/flaky. Native checks include semantic colors, actual debugger/camera interactions, context recovery and real Troika mask composition. [Evidence, boundaries and remaining failures](migration/world-text-memo.md). Whole A–G remains OPEN.
+
+## Complete Frame value insets — 2026-10-25
+
+Two new actual-Java desktop/narrow cases verify null parameter/local chips, exact native slot picking and unchanged recording/cursor/camera/entities/references. Heap null fields have no inset. Full native integration passes 67/67, zero skips/failures/flaky; 45 JVM IDs are attached, with other evidence classes distinguished. [Evidence, boundaries and remaining failures](migration/frame-value-chips.md). Whole A–G remains OPEN.

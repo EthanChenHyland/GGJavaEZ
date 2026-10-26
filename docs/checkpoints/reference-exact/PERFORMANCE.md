@@ -271,3 +271,11 @@ The exact-source Dense run completes all ten stages with zero browser errors/sus
 ## Stable World text renders — 2026-10-25
 
 The component avoids redundant host commits and sampled WorldText JSX time is lower across two extra-command profiles, without a statistical or whole-command improvement claim. All ten unchanged Dense stages finish without browser errors, but seek p50 82.563, Focus p95 149.718 and Home p95 166.797 ms still FAIL. Focus tail is higher than the preceding run. Sustained orbit/soak pass; independent presentation retention remains OPEN. [Evidence, boundaries and remaining failures](migration/world-text-memo.md). Whole A–G remains OPEN.
+
+## Rejected routing probes — 2026-10-25
+
+Exact-path offline probes leave production routing unchanged: bounded edge lookup has a limited isolated-helper result, and scalar clipping is slower on the prepared-call method. Neither establishes browser latency improvement. [Inputs, counts and rejection decisions](migration/routing-probes.md).
+
+## Complete Frame value insets — 2026-10-25
+
+Frame value insets share the existing geometry/material/instance band. Unchanged Dense finishes ten stages with zero browser errors, but seek p50 82.358, Focus p95 134.143 and Home p95 165.603 ms still FAIL. Orbit/soak pass without a no-jank claim; independent presentation retention remains OPEN. [Evidence, boundaries and remaining failures](migration/frame-value-chips.md). Whole A–G remains OPEN.

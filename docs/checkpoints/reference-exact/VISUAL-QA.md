@@ -157,3 +157,7 @@ Eight of 77 current native originals are root reviewed at full size: four settle
 ## Stable World text renders — 2026-10-25
 
 Five of 77 native originals plus the separate Dense original are root reviewed at original size. Text and current values persist; route glow, distant/cutoff labels, face/side treatment and optional clipping remain OPEN. This is not formal reference or motion acceptance. [Evidence, boundaries and remaining failures](migration/world-text-memo.md). Whole A–G remains OPEN.
+
+## Complete Frame value insets — 2026-10-25
+
+Five of 79 integrated native originals plus the separate Dense original are reviewed at original size. New null Frame insets are readable and pick their exact slots. Existing null-row provenance Flow markers require a separate Port audit; route glow, cutoff text, face/side treatment and optional clipping remain OPEN. [Evidence, boundaries and remaining failures](migration/frame-value-chips.md). Whole A–G remains OPEN.

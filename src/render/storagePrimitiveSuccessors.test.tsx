@@ -127,3 +127,20 @@ it.each(['object','class']as const)('keeps an off-face captured %s selection exa
  expect(faceRowPort(node,presented,id)).toBeNull();expect(presentedFlowPorts(scene,plan.entities,plan.cellWindows)({kind:'slot',id})).toBeNull()
  expect(buildSolidBatch(scene,plan).some(solid=>solid.pick.id===id)).toBe(false);expect(JSON.stringify(node)).toBe(before)
 })
+
+it.each(['MEDIUM','CLOSE']as const)('contains captured null, unavailable and String-summary Frame values in %s chips without inventing reference ports',detail=>{
+ const {scene,plan}=fixture(3),original=scene.entities.frame
+ if(original.kind!=='frame')throw new Error('Expected captured Frame')
+ const values=[{kind:'null' as const,text:'null',exact:'null',observation:'OBSERVED' as const},{kind:'not-recorded' as const,text:'⟨not recorded⟩' as const,exact:'⟨not recorded⟩' as const,observation:'UNAVAILABLE' as const,reason:'Recorder could not capture local'},{kind:'string' as const,text:'"captured"',exact:'"captured"',observation:'OBSERVED' as const}]
+ const node={...original,rows:original.rows.map((row,index)=>({...row,value:values[index]}))},modified={...scene,entities:{...scene.entities,[node.id]:node}},presented=render(node,plan,detail),cut={...plan,entities:new Map([...plan.entities].map(([id,item])=>[id,id===node.id?presented:item]))},before=JSON.stringify(modified),solids=buildSolidBatch(modified,cut)
+ for(const row of faceRows(node,presented).visible){
+  const parts=solids.filter(item=>item.pick.kind==='slot'&&item.pick.id===row.slotId),plate=parts.find(item=>!item.part)!,rim=parts.find(item=>item.part==='value-chip-rim')!,fill=parts.find(item=>item.part==='value-chip')!
+  expect(parts.map(item=>item.part)).toEqual([undefined,'value-chip-rim','value-chip'])
+  expect(fill.anchor.position[1]).toBe(plate.anchor.position[1]);expect(fill.anchor.size[0]).toBeLessThan(rim.anchor.size[0]);expect(fill.anchor.ports).toEqual({});expect(fill.tint).toBe('#081538')
+  expect(fill.anchor.position[0]-fill.anchor.size[0]/2).toBeGreaterThan(plate.anchor.position[0]-plate.anchor.size[0]/2)
+  expect(fill.anchor.position[0]+fill.anchor.size[0]/2).toBeLessThan(plate.anchor.position[0]+plate.anchor.size[0]/2)
+  expect(captured.labels.find(label=>label.frameText?.kind==='value'&&label.frameText.slotId===row.slotId)?.children).toBe(row.value.text)
+  expect(inspectorRows(node).at(node.rows.findIndex(item=>item.slotId===row.slotId)).value.exact).toBe(row.value.exact)
+ }
+ expect(modified.references).toBe(scene.references);expect(JSON.stringify(modified)).toBe(before)
+})

@@ -25,7 +25,7 @@ interface Solid {
     tint: string;
     edge?: string;
     arrayPick?: ArrayWindowPick;
-    part?: 'reference-chip-rim' | 'reference-chip' | 'primitive-chip-rim' | 'primitive-chip';
+    part?: 'reference-chip-rim' | 'reference-chip' | 'primitive-chip-rim' | 'primitive-chip' | 'value-chip-rim' | 'value-chip';
 }
 function entityPick(node: SceneEntity): Pick { return { kind: node.kind === 'frame' ? 'frame' : node.kind === 'class' ? 'class' : 'object', id: node.id }; }
 // Pre-composite a subdued rim from the existing palette, keeping opaque value
@@ -61,14 +61,17 @@ export function buildSolidBatch(scene: SceneModel, plan: PresentationPlan): Soli
         for(const row of model.visible){
             rowPlate(row.slotId);
             const reference=row.value.kind==='reference'&&row.value.observation!=='UNAVAILABLE'&&!!scene.entities[row.value.targetId];
-            if(!reference&&row.value.kind!=='primitive')continue;
+            // Every visible Frame value has a chip, including null/missing
+            // captures. Heap null fields retain their plain-text presentation.
+            if(!reference&&row.value.kind!=='primitive'&&node.kind!=='frame')continue;
             const background=facePlate(node,presented,row.slotId,model);
             if(!background)continue;
             // Whole-row hit/mutation bounds remain unchanged. Only the actual
             // captured value column receives this inset, below its text.
             const centre=x+w/2-.28-columns.value/2,height=model.pitch*.62;
-            plate(row.slotId,[centre,background.position[1],face+.042],[columns.value+.12,height+.08,.012],chipRims[role],opacity,undefined,reference?'reference-chip-rim':'primitive-chip-rim');
-            plate(row.slotId,[centre,background.position[1],face+.050],[columns.value+.04,height,.012],'chip' in palette?palette.chip:palette.face,opacity,undefined,reference?'reference-chip':'primitive-chip');
+            const chip=reference?'reference-chip':row.value.kind==='primitive'?'primitive-chip':'value-chip';
+            plate(row.slotId,[centre,background.position[1],face+.042],[columns.value+.12,height+.08,.012],chipRims[role],opacity,undefined,`${chip}-rim`);
+            plate(row.slotId,[centre,background.position[1],face+.050],[columns.value+.04,height,.012],'chip' in palette?palette.chip:palette.face,opacity,undefined,chip);
         }
         if (node.kind === 'array') {
             const window=plan.cellWindows.get(node.id);

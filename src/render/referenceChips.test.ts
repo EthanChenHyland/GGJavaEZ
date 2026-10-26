@@ -35,6 +35,7 @@ it('leaves null, primitive and unavailable values as ordinary row surfaces witho
   expect(row.filter(item=>!item.part)).toHaveLength(1)
   expect(row.filter(item=>item.part?.startsWith('reference-chip'))).toHaveLength(0)
   expect(row.filter(item=>item.part?.startsWith('primitive-chip'))).toHaveLength(name==='quantity'?2:0)
+  expect(row.filter(item=>item.part?.startsWith('value-chip'))).toHaveLength(0)
  }
 })
 it('does not turn a reference to an absent target into a visible chip',()=>{

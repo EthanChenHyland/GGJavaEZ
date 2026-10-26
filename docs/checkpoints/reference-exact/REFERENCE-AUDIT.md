@@ -72,3 +72,7 @@ Recorded-editor asset failure is now contained within Source instead of removing
 ## Stable World text renders — 2026-10-25
 
 Equivalent text wrappers retain fixed fonts, exact content, all semantic annotations and camera-based cutoff behavior. No token, geometry, reference-image or performance-threshold changes. Known visual differences remain OPEN. [Evidence, boundaries and remaining failures](migration/world-text-memo.md). Whole A–G remains OPEN.
+
+## Complete Frame value insets — 2026-10-25
+
+Requirements 9.7/9.10 now extend the shared inset treatment to remaining Frame value kinds while preserving exact null/unrecorded distinctions. Heap null remains plain per 10.7. This does not approve universal Port behavior, motion or reference convergence. [Evidence, boundaries and remaining failures](migration/frame-value-chips.md). Whole A–G remains OPEN.

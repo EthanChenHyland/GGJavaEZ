@@ -304,3 +304,7 @@ RecordedSourceView contains its lazy editor failure locally and shows the curren
 ## Stable World text renders — 2026-10-25
 
 WorldText skips equivalent drawing/semantic wrappers while preserving every annotation field, context/store updates, per-frame visibility and glyph cleanup. No runtime or presentation contract changes. [Evidence, boundaries and remaining failures](migration/world-text-memo.md). Whole A–G remains OPEN.
+
+## Complete Frame value insets — 2026-10-25
+
+Every remaining visible Frame value now uses the existing rounded inset batch, including null, unavailable and captured String summaries. Generic value-chip metadata does not reclassify Java values or change runtime/shared schemas. Heap null fields remain plain text. [Evidence, boundaries and remaining failures](migration/frame-value-chips.md). Whole A–G remains OPEN.

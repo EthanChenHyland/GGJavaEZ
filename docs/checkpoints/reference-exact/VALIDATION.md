@@ -366,3 +366,7 @@ Final source `5d53f47c432d4c15aee37b03dd9e1568bccea2b325f3a5e9b335233b451674dc` 
 ## Stable World text renders — 2026-10-25
 
 Frozen 964-file source a3dd54ca31963a6c759d3f06cf9bcf86b020e29fcc3d8e2a58df37032b026faa passes 2,190 defaults /70 explicit opt-in skips/2,260 total (236 files, 177.27 seconds), eight validation gates and 65/65 native cases (468.330 seconds). Forty-three JVM IDs are attached; the separate actual fallback, nineteen curated and two isolated WebGL cases are distinguished. [Evidence, boundaries and remaining failures](migration/world-text-memo.md). Whole A–G remains OPEN.
+
+## Complete Frame value insets — 2026-10-25
+
+Frozen 965-file source 6bcbe87a946af033d7fe75469f25c556591b0a7f43486ccf48336f0bbc290eb3 passes 2,192 defaults /70 explicit skips/2,262 total (236 files, 172.93 seconds), eight validation gates and 67/67 native cases (468.591 seconds). Full Dense completes without browser errors but fails three fixed latency budgets. [Evidence, boundaries and remaining failures](migration/frame-value-chips.md). Whole A–G remains OPEN.
