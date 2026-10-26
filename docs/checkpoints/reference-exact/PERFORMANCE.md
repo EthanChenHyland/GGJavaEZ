@@ -267,3 +267,7 @@ Frozen source `6bb9bfd548110be09420296ad718fafe7e7a66e1a5fc29482d633486d674ccc1`
 ## Recorded source containment — 2026-10-25
 
 The exact-source Dense run completes all ten stages with zero browser errors/suspended requests. Seek p50 81.381 ms, Focus p95 134.830 ms and Home p95 166.094 ms still FAIL 55/125/152 ms; seek p95 99.281 ms and cold median 4,112.070 ms pass. All orbit/soak budgets pass, while individual frames still reach 400/486.3/488.4 ms. Whole-frontend post-GC heap growth is +0.12075%; this is not independent presentation-retention approval. Entry gzip is 71,763 bytes. [Complete source-bound measurements](migration/recorded-source-containment.md). Overall performance approval remains FAILED.
+
+## Stable World text renders — 2026-10-25
+
+The component avoids redundant host commits and sampled WorldText JSX time is lower across two extra-command profiles, without a statistical or whole-command improvement claim. All ten unchanged Dense stages finish without browser errors, but seek p50 82.563, Focus p95 149.718 and Home p95 166.797 ms still FAIL. Focus tail is higher than the preceding run. Sustained orbit/soak pass; independent presentation retention remains OPEN. [Evidence, boundaries and remaining failures](migration/world-text-memo.md). Whole A–G remains OPEN.

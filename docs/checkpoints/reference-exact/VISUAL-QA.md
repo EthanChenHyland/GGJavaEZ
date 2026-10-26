@@ -153,3 +153,7 @@ Six of 54 latest native originals are root reviewed at full size: four desktop/n
 ## Recorded source containment — 2026-10-25
 
 Eight of 77 current native originals are root reviewed at full size: four settled source-failure views, two normal actual-debugger narrow Source views, narrow Hero and curated Cinematic Person. Sixty-nine remain unreviewed; the separate Dense image was reviewed too. An earlier narrow capture during a CSS transition is retained as an intermediate, not settled-layout proof. [Captures and scope](migration/recorded-source-containment.md). Final reference/motion acceptance remains OPEN.
+
+## Stable World text renders — 2026-10-25
+
+Five of 77 native originals plus the separate Dense original are root reviewed at original size. Text and current values persist; route glow, distant/cutoff labels, face/side treatment and optional clipping remain OPEN. This is not formal reference or motion acceptance. [Evidence, boundaries and remaining failures](migration/world-text-memo.md). Whole A–G remains OPEN.

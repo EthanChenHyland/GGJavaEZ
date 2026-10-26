@@ -300,3 +300,7 @@ CameraRig tracks the current geometry and original deadline of an active Focus i
 ## Recorded source containment — 2026-10-25
 
 RecordedSourceView contains its lazy editor failure locally and shows the current captured file as a disclosed, focusable read-only view. Its single failure flag leaves the recording, workbench, source binding and normal Monaco lifecycle with their existing owners. [Scope and native fault evidence](migration/recorded-source-containment.md).
+
+## Stable World text renders — 2026-10-25
+
+WorldText skips equivalent drawing/semantic wrappers while preserving every annotation field, context/store updates, per-frame visibility and glyph cleanup. No runtime or presentation contract changes. [Evidence, boundaries and remaining failures](migration/world-text-memo.md). Whole A–G remains OPEN.

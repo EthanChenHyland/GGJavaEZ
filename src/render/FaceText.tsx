@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useId, useLayoutEffect, useMemo, useRef, type ReactNode } from 'react';
+import { createContext, memo, useContext, useEffect, useId, useLayoutEffect, useMemo, useRef, type ReactNode } from 'react';
 import { useFrame,useThree } from '@react-three/fiber';
 import { BatchedText, Text } from 'troika-three-text';
 import { Group, MeshBasicMaterial,Vector3,type Object3D } from 'three';
@@ -24,7 +24,7 @@ export function FaceTextBatch({ children }: {
     useFrame(({ gl }) => { textReadiness.lastUploadFrame = gl.info.render.frame; });
     return <Context.Provider value={batch}><primitive object={batch}/>{children}</Context.Provider>;
 }
-export function WorldText({ children, position, size = .25, tint = color.ui.text, width = 4, align = 'left', opacity = 1, weight=400, tracking=0, minimumPixels=11, lines, heading,collectionText,frameText,returnText,exceptionText }: {
+type WorldTextProps = {
     children: string;
     position: Vec3;
     size?: number;
@@ -41,7 +41,27 @@ export function WorldText({ children, position, size = .25, tint = color.ui.text
     returnText?:{flowId:string;kind:'value'|'operands'};
     frameText?:{entityId:string;kind:'scope'|'name'|'value';slotId?:string};
     collectionText?:{entityId:string;kind:'size'|'more'|'key'|'value';slotId?:string};
-}) {
+};
+// Parents reconstruct coordinate and semantic wrappers when detail changes.
+// Compare their values while keeping unknown future object props conservative.
+function sameTextProps(previous:WorldTextProps,next:WorldTextProps){
+    const a=previous as unknown as Record<string,unknown>,b=next as unknown as Record<string,unknown>;
+    const keys=Object.keys(a);
+    if(keys.length!==Object.keys(b).length)return false;
+    return keys.every(key=>{
+        if(!Object.hasOwn(b,key))return false;
+        const left=a[key],right=b[key];
+        if(Object.is(left,right))return true;
+        if(key==='position'||key==='lines')return Array.isArray(left)&&Array.isArray(right)&&left.length===right.length&&left.every((value,index)=>Object.is(value,right[index]));
+        if(key==='heading'||key==='frameText'||key==='collectionText'||key==='returnText'){
+            if(!left||!right||typeof left!=='object'||typeof right!=='object')return false;
+            const fields=Object.keys(left),other=right as Record<string,unknown>;
+            return fields.length===Object.keys(right).length&&fields.every(field=>Object.hasOwn(other,field)&&Object.is((left as Record<string,unknown>)[field],other[field]));
+        }
+        return false;
+    });
+}
+export const WorldText=memo(function WorldText({ children, position, size = .25, tint = color.ui.text, width = 4, align = 'left', opacity = 1, weight=400, tracking=0, minimumPixels=11, lines, heading,collectionText,frameText,returnText,exceptionText }: WorldTextProps) {
     const batch = useContext(Context), anchor = useRef<Group>(null), id = useId(), text = useMemo(() => new Text(), []),lastLayout=useRef(''),syncGeneration=useRef(0);
     const invalidate=useThree(state=>state.invalidate);
     const {camera,size:viewport}=useThree(),projection=useMemo(()=>({point:new Vector3(),scratch:new Vector3()}),[]);
@@ -77,4 +97,4 @@ export function WorldText({ children, position, size = .25, tint = color.ui.text
         text.fillOpacity=visible&&worldTextVisible(pixels,minimumPixels)?opacity:0;
     } },.5);
     return <group ref={anchor} position={[...position]} userData={{...(exceptionText?{runtimeExceptionText:{text}}:{}),...(heading?{runtimeHeading:{...heading,text}}:{}),...(collectionText?{runtimeCollectionText:{...collectionText,text}}:{}),...(frameText?{runtimeFrameText:{...frameText,text}}:{}),...(returnText?{runtimeReturnText:{...returnText,text}}:{})}}/>;
-}
+},sameTextProps);

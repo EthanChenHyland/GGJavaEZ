@@ -362,3 +362,7 @@ Source `6bb9bfd548110be09420296ad718fafe7e7a66e1a5fc29482d633486d674ccc1` passes
 ## Recorded source containment — 2026-10-25
 
 Final source `5d53f47c432d4c15aee37b03dd9e1568bccea2b325f3a5e9b335233b451674dc` has 963 files. Full defaults pass 2,184/70 explicit skips/2,254 total on identical production/unit/fixture inputs; subsequent excluded browser capture/ID changes are recorded explicitly. Final type/lint/build/reference/protected gates pass. Native integration passes 63/63, zero skips/failures/flaky, 465.171 seconds. All ten Dense stages complete without browser errors, but three fixed latency budgets still FAIL. [Exact source equivalence, commands and counts](migration/recorded-source-containment.md). Whole A–G remains OPEN.
+
+## Stable World text renders — 2026-10-25
+
+Frozen 964-file source a3dd54ca31963a6c759d3f06cf9bcf86b020e29fcc3d8e2a58df37032b026faa passes 2,190 defaults /70 explicit opt-in skips/2,260 total (236 files, 177.27 seconds), eight validation gates and 65/65 native cases (468.330 seconds). Forty-three JVM IDs are attached; the separate actual fallback, nineteen curated and two isolated WebGL cases are distinguished. [Evidence, boundaries and remaining failures](migration/world-text-memo.md). Whole A–G remains OPEN.

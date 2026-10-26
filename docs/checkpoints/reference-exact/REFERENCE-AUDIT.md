@@ -68,3 +68,7 @@ Two actual native failures established stale Focus geometry after array-window r
 ## Recorded source containment — 2026-10-25
 
 Recorded-editor asset failure is now contained within Source instead of removing the workbench and runtime World. Two controlled failures and normal source/debugger/navigation/rendering workflows pass in a 63-case native gate. Eight of 77 originals are reviewed; final reference/motion convergence and three Dense latency budgets remain OPEN. [Scope and evidence](migration/recorded-source-containment.md).
+
+## Stable World text renders — 2026-10-25
+
+Equivalent text wrappers retain fixed fonts, exact content, all semantic annotations and camera-based cutoff behavior. No token, geometry, reference-image or performance-threshold changes. Known visual differences remain OPEN. [Evidence, boundaries and remaining failures](migration/world-text-memo.md). Whole A–G remains OPEN.

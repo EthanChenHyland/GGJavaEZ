@@ -154,3 +154,7 @@ Actual `[6500]` Focus previously followed presented slot 23 after semantic zoom 
 ## Recorded source containment — 2026-10-25
 
 Two reproduced editor-asset failures previously removed the shell/World. Both now retain the UI, exact current source, native replay/Home and recording switching at desktop/narrow widths. Combined integration passes 63/63, zero skips/failures/flaky, with 43 attached actual JVM IDs, a separately classified actual fallback and 19 curated cases. Expected fault errors remain scoped to the two deliberate asset-failure cases. [Native evidence and limits](migration/recorded-source-containment.md).
+
+## Stable World text renders — 2026-10-25
+
+Six component lifetime cases and 65/65 native cases pass, zero native skips/failures/flaky. Native checks include semantic colors, actual debugger/camera interactions, context recovery and real Troika mask composition. [Evidence, boundaries and remaining failures](migration/world-text-memo.md). Whole A–G remains OPEN.
