@@ -390,3 +390,7 @@ Browser-only 965-file source 66efbe46035a53606e96e32fa51e6b6d8302667265eae00db0d
 ## Incremental transport browser successors — 2026-10-28
 
 Browser-only 965-file source fc065d66f389004042eac6a8fcf21bd56ecef37f9a9e8a7f5bc5359eb00107fe passes seven fresh checks and focused 3/3 (32.397 seconds). Identical production/unit/fixture inputs and fourteen JS resources justify explicit reuse of 2,192/70 defaults. Both wider 9/3 integrations and the 240.8 ms diagnostic Console failure are preserved; no whole-integration pass is claimed. [Evidence and explicit limitations](migration/incremental-browser.md). Whole A–G remains OPEN.
+
+## Console publication priority — 2026-10-28
+
+Frozen 965-file source 62e5dc29a4535c1fc180faefdd217b7c5fd6ca4f12d393bd656e4b296ae4a8d2 passes eight checks, fresh 2,192/70 defaults (2,262 total, 236 files, 366.65 seconds) and 18/18 browser cases (158.475 seconds), zero browser skips/failures/flaky. The fixed Dense run completes all ten stages but exits one with four budget failures. [Full evidence and limitations](migration/console-publication.md). Whole A–G remains OPEN.

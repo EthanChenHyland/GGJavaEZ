@@ -181,3 +181,7 @@ Nine of 23 current coverage originals are root reviewed at original size; fourte
 ## Incremental transport browser successors — 2026-10-28
 
 All four final transport/ingestion originals are inspected at original resolution. Populated Person geometry and real Console/History/Live evidence remain visible; clipping, Console occlusion, Header wrapping, face/side and route/reflection treatment remain OPEN. No reference or motion approval is claimed. [Evidence and explicit limitations](migration/incremental-browser.md). Whole A–G remains OPEN.
+
+## Console publication priority — 2026-10-28
+
+Six of nineteen exact final browser originals and the separate Dense original are root reviewed. Input paints before the first World publication. Generic Ready placeholder wording and tool-status clarity need follow-up; existing material, glow, text, clipping and occlusion gaps remain. No reference/motion/visual approval is claimed. [Full evidence and limitations](migration/console-publication.md). Whole A–G remains OPEN.

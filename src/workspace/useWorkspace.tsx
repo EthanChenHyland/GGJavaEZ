@@ -653,6 +653,12 @@ export function useWorkspace(recordingViewer = false) {
       if (session.build.javaProject) setJavaProject(session.build.javaProject)
       setMainClass(session.mainClass ?? session.build.mainClasses[0] ?? '')
     }
+    if (session.phase === 'WAITING_FOR_INPUT' && (previousExecution?.id!==session.id || previousExecution.phase!=='WAITING_FOR_INPUT')) {
+      toolRef.current = 'console'; setTool('console'); setBottomOpen(true)
+      // Give the newly surfaced input a paint before a new World publication
+      // can compile shaders. Raw ingestion continues; World cadence stays 100 ms.
+      ingestPublication.current.at = performance.now()
+    }
     // Desired workspace breakpoints are independent of the session's captured identities.
     if ((session.rawEventCount ?? session.rawEvents.length) > 0 && session.build?.success) {
       if (ingestRef.current?.sessionId !== session.id) {
@@ -666,9 +672,6 @@ export function useWorkspace(recordingViewer = false) {
       setTool('problems'); setBottomOpen(true); setNotice(session.diagnostic ?? 'Compilation failed')
     } else if (session.support === 'RUN_ONLY' && ['RUNNING', 'WAITING_FOR_INPUT', 'COMPLETED'].includes(session.phase) &&
       (previousExecution?.id!==session.id || previousExecution.phase!==session.phase)) {
-      toolRef.current = 'console'; setTool('console'); setBottomOpen(true)
-    }
-    if (session.phase === 'WAITING_FOR_INPUT' && (previousExecution?.id!==session.id || previousExecution.phase!=='WAITING_FOR_INPUT')) {
       toolRef.current = 'console'; setTool('console'); setBottomOpen(true)
     }
     // Only an actual finished process collapses automatically surfaced output.

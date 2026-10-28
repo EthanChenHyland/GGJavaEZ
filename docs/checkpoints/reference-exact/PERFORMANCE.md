@@ -279,3 +279,7 @@ Exact-path offline probes leave production routing unchanged: bounded edge looku
 ## Complete Frame value insets — 2026-10-25
 
 Frame value insets share the existing geometry/material/instance band. Unchanged Dense finishes ten stages with zero browser errors, but seek p50 82.358, Focus p95 134.143 and Home p95 165.603 ms still FAIL. Orbit/soak pass without a no-jank claim; independent presentation retention remains OPEN. [Evidence, boundaries and remaining failures](migration/frame-value-chips.md). Whole A–G remains OPEN.
+
+## Console publication priority — 2026-10-28
+
+Current fixed run 9e3c5a15-d700-4b12-8648-1bf662af5e4d / actual JVM f9a51890-137d-457c-8f9f-688932a72a52 completes all ten stages, 7,492/9,852 events, FULL/exit zero, no browser errors/suspended requests. Runner exit one: seek p50 83.401 ms, Focus p95 166.074, Home p95 175.216 and cold median 6,036.133 exceed unchanged limits. Seek p95 100.538, sustained orbit and soak pass; large frame spikes and independent retention failures remain OPEN. Rejected shader preparation is preserved separately and does not ship. [Full evidence and limitations](migration/console-publication.md). Whole A–G remains OPEN.

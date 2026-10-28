@@ -13,7 +13,7 @@ test('the real GPU gates quality, Interactive never requests Cinematic, and tier
  const canvas=page.locator('.world-canvas canvas');await canvas.evaluate(node=>node.setAttribute('data-quality-canvas','same'))
  const initial=await page.evaluate(()=>window.__ggjavaezWorld!.quality())
  let cinematic:typeof initial|null=null
- expect(initial.setting).toBe('INTERACTIVE');expect(initial.active).toBe('INTERACTIVE');expect(initial.capabilities).not.toBeNull();expect(requests).toEqual([])
+ expect(initial.setting).toBe('INTERACTIVE');expect(initial.active).toBe('INTERACTIVE');expect(initial.compiled,'Unloaded Cinematic materials must not be marked compiled').toBe(false);expect(initial.capabilities).not.toBeNull();expect(requests).toEqual([])
  await page.screenshot({path:'.ggjavaez/qa/reference-exact/quality-interactive-native.png'})
  await page.locator('summary[aria-label="Timeline settings"]').click()
  const quality=page.getByRole('button',{name:'Rendering quality: INTERACTIVE',exact:true})

@@ -182,3 +182,7 @@ All eight original cross-feature coverage cases pass on the current World, with 
 ## Incremental transport browser successors — 2026-10-28
 
 Both original incremental transport/ingestion cases pass with the original fixture, fault injection, workload and thresholds. Final focused confirmation is 3/3 including shutdown completion; wider integration remains 9/3 with Console 200 ms failure retained. Seventy-eight older cases remain. [Evidence and explicit limitations](migration/incremental-browser.md). Whole A–G remains OPEN.
+
+## Console publication priority — 2026-10-28
+
+Input waits surface Console before World publication and use the existing 100 ms cadence to let input paint. Current 18/18 browser cases pass, with desktop/narrow wait presentation 4.1/4.6 ms against the unchanged 200 ms ceiling. Raw facts, replay and shutdown capture remain verified. Seventy-eight older cases remain. [Full evidence and limitations](migration/console-publication.md). Whole A–G remains OPEN.
