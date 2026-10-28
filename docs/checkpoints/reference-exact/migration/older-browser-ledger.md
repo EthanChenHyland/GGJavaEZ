@@ -1,11 +1,11 @@
 # Remaining older browser cases — 2026-10-26
 
-Default inventory at f262899 discovers 294 cases in 81 files. Of these, 202 belong to the current reference/camera/playback suite; that classification is not a passing whole-suite claim. The two original command receipt cases now pass in the separate 17-case integration gate. Eighty-eight older cases remain for individual migration/disposition. Formal 80-case reference matrix and opt-in suites remain separate.
+Default inventory at f262899 discovers 294 cases in 81 files. Of these, 202 belong to the current reference/camera/playback suite; that classification is not a passing whole-suite claim. The two original command receipt cases now pass in the separate 17-case integration gate. Eighty older cases remain for individual migration/disposition. Formal 80-case reference matrix and opt-in suites remain separate.
 
 | Original file | Cases | Status |
 | --- | ---: | --- |
 | `commands-v12-p4.spec.ts` | 2 | [Migrated; both preserved cases pass](command-receipts.md) |
-| `coverage-v12-p4.spec.ts` | 8 | OPEN |
+| `coverage-v12-p4.spec.ts` | 8 | [Migrated; exact fixture outputs with explicit presentation dispositions](coverage-browser.md) |
 | `debugger-errors.spec.ts` | 11 | OPEN |
 | `ide-recording-handoff.spec.ts` | 1 | [Migrated with requirement 1.21 Console disposition and prior-label fix](recording-handoff.md) |
 | `ide.spec.ts` | 10 | OPEN |

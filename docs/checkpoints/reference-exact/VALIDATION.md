@@ -382,3 +382,7 @@ Frozen 965-file source 05860f5d7a52802064a5f968f7c21979b34728d85d912643c193b6520
 ## Constructor provenance browser successor — 2026-10-28
 
 Browser-only source 048c9a825532587a217269a2f28533bd06d441c8c1df1d0f316705fd7af8f63b (965 files) passes seven fresh checks and 15/15 native cases, 133.128 seconds. All production/unit/fixture inputs and fourteen JS artifacts match 8cd62c4, so its 2,192/70 default result is reused explicitly. Eighty-eight older browser cases remain. [Semantic proof, failures and evidence](migration/provenance-browser.md). Whole A–G remains OPEN.
+
+## Phase 4 cross-feature browser successors — 2026-10-28
+
+Browser-only 965-file source 66efbe46035a53606e96e32fa51e6b6d8302667265eae00db0d8a3cf81e08557 passes seven fresh checks and 8/8 actual-JVM coverage cases in 149.757 seconds. Production/unit/fixtures and fourteen JS resources match 6af3579, so its identical-input 2,192/70 default result is reused explicitly. Eighty older browser cases remain. [Per-case dispositions, failures and evidence](migration/coverage-browser.md). Whole A–G remains OPEN.

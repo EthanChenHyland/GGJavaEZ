@@ -13,6 +13,7 @@
     "e2e/commands-v12-p4.spec.ts",
     "e2e/ide-recording-handoff.spec.ts",
     "e2e/provenance-v12.spec.ts",
+    "e2e/coverage-v12-p4.spec.ts",
     "playwright.reference.config.ts",
     "scripts/reference/validation.d.mts",
     "src/**/*.d.ts"

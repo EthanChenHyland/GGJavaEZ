@@ -173,3 +173,7 @@ Both current handoff captures are root reviewed at original resolution; fifteen 
 ## Constructor provenance browser successor — 2026-10-28
 
 All four current constructor Focus originals are root reviewed at full resolution; six additionally archived handoff/layout originals remain unreviewed. Declaring-class/value text persists; desktop Console obscures lower object rows and known text/glow/material differences remain OPEN. [Semantic proof, failures and evidence](migration/provenance-browser.md). Whole A–G remains OPEN.
+
+## Phase 4 cross-feature browser successors — 2026-10-28
+
+Nine of 23 current coverage originals are root reviewed at original size; fourteen remain unreviewed. Review spans OOP, arrays, statics, collections, I/O, Maven, caught exceptions and a 100,000-element array. Heading truncation, glow/crossings, peripheral clipping and material/reflection gaps remain OPEN. [Per-case dispositions, failures and evidence](migration/coverage-browser.md). Whole A–G remains OPEN.

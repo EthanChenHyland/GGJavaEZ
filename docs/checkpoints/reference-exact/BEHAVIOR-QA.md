@@ -174,3 +174,7 @@ The older handoff case now checks the current Shell and requirement 1.21: labell
 ## Constructor provenance browser successor — 2026-10-28
 
 The original constructor graph proof and assertions retain their exact 32-event batch corpus. Native current World/Console/catalog/Focus/history/reload interactions pass in a 15/15 integration gate, zero skips/failures/flaky. Six JVM IDs are known; earlier retired-selector, LIVE-precondition and project-readiness failures remain archived. [Semantic proof, failures and evidence](migration/provenance-browser.md). Whole A–G remains OPEN.
+
+## Phase 4 cross-feature browser successors — 2026-10-28
+
+All eight original cross-feature coverage cases pass on the current World, with exact original process outputs/FULL recording and eight fresh JVM IDs. Statics, array/collection facts and HUD geometry have explicit current-representation dispositions. Corrected 8/8 has zero skips/failures/flaky; the earlier 7/1 catalog failure remains archived. [Per-case dispositions, failures and evidence](migration/coverage-browser.md). Whole A–G remains OPEN.
