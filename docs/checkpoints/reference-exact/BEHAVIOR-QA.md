@@ -178,3 +178,7 @@ The original constructor graph proof and assertions retain their exact 32-event 
 ## Phase 4 cross-feature browser successors — 2026-10-28
 
 All eight original cross-feature coverage cases pass on the current World, with exact original process outputs/FULL recording and eight fresh JVM IDs. Statics, array/collection facts and HUD geometry have explicit current-representation dispositions. Corrected 8/8 has zero skips/failures/flaky; the earlier 7/1 catalog failure remains archived. [Per-case dispositions, failures and evidence](migration/coverage-browser.md). Whole A–G remains OPEN.
+
+## Incremental transport browser successors — 2026-10-28
+
+Both original incremental transport/ingestion cases pass with the original fixture, fault injection, workload and thresholds. Final focused confirmation is 3/3 including shutdown completion; wider integration remains 9/3 with Console 200 ms failure retained. Seventy-eight older cases remain. [Evidence and explicit limitations](migration/incremental-browser.md). Whole A–G remains OPEN.

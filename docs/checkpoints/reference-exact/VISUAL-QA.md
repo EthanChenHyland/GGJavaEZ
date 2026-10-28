@@ -177,3 +177,7 @@ All four current constructor Focus originals are root reviewed at full resolutio
 ## Phase 4 cross-feature browser successors — 2026-10-28
 
 Nine of 23 current coverage originals are root reviewed at original size; fourteen remain unreviewed. Review spans OOP, arrays, statics, collections, I/O, Maven, caught exceptions and a 100,000-element array. Heading truncation, glow/crossings, peripheral clipping and material/reflection gaps remain OPEN. [Per-case dispositions, failures and evidence](migration/coverage-browser.md). Whole A–G remains OPEN.
+
+## Incremental transport browser successors — 2026-10-28
+
+All four final transport/ingestion originals are inspected at original resolution. Populated Person geometry and real Console/History/Live evidence remain visible; clipping, Console occlusion, Header wrapping, face/side and route/reflection treatment remain OPEN. No reference or motion approval is claimed. [Evidence and explicit limitations](migration/incremental-browser.md). Whole A–G remains OPEN.

@@ -3,6 +3,8 @@ import { expect, test } from '@playwright/test'
 import { writeFile } from 'node:fs/promises'
 import { browserErrors, currentSession } from './harness'
 import type {} from './fixtures/console'
+const ownedConsoleProjects=new Set<string>()
+test.afterEach(async({request})=>{const session=await currentSession(request);if(session&&ownedConsoleProjects.has(session.projectId)&&['BUILDING','STARTING','RUNNING','WAITING_FOR_INPUT','PAUSED'].includes(session.phase))expect((await request.post(`/api/execution/${session.id}/stop`,{data:{}})).ok()).toBe(true)})
 
 test('million-line Console has bounded rows, exact detail and first/last presentation within 200 ms', async ({ page }) => {
   const errors = browserErrors(page)
@@ -55,9 +57,9 @@ for (const viewport of [{ width: 1440, height: 900 }, { width: 760, height: 900 
   test.setTimeout(60000); await page.setViewportSize(viewport)
   const errors = browserErrors(page)
   const response = await request.post('/api/projects/import', { data: { name: `Console ${Date.now()}`, files: [{ path: 'Main.java', content: 'import java.util.Scanner; public class Main { public static void main(String[] args) { System.out.print("prompt "); System.out.println("ready"); System.err.println("warning only"); String name = new Scanner(System.in).nextLine(); System.out.println("Hello " + name); } }\n' }] } })
-  expect(response.ok()).toBe(true); const {id} = await response.json()
+  expect(response.ok()).toBe(true); const {id} = await response.json();ownedConsoleProjects.add(id)
   await page.addInitScript(id => localStorage.setItem('ggjavaez:project', id), id)
-  await page.goto('/?qa=1'); await expect(page.getByRole('button', {name:'Run',exact:true})).toBeEnabled()
+  await page.goto('/?qa=1'); await page.waitForFunction(id=>document.querySelector('[data-project-id]')?.getAttribute('data-project-id')===id,id); await expect(page.getByRole('button', {name:'Run',exact:true})).toBeEnabled()
   await page.evaluate(()=>{
     const host=window as unknown as {consoleWaitFocus?:{elapsed:number;focused:boolean}}
     const observer=new MutationObserver(()=>{

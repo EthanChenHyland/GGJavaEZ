@@ -53,7 +53,7 @@ test('a stop request still receives the shutdown recording before retiring obser
  test.setTimeout(90000);await observeStreams(page);const errors=browserErrors(page)
  const content='public class StopLate {static class Farewell extends Thread {public void run(){try{Thread.sleep(500);}catch(InterruptedException e){Thread.currentThread().interrupt();}for(int i=0;i<5;i++){System.out.println("LATE "+i);}}} public static void main(String[] args)throws Exception{Runtime.getRuntime().addShutdownHook(new Farewell());System.out.println("READY");System.in.read();}}\n'
  const response=await request.post('/api/projects/import',{data:{name:'Stop shutdown observation '+Date.now(),files:[{path:'StopLate.java',content}]}});expect(response.ok()).toBe(true);const project=(await response.json()).id as string;stopProject=project
- await page.addInitScript(id=>localStorage.setItem('ggjavaez:project',id),project);await page.goto('/?qa=1');await expect(page.getByRole('button',{name:'Run',exact:true})).toBeEnabled();await page.getByRole('button',{name:'Run',exact:true}).click()
+ await page.addInitScript(id=>localStorage.setItem('ggjavaez:project',id),project);await page.goto('/?qa=1');await page.waitForFunction(id=>document.querySelector('[data-project-id]')?.getAttribute('data-project-id')===id,project);await expect(page.getByRole('button',{name:'Run',exact:true})).toBeEnabled();await page.getByRole('button',{name:'Run',exact:true}).click()
  await expect.poll(async()=>{const s=await currentSession(request);return s?.projectId===project?s.phase:null},{timeout:45000}).toBe('WAITING_FOR_INPUT')
  const waiting=(await currentSession(request))!;await ready(page)
  await page.getByRole('button',{name:'Stop',exact:true}).click()

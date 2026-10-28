@@ -46,6 +46,8 @@ export async function openFixture(page:Page,request:APIRequestContext,name:Fixtu
  // for its real published boundary before starting the editor visibility check;
  // a cold dev module graph is not a five-second Monaco mount measurement.
  await page.waitForFunction(()=>typeof window.__ggjavaezQA?.ready==='function')
+ // A published Shell can still be restoring its selected project and JDK.
+ await page.waitForFunction(id=>document.querySelector('[data-project-id]')?.getAttribute('data-project-id')===id,id)
  if(page.viewportSize()!.width<1024){
   const peek=page.getByRole('button',{name:'Show source drawer',exact:true})
   await expect(peek).toBeVisible();await expect(peek).toContainText('.java')

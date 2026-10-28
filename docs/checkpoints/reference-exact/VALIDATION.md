@@ -386,3 +386,7 @@ Browser-only source 048c9a825532587a217269a2f28533bd06d441c8c1df1d0f316705fd7af8
 ## Phase 4 cross-feature browser successors — 2026-10-28
 
 Browser-only 965-file source 66efbe46035a53606e96e32fa51e6b6d8302667265eae00db0d8a3cf81e08557 passes seven fresh checks and 8/8 actual-JVM coverage cases in 149.757 seconds. Production/unit/fixtures and fourteen JS resources match 6af3579, so its identical-input 2,192/70 default result is reused explicitly. Eighty older browser cases remain. [Per-case dispositions, failures and evidence](migration/coverage-browser.md). Whole A–G remains OPEN.
+
+## Incremental transport browser successors — 2026-10-28
+
+Browser-only 965-file source fc065d66f389004042eac6a8fcf21bd56ecef37f9a9e8a7f5bc5359eb00107fe passes seven fresh checks and focused 3/3 (32.397 seconds). Identical production/unit/fixture inputs and fourteen JS resources justify explicit reuse of 2,192/70 defaults. Both wider 9/3 integrations and the 240.8 ms diagnostic Console failure are preserved; no whole-integration pass is claimed. [Evidence and explicit limitations](migration/incremental-browser.md). Whole A–G remains OPEN.
