@@ -12,6 +12,7 @@
     "e2e/refinement.spec.ts",
     "e2e/commands-v12-p4.spec.ts",
     "e2e/ide-recording-handoff.spec.ts",
+    "e2e/provenance-v12.spec.ts",
     "playwright.reference.config.ts",
     "scripts/reference/validation.d.mts",
     "src/**/*.d.ts"

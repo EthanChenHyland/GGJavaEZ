@@ -169,3 +169,7 @@ One of sixteen current source/workspace originals is reviewed at full resolution
 ## Retained recording handoff — 2026-10-26
 
 Both current handoff captures are root reviewed at original resolution; fifteen archived Source captures remain unreviewed. Correct source-change label and prior/current Console association headings are visible. Header wrapping/clipping and World convergence remain OPEN. [Evidence, semantic disposition and remaining gates](migration/recording-handoff.md). Whole A–G remains OPEN.
+
+## Constructor provenance browser successor — 2026-10-28
+
+All four current constructor Focus originals are root reviewed at full resolution; six additionally archived handoff/layout originals remain unreviewed. Declaring-class/value text persists; desktop Console obscures lower object rows and known text/glow/material differences remain OPEN. [Semantic proof, failures and evidence](migration/provenance-browser.md). Whole A–G remains OPEN.

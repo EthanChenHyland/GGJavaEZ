@@ -170,3 +170,7 @@ Both original command-receipt cases retain all behavioral assertions while using
 ## Retained recording handoff — 2026-10-26
 
 The older handoff case now checks the current Shell and requirement 1.21: labelled prior output survives, current-attempt output is isolated, selected prior Frame/camera/cursor survive failed and run-only attempts, and prior seeks restore exact state. The exact prior-label RED exposes a one-line production fix. Combined native integration passes 38/38. [Evidence, semantic disposition and remaining gates](migration/recording-handoff.md). Whole A–G remains OPEN.
+
+## Constructor provenance browser successor — 2026-10-28
+
+The original constructor graph proof and assertions retain their exact 32-event batch corpus. Native current World/Console/catalog/Focus/history/reload interactions pass in a 15/15 integration gate, zero skips/failures/flaky. Six JVM IDs are known; earlier retired-selector, LIVE-precondition and project-readiness failures remain archived. [Semantic proof, failures and evidence](migration/provenance-browser.md). Whole A–G remains OPEN.

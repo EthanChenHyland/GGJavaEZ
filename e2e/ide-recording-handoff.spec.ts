@@ -44,7 +44,9 @@ test('a new failed or console-only session labels retained output and isolates c
   expect(created.ok(), await created.text()).toBe(true)
   const { id } = await created.json() as { id: string };owned.add(id)
   await page.addInitScript((projectId) => localStorage.setItem('ggjavaez:project', projectId), id)
-  await page.goto('/?qa=1');await expect(page.locator('.monaco-editor')).toBeVisible()
+  await page.goto('/?qa=1')
+  // Project hydration precedes the existing editor/Run checks.
+  await page.waitForFunction(id=>document.querySelector('[data-project-id]')?.getAttribute('data-project-id')===id,id);await expect(page.locator('.monaco-editor')).toBeVisible()
   await page.getByRole('button', { name: 'Run', exact: true }).click()
   const first = await currentPhase(request, id, 'COMPLETED')
   expect(first.rawEvents.length).toBeGreaterThan(0);expect(first.stdout).toBe('first-output\n');expect(first.build?.success).toBe(true);expect(first.recording?.state).toBe('FULL');expect(first.exitCode).toBe(0)

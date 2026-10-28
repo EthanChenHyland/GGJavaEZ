@@ -378,3 +378,7 @@ Browser-only migration passes seven fresh checks and 17/17 native integration, 9
 ## Retained recording handoff — 2026-10-26
 
 Frozen 965-file source 05860f5d7a52802064a5f968f7c21979b34728d85d912643c193b65205672f2b passes 2,192 defaults /70 explicit skips/2,262 total (236 files, 185.58 seconds), eight checks and 38/38 native cases (172.684 seconds), zero native skips/failures/flaky. Twenty-one JVM IDs are known; compile failure is not counted as JVM execution. Eighty-nine older browser cases remain. [Evidence, semantic disposition and remaining gates](migration/recording-handoff.md). Whole A–G remains OPEN.
+
+## Constructor provenance browser successor — 2026-10-28
+
+Browser-only source 048c9a825532587a217269a2f28533bd06d441c8c1df1d0f316705fd7af8f63b (965 files) passes seven fresh checks and 15/15 native cases, 133.128 seconds. All production/unit/fixture inputs and fourteen JS artifacts match 8cd62c4, so its 2,192/70 default result is reused explicitly. Eighty-eight older browser cases remain. [Semantic proof, failures and evidence](migration/provenance-browser.md). Whole A–G remains OPEN.
