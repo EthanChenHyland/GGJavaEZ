@@ -283,3 +283,7 @@ Frame value insets share the existing geometry/material/instance band. Unchanged
 ## Console publication priority — 2026-10-28
 
 Current fixed run 9e3c5a15-d700-4b12-8648-1bf662af5e4d / actual JVM f9a51890-137d-457c-8f9f-688932a72a52 completes all ten stages, 7,492/9,852 events, FULL/exit zero, no browser errors/suspended requests. Runner exit one: seek p50 83.401 ms, Focus p95 166.074, Home p95 175.216 and cold median 6,036.133 exceed unchanged limits. Seek p95 100.538, sustained orbit and soak pass; large frame spikes and independent retention failures remain OPEN. Rejected shader preparation is preserved separately and does not ship. [Full evidence and limitations](migration/console-publication.md). Whole A–G remains OPEN.
+
+## Stable outline buffers — 2026-10-29
+
+Fixed Dense run 6581f946-43b5-474c-8946-b88a5e5726e1 completes all ten stages with fresh actual JVM d94d9c59-2544-4d3b-b3ba-d81ae8610295, 7,492 raw/9,852 normalized Events and zero browser errors. Seek p50 82.246/55, Focus p95 134.865/125 and Home p95 164.942/152 FAIL. Seek p95 99.859/112 and cold median 4,441.033/5,300 pass. Orbit/soak budgets pass, but a 445.4 ms maximum frame interval prevents no-jank approval. Independent 25% retention failures remain OPEN; no causal global improvement is claimed from separate runs. [Source, lifetime proof and full evidence](migration/solid-edge-lifetime.md). Whole A–G remains OPEN.

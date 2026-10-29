@@ -69,6 +69,7 @@ async function runOrigins(page:Page,request:APIRequestContext):Promise<Execution
  await page.addInitScript(id=>localStorage.setItem('ggjavaez:project',id),projectId)
  await page.goto('/?qa=1')
  await page.waitForFunction(()=>typeof window.__ggjavaezQA?.ready==='function')
+ await page.waitForFunction(id=>document.querySelector('[data-project-id]')?.getAttribute('data-project-id')===id,projectId)
  const run=page.getByRole('button',{name:'Run',exact:true});await expect(run).toHaveAttribute('aria-disabled','false')
  const pending=page.waitForResponse(response=>new URL(response.url()).pathname===`/api/projects/${projectId}/execution`&&response.request().method()==='POST')
  await run.click();const response=await pending;expect(response.ok(),await response.text()).toBe(true)

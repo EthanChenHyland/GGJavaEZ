@@ -406,3 +406,7 @@ Browser-only 965-file source dac6d9a0e1924558876516c57ba30aacca29b0ae50ed495e81e
 ## Focus resize contract — 2026-10-28
 
 Browser-only 966-file source bc54fbdefb301ac4bb07bf41517232dc5b693a50fb7f8854db8ec05fd9a7abc7 passes seven fresh checks and 2/2 new actual-JVM cases (30.879 seconds). All prior 965 inputs and fourteen production JS resources are identical. Prior 22/22 is separate evidence; no combined 24-case execution is claimed. Discovery is 296 cases /82 files, with 74 older cases still open. [Evidence and contract clarification](migration/focus-resize.md). Whole A–G remains OPEN.
+
+## Stable outline buffers — 2026-10-29
+
+Final 968-file source f132bff283a58195126cdf77d6905455c00e6a5172ec532106f771ab67791087 passes seven fresh checks and 85/85 native cases (602.122 seconds). Fresh full defaults on identical production/unit/fixture inputs are 2,195/70 explicit skips/2,265 total, 237 files (386.02 seconds); only a browser hydration prerequisite changes afterward. Fixed Dense completes but exits one with three latency failures. [Source, lifetime proof and full evidence](migration/solid-edge-lifetime.md). Whole A–G remains OPEN.

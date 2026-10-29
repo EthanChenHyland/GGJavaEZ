@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef,type RefObject } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef,memo,type RefObject } from 'react';
 import { BufferGeometry, Float32BufferAttribute, InstancedMesh, Object3D, Color, Vector3 } from 'three';
 import type { Intersection, Raycaster } from 'three';
 import type { Selection } from '../contracts/interaction';
@@ -148,7 +148,7 @@ function Instances({ items, onSelect, onFocus, tier, plan, recordingId, cursor,p
         approach depth-buffer precision in a distant Hero view. */}
   </instancedMesh>;
 }
-function Edges({ items }: {
+const EdgeGeometry=memo(function EdgeGeometry({ items }: {
     items: Solid[];
 }) {
     const geometry = useMemo(() => {
@@ -170,7 +170,18 @@ function Edges({ items }: {
         return geometry;
     }, [items]);
     useEffect(() => () => geometry.dispose(), [geometry]);
-    return <lineSegments geometry={geometry} userData={{runtimeBloomRole:'emitter'}} raycast={noRaycast}><lineBasicMaterial vertexColors transparent depthWrite={false} opacity={items[0].opacity} toneMapped={false}/></lineSegments>;
+    return <primitive object={geometry} attach="geometry"/>;
+},(prior,next)=>prior.items.length===next.items.length&&prior.items.every((item,index)=>{
+    const other=next.items[index];
+    return item.edge===other.edge
+        &&item.anchor.position.every((value,axis)=>Object.is(value,other.anchor.position[axis]))
+        &&item.anchor.size.every((value,axis)=>Object.is(value,other.anchor.size[axis]));
+}));
+/** Opacity belongs to the material; unchanged outlines keep their one GPU buffer
+ * while camera/presentation wrappers are rebuilt. Shape/color changes replace
+ * that buffer, and its owning component still releases it on retirement. */
+export function SolidEdges({items}:{items:Solid[]}) {
+    return <lineSegments userData={{runtimeBloomRole:'emitter'}} raycast={noRaycast}><EdgeGeometry items={items}/><lineBasicMaterial vertexColors transparent depthWrite={false} opacity={items[0].opacity} toneMapped={false}/></lineSegments>;
 }
 export function SolidBatch({ scene, plan, onSelect, onFocus }: {
     scene: SceneModel;
@@ -197,5 +208,5 @@ export function SolidBatch({ scene, plan, onSelect, onFocus }: {
         }
         return { groups, edges };
     }, [scene, plan]);
-    return <>{[...batches.groups].map(([key, items]) => <Instances key={key} items={items} tier={tier} plan={plan} recordingId={scene.recordingId} cursor={scene.cursor} press={press} onSelect={onSelect} onFocus={onFocus}/>)}{[...batches.edges].map(([key, items]) => <Edges key={key} items={items}/>)}</>;
+    return <>{[...batches.groups].map(([key, items]) => <Instances key={key} items={items} tier={tier} plan={plan} recordingId={scene.recordingId} cursor={scene.cursor} press={press} onSelect={onSelect} onFocus={onFocus}/>)}{[...batches.edges].map(([key, items]) => <SolidEdges key={key} items={items}/>)}</>;
 }

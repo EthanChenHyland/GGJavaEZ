@@ -197,3 +197,7 @@ All five observer originals are reviewed; twenty-one other integrated PNGs remai
 ## Focus resize contract — 2026-10-28
 
 Four of eight source-bound resize/refocus originals are reviewed. Fresh explicit Focus contains StockItem #3 above the narrow Inspector; resize itself preserves camera as required. Text/glow/clipping/material/reflection and reduced-mode row-outline differences remain OPEN. The prior clipped resize capture is not alone a CameraRig defect. [Evidence and contract clarification](migration/focus-resize.md). Whole A–G remains OPEN.
+
+## Stable outline buffers — 2026-10-29
+
+Ten of 110 exact final browser originals and the separate Dense original are reviewed at native size. Existing cuboid outlines and values persist through picking, Focus and actual context recovery. Text/cutoff, glow, primitive/null Flow Ports, material/reflection and clipping gaps remain OPEN. No final reference/motion approval is claimed. [Source, lifetime proof and full evidence](migration/solid-edge-lifetime.md). Whole A–G remains OPEN.

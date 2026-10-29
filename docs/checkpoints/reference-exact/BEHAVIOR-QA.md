@@ -198,3 +198,7 @@ Both original observer cases pass on current native Console, TimeDock, cluster m
 ## Focus resize contract — 2026-10-28
 
 Two new actual-JVM normal/reduced-motion cases verify unchanged camera/runtime identity on resize, fitted faces after a fresh explicit Focus Selection command, and preserved manual zoom through a later resize. Both pass. Requirement 30.10 prevents automatic recentering on resize; the observer clipping alone was not a camera defect. [Evidence and contract clarification](migration/focus-resize.md). Whole A–G remains OPEN.
+
+## Stable outline buffers — 2026-10-29
+
+Outline buffers retain their resource identity across unchanged geometry wrappers while material opacity remains live. Three lifecycle cases and all six prior text lifetime cases pass. Final native integration passes 85/85, zero skips/failures/flaky; the earlier 83/2 project-readiness failure is preserved separately. [Source, lifetime proof and full evidence](migration/solid-edge-lifetime.md). Whole A–G remains OPEN.

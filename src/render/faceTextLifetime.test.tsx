@@ -1,8 +1,8 @@
 // Real React memo/effect lifetimes with inert Three groups. Glyph rasterization
 // and the Fiber store/frame hooks are controlled; no GPU performance is claimed.
-import {createContext,type ComponentProps,type ReactNode} from 'react'
-import Reconciler from '@react-three/fiber/react-reconciler/index.js'
-import {Group,PerspectiveCamera} from 'three'
+import {type ComponentProps} from 'react'
+import {PerspectiveCamera} from 'three'
+import {renderThreeLifetime as render,threeLifetimeReconciler as reconciler,unmountThreeLifetimes} from '../testing/reactThreeLifetime'
 import {afterEach,beforeEach,expect,it,vi} from 'vitest'
 const state=vi.hoisted(()=>({frames:new Set<()=>void>(),listeners:new Set<()=>void>(),snapshot:null as unknown,invalidations:0,texts:[] as unknown[],batches:[] as unknown[]}))
 vi.mock('@react-three/fiber',async()=>{
@@ -20,48 +20,6 @@ vi.mock('troika-three-text',async()=>{
 })
 import {Text} from 'troika-three-text'
 import {FaceTextBatch,WorldText,textReadiness} from './FaceText'
-const apply=(node:HostNode,props:Record<string,unknown>)=>{node.publicInstance.position.fromArray(props.position as number[]??[0,0,0]);node.publicInstance.userData=props.userData as Record<string,unknown>??{}}
-type HostNode = { children: HostNode[]; visible: boolean; props?:Record<string,unknown>; publicInstance:Group; commits:number }
-const context = {}
-let priority = 0
-const append = (parent: HostNode, child: HostNode) => { parent.children.push(child) }
-const remove = (parent: HostNode, child: HostNode) => { parent.children = parent.children.filter(node => node !== child) }
-const insert = (parent: HostNode, child: HostNode, before: HostNode) => { parent.children.splice(parent.children.indexOf(before), 0, child) }
-const reconciler = Reconciler({
-  supportsMutation: true, supportsPersistence: false, supportsHydration: false, isPrimaryRenderer: false,
-  createInstance: (_type:string,props:Record<string,unknown>) => {
-    const node:HostNode={children:[],visible:true,props,publicInstance:new Group(),commits:0};
-    apply(node,props);return node
-  }, createTextInstance: () => ({ children: [], visible: true, publicInstance:new Group(),commits:0 }),
-  appendInitialChild: append, appendChild: append, appendChildToContainer: append,
-  removeChild: remove, removeChildFromContainer: remove, insertBefore: insert, insertInContainerBefore: insert,
-  getRootHostContext: () => context, getChildHostContext: () => context, getPublicInstance: (node: HostNode) => node.publicInstance,
-  prepareForCommit: () => null, resetAfterCommit: () => {}, finalizeInitialChildren: () => false,
-  commitUpdate: (node:HostNode,_type:string,_old:unknown,props:Record<string,unknown>) => {node.props=props;node.commits++;apply(node,props)}, commitTextUpdate: () => {}, shouldSetTextContent: () => false,
-  clearContainer: (node: HostNode) => { node.children = [] }, detachDeletedInstance: () => {},
-  supportsMicrotasks: true, scheduleMicrotask: queueMicrotask, scheduleTimeout: setTimeout, cancelTimeout: clearTimeout, noTimeout: -1,
-  setCurrentUpdatePriority: (next: number) => { priority = next }, getCurrentUpdatePriority: () => priority,
-  resolveUpdatePriority: () => priority || 32, trackSchedulerEvent: () => {},
-  resolveEventType: () => null, resolveEventTimeStamp: () => -1.1, shouldAttemptEagerTransition: () => false,
-  maySuspendCommit: () => false, preloadInstance: () => true, startSuspendingCommit: () => {},
-  suspendInstance: () => {}, waitForCommitToBeReady: () => null,
-  NotPendingTransition: null, HostTransitionContext: createContext(null),
-} as unknown as Parameters<typeof Reconciler>[0])
-const mounted = new Set<() => void>()
-function render(element: ReactNode) {
-  const onError = (error: Error) => { throw error }
-  const container:HostNode={children:[],visible:true,publicInstance:new Group(),commits:0}
-  const root = reconciler.createContainer(container, 1, null, false, null, '', onError, onError, onError, () => {})
-  const update = (next: ReactNode) => {
-    reconciler.updateContainerSync(next, root, null, null)
-    reconciler.flushSyncWork()
-    reconciler.flushPassiveEffects()
-  }
-  const unmount = () => { update(null); mounted.delete(unmount) }
-  mounted.add(unmount)
-  update(element)
-  return { rerender: update, unmount, nodes:()=>{const result:HostNode[]=[];const visit=(node:HostNode)=>{result.push(node);node.children.forEach(visit)};visit(container);return result} }
-}
 
 type ProbeText=Text&{syncs:number;disposed:number}
 const glyph=()=>state.texts[0] as ProbeText
@@ -70,7 +28,7 @@ const props=():ComponentProps<typeof WorldText>=>({children:'18',position:[0,0,-
 const refresh=(height:number)=>{state.snapshot={camera:new PerspectiveCamera(36,1,.1,1000),size:{width:1440,height},invalidate:()=>state.invalidations++};for(const notify of state.listeners)notify();reconciler.flushSyncWork();reconciler.flushPassiveEffects()}
 const frame=()=>{for(const callback of state.frames)callback()}
 beforeEach(()=>{state.texts=[];state.batches=[];state.invalidations=0;refresh(900)})
-afterEach(()=>{for(const unmount of mounted)unmount();expect(state.frames.size).toBe(0);expect(state.listeners.size).toBe(0);expect(textReadiness.pending.size).toBe(0);vi.restoreAllMocks()})
+afterEach(()=>{unmountThreeLifetimes();expect(state.frames.size).toBe(0);expect(state.listeners.size).toBe(0);expect(textReadiness.pending.size).toBe(0);vi.restoreAllMocks()})
 it('skips unchanged text host commits across 100 reconstructed coordinate, line and semantic wrappers',()=>{
  const view=render(<WorldText {...props()}/>),anchor=group(view),text=glyph(),syncs=text.syncs
  for(let index=0;index<100;index++)view.rerender(<WorldText {...props()}/>)
