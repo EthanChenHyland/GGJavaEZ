@@ -394,3 +394,7 @@ Browser-only 965-file source fc065d66f389004042eac6a8fcf21bd56ecef37f9a9e8a7f5bc
 ## Console publication priority — 2026-10-28
 
 Frozen 965-file source 62e5dc29a4535c1fc180faefdd217b7c5fd6ca4f12d393bd656e4b296ae4a8d2 passes eight checks, fresh 2,192/70 defaults (2,262 total, 236 files, 366.65 seconds) and 18/18 browser cases (158.475 seconds), zero browser skips/failures/flaky. The fixed Dense run completes all ten stages but exits one with four budget failures. [Full evidence and limitations](migration/console-publication.md). Whole A–G remains OPEN.
+
+## Persistence browser successors — 2026-10-28
+
+Frozen 965-file source 83ca242c5efc92cee3327535e9d4517784a2d87ff63dc546acd1ddbddd563d53 passes eight checks including all 197 Shell tests in 20 files and 20/20 browser cases (187.528 seconds). Prior 2,192/70 defaults are earlier evidence, not a fresh whole-suite run on the two wording changes. No fresh Dense run is claimed; four prior budgets remain failed. [Preserved assertions, failures and evidence](migration/persistence-browser.md). Whole A–G remains OPEN.

@@ -186,3 +186,7 @@ Both original incremental transport/ingestion cases pass with the original fixtu
 ## Console publication priority — 2026-10-28
 
 Input waits surface Console before World publication and use the existing 100 ms cadence to let input paint. Current 18/18 browser cases pass, with desktop/narrow wait presentation 4.1/4.6 ms against the unchanged 200 ms ceiling. Raw facts, replay and shutdown capture remain verified. Seventy-eight older cases remain. [Full evidence and limitations](migration/console-publication.md). Whole A–G remains OPEN.
+
+## Persistence browser successors — 2026-10-28
+
+Both original persistence cases retain their exact Java/editor corpus and pass current native history/replay and nested-package editing. Combined integration passes 20/20, zero skips/failures/flaky. Narrow Inspector dismissal follows requirements 30.7/30.11. Seventy-six older cases remain. [Preserved assertions, failures and evidence](migration/persistence-browser.md). Whole A–G remains OPEN.

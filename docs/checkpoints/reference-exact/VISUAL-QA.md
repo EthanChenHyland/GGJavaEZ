@@ -185,3 +185,7 @@ All four final transport/ingestion originals are inspected at original resolutio
 ## Console publication priority — 2026-10-28
 
 Six of nineteen exact final browser originals and the separate Dense original are root reviewed. Input paints before the first World publication. Generic Ready placeholder wording and tool-status clarity need follow-up; existing material, glow, text, clipping and occlusion gaps remain. No reference/motion/visual approval is claimed. [Full evidence and limitations](migration/console-publication.md). Whole A–G remains OPEN.
+
+## Persistence browser successors — 2026-10-28
+
+Eight of twenty-one exact final PNGs are root reviewed at original size, including all six Person captures. Java tools footer is visible; the settled images do not capture the transient empty-World wait placeholder. Text cutoff, glow, clipping, material/reflection and occlusion gaps remain OPEN. No reference or motion approval is claimed. [Preserved assertions, failures and evidence](migration/persistence-browser.md). Whole A–G remains OPEN.
