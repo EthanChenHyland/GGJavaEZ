@@ -194,3 +194,7 @@ Both original persistence cases retain their exact Java/editor corpus and pass c
 ## Observer browser successors — 2026-10-28
 
 Both original observer cases pass on current native Console, TimeDock, cluster member selection, Focus and reload, preserving exact saturation/thread Java and assertions. Combined integration passes 22/22, zero skips/failures/flaky. Seventy-four older cases remain. [Preserved assertions, failures and evidence](migration/observer-browser.md). Whole A–G remains OPEN.
+
+## Focus resize contract — 2026-10-28
+
+Two new actual-JVM normal/reduced-motion cases verify unchanged camera/runtime identity on resize, fitted faces after a fresh explicit Focus Selection command, and preserved manual zoom through a later resize. Both pass. Requirement 30.10 prevents automatic recentering on resize; the observer clipping alone was not a camera defect. [Evidence and contract clarification](migration/focus-resize.md). Whole A–G remains OPEN.

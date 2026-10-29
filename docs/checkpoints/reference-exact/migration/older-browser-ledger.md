@@ -1,6 +1,6 @@
 # Remaining older browser cases — 2026-10-26
 
-Default inventory at f262899 discovers 294 cases in 81 files. Of these, 202 belong to the current reference/camera/playback suite; that classification is not a passing whole-suite claim. The two original command receipt cases now pass in the separate 17-case integration gate. Seventy-four older cases remain for individual migration/disposition. Formal 80-case reference matrix and opt-in suites remain separate.
+Default inventory at f262899 discovers 294 cases in 81 files. Of these, 202 belong to the current reference/camera/playback suite; that classification is not a passing whole-suite claim. The two original command receipt cases now pass in the separate 17-case integration gate. Seventy-four older cases remain for individual migration/disposition. Two new actual-JVM resize/refocus cases bring fresh discovery to 296 cases in 82 files (222 current-classified, 74 older); this is not an exhaustive passing result. Formal 80-case reference matrix and opt-in suites remain separate.
 
 | Original file | Cases | Status |
 | --- | ---: | --- |

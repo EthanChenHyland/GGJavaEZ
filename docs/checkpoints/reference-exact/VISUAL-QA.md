@@ -193,3 +193,7 @@ Eight of twenty-one exact final PNGs are root reviewed at original size, includi
 ## Observer browser successors — 2026-10-28
 
 All five observer originals are reviewed; twenty-one other integrated PNGs remain unreviewed. Last captured Main$Item #256 shows number 254. Four Inspector row bounds pass, but the narrow 3D Focus target clips after resize. Tiny overview representatives, text/glow/material/reflection and clipping gaps remain OPEN. [Preserved assertions, failures and evidence](migration/observer-browser.md). Whole A–G remains OPEN.
+
+## Focus resize contract — 2026-10-28
+
+Four of eight source-bound resize/refocus originals are reviewed. Fresh explicit Focus contains StockItem #3 above the narrow Inspector; resize itself preserves camera as required. Text/glow/clipping/material/reflection and reduced-mode row-outline differences remain OPEN. The prior clipped resize capture is not alone a CameraRig defect. [Evidence and contract clarification](migration/focus-resize.md). Whole A–G remains OPEN.

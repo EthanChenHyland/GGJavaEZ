@@ -402,3 +402,7 @@ Frozen 965-file source 83ca242c5efc92cee3327535e9d4517784a2d87ff63dc546acd1ddbdd
 ## Observer browser successors — 2026-10-28
 
 Browser-only 965-file source dac6d9a0e1924558876516c57ba30aacca29b0ae50ed495e81ec3c5a3ba7115d passes seven fresh checks and 22/22 browser cases (227.403 seconds). Production/unit/fixture inputs and fourteen JS resources match f0d8af2; earlier full 2,192/70 and Shell 197/20 evidence is reused explicitly. [Preserved assertions, failures and evidence](migration/observer-browser.md). Whole A–G remains OPEN.
+
+## Focus resize contract — 2026-10-28
+
+Browser-only 966-file source bc54fbdefb301ac4bb07bf41517232dc5b693a50fb7f8854db8ec05fd9a7abc7 passes seven fresh checks and 2/2 new actual-JVM cases (30.879 seconds). All prior 965 inputs and fourteen production JS resources are identical. Prior 22/22 is separate evidence; no combined 24-case execution is claimed. Discovery is 296 cases /82 files, with 74 older cases still open. [Evidence and contract clarification](migration/focus-resize.md). Whole A–G remains OPEN.
