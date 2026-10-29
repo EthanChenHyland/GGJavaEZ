@@ -189,3 +189,7 @@ Six of nineteen exact final browser originals and the separate Dense original ar
 ## Persistence browser successors — 2026-10-28
 
 Eight of twenty-one exact final PNGs are root reviewed at original size, including all six Person captures. Java tools footer is visible; the settled images do not capture the transient empty-World wait placeholder. Text cutoff, glow, clipping, material/reflection and occlusion gaps remain OPEN. No reference or motion approval is claimed. [Preserved assertions, failures and evidence](migration/persistence-browser.md). Whole A–G remains OPEN.
+
+## Observer browser successors — 2026-10-28
+
+All five observer originals are reviewed; twenty-one other integrated PNGs remain unreviewed. Last captured Main$Item #256 shows number 254. Four Inspector row bounds pass, but the narrow 3D Focus target clips after resize. Tiny overview representatives, text/glow/material/reflection and clipping gaps remain OPEN. [Preserved assertions, failures and evidence](migration/observer-browser.md). Whole A–G remains OPEN.

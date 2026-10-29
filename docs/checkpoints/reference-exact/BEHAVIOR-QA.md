@@ -190,3 +190,7 @@ Input waits surface Console before World publication and use the existing 100 ms
 ## Persistence browser successors — 2026-10-28
 
 Both original persistence cases retain their exact Java/editor corpus and pass current native history/replay and nested-package editing. Combined integration passes 20/20, zero skips/failures/flaky. Narrow Inspector dismissal follows requirements 30.7/30.11. Seventy-six older cases remain. [Preserved assertions, failures and evidence](migration/persistence-browser.md). Whole A–G remains OPEN.
+
+## Observer browser successors — 2026-10-28
+
+Both original observer cases pass on current native Console, TimeDock, cluster member selection, Focus and reload, preserving exact saturation/thread Java and assertions. Combined integration passes 22/22, zero skips/failures/flaky. Seventy-four older cases remain. [Preserved assertions, failures and evidence](migration/observer-browser.md). Whole A–G remains OPEN.

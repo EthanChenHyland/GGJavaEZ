@@ -16,6 +16,7 @@
     "e2e/coverage-v12-p4.spec.ts",
     "e2e/incremental-v12.spec.ts",
     "e2e/m11-persistence.spec.ts",
+    "e2e/observer-saturation-v12.spec.ts",
     "playwright.reference.config.ts",
     "scripts/reference/validation.d.mts",
     "src/**/*.d.ts"

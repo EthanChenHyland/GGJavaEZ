@@ -398,3 +398,7 @@ Frozen 965-file source 62e5dc29a4535c1fc180faefdd217b7c5fd6ca4f12d393bd656e4b296
 ## Persistence browser successors — 2026-10-28
 
 Frozen 965-file source 83ca242c5efc92cee3327535e9d4517784a2d87ff63dc546acd1ddbddd563d53 passes eight checks including all 197 Shell tests in 20 files and 20/20 browser cases (187.528 seconds). Prior 2,192/70 defaults are earlier evidence, not a fresh whole-suite run on the two wording changes. No fresh Dense run is claimed; four prior budgets remain failed. [Preserved assertions, failures and evidence](migration/persistence-browser.md). Whole A–G remains OPEN.
+
+## Observer browser successors — 2026-10-28
+
+Browser-only 965-file source dac6d9a0e1924558876516c57ba30aacca29b0ae50ed495e81ec3c5a3ba7115d passes seven fresh checks and 22/22 browser cases (227.403 seconds). Production/unit/fixture inputs and fourteen JS resources match f0d8af2; earlier full 2,192/70 and Shell 197/20 evidence is reused explicitly. [Preserved assertions, failures and evidence](migration/observer-browser.md). Whole A–G remains OPEN.
