@@ -1,4 +1,5 @@
-import {expect,it} from 'vitest'
+import {expect,it,vi} from 'vitest'
+import * as transitions from '../motion/semanticTransition'
 import type {RawRuntimeEvent} from '../instrumentation/contracts'
 import {normalizeTrace} from '../instrumentation/normalize'
 import {seek} from '../runtime'
@@ -94,4 +95,49 @@ it('incremental return-face status changes when its consuming edge arrives and a
   if(cursor===write.seq)expect(scene.entities['jvm:frame:child']).toMatchObject({status:{kind:'returned',value:{exact:'7'}}})
   if(cursor===write.seq+1)expect(scene.entities['jvm:frame:child']).toMatchObject({status:{kind:'returned',value:null}})
  }
+})
+
+it('iterates every supported prefix without changing the eager snapshot identity through rewinds',()=>{
+ const trace=recording(),layout=createLayoutEngine();layout.append(trace.events)
+ const projector=createSceneProjector(trace),graph=seek(trace,trace.events.length).executionGraph!,catalog=createFlowCatalog();catalog.extend(graph,trace)
+ const context={sessionEnded:false,pausedAtLiveHead:false,liveHead:trace.events.length,recording:{state:'FULL' as const,reason:null,budget:null,lastRecordedSeq:null,executionContinued:false}}
+ for(const cursor of [trace.events.length,0,Math.floor(trace.events.length/2),trace.events.length-1,1,trace.events.length]){
+  const scene=projector.project(seek(trace,cursor),layout.state,context),fresh=createFlowCatalog();fresh.extend(graph,trace)
+  const expected=fresh.prefix(cursor,scene)
+  expect([...catalog.iteratePrefix(cursor,scene)]).toEqual(expected)
+  const eager=catalog.prefix(cursor,scene);expect(Object.isFrozen(eager)).toBe(true)
+  expect([...catalog.iteratePrefix(cursor,scene)]).toEqual(eager);expect(catalog.prefix(cursor,scene)).toBe(eager)
+  expect(eager.every(flow=>flow.evidenceSeqs.every(seq=>seq<cursor))).toBe(true)
+ }
+})
+it('captures an iterator boundary before delayed consumption and graph append, despite interleaved rewind queries',()=>{
+ const trace=recording(),layout=createLayoutEngine();layout.append(trace.events)
+ const graph=seek(trace,trace.events.length).executionGraph!,supported=new Set(['ARGUMENT_BIND','RECEIVER_BIND','ASSIGN','FIELD_WRITE','STATIC_WRITE','FIELD_READ','STATIC_READ','REFERENCE_BIND','ARRAY_READ','ARRAY_WRITE','RETURN','INPUT_CONSUME','OUTPUT','THROW','UNWIND','CATCH'])
+ const first=graph.edges.findIndex(edge=>supported.has(edge.kind));expect(first).toBeGreaterThanOrEqual(0)
+ const catalog=createFlowCatalog();catalog.extend({...graph,edges:graph.edges.slice(0,first+1)},trace)
+ const projector=createSceneProjector(trace),context={sessionEnded:false,pausedAtLiveHead:false,liveHead:trace.events.length,recording:{state:'FULL' as const,reason:null,budget:null,lastRecordedSeq:null,executionContinued:false}}
+ const scene=projector.project(seek(trace,trace.events.length),layout.state,context),oracle=createFlowCatalog();oracle.extend({...graph,edges:graph.edges.slice(0,first+1)},trace)
+ const expected=oracle.prefix(scene.cursor,scene)
+ expect(expected).toHaveLength(1)
+ const delayed=catalog.iteratePrefix(scene.cursor,scene),active=catalog.iteratePrefix(scene.cursor,scene)[Symbol.iterator](),initial=active.next();expect(initial.done).toBe(false)
+ const empty=projector.project(seek(trace,0),layout.state,context)
+ expect(catalog.query({cursor:0,scene:empty,priority:{selectedIds:new Set(),focusedIds:new Set(),currentIds:new Set()},limit:5})).toEqual([])
+ catalog.extend(graph,trace)
+ expect([...delayed]).toEqual(expected);expect([initial.value,...Array.from({[Symbol.iterator]:()=>active})]).toEqual(expected)
+ const fresh=createFlowCatalog();fresh.extend(graph,trace)
+ const current=[...catalog.iteratePrefix(scene.cursor,scene)];expect(current.length).toBeGreaterThan(expected.length);expect(current).toEqual(fresh.prefix(scene.cursor,scene))
+})
+
+it('reuses semantic endpoint derivation for repeated planning and invalidates it across a different resolved prefix',()=>{
+ const trace=recording(),layout=createLayoutEngine();layout.append(trace.events)
+ const projector=createSceneProjector(trace),catalog=createFlowCatalog();catalog.extend(seek(trace,trace.events.length).executionGraph!,trace)
+ const context={sessionEnded:false,pausedAtLiveHead:false,liveHead:trace.events.length,recording:{state:'FULL' as const,reason:null,budget:null,lastRecordedSeq:null,executionContinued:false}}
+ const scene=projector.project(seek(trace,trace.events.length),layout.state,context),spy=vi.spyOn(transitions,'graphTransition')
+ try{
+  const first=[...catalog.iteratePrefix(scene.cursor,scene)];expect(first.length).toBeGreaterThan(0);expect(spy).toHaveBeenCalled()
+  spy.mockClear();expect([...catalog.iteratePrefix(scene.cursor,scene)]).toEqual(first);expect(spy).not.toHaveBeenCalled()
+  const cursor=Math.floor(trace.events.length/2),earlier=projector.project(seek(trace,cursor),layout.state,context)
+  expect([...catalog.iteratePrefix(cursor,earlier)].length).toBeGreaterThan(0);expect(spy).toHaveBeenCalled()
+  spy.mockClear();expect([...catalog.iteratePrefix(scene.cursor,scene)]).toEqual(first);expect(spy).toHaveBeenCalled()
+ }finally{spy.mockRestore()}
 })

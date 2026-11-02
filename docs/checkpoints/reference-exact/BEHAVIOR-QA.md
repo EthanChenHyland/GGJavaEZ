@@ -202,3 +202,8 @@ Two new actual-JVM normal/reduced-motion cases verify unchanged camera/runtime i
 ## Stable outline buffers — 2026-10-29
 
 Outline buffers retain their resource identity across unchanged geometry wrappers while material opacity remains live. Three lifecycle cases and all six prior text lifetime cases pass. Final native integration passes 85/85, zero skips/failures/flaky; the earlier 83/2 project-readiness failure is preserved separately. [Source, lifetime proof and full evidence](migration/solid-edge-lifetime.md). Whole A–G remains OPEN.
+
+
+## Complete flow-prefix ownership — 2026-11-01
+
+The planner accounts for every supported prefix edge through one iterable; compact endpoint IDs/tags avoid repeated derivation without retaining every flow DTO/object pair. Public eager snapshot identity and query behavior remain compatible. Four regressions, 3,834 complete parent-plan comparisons and final 97/97 native cases pass. An actual stale-width provenance seek is corrected only by waiting for STANDARD layout after resize; its earlier 96/1 failure stays archived. [Contracts, counts and limitations](migration/flow-prefix-lifetime.md). Whole A–G remains OPEN.

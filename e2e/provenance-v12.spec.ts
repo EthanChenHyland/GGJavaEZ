@@ -89,6 +89,7 @@ test('actual constructor graph survives browser normalization, history scrubbing
     await page.screenshot({ path: `${outputRoot}/provenance/constructor-focus-${width}x${height}.png` })
   }
   await page.setViewportSize({ width: 1440, height: 900 })
+  await expect(page.locator('.shell')).toHaveAttribute('data-viewport','STANDARD')
   // Enter History explicitly: a viewport capture may already be at LIVE.
   await seekCursor(page,proof.semanticEvents-1)
   await expect(page.locator('.gg-time-lens')).toHaveText('HISTORY')

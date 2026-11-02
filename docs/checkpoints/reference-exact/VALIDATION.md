@@ -410,3 +410,8 @@ Browser-only 966-file source bc54fbdefb301ac4bb07bf41517232dc5b693a50fb7f8854db8
 ## Stable outline buffers — 2026-10-29
 
 Final 968-file source f132bff283a58195126cdf77d6905455c00e6a5172ec532106f771ab67791087 passes seven fresh checks and 85/85 native cases (602.122 seconds). Fresh full defaults on identical production/unit/fixture inputs are 2,195/70 explicit skips/2,265 total, 237 files (386.02 seconds); only a browser hydration prerequisite changes afterward. Fixed Dense completes but exits one with three latency failures. [Source, lifetime proof and full evidence](migration/solid-edge-lifetime.md). Whole A–G remains OPEN.
+
+
+## Complete flow-prefix ownership — 2026-11-01
+
+Final 968-file source 0ddeed5c6450579407d6b8dd76a0fc44403a6b42ed2a6657961e9f278e6d843a passes seven fresh checks and 97/97 native cases, zero skips/failures/flaky, 843.002 seconds. Fresh complete defaults on identical production/unit/fixture inputs are 2,199 passed/70 explicit opt-in skips/2,269 total in 237 files, 264.72 seconds; only one browser resize prerequisite changes afterward, and fourteen built JS resources are byte-identical. Fixed Dense completes all ten stages but exits one with four latency failures. [API equivalence, failed candidates, source and full evidence](migration/flow-prefix-lifetime.md). Whole A–G remains OPEN.

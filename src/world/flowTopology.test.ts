@@ -115,3 +115,10 @@ it('bounds priority-policy queries to one per drawable flow while preserving the
  expect([...calls.values()].reduce((sum,count)=>sum+count,0)).toBeLessThanOrEqual(flows.length)
  expect(JSON.stringify(flows)).toBe(before)
 })
+
+it('accounts the same complete flow partition from a single-pass iterator without an array owner',()=>{
+ const f=fixture(),flows=Array.from({length:100},(_,index)=>f.flow(`single pass / ${index}`,index%5===0?'missing lifetime':undefined,index%2?'assignment':'reference'))
+ const expected=buildFlowTopology({...f.input,flows});let visits=0,iterations=0
+ const singlePass={*[Symbol.iterator](){iterations++;expect(iterations).toBe(1);for(const flow of flows){visits++;yield flow}}}
+ const result=buildFlowTopology({...f.input,flows:singlePass});expect(result).toEqual(expected);expect(visits).toBe(flows.length);assertPartition(result,flows.map(flow=>flow.id))
+})

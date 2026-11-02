@@ -8,7 +8,7 @@ export interface FlowPort {point:Vec3;anchor:WorldAnchor}
 export interface DrawableFlow {flow:SceneFlow;from:FlowPort;to:FlowPort}
 export interface FlowTopologyInput {
  scene:SceneModel;entities:ReadonlyMap<string,PresentedEntity>;cellWindows:ReadonlyMap<string,ArrayWindow>
- flows:readonly RecordedFlow[];limit:number;mandatoryIds:ReadonlySet<string>
+ flows:Iterable<RecordedFlow>;limit:number;mandatoryIds:ReadonlySet<string>
  priority(flow:RecordedFlow):number;inScope(flow:RecordedFlow):boolean;aggregate:boolean
 }
 
@@ -59,7 +59,9 @@ export function presentedFlowPorts(scene:SceneModel,entities:ReadonlyMap<string,
 export function buildFlowTopology(input:FlowTopologyInput){
  if(!Number.isSafeInteger(input.limit)||input.limit<0)throw new RangeError('Flow limit must be a non-negative safe integer')
  const port=presentedFlowPorts(input.scene,input.entities,input.cellWindows),available:DrawableFlow[]=[],unavailable:FlowPresentation['unavailable'][number][]=[],scopeExcluded:string[]=[],seen=new Set<string>()
+ let recorded=0
  for(const flow of input.flows){
+  recorded++
   if(seen.has(flow.id))throw new Error(`Duplicate recorded flow ID: ${flow.id}`);seen.add(flow.id)
   if(flow.evidenceSeqs.some(seq=>seq>=input.scene.cursor))throw new Error('Flow evidence is outside the applied prefix')
   if(!input.inScope(flow)){scopeExcluded.push(flow.id);continue}
@@ -79,6 +81,6 @@ export function buildFlowTopology(input:FlowTopologyInput){
   const group=groups.get(id)??{id,from:item.from,to:item.to,flows:[]};group.flows.push(flow);groups.set(id,group)
  }
  const bundles=[...groups.values()].sort((a,b)=>a.id<b.id?-1:a.id>b.id?1:0),bundled=bundles.reduce((sum,bundle)=>sum+bundle.flows.length,0)
- const presentation:FlowPresentation={counts:{recorded:input.flows.length,drawable:individual.length+bundled,individual:individual.length,bundled,bundleCurves:bundles.length,unavailable:unavailable.length,scopeExcluded:scopeExcluded.length},individualIds:individual.map(item=>item.flow.id),unavailable,scopeExcluded}
+ const presentation:FlowPresentation={counts:{recorded,drawable:individual.length+bundled,individual:individual.length,bundled,bundleCurves:bundles.length,unavailable:unavailable.length,scopeExcluded:scopeExcluded.length},individualIds:individual.map(item=>item.flow.id),unavailable,scopeExcluded}
  return{individual,bundles,presentation,mandatory:mandatory.map(item=>item.flow.id)}
 }

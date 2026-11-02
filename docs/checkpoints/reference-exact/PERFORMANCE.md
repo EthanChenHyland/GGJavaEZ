@@ -287,3 +287,8 @@ Current fixed run 9e3c5a15-d700-4b12-8648-1bf662af5e4d / actual JVM f9a51890-137
 ## Stable outline buffers — 2026-10-29
 
 Fixed Dense run 6581f946-43b5-474c-8946-b88a5e5726e1 completes all ten stages with fresh actual JVM d94d9c59-2544-4d3b-b3ba-d81ae8610295, 7,492 raw/9,852 normalized Events and zero browser errors. Seek p50 82.246/55, Focus p95 134.865/125 and Home p95 164.942/152 FAIL. Seek p95 99.859/112 and cold median 4,441.033/5,300 pass. Orbit/soak budgets pass, but a 445.4 ms maximum frame interval prevents no-jank approval. Independent 25% retention failures remain OPEN; no causal global improvement is claimed from separate runs. [Source, lifetime proof and full evidence](migration/solid-edge-lifetime.md). Whole A–G remains OPEN.
+
+
+## Complete flow-prefix ownership — 2026-11-01
+
+On M1 Pro/Node 24.22.1, the unchanged independent benchmark measures 31,796,616 →27,529,608 presentation heap bytes at the 20k target versus exact parent production modules. The compact tag backing-store bound adds at most 15,375 bytes; all three 25% ratios still FAIL. Counterbalanced pure planning is approximately 4–5 ms parent versus 6–8 ms compact, after rejecting a 23–26 ms cacheless candidate. Final fixed Dense 51ffadfb completes ten stages with fresh JVM 2152c7df, 7,492/9,852 Events and zero browser/lifecycle errors. Seek 90.673/157.048, Focus 183.829 and Home 215.858 ms FAIL unchanged 55/112/125/152 limits; cold 4,601.898 ms and all orbit/soak budgets pass. An 801 ms maximum frame interval prevents no-jank approval. This is separate from earlier M4 evidence; no global non-regression is claimed. [Methods, source, tradeoff and full metrics](migration/flow-prefix-lifetime.md). Whole A–G remains OPEN.

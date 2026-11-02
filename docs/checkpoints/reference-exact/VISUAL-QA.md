@@ -201,3 +201,8 @@ Four of eight source-bound resize/refocus originals are reviewed. Fresh explicit
 ## Stable outline buffers — 2026-10-29
 
 Ten of 110 exact final browser originals and the separate Dense original are reviewed at native size. Existing cuboid outlines and values persist through picking, Focus and actual context recovery. Text/cutoff, glow, primitive/null Flow Ports, material/reflection and clipping gaps remain OPEN. No final reference/motion approval is claimed. [Source, lifetime proof and full evidence](migration/solid-edge-lifetime.md). Whole A–G remains OPEN.
+
+
+## Complete flow-prefix ownership — 2026-11-01
+
+Five of 140 final native PNGs and the separate fresh Dense original are root reviewed at native size; 135 native originals remain unreviewed. Existing dimensions, values, picking and recovery persist. The null-chip endpoint loop is confirmed under requirement9.8; text cutoff/aliasing, route glow/crowding, dark face/side/floor response and clipping remain OPEN. No final reference/motion approval is claimed. [Source-bound review and evidence](migration/flow-prefix-lifetime.md). Whole A–G remains OPEN.

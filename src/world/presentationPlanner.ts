@@ -264,7 +264,7 @@ export function planPresentation(input: PlanInput, previous?: PresentationPlan):
         curve(call.id, 'call', [from.position[0] - from.size[0] / 2, from.position[1] + from.size[1] / 2 - .7, from.position[2] + from.size[2] / 2], [to.position[0] - to.size[0] / 2, to.position[1] + to.size[1] / 2 - .7, to.position[2] + to.size[2] / 2], 'call', relevant, true, false, undefined, from, to);
         if(relevant)participate(call.callerId,call.calleeId);
     }
-    const flowTopology=buildFlowTopology({scene,entities,cellWindows,flows:input.flows?.prefix(scene.cursor,scene)??[],limit:budget.flows,
+    const flowTopology=buildFlowTopology({scene,entities,cellWindows,flows:input.flows?.iteratePrefix(scene.cursor,scene)??[],limit:budget.flows,
       mandatoryIds:new Set(requiredFlows.map(flow=>flow.id)),aggregate:trace.active&&trace.scope==='all',
       priority:flow=>flow.id===selection?.id?0:[flow.from,flow.to].some(point=>point&&priority.focusedIds.has(point.id))?1:flow.evidenceSeqs.includes(scene.cursorEvent?.seq??-1)?2:flowRelevant(flow)?3:4,
       inScope:flow=>!trace.active||trace.scope==='all'||trace.scope==='current'&&flow.evidenceSeqs.includes(scene.cursorEvent?.seq??-1)||trace.scope==='relevant'&&flowRelevant(flow)});

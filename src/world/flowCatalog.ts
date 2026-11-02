@@ -19,10 +19,14 @@ export interface FlowCatalog {
  atEvent(cursor:number,scene:SceneModel):SceneFlow[]
  /** Complete supported-edge prefix, including evidence without spatial endpoints. */
  prefix(cursor:number,scene:SceneModel):readonly RecordedFlow[]
+ /** One complete, ordered pass over the accepted edge boundary; no retained DTO list. */
+ iteratePrefix(cursor:number,scene:SceneModel):Iterable<RecordedFlow>
  recordedProvenanceOf(valueOrSlotId:string,cursor:number):readonly RecordedProvenance[]
  drawableFlowsOf(valueOrSlotId:string,cursor:number,scene:SceneModel):readonly SceneFlow[]
 }
 interface Candidate {edgeIndex:number;edge:GraphEdge;seq:number;kind:FlowKind;value:RuntimeValue|undefined}
+const endpointCode=(point:FlowEndpoint|null):number=>!point?0:point.kind==='slot'?1:point.kind==='frame'?2:point.kind==='object'?3:point.kind==='class'?4:point.id==='stdin'?5:point.id==='stdout'?6:7
+const endpointFromCode=(code:number,id:string|null|undefined):FlowEndpoint|null=>code===1?{kind:'slot',id:id!}:code===2?{kind:'frame',id:id!}:code===3?{kind:'object',id:id!}:code===4?{kind:'class',id:id!}:code===5?{kind:'io',id:'stdin'}:code===6?{kind:'io',id:'stdout'}:code===7?{kind:'io',id:'stderr'}:null
 const kinds:Partial<Record<GraphEdge['kind'],FlowKind>>={ARGUMENT_BIND:'argument',RECEIVER_BIND:'receiver',ASSIGN:'assignment',FIELD_WRITE:'local-field',STATIC_WRITE:'local-field',FIELD_READ:'field-read',STATIC_READ:'field-read',REFERENCE_BIND:'reference',ARRAY_READ:'array-read',ARRAY_WRITE:'array-write',RETURN:'return',INPUT_CONSUME:'input',OUTPUT:'output',THROW:'throw',UNWIND:'unwind',CATCH:'catch'}
 /** Complete recorded adjacency is independent of drawable-flow filtering; all IDs are looked up explicitly. */
 export function createFlowCatalog():FlowCatalog {
@@ -31,6 +35,9 @@ export function createFlowCatalog():FlowCatalog {
  // only to the currently resolved graph, rather than multiplying across every
  // retained checkpoint/recent root after scrubbing.
  const resolvedCache=new Map<number,{from:FlowEndpoint|null;to:FlowEndpoint|null}>()
+ // Streamed plans retain opaque endpoint IDs and packed kind tags, rather than
+ // a DTO list and an object pair for every edge. Bit 6 also caches null/null.
+ let endpointTags=new Uint8Array(0),endpointFromIds:(string|null)[]=[],endpointToIds:(string|null)[]=[]
  let currentPrefix:{trace:TraceDocument;cursor:number;length:number;state:RuntimeState}|undefined
  const stateAt=(cursor:number):RuntimeState|null=>{
   if(!acceptedTrace)return null
@@ -38,6 +45,7 @@ export function createFlowCatalog():FlowCatalog {
   if(currentPrefix?.trace===acceptedTrace&&currentPrefix.cursor===cursor&&currentPrefix.length===length)return currentPrefix.state
   const state=seek(acceptedTrace,cursor)
   resolvedCache.clear()
+  endpointTags=new Uint8Array(0);endpointFromIds=[];endpointToIds=[]
   currentPrefix={trace:acceptedTrace,cursor,length,state}
   return state
  }
@@ -64,19 +72,25 @@ export function createFlowCatalog():FlowCatalog {
   const rows=owner.kind==='frame'||owner.kind==='class'?owner.rows:owner.groups.flatMap(g=>g.rows)
   return rows.some(row=>row.slotId===point.id&&(owner.kind==='frame'||row.port!==null)) // actual frame row windows are resolved by the planner
  }
- const formatted=(candidate:Candidate,scene:SceneModel):SceneFlow|null=>{
-  const points=resolve(candidate,scene.cursor);if(!points.to)return null
+ const formatted=(candidate:Candidate,scene:SceneModel,points=resolve(candidate,scene.cursor)):SceneFlow|null=>{
+  if(!points.to)return null
   const value=candidate.value
   const target=value?.kind==='reference'?scene.entities[value.objectId]:null
   const text=value?.kind==='reference'?target?`${target.title} #${'displayId'in target?target.displayId:'?'}`:'⟨not recorded⟩':value?valueText(value).text:null
   return{id:candidate.edge.id,edgeIndex:candidate.edgeIndex,kind:candidate.kind,from:points.from,to:points.to,evidenceEventIds:[candidate.edge.eventId],evidenceSeqs:[candidate.seq],valueText:text}
  }
- const resolve=(candidate:Candidate,cursor:number):{from:FlowEndpoint|null;to:FlowEndpoint|null}=>{
+ const resolve=(candidate:Candidate,cursor:number,retain=true):{from:FlowEndpoint|null;to:FlowEndpoint|null}=>{
   const state=stateAt(cursor)
   if(!state)return{from:null,to:null}
   const prefix=state.executionGraph,event=events.get(candidate.edge.eventId)!
   if(!prefix||candidate.seq>=cursor)return{from:null,to:null}
   const prior=resolvedCache.get(candidate.edgeIndex);if(prior)return prior
+  const tag=endpointTags[candidate.edgeIndex]
+  if(tag){
+   const result={from:endpointFromCode((tag>>3)&7,endpointFromIds[candidate.edgeIndex]),to:endpointFromCode(tag&7,endpointToIds[candidate.edgeIndex])}
+   if(retain)resolvedCache.set(candidate.edgeIndex,result)
+   return result
+  }
   const edge=candidate.edge,transition=graphTransition(event,edge,state,prefix,true)
   let from=transition?.from??(edge.evidence==='unknown'?null:physical(edge.originSlotId??edge.from,state)),to=transition?.to??physical(edge.to,state)
   const consumingDestination=(valueId:string)=>{
@@ -91,7 +105,25 @@ export function createFlowCatalog():FlowCatalog {
   else if(edge.kind==='INPUT_CONSUME'){from=physical(edge.from,state);to=consumingDestination(edge.to)}
   if(from?.kind==='slot'&&from.id.startsWith('return:')){const id=from.id.slice('return:'.length),invocation=prefix.invocations[id];from=invocation?.returnValueId&&invocation.returnValueId===edge.from&&state.frames[id]?{kind:'frame',id}:null}
   if(from?.id===to?.id&&from?.kind===to?.kind)from=null
-  const result={from:from??null,to:to??null};resolvedCache.set(candidate.edgeIndex,result);return result
+  const result={from:from??null,to:to??null}
+  if(retain)resolvedCache.set(candidate.edgeIndex,result)
+  else{
+   if(candidate.edgeIndex>=endpointTags.length){const tags=new Uint8Array(Math.max(indexedEdges,candidate.edgeIndex+1));tags.set(endpointTags);endpointTags=tags}
+   endpointFromIds[candidate.edgeIndex]=result.from?.id??null;endpointToIds[candidate.edgeIndex]=result.to?.id??null
+   endpointTags[candidate.edgeIndex]=64|(endpointCode(result.from)<<3)|endpointCode(result.to)
+  }
+  return result
+ }
+ // Eager public snapshots retain their existing cache/identity contract. The
+ // planner consumes this pass directly, so off-cut DTOs and endpoint pairs do
+ // not become long-lived owners merely because a plan accounts for them.
+ function* iterate(cursor:number,scene:SceneModel,retain:boolean,edgeLimit:number):IterableIterator<RecordedFlow>{
+  lastScene=scene
+  for(const candidate of byId.values()){
+   if(candidate.edgeIndex>=edgeLimit||candidate.seq>=cursor)break
+   const points=resolve(candidate,cursor,retain),flow=formatted(candidate,scene,points)
+   yield flow??{id:candidate.edge.id,edgeIndex:candidate.edgeIndex,kind:candidate.kind,from:points.from,to:points.to,evidenceEventIds:[candidate.edge.eventId],evidenceSeqs:[candidate.seq],valueText:null}
+  }
  }
  const drawable=(candidate:Candidate,scene:SceneModel)=>{const points=resolve(candidate,scene.cursor);return mapped(points.from,scene)&&mapped(points.to,scene)}
  const adjacency=(ids:ReadonlySet<string>,result:Set<number>,tail:number,cursor=Infinity)=>{
@@ -135,13 +167,11 @@ export function createFlowCatalog():FlowCatalog {
   prefix(cursor,scene){
    lastScene=scene
    if(prefixCache?.scene===scene&&prefixCache.cursor===cursor&&prefixCache.indexedEdges===indexedEdges)return prefixCache.items
-   const items:RecordedFlow[]=[]
-   for(const candidate of byId.values()){
-    if(candidate.seq>=cursor)break
-    const points=resolve(candidate,cursor),flow=formatted(candidate,scene)
-    items.push(flow??{id:candidate.edge.id,edgeIndex:candidate.edgeIndex,kind:candidate.kind,from:points.from,to:points.to,evidenceEventIds:[candidate.edge.eventId],evidenceSeqs:[candidate.seq],valueText:null})
-   }
-   const result=Object.freeze(items);prefixCache={scene,cursor,indexedEdges,items:result};return result
+   const result=Object.freeze([...iterate(cursor,scene,true,indexedEdges)]);prefixCache={scene,cursor,indexedEdges,items:result};return result
+  },
+  iteratePrefix(cursor,scene){
+   lastScene=scene
+   return prefixCache?.scene===scene&&prefixCache.cursor===cursor&&prefixCache.indexedEdges===indexedEdges?prefixCache.items:iterate(cursor,scene,false,indexedEdges)
   },
   bundles({cursor,scene,exclude}){
    lastScene=scene;const groups=new Map<string,FlowBundle>()
