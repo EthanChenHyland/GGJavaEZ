@@ -110,3 +110,21 @@ it('rejects a nonappend envelope before consuming any new observations',()=>{
  index.append(trace.events);expect(index.current(3).length).toBe(1)
  expect(()=>index.append(trace.events.slice(0,2))).toThrow();expect(index.length).toBe(3)
 })
+it('shares a read-only accepted event lookup through append, rejected suffixes and independent recordings',()=>{
+ const trace=fixture([{type:'ALLOCATE_OBJECT',objectId:'a',displayId:1,className:'Unit',fields:[]},{type:'ALLOCATE_OBJECT',objectId:'b',displayId:2,className:'Unit',fields:[slot('p',ref('a'))]}])
+ const index=createRecordedReferenceBindings(trace.demoId),lookup=index.events,other=createRecordedReferenceBindings(trace.demoId)
+ expect(Object.isFrozen(lookup)).toBe(true);expect('set'in lookup).toBe(false)
+ expect(lookup.get(trace.events[0].eventId)).toBeUndefined()
+ index.append(trace.events.slice(0,2))
+ expect(index.events).toBe(lookup);expect(lookup.get(trace.events[1].eventId)).toBe(trace.events[1])
+ expect(lookup.get(trace.events[2].eventId)).toBeUndefined();expect(other.events.get(trace.events[1].eventId)).toBeUndefined()
+ const duplicate=[...trace.events,{...base(3),type:'PROGRAM_END' as const,eventId:trace.events[0].eventId}]
+ expect(()=>index.append(duplicate)).toThrow();expect(index.length).toBe(2)
+ expect(lookup.get(trace.events[2].eventId)).toBeUndefined();expect(lookup.get(trace.events[0].eventId)).toBe(trace.events[0])
+ const gap=[...trace.events.slice(0,2),{...trace.events[2],seq:8}]
+ expect(()=>index.append(gap)).toThrow();expect(lookup.get(trace.events[2].eventId)).toBeUndefined()
+ index.append(trace.events);expect(lookup.get(trace.events[2].eventId)).toBe(trace.events[2])
+ expect(()=>index.append(trace.events.slice(0,2))).toThrow();expect(index.events).toBe(lookup)
+ for(const event of trace.events)expect(lookup.get(event.eventId)).toBe(event)
+ expect(lookup.get('not an accepted event')).toBeUndefined();expect(other.length).toBe(0)
+})

@@ -10,10 +10,14 @@ export function createRecordedReferenceBindings(recordingId:string){
  const history=createReferenceBindingHistory(recordingId)
  const fields=new Map<string,Set<string>>(),summaries=new Map<string,Set<string>>()
  const locals=new Map<string,Map<string,string|undefined>>()
- const eventIds=new Set<string>()
+ const eventsById=new Map<string,TraceEvent>()
+ // The envelope validator owns these accepted witnesses. Consumers receive
+ // lookup only, so projection need not retain a duplicate event-ID index.
+ const eventLookup=Object.freeze({get:(id:string)=>eventsById.get(id)})
  let indexed=0,lastEventId:string|undefined
  return{
   get length(){return indexed},
+  get events(){return eventLookup},
   historical:history.historical,
   current:history.current,
   append(events:readonly TraceEvent[]){
@@ -22,7 +26,7 @@ export function createRecordedReferenceBindings(recordingId:string){
    const incoming=new Set<string>()
    for(let i=indexed;i<events.length;i++){
     const event=events[i]
-    if(event.seq!==i||!event.eventId||eventIds.has(event.eventId)||incoming.has(event.eventId))throw new Error('Reference bindings require unique event IDs and contiguous normalized ordinals')
+    if(event.seq!==i||!event.eventId||eventsById.has(event.eventId)||incoming.has(event.eventId))throw new Error('Reference bindings require unique event IDs and contiguous normalized ordinals')
     incoming.add(event.eventId)
    }
    for(;indexed<events.length;indexed++){
@@ -91,7 +95,7 @@ export function createRecordedReferenceBindings(recordingId:string){
      case 'RETURN_VALUE':if(event.destination)add(event.destination.frameId,event.destination.slotId,event.value,'frame-object','write');break
     }
     if(observations.size)history.append(event.seq,event.eventId,[...observations.values()])
-    eventIds.add(event.eventId);lastEventId=event.eventId
+    eventsById.set(event.eventId,event);lastEventId=event.eventId
    }
   },
  }

@@ -319,3 +319,8 @@ The existing source/path comparison now applies to a retained visualization, cor
 ## Null and unavailable attachment eligibility — 2026-11-03
 
 Physical face-row positions are separate from current live attachment eligibility. Shared null/unavailable filtering applies to projected rows, presented Flow geometry and drawable catalog queries; complete graph provenance and canonical layout anchors remain intact. Trace All uses still-visible captured storage geometry for ended bindings at its existing faded opacity. No runtime/shared semantic contract, dependency or production module is added. [Contracts, failures and evidence](migration/null-value-ports.md). Primitive chip ports and whole A–G remain OPEN.
+
+
+## Accepted event lookup ownership — 2026-11-03
+
+The binding adapter now owns the single accepted-witness Map used by the projector, exposing only a frozen get-only facade. Full append-envelope validation remains with that owner; cursor qualification remains in existing readers. Return-evidence helpers express their existing get-only requirement. No global cache, runtime/shared semantic field, dependency or production module is added. [Ownership, contract regression and evidence](migration/accepted-event-lookup.md). Whole A–G remains OPEN.

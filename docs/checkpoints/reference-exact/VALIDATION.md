@@ -420,3 +420,8 @@ Final 968-file source 0ddeed5c6450579407d6b8dd76a0fc44403a6b42ed2a6657961e9f278e
 ## Null and unavailable attachment eligibility — 2026-11-03
 
 Final 968-input source bb9299e6f005d7bb7a970a72754ccb39333b0cd5d3728bd46ce5ef466694cd5d passes seven fresh checks and 99/99 native cases, zero skipped/failed/flaky, 951.657 seconds. Fresh full defaults on identical production/unit/fixture inputs are 2,204 passed/70 explicit opt-in skips/2,274 total, 237 files, 285.24 seconds; only three browser successors differ afterward, with fourteen built JS resources byte-identical. Fixed Dense completes all ten stages but exits one on four latency limits. [Preserved failures, source equivalence and evidence](migration/null-value-ports.md). Whole A–G remains OPEN.
+
+
+## Accepted event lookup ownership — 2026-11-03
+
+Frozen 968-input source eb3ca568659c275780c0db1d450cb7ac67ac8fe5a40ceb6b5cea3a067fe2c980 passes eight fresh checks, complete defaults 2,205/70 explicit opt-in skips/2,275 total in 237 files (291.43 seconds), and 109/109 native cases (1,043.378 seconds), zero native skips/failures/flaky. Saved-input parent proof matches 32,344 complete scenes across 37 workloads. Fixed Dense completes all ten stages but exits one on four latency budgets. [Source, comparisons and limitations](migration/accepted-event-lookup.md). Whole A–G remains OPEN.

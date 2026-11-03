@@ -211,3 +211,8 @@ Five of 140 final native PNGs and the separate fresh Dense original are root rev
 ## Null and unavailable attachment eligibility — 2026-11-03
 
 Final native integration retains 144 exact PNG files, five root reviewed at original size: actual-JVM Hero, narrow null Frame, narrow Trace All history, recovered environment and CINEMATIC StockItem. Null chips lose the former live dots/loop while non-null references and faded historical bindings remain. The Dense image is reviewed separately. Bright/crowded routes, glyph quality, peripheral clipping and face/side/floor hierarchy remain unapproved against best.png; 139 native PNGs remain unreviewed. [Capture identities and limits](migration/null-value-ports.md). No final visual/motion or A–G approval.
+
+
+## Accepted event lookup ownership — 2026-11-03
+
+Native integration retains 156 exact PNG files, seven root reviewed at original size, 149 unreviewed. Reviewed Hero/null/history/recovery/CINEMATIC states retain the current visual language; added actual-JVM return and exception images expose stack/TimeDock clipping and panel/title hierarchy limitations. Dense is reviewed separately. Bright/crowded routing, glyph quality and peripheral clipping remain unapproved against best.png. [Capture identities and observations](migration/accepted-event-lookup.md). No final visual/motion or A–G approval.

@@ -148,8 +148,9 @@ function referenceSnapshot(groups: readonly ReferenceGroup[]): readonly SceneRef
  */
 export function createSceneProjector(trace: TraceDocument): SceneProjector {
   let events: readonly TraceEvent[] = trace.events, indexed = 0, invocationNumber = 0, revision = 0
-  const byEvent = new Map<string, TraceEvent>(), owners = new Map<string, OwnerHistory>(), slotOwners = new Map<string, string>()
+  const owners = new Map<string, OwnerHistory>(), slotOwners = new Map<string, string>()
   const bindingHistory=createRecordedReferenceBindings(trace.demoId)
+  const byEvent=bindingHistory.events
   const frameCache = new WeakMap<RuntimeFrame, CachedNode<SceneFrame>>()
   const objectCache = new WeakMap<RuntimeObject, CachedNode<SceneObject | SceneArray | SceneCollection>>()
   const classCache = new WeakMap<RuntimeClass, CachedNode<SceneClass>>()
@@ -232,8 +233,9 @@ export function createSceneProjector(trace: TraceDocument): SceneProjector {
     events = next
     for (; indexed < next.length; indexed++) {
       const event = next[indexed]
-      if (event.seq !== indexed || byEvent.has(event.eventId)) throw new Error('SceneProjector requires unique event IDs and contiguous semantic ordinals')
-      byEvent.set(event.eventId, event)
+      // bindingHistory validated the complete append envelope before admitting
+      // its witnesses; this reader keeps no second identity-validation index.
+      if (event.seq !== indexed) throw new Error('SceneProjector requires contiguous semantic ordinals')
       for (const id of eventOwners(event)) {
         const history = owner(id, event.seq)
         history.changes = appendOrdinal(history.changes, event.seq)

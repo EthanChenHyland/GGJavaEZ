@@ -212,3 +212,8 @@ The planner accounts for every supported prefix edge through one iterable; compa
 ## Null and unavailable attachment eligibility — 2026-11-03
 
 Null/missing chips retain physical surfaces, text, picking and provenance without live Flow ports. Trace All preserves ended bindings on real visible rows; the new regression distinguishes that historical role from a live port. Final 99/99 passes, including native non-null-prefix Flow bundle picking followed by restoration of the null head/replay. The earlier 94/5 and intermediate prerequisite failures remain separate. [Exact Java/assertion dispositions and evidence](migration/null-value-ports.md). Primitive chip ports and whole A–G remain OPEN.
+
+
+## Accepted event lookup ownership — 2026-11-03
+
+The new lookup contract checks exact witness identity, frozen read access, independent recordings, atomic rejected envelopes, ordinal gaps and retry/rewind behavior. Complete parent-scene equality passes 32,344 comparisons and 6,513 append batches; 59 focused checks and the full default suite pass. The 109-case native gate additionally covers actual return/uncaught-exception views across five viewports each. [Exact scope and evidence](migration/accepted-event-lookup.md). Whole A–G remains OPEN.
