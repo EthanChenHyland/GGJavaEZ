@@ -1093,7 +1093,14 @@ export function useWorkspace(recordingViewer = false) {
       else if (id === 'execution.build') await buildProject()
       else if (id === 'execution.stop') await commandIO(async () => { const session = executionRef.current; if (session) { const next = await bridge.executionStop(session.id); checkContext(context); acceptExecution(next) } })
       else if (id === 'workbench.explorer') toggleExplorer()
-      else if (id === 'workbench.source') { userLayoutOverride.current = true; if (runtimeExpanded) setFocusSourceOpen((value) => !value); else { setSourceOpen((value) => !value); setFocusSourceOpen((value) => !value) } }
+      else if (id === 'workbench.source') {
+        userLayoutOverride.current = true
+        if(workspaceMode==='code'&&visualization){
+          setWorkspaceMode(execution?.kind==='debug'?'debug':'visualize')
+          setSourceOpen(true);setFocusSourceOpen(false)
+        }else if (runtimeExpanded) setFocusSourceOpen((value) => !value)
+        else { setSourceOpen((value) => !value); setFocusSourceOpen((value) => !value) }
+      }
       else if (id === 'workbench.edit') { userLayoutOverride.current = true; enterMode('code');setFocusSourceOpen(true) }
       else if (id === 'workbench.tools') { bottomPinned.current = !bottomOpen; setBottomOpen(!bottomOpen) }
       else if (id === 'workbench.console' || id === 'workbench.problems' || id === 'workbench.debugger') { bottomPinned.current = true; setTool(id === 'workbench.console' ? 'console' : id === 'workbench.problems' ? 'problems' : 'debugger'); setBottomOpen(true) }

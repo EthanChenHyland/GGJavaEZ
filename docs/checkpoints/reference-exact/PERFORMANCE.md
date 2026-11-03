@@ -319,3 +319,8 @@ The font-only correction passes build metrics (71,733-byte main entry); all 76 l
 ## Face text opacity lifetime — 2026-11-03
 
 Fresh fixed Dense 32dbbcd1 completes ten stages on FULL actual JVM f71a10c5 (7,492/9,852 Events), without recorded browser/lifecycle/stage errors. Seek p50/p95 99.570/117.192 ms, Focus p95 199.919, Home p95 212.697 and cold median 5,665.682 all FAIL unchanged limits. Orbit/soak budgets pass; maximum interval 1,026.4 ms prevents no-jank approval. Small separate native probes show lower dispatch medians but do not establish statistical non-regression. All 76 protected Node inputs are unchanged, and prior retention failures remain. The no-gain routing-grid prototype is rejected. [Full methods and results](migration/face-text-opacity-lifetime.md). Whole A–G remains OPEN.
+
+
+## Source Escape and IDE browser successors — 2026-11-03
+
+The Source Escape/IDE migration passes build metrics (71,732-byte main entry); all 76 local protected Node benchmark inputs are unchanged. Latest Dense evidence remains source187/run32dbbcd1 with five latency/load failures; no new current-source browser performance or retention approval is claimed. [Source and evidence boundary](migration/ide-browser-successors.md). Whole A–G remains OPEN.

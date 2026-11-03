@@ -231,3 +231,8 @@ Twenty-four originals are archived; three receive root review for desktop/narrow
 ## Face text opacity lifetime — 2026-11-03
 
 Fifty-two native PNG originals are archived; five receive root review for Hero, object Focus, return, exception and narrow reduced-motion [6500]. The Dense original is separately reviewed. Real XYZ and captured facts remain coherent; cutoff/aliasing, matte faces, glow, port/value overlap, long stack below TimeDock and peripheral clipping remain unapproved. [Review scope and evidence](migration/face-text-opacity-lifetime.md).
+
+
+## Source Escape and IDE browser successors — 2026-11-03
+
+Twenty-nine originals are archived; four receive root review for import/Console, stopped Scanner, narrow debugger Source and curated object Focus. UI reachability and captured facts hold; clipping, aliasing, Header wrap and scene/Dock hierarchy remain unapproved. [Review/source boundary](migration/ide-browser-successors.md). Whole A–G remains OPEN.

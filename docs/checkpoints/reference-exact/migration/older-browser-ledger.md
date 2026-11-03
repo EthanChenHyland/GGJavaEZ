@@ -8,7 +8,7 @@ Default inventory at f262899 discovers 294 cases in 81 files. Of these, 202 belo
 | `coverage-v12-p4.spec.ts` | 8 | [Migrated; exact fixture outputs with explicit presentation dispositions](coverage-browser.md) |
 | `debugger-errors.spec.ts` | 11 | OPEN |
 | `ide-recording-handoff.spec.ts` | 1 | [Migrated with requirement 1.21 Console disposition and prior-label fix](recording-handoff.md) |
-| `ide.spec.ts` | 10 | OPEN |
+| `ide.spec.ts` | 10 | [Migrated; original Java/backend checks, native Source Escape fix and full 20-case source integration pass](ide-browser-successors.md) |
 | `incremental-v12.spec.ts` | 2 | [Migrated; unchanged workload and transport proof; wider Console latency failure retained](incremental-browser.md) |
 | `m11-persistence.spec.ts` | 2 | [Migrated; original Java, history/replay and editing preserved](persistence-browser.md) |
 | `observer-saturation-v12.spec.ts` | 2 | [Migrated; exact saturation/thread corpus and captured prefix retained](observer-browser.md) |
@@ -26,3 +26,6 @@ Default inventory at f262899 discovers 294 cases in 81 files. Of these, 202 belo
 | `workspace-m8.spec.ts` | 5 | OPEN |
 
 No original case is removed or marked skipped by this ledger. Saved discovery list and per-file counts are in the ignored QA evidence directory. Each later disposition must link its preserved assertions, exact source and actual executed result.
+
+
+On source4b798b34, all ten original IDE cases pass in the 20-case source integration (zero skipped/failed/flaky). This reduces the remaining older disposition count from 74 to 64. The earlier 296-case discovery/classification remains historical; the same test population now has 232 current-classified and 64 remaining older cases, not a passing whole-browser result. [Explicit retired-surface replacements, failure archives and Source Escape fix](ide-browser-successors.md).

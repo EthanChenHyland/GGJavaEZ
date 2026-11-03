@@ -339,3 +339,8 @@ ArrayCellLabels now supplies the required existing Inter weights explicitly: 500
 ## Face text opacity lifetime — 2026-11-03
 
 RuntimeSolid separates memoized label content from the face fade. FaceTextOpacity carries opacity on the existing transform hierarchy; WorldText applies the inherited scalar in its pre-render hook. Actual values/geometry/highlight/windows still update. [Ownership and lifetime evidence](migration/face-text-opacity-lifetime.md).
+
+
+## Source Escape and IDE browser successors — 2026-11-03
+
+Source chrome now consumes plain Escape only while expanded over an existing World, preserving editor/input/widget ownership. The existing workbench.source action restores run/debug presentation sizing without changing Cursor, runtime, Focus or camera contracts. [Regression and ownership](migration/ide-browser-successors.md).

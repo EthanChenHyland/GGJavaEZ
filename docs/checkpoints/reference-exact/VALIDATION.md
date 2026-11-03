@@ -445,3 +445,8 @@ Source 18789fe6 passes eight fresh checks, including 2,208 defaults/70 explicit 
 ## Current-source JVM convergence — 2026-11-03
 
 Acceptance passes 191 ordinary cases plus four preserved expected-failure contracts (195 total, 47 observed target JVM starts). Reference programs pass 7/7 with seven starts, torture 9/9 with nine starts, and prior coverage/provenance 85/85 with fifty starts (33 inventory +52 JVM-dependent cases). All counts match, with zero required skips/failures. Expected-failure targets remain gaps. [Exact source, process/test distinctions, flags and evidence](migration/current-jvm-convergence.md). Whole A–G remains OPEN.
+
+
+## Source Escape and IDE browser successors — 2026-11-03
+
+Source4b798b34 passes eight fresh checks, including 2,208 defaults/70 explicit opt-in skips/2,278 total in 237 files. Full native integration passes 20/20 with zero failures/skips/flaky results, 11 attached distinct actual JVM IDs and 29 archived originals. Fifteen Java literals match the original IDE driver exactly; older browser cases remaining fall from 74 to 64. [Exact source, assertions, failures and scope](migration/ide-browser-successors.md). Whole A–G remains OPEN.
