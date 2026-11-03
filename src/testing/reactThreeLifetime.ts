@@ -6,9 +6,12 @@ const apply=(node:HostNode,props:Record<string,unknown>)=>{node.publicInstance.p
 export type HostNode = { children: HostNode[]; visible: boolean; props?:Record<string,unknown>; type?:string; publicInstance:Group; commits:number }
 const context = {}
 let priority = 0
-const append = (parent: HostNode, child: HostNode) => { parent.children.push(child) }
-const remove = (parent: HostNode, child: HostNode) => { parent.children = parent.children.filter(node => node !== child) }
-const insert = (parent: HostNode, child: HostNode, before: HostNode) => { parent.children.splice(parent.children.indexOf(before), 0, child) }
+const append = (parent: HostNode, child: HostNode) => { parent.children.push(child);parent.publicInstance.add(child.publicInstance) }
+const remove = (parent: HostNode, child: HostNode) => { parent.children = parent.children.filter(node => node !== child);parent.publicInstance.remove(child.publicInstance) }
+const insert = (parent: HostNode, child: HostNode, before: HostNode) => {
+  parent.children.splice(parent.children.indexOf(before), 0, child);parent.publicInstance.add(child.publicInstance)
+  const siblings=parent.publicInstance.children;siblings.splice(siblings.indexOf(child.publicInstance),1);siblings.splice(siblings.indexOf(before.publicInstance),0,child.publicInstance)
+}
 export const threeLifetimeReconciler = Reconciler({
   supportsMutation: true, supportsPersistence: false, supportsHydration: false, isPrimaryRenderer: false,
   createInstance: (_type:string,props:Record<string,unknown>) => {

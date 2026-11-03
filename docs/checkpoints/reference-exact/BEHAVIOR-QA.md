@@ -227,3 +227,8 @@ Thirty native cases pass: fifteen actual-JVM Hero/array cuts, six curated array 
 ## Array cell typography — 2026-11-03
 
 All 25 native cases pass: ten actual-JVM array cuts, six curated array workflows, six actual-JVM virtualized Focus/origin checks, one quality case and two isolated masks. Heavier glyphs preserve values, activity markers, canonical selection, reverse scrub and replay. [Scope and source](migration/array-cell-typography.md). Whole A–G remains OPEN.
+
+
+## Face text opacity lifetime — 2026-11-03
+
+All 47 native checks pass: thirty actual-JVM Hero/object/array/return/exception cuts, six curated array workflows, six actual-JVM virtualized Focus/origin checks, three quality/palette/forensic cases and two isolated masks. Inert real-React checks verify opacity inheritance, visibility, transforms, skipped commits and cleanup. [Detailed boundaries](migration/face-text-opacity-lifetime.md). Whole A–G remains OPEN.

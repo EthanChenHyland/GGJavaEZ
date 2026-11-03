@@ -435,3 +435,8 @@ Source 3f9dc1e116ba2474e60abae5abbf7950f58b2a95122949f25c161ad4475d22fe passes e
 ## Array cell typography — 2026-11-03
 
 Source 67bb4ddb passes eight fresh checks, including 2,207 default tests /70 explicit opt-in skips /2,277 total in 237 files. The 44 focused checks and 10,338 presentation comparisons pass. Native integration passes 25/25 with zero failures/skips/flaky results and sixteen attached distinct actual JVM IDs. [Exact scope and evidence](migration/array-cell-typography.md). Whole A–G remains OPEN.
+
+
+## Face text opacity lifetime — 2026-11-03
+
+Source 18789fe6 passes eight fresh checks, including 2,208 defaults/70 explicit opt-in skips/2,278 total in 237 files; 45 focused checks pass. Native integration passes 47/47 with zero failures/skips/flaky results and 38 attached distinct actual JVM IDs. The unchanged 195-case acceptance gate completes: 191 ordinary passes, four preserved expected-failure contracts, zero failures/skips/todos, and 47/47 observed target JVM launches (262.962 seconds). Expected-failure targets remain unimplemented evidence, not successful behavior. [Source, scopes and logs](migration/face-text-opacity-lifetime.md). Whole A–G remains OPEN.

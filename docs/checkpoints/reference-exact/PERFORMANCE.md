@@ -314,3 +314,8 @@ The real-React regression skips 100 unchanged cell-group commits across twenty e
 ## Array cell typography — 2026-11-03
 
 The font-only correction passes build metrics (71,733-byte main entry); all 76 local protected Node dependency inputs are unchanged and prior retention failures remain. Dense is not repeated for this typography cut; latest formal run 1268b129 measured prior source 3f9dc1e and still fails five latency/load limits. No current-source browser performance approval is implied. [Source and boundaries](migration/array-cell-typography.md). Whole A–G remains OPEN.
+
+
+## Face text opacity lifetime — 2026-11-03
+
+Fresh fixed Dense 32dbbcd1 completes ten stages on FULL actual JVM f71a10c5 (7,492/9,852 Events), without recorded browser/lifecycle/stage errors. Seek p50/p95 99.570/117.192 ms, Focus p95 199.919, Home p95 212.697 and cold median 5,665.682 all FAIL unchanged limits. Orbit/soak budgets pass; maximum interval 1,026.4 ms prevents no-jank approval. Small separate native probes show lower dispatch medians but do not establish statistical non-regression. All 76 protected Node inputs are unchanged, and prior retention failures remain. The no-gain routing-grid prototype is rejected. [Full methods and results](migration/face-text-opacity-lifetime.md). Whole A–G remains OPEN.

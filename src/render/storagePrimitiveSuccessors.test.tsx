@@ -11,7 +11,7 @@ import {presentedFlowPorts} from '../world/flowTopology'
 import {buildSolidBatch} from './SolidBatch'
 import {inspectorEntity,inspectorRows} from './inspection'
 const captured=vi.hoisted(()=>({labels:[]as {children:string;size?:number;weight?:number;position:readonly number[];heading?:{entityId:string;kind:string};frameText?:{kind:string;slotId?:string}}[]}))
-vi.mock('./FaceText',()=>({WorldText:(props:typeof captured.labels[number])=>{captured.labels.push(props);return null}}))
+vi.mock('./FaceText',async importOriginal=>({...await importOriginal<typeof import('./FaceText')>(),WorldText:(props:typeof captured.labels[number])=>{captured.labels.push(props);return null}}))
 import {RuntimeSolid} from './RuntimeSolid'
 const int=(value:number)=>({kind:'primitive' as const,javaType:'int' as const,value})
 const slot=(owner:string,index:number):RuntimeSlot=>({id:`${owner}/captured/${index}`,name:`value${index}`,javaType:'int',value:int(index)})

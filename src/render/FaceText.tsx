@@ -7,6 +7,10 @@ import { color, runtimeFonts } from '../theme/tokens';
 import {fitWorldText,projectedFontPixels,worldTextVisible} from './text/textSystem';
 const Context = createContext<BatchedText | null>(null);
 export const textReadiness = { pending: new Set<string>(), lastSync: 0, lastUploadFrame: 0, mounted:false };
+/** Fade a face without changing every glyph's React props or layout lifetime. */
+export function FaceTextOpacity({opacity,children}:{opacity:number;children:ReactNode}){
+    return <group userData={{runtimeTextOpacity:opacity}}>{children}</group>;
+}
 export function FaceTextBatch({ children }: {
     children: ReactNode;
 }) {
@@ -92,9 +96,14 @@ export const WorldText=memo(function WorldText({ children, position, size = .25,
         text.matrix.copy(anchor.current.matrixWorld);
         projection.point.setFromMatrixPosition(anchor.current.matrixWorld);
         const scale=projection.scratch.setFromMatrixScale(anchor.current.matrixWorld).y;
-        let visible=true;for(let parent:Object3D|null=anchor.current;parent;parent=parent.parent)if(!parent.visible){visible=false;break}
+        let visible=true,inheritedOpacity=1;
+        for(let parent:Object3D|null=anchor.current;parent;parent=parent.parent){
+            if(!parent.visible){visible=false;break}
+            const fade=parent.userData.runtimeTextOpacity;
+            if(typeof fade==='number')inheritedOpacity*=fade;
+        }
         const pixels=projectedFontPixels(size*scale,projection.point,camera,viewport.height,projection.scratch);
-        text.fillOpacity=visible&&worldTextVisible(pixels,minimumPixels)?opacity:0;
+        text.fillOpacity=visible&&worldTextVisible(pixels,minimumPixels)?opacity*inheritedOpacity:0;
     } },.5);
     return <group ref={anchor} position={[...position]} userData={{...(exceptionText?{runtimeExceptionText:{text}}:{}),...(heading?{runtimeHeading:{...heading,text}}:{}),...(collectionText?{runtimeCollectionText:{...collectionText,text}}:{}),...(frameText?{runtimeFrameText:{...frameText,text}}:{}),...(returnText?{runtimeReturnText:{...returnText,text}}:{})}}/>;
 },sameTextProps);

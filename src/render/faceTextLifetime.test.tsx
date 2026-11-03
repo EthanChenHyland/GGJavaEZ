@@ -1,7 +1,7 @@
 // Real React memo/effect lifetimes with inert Three groups. Glyph rasterization
 // and the Fiber store/frame hooks are controlled; no GPU performance is claimed.
 import {type ComponentProps} from 'react'
-import {PerspectiveCamera} from 'three'
+import {PerspectiveCamera,Vector3} from 'three'
 import {renderThreeLifetime as render,threeLifetimeReconciler as reconciler,unmountThreeLifetimes} from '../testing/reactThreeLifetime'
 import {afterEach,beforeEach,expect,it,vi} from 'vitest'
 const state=vi.hoisted(()=>({frames:new Set<()=>void>(),listeners:new Set<()=>void>(),snapshot:null as unknown,invalidations:0,texts:[] as unknown[],batches:[] as unknown[]}))
@@ -19,7 +19,7 @@ vi.mock('troika-three-text',async()=>{
  return {Text,BatchedText}
 })
 import {Text} from 'troika-three-text'
-import {FaceTextBatch,WorldText,textReadiness} from './FaceText'
+import {FaceTextBatch,FaceTextOpacity,WorldText,textReadiness} from './FaceText'
 import {RuntimeSolid} from './RuntimeSolid'
 import {sparseTrace,sparseArrayId,sparseInt} from '../testing/sparseTrace'
 import {projectTrace} from '../testing/projectTrace'
@@ -74,6 +74,16 @@ it('preserves one batch registration through skipped parents and releases it on 
  for(let index=0;index<20;index++)view.rerender(<FaceTextBatch><WorldText {...props()}/></FaceTextBatch>)
  expect(batch.added).toEqual([text]);expect(batch.removed).toEqual([]);expect(state.texts).toHaveLength(1)
  view.unmount();expect(batch.removed).toEqual([text]);expect(batch.disposed).toBe(1);expect(text.disposed).toBe(1);expect(textReadiness.mounted).toBe(false)
+})
+it('inherits changing face opacity through memoized glyphs without changing layout, transforms or visibility rules',()=>{
+ const content=(opacity:number)=><FaceTextOpacity opacity={opacity}><group position={[1,2,0]}><FaceTextOpacity opacity={.5}><WorldText children="18" position={[0,0,-5]} opacity={.8}/></FaceTextOpacity></group></FaceTextOpacity>
+ const view=render(content(.5)),anchor=view.nodes().find(node=>(node.props?.position as number[]|undefined)?.[2]===-5)!,text=glyph(),syncs=text.syncs
+ frame();expect(text.fillOpacity).toBe(.2);expect(new Vector3().setFromMatrixPosition(text.matrix).toArray()).toEqual([1,2,-5])
+ view.rerender(content(.25));frame();expect(text.fillOpacity).toBe(.1);expect(anchor.commits).toBe(0);expect(text.syncs).toBe(syncs);expect(state.texts).toHaveLength(1)
+ const root=view.nodes().find(node=>node.props?.userData)!.publicInstance
+ root.visible=false;frame();expect(text.fillOpacity).toBe(0);root.visible=true;frame();expect(text.fillOpacity).toBe(.1)
+ refresh(10);frame();expect(text.fillOpacity).toBe(0);refresh(900);frame();expect(text.fillOpacity).toBe(.1)
+ view.unmount();expect(text.disposed).toBe(1)
 })
 
 function arrayLifetime(extra:object[]=[]){
@@ -132,10 +142,10 @@ it('updates only affected cell labels for actual writes, reads, reverse stepping
  expect(commits()).toEqual([0,3,2,2,1]);expect(labels(3)[0].props.tint).toBe(color.ui.textSecondary);expect(labels(4).every(label=>label.props.tint===color.semantic.execution)).toBe(true)
  const selected=fixture.at(fixture.initial,{kind:'slot',id:arrayElementSlotId(sparseArrayId,4)})
  view.rerender(<RuntimeSolid {...selected} presented={{...selected.presented,opacity:.35}}/>);
- expect(commits()).toEqual([1,4,3,3,2]);for(const index of fixture.indices)expect(labels(index).every(label=>label.props.opacity===.35)).toBe(true)
+ expect(commits()).toEqual([0,3,2,2,1]);frame();for(const index of fixture.indices)expect((state.texts as ProbeText[]).find(text=>text.text===String(index))!.fillOpacity).toBe(.35)
  const window=selected.plan.cellWindows.get(sparseArrayId)!,slotId=arrayElementSlotId(sparseArrayId,0),cell=window.mapping.get(slotId)!,[x,y,z]=cell.anchor.position
  const moved={...cell,anchor:{...cell.anchor,position:[x+2,y-1,z+.5] as const}},mapping=new Map(window.mapping).set(slotId,moved)
  view.rerender(<RuntimeSolid {...selected} presented={{...selected.presented,opacity:.35}} plan={{...selected.plan,cellWindows:new Map([[sparseArrayId,{...window,mapping}]])}}/>);
- expect(commits()).toEqual([2,4,3,3,2]);expect(groups.get(0)!.children.map(child=>child.publicInstance.position.toArray())).toEqual([[x+2,y-1+.38,z+.5+.83],[x+2,y-1-.1,z+.5+.83]])
+ expect(commits()).toEqual([1,3,2,2,1]);expect(groups.get(0)!.children.map(child=>child.publicInstance.position.toArray())).toEqual([[x+2,y-1+.38,z+.5+.83],[x+2,y-1-.1,z+.5+.83]])
  expect(state.texts).toEqual(resources)
 })

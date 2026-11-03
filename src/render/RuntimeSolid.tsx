@@ -2,7 +2,7 @@ import type { PresentationPlan, PresentedEntity, SceneEntity } from '../contract
 import { color } from '../theme/tokens';
 import { frameStatusText } from '../world/frameStatus';
 import { notRecordedValue, truncateFrameText } from '../world/valueText';
-import { WorldText } from './FaceText';
+import { FaceTextOpacity, WorldText } from './FaceText';
 import { faceRows } from './faceModel';
 import {faceRowPosition} from '../world/faceRows';
 import { displayType } from '../world/displayType';
@@ -24,15 +24,27 @@ const ArrayCellLabels=memo(function ArrayCellLabels({x,y,z,indexLabel,valueText,
         <WorldText position={[x,y-.1,z+.83]} size={.34} weight={600} width={1.3} align="center" tint={valueTint} opacity={opacity}>{valueText}</WorldText>
     </group>;
 });
-/** Face labels share the solid/row geometry model and one glyph batch. */
-export const RuntimeSolid=memo(function RuntimeSolid({ node, presented, plan }: {
+type RuntimeSolidProps={
     node: SceneEntity;
     presented: PresentedEntity;
     plan: PresentationPlan;
-}) {
+};
+function sameFaceLabels(prior:RuntimeSolidProps,next:RuntimeSolidProps){
+    return prior.node===next.node
+        &&prior.presented.mode===next.presented.mode&&prior.presented.detail===next.presented.detail
+        &&prior.presented.highlight===next.presented.highlight
+        &&prior.presented.rowSlotIds===next.presented.rowSlotIds
+        &&(next.node.kind!=='array'||prior.plan.cellWindows.get(next.node.id)===next.plan.cellWindows.get(next.node.id));
+}
+/** Face labels share the solid/row geometry model and one glyph batch. */
+export const RuntimeSolid=memo(function RuntimeSolid(props:RuntimeSolidProps){
+    if(props.presented.mode!=='detailed')return null;
+    return <FaceTextOpacity opacity={props.presented.opacity}><RuntimeSolidLabels {...props}/></FaceTextOpacity>;
+},(prior,next)=>prior.presented.opacity===next.presented.opacity&&sameFaceLabels(prior,next));
+const RuntimeSolidLabels=memo(function RuntimeSolidLabels({node,presented,plan}:RuntimeSolidProps) {
     if (presented.mode !== 'detailed')
         return null;
-    const { anchor } = node, [x, y, z] = anchor.position, [w, h, d] = anchor.size, top = y + h / 2, face = z + d / 2 + .085, left = x - w / 2 + .28, opacity = presented.opacity;
+    const { anchor } = node, [x, y, z] = anchor.position, [w, h, d] = anchor.size, top = y + h / 2, face = z + d / 2 + .085, left = x - w / 2 + .28, opacity = 1;
     const model = faceRows(node, presented);
     const arrayWindow=node.kind==='array'?plan.cellWindows.get(node.id):undefined;
     const targeted=arrayWindow?arrayCellTargeted(presented,arrayWindow):()=>false;
@@ -45,7 +57,7 @@ export const RuntimeSolid=memo(function RuntimeSolid({ node, presented, plan }: 
     const columns=faceRowColumns(node,presented,model);
     const emphasis = presented.highlight === 'exception' ? color.semantic.exception : presented.highlight === 'mutation' ? color.semantic.mutation : color.ui.textSecondary;
     const string = node.kind === 'object' ? node.groups.flatMap(g => g.rows).find(row => row.slotId.endsWith(':captured-string')) : null;
-    return <group>
+    return <>
     <WorldText position={heading.title.position} weight={600} size={titleSize} width={titleWidth} lines={titleLines} opacity={opacity} heading={{entityId:node.id,kind:'title'}}>{title}</WorldText>
     {identity&&heading.identity&&<WorldText position={heading.identity.position} weight={500} size={heading.identity.size} align="right" width={identityWidth} opacity={opacity} heading={{entityId:node.id,kind:'identity'}}>{identity}</WorldText>}
     {node.kind === 'frame' && <WorldText position={[left, top - .94, face]} size={.25} tint={emphasis} opacity={opacity}>{frameStatusText(node.status)}</WorldText>}
@@ -83,9 +95,5 @@ export const RuntimeSolid=memo(function RuntimeSolid({ node, presented, plan }: 
                 indexTint={activityTint??color.ui.textSecondary}
                 valueTint={activityTint??(value.kind==='reference'?color.semantic.execution:color.ui.text)} opacity={opacity}/>;
         })}
-  </group>;
-},(prior,next)=>prior.node===next.node
-    &&prior.presented.mode===next.presented.mode&&prior.presented.detail===next.presented.detail
-    &&prior.presented.opacity===next.presented.opacity&&prior.presented.highlight===next.presented.highlight
-    &&prior.presented.rowSlotIds===next.presented.rowSlotIds
-    &&(next.node.kind!=='array'||prior.plan.cellWindows.get(next.node.id)===next.plan.cellWindows.get(next.node.id)));
+  </>;
+},sameFaceLabels);

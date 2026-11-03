@@ -226,3 +226,8 @@ Thirty PNG originals are archived; four receive root review at original size aga
 ## Array cell typography — 2026-11-03
 
 Twenty-four originals are archived; three receive root review for desktop/narrow write state and narrow reduced-motion [6500] Focus. The required 500/600 weights improve value emphasis. Aliasing, ellipsis, port/value overlap, glow, clipping and hierarchy remain unapproved. The separate index-placement audit exposes narrow Focus clipping and remains OPEN. [Review and migration](migration/array-cell-typography.md).
+
+
+## Face text opacity lifetime — 2026-11-03
+
+Fifty-two native PNG originals are archived; five receive root review for Hero, object Focus, return, exception and narrow reduced-motion [6500]. The Dense original is separately reviewed. Real XYZ and captured facts remain coherent; cutoff/aliasing, matte faces, glow, port/value overlap, long stack below TimeDock and peripheral clipping remain unapproved. [Review scope and evidence](migration/face-text-opacity-lifetime.md).

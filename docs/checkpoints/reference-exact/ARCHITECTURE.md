@@ -334,3 +334,8 @@ RuntimeSolid gives each physical cell a private memoized label boundary over pre
 ## Array cell typography — 2026-11-03
 
 ArrayCellLabels now supplies the required existing Inter weights explicitly: 500 for indices/activity labels and 600 for values. The parent/candidate comparison permits only those attributes. [Typography ownership and proof](migration/array-cell-typography.md).
+
+
+## Face text opacity lifetime — 2026-11-03
+
+RuntimeSolid separates memoized label content from the face fade. FaceTextOpacity carries opacity on the existing transform hierarchy; WorldText applies the inherited scalar in its pre-render hook. Actual values/geometry/highlight/windows still update. [Ownership and lifetime evidence](migration/face-text-opacity-lifetime.md).
