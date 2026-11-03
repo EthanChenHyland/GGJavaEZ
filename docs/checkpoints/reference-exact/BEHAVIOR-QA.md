@@ -217,3 +217,8 @@ Null/missing chips retain physical surfaces, text, picking and provenance withou
 ## Accepted event lookup ownership — 2026-11-03
 
 The new lookup contract checks exact witness identity, frozen read access, independent recordings, atomic rejected envelopes, ordinal gaps and retry/rewind behavior. Complete parent-scene equality passes 32,344 comparisons and 6,513 append batches; 59 focused checks and the full default suite pass. The 109-case native gate additionally covers actual return/uncaught-exception views across five viewports each. [Exact scope and evidence](migration/accepted-event-lookup.md). Whole A–G remains OPEN.
+
+
+## Array cell label lifetime — 2026-11-03
+
+Thirty native cases pass: fifteen actual-JVM Hero/array cuts, six curated array workflows, six actual-JVM virtualized Focus/origin checks, one GPU quality case and two isolated text masks. Reverse scrub, indexed writes, replay, selection, actual canonical [6500] Focus, reduced motion and connector origins retain their assertions. [Classification and lifetime regressions](migration/array-cell-label-lifetime.md). Whole A–G remains OPEN.

@@ -14,6 +14,16 @@ import {compactLibraryFace} from '../world/firstObjectPresentation';
 import {memo} from 'react';
 import {arrayCellTargeted} from './arrayCellStyle';
 export { WorldText } from './FaceText';
+// Observations can replace evidence/value wrappers without changing a cell's
+// face. Keep the label subtree stable using its actual presentation scalars.
+const ArrayCellLabels=memo(function ArrayCellLabels({x,y,z,indexLabel,valueText,indexTint,valueTint,opacity}:{
+    x:number;y:number;z:number;indexLabel:string;valueText:string;indexTint:string;valueTint:string;opacity:number;
+}){
+    return <group>
+        <WorldText position={[x,y+.38,z+.83]} size={.28} width={1.3} align="center" tint={indexTint} opacity={opacity}>{indexLabel}</WorldText>
+        <WorldText position={[x,y-.1,z+.83]} size={.34} width={1.3} align="center" tint={valueTint} opacity={opacity}>{valueText}</WorldText>
+    </group>;
+});
 /** Face labels share the solid/row geometry model and one glyph batch. */
 export const RuntimeSolid=memo(function RuntimeSolid({ node, presented, plan }: {
     node: SceneEntity;
@@ -68,10 +78,10 @@ export const RuntimeSolid=memo(function RuntimeSolid({ node, presented, plan }: 
             const captured = node.cells.find(c => c.index === cell.index), value = captured?.value ?? notRecordedValue(), [cx, cy, cz] = cell.anchor.position;
             const activity=node.activity?.index===cell.index?node.activity.kind:null;
             const activityTint=targeted(id)?color.semantic.execution:activity==='write'?color.semantic.mutation:activity==='read'?color.semantic.execution:null;
-            return <group key={id}>
-        <WorldText position={[cx, cy + .38, cz + .83]} size={.28} width={1.3} align="center" tint={activityTint??color.ui.textSecondary} opacity={opacity}>{`[${cell.index}]${activity==='write'?' ←':activity==='read'?' →':''}`}</WorldText>
-        <WorldText position={[cx, cy - .1, cz + .83]} size={.34} width={1.3} align="center" tint={activityTint??(value.kind === 'reference' ? color.semantic.execution : color.ui.text)} opacity={opacity}>{value.text}</WorldText>
-      </group>;
+            return <ArrayCellLabels key={id} x={cx} y={cy} z={cz}
+                indexLabel={`[${cell.index}]${activity==='write'?' ←':activity==='read'?' →':''}`} valueText={value.text}
+                indexTint={activityTint??color.ui.textSecondary}
+                valueTint={activityTint??(value.kind==='reference'?color.semantic.execution:color.ui.text)} opacity={opacity}/>;
         })}
   </group>;
 },(prior,next)=>prior.node===next.node

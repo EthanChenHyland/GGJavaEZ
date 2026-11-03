@@ -324,3 +324,8 @@ Physical face-row positions are separate from current live attachment eligibilit
 ## Accepted event lookup ownership — 2026-11-03
 
 The binding adapter now owns the single accepted-witness Map used by the projector, exposing only a frozen get-only facade. Full append-envelope validation remains with that owner; cursor qualification remains in existing readers. Return-evidence helpers express their existing get-only requirement. No global cache, runtime/shared semantic field, dependency or production module is added. [Ownership, contract regression and evidence](migration/accepted-event-lookup.md). Whole A–G remains OPEN.
+
+
+## Array cell label lifetime — 2026-11-03
+
+RuntimeSolid gives each physical cell a private memoized label boundary over presentation scalars. Equal-value observations preserve the group and glyph resources; activity, value, tint, opacity and supplied XYZ changes still update the affected subtree. Runtime truth, picking geometry and shared contracts remain unchanged. [Ownership and parent-equivalence evidence](migration/array-cell-label-lifetime.md).

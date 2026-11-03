@@ -20,6 +20,13 @@ vi.mock('troika-three-text',async()=>{
 })
 import {Text} from 'troika-three-text'
 import {FaceTextBatch,WorldText,textReadiness} from './FaceText'
+import {RuntimeSolid} from './RuntimeSolid'
+import {sparseTrace,sparseArrayId,sparseInt} from '../testing/sparseTrace'
+import {projectTrace} from '../testing/projectTrace'
+import {planPresentation} from '../world/presentationPlanner'
+import type {Selection} from '../contracts/interaction'
+import {arrayElementSlotId} from '../contracts/runtime'
+import {color} from '../theme/tokens'
 
 type ProbeText=Text&{syncs:number;disposed:number}
 const glyph=()=>state.texts[0] as ProbeText
@@ -67,4 +74,68 @@ it('preserves one batch registration through skipped parents and releases it on 
  for(let index=0;index<20;index++)view.rerender(<FaceTextBatch><WorldText {...props()}/></FaceTextBatch>)
  expect(batch.added).toEqual([text]);expect(batch.removed).toEqual([]);expect(state.texts).toHaveLength(1)
  view.unmount();expect(batch.removed).toEqual([text]);expect(batch.disposed).toBe(1);expect(text.disposed).toBe(1);expect(textReadiness.mounted).toBe(false)
+})
+
+function arrayLifetime(extra:object[]=[]){
+ const indices=[0,1,2,3,4],trace=sparseTrace({length:5,indices,extra}),projection=projectTrace(trace),initial=trace.events.length-extra.length
+ const at=(cursor:number,selection:Selection=null)=>{
+  const scene=projection.project(cursor),node=scene.entities[sparseArrayId]
+  if(node.kind!=='array')throw new Error('Expected captured array')
+  const plan=planPresentation({scene,layout:projection.layout,detailLevel:'CLOSE',selection,focusTargetId:null,trace:{active:false,scope:'relevant'}})
+  return {node,plan,presented:plan.entities.get(node.id)!}
+ }
+ return {at,initial,indices}
+}
+function cellGroups(view:ReturnType<typeof render>){
+ const result=new Map<number,ReturnType<typeof view.nodes>[number]>()
+ for(const node of view.nodes()){
+  const children=node.props?.children as {props?:{children?:unknown}}[]|undefined
+  if(!Array.isArray(children)||children.length!==2)continue
+  const label=children[0]?.props?.children
+  if(typeof label==='string'&&/^\[\d+\]/.test(label))result.set(Number(label.match(/^\[(\d+)\]/)![1]),node)
+ }
+ return result
+}
+it('skips unchanged cell groups across captured array observations with fresh evidence and value wrappers',()=>{
+ const extra=Array.from({length:20},()=>({type:'OBJECT_OBSERVE',objectId:sparseArrayId,arrayElements:[0,1,2,3,4].map(index=>({index,value:sparseInt(index)}))}))
+ const fixture=arrayLifetime(extra),first=fixture.at(fixture.initial),view=render(<RuntimeSolid {...first}/>),groups=cellGroups(view),resources=[...state.texts]
+ expect([...groups.keys()]).toEqual(fixture.indices)
+ let previous=first.node
+ for(let cursor=fixture.initial+1;cursor<=fixture.initial+extra.length;cursor++){
+  const next=fixture.at(cursor)
+  expect(next.node).not.toBe(previous);expect(next.node.cells).not.toBe(previous.cells)
+  expect(next.node.cells.map(cell=>cell.value.exact)).toEqual(['0','1','2','3','4'])
+  view.rerender(<RuntimeSolid {...next}/>);previous=next.node
+ }
+ for(const [index,group] of groups){expect(cellGroups(view).get(index)).toBe(group);expect(group.commits).toBe(0)}
+ expect(state.texts).toEqual(resources)
+ view.unmount();expect(resources.every(text=>(text as ProbeText).disposed===1)).toBe(true)
+})
+it('updates only affected cell labels for actual writes, reads, reverse stepping and physical selection',()=>{
+ const fixture=arrayLifetime([
+  {type:'ARRAY_WRITE',frameId:'observed-call',objectId:sparseArrayId,index:1,value:sparseInt(42)},
+  {type:'ARRAY_READ',frameId:'observed-call',objectId:sparseArrayId,index:2,value:sparseInt(2)},
+ ]),first=fixture.at(fixture.initial),view=render(<RuntimeSolid {...first}/>),groups=cellGroups(view),resources=[...state.texts]
+ const labels=(index:number)=>groups.get(index)!.props!.children as {props:{children:string;tint:string;opacity:number}}[]
+ const commits=()=>fixture.indices.map(index=>groups.get(index)!.commits)
+ view.rerender(<RuntimeSolid {...fixture.at(fixture.initial+1)}/>);
+ expect(commits()).toEqual([0,1,0,0,0]);expect(labels(1).map(label=>label.props.children)).toEqual(['[1] ←','42'])
+ expect(labels(1).every(label=>label.props.tint===color.semantic.mutation)).toBe(true)
+ view.rerender(<RuntimeSolid {...fixture.at(fixture.initial+2)}/>);
+ expect(commits()).toEqual([0,2,1,0,0]);expect(labels(1).map(label=>label.props.children)).toEqual(['[1]','42'])
+ expect(labels(2)[0].props.children).toBe('[2] →');expect(labels(2).every(label=>label.props.tint===color.semantic.execution)).toBe(true)
+ view.rerender(<RuntimeSolid {...fixture.at(fixture.initial)}/>);
+ expect(commits()).toEqual([0,3,2,0,0]);expect(labels(1).map(label=>label.props.children)).toEqual(['[1]','1']);expect(labels(2)[0].props.children).toBe('[2]')
+ view.rerender(<RuntimeSolid {...fixture.at(fixture.initial,{kind:'slot',id:arrayElementSlotId(sparseArrayId,3)})}/>);
+ expect(commits()).toEqual([0,3,2,1,0]);expect(labels(3).every(label=>label.props.tint===color.semantic.execution)).toBe(true)
+ view.rerender(<RuntimeSolid {...fixture.at(fixture.initial,{kind:'slot',id:arrayElementSlotId(sparseArrayId,4)})}/>);
+ expect(commits()).toEqual([0,3,2,2,1]);expect(labels(3)[0].props.tint).toBe(color.ui.textSecondary);expect(labels(4).every(label=>label.props.tint===color.semantic.execution)).toBe(true)
+ const selected=fixture.at(fixture.initial,{kind:'slot',id:arrayElementSlotId(sparseArrayId,4)})
+ view.rerender(<RuntimeSolid {...selected} presented={{...selected.presented,opacity:.35}}/>);
+ expect(commits()).toEqual([1,4,3,3,2]);for(const index of fixture.indices)expect(labels(index).every(label=>label.props.opacity===.35)).toBe(true)
+ const window=selected.plan.cellWindows.get(sparseArrayId)!,slotId=arrayElementSlotId(sparseArrayId,0),cell=window.mapping.get(slotId)!,[x,y,z]=cell.anchor.position
+ const moved={...cell,anchor:{...cell.anchor,position:[x+2,y-1,z+.5] as const}},mapping=new Map(window.mapping).set(slotId,moved)
+ view.rerender(<RuntimeSolid {...selected} presented={{...selected.presented,opacity:.35}} plan={{...selected.plan,cellWindows:new Map([[sparseArrayId,{...window,mapping}]])}}/>);
+ expect(commits()).toEqual([2,4,3,3,2]);expect(groups.get(0)!.children.map(child=>child.publicInstance.position.toArray())).toEqual([[x+2,y-1+.38,z+.5+.83],[x+2,y-1-.1,z+.5+.83]])
+ expect(state.texts).toEqual(resources)
 })

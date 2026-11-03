@@ -216,3 +216,8 @@ Final native integration retains 144 exact PNG files, five root reviewed at orig
 ## Accepted event lookup ownership — 2026-11-03
 
 Native integration retains 156 exact PNG files, seven root reviewed at original size, 149 unreviewed. Reviewed Hero/null/history/recovery/CINEMATIC states retain the current visual language; added actual-JVM return and exception images expose stack/TimeDock clipping and panel/title hierarchy limitations. Dense is reviewed separately. Bright/crowded routing, glyph quality and peripheral clipping remain unapproved against best.png. [Capture identities and observations](migration/accepted-event-lookup.md). No final visual/motion or A–G approval.
+
+
+## Array cell label lifetime — 2026-11-03
+
+Thirty PNG originals are archived; four receive root review at original size against the array reference: desktop/narrow write state, completed array and narrow reduced-motion canonical [6500] Focus. Recorded values and highlights persist. Aliasing/cutoff, bright crossing routes, face/floor hierarchy, ellipsized cell values and peripheral clipping remain unapproved. [Capture hashes and scope](migration/array-cell-label-lifetime.md). Whole A–G remains OPEN.

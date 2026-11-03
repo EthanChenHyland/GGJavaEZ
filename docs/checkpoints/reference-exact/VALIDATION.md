@@ -425,3 +425,8 @@ Final 968-input source bb9299e6f005d7bb7a970a72754ccb39333b0cd5d3728bd46ce5ef466
 ## Accepted event lookup ownership — 2026-11-03
 
 Frozen 968-input source eb3ca568659c275780c0db1d450cb7ac67ac8fe5a40ceb6b5cea3a067fe2c980 passes eight fresh checks, complete defaults 2,205/70 explicit opt-in skips/2,275 total in 237 files (291.43 seconds), and 109/109 native cases (1,043.378 seconds), zero native skips/failures/flaky. Saved-input parent proof matches 32,344 complete scenes across 37 workloads. Fixed Dense completes all ten stages but exits one on four latency budgets. [Source, comparisons and limitations](migration/accepted-event-lookup.md). Whole A–G remains OPEN.
+
+
+## Array cell label lifetime — 2026-11-03
+
+Source 3f9dc1e116ba2474e60abae5abbf7950f58b2a95122949f25c161ad4475d22fe passes eight fresh checks: 2,207 default tests, 70 explicit opt-in skips, 2,277 total in 237 files; production/browser types, lint, build, build measurements, references and protected boundaries pass. Exact-parent replay matches 10,338 complete label renders across fifteen normalized inputs. Native integration passes 30/30 with zero skips/failures/flaky results and 21 attached distinct actual JVM IDs; curated and isolated cases are separately classified. [Scope, source and evidence](migration/array-cell-label-lifetime.md). Whole A–G remains OPEN.
