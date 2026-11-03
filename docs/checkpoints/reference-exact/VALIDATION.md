@@ -430,3 +430,8 @@ Frozen 968-input source eb3ca568659c275780c0db1d450cb7ac67ac8fe5a40ceb6b5cea3a06
 ## Array cell label lifetime — 2026-11-03
 
 Source 3f9dc1e116ba2474e60abae5abbf7950f58b2a95122949f25c161ad4475d22fe passes eight fresh checks: 2,207 default tests, 70 explicit opt-in skips, 2,277 total in 237 files; production/browser types, lint, build, build measurements, references and protected boundaries pass. Exact-parent replay matches 10,338 complete label renders across fifteen normalized inputs. Native integration passes 30/30 with zero skips/failures/flaky results and 21 attached distinct actual JVM IDs; curated and isolated cases are separately classified. [Scope, source and evidence](migration/array-cell-label-lifetime.md). Whole A–G remains OPEN.
+
+
+## Array cell typography — 2026-11-03
+
+Source 67bb4ddb passes eight fresh checks, including 2,207 default tests /70 explicit opt-in skips /2,277 total in 237 files. The 44 focused checks and 10,338 presentation comparisons pass. Native integration passes 25/25 with zero failures/skips/flaky results and sixteen attached distinct actual JVM IDs. [Exact scope and evidence](migration/array-cell-typography.md). Whole A–G remains OPEN.

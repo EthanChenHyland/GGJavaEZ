@@ -329,3 +329,8 @@ The binding adapter now owns the single accepted-witness Map used by the project
 ## Array cell label lifetime — 2026-11-03
 
 RuntimeSolid gives each physical cell a private memoized label boundary over presentation scalars. Equal-value observations preserve the group and glyph resources; activity, value, tint, opacity and supplied XYZ changes still update the affected subtree. Runtime truth, picking geometry and shared contracts remain unchanged. [Ownership and parent-equivalence evidence](migration/array-cell-label-lifetime.md).
+
+
+## Array cell typography — 2026-11-03
+
+ArrayCellLabels now supplies the required existing Inter weights explicitly: 500 for indices/activity labels and 600 for values. The parent/candidate comparison permits only those attributes. [Typography ownership and proof](migration/array-cell-typography.md).

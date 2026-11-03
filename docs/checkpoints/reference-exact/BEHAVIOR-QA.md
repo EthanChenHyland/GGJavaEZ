@@ -222,3 +222,8 @@ The new lookup contract checks exact witness identity, frozen read access, indep
 ## Array cell label lifetime — 2026-11-03
 
 Thirty native cases pass: fifteen actual-JVM Hero/array cuts, six curated array workflows, six actual-JVM virtualized Focus/origin checks, one GPU quality case and two isolated text masks. Reverse scrub, indexed writes, replay, selection, actual canonical [6500] Focus, reduced motion and connector origins retain their assertions. [Classification and lifetime regressions](migration/array-cell-label-lifetime.md). Whole A–G remains OPEN.
+
+
+## Array cell typography — 2026-11-03
+
+All 25 native cases pass: ten actual-JVM array cuts, six curated array workflows, six actual-JVM virtualized Focus/origin checks, one quality case and two isolated masks. Heavier glyphs preserve values, activity markers, canonical selection, reverse scrub and replay. [Scope and source](migration/array-cell-typography.md). Whole A–G remains OPEN.

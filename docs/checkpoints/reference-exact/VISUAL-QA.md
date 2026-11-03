@@ -221,3 +221,8 @@ Native integration retains 156 exact PNG files, seven root reviewed at original 
 ## Array cell label lifetime — 2026-11-03
 
 Thirty PNG originals are archived; four receive root review at original size against the array reference: desktop/narrow write state, completed array and narrow reduced-motion canonical [6500] Focus. Recorded values and highlights persist. Aliasing/cutoff, bright crossing routes, face/floor hierarchy, ellipsized cell values and peripheral clipping remain unapproved. [Capture hashes and scope](migration/array-cell-label-lifetime.md). Whole A–G remains OPEN.
+
+
+## Array cell typography — 2026-11-03
+
+Twenty-four originals are archived; three receive root review for desktop/narrow write state and narrow reduced-motion [6500] Focus. The required 500/600 weights improve value emphasis. Aliasing, ellipsis, port/value overlap, glow, clipping and hierarchy remain unapproved. The separate index-placement audit exposes narrow Focus clipping and remains OPEN. [Review and migration](migration/array-cell-typography.md).

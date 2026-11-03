@@ -20,8 +20,8 @@ const ArrayCellLabels=memo(function ArrayCellLabels({x,y,z,indexLabel,valueText,
     x:number;y:number;z:number;indexLabel:string;valueText:string;indexTint:string;valueTint:string;opacity:number;
 }){
     return <group>
-        <WorldText position={[x,y+.38,z+.83]} size={.28} width={1.3} align="center" tint={indexTint} opacity={opacity}>{indexLabel}</WorldText>
-        <WorldText position={[x,y-.1,z+.83]} size={.34} width={1.3} align="center" tint={valueTint} opacity={opacity}>{valueText}</WorldText>
+        <WorldText position={[x,y+.38,z+.83]} size={.28} weight={500} width={1.3} align="center" tint={indexTint} opacity={opacity}>{indexLabel}</WorldText>
+        <WorldText position={[x,y-.1,z+.83]} size={.34} weight={600} width={1.3} align="center" tint={valueTint} opacity={opacity}>{valueText}</WorldText>
     </group>;
 });
 /** Face labels share the solid/row geometry model and one glyph batch. */

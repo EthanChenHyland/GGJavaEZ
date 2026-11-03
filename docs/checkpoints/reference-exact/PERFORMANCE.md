@@ -309,3 +309,8 @@ Four independent explicit-GC protected Node runs use parent/candidate/candidate/
 ## Array cell label lifetime — 2026-11-03
 
 The real-React regression skips 100 unchanged cell-group commits across twenty equal-value observations. This is local work removal, not a global speed claim. Fresh fixed Dense 1268b129 (FULL actual JVM f9897775; 7,492/9,852 Events) completes ten stages with zero recorded browser/lifecycle errors. Seek p50/p95 99.314/134.502 ms, Focus p95 217.032, Home p95 229.698 and cold median 5,798.346 all FAIL unchanged limits; maximum frame interval 1,006.8 ms prevents no-jank acceptance. A separate twenty-context counterbalanced cold diagnostic on one fresh JVM finds parent medians 5,810.019/4,996.229 versus candidate 5,592.962/4,960.506, showing startup variation without statistical non-regression or substitution for the formal failure. All 76 local Node benchmark inputs are unchanged; its existing retention failures remain. [Methods, source, tradeoff and complete results](migration/array-cell-label-lifetime.md). Whole A–G remains OPEN.
+
+
+## Array cell typography — 2026-11-03
+
+The font-only correction passes build metrics (71,733-byte main entry); all 76 local protected Node dependency inputs are unchanged and prior retention failures remain. Dense is not repeated for this typography cut; latest formal run 1268b129 measured prior source 3f9dc1e and still fails five latency/load limits. No current-source browser performance approval is implied. [Source and boundaries](migration/array-cell-typography.md). Whole A–G remains OPEN.
