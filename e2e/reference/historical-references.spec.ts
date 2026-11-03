@@ -83,7 +83,17 @@ for(const viewport of [{width:1440,height:900},{width:760,height:900}])test(`act
  expect(await facts()).toEqual(before);expect(await page.evaluate(()=>window.__ggjavaezQA!.cameraPose())).toEqual(pose)
  await page.screenshot({path:`.ggjavaez/qa/reference-exact/historical-bindings-${viewport.width}x${viewport.height}.png`})
  await inspector.getByRole('button',{name:'Close inspector'}).click();await ready(page)
- const flowPartition=await partition(page,traceOracle);expect(flowPartition.flowBundles.some(bundle=>bundle.count>1)).toBe(true)
+ // The final writes null these destinations: history remains drawable, while
+ // live Flows must not acquire a Port on the null chip. Exercise Flow bundles
+ // at the captured prefix where the repeated destination still holds a value.
+ const headFlowPartition=await partition(page,traceOracle)
+ const ended=all.bindings.filter(binding=>binding.sourceId===owner.id&&binding.endKind==='null').sort((a,b)=>b.endSeq!-a.endSeq!)[0]!
+ const attachment=()=>page.evaluate(async({id,slotId})=>{const path='/src/world/flowTopology.ts',{presentedFlowPorts}=await import(path),world=window.__ggjavaezWorld!,scene=world.scene(),plan=world.plan(),node=scene.entities[id];if(node.kind!=='object')throw Error('Captured owner missing');return{value:node.groups.flatMap(group=>group.rows).find(row=>row.slotId===slotId)!.value.kind,port:presentedFlowPorts(scene,plan.entities,plan.cellWindows)({kind:'slot',id:slotId})}}, {id:owner.id,slotId:ended.sourceSlotId})
+ expect(await attachment()).toEqual({value:'null',port:null})
+ const flowCursor=ended.introducedSeq+1;expect(flowCursor).toBeLessThan(all.cursor)
+ await seekCursor(page,flowCursor);await ready(page)
+ expect((await attachment()).value).toBe('reference');expect((await attachment()).port).not.toBeNull()
+ const flowPartition=await partition(page,traceOracle),flowFactsBefore=await facts();expect(flowPartition.flowBundles.some(bundle=>bundle.count>1)).toBe(true)
  let pickedFlowBundle:string|null=null
  for(const bundle of flowPartition.flowBundles.filter(bundle=>bundle.count>1)){
   for(let i=1;i<bundle.points.length;i++){
@@ -100,16 +110,18 @@ for(const viewport of [{width:1440,height:900},{width:760,height:900}])test(`act
  await expect(inspector).toContainText(`${flowBundle.count} recorded flows`);expect(await inspector.locator('*').count()).toBeLessThanOrEqual(200)
  await inspector.getByRole('list',{name:'Bundle flows'}).getByRole('button').first().click();await ready(page)
  const flowConstituent=await page.evaluate(()=>window.__ggjavaezQA!.selection());expect(flowConstituent?.kind).toBe('flow');expect(flowBundle.flowIds).toContain(flowConstituent?.id)
- const selectedGraphEdge=seek(traceOracle,all.cursor).executionGraph!.edges.find(edge=>edge.id===flowConstituent?.id)!
+ const selectedGraphEdge=seek(traceOracle,flowCursor).executionGraph!.edges.find(edge=>edge.id===flowConstituent?.id)!
  const flowEvent=traceOracle.events.find(event=>event.eventId===selectedGraphEdge.eventId)!
  await expect(inspector).toContainText('Recorded graph edge');await expect(inspector).toContainText(`Event ${flowEvent.seq} · ${flowEvent.eventId}`);await partition(page,traceOracle)
- expect(await facts()).toEqual(before);expect(await page.evaluate(()=>window.__ggjavaezQA!.cameraPose())).toEqual(pose)
+ expect(await facts()).toEqual(flowFactsBefore);expect(await page.evaluate(()=>window.__ggjavaezQA!.cameraPose())).toEqual(pose)
  await page.screenshot({path:`.ggjavaez/qa/reference-exact/flow-constituent-${viewport.width}x${viewport.height}.png`})
+ await inspector.getByRole('button',{name:'Close inspector'}).click();await seekCursor(page,all.cursor)
+ expect(await facts()).toEqual(before);expect(await page.evaluate(()=>window.__ggjavaezQA!.cameraPose())).toEqual(pose)
  const binding=all.bindings.find(binding=>binding.id===picked)!
- await inspector.getByRole('button',{name:'Close inspector'}).click();await seekCursor(page,binding.endSeq!);const earlier=await partition(page,traceOracle);expect(earlier.bindings.some(item=>item.id===binding.id)).toBe(false)
+ await seekCursor(page,binding.endSeq!);const earlier=await partition(page,traceOracle);expect(earlier.bindings.some(item=>item.id===binding.id)).toBe(false)
  await seekCursor(page,0);expect((await partition(page,traceOracle)).bindings).toEqual([]);await seekCursor(page,all.cursor);const replay=await partition(page,traceOracle);expect(replay.bindings).toEqual(all.bindings)
  expect(await facts()).toEqual(before);expect(await page.evaluate(()=>window.__ggjavaezQA!.cameraPose())).toEqual(pose)
  await page.getByRole('group',{name:'Trace scope'}).getByRole('button',{name:'Current',exact:true}).click();await ready(page);const current=await partition(page,traceOracle);expect(current.curves).toEqual([]);expect(current.bundles).toEqual([]);expect(current.presentation.counts.scopeExcluded).toBe(current.presentation.counts.eligible)
  await page.getByRole('group',{name:'Trace scope'}).getByRole('button',{name:'All',exact:true}).click();await ready(page);await partition(page,traceOracle);expect(errors).toEqual([])
- await writeFile(`.ggjavaez/qa/reference-exact/historical-bindings-${viewport.width}x${viewport.height}.json`,JSON.stringify({realJvmExecuted:true,sessionId:session.id,rawEvents:completed.rawEvents.length,all,picked,pickedBundle,bundle,constituent,pickedFlowBundle,flowBundle,flowConstituent,binding,earlier,replay},null,2)+'\n')
+ await writeFile(`.ggjavaez/qa/reference-exact/historical-bindings-${viewport.width}x${viewport.height}.json`,JSON.stringify({realJvmExecuted:true,sessionId:session.id,rawEvents:completed.rawEvents.length,all,picked,pickedBundle,bundle,constituent,headFlowPartition,flowCursor,flowPartition,pickedFlowBundle,flowBundle,flowConstituent,binding,earlier,replay},null,2)+'\n')
 })

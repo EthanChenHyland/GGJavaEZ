@@ -1,6 +1,7 @@
 import {expect,it,vi} from 'vitest'
 import * as transitions from '../motion/semanticTransition'
 import type {RawRuntimeEvent} from '../instrumentation/contracts'
+import type {TraceDocument,TraceEvent} from '../contracts/runtime'
 import {normalizeTrace} from '../instrumentation/normalize'
 import {seek} from '../runtime'
 import {createLayoutEngine} from './layoutEngine'
@@ -25,6 +26,24 @@ function recording(consumes=true){
  const fileId='sample/Main.java',manifest={sources:[{fileId,name:'Main.java',content:'package sample; class Main {} class Worker {}',sha256:'0'}],classes:['sample.Main','sample.Worker'].map(className=>({className,sourceFile:'Main.java',fileId,sourceSha256:'0',status:'resolved' as const,candidates:[]}))}
  return normalizeTrace(events,manifest,{status:'complete',exitCode:0,diagnostic:null}).trace
 }
+it('retains recorded null assignment provenance without claiming a drawable slot port',()=>{
+ const source='opaque/null/source',destination='opaque/null/destination',frameId='unit/null/frame'
+ const inputs=[{type:'PROGRAM_START'},{type:'ENTER_METHOD',frameId,callerFrameId:null,className:'NullUnit',methodName:'run',locals:[source,destination].map(id=>({id,name:id,javaType:'java.lang.Object',value:{kind:'null'}}))},
+  {type:'EXECUTION_FACT',fact:{kind:'write',context:{owner:'NullUnit',name:'run',descriptor:'()V',frameId,site:0,rawSeq:2,source:null},target:{id:source,kind:'variable',ownerId:frameId,name:'source',javaType:'java.lang.Object'},value:{kind:'null'},origin:{kind:'constant',value:{kind:'null'}}}},
+  {type:'EXECUTION_FACT',fact:{kind:'write',context:{owner:'NullUnit',name:'run',descriptor:'()V',frameId,site:1,rawSeq:3,source:null},target:{id:destination,kind:'variable',ownerId:frameId,name:'destination',javaType:'java.lang.Object'},value:{kind:'null'},origin:{kind:'local',slotId:source}}}]
+ const events=inputs.map((event,seq)=>({...event,seq,eventId:`unit/null/${seq}`,source:null,importance:'normal',label:'Explicit unit null storage'}))as TraceEvent[]
+ const trace:TraceDocument={schemaVersion:2,demoId:'unit/null/ports',sourceFiles:[],events},layout=createLayoutEngine();layout.append(events)
+ const state=seek(trace,events.length),scene=createSceneProjector(trace).project(state,layout.state,{sessionEnded:false,pausedAtLiveHead:false,liveHead:events.length,recording:{state:'FULL',reason:null,budget:null,lastRecordedSeq:null,executionContinued:false}}),catalog=createFlowCatalog();catalog.extend(state.executionGraph!,trace)
+ const edge=[...catalog.iteratePrefix(scene.cursor,scene)].find(flow=>flow.from?.id===source&&flow.to?.id===destination)
+ expect(edge).toBeDefined()
+ const queries=catalog.query({cursor:scene.cursor,scene,priority:{selectedIds:new Set([destination]),focusedIds:new Set(),currentIds:new Set()},limit:40})
+ expect(queries.some(flow=>flow.id===edge!.id)).toBe(false)
+ expect(catalog.recordedProvenanceOf(destination,scene.cursor).find(flow=>flow.edgeId===edge!.id)?.spatial.drawable).toBe(false)
+ const plan=planPresentation({scene,layout:layout.state,flows:catalog,detailLevel:'CLOSE',selection:{kind:'slot',id:destination},focusTargetId:null,trace:{active:true,scope:'all'}})
+ expect(plan.curves.some(curve=>curve.id===edge!.id)).toBe(false)
+ expect(plan.flowPresentation.unavailable.some(flow=>flow.id===edge!.id)).toBe(true)
+ expect(catalog.recordedProvenanceOf(destination,scene.cursor).some(flow=>flow.edgeId===edge!.id)).toBe(true)
+})
 it('return destinations require prefix-visible assignment evidence, even when the destination already has a port',()=>{
  const trace=recording(),write=trace.events.find(event=>event.type==='EXECUTION_FACT'&&event.fact.kind==='write'&&event.fact.origin.kind==='call_result')!
  const layout=createLayoutEngine();layout.append(trace.events)

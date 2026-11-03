@@ -1,5 +1,5 @@
 import type {PresentedEntity,SceneEntity,Vec3,WorldAnchor} from '../contracts/world'
-import {faceRows,faceRowPort} from './faceRows'
+import {faceRows,faceRowPosition} from './faceRows'
 import {collectionEntryFace} from './collectionFace'
 
 /** Physical visible chip geometry shared by picking and temporal emphasis.
@@ -17,7 +17,7 @@ export function facePlate(node:SceneEntity,presented:Pick<PresentedEntity,'detai
  }else{
   const index=model.visible.findIndex(row=>row.slotId===slotId)
   if(index<0)return null
-  const ry=faceRowPort(node,presented,slotId,model)?.[1]??y+h/2-model.header-model.pitch*(index+.5)
+  const ry=faceRowPosition(node,presented,slotId,model)?.[1]??y+h/2-model.header-model.pitch*(index+.5)
   position=[x,ry,face+.01];size=[w-.45,model.pitch*.73,.05]
  }
  return{...node.anchor,entityId:slotId,position,size,ports:{},bodyPort:position}

@@ -3,7 +3,7 @@ import { seek } from '../runtime'
 import { loadControlTrace } from '../examples/traces'
 import { projectTrace } from '../testing/projectTrace'
 import { planPresentation } from './presentationPlanner'
-import { faceRows, faceRowPort } from './faceRows'
+import { faceRows, faceRowPort,faceRowPosition } from './faceRows'
 import { homeFraming } from '../camera/homeFraming'
 import { projectionCamera, screenPoint } from '../camera/projection'
 import { world } from '../theme/tokens'
@@ -60,9 +60,10 @@ describe('captured scopes through one production runtime world', () => {
           if (slot.value.kind === 'primitive') expect(row.value.exact).toBe(String(slot.value.value))
           else if (slot.value.kind === 'reference') expect(row.value).toMatchObject({ kind: 'reference', targetId: slot.value.objectId })
           const plan = planPresentation({ scene, layout, detailLevel: 'CLOSE', selection: { kind: 'slot', id: row.slotId }, focusTargetId: null, trace: { active: false, scope: 'relevant' } })
-          const point = faceRowPort(frame, plan.entities.get(id)!, row.slotId)!
+          const point = faceRowPosition(frame, plan.entities.get(id)!, row.slotId)!
           expect(point).not.toBeNull()
           expect(point[1]).toBeGreaterThan(frame.anchor.position[1] - frame.anchor.size[1] / 2 + world.frame.pad)
+          expect(faceRowPort(frame,plan.entities.get(id)!,row.slotId)).toEqual(row.value.kind==='null'||row.value.kind==='not-recorded'?null:point)
         }
         for (const divider of frame.scopeDividers ?? []) expect(Object.values(state.scopes).some(scope => scope.frameId === id && scope.status === 'active' && scope.depth === divider.depth && scope.label === divider.label)).toBe(true)
       }

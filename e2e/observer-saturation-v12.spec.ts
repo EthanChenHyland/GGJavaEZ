@@ -151,6 +151,11 @@ test('unsupported thread leaves a successful run and a truthful recorded prefix'
   expect(done.exitCode).toBe(0)
   expect(done.recording).toMatchObject({ state: 'STOPPED_UNSUPPORTED', budget: null, executionContinued: true })
   expect(new Set(done.rawEvents.filter((event) => event.type !== 'capture_saturated').map((event) => event.threadId)).size).toBe(1)
+  await expect.poll(()=>page.evaluate(()=>({
+    process:window.__ggjavaezQA!.appState().dimensions.process,
+    recording:window.__ggjavaezWorld?.scene().recordingId,
+  }))).toEqual({process:'ended',recording:`execution:${done.id}`})
+  await ready(page)
   await openDock(page,'Console')
   await expect(page.locator('.ide-console-output')).toContainText('WORKER 7')
   await expect(page.locator('.ide-console-output')).toContainText('THREAD DONE')

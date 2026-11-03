@@ -12,6 +12,9 @@ export interface ValueTextOptions {
 export interface CapturedString { value: string; length?: number; truncated?: boolean }
 const marker = '⟨not recorded⟩' as const
 
+/** Null and missing values have readable surfaces, but no spatial attachment. */
+export const hasRecordedValuePort=(value:ValueText):boolean=>value.kind!=='null'&&value.kind!=='not-recorded'
+
 export function notRecordedValue(reason = 'No value was captured'): ValueText {
   return { kind: 'not-recorded', text: marker, exact: marker, observation: 'UNAVAILABLE', reason }
 }

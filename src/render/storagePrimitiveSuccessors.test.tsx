@@ -141,6 +141,19 @@ it.each(['MEDIUM','CLOSE']as const)('contains captured null, unavailable and Str
   expect(fill.anchor.position[0]+fill.anchor.size[0]/2).toBeLessThan(plate.anchor.position[0]+plate.anchor.size[0]/2)
   expect(captured.labels.find(label=>label.frameText?.kind==='value'&&label.frameText.slotId===row.slotId)?.children).toBe(row.value.text)
   expect(inspectorRows(node).at(node.rows.findIndex(item=>item.slotId===row.slotId)).value.exact).toBe(row.value.exact)
+  if(row.value.kind==='null'||row.value.kind==='not-recorded'){
+   expect(faceRowPort(node,presented,row.slotId)).toBeNull()
+   expect(presentedFlowPorts(modified,cut.entities,cut.cellWindows)({kind:'slot',id:row.slotId})).toBeNull()
+  }
  }
  expect(modified.references).toBe(scene.references);expect(JSON.stringify(modified)).toBe(before)
+})
+
+it('keeps inherited field headings and row surfaces when every field is null and has no port',()=>{
+ const f=fixture(3),trace={...f.trace,events:f.trace.events.map(event=>event.type==='ALLOCATE_OBJECT'?{...event,fields:event.fields.map((slot,index)=>({...slot,javaType:'java.lang.Object',declaringClass:index===0?'pkg.Base':'pkg.Derived',value:{kind:'null' as const}}))}:event)}
+ const projection=projectTrace(trace),scene=projection.project(trace.events.length),plan=planPresentation({scene,layout:projection.layout,detailLevel:'CLOSE',selection:null,focusTargetId:null,trace:{active:false,scope:'relevant'}}),node=scene.entities.object
+ if(node.kind!=='object')throw new Error('Expected captured object')
+ const presented=render(node,plan)
+ expect(texts()).toContain('Base');expect(texts()).toContain('Derived')
+ for(const row of faceRows(node,presented).visible){expect(row.port).toBeNull();expect(faceRowPort(node,presented,row.slotId)).toBeNull();expect(buildSolidBatch(scene,{...plan,entities:new Map([...plan.entities].map(([id,entity])=>[id,id===node.id?presented:entity]))}).some(solid=>solid.pick.id===row.slotId)).toBe(true)}
 })

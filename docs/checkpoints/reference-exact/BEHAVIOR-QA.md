@@ -207,3 +207,8 @@ Outline buffers retain their resource identity across unchanged geometry wrapper
 ## Complete flow-prefix ownership — 2026-11-01
 
 The planner accounts for every supported prefix edge through one iterable; compact endpoint IDs/tags avoid repeated derivation without retaining every flow DTO/object pair. Public eager snapshot identity and query behavior remain compatible. Four regressions, 3,834 complete parent-plan comparisons and final 97/97 native cases pass. An actual stale-width provenance seek is corrected only by waiting for STANDARD layout after resize; its earlier 96/1 failure stays archived. [Contracts, counts and limitations](migration/flow-prefix-lifetime.md). Whole A–G remains OPEN.
+
+
+## Null and unavailable attachment eligibility — 2026-11-03
+
+Null/missing chips retain physical surfaces, text, picking and provenance without live Flow ports. Trace All preserves ended bindings on real visible rows; the new regression distinguishes that historical role from a live port. Final 99/99 passes, including native non-null-prefix Flow bundle picking followed by restoration of the null head/replay. The earlier 94/5 and intermediate prerequisite failures remain separate. [Exact Java/assertion dispositions and evidence](migration/null-value-ports.md). Primitive chip ports and whole A–G remain OPEN.

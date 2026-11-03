@@ -206,3 +206,8 @@ Ten of 110 exact final browser originals and the separate Dense original are rev
 ## Complete flow-prefix ownership — 2026-11-01
 
 Five of 140 final native PNGs and the separate fresh Dense original are root reviewed at native size; 135 native originals remain unreviewed. Existing dimensions, values, picking and recovery persist. The null-chip endpoint loop is confirmed under requirement9.8; text cutoff/aliasing, route glow/crowding, dark face/side/floor response and clipping remain OPEN. No final reference/motion approval is claimed. [Source-bound review and evidence](migration/flow-prefix-lifetime.md). Whole A–G remains OPEN.
+
+
+## Null and unavailable attachment eligibility — 2026-11-03
+
+Final native integration retains 144 exact PNG files, five root reviewed at original size: actual-JVM Hero, narrow null Frame, narrow Trace All history, recovered environment and CINEMATIC StockItem. Null chips lose the former live dots/loop while non-null references and faded historical bindings remain. The Dense image is reviewed separately. Bright/crowded routes, glyph quality, peripheral clipping and face/side/floor hierarchy remain unapproved against best.png; 139 native PNGs remain unreviewed. [Capture identities and limits](migration/null-value-ports.md). No final visual/motion or A–G approval.

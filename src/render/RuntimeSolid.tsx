@@ -4,7 +4,7 @@ import { frameStatusText } from '../world/frameStatus';
 import { notRecordedValue, truncateFrameText } from '../world/valueText';
 import { WorldText } from './FaceText';
 import { faceRows } from './faceModel';
-import {faceRowPort} from '../world/faceRows';
+import {faceRowPosition} from '../world/faceRows';
 import { displayType } from '../world/displayType';
 import {faceRowColumns,faceHeading,rowValueLabel} from './text/faceTypography';
 import {fitWorldText} from './text/textSystem';
@@ -44,8 +44,8 @@ export const RuntimeSolid=memo(function RuntimeSolid({ node, presented, plan }: 
     {lengthLabel && <WorldText position={[x + w / 2 - .28, top - .28, face]} size={.25} tint={color.ui.textSecondary} align="right" width={metadataWidth} opacity={opacity}>{lengthLabel}</WorldText>}
     {node.kind==='collection'&&presented.detail!=='FAR'&&top-world.object.header-world.collection.sizeRow*.86>=y-h/2+world.object.pad&&<WorldText position={[left,top-world.object.header-world.collection.sizeRow/2,face+.015]} size={.34} width={w-.56} opacity={opacity} tint={color.ui.textSecondary} collectionText={{entityId:node.id,kind:'size'}}>{`size = ${node.size}`}</WorldText>}
     {node.kind==='object'&&node.anchor.region!=='library'&&node.groups.map(group=>{
-      const first=group.rows.find(row=>row.declaringClass&&model.visible.some(visible=>visible.slotId===row.slotId)&&row.port);
-      return first?.port?<WorldText key={group.declaringClass} position={[left,first.port[1]+model.pitch/2+.3,face]} size={.23} tint={color.ui.textMuted} opacity={opacity}>{displayType(group.declaringClass)}</WorldText>:null
+      const first=group.rows.find(row=>row.declaringClass&&model.visible.some(visible=>visible.slotId===row.slotId)),point=first?faceRowPosition(node,presented,first.slotId,model):null;
+      return point?<WorldText key={group.declaringClass} position={[left,point[1]+model.pitch/2+.3,face]} size={.23} tint={color.ui.textMuted} opacity={opacity}>{displayType(group.declaringClass)}</WorldText>:null
     })}
     {model.scopes?.dividers.map(divider=><WorldText key={divider.beforeSlotId} position={[left+divider.depth*world.frame.scopeIndent,top-model.header-divider.offset,face+.015]} size={.23} width={Math.max(.1,w-.56-divider.depth*world.frame.scopeIndent)} opacity={opacity} tint={color.ui.textMuted} frameText={{entityId:node.id,kind:'scope',slotId:divider.beforeSlotId}}>{divider.label}</WorldText>)}
     {model.visible.map((row, index) => {
@@ -54,7 +54,7 @@ export const RuntimeSolid=memo(function RuntimeSolid({ node, presented, plan }: 
                 const label=(value:typeof entry.value,point:readonly[number,number,number],kind:'key'|'value',slotId?:string)=><WorldText position={[point[0],point[1],face+.015]} align="center" size={.34} weight={600} width={geometry.valueWidth-.08} opacity={opacity} tint={value.kind==='reference'?color.semantic.execution:value.kind==='not-recorded'?color.ui.textMuted:color.ui.text} collectionText={{entityId:node.id,kind,slotId}}>{rowValueLabel(value)}</WorldText>;
                 return <group key={entry.slotId}>{label(entry.value,geometry.value,'value',entry.slotId)}{entry.key&&geometry.key&&label(entry.key,geometry.key,'key',entry.keySlotId)}</group>;
             }
-            const ry = faceRowPort(node,presented,row.slotId,model)?.[1] ?? top - model.header - model.pitch * (index + .5), value = row.value, mutation = node.kind === 'object' && node.mutation?.slotId === row.slotId;
+            const ry = faceRowPosition(node,presented,row.slotId,model)?.[1] ?? top - model.header - model.pitch * (index + .5), value = row.value, mutation = node.kind === 'object' && node.mutation?.slotId === row.slotId;
             const indent=node.kind==='frame'&&'scopeDepth'in row?(row.scopeDepth??0)*world.frame.scopeIndent:0;
             return <group key={row.slotId}>
         <WorldText position={[left+indent, ry, face + .015]} weight={500} size={compact?.23:.32} width={Math.max(.1,columns.name-indent)} tint={color.ui.textSecondary} opacity={opacity} frameText={node.kind==='frame'?{entityId:node.id,kind:'name',slotId:row.slotId}:undefined}>{presented.detail==='MEDIUM'?`${row.name} →`:row.name}</WorldText>

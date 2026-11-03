@@ -9,7 +9,7 @@ import { collectionSummary } from './collectionSummary'
 import { frameStatus } from './frameStatus'
 import { frameTitle } from './frameTitle'
 import { consoleIoSummaries, graphIoSummaries } from './ioSummary'
-import { stringValueText, valueText } from './valueText'
+import { stringValueText, valueText,hasRecordedValuePort } from './valueText'
 import {createRecordedReferenceBindings} from './recordedReferenceBindings'
 import {recordedReturnDestination} from './returnEvidence'
 import {currentStorage} from './currentStorage'
@@ -307,11 +307,12 @@ export function createSceneProjector(trace: TraceDocument): SceneProjector {
     return seq === null ? null : events[seq].source
   }
   function row(slot: RuntimeSlot, role: SceneRow['role'], id: string, state: RuntimeState, anchor: WorldAnchor): SceneRow {
+    const value=valueText(slot.value, { context: role === 'local' || role === 'parameter' || role === 'this' ? 'frame' : 'object', objects: state.objects })
     return { slotId: slot.id, name: slot.name, type: displayType(slot.javaType), role,
-      value: valueText(slot.value, { context: role === 'local' || role === 'parameter' || role === 'this' ? 'frame' : 'object', objects: state.objects }),
+      value,
       ...(slot.declaringClass ? { declaringClass: slot.declaringClass } : {}),
       ...(slot.scopeId && state.scopes[slot.scopeId] ? { scopeDepth: state.scopes[slot.scopeId].depth } : {}),
-      port: anchor.ports[slot.id] ?? null, evidence: slotEvidence(id, slot, state.cursor) }
+      port: hasRecordedValuePort(value)?anchor.ports[slot.id] ?? null:null, evidence: slotEvidence(id, slot, state.cursor) }
   }
   function targetDependencies(slots: readonly RuntimeSlot[], state: RuntimeState): readonly (RuntimeObject | undefined)[] {
     return slots.flatMap(slot => slot.value.kind === 'reference' ? [state.objects[slot.value.objectId]] : [])

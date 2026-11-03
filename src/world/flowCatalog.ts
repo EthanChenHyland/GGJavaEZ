@@ -3,7 +3,7 @@ import type { ExecutionGraph, GraphEdge } from '../contracts/executionGraph'
 import type { Evidence, SceneModel } from '../contracts/world'
 import { graphTransition, type FlowEndpoint } from '../motion/semanticTransition'
 import { seek } from '../runtime'
-import { valueText } from './valueText'
+import { valueText,hasRecordedValuePort } from './valueText'
 import {collectionEntryFace} from './collectionFace'
 import {consumingWriteDestination,recordedReturnDestination} from './returnEvidence'
 export type FlowKind='argument'|'receiver'|'local-field'|'field-read'|'assignment'|'reference'|'array-read'|'array-write'|'return'|'input'|'output'|'throw'|'unwind'|'catch'
@@ -67,10 +67,10 @@ export function createFlowCatalog():FlowCatalog {
   if(point.kind!=='slot')return !!scene.entities[point.id]
   const storage=stateAt(scene.cursor)?.executionGraph?.storage[point.id],owner=storage?scene.entities[storage.ownerId]:null
   if(!owner)return false
-  if(owner.kind==='array')return owner.cells.some(cell=>cell.slotId===point.id) // actual window attachment is checked by the planner
-  if(owner.kind==='collection')return owner.entries.some((entry,index)=>(entry.slotId===point.id||entry.keySlotId===point.id)&&!!collectionEntryFace(owner.anchor,index,owner.collectionKind==='Map'))
+  if(owner.kind==='array')return owner.cells.some(cell=>cell.slotId===point.id&&hasRecordedValuePort(cell.value)) // actual window attachment is checked by the planner
+  if(owner.kind==='collection')return owner.entries.some((entry,index)=>((entry.slotId===point.id&&hasRecordedValuePort(entry.value))||(entry.keySlotId===point.id&&!!entry.key&&hasRecordedValuePort(entry.key)))&&!!collectionEntryFace(owner.anchor,index,owner.collectionKind==='Map'))
   const rows=owner.kind==='frame'||owner.kind==='class'?owner.rows:owner.groups.flatMap(g=>g.rows)
-  return rows.some(row=>row.slotId===point.id&&(owner.kind==='frame'||row.port!==null)) // actual frame row windows are resolved by the planner
+  return rows.some(row=>row.slotId===point.id&&hasRecordedValuePort(row.value)&&(owner.kind==='frame'||row.port!==null)) // actual frame row windows are resolved by the planner
  }
  const formatted=(candidate:Candidate,scene:SceneModel,points=resolve(candidate,scene.cursor)):SceneFlow|null=>{
   if(!points.to)return null

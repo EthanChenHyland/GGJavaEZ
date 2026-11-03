@@ -51,16 +51,26 @@ it('never substitutes quiet/hidden/retired storage or collapsed bodies for real 
  expect(buildFlowTopology({...f.input,entities,flows}).presentation.counts.unavailable).toBe(3)
  entities.delete('target');expect(buildFlowTopology({...f.input,entities,flows}).presentation.counts.unavailable).toBe(3)
 })
-it('uses separate real Map key and null-value chip geometry and only captured current array cells',()=>{
+it('keeps Map key geometry, leaves null values without ports and uses only captured current array cells',()=>{
  const f=fixture(),port=presentedFlowPorts(f.scene,f.plan.entities,f.plan.cellWindows),map=f.scene.entities.map
  if(map.kind!=='collection')throw new Error('Expected Map')
  expect(map.entries[0].port).toBeNull();const geometry=collectionEntryFace(map.anchor,0,true)!
- expect(port({kind:'slot',id:map.entries[0].slotId})?.point).toEqual(geometry.value)
+ expect(port({kind:'slot',id:map.entries[0].slotId})).toBeNull()
  expect(port({kind:'slot',id:map.entries[0].keySlotId!})?.point).toEqual(geometry.key)
  const array=f.scene.entities.array,windows=new Map(f.plan.cellWindows)
  windows.set('array',computeArrayWindow({recordingId:f.scene.recordingId,arrayId:'array',recordedLength:1000,anchor:array.anchor,nominalCellBudget:1,requestedIndices:[500]}))
  const current=presentedFlowPorts(f.scene,f.plan.entities,windows)
  expect(current({kind:'slot',id:'array:element:500'})).toBeNull();expect(current({kind:'slot',id:'array:element:1'})).toBeNull()
+})
+it('withholds null or unavailable array and Map-key ports without moving surviving captured attachments',()=>{
+ const f=fixture(),array=f.scene.entities.array,map=f.scene.entities.map
+ if(array.kind!=='array'||map.kind!=='collection')throw new Error('Expected captured array and Map')
+ const nullValue={kind:'null' as const,text:'null',exact:'null',observation:'OBSERVED' as const},missing={kind:'not-recorded' as const,text:'⟨not recorded⟩' as const,exact:'⟨not recorded⟩' as const,observation:'UNAVAILABLE' as const}
+ const scene={...f.scene,entities:{...f.scene.entities,array:{...array,cells:array.cells.map((cell,index)=>index<2?{...cell,value:index===0?nullValue:missing}:cell)},map:{...map,entries:map.entries.map(entry=>({...entry,key:nullValue,value:array.cells[2].value}))}}}
+ const port=presentedFlowPorts(scene,f.plan.entities,f.plan.cellWindows)
+ expect(port({kind:'slot',id:array.cells[0].slotId})).toBeNull();expect(port({kind:'slot',id:array.cells[1].slotId})).toBeNull()
+ expect(port({kind:'slot',id:array.cells[2].slotId})?.point).toEqual(f.plan.cellWindows.get(array.id)!.mapping.get(array.cells[2].slotId)!.port)
+ expect(port({kind:'slot',id:map.entries[0].keySlotId!})).toBeNull();expect(port({kind:'slot',id:map.entries[0].slotId})?.point).toEqual(collectionEntryFace(map.anchor,0,true)!.value)
 })
 it('retains every drawable mandatory flow over budget and records scope exclusions separately (100 runs)',()=>{
  fc.assert(fc.property(fc.integer({min:1,max:50}),fc.integer({min:0,max:8}),(count,limit)=>{

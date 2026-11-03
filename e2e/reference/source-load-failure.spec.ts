@@ -43,7 +43,7 @@ for(const width of[1440,760])test(`recorded source asset failure preserves the W
   await settleSource(page)
   await page.screenshot({path:`.ggjavaez/qa/reference-exact/source-load-fallback-array-${width}x900.png`})
   expect(pageErrors,'The source failure is caught inside the source pane').toEqual([])
-  expect(consoleErrors.filter(message=>!message.includes('net::ERR_FAILED')&&!message.includes('Failed to fetch dynamically imported module: http://127.0.0.1:5173/src/shell/source/RecordedSourceEditor.tsx')),'Only the deliberately failed source asset may produce a console error').toEqual([])
+  expect(consoleErrors.filter(message=>!message.includes('net::ERR_FAILED')&&!failedAssets.some(url=>message.includes(`Failed to fetch dynamically imported module: ${url}`))),'Only the deliberately failed source asset may produce a console error').toEqual([])
  }finally{
   const dom=page.isClosed()?null:await page.evaluate(()=>({shell:!!document.querySelector('.shell-header'),world:!!document.querySelector('.world-canvas canvas'),fallback:!!document.querySelector('[aria-label="Captured source fallback"]')})).catch(()=>null)
   await writeFile(`.ggjavaez/qa/reference-exact/source-load-fallback-${width}x900.json`,JSON.stringify({evidence:'Curated recording with a deliberately failed editor asset',failedAssets,pageErrors,consoleErrors,dom},null,2)+'\n')

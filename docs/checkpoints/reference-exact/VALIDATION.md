@@ -415,3 +415,8 @@ Final 968-file source f132bff283a58195126cdf77d6905455c00e6a5172ec532106f771ab67
 ## Complete flow-prefix ownership — 2026-11-01
 
 Final 968-file source 0ddeed5c6450579407d6b8dd76a0fc44403a6b42ed2a6657961e9f278e6d843a passes seven fresh checks and 97/97 native cases, zero skips/failures/flaky, 843.002 seconds. Fresh complete defaults on identical production/unit/fixture inputs are 2,199 passed/70 explicit opt-in skips/2,269 total in 237 files, 264.72 seconds; only one browser resize prerequisite changes afterward, and fourteen built JS resources are byte-identical. Fixed Dense completes all ten stages but exits one with four latency failures. [API equivalence, failed candidates, source and full evidence](migration/flow-prefix-lifetime.md). Whole A–G remains OPEN.
+
+
+## Null and unavailable attachment eligibility — 2026-11-03
+
+Final 968-input source bb9299e6f005d7bb7a970a72754ccb39333b0cd5d3728bd46ce5ef466694cd5d passes seven fresh checks and 99/99 native cases, zero skipped/failed/flaky, 951.657 seconds. Fresh full defaults on identical production/unit/fixture inputs are 2,204 passed/70 explicit opt-in skips/2,274 total, 237 files, 285.24 seconds; only three browser successors differ afterward, with fourteen built JS resources byte-identical. Fixed Dense completes all ten stages but exits one on four latency limits. [Preserved failures, source equivalence and evidence](migration/null-value-ports.md). Whole A–G remains OPEN.

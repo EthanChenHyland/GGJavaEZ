@@ -7,6 +7,7 @@ import {planPresentation} from './presentationPlanner'
 import {historicalReferenceEligible,historicalSceneReference} from './historicalReference'
 import {referencePresentationTopology} from './referencePresentationTopology'
 import {collectionEntryFace} from './collectionFace'
+import {faceRowPort,faceRowPosition} from './faceRows'
 import {inspectorEntity} from '../render/inspection'
 
 // Accepted normalized unit fixtures; not JVM or screenshot evidence.
@@ -64,6 +65,20 @@ it('uses the actual visible Map value chip after nulling, never borrowing its ke
  const binding=scene.historicalBindings.find(binding=>binding.sourceSlotId==='map:summary:entry:0:value')!,curve=plan.curves.find(curve=>curve.id===binding.id)!
  expect(curve.kind).toBe('binding-history');expect(curve.points[0]).toEqual(collectionEntryFace(node.anchor,0,true)!.value);expect(curve.points[0]).not.toEqual(node.entries[0].keyPort)
  expect(inspectorEntity(scene,{kind:'reference',id:binding.id})).toBe(node)
+})
+it('keeps a null field free of live ports while attaching ended bindings to its visible row in Trace All',()=>{
+ const f=fixture(),{scene,plan}=f.plan(),node=scene.entities.owner,presented=plan.entities.get('owner')!
+ expect(node.kind).toBe('object');if(node.kind!=='object')throw new Error('Expected captured owner')
+ const row=node.groups.flatMap(group=>group.rows).find(row=>row.slotId==='p')!
+ expect(row.value.kind).toBe('null');expect(row.port).toBeNull()
+ expect(faceRowPort(node,presented,'p')).toBeNull()
+ expect(scene.references.some(reference=>reference.sourceId==='owner'&&reference.sourceSlotId==='p')).toBe(false)
+ const binding=scene.historicalBindings.find(binding=>binding.sourceId==='owner'&&binding.sourceSlotId==='p')!
+ const selected=f.plan(f.events.length,'all',binding.id).plan
+ const curve=selected.curves.find(curve=>curve.id===binding.id)!
+ expect(curve).toMatchObject({kind:'binding-history',opacity:.25})
+ expect(curve.points[0]).toEqual(faceRowPosition(node,presented,'p'))
+ for(const scope of ['current','relevant']as const)expect(f.plan(f.events.length,scope).plan.curves.some(curve=>curve.id===binding.id)).toBe(false)
 })
 it('does not manufacture a semantic source chip after replacement retires its slot',()=>{
  const f=fixture(),before=f.sceneAt(f.events.length),extra:TraceEvent={seq:f.events.length,eventId:'opaque/retire',source:null,label:'Captured field replacement',importance:'normal',type:'OBJECT_OBSERVE',objectId:'owner',replaceFields:true,fields:[]}

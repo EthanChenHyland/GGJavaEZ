@@ -5,7 +5,7 @@ import { loadArrayTrace } from '../examples/traces'
 import { projectTrace } from '../testing/projectTrace'
 import { planPresentation } from './presentationPlanner'
 import { presentedFlowPorts } from './flowTopology'
-import { faceRows, faceRowPort } from './faceRows'
+import { faceRows, faceRowPort,faceRowPosition } from './faceRows'
 
 const trace = loadArrayTrace(), projection = projectTrace(trace), layout = projection.layout
 const allocation = trace.events.find(event => event.type === 'ALLOCATE_ARRAY')!
@@ -74,8 +74,9 @@ describe('array spatial identity through the production projection', () => {
           const plan = planPresentation({ scene, layout, detailLevel: 'CLOSE', selection: { kind: 'slot', id: row.slotId }, focusTargetId: null, trace: { active: false, scope: 'relevant' } })
           const cut = plan.entities.get(id)!, rows = faceRows(frame, cut).visible
           expect(rows.some(item => item.slotId === row.slotId)).toBe(true)
-          const ports = rows.map(item => faceRowPort(frame, cut, item.slotId)!)
-          expect(new Set(ports.map(port => port[1])).size).toBe(rows.length)
+          const positions = rows.map(item => faceRowPosition(frame, cut, item.slotId)!)
+          expect(new Set(positions.map(point => point[1])).size).toBe(rows.length)
+          for(const item of rows)expect(faceRowPort(frame,cut,item.slotId)).toEqual(item.value.kind==='null'||item.value.kind==='not-recorded'?null:faceRowPosition(frame,cut,item.slotId))
           expect(rows.every(item => frame.rows.some(captured=>captured.slotId===item.slotId))).toBe(true)
           expect(frame.anchor).toBe(layout.anchors[id])
         }

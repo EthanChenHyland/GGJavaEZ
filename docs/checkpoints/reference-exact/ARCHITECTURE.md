@@ -314,3 +314,8 @@ Every remaining visible Frame value now uses the existing rounded inset batch, i
 ## Retained recording handoff — 2026-10-26
 
 The existing source/path comparison now applies to a retained visualization, correcting suppressed source-change labels after a failed build. Only the session guard changes; runtime, source-proof, camera and store contracts remain unchanged. [Evidence, semantic disposition and remaining gates](migration/recording-handoff.md). Whole A–G remains OPEN.
+
+
+## Null and unavailable attachment eligibility — 2026-11-03
+
+Physical face-row positions are separate from current live attachment eligibility. Shared null/unavailable filtering applies to projected rows, presented Flow geometry and drawable catalog queries; complete graph provenance and canonical layout anchors remain intact. Trace All uses still-visible captured storage geometry for ended bindings at its existing faded opacity. No runtime/shared semantic contract, dependency or production module is added. [Contracts, failures and evidence](migration/null-value-ports.md). Primitive chip ports and whole A–G remain OPEN.

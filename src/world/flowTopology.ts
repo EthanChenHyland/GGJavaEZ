@@ -3,6 +3,7 @@ import type {FlowEndpoint} from '../motion/semanticTransition'
 import type {RecordedFlow,SceneFlow} from './flowCatalog'
 import {faceRows,faceRowPort} from './faceRows'
 import {collectionEntryFace} from './collectionFace'
+import {hasRecordedValuePort} from './valueText'
 
 export interface FlowPort {point:Vec3;anchor:WorldAnchor}
 export interface DrawableFlow {flow:SceneFlow;from:FlowPort;to:FlowPort}
@@ -24,7 +25,7 @@ export function presentedFlowPorts(scene:SceneModel,entities:ReadonlyMap<string,
   if(node.kind==='array'){
    const window=windows.get(id)
    if(window?.recordingId===scene.recordingId&&window.arrayId===id&&window.mapping.size){
-    const observed=new Set(node.cells.map(cell=>cell.slotId))
+    const observed=new Set(node.cells.filter(cell=>hasRecordedValuePort(cell.value)).map(cell=>cell.slotId))
     for(const[slot,cell]of window.mapping)if(observed.has(slot))slots.set(slot,{point:cell.port,anchor:cell.anchor})
    }
   }else{
@@ -33,8 +34,8 @@ export function presentedFlowPorts(scene:SceneModel,entities:ReadonlyMap<string,
     const ids=new Set(visible.map(row=>row.slotId))
     for(const[index,entry]of node.entries.entries())if(ids.has(entry.slotId)){
      const geometry=collectionEntryFace(node.anchor,index,node.collectionKind==='Map');if(!geometry)continue
-     slots.set(entry.slotId,{point:geometry.value,anchor})
-     if(entry.keySlotId&&geometry.key)slots.set(entry.keySlotId,{point:geometry.key,anchor})
+     if(hasRecordedValuePort(entry.value))slots.set(entry.slotId,{point:geometry.value,anchor})
+     if(entry.keySlotId&&geometry.key&&entry.key&&hasRecordedValuePort(entry.key))slots.set(entry.keySlotId,{point:geometry.key,anchor})
     }
    }else for(const row of visible){const point=faceRowPort(node,presented,row.slotId,model);if(point)slots.set(row.slotId,{point,anchor})}
   }

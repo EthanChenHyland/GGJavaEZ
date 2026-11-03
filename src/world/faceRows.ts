@@ -3,6 +3,7 @@ import { world } from '../theme/tokens';
 import {collectionEntryFace} from './collectionFace';
 import {frameFace} from './frameFace';
 import {compactLibraryFace} from './firstObjectPresentation';
+import {hasRecordedValuePort} from './valueText';
 /** Shared by face drawing and correctness-required reference admission. */
 export function faceRows(node: SceneEntity, presented: Pick<PresentedEntity,'detail'>&Partial<Pick<PresentedEntity,'rowSlotIds'>>) {
     const rows = node.kind === 'frame' || node.kind === 'class' ? node.rows : node.kind === 'object' ? node.groups.flatMap(g => g.rows).filter(row => !row.slotId.endsWith(':captured-string')) : node.kind === 'collection' ? node.entries.map((entry, index) => ({ ...entry, name: entry.key?.text ?? `[${index}]`, type: entry.value.kind === 'reference' ? entry.value.targetType : '' })) : [];
@@ -37,7 +38,7 @@ export function faceRows(node: SceneEntity, presented: Pick<PresentedEntity,'det
 /** Matches the actual rendered row plane, including the bounded frame window.
  * This creates presentation geometry for real captured storage, never a value
  * or a permanent canonical port for an unobserved/retired row. */
-export function faceRowPort(node:SceneEntity,presented:Pick<PresentedEntity,'detail'>&Partial<Pick<PresentedEntity,'rowSlotIds'>>,slotId:string,model:ReturnType<typeof faceRows>=faceRows(node,presented)):Vec3|null {
+export function faceRowPosition(node:SceneEntity,presented:Pick<PresentedEntity,'detail'>&Partial<Pick<PresentedEntity,'rowSlotIds'>>,slotId:string,model:ReturnType<typeof faceRows>=faceRows(node,presented)):Vec3|null {
     if(node.kind==='array'||node.kind==='collection')return null;
     const index=model.visible.findIndex(row=>row.slotId===slotId);
     if(index<0)return null;
@@ -48,4 +49,10 @@ export function faceRowPort(node:SceneEntity,presented:Pick<PresentedEntity,'det
     if(!windowed)return node.anchor.ports[slotId]??null;
     const [x,y,z]=node.anchor.position,[w,h,d]=node.anchor.size;
     return[x+w/2,y+h/2-model.header-model.pitch*(index+.5)-(model.scopes?.offsets.get(slotId)??0),z+d/2+.06];
+}
+
+/** Spatial evidence may attach only to an observed, non-null visible value. */
+export function faceRowPort(node:SceneEntity,presented:Pick<PresentedEntity,'detail'>&Partial<Pick<PresentedEntity,'rowSlotIds'>>,slotId:string,model:ReturnType<typeof faceRows>=faceRows(node,presented)):Vec3|null {
+    const row=model.visible.find(row=>row.slotId===slotId);
+    return row&&hasRecordedValuePort(row.value)?faceRowPosition(node,presented,slotId,model):null;
 }

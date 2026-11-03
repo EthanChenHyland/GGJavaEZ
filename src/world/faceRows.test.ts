@@ -11,6 +11,7 @@ import { buildSolidBatch } from '../render/SolidBatch'
 import { world } from '../theme/tokens'
 import { createFlowCatalog } from './flowCatalog'
 import { seek } from '../runtime'
+import {facePlate} from './facePlate'
 
 function fixture() {
   const slot = (id: string): RuntimeSlot => ({ id, name: id, javaType: 'Node', value: { kind: 'reference', javaType: 'Node', objectId: 'unit/target' } })
@@ -28,6 +29,17 @@ function fixture() {
   return { projection, scene, frame, trace }
 }
 const presented: PresentedEntity = { id: 'unit/frame', detail: 'CLOSE', mode: 'detailed', opacity: 1, pinned: true, pickable: true, highlight: null }
+
+it('keeps promoted null and unavailable row surfaces aligned without exposing semantic ports',()=>{
+ const {frame}=fixture(),cut={...presented,rowSlotIds:['b','c','late/19']}
+ const node={...frame,rows:frame.rows.map(row=>row.slotId==='b'?{...row,value:{kind:'null' as const,text:'null',exact:'null',observation:'OBSERVED' as const}}:row.slotId==='late/19'?{...row,value:{kind:'not-recorded' as const,text:'⟨not recorded⟩' as const,exact:'⟨not recorded⟩' as const,observation:'UNAVAILABLE' as const}}:row)}
+ for(const id of ['b','late/19']){
+  const original=facePlate(frame,cut,id)!;expect(original).not.toBeNull()
+  expect(facePlate(node,cut,id)).toEqual(original)
+  expect(faceRowPort(node,cut,id)).toBeNull()
+ }
+ expect(faceRowPort(node,cut,'c')).toEqual(faceRowPort(frame,cut,'c'))
+})
 
 it('promotes real captured frame rows into a bounded face without changing canonical geometry (100 runs)', () => {
   const { frame } = fixture(), before = JSON.stringify(frame), capacity = faceRows(frame, presented).visible.length

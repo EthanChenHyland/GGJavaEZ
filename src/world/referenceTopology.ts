@@ -2,7 +2,7 @@ import type {
   ArrayWindow, PresentedCluster, PresentedEntity, SceneEntity, SceneModel,
   SceneReference, Vec3, WorldAnchor,
 } from '../contracts/world'
-import { faceRows,faceRowPort } from './faceRows'
+import { faceRows,faceRowPort,faceRowPosition } from './faceRows'
 import {collectionEntryFace} from './collectionFace'
 
 export interface ReferenceTopologyInput {
@@ -169,7 +169,10 @@ export function buildReferenceTopology(input: ReferenceTopologyInput): Reference
         return validPoint(point) ? { point, anchor: source.anchor } : { reason: 'Source collection entry has no recorded port' }
       }
       if (!visible.has(reference.sourceSlotId)) return { reason: 'Source slot is not in the visible face rows' }
-      const point = faceRowPort(node,presented,reference.sourceSlotId,faceModels.get(node.id)!)
+      // Trace All attaches an ended binding to captured storage geometry even
+      // when its current value is null. This does not restore a live value port.
+      const rowPoint = input.historical ? faceRowPosition : faceRowPort
+      const point = rowPoint(node,presented,reference.sourceSlotId,faceModels.get(node.id)!)
       return validPoint(point) ? { point, anchor: source.anchor } : { reason: 'Visible source slot has no recorded port' }
     }
     const candidates: Candidate[] = []
