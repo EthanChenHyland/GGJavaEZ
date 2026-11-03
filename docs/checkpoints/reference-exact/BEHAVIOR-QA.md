@@ -232,3 +232,8 @@ All 25 native cases pass: ten actual-JVM array cuts, six curated array workflows
 ## Face text opacity lifetime — 2026-11-03
 
 All 47 native checks pass: thirty actual-JVM Hero/object/array/return/exception cuts, six curated array workflows, six actual-JVM virtualized Focus/origin checks, three quality/palette/forensic cases and two isolated masks. Inert real-React checks verify opacity inheritance, visibility, transforms, skipped commits and cleanup. [Detailed boundaries](migration/face-text-opacity-lifetime.md). Whole A–G remains OPEN.
+
+
+## Current-source JVM convergence — 2026-11-03
+
+Acceptance passes 191 ordinary cases plus four preserved expected-failure contracts (195 total, 47 observed target JVM starts). Reference programs pass 7/7 with seven starts, torture 9/9 with nine starts, and prior coverage/provenance 85/85 with fifty starts (33 inventory +52 JVM-dependent cases). All counts match, with zero required skips/failures. Expected-failure targets remain gaps. [Exact source, process/test distinctions, flags and evidence](migration/current-jvm-convergence.md). Whole A–G remains OPEN.

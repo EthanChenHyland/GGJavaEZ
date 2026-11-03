@@ -440,3 +440,8 @@ Source 67bb4ddb passes eight fresh checks, including 2,207 default tests /70 exp
 ## Face text opacity lifetime — 2026-11-03
 
 Source 18789fe6 passes eight fresh checks, including 2,208 defaults/70 explicit opt-in skips/2,278 total in 237 files; 45 focused checks pass. Native integration passes 47/47 with zero failures/skips/flaky results and 38 attached distinct actual JVM IDs. The unchanged 195-case acceptance gate completes: 191 ordinary passes, four preserved expected-failure contracts, zero failures/skips/todos, and 47/47 observed target JVM launches (262.962 seconds). Expected-failure targets remain unimplemented evidence, not successful behavior. [Source, scopes and logs](migration/face-text-opacity-lifetime.md). Whole A–G remains OPEN.
+
+
+## Current-source JVM convergence — 2026-11-03
+
+Acceptance passes 191 ordinary cases plus four preserved expected-failure contracts (195 total, 47 observed target JVM starts). Reference programs pass 7/7 with seven starts, torture 9/9 with nine starts, and prior coverage/provenance 85/85 with fifty starts (33 inventory +52 JVM-dependent cases). All counts match, with zero required skips/failures. Expected-failure targets remain gaps. [Exact source, process/test distinctions, flags and evidence](migration/current-jvm-convergence.md). Whole A–G remains OPEN.
