@@ -11,7 +11,7 @@ import { useInteractionStore } from '../interaction/interactionStore';
 import { RuntimeSolid, WorldText } from './RuntimeSolid';
 import { roleColor } from './RuntimeMaterials';
 import { FaceTextBatch, textReadiness } from './FaceText';
-import { ACESFilmicToneMapping, Color, DataTexture, InstancedMesh, PerspectiveCamera, RGBAFormat, Sprite, SRGBColorSpace, UnsignedByteType, Vector3 } from 'three';
+import { ACESFilmicToneMapping, Color, DataTexture, InstancedMesh, Matrix4, PerspectiveCamera, RGBAFormat, SphereGeometry, Sprite, SRGBColorSpace, UnsignedByteType, Vector3 } from 'three';
 import type {} from '../qa/worldObservation';
 import { SolidBatch,buildSolidBatch } from './SolidBatch';
 import { ConnectorTooltip,InteractiveConnectors } from './ConnectorInteraction';
@@ -141,6 +141,19 @@ function Metrics({ scene, plan, selection,trace }: {
                     return{x:(p.x+1)*size.width/2,y:(1-p.y)*size.height/2,visible:Math.abs(p.x)<=1&&Math.abs(p.y)<=1&&p.z>=-1&&p.z<=1};
                 },
                 renderer: () => ({ calls: gl.info.render.calls, triangles: gl.info.render.triangles, geometries: gl.info.memory.geometries, textures: gl.info.memory.textures, frame: gl.info.render.frame }),
+                connectorPorts:()=>{
+                    const ports:ReturnType<NonNullable<Window['__ggjavaezWorld']>['connectorPorts']>[number][]=[],matrix=new Matrix4(),position=new Vector3(),scale=new Vector3();
+                    world.traverseVisible(object=>{
+                        if(!(object instanceof InstancedMesh)||!object.userData.runtimeConnectorPorts||!(object.geometry instanceof SphereGeometry))return;
+                        const alpha=object.geometry.getAttribute('runtimeAlpha'),chips=Number(object.userData.runtimeReferenceChipPortCount??0);
+                        object.updateWorldMatrix(true,false);
+                        for(let index=0;index<object.count;index++){
+                            object.getMatrixAt(index,matrix);matrix.premultiply(object.matrixWorld);
+                            position.setFromMatrixPosition(matrix);scale.setFromMatrixScale(matrix);
+                            ports.push({position:position.toArray()as[number,number,number],radius:object.geometry.parameters.radius*Math.max(scale.x,scale.y,scale.z),opacity:alpha?.getX(index)??1,referenceChip:index<chips});
+                        }
+                    });return ports;
+                },
                 effects:()=>({...postReadiness}),
                 atmosphere:()=>{
                     const result:ReturnType<NonNullable<Window['__ggjavaezWorld']>['atmosphere']>[number][]=[];

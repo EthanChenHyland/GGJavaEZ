@@ -6,6 +6,7 @@ import { projectTrace } from '../testing/projectTrace'
 import { planPresentation } from './presentationPlanner'
 import { presentedFlowPorts } from './flowTopology'
 import { faceRows, faceRowPort,faceRowPosition } from './faceRows'
+import {valueChipReferencePort} from './valueChipGeometry'
 
 const trace = loadArrayTrace(), projection = projectTrace(trace), layout = projection.layout
 const allocation = trace.events.find(event => event.type === 'ALLOCATE_ARRAY')!
@@ -76,7 +77,7 @@ describe('array spatial identity through the production projection', () => {
           expect(rows.some(item => item.slotId === row.slotId)).toBe(true)
           const positions = rows.map(item => faceRowPosition(frame, cut, item.slotId)!)
           expect(new Set(positions.map(point => point[1])).size).toBe(rows.length)
-          for(const item of rows)expect(faceRowPort(frame,cut,item.slotId)).toEqual(item.value.kind==='null'||item.value.kind==='not-recorded'?null:faceRowPosition(frame,cut,item.slotId))
+          for(const item of rows){const position=faceRowPosition(frame,cut,item.slotId)!;expect(faceRowPort(frame,cut,item.slotId)).toEqual(item.value.kind==='null'||item.value.kind==='not-recorded'?null:item.value.kind==='reference'?valueChipReferencePort(frame.anchor,position[1]):position)}
           expect(rows.every(item => frame.rows.some(captured=>captured.slotId===item.slotId))).toBe(true)
           expect(frame.anchor).toBe(layout.anchors[id])
         }

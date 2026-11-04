@@ -4,7 +4,7 @@ import { arrayElementSlotId } from '../contracts/runtime'
 import { createLayoutEngine } from './layoutEngine'
 import { projectTrace } from '../testing/projectTrace'
 import { planPresentation } from './presentationPlanner'
-import { faceRows } from './faceRows'
+import { faceRows,faceRowPort } from './faceRows'
 import { computeArrayWindow } from './arrayWindow'
 import { world } from '../theme/tokens'
 
@@ -115,7 +115,7 @@ describe('persistent production runtime geography', () => {
       expect(plan.entities.get(event.classId)?.pinned).toBe(true)
       expect(scene.entities[event.classId].anchor).toBe(layout.anchors[event.classId])
       if (detailLevel === 'FAR') expect(plan.referencePresentation.unavailable.map(item => item.id)).toContain(scene.references[0].id)
-      else expect(plan.curves.find(curve => curve.id === scene.references[0].id)?.points[0]).toEqual(layout.anchors[event.classId].ports['static:shared'])
+      else expect(plan.curves.find(curve => curve.id === scene.references[0].id)?.points[0]).toEqual(faceRowPort(scene.entities[event.classId],plan.entities.get(event.classId)!,'static:shared'))
     }
   })
 })

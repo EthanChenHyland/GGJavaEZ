@@ -9,6 +9,7 @@ import {accessibleEntities} from '../interaction/accessibleEntities'
 import {inspectorRows,inspectorEntity} from './inspection'
 import {buildSolidBatch} from './SolidBatch'
 import {budgets} from '../theme/tokens'
+import {faceRowPort} from '../world/faceRows'
 import type {Selection} from '../contracts/interaction'
 function view(options:Parameters<typeof sparseTrace>[0]={},selection:Selection={kind:'object',id:arrayId}){
  const trace=sparseTrace(options),projection=projectTrace(trace),scene=projection.project(trace.events.length),plan=planPresentation({scene,layout:projection.layout,detailLevel:'CLOSE',selection,focusTargetId:null,trace:{active:false,scope:'relevant'}})
@@ -28,7 +29,7 @@ describe('production static/sparse successors',()=>{
  it('attaches static references to exact storage and heap identity with shared Inspector ownership',()=>{
   const {scene,plan,storage,array}=view(),reference=scene.references.find(reference=>reference.sourceSlotId==='static:entries')!,curve=plan.curves.find(curve=>curve.id===reference.id)!
   expect(reference).toMatchObject({sourceId:classId,sourceSlotId:'static:entries',targetId:arrayId,role:'class-object'})
-  expect(curve.points[0]).toEqual(storage.anchor.ports['static:entries']);expect(curve.destinationAnchor?.entityId).toBe(array.id)
+  expect(curve.points[0]).toEqual(faceRowPort(storage,plan.entities.get(storage.id)!,'static:entries'));expect(curve.destinationAnchor?.entityId).toBe(array.id)
   expect(inspectorEntity(scene,{kind:'class',id:classId})).toBe(storage)
   expect(inspectorEntity(scene,{kind:'slot',id:'static:entries'})).toBe(storage)
  })

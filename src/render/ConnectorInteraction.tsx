@@ -5,11 +5,13 @@ import {ConnectorBatch} from './ConnectorBatch'
 import {connectorHoverLabel,currentConnectorHover} from './connectorHover'
 import {SurfacePortal} from '../shell/dialogs/SurfacePortal'
 import {useCameraStore} from '../camera/cameraStore'
+import {referenceChipPorts} from './referenceChipPorts'
 interface Context {scene:SceneModel;plan:PresentationPlan}
 
 /** Moving pointer coordinates update only the tooltip, never the World planner. */
 export function InteractiveConnectors({scene,plan,curves,onSelect}:{curves:readonly PresentedCurve[];onSelect(id:string):void}&Context){
  const hoverId=useInteractionStore(state=>currentConnectorHover(state.hover,scene,plan))
+ const ports=useMemo(()=>referenceChipPorts(scene,plan),[scene,plan])
  const clear=(id?:string)=>{
   const state=useInteractionStore.getState()
   if(currentConnectorHover(state.hover,scene,plan)&&(!id||state.hover?.id===id))state.setHover(null)
@@ -18,7 +20,7 @@ export function InteractiveConnectors({scene,plan,curves,onSelect}:{curves:reado
  useEffect(()=>useCameraStore.subscribe((next,prior)=>{
   if(next.pose!==prior.pose||next.intentRevision!==prior.intentRevision)clear()
  }),[scene.recordingId,scene.cursor,plan.revision])
- return <ConnectorBatch curves={curves} onSelect={onSelect} hoverId={hoverId} onHover={(id,pointer)=>{
+ return <ConnectorBatch curves={curves} referencePorts={ports} onSelect={onSelect} hoverId={hoverId} onHover={(id,pointer)=>{
   if(!id||!pointer){clear();return}
   const state=useInteractionStore.getState()
   if(currentConnectorHover(state.hover,scene,plan)!==id&&!connectorHoverLabel(scene,plan,id)){clear();return}

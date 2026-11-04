@@ -14,6 +14,7 @@ import { useCameraStore } from '../camera/cameraStore';
 import {arrayCellTargeted} from './arrayCellStyle';
 import {faceRowColumns} from './text/faceTypography';
 import {unitRoundedChip} from './geometry/roundedChip';
+import {valueChipGeometry} from '../world/valueChipGeometry';
 type Pick = NonNullable<Selection>;
 interface SolidPress {pick:Pick;arrayPick?:ArrayWindowPick;recordingId:string}
 interface Solid {
@@ -68,10 +69,10 @@ export function buildSolidBatch(scene: SceneModel, plan: PresentationPlan): Soli
             if(!background)continue;
             // Whole-row hit/mutation bounds remain unchanged. Only the actual
             // captured value column receives this inset, below its text.
-            const centre=x+w/2-.28-columns.value/2,height=model.pitch*.62;
+            const geometry=valueChipGeometry(node.anchor,background.position[1],columns.value,model.pitch);
             const chip=reference?'reference-chip':row.value.kind==='primitive'?'primitive-chip':'value-chip';
-            plate(row.slotId,[centre,background.position[1],face+.042],[columns.value+.12,height+.08,.012],chipRims[role],opacity,undefined,`${chip}-rim`);
-            plate(row.slotId,[centre,background.position[1],face+.050],[columns.value+.04,height,.012],'chip' in palette?palette.chip:palette.face,opacity,undefined,chip);
+            plate(row.slotId,geometry.rim.position,geometry.rim.size,chipRims[role],opacity,undefined,`${chip}-rim`);
+            plate(row.slotId,geometry.fill.position,geometry.fill.size,'chip' in palette?palette.chip:palette.face,opacity,undefined,chip);
         }
         if (node.kind === 'array') {
             const window=plan.cellWindows.get(node.id);

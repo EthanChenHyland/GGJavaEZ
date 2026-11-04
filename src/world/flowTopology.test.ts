@@ -13,6 +13,7 @@ import {collectionEntryFace} from './collectionFace'
 import {generateRawTrace} from '../testing/traceGen'
 import {normalizeTrace} from '../instrumentation/normalize'
 import {computeArrayWindow} from './arrayWindow'
+import {faceRowPort} from './faceRows'
 
 // Explicit normalized geometry and synthetic edge records are unit fixtures,
 // not claimed Java/JVM execution evidence.
@@ -41,7 +42,7 @@ it('groups genuine directed semantic pairs and roles with exact constituents des
  const f=fixture(),flows=Array.from({length:100},(_,i)=>f.flow(`opaque version ${i}`,undefined,i%2?'assignment':'reference'))
  const result=buildFlowTopology({...f.input,flows});assertPartition(result,flows.map(flow=>flow.id));expect(result.individual).toHaveLength(2);expect(result.bundles).toHaveLength(2)
  expect(result.bundles.map(bundle=>bundle.flows.length).sort()).toEqual([49,49])
- for(const bundle of result.bundles){expect(new Set(bundle.flows.map(flow=>flow.kind)).size).toBe(1);expect(bundle.from.point).toEqual(f.scene.entities.source.anchor.ports['opaque/field/0'])}
+ for(const bundle of result.bundles){expect(new Set(bundle.flows.map(flow=>flow.kind)).size).toBe(1);expect(bundle.from.point).toEqual(faceRowPort(f.scene.entities.source,f.plan.entities.get('source')!,'opaque/field/0'))}
  expect(buildFlowTopology({...f.input,flows:[...flows].reverse()})).toEqual(result)
 })
 it('never substitutes quiet/hidden/retired storage or collapsed bodies for real provenance ports',()=>{

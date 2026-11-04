@@ -76,3 +76,8 @@ Equivalent text wrappers retain fixed fonts, exact content, all semantic annotat
 ## Complete Frame value insets — 2026-10-25
 
 Requirements 9.7/9.10 now extend the shared inset treatment to remaining Frame value kinds while preserving exact null/unrecorded distinctions. Heap null remains plain per 10.7. This does not approve universal Port behavior, motion or reference convergence. [Evidence, boundaries and remaining failures](migration/frame-value-chips.md). Whole A–G remains OPEN.
+
+
+## Reference-chip attachment geometry — 2026-11-04
+
+Requirement 9.8 attachment geometry is measured against the actual inset: non-null reference ports are centered on its right edge and remain visible independently of curves. Primitive chips stay port-free while proven value-transfer terminals retain frame-boundary geometry. Desktop/narrow actual-instance audits and all 60 integrated native cases pass. This is a narrow reference convergence fix; array/collection port geometry, global rendering and whole-product acceptance remain OPEN. [Exact source, regression and current measurements](migration/reference-chip-ports.md). Whole A–G remains OPEN.

@@ -271,3 +271,8 @@ Six fresh original-size captures were reviewed on source `1e715790`: desktop/nar
 ## Arbitrary Java browser successors — 2026-11-04
 
 All five original-size arbitrary-Java successor captures were reviewed on driver source `efaa1bb2` and preserved with exact hashes. They show the actual edited Person, free orbit during factorial playback, indexed array, recorded Console output and uncaught exception. Opaque/matte faces, excessive glow/crossings, clipping and material/reference convergence remain OPEN; these captures establish behavioral successors, not final reference acceptance. [Exact assertions, source boundaries and evidence](migration/arbitrary-java-browser-successors.md). Whole A–G remains OPEN.
+
+
+## Reference-chip attachment geometry — 2026-11-04
+
+Seven final native originals (hero, object, recursion, return, exception and two picked-chip views) and the current Dense original were reviewed full-size. Actual reference spheres attach to inset edges; primitive boundary terminals stay outside primitive chips. Reference glyphs remain readable. The native archive has 65 originals, 58 not root-reviewed. Matte/opaque faces, aliasing, excessive route glow/crossings, peripheral clipping, long-stack/return framing and dense array/index readability remain OPEN. Targeted attachment approval is not whole-reference acceptance. [Exact source, regression and current measurements](migration/reference-chip-ports.md). Whole A–G remains OPEN.

@@ -354,3 +354,8 @@ Four protected prototype controls reduce large-corpus retention from about 24.40
 ## Error Explorer applied-prefix evidence — 2026-11-04
 
 Source `1e715790` passes current production build metrics: entry static JS gzip 72,164 bytes; application Shell static closure gzip 674,859 bytes. Error Explorer uses the recording-qualified prefix and a clamped historical throw snapshot, with separate explicit future navigation. No fresh Dense latency or isolated retention measurement is claimed for this source. The formal Dense failures on `ff2fa076` and failed 25% retention budgets recorded for the preceding milestone retain their exact source boundaries and remain OPEN. [Behavior, source qualification and regression evidence](migration/error-prefix-evidence.md).
+
+
+## Reference-chip attachment geometry — 2026-11-04
+
+Fresh source `b568613e` keeps all three 25% retention budgets failing: large 22,812,128 bytes/40.974685%; LINE ratio 1.220114 passes 2x. Fresh Dense 1d05f818 completes FULL JVM a66958b0 and all ten stages without browser/lifecycle errors, exits 1: seek p50/p95=114.190/132.689ms, Focus p95=200.138ms and Home p95=216.737ms FAIL unchanged limits. Cold median 5,028.218 ms PASSES 5,300 ms in this run; no causal speedup or statistical non-regression is inferred. Orbit medians 16.7 ms; maximum interval 932.6 ms precludes no-jank approval. Four external rows remain NOT_MEASURED. Entry gzip 72,163 bytes; Shell closure 675,300 bytes. [Exact source, regression and current measurements](migration/reference-chip-ports.md). Whole A–G remains OPEN.

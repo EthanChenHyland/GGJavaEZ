@@ -485,3 +485,8 @@ Source `1e715790` (976 inputs) passes all eight checks: 2,232 default passes, 70
 ## Arbitrary Java browser successors — 2026-11-04
 
 Browser-driver source `efaa1bb2` passes all five migrated cases in 50.326 seconds, zero failures/skips/flaky, with five distinct attached actual JVM IDs and five reviewed originals. Fresh browser types/protected guards pass. The other 975 source inputs and all 14 measured JS build resources match source `1e715790`; its 2,232-pass/70-explicit-skip validation, build and 25-case native gate retain their earlier execution boundary. Default discovery remains 304 cases/85 files; 44 older cases remain. AST: 694 modules/2,449 literal edges/265 reachable/41 nonliteral/zero obsolete targets. [Exact assertions, source boundaries and evidence](migration/arbitrary-java-browser-successors.md). Whole A–G remains OPEN.
+
+
+## Reference-chip attachment geometry — 2026-11-04
+
+Source `b568613e` qualifies 978 inputs and passes all eight checks: 2,237 default passes / 70 explicit opt-in skips / 2,307 total across 240 files (286.66s). Native 60/60 passes with zero failures/skips/flaky in 604.618 seconds, 49 distinct standard attached actual JVM IDs across 49 cases, 65 originals (seven reviewed/58 unreviewed). AST: 696 modules / 2,464 literal edges / 267 reachable / 42 nonliteral / zero obsolete targets. Default discovery remains 304 cases/85 files, with 44 older cases still OPEN. Separate fresh protected retention and Dense runs execute fully but retain budget failures; no skipped suite is counted as passed. [Exact source, regression and current measurements](migration/reference-chip-ports.md). Whole A–G remains OPEN.

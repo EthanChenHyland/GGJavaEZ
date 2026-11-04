@@ -374,3 +374,8 @@ Unavailable-flow evidence now uses a complete read-only Array facade over privat
 ## Error Explorer applied-prefix evidence — 2026-11-04
 
 Error Explorer reads the existing recording-qualified RuntimeState and clamps its historical throw snapshot to the applied prefix. Accepted later Events remain explicit navigation targets outside the observed path. A user-created return bookmark is qualified by recording and throw witness, independently of the currently visible earlier episode. Runtime/Graph schemas, normalization, history, camera and navigation contracts remain unchanged; no CSS or alternate scene system is added. [Exact source, regressions and qualification](migration/error-prefix-evidence.md). Whole A–G remains OPEN.
+
+
+## Reference-chip attachment geometry — 2026-11-04
+
+Reference attachments use shared value-inset geometry; primitive transfer terminals preserve existing frame-boundary coordinates. Visible captured reference chips own ports independently of curve admission. The endpoint instance batch merges attachments and preserves hover, while a read-only QA observer reads actual sphere matrices/radii/alpha. Entity anchors, RuntimeState, Graph, normalization, history and all Java remain unchanged. Arrays/collections retain separate existing geometry. [Exact source, regression and current measurements](migration/reference-chip-ports.md). Whole A–G remains OPEN.

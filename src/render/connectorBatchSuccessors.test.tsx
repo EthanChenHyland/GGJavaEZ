@@ -70,6 +70,17 @@ it('retains exact supplied XYZ terminals in visible batches without mutating the
  expect(object.geometry.getAttribute('instanceStart').count).toBe(input.points.length-1)
  expect(JSON.stringify(input)).toBe(before)
 })
+it('renders a captured chip port at radius .08 even when no curve is admitted',()=>{
+ const point:Vec3=[1,2,3],referencePorts=[{id:'captured/slot',point,opacity:.25,colorRole:'reference' as const}]
+ const view=render(<ConnectorBatch curves={[]} referencePorts={referencePorts} onSelect={()=>{}}/>),matrix=new Matrix4(),position=new Vector3()
+ expect(lines(view)).toHaveLength(0)
+ const ports=view.nodes().find(node=>(node.props?.userData as {runtimeConnectorPorts?:boolean})?.runtimeConnectorPorts)!
+ expect(ports.publicInstance!.count).toBe(1)
+ ports.publicInstance!.getMatrixAt(0,matrix);expect(position.setFromMatrixPosition(matrix).toArray()).toEqual(point)
+ const alpha=view.nodes().find(node=>node.props?.attach==='attributes-runtimeAlpha')!.props!.object as InstancedBufferAttribute
+ expect(alpha.getX(0)).toBe(.25)
+ expect(view.nodes().some(node=>(node.props?.args as unknown[])?.[0]===.08)).toBe(true)
+})
 it('uses shared pixel-width emphasis bands and preserves per-curve alpha instead of darkening semantic colours',()=>{
  const a=curve(),b=curve('ref/b',{opacity:.35}),c=curve('ref/c',{widthPx:3.5})
  const view=render(<ConnectorBatch curves={[a,b,c]} onSelect={()=>{}}/>),all=lines(view)

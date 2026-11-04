@@ -6,6 +6,8 @@ import { LineSegmentsGeometry } from 'three/addons/lines/LineSegmentsGeometry.js
 import type { PresentedCurve } from '../contracts/world';
 import { connectorMaterial,roleColor } from './RuntimeMaterials';
 import {instanceAlphaMaterial} from './instanceAlpha';
+import {connectorPortMarkers,type ReferenceChipPort} from './referenceChipPorts';
+const noReferencePorts:readonly ReferenceChipPort[]=[];
 type Hover=(id:string|null,pointer?:readonly[number,number])=>void;
 function Curves({ curves, halo, onSelect,onHover }: {
     curves: readonly PresentedCurve[];
@@ -52,32 +54,34 @@ function Curves({ curves, halo, onSelect,onHover }: {
         onSelect(id);
     } }}/>;
 }
-function Endpoints({ curves,hoverId }: {
+function Endpoints({ curves,hoverId,referencePorts }: {
     curves: readonly PresentedCurve[];
     hoverId?:string|null;
+    referencePorts:readonly ReferenceChipPort[];
 }) {
     const ref = useRef<InstancedMesh>(null);
     const material=useMemo(instanceAlphaMaterial,[]);
-    const alpha=useMemo(()=>new InstancedBufferAttribute(new Float32Array(curves.flatMap(curve=>curve.id===hoverId?[1,1]:[curve.opacity,curve.opacity])),1),[curves,hoverId]);
+    const markers=useMemo(()=>connectorPortMarkers(curves,referencePorts,hoverId),[curves,referencePorts,hoverId]);
+    const alpha=useMemo(()=>new InstancedBufferAttribute(new Float32Array(markers.map(marker=>marker.opacity)),1),[markers]);
     useEffect(()=>()=>material.dispose(),[material]);
     useLayoutEffect(() => {
         const mesh = ref.current;
         if (!mesh)
             return;
         const transform = new Object3D(), color = new Color();
-        curves.forEach((curve, index) => { color.set(roleColor[curve.colorRole]).multiplyScalar(curve.id===hoverId?1.65:1.1); for (const [side, point] of [curve.points[0], curve.points.at(-1)!].entries()) {
-            transform.scale.setScalar(curve.id===hoverId?1.5:1);
-            transform.position.set(...point);
+        markers.forEach((marker,index) => { color.set(roleColor[marker.colorRole]).multiplyScalar(marker.hovered?1.65:1.1);
+            transform.scale.setScalar(marker.hovered?1.5:1);
+            transform.position.set(...marker.point);
             transform.updateMatrix();
-            mesh.setMatrixAt(index * 2 + side, transform.matrix);
-            mesh.setColorAt(index * 2 + side, color);
-        } });
+            mesh.setMatrixAt(index, transform.matrix);
+            mesh.setColorAt(index, color);
+        });
         mesh.instanceMatrix.needsUpdate = true;
         if (mesh.instanceColor)
             mesh.instanceColor.needsUpdate = true;
         mesh.computeBoundingSphere();
-    }, [curves,hoverId]);
-    return <instancedMesh userData={{runtimeBloomRole:'emitter',runtimeConnectorPorts:true}} ref={ref} material={material} args={[undefined, undefined, curves.length * 2]} raycast={() => undefined}><sphereGeometry args={[.08, 8, 6]}><primitive object={alpha} attach="attributes-runtimeAlpha"/></sphereGeometry></instancedMesh>;
+    }, [markers]);
+    return <instancedMesh userData={{runtimeBloomRole:'emitter',runtimeConnectorPorts:true,runtimeReferenceChipPortCount:referencePorts.length}} ref={ref} material={material} args={[undefined, undefined, markers.length]} raycast={() => undefined}><sphereGeometry args={[.08, 8, 6]}><primitive object={alpha} attach="attributes-runtimeAlpha"/></sphereGeometry></instancedMesh>;
 }
 function Arrows({ curves }: {
     curves: readonly PresentedCurve[];
@@ -102,11 +106,12 @@ function Arrows({ curves }: {
     return <instancedMesh userData={{runtimeBloomRole:'emitter'}} ref={ref} material={material} args={[undefined, undefined, items.length]} raycast={() => undefined}><coneGeometry args={[.08, .24, 6]}><primitive object={alpha} attach="attributes-runtimeAlpha"/></coneGeometry></instancedMesh>;
 }
 /** Pixel-width cores and halos are merged by three bounded emphasis bands. */
-export function ConnectorBatch({ curves, onSelect,onHover,hoverId }: {
+export function ConnectorBatch({ curves, onSelect,onHover,hoverId,referencePorts=noReferencePorts }: {
     curves: readonly PresentedCurve[];
     onSelect(id: string): void;
     onHover?:Hover;
     hoverId?:string|null;
+    referencePorts?:readonly ReferenceChipPort[];
 }) {
     const bands = useMemo(() => {
         const groups = new Map<string, PresentedCurve[]>();
@@ -117,5 +122,5 @@ export function ConnectorBatch({ curves, onSelect,onHover,hoverId }: {
         }
         return [...groups];
     }, [curves]);
-    return <>{curves.length > 0 && <Curves curves={curves} halo onSelect={onSelect} onHover={onHover}/>} {bands.map(([key, group]) => <Curves key={key} curves={group} halo={false} onSelect={onSelect}/>)}{curves.length > 0 && <><Endpoints curves={curves} hoverId={hoverId}/><Arrows curves={curves}/></>}</>;
+    return <>{curves.length > 0 && <Curves curves={curves} halo onSelect={onSelect} onHover={onHover}/>} {bands.map(([key, group]) => <Curves key={key} curves={group} halo={false} onSelect={onSelect}/>)}{(curves.length>0||referencePorts.length>0)&&<Endpoints curves={curves} hoverId={hoverId} referencePorts={referencePorts}/>} {curves.length>0&&<Arrows curves={curves}/>}</>;
 }

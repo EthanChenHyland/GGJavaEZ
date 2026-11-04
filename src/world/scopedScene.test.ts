@@ -7,6 +7,7 @@ import { faceRows, faceRowPort,faceRowPosition } from './faceRows'
 import { homeFraming } from '../camera/homeFraming'
 import { projectionCamera, screenPoint } from '../camera/projection'
 import { world } from '../theme/tokens'
+import {valueChipReferencePort} from './valueChipGeometry'
 
 const trace = loadControlTrace(), projection = projectTrace(trace), layout = projection.layout
 
@@ -63,7 +64,7 @@ describe('captured scopes through one production runtime world', () => {
           const point = faceRowPosition(frame, plan.entities.get(id)!, row.slotId)!
           expect(point).not.toBeNull()
           expect(point[1]).toBeGreaterThan(frame.anchor.position[1] - frame.anchor.size[1] / 2 + world.frame.pad)
-          expect(faceRowPort(frame,plan.entities.get(id)!,row.slotId)).toEqual(row.value.kind==='null'||row.value.kind==='not-recorded'?null:point)
+          expect(faceRowPort(frame,plan.entities.get(id)!,row.slotId)).toEqual(row.value.kind==='null'||row.value.kind==='not-recorded'?null:row.value.kind==='reference'?valueChipReferencePort(frame.anchor,point[1]):point)
         }
         for (const divider of frame.scopeDividers ?? []) expect(Object.values(state.scopes).some(scope => scope.frameId === id && scope.status === 'active' && scope.depth === divider.depth && scope.label === divider.label)).toBe(true)
       }

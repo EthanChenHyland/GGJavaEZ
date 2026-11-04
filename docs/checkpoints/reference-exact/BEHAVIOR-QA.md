@@ -277,3 +277,8 @@ Event 0 withholds future exception metadata, stack, paths and crash status. Appl
 ## Arbitrary Java browser successors — 2026-11-04
 
 The five original arbitrary-Java workflows now use current Shell/World controls. Six Java sources are byte-equivalent. Real Monaco edit/save and age 19, source synchronization, stable reverse identities, factorial playback/user orbit over Follow, indexed swap values, generic array Focus, recorded stdout prefix/Return Live, and uncaught exception evidence/separate stderr all pass. Explicit retired-surface dispositions preserve the original semantic assertions; deadlines and zero retries remain. [Exact assertions, source boundaries and evidence](migration/arbitrary-java-browser-successors.md). Whole A–G remains OPEN.
+
+
+## Reference-chip attachment geometry — 2026-11-04
+
+The parent alignment regression fails at x2.4 versus the real chip edge x2.14. New reference spheres match actual inset geometry at diameter 0.16 u; primitive chips have no reference marker, and value-transfer/return flows retain real boundary terminals. Missing/null values expose no attachment. Seven legacy storage-coordinate assertions now distinguish storage from the measured visible chip plane; original identities, scopes, values, stable-layout and conservation assertions remain. Focused 90/90, World/render 653/653 and final native 60/60 pass. [Exact source, regression and current measurements](migration/reference-chip-ports.md). Whole A–G remains OPEN.

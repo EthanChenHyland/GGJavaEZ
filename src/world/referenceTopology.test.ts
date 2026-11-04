@@ -10,6 +10,7 @@ import { seek } from '../runtime'
 import { createLayoutEngine } from './layoutEngine'
 import { createSceneProjector } from './sceneProjector'
 import { computeArrayWindow } from './arrayWindow'
+import { valueChipReferencePort } from './valueChipGeometry'
 import { buildReferenceTopology, type ReferenceTopology, type ReferenceTopologyInput } from './referenceTopology'
 
 // Synthetic geometry and explicitly normalized records below are unit fixtures,
@@ -146,7 +147,8 @@ describe('current reference topology over a presented cut', () => {
     const shelf: SceneClass = { kind: 'class', id: 'source', rows, anchor: { ...body, region: 'class' }, title: 'Unit', packageName: '', initialization: 'observed', evidence: evidence() }
     for (const source of [frame, shelf]) {
       const result = buildReferenceTopology(inputFor(scene([source, object('target', [], 8)])))
-      expect(result.individual[0].sourcePoint).toBe(source.anchor.ports['opaque slot'])
+      expect(result.individual[0].sourcePoint).toEqual(valueChipReferencePort(source.anchor,source.anchor.ports['opaque slot'][1]))
+      expect(source.anchor.ports['opaque slot']).toEqual([-6,0,1])
       expect(result.individual[0].sourceAnchor).toBe(source.anchor)
       conservation(result)
     }

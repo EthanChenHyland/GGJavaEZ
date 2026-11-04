@@ -3,7 +3,8 @@ import fc from 'fast-check'
 import type { RuntimeSlot, TraceDocument, TraceEvent } from '../contracts/runtime'
 import type { PresentedEntity, SceneFrame } from '../contracts/world'
 import { projectTrace } from '../testing/projectTrace'
-import { faceRows, faceRowPort } from './faceRows'
+import { faceRows, faceRowPort,faceRowPosition } from './faceRows'
+import {valueChipReferencePort} from './valueChipGeometry'
 import { planPresentation } from './presentationPlanner'
 import { presentedFlowPorts } from './flowTopology'
 import { buildReferenceTopology } from './referenceTopology'
@@ -101,7 +102,8 @@ it('reuses equal requested row windows and restores canonical rows when the requ
   const released = planPresentation({ ...input, selection: null }, again), cut = released.entities.get(frame.id)!
   expect(cut.rowSlotIds).toBeUndefined()
   expect(faceRows(frame, cut).visible.map(row => row.slotId)).toEqual(['a', 'b', 'c'])
-  expect(faceRowPort(frame, cut, 'a')).toBe(frame.anchor.ports.a)
+  expect(faceRowPosition(frame,cut,'a')).toBe(frame.anchor.ports.a)
+  expect(faceRowPort(frame,cut,'a')).toEqual(valueChipReferencePort(frame.anchor,frame.anchor.ports.a[1]))
   expect(faceRowPort(frame, cut, 'late/19')).toBeNull()
 })
 
