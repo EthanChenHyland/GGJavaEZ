@@ -86,3 +86,8 @@ Requirement 9.8 attachment geometry is measured against the actual inset: non-nu
 ## Focus connection hierarchy and target readability — 2026-11-04
 
 Requirement 19.6 retains its reference-only neighborhood and now caps indirect connections even under Trace All or foreign selection. Actual rounded-target masking and an explicit faded-Focus depth modifier recover an obscured constructor without moving runtime geometry or the camera. Fresh native integration passes 69/69; reviewed originals still show wider material, glow and composition differences. [Exact source, failed/corrected evidence and outstanding work](migration/focus-connection-mask.md). Whole A–G remains OPEN.
+
+
+## Private layout metadata compaction — 2026-11-04
+
+Private layout metadata compaction targets measured retention while preserving every public anchor/port/bound/placement field in exact comparisons. Current full source validation and native 69/69 pass. ABBA shows a repeated medium/large retention reduction, while every memory budget and five fresh Dense latency limits still fail. The whole-product material, array, composition and reference/motion findings remain OPEN. [Evidence and boundaries](migration/compact-layout-slot-metadata.md).

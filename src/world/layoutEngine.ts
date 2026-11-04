@@ -46,7 +46,8 @@ export function createLayoutEngine(t: WorldLayoutTokens = worldLayoutTokens): La
     const regionBounds: Record<Region, WorldBounds | null> = { stack: null, heap: null, library: null, class: null, io: null };
     const lastChild = new Map<string | null, WorldAnchor>();
     const rows = new Map<string, string[]>();
-    const recordedSlots = new Map<string, Map<string, RuntimeSlot>>();
+    // Geometry needs slot order and heap declaring-class labels, never values.
+    const rowGroups = new Map<string, Map<string, string>>();
     let nextLeft = t.frame.w / 2 + t.regions.stackHeapGap, root: WorldAnchor | null = null;
     const add = (anchor: WorldAnchor, firstSeq: number, type: string, packageName: string, ownership: Ownership | undefined, capacity?: number) => {
         anchors = persistentPut(anchors, anchor.entityId, anchor);
@@ -71,16 +72,24 @@ export function createLayoutEngine(t: WorldLayoutTokens = worldLayoutTokens): La
             io.push(anchor);
     };
     const ports = (anchor: WorldAnchor, slots: readonly RuntimeSlot[], capacity: number, header: number, pitch: number) => {
-        const names = rows.get(anchor.entityId) ?? [], details = recordedSlots.get(anchor.entityId) ?? new Map<string,RuntimeSlot>();
-        for(const slot of slots)details.set(slot.id, slot); recordedSlots.set(anchor.entityId, details);
+        const names = rows.get(anchor.entityId) ?? [];
+        let groups=rowGroups.get(anchor.entityId);
+        if(anchor.region==='heap'){
+            for(const slot of slots){
+                if(slot.declaringClass!==undefined){groups??=new Map();groups.set(slot.id,slot.declaringClass)}
+                else groups?.delete(slot.id);
+            }
+            if(groups?.size)rowGroups.set(anchor.entityId,groups);
+            else rowGroups.delete(anchor.entityId);
+        }
         for (const slot of slots)
             if (!names.includes(slot.id))
                 names.push(slot.id);
-        rows.set(anchor.entityId, names);
+        if(names.length)rows.set(anchor.entityId, names);
         const next = { ...anchor.ports };
         let groupOffset=0,previousGroup:string|undefined;
         for (let i = 0; i < Math.min(capacity, names.length); i++) {
-            const group=details.get(names[i])?.declaringClass;
+            const group=groups?.get(names[i]);
             if(anchor.region==='heap'&&group&&group!==previousGroup){groupOffset+=.6;previousGroup=group}
             if(next[names[i]])continue;
             const rowY=anchor.position[1]+anchor.size[1]/2-header-groupOffset-pitch*(i+.5);

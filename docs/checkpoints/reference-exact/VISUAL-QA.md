@@ -281,3 +281,8 @@ Seven final native originals (hero, object, recursion, return, exception and two
 ## Focus connection hierarchy and target readability — 2026-11-04
 
 The fresh 69-case run preserves 79 originals; eight receive full-size root review and 71 remain unreviewed. Selected constructor title/status/rows now remain visible through faded later frames, with unrelated labels retained outside its actual silhouette. Both GPU tiers execute; all eight face/chip RGB samples equal their specified bytes exactly. Array masking, overbright/crossing routes, matte surfaces, aliasing, clipping, return/long-stack composition and complete motion/reference convergence remain OPEN. This narrow correction does not close the whole Focus matrix or A–G. [Reviewed evidence and limits](migration/focus-connection-mask.md).
+
+
+## Private layout metadata compaction — 2026-11-04
+
+The layout compaction is constrained by exact parent/candidate equality of every public LayoutState field, not a visual-token change. Fresh hero/object originals retain their arrangement and readable selected values. Matte faces, glow/crossings, clipping, return composition and full reference/motion approval remain OPEN. Fresh native 69/69 preserves 79 originals,4reviewed full-size/75unreviewed, with source-qualified hashes. [Scope and evidence](migration/compact-layout-slot-metadata.md).

@@ -1,6 +1,6 @@
 # Validation
 
-Latest qualified increment: [Focus connection hierarchy and target readability](migration/focus-connection-mask.md), source `18463b85`, 2026-11-04. Defaults and the 69-case integration pass; fresh Node retention and four Dense latency limits still fail. Whole-product acceptance remains OPEN. The October table below retains its historical qualification.
+Latest qualified increment: [Private layout metadata compaction](migration/compact-layout-slot-metadata.md), source `b5256fb3`, 2026-11-04. Defaults and the 69-case integration pass; all retention budgets still fail despite a repeated medium/large reduction. Fresh Dense completes all ten stages without workflow errors but fails five latency limits. Whole-product acceptance remains OPEN. The October table below retains its historical qualification.
 
 Historical implementation evidence, 2026-10-18. A–G completion is not claimed. The detailed chronological record is `docs/reports/reference-exact/VALIDATION.md`; migration ledgers live beside this file in `migration/`. Final results must be refreshed on the cleaned final commit and pushed tip.
 
@@ -499,3 +499,8 @@ Source `b568613e` qualifies 978 inputs and passes all eight checks: 2,237 defaul
 Exact source `18463b8538cef4f5ace0bd1e04b5854a34e64459507ce42b0e08b8e83f6f8a54` passes all eight checks: 2,245 default tests, 70 explicit opt-in skips, 2,315 total/241 files, 285.20 seconds; typecheck, browser types, lint, build, metrics, references and protected guards pass. Fresh native integration passes 69/69 in 681.283 seconds, zero skips/failures/flaky. Its archive contains 53 distinct standard attached JVM IDs across 53 cases and 79 original captures, eight reviewed. Earlier interrupted failures and three unchanged five-case confirmations remain separate. Entry gzip 72,164 bytes; Shell static JS closure 676,185 bytes. AST: 699 modules, 2,475 literal edges, 268 production-reachable, 42 nonliteral sites, zero inventoried obsolete targets. Default discovery 306 cases/86 files, 44 older cases still OPEN; discovery is not exhaustive acceptance. [Evidence and source qualification](migration/focus-connection-mask.md).
 
 Fresh source-qualified performance completes all ten Dense stages without workflow errors but still fails four latency limits; Node still fails all three 25% retention limits. Cold median passes in this execution; no speedup/non-regression or whole-product approval follows. See [current measurements](migration/focus-connection-mask.md).
+
+
+## Private layout metadata compaction — 2026-11-04
+
+Exact two-file source `b5256fb366ed6f189133ff2640bf5f725c8a9eab99cf28ee5e9e392ce9814217` passes all eight checks: 2,246 defaults, 70 explicit opt-in skips, 2,316 total/241 files, 302.24 seconds, plus typecheck/browser types/lint/build/metrics/references/protected guards. Entry gzip 72,162 bytes; Shell static JS closure 676,213 bytes. AST 699 modules/2,476 literal edges/268 production-reachable/42 nonliteral sites/zero inventoried obsolete targets. Fresh native 69/69 passes in 700.802 seconds, zero failures/skips/flaky; 53 distinct standard attached JVM IDs across 53 cases; 79 originals, four reviewed/75 unreviewed. ABBA confirms lower medium/large total retention while all 12 memory budgets still fail; fresh Dense completes with five latency failures. [Evidence](migration/compact-layout-slot-metadata.md).

@@ -287,3 +287,8 @@ The parent alignment regression fails at x2.4 versus the real chip edge x2.14. N
 ## Focus connection hierarchy and target readability — 2026-11-04
 
 Source `18463b85` passes all eight validation checks: 2,245 defaults passed, 70 explicit opt-in skips, 2,315 total/241 files. The fresh integrated native gate passes 69/69 with zero skips/failures/flaky, attaching 53 distinct standard actual-JVM IDs across 53 cases. The earlier 64-pass/four-failure/one-skip run remains failed and archived; three separate unchanged confirmations pass 15/15 before the fresh complete gate. No assertion or timeout is relaxed. [Exact boundaries, affected workflows and archives](migration/focus-connection-mask.md).
+
+
+## Private layout metadata compaction — 2026-11-04
+
+Frozen source `b5256fb3` passes all eight checks: 2,246 default passes, 70 explicit opt-in skips, 2,316 total/241 files. Focused checks pass 17/17; the saved actual-JVM/curated/generated/explicit-unit comparison checks 57 traces and 1,157 complete public layout prefixes with no geometry tolerance. Fresh native integration passes 69/69 with zero failures/skips/flaky; no earlier gate is relabelled current. [Exact evidence and qualification](migration/compact-layout-slot-metadata.md).

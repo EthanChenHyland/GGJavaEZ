@@ -7,12 +7,34 @@ import { generateRawTrace } from '../testing/traceGen';
 import { normalizeTrace } from '../instrumentation/normalize';
 import { computeArrayWindow } from './arrayWindow';
 import { createLayoutEngine } from './layoutEngine';
+import { world } from '../theme/tokens';
 const intersects = (a: WorldAnchor, b: WorldAnchor) => a.position.every((v, axis) => Math.abs(v - b.position[axis]) < (a.size[axis] + b.size[axis]) / 2 - 1e-6);
 function generated(seed: number) {
     const raw = generateRawTrace({ seed, rawEvents: 35, classes: 3, maxDepth: 5, callRate: .4, allocateRate: .65 });
     return normalizeTrace(raw.rawEvents, raw.manifest, { status: 'complete', exitCode: 0, diagnostic: null }).trace;
 }
 describe('first-observation spatial layout', () => {
+    it('retains omitted declaring groups, clears observed absent groups and only adds newly fitting ports', () => {
+        const slot=(index:number,declaringClass?:string)=>({id:`field/${index}`,name:`field${index}`,javaType:'int',declaringClass,value:{kind:'primitive' as const,javaType:'int',value:index}});
+        // Explicit normalized unit records, with two inherited declaring groups.
+        const records=[
+            {type:'ALLOCATE_OBJECT',objectId:'grouped',displayId:1,className:'Child',metadata:{ownership:'PROJECT'},fields:[slot(0,'Base'),slot(1,'Child'),slot(2,'Base'),slot(3,'Child')]},
+            {type:'OBJECT_OBSERVE',objectId:'grouped',fields:[slot(0),slot(4)]},
+            {type:'OBJECT_OBSERVE',objectId:'grouped',fields:[slot(1),slot(2),slot(3),slot(4)]},
+        ];
+        const events=records.map((record,seq)=>({...record,seq,eventId:`unit/layout-groups/${seq}`,source:null,label:'Observed groups',importance:'normal'})) as TraceEvent[];
+        const engine=createLayoutEngine();engine.append(events.slice(0,1));
+        const initial=engine.state,anchor=initial.anchors.grouped,original=JSON.stringify(initial);
+        engine.append(events.slice(0,2));
+        expect(engine.state.anchors.grouped.ports['field/4']).toBeUndefined();
+        engine.append(events);
+        const final=engine.state.anchors.grouped;
+        expect(final.position).toEqual(anchor.position);expect(final.size).toEqual(anchor.size);
+        for(const[id,port]of Object.entries(anchor.ports))expect(final.ports[id]).toEqual(port);
+        expect(final.ports['field/4']).toEqual([anchor.position[0]+anchor.size[0]/2,anchor.position[1]+anchor.size[1]/2-world.object.header-world.object.row*4.5,anchor.position[2]+anchor.size[2]/2+.06]);
+        expect(JSON.stringify(initial)).toBe(original);
+        const batch=createLayoutEngine();batch.append(events);expect(batch.state).toEqual(engine.state);
+    });
     it('Property 20: append never changes any reserved body or existing port (100 runs)', () => {
         fc.assert(fc.property(fc.integer({ min: 1, max: 100000 }), seed => {
             const trace = generated(seed), engine = createLayoutEngine();

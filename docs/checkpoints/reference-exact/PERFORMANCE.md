@@ -368,3 +368,41 @@ The unchanged protected Node probe runs on source `18463b85` in 21.920 seconds a
 Fresh Dense run `3385a015` records actual FULL JVM `a7e27010` (7,492 raw / 9,852 normalized Events), completed Java exit 0. All ten stages complete with zero browser/stage/lifecycle errors and zero suspended requests. Runner time is 481.564 seconds; benchmark exit 1, archive exit 0. Seek p50 100.478 ms exceeds 55; seek p95 133.344 exceeds 112; Focus p95 217.022 exceeds 125; Home p95 240.301 exceeds 152. Cold median 4,943.850 ms passes 5,300 in this execution. No causal speedup or statistical non-regression is inferred from a single execution.
 
 Orbit medians are 16.7 ms at all five viewports; p95 intervals are 17.4/17.4/17.3/17.0/17.4 ms, CPU p95 3.4/3.4/3.0/2.9/4.1 ms, calls at most 102. Maximum intervals are 23.0/581.6/571.9/312.4/938.2 ms, so long stalls remain. The 61,264.6-ms soak has zero median drift and +0.201136% whole-frontend post-GC heap growth, not isolated presentation retention. Four external rows remain NOT_MEASURED. The original Dense image is root-reviewed with array/index readability, material, glow, aliasing and clipping findings still OPEN. Exact source, reports, profiles, session snapshot, environment and image remain in `performance-focus-connection-mask/`. [Scope and source qualification](migration/focus-connection-mask.md).
+
+
+## Private layout metadata compaction — 2026-11-04
+
+Source `b5256fb3` runs the unchanged protected Node probe in ABBA order, four
+separate processes. Parent runs explicitly substitute only the captured parent
+layout module; candidate runs use default production configuration. All raw
+corpus hashes/GC/seeks/limits remain unchanged. Medium total presentation
+retention falls by 115,168/113,736 bytes in the two pairs; large falls by
+450,728/451,120 bytes. Smallest-corpus totals vary −3,632/+10,248 bytes, so no
+small-corpus reduction is claimed. All 12 retention rows still FAIL 25%; all four
+LINE ratios pass 2×. Per-stage/timing variation is preserved; no speedup or
+statistical latency claim is made.
+
+The preserved second candidate report has presentation bytes 1,553,176/6,013,344/
+22,360,232 and semantic bytes 927,896/12,377,040/55,677,520: ratios 1.673869/.485847/
+.401603. Its LINE 1.738244 passes 2×. This is one of the two real candidate runs,
+not an extra execution. Full reports and source boundaries remain in
+`compact-layout-slot-metadata/`. Fresh Dense run `1514bab2` records actual FULL JVM `e94d507d` (7,492 raw /
+9,852 normalized Events), completed Java exit 0. All ten stages complete with
+zero browser/stage/lifecycle errors and zero suspended requests. Runner time
+is 492.251 seconds; benchmark exit 1 and archive exit 0. Seek p50 115.997 ms
+exceeds 55; seek p95 134.527 exceeds 112; Focus p95 200.786 exceeds 125; Home
+p95 231.572 exceeds 152; cold median 5,556.662 exceeds 5,300. All five latency
+limits FAIL in this execution. These single-source samples do not establish a
+causal latency improvement or statistical non-regression against older runs.
+
+Orbit medians are 16.7 ms at all five viewports; p95 intervals are
+17.5/17.3/17.5/17.5/17.7 ms, CPU p95 3.6/3.9/3.9/4.0/6.0 ms, calls at most
+102. Maximum intervals are 791.0/863.8/903.9/704.8/999.0 ms, so long stalls
+remain. The 61,815.5-ms soak has zero median drift and +0.095072% whole-frontend
+post-GC heap growth, not isolated presentation retention. Four external rows
+remain NOT_MEASURED. Exact source, full reports, profiles, snapshot, environment
+and original image are archived in `performance-compact-layout-slot-metadata/`.
+The original Dense image is root-reviewed; array/index readability, matte
+materials, route glow, aliasing and peripheral clipping remain OPEN.
+
+[Ownership proof, equivalence and source](migration/compact-layout-slot-metadata.md).

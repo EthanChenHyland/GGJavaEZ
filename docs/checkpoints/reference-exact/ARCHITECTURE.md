@@ -384,3 +384,8 @@ Reference attachments use shared value-inset geometry; primitive transfer termin
 ## Focus connection hierarchy and target readability — 2026-11-04
 
 The root preserves the original six-neighbor reference ranking and caps every connection outside the direct Focus cut, composing with Trace, selection and forensic priority. A shared explicit Focus-context material modifier disables depth writes only for faded Focus bodies. A renderer-owned rounded-target mask clips faded glyphs over that target; actual draw-camera identity excludes reflections, and the owned base material releases installed Troika derivatives. Runtime/Graph/anchor/camera contracts and the Cinematic module remain unchanged. Arrays are excluded until their real header/cell silhouette is supported. [Scope, rejected alternatives and exact proof](migration/focus-connection-mask.md).
+
+
+## Private layout metadata compaction — 2026-11-04
+
+The private layout cache retains first slot order and latest heap declaring-class strings instead of complete RuntimeSlot/value wrappers. Omitted group metadata survives partial observations; supplied absent metadata clears it; empty maps are removed. Permanent geometry/ports and all runtime/Graph/history/camera contracts stay unchanged. [Ownership proof and complete parent/candidate comparison](migration/compact-layout-slot-metadata.md).

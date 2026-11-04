@@ -60,3 +60,8 @@ The return renderer audit also finds no consumer of PresentedCurve.label in the 
 ## Focus connection hierarchy and target readability — 2026-11-04
 
 The root reviews eight originals from exact source `18463b85` against the existing reference language. Constructor Focus text is recovered; both-tier palette bytes remain exact. Existing global review rows remain OPEN: indirect connection masking does not resolve bright direct routes, matte caps, context clutter, return caption placement, long-stack clipping, array label/mask behavior or the unreviewed images. Source-bound originals/hashes and failed/corrected runs are retained in [the Focus evidence ledger](migration/focus-connection-mask.md).
+
+
+## Private layout metadata compaction — 2026-11-04
+
+The root reviews the two-file layout change and explicit-GC value-release proof, with exact parent/candidate geometry comparisons across 57 traces. No runtime semantics or design token is changed. Existing visual review rows remain OPEN; removing unused private metadata does not close them. [Proof, source and remaining gates](migration/compact-layout-slot-metadata.md).
