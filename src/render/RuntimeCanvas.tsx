@@ -213,6 +213,7 @@ export function RuntimeCanvas({ scene, plan, layout, safeFrame,inspectorRect, se
     const supportsWebGL=useMemo(supportsRuntimeWebGL,[]);
     const [accessible,setAccessible]=useState<AccessibleEntity[]>([]),list=useRef<HTMLDivElement>(null);
     const curves=useMemo(()=>[...plan.curves,...plan.bundles],[plan.curves,plan.bundles]);
+    const focusNode=plan.framing.focus?scene.entities[plan.framing.focus.targetId]:null;
     const activeIndex=accessible.findIndex(item=>item.id===selection?.id);
     const worldElement=useRef<HTMLDivElement>(null)
     const input = useRef<CameraInput | null>(null), pointer = useRef<{
@@ -266,7 +267,7 @@ export function RuntimeCanvas({ scene, plan, layout, safeFrame,inspectorRect, se
         {!contextLost&&<EnvironmentRig/>}
         <Floor layout={layout} plan={plan} scene={scene} quality={quality}/>
         <SolidBatch scene={scene} plan={plan} onSelect={select} onFocus={onFocus}/>
-        <FaceTextBatch>
+        <FaceTextBatch focusAnchor={focusNode&&focusNode.kind!=='array'?focusNode.anchor:null}>
         {[...plan.entities].map(([id, presented]) => <RuntimeSolid key={id} node={scene.entities[id]} presented={presented} plan={plan}/>)}
         <StructuralLabels scene={scene} plan={plan} safeFrame={safeFrame} inspectorRect={inspectorRect}/>
         <InteractiveConnectors scene={scene} plan={plan} curves={curves} onSelect={id => { if(plan.bundles.some(bundle=>bundle.id===id))select({kind:'bundle',id}); else if (scene.references.some(ref => ref.id === id)||scene.historicalBindings.some(binding=>binding.id===id))

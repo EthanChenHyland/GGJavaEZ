@@ -91,9 +91,13 @@ export function planPresentation(input: PlanInput, previous?: PresentationPlan):
     for (const ref of scene.references)
         if (ref.sourceId === current)
             pin(ref.targetId, 'direct executing-frame reference');
-    const neighbours = focused ? scene.references.filter(r => r.sourceId === focused || r.targetId === focused)
+    const referenceNeighbours = focused ? scene.references.filter(r => r.sourceId === focused || r.targetId === focused)
         .sort((a, b) => ['frame-object', 'object-object', 'class-object'].indexOf(a.role) - ['frame-object', 'object-object', 'class-object'].indexOf(b.role) || (a.evidence.introducedSeq ?? Infinity) - (b.evidence.introducedSeq ?? Infinity) || a.id.localeCompare(b.id))
-        .map(r => r.sourceId === focused ? r.targetId : r.sourceId).filter((id, i, all) => scene.entities[id] && all.indexOf(id) === i).slice(0, 6) : [];
+        .map(r => r.sourceId === focused ? r.targetId : r.sourceId) : [];
+    const neighbours=referenceNeighbours.filter((id,i,all)=>scene.entities[id]&&all.indexOf(id)===i).slice(0,6);
+    const focusContext=new Set([focused,...neighbours]);
+    const focusConnection=(source:string|null|undefined,target:string|null|undefined)=>!focused||!!source&&!!target
+        &&(source===focused||target===focused)&&focusContext.has(source)&&focusContext.has(target);
     for (const id of neighbours)
         pin(id, 'focus neighbour');
     if (scene.exception)
@@ -233,13 +237,15 @@ export function planPresentation(input: PlanInput, previous?: PresentationPlan):
     const curve = (id: string, kind: PresentedCurve['kind'], from: Vec3 | null, to: Vec3 | null, role: MaterialRole, relevant: boolean, left = false, arrow = false, label?: string, source?: WorldAnchor, target?: WorldAnchor, forensicPath = false) => {
         if (!from || !to)
             return;
-        const opacity=forensicState?(forensicPath?1:Math.min(world.opacity.forensicDim,focused&&!relevant?.25:relevant?1:.35)):focused&&!relevant?.25:relevant?1:.35;
+        const focusCap=focused&&!forensicPath&&!focusConnection(owner(source?.entityId),owner(target?.entityId))?world.opacity.focusDim:1;
+        const baseOpacity=forensicState?(forensicPath?1:Math.min(world.opacity.forensicDim,focused&&!relevant?.25:relevant?1:.35)):focused&&!relevant?.25:relevant?1:.35;
+        const opacity=Math.min(baseOpacity,focusCap);
         curves.push({ id, kind, points: route(from, to, source, target, left), sourceAnchor:source, destinationAnchor:target, colorRole: role, opacity, widthPx: relevant ? 3.5 : 2.5, arrow, label });
     };
     const referenceRelevant = (ref: SceneModel['references'][number]) => trace.active&&trace.scope==='all'||ref.id===selection?.id||relevantEntities.has(ref.sourceId)||relevantEntities.has(ref.targetId);
     const referenceRole = (ref: SceneModel['references'][number]): MaterialRole => ref.overlay??(ref.role==='object-object'?'heap':ref.role==='class-object'?'class':'reference');
     const referenceOpacity = (refs: readonly SceneModel['references'][number][], relevant: boolean) => Math.min(relevant?1:.35,
-      focused&&!refs.some(ref=>[focused,...neighbours].some(id=>id===ref.sourceId||id===ref.targetId))?world.opacity.focusDim:1,
+      focused&&!(forensicState&&refs.every(ref=>ref.overlay==='exception'))&&!refs.every(ref=>focusConnection(ref.sourceId,ref.targetId))?world.opacity.focusDim:1,
       forensicState&&!refs.every(ref=>ref.overlay==='exception')?world.opacity.forensicDim:1);
     const {current:topology,historical:historicalTopology}=referencePresentationTopology({scene,entities,clusters,cellWindows,individualLimit:budget.connectors,
       mandatoryIds:new Set([...scene.references.filter(ref=>ref.id===selectedRef?.id||ref.evidence.changedSeq===scene.cursorEvent?.seq).map(ref=>ref.id),...(selectedRef?[selectedRef.id]:[])]),

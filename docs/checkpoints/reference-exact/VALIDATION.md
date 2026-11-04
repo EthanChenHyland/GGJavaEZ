@@ -1,8 +1,10 @@
 # Validation
 
-Current implementation evidence, 2026-10-18. A–G completion is not claimed. The detailed chronological record is `docs/reports/reference-exact/VALIDATION.md`; migration ledgers live beside this file in `migration/`. Final results must be refreshed on the cleaned final commit and pushed tip.
+Latest qualified increment: [Focus connection hierarchy and target readability](migration/focus-connection-mask.md), source `18463b85`, 2026-11-04. Defaults and the 69-case integration pass; fresh Node retention and four Dense latency limits still fail. Whole-product acceptance remains OPEN. The October table below retains its historical qualification.
 
-| Gate | Command/evidence | Current result |
+Historical implementation evidence, 2026-10-18. A–G completion is not claimed. The detailed chronological record is `docs/reports/reference-exact/VALIDATION.md`; migration ledgers live beside this file in `migration/`. Final results must be refreshed on the cleaned final commit and pushed tip.
+
+| Gate | Command/evidence | Historical result |
 | --- | --- | --- |
 | Default unit/property/regression | npm test; unit-hero-home-reconciled.log | 2065 pass / 70 explicit opt-in skips / 2135 total, 214 files, 175.05 s; exit 0. |
 | Source lint | npm run lint; lint-home-cut-reconciliation.log | Pass |
@@ -490,3 +492,10 @@ Browser-driver source `efaa1bb2` passes all five migrated cases in 50.326 second
 ## Reference-chip attachment geometry — 2026-11-04
 
 Source `b568613e` qualifies 978 inputs and passes all eight checks: 2,237 default passes / 70 explicit opt-in skips / 2,307 total across 240 files (286.66s). Native 60/60 passes with zero failures/skips/flaky in 604.618 seconds, 49 distinct standard attached actual JVM IDs across 49 cases, 65 originals (seven reviewed/58 unreviewed). AST: 696 modules / 2,464 literal edges / 267 reachable / 42 nonliteral / zero obsolete targets. Default discovery remains 304 cases/85 files, with 44 older cases still OPEN. Separate fresh protected retention and Dense runs execute fully but retain budget failures; no skipped suite is counted as passed. [Exact source, regression and current measurements](migration/reference-chip-ports.md). Whole A–G remains OPEN.
+
+
+## Focus connection hierarchy and target readability — 2026-11-04
+
+Exact source `18463b8538cef4f5ace0bd1e04b5854a34e64459507ce42b0e08b8e83f6f8a54` passes all eight checks: 2,245 default tests, 70 explicit opt-in skips, 2,315 total/241 files, 285.20 seconds; typecheck, browser types, lint, build, metrics, references and protected guards pass. Fresh native integration passes 69/69 in 681.283 seconds, zero skips/failures/flaky. Its archive contains 53 distinct standard attached JVM IDs across 53 cases and 79 original captures, eight reviewed. Earlier interrupted failures and three unchanged five-case confirmations remain separate. Entry gzip 72,164 bytes; Shell static JS closure 676,185 bytes. AST: 699 modules, 2,475 literal edges, 268 production-reachable, 42 nonliteral sites, zero inventoried obsolete targets. Default discovery 306 cases/86 files, 44 older cases still OPEN; discovery is not exhaustive acceptance. [Evidence and source qualification](migration/focus-connection-mask.md).
+
+Fresh source-qualified performance completes all ten Dense stages without workflow errors but still fails four latency limits; Node still fails all three 25% retention limits. Cold median passes in this execution; no speedup/non-regression or whole-product approval follows. See [current measurements](migration/focus-connection-mask.md).

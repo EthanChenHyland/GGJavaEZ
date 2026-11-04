@@ -48,7 +48,9 @@ it('does not promote an earlier exception flow on the same endpoints into the fi
  const current:SceneFlow={id:'current-throw',edgeIndex:0,kind:'throw',from:{kind:'frame',id:from},to:{kind:'object',id:to},evidenceEventIds:['throw'],evidenceSeqs:[1],valueText:null}
  const earlier:SceneFlow={...current,id:'earlier-caught-throw',edgeIndex:1,evidenceEventIds:['caught-earlier']}
  const flows:FlowCatalog={extend(){},query:()=>[earlier,current],prefix:()=>[earlier,current],iteratePrefix:()=>[earlier,current],atEvent:()=>[],bundles:()=>[],recordedProvenanceOf:()=>[],drawableFlowsOf:()=>[]}
- const plan=planPresentation({scene,layout,flows,detailLevel:'CLOSE',selection:null,focusTargetId:null,trace:{active:true,scope:'all'}})
- expect(plan.curves.find(curve=>curve.id===current.id)).toMatchObject({colorRole:'exception',opacity:1})
- expect(plan.curves.find(curve=>curve.id===earlier.id)?.opacity).toBeLessThanOrEqual(.4)
+ for(const focusTargetId of[null,scene.order.frames[0]]){
+  const plan=planPresentation({scene,layout,flows,detailLevel:'CLOSE',selection:null,focusTargetId,trace:{active:true,scope:'all'}})
+  expect(plan.curves.find(curve=>curve.id===current.id)).toMatchObject({colorRole:'exception',opacity:1})
+  expect(plan.curves.find(curve=>curve.id===earlier.id)?.opacity).toBeLessThanOrEqual(.4)
+ }
 })

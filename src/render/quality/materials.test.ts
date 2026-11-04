@@ -3,7 +3,8 @@ import { Color, MeshPhysicalMaterial, ShaderLib } from 'three'
 import { faceMaterial, glassMaterial, disposeRuntimeMaterials } from '../RuntimeMaterials'
 import { createCinematicBody } from './cinematicMaterials'
 import { color } from '../../theme/tokens'
-afterEach(()=>disposeRuntimeMaterials())
+import { qualityStore } from './qualityStore'
+afterEach(()=>{disposeRuntimeMaterials();qualityStore.setState({cinematicModule:null})})
 
 it('shares face-band material identity and releases each once with the renderer',()=>{
   const surface=faceMaterial(1,false),inset=faceMaterial(1,true),dimmed=faceMaterial(.25,true)
@@ -33,6 +34,20 @@ it('Interactive uses reflected acrylic rim shading without physical transmission
   expect(shader.fragmentShader).toContain('#include <opaque_fragment>')
   expect(material).toBe(glassMaterial('stack'))
   disposeRuntimeMaterials()
+})
+it('only faded Focus context stops writing depth, preserving ordinary historical and Trace bands in both tiers', () => {
+  qualityStore.setState({cinematicModule:{createCinematicBody}})
+  for (const role of ['stack', 'heap', 'class'] as const) {
+    for (const tier of ['INTERACTIVE','CINEMATIC'] as const) for (const emphasis of [.25, .4, .45, .55, 1]) {
+      const ordinary=glassMaterial(role,emphasis,tier),focused=glassMaterial(role,emphasis,tier,true)
+      const opacity=(tier==='INTERACTIVE'?.78:1)*emphasis
+      expect(ordinary).toMatchObject({opacity,depthTest:true,depthWrite:true})
+      expect(focused).toMatchObject({opacity,depthTest:true,depthWrite:emphasis>.25})
+      expect(glassMaterial(role,emphasis,tier,true)).toBe(focused)
+      if(emphasis>.25)expect(focused).toBe(ordinary)
+      else expect(focused).not.toBe(ordinary)
+    }
+  }
 })
 it('Cinematic has the specified physical transmission and semantic attenuation colour for every body role', () => {
   for (const role of ['stack', 'heap', 'class'] as const) {

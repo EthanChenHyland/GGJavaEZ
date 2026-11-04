@@ -14,7 +14,7 @@ Default inventory at f262899 discovers 294 cases in 81 files. Of these, 202 belo
 | `observer-saturation-v12.spec.ts` | 2 | [Migrated; exact saturation/thread corpus and captured prefix retained](observer-browser.md) |
 | `product-audit-m11_5.spec.ts` | 4 | OPEN |
 | `provenance-v12.spec.ts` | 1 | [Migrated; exact constructor proof retained](provenance-browser.md) |
-| `real-visualize.spec.ts` | 5 | OPEN |
+| `real-visualize.spec.ts` | 5 | [Migrated; five preserved cases and six original Java sources](arbitrary-java-browser-successors.md) |
 | `recursion.spec.ts` | 4 | [Migrated; captured expressions restored, unchanged trace and 37-case integration pass](recursion-browser-successors.md) |
 | `spatial-io-v12-p5.spec.ts` | 1 | OPEN |
 | `spatial-shell-v12-p5.spec.ts` | 6 | OPEN |
@@ -50,3 +50,12 @@ Four new actual-JVM prefix and history-return cases cover desktop and narrow wid
 ## Arbitrary Java workflows — 2026-11-04
 
 All five `real-visualize.spec.ts` cases pass on driver source `efaa1bb2` with the six original Java sources byte-equivalent and original execution assertions preserved. The older remainder drops 49→44; fresh discovery remains 304 cases/85 files, with 260 current-classified. This is a focused passing result, not exhaustive browser acceptance. The prior source's full units/build and 25-case gate retain their exact qualification boundary. [Retired-surface dispositions and evidence](arbitrary-java-browser-successors.md).
+
+## Focus connection mask — 2026-11-04
+
+Two new actual-JVM desktop/narrow Focus cases bring exact-source discovery to
+306 cases/86 files: 262 current-classified and 44 older cases. They add coverage
+without retiring an older case. Their exact-source preflight passes 2/2; the
+first larger gate's failures, unchanged confirmations and fresh full rerun
+remain separately qualified. Discovery is not exhaustive passing acceptance.
+[Behavior, visual findings and source boundaries](focus-connection-mask.md).

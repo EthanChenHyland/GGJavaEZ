@@ -32,7 +32,8 @@ type ProbeText=Text&{syncs:number;disposed:number}
 const glyph=()=>state.texts[0] as ProbeText
 const group=(view:ReturnType<typeof render>)=>view.nodes().find(node=>node.props?.position)!
 const props=():ComponentProps<typeof WorldText>=>({children:'18',position:[0,0,-5],lines:['18'],heading:{entityId:'frame/a',kind:'title'},frameText:{entityId:'frame/a',kind:'value',slotId:'local/a'},returnText:{flowId:'return/a',kind:'value'},collectionText:{entityId:'map/a',kind:'value',slotId:'entry/a'}})
-const refresh=(height:number)=>{state.snapshot={camera:new PerspectiveCamera(36,1,.1,1000),size:{width:1440,height},invalidate:()=>state.invalidations++};for(const notify of state.listeners)notify();reconciler.flushSyncWork();reconciler.flushPassiveEffects()}
+const renderer={}
+const refresh=(height:number)=>{state.snapshot={gl:renderer,camera:new PerspectiveCamera(36,1,.1,1000),size:{width:1440,height},invalidate:()=>state.invalidations++};for(const notify of state.listeners)notify();reconciler.flushSyncWork();reconciler.flushPassiveEffects()}
 const frame=()=>{for(const callback of state.frames)callback()}
 beforeEach(()=>{state.texts=[];state.batches=[];state.invalidations=0;refresh(900)})
 afterEach(()=>{unmountThreeLifetimes();expect(state.frames.size).toBe(0);expect(state.listeners.size).toBe(0);expect(textReadiness.pending.size).toBe(0);vi.restoreAllMocks()})
@@ -70,10 +71,11 @@ it('releases the old glyph and creates a fresh resource on remount',()=>{
 
 it('preserves one batch registration through skipped parents and releases it on canvas teardown',()=>{
  const view=render(<FaceTextBatch><WorldText {...props()}/></FaceTextBatch>),text=glyph(),batch=state.batches[0] as {added:unknown[];removed:unknown[];disposed:number}
+ const material=(state.batches[0] as {material:import('three').Material}).material,disposed=vi.fn();material.addEventListener('dispose',disposed)
  expect(batch.added).toEqual([text]);expect(textReadiness.mounted).toBe(true)
  for(let index=0;index<20;index++)view.rerender(<FaceTextBatch><WorldText {...props()}/></FaceTextBatch>)
  expect(batch.added).toEqual([text]);expect(batch.removed).toEqual([]);expect(state.texts).toHaveLength(1)
- view.unmount();expect(batch.removed).toEqual([text]);expect(batch.disposed).toBe(1);expect(text.disposed).toBe(1);expect(textReadiness.mounted).toBe(false)
+ view.unmount();expect(batch.removed).toEqual([text]);expect(batch.disposed).toBe(1);expect(text.disposed).toBe(1);expect(textReadiness.mounted).toBe(false);expect(disposed).toHaveBeenCalledOnce()
 })
 it('inherits changing face opacity through memoized glyphs without changing layout, transforms or visibility rules',()=>{
  const content=(opacity:number)=><FaceTextOpacity opacity={opacity}><group position={[1,2,0]}><FaceTextOpacity opacity={.5}><WorldText children="18" position={[0,0,-5]} opacity={.8}/></FaceTextOpacity></group></FaceTextOpacity>

@@ -1,6 +1,6 @@
 import { BoxGeometry, Color, EdgesGeometry, MeshBasicMaterial, MeshDepthMaterial, MeshDistanceMaterial, MeshStandardMaterial, RGBADepthPacking } from 'three';
 import type { MaterialRole } from '../contracts/world';
-import { color } from '../theme/tokens';
+import { color, world } from '../theme/tokens';
 import { qualityStore, type QualityTier } from './quality/qualityStore';
 import {bodyPalette} from './quality/bodyPalette';
 import type { BodyRole } from './quality/materialTypes';
@@ -41,19 +41,23 @@ export function roundedDepthMaterial() {
 export function roundedDistanceMaterial() {
     return roundedDistance ??= applyRoundedBoxMaterial(new MeshDistanceMaterial());
 }
-export function glassMaterial(role: BodyRole, opacity = 1, tier: QualityTier = 'INTERACTIVE') {
+export function glassMaterial(role: BodyRole, opacity = 1, tier: QualityTier = 'INTERACTIVE', focusContext = false) {
     const cinematic = tier === 'CINEMATIC' ? qualityStore.getState().cinematicModule : null;
     const actualTier = cinematic ? 'CINEMATIC' : 'INTERACTIVE';
-    const key = `${actualTier}:${role}:${opacity}`, existing = materials.get(key);
+    const depthWrite=!(focusContext&&opacity<=world.opacity.focusDim);
+    const key = `${actualTier}:${role}:${opacity}:${depthWrite}`, existing = materials.get(key);
     if (existing)
         return existing;
     const palette = bodyPalette(role);
     if (cinematic) {
         const material = cinematic.createCinematicBody(role, opacity);
+        material.depthWrite=depthWrite;
         materials.set(key, material);
         return material;
     }
-    const material = new MeshStandardMaterial({ color: palette.core, emissive: palette.core, emissiveIntensity: .10, roughness: .22, metalness: .06, envMapIntensity: 1.35, transparent: true, opacity: .78 * opacity, depthWrite: true });
+    // Focus context must not leave an opaque depth silhouette over its target.
+    // All ordinary, historical, Trace and full-emphasis bands keep depth writes.
+    const material = new MeshStandardMaterial({ color: palette.core, emissive: palette.core, emissiveIntensity: .10, roughness: .22, metalness: .06, envMapIntensity: 1.35, transparent: true, opacity: .78 * opacity, depthWrite });
     material.name = `runtime:INTERACTIVE:${role}`;
     material.onBeforeCompile = shader => {
         shader.uniforms.runtimeEdgeTint = { value: new Color(palette.edge) };

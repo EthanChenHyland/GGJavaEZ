@@ -81,3 +81,8 @@ Requirements 9.7/9.10 now extend the shared inset treatment to remaining Frame v
 ## Reference-chip attachment geometry — 2026-11-04
 
 Requirement 9.8 attachment geometry is measured against the actual inset: non-null reference ports are centered on its right edge and remain visible independently of curves. Primitive chips stay port-free while proven value-transfer terminals retain frame-boundary geometry. Desktop/narrow actual-instance audits and all 60 integrated native cases pass. This is a narrow reference convergence fix; array/collection port geometry, global rendering and whole-product acceptance remain OPEN. [Exact source, regression and current measurements](migration/reference-chip-ports.md). Whole A–G remains OPEN.
+
+
+## Focus connection hierarchy and target readability — 2026-11-04
+
+Requirement 19.6 retains its reference-only neighborhood and now caps indirect connections even under Trace All or foreign selection. Actual rounded-target masking and an explicit faded-Focus depth modifier recover an obscured constructor without moving runtime geometry or the camera. Fresh native integration passes 69/69; reviewed originals still show wider material, glow and composition differences. [Exact source, failed/corrected evidence and outstanding work](migration/focus-connection-mask.md). Whole A–G remains OPEN.

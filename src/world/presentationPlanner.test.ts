@@ -9,6 +9,8 @@ import { planPresentation } from './presentationPlanner';
 import { budgets } from '../theme/tokens';
 import type { DetailLevel } from '../contracts/world';
 import {clusterSize} from './clusterAnchor';
+import {heroTrace} from '../testing/heroTrace';
+import {projectTrace} from '../testing/projectTrace';
 it('presentation cut accounts for every prefix-present identity and retains required entities (100 runs)', () => {
     fc.assert(fc.property(fc.integer({ min: 1, max: 100000 }), fc.constantFrom<DetailLevel>('FAR', 'MEDIUM', 'CLOSE'), (seed, detail) => {
         const raw = generateRawTrace({ seed, rawEvents: 80, maxDepth: 8, classes: 8, callRate: .6, allocateRate: .7 }), trace = normalizeTrace(raw.rawEvents, raw.manifest, { status: 'complete', exitCode: 0, diagnostic: null }).trace;
@@ -31,7 +33,9 @@ it('presentation cut accounts for every prefix-present identity and retains requ
         for(const curve of plan.curves.filter(curve=>curve.kind==='connector')){
             const ref=scene.references.find(ref=>ref.id===curve.id)!;
             expect(curve.colorRole).toBe(ref.overlay??(ref.role==='object-object'?'heap':ref.role==='class-object'?'class':'reference'));
-            if(selected&&ref.sourceId!==selected&&ref.targetId!==selected&&!plan.framing.focus?.neighbours.some(id=>id===ref.sourceId||id===ref.targetId))expect(curve.opacity).toBeLessThanOrEqual(.25);
+            const context=new Set([selected,...(plan.framing.focus?.neighbours??[])]);
+            const direct=(ref.sourceId===selected||ref.targetId===selected)&&context.has(ref.sourceId)&&context.has(ref.targetId);
+            if(selected&&!direct)expect(curve.opacity).toBeLessThanOrEqual(.25);
         }
         const residual=plan.clusters.flatMap(cluster=>{
             expect(cluster.members).toBe(cluster.memberIds.length);
@@ -55,5 +59,35 @@ it('presentation cut accounts for every prefix-present identity and retains requ
         expect(planPresentation(input)).toEqual(plan);
         if (selected)
             expect(plan.entities.get(selected)?.detail).toBe('CLOSE');
+        expect(plan.framing.focus?.neighbours.length??0).toBeLessThanOrEqual(6);
     }), { numRuns: 100 });
 });
+
+it('caps indirect neighbour references and call links during Focus, including Trace All and foreign selection',()=>{
+ const{trace}=heroTrace(),projection=projectTrace(trace),scene=projection.project(trace.events.length),before=JSON.stringify(scene)
+ const focus='first-record',foreign=scene.references.find(ref=>ref.sourceId==='second-record'&&ref.targetId==='second-label')!
+ expect(foreign).toBeTruthy();expect(scene.callLinks.length).toBeGreaterThan(0)
+ for(const active of[false,true])for(const selected of[false,true]){
+  const plan=planPresentation({scene,layout:projection.layout,detailLevel:'CLOSE',selection:selected?{kind:'reference',id:foreign.id}:null,focusTargetId:focus,trace:{active,scope:'all'}})
+  expect(plan.framing.focus!.neighbours).toContain('second-record')
+  expect(plan.framing.focus!.neighbours).not.toContain('second-label')
+  const connection=plan.curves.find(curve=>curve.id===foreign.id)!
+  expect(connection).toBeTruthy();expect(connection.opacity).toBeLessThanOrEqual(.25)
+  const calls=plan.curves.filter(curve=>curve.kind==='call')
+  expect(calls.length).toBeGreaterThan(0);for(const call of calls)expect(call.opacity).toBeLessThanOrEqual(.25)
+  expect(plan.referencePresentation.counts.current).toBe(scene.references.length)
+ }
+ expect(JSON.stringify(scene)).toBe(before)
+})
+
+it('preserves recorded callers as dim context outside the reference-only Frame Focus neighbourhood',()=>{
+ const{trace}=heroTrace(),projection=projectTrace(trace),scene=projection.project(trace.events.length)
+ const input={scene,layout:projection.layout,detailLevel:'CLOSE' as const,selection:{kind:'frame' as const,id:'setter'},focusTargetId:'setter',trace:{active:false,scope:'relevant' as const}}
+ const plan=planPresentation(input)
+ expect(plan.framing.focus!.neighbours).toContain('first-record')
+ expect(plan.framing.focus!.neighbours).not.toContain('entry')
+ expect(plan.framing.focus!.neighbours.length).toBeLessThanOrEqual(6)
+ expect(scene.callLinks.some(call=>call.callerId==='entry'&&call.calleeId==='setter')).toBe(true)
+ expect(plan.entities.get('entry')!.opacity).toBeLessThanOrEqual(.25)
+ expect(plan.framing.focus).toEqual(planPresentation(input).framing.focus)
+})

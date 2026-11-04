@@ -379,3 +379,8 @@ Error Explorer reads the existing recording-qualified RuntimeState and clamps it
 ## Reference-chip attachment geometry — 2026-11-04
 
 Reference attachments use shared value-inset geometry; primitive transfer terminals preserve existing frame-boundary coordinates. Visible captured reference chips own ports independently of curve admission. The endpoint instance batch merges attachments and preserves hover, while a read-only QA observer reads actual sphere matrices/radii/alpha. Entity anchors, RuntimeState, Graph, normalization, history and all Java remain unchanged. Arrays/collections retain separate existing geometry. [Exact source, regression and current measurements](migration/reference-chip-ports.md). Whole A–G remains OPEN.
+
+
+## Focus connection hierarchy and target readability — 2026-11-04
+
+The root preserves the original six-neighbor reference ranking and caps every connection outside the direct Focus cut, composing with Trace, selection and forensic priority. A shared explicit Focus-context material modifier disables depth writes only for faded Focus bodies. A renderer-owned rounded-target mask clips faded glyphs over that target; actual draw-camera identity excludes reflections, and the owned base material releases installed Troika derivatives. Runtime/Graph/anchor/camera contracts and the Cinematic module remain unchanged. Arrays are excluded until their real header/cell silhouette is supported. [Scope, rejected alternatives and exact proof](migration/focus-connection-mask.md).

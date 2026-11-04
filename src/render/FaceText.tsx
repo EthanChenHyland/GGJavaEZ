@@ -2,29 +2,43 @@ import { createContext, memo, useContext, useEffect, useId, useLayoutEffect, use
 import { useFrame,useThree } from '@react-three/fiber';
 import { BatchedText, Text } from 'troika-three-text';
 import { Group, MeshBasicMaterial,Vector3,type Object3D } from 'three';
-import type { Vec3 } from '../contracts/world';
+import type { Vec3, WorldAnchor } from '../contracts/world';
 import { color, runtimeFonts } from '../theme/tokens';
 import {fitWorldText,projectedFontPixels,worldTextVisible} from './text/textSystem';
+import {FocusTextMask} from './post/focusTextMask';
+import {registerAuxiliaryPass} from './post/auxiliaryPasses';
 const Context = createContext<BatchedText | null>(null);
 export const textReadiness = { pending: new Set<string>(), lastSync: 0, lastUploadFrame: 0, mounted:false };
 /** Fade a face without changing every glyph's React props or layout lifetime. */
 export function FaceTextOpacity({opacity,children}:{opacity:number;children:ReactNode}){
     return <group userData={{runtimeTextOpacity:opacity}}>{children}</group>;
 }
-export function FaceTextBatch({ children }: {
+export function FaceTextBatch({ children, focusAnchor=null }: {
     children: ReactNode;
+    focusAnchor?:WorldAnchor|null;
 }) {
-    const batch = useMemo(() => {
+    const {gl,camera}=useThree(),focusMask=useMemo(()=>new FocusTextMask(),[]);
+    const {batch,material} = useMemo(() => {
         const object = new BatchedText();
-        object.material = new MeshBasicMaterial({ color: 'white', transparent: true, depthWrite: false, toneMapped: false });
+        const material = new MeshBasicMaterial({ color: 'white', transparent: true, depthWrite: false, toneMapped: false });
+        // Patch the base before Troika wraps it. Re-entering a derived compile
+        // hook from its appended user hook would recurse during compilation.
+        focusMask.apply(material);
+        object.material = material;
+        const before=object.onBeforeRender;
+        object.onBeforeRender=function(...args:Parameters<typeof before>){
+            before.apply(this,args);focusMask.prepareText(args[2]);
+        };
         object.frustumCulled = false;
         object.renderOrder = 3;
         object.userData.runtimeBloomRole = 'protected';
         object.userData.runtimeText = true;
-        return object;
-    }, []);
+        return {batch:object,material};
+    }, [focusMask]);
+    useLayoutEffect(()=>{focusMask.anchor=focusAnchor},[focusMask,focusAnchor]);
+    useEffect(()=>registerAuxiliaryPass(gl,'focus-text',()=>focusMask.render(gl,camera)),[gl,camera,focusMask]);
     useLayoutEffect(()=>{textReadiness.mounted=true;return()=>{textReadiness.mounted=false}},[]);
-    useEffect(() => () => { batch.material.dispose(); batch.dispose(); }, [batch]);
+    useEffect(() => () => { material.dispose(); batch.dispose(); focusMask.dispose(); }, [batch,material,focusMask]);
     useFrame(({ gl }) => { textReadiness.lastUploadFrame = gl.info.render.frame; });
     return <Context.Provider value={batch}><primitive object={batch}/>{children}</Context.Provider>;
 }

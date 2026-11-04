@@ -276,3 +276,8 @@ All five original-size arbitrary-Java successor captures were reviewed on driver
 ## Reference-chip attachment geometry — 2026-11-04
 
 Seven final native originals (hero, object, recursion, return, exception and two picked-chip views) and the current Dense original were reviewed full-size. Actual reference spheres attach to inset edges; primitive boundary terminals stay outside primitive chips. Reference glyphs remain readable. The native archive has 65 originals, 58 not root-reviewed. Matte/opaque faces, aliasing, excessive route glow/crossings, peripheral clipping, long-stack/return framing and dense array/index readability remain OPEN. Targeted attachment approval is not whole-reference acceptance. [Exact source, regression and current measurements](migration/reference-chip-ports.md). Whole A–G remains OPEN.
+
+
+## Focus connection hierarchy and target readability — 2026-11-04
+
+The fresh 69-case run preserves 79 originals; eight receive full-size root review and 71 remain unreviewed. Selected constructor title/status/rows now remain visible through faded later frames, with unrelated labels retained outside its actual silhouette. Both GPU tiers execute; all eight face/chip RGB samples equal their specified bytes exactly. Array masking, overbright/crossing routes, matte surfaces, aliasing, clipping, return/long-stack composition and complete motion/reference convergence remain OPEN. This narrow correction does not close the whole Focus matrix or A–G. [Reviewed evidence and limits](migration/focus-connection-mask.md).

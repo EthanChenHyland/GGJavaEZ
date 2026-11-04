@@ -55,3 +55,8 @@ The return fallback identified above is now removed: projector candidates and Fl
 Further frozen-source audit: motionSubjects in motion/overlayGeometry.ts still derives frame pulse rows from permanent row.port instead of the shared scoped/windowed faceRowPort, and uses legacy collection entry ports. The shared labels, picks and reference/Flow endpoints have moved to the bounded face/window mapping, so temporal emphasis must converge on that same physical mapping. Reproduce with actual scoped/captured late-row and Map-entry records after the current native gate; do not move canonical bodies or fabricate ports.
 
 The return renderer audit also finds no consumer of PresentedCurve.label in the active render tree: ConnectorBatch draws lines/endpoints/arrows, while StructuralLabels handles only headings/clusters/bundles. Recorded return values therefore lack their required visible return captions (10.4/10.7). Add bounded graph-edge-owned captions with actual glyph observations and native visibility checks after the frozen native checkpoint; show operand lines only when captured, and preserve exact values in inspection.
+
+
+## Focus connection hierarchy and target readability — 2026-11-04
+
+The root reviews eight originals from exact source `18463b85` against the existing reference language. Constructor Focus text is recovered; both-tier palette bytes remain exact. Existing global review rows remain OPEN: indirect connection masking does not resolve bright direct routes, matte caps, context clutter, return caption placement, long-stack clipping, array label/mask behavior or the unreviewed images. Source-bound originals/hashes and failed/corrected runs are retained in [the Focus evidence ledger](migration/focus-connection-mask.md).

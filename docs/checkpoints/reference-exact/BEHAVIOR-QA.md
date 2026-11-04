@@ -282,3 +282,8 @@ The five original arbitrary-Java workflows now use current Shell/World controls.
 ## Reference-chip attachment geometry — 2026-11-04
 
 The parent alignment regression fails at x2.4 versus the real chip edge x2.14. New reference spheres match actual inset geometry at diameter 0.16 u; primitive chips have no reference marker, and value-transfer/return flows retain real boundary terminals. Missing/null values expose no attachment. Seven legacy storage-coordinate assertions now distinguish storage from the measured visible chip plane; original identities, scopes, values, stable-layout and conservation assertions remain. Focused 90/90, World/render 653/653 and final native 60/60 pass. [Exact source, regression and current measurements](migration/reference-chip-ports.md). Whole A–G remains OPEN.
+
+
+## Focus connection hierarchy and target readability — 2026-11-04
+
+Source `18463b85` passes all eight validation checks: 2,245 defaults passed, 70 explicit opt-in skips, 2,315 total/241 files. The fresh integrated native gate passes 69/69 with zero skips/failures/flaky, attaching 53 distinct standard actual-JVM IDs across 53 cases. The earlier 64-pass/four-failure/one-skip run remains failed and archived; three separate unchanged confirmations pass 15/15 before the fresh complete gate. No assertion or timeout is relaxed. [Exact boundaries, affected workflows and archives](migration/focus-connection-mask.md).
