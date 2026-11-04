@@ -364,3 +364,8 @@ Invocation inspection now exposes only the selected invocation’s existing, pre
 ## Shared presentation event witnesses — 2026-11-04
 
 Scene projection and FlowCatalog share one exact-document event-ID index through a registry with weak keys and weak values. Live readers retain their owner and qualify every lookup by their own admitted prefix; differing mutable incoming witnesses fork privately. The World compiler binds both readers to its original document across streaming wrappers. No RuntimeState, Graph, history, JVM or camera contract changes. [Ownership contract, rejected candidate and measurements](migration/shared-presentation-events.md). Whole A–G remains OPEN.
+
+
+## Complete unavailable-flow snapshots — 2026-11-04
+
+Unavailable-flow evidence now uses a complete read-only Array facade over privately captured IDs and an immutable on-heap reason string. It captures no mutable catalog or future prefix and preserves every ID, exact reason, index, count, iteration and JSON value. Stable identity is the recorded Flow ID; Inspector has no per-DTO identity cache or mutation. No runtime, Graph, event, history, camera, source or material contract changes. [Complete evidence, ownership and source qualification](migration/compact-unavailable-flows.md). Whole A–G remains OPEN.

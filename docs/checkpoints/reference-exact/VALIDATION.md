@@ -470,3 +470,8 @@ Product/unit source c66556e3 passes eight checks: 2,211 default passes/70 explic
 ## Shared presentation event witnesses — 2026-11-04
 
 Corrected source 80f38870 (971 inputs) passes all eight checks, including 2,217 default passes, 70 explicit opt-in skips and 2,287 total tests/238 files (297.58 seconds). Focused checks pass 35/35; parent equivalence covers 912 scenes, 1,632 plans and 9,696 flow queries. AST is 689 modules/2,426 literal edges/264 reachable/41 nonliteral/zero obsolete targets. The complete second native gate passes 135/135, zero failures/skips/flaky, in 1,343.236 seconds, with 95 distinct attached actual JVM session IDs across 94 cases. It preserves 188 originals, four root-reviewed. The first 134-pass/one-HTTP-504-failure run and three unchanged successful repetitions remain archived separately. [Ownership contract, rejected candidate and measurements](migration/shared-presentation-events.md). Whole A–G remains OPEN.
+
+
+## Complete unavailable-flow snapshots — 2026-11-04
+
+Product/unit source 94e01c3e passes eight checks: 2,220 default passes, 70 explicit opt-in skips, 2,290 total tests/239 files (307.42 seconds). Final driver ff2fa076 changes only the new browser test; all 973 other inputs and all 29 built resources are byte-identical, with fresh browser typecheck/protected guards. Its focused native gate passes 49/49, zero failures/skips/flaky, in 524.712 seconds, with 38 distinct attached actual JVM IDs and 54 originals (four reviewed/50 unreviewed). The older 135-case parent execution is not relabelled fresh. AST: 692 modules/2,433 literal edges/265 reachable/41 nonliteral/zero obsolete targets. [Complete evidence, ownership and source qualification](migration/compact-unavailable-flows.md). Whole A–G remains OPEN.

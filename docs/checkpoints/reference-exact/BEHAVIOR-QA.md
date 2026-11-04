@@ -262,3 +262,8 @@ The four original curated recursion cases preserve exact positions, six invocati
 ## Shared presentation event witnesses — 2026-11-04
 
 New ownership checks cover exact-document isolation, atomic malformed-envelope rejection, lagging readers, independent admitted prefixes, streamed document wrappers, mutable-fixture compatibility and graph-edge admission. The original collection test caught a rejected strict-identity candidate and now passes unchanged. Thirty-eight input recordings reproduce complete parent scene/flow/plan behavior; explicit-GC diagnostics distinguish an unused index from its retained trace. All 135 unchanged native successors pass in the second complete gate, including live delta ingestion, references, debugger/error/source boundaries, selection, camera control and context recovery. [Ownership contract, rejected candidate and measurements](migration/shared-presentation-events.md). Whole A–G remains OPEN.
+
+
+## Complete unavailable-flow snapshots — 2026-11-04
+
+The integrated implementation matches 6,840 complete parent plans across 38 recordings, 760 scenes, 476,849 unavailable entries and 102 old snapshots. New actual-JVM desktop/narrow cases page a complete list past index 4,096, verify the captured tail ID/reason, preserve Cursor/camera while selecting the real graph edge, clear evidence at Event 0 and restore it at the exact normalized head. The unchanged 1,287-byte Topology fixture is hash-qualified; failed new-driver setup attempts are retained separately. [Complete evidence, ownership and source qualification](migration/compact-unavailable-flows.md). Whole A–G remains OPEN.

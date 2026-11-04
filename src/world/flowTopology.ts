@@ -1,3 +1,4 @@
+import{unavailableFlowSnapshot}from'./unavailableFlowSnapshot'
 import type {ArrayWindow,FlowPresentation,PresentedEntity,SceneModel,Vec3,WorldAnchor} from '../contracts/world'
 import type {FlowEndpoint} from '../motion/semanticTransition'
 import type {RecordedFlow,SceneFlow} from './flowCatalog'
@@ -59,7 +60,8 @@ export function presentedFlowPorts(scene:SceneModel,entities:ReadonlyMap<string,
  * IDs or substitute cluster endpoints. Scope and unavailable evidence stay queryable. */
 export function buildFlowTopology(input:FlowTopologyInput){
  if(!Number.isSafeInteger(input.limit)||input.limit<0)throw new RangeError('Flow limit must be a non-negative safe integer')
- const port=presentedFlowPorts(input.scene,input.entities,input.cellWindows),available:DrawableFlow[]=[],unavailable:FlowPresentation['unavailable'][number][]=[],scopeExcluded:string[]=[],seen=new Set<string>()
+ const unavailableIds:string[]=[],unavailableCodes:string[]=[]
+ const port=presentedFlowPorts(input.scene,input.entities,input.cellWindows),available:DrawableFlow[]=[],scopeExcluded:string[]=[],seen=new Set<string>()
  let recorded=0
  for(const flow of input.flows){
   recorded++
@@ -67,7 +69,7 @@ export function buildFlowTopology(input:FlowTopologyInput){
   if(flow.evidenceSeqs.some(seq=>seq>=input.scene.cursor))throw new Error('Flow evidence is outside the applied prefix')
   if(!input.inScope(flow)){scopeExcluded.push(flow.id);continue}
   const from=port(flow.from,flow.kind==='return'),to=port(flow.to)
-  if(!from||!to){unavailable.push({id:flow.id,reason:!flow.from?'Recorded evidence has no proved semantic source':!flow.to?'Recorded evidence has no prefix-proved semantic destination':!from?'Source port is absent, retired, quiet or hidden in the current presentation':'Destination port is absent, retired, quiet or hidden in the current presentation'});continue}
+  if(!from||!to){unavailableIds.push(flow.id);unavailableCodes.push(!flow.from?'0':!flow.to?'1':!from?'2':'3');continue}
   available.push({flow:flow as SceneFlow,from,to})
  }
  // Priority is a pure policy for this cut; evaluate it once per drawable edge.
@@ -82,6 +84,7 @@ export function buildFlowTopology(input:FlowTopologyInput){
   const group=groups.get(id)??{id,from:item.from,to:item.to,flows:[]};group.flows.push(flow);groups.set(id,group)
  }
  const bundles=[...groups.values()].sort((a,b)=>a.id<b.id?-1:a.id>b.id?1:0),bundled=bundles.reduce((sum,bundle)=>sum+bundle.flows.length,0)
+ const unavailable=unavailableFlowSnapshot(unavailableIds,unavailableCodes.join(''))
  const presentation:FlowPresentation={counts:{recorded,drawable:individual.length+bundled,individual:individual.length,bundled,bundleCurves:bundles.length,unavailable:unavailable.length,scopeExcluded:scopeExcluded.length},individualIds:individual.map(item=>item.flow.id),unavailable,scopeExcluded}
  return{individual,bundles,presentation,mandatory:mandatory.map(item=>item.flow.id)}
 }

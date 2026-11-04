@@ -35,3 +35,8 @@ On source4c52141b, all eleven debugger cases pass in the 23-case integration (ze
 Fresh default discovery on source44fd57fa lists 298 cases in 83 files after adding two current Error Explorer navigation cases. The historical classification is 245 current-classified/53 older still OPEN; neither classification nor the 39-case focused integration is a passing whole-browser result. [Independent source/frame/event actions](error-navigation.md).
 
 On final driver source 7c9eaa1a, all four curated recursion cases pass inside the 37-case integration. This reduces the older remainder from 53 to 49. The historical 298-case population now has 249 current-classified/49 older cases; this is not a passing whole-browser result. The curated cases launch no JVM; the related integration attaches 29 distinct actual JVM IDs. [Original assertions, return metadata fix, timing failure and qualification boundaries](recursion-browser-successors.md).
+
+
+## Complete unavailable-flow evidence cases — 2026-11-04
+
+Two new actual-JVM desktop/narrow paging and prefix cases pass in the current 49-case focused gate. They add coverage rather than migrate an older case. Fresh default discovery is 300 cases/84 files: 251 current-classified and 49 older cases remain. Neither discovery nor classification is an exhaustive passing result. The previous 135-case parent gate retains its own source boundary. [Evidence and qualification](compact-unavailable-flows.md).

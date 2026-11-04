@@ -256,3 +256,8 @@ The final 37-case integration archives 49 original PNGs, four root-reviewed/45 u
 ## Shared presentation event witnesses — 2026-11-04
 
 Four fresh original native hero, narrow object-inspection, return and exception captures have been root-reviewed at full size against best.png and references 07/08/10. None establishes visual convergence: aliasing, matte faces, connector glow/crossings, heading placement and stack/return clipping remain OPEN. The second native gate passes 135/135 and archives 188 originals (four reviewed/184 unreviewed); the separate fresh Dense original is also reviewed with aliasing, cutoff labels, array/body clipping and weak material hierarchy still OPEN. Fresh Dense still fails five latency/load limits. Functional output equivalence is not visual approval. [Ownership contract, rejected candidate and measurements](migration/shared-presentation-events.md). Whole A–G remains OPEN.
+
+
+## Complete unavailable-flow snapshots — 2026-11-04
+
+Four current original hero, return, desktop tail and narrow selected-Flow captures are root-reviewed at full size against unchanged supplied references. The last unavailable row is actually on screen before capture; selected recorded evidence remains inspectable without inventing a drawable port. Fifty other originals are unreviewed. Aliasing, clipped titles/stack, glow/crossings, matte materials, bounded reason previews and peripheral framing remain OPEN. The separate fresh Dense original is also reviewed; it still fails five latency/load gates and shows aliasing, clipping and weak material hierarchy. No visual convergence approval follows from identical plan values. [Complete evidence, ownership and source qualification](migration/compact-unavailable-flows.md). Whole A–G remains OPEN.
