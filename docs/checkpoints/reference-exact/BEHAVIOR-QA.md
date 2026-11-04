@@ -242,3 +242,8 @@ Acceptance passes 191 ordinary cases plus four preserved expected-failure contra
 ## Source Escape and IDE browser successors — 2026-11-03
 
 Ten IDE successors preserve original Java, editing, file revisions, output, stdin/Stop, crash and reload assertions. A native requirement 3.6 regression is fixed: Source chrome Escape restores RUN size within 2 px; editor Escape leaves expansion, and Cursor/execution ID stay unchanged. All 20 IDE/source/debug cases pass. [Presentation dispositions and native proof](migration/ide-browser-successors.md). Whole A–G remains OPEN.
+
+
+## Debugger browser successors — 2026-11-03
+
+All eleven original debugger workflows pass, preserving Java programs, breakpoint and pause locations, stepping, captured identities, exception order, causal rewind, exact console prefixes and process output. Actual SceneExceptionPath unwind history remains distinct from throw-origin face status. The full 23-case integration passes. [Assertions, rejected experiment, exact source and evidence](migration/debugger-browser-successors.md). Whole A–G remains OPEN.

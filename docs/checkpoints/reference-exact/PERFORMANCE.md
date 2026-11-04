@@ -324,3 +324,8 @@ Fresh fixed Dense 32dbbcd1 completes ten stages on FULL actual JVM f71a10c5 (7,4
 ## Source Escape and IDE browser successors — 2026-11-03
 
 The Source Escape/IDE migration passes build metrics (71,732-byte main entry); all 76 local protected Node benchmark inputs are unchanged. Latest Dense evidence remains source187/run32dbbcd1 with five latency/load failures; no new current-source browser performance or retention approval is claimed. [Source and evidence boundary](migration/ide-browser-successors.md). Whole A–G remains OPEN.
+
+
+## Debugger browser successors — 2026-11-03
+
+Production inputs and all 76 protected Node benchmark dependency inputs remain unchanged. Main-entry gzip is 71,732 bytes; Shell closure 672,897 bytes is diagnostic. No new Dense or retention approval is claimed: the latest five Dense latency/load failures and independent retention failures remain OPEN. [Assertions, rejected experiment, exact source and evidence](migration/debugger-browser-successors.md). Whole A–G remains OPEN.

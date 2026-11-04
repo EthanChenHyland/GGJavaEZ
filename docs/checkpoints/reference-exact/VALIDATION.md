@@ -450,3 +450,8 @@ Acceptance passes 191 ordinary cases plus four preserved expected-failure contra
 ## Source Escape and IDE browser successors — 2026-11-03
 
 Source4b798b34 passes eight fresh checks, including 2,208 defaults/70 explicit opt-in skips/2,278 total in 237 files. Full native integration passes 20/20 with zero failures/skips/flaky results, 11 attached distinct actual JVM IDs and 29 archived originals. Fifteen Java literals match the original IDE driver exactly; older browser cases remaining fall from 74 to 64. [Exact source, assertions, failures and scope](migration/ide-browser-successors.md). Whole A–G remains OPEN.
+
+
+## Debugger browser successors — 2026-11-03
+
+Source4c52141b passes eight checks: 2,209 default passes, 70 explicit opt-in skips, 2,279 total in 237 files (300.71 seconds). Native integration passes 23/23, zero skips/failures/flaky, in 231.433 seconds, with 22 distinct attached actual JVM IDs. All eleven debugger cases migrate; 53 older cases remain. AST inventory is 686 modules/2,413 literal edges/263 reachable/41 nonliteral/zero obsolete targets. [Assertions, rejected experiment, exact source and evidence](migration/debugger-browser-successors.md). Whole A–G remains OPEN.

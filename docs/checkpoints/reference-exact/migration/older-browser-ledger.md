@@ -6,7 +6,7 @@ Default inventory at f262899 discovers 294 cases in 81 files. Of these, 202 belo
 | --- | ---: | --- |
 | `commands-v12-p4.spec.ts` | 2 | [Migrated; both preserved cases pass](command-receipts.md) |
 | `coverage-v12-p4.spec.ts` | 8 | [Migrated; exact fixture outputs with explicit presentation dispositions](coverage-browser.md) |
-| `debugger-errors.spec.ts` | 11 | OPEN |
+| `debugger-errors.spec.ts` | 11 | [Migrated; original JVM semantics and exact prefixes retained, 23-case integration passes](debugger-browser-successors.md) |
 | `ide-recording-handoff.spec.ts` | 1 | [Migrated with requirement 1.21 Console disposition and prior-label fix](recording-handoff.md) |
 | `ide.spec.ts` | 10 | [Migrated; original Java/backend checks, native Source Escape fix and full 20-case source integration pass](ide-browser-successors.md) |
 | `incremental-v12.spec.ts` | 2 | [Migrated; unchanged workload and transport proof; wider Console latency failure retained](incremental-browser.md) |
@@ -29,3 +29,5 @@ No original case is removed or marked skipped by this ledger. Saved discovery li
 
 
 On source4b798b34, all ten original IDE cases pass in the 20-case source integration (zero skipped/failed/flaky). This reduces the remaining older disposition count from 74 to 64. The earlier 296-case discovery/classification remains historical; the same test population now has 232 current-classified and 64 remaining older cases, not a passing whole-browser result. [Explicit retired-surface replacements, failure archives and Source Escape fix](ide-browser-successors.md).
+
+On source4c52141b, all eleven debugger cases pass in the 23-case integration (zero skipped/failed/flaky). This reduces the remaining older disposition count from 64 to 53. The historical 296-case population now has 243 current-classified and 53 remaining older cases; this is not a passing whole-browser result. [Explicit presentation replacements, rejected status experiment and final evidence](debugger-browser-successors.md).

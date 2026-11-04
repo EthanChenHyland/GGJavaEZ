@@ -2,6 +2,40 @@ import { expect, it } from 'vitest'
 import type { RuntimeFrame, RuntimeState, TraceEvent } from '../contracts/runtime'
 import { createInitialState } from '../runtime/state'
 import { frameStatus, frameStatusText, type FrameStatusInputs } from './frameStatus'
+import type { RawRuntimeEvent } from '../instrumentation/contracts'
+import { normalizeTrace } from '../instrumentation/normalize'
+import { seek } from '../runtime'
+import { createLayoutEngine } from './layoutEngine'
+import { createSceneProjector } from './sceneProjector'
+
+it('preserves throw-origin status while recording origin and caller unwinds through reverse replay', () => {
+  const raw = [
+    { type: 'enter', frameId: 'caller', methodName: 'main', callerFrameId: null, receiver: null, parameters: [] },
+    { type: 'enter', frameId: 'origin', methodName: 'work', callerFrameId: 'caller', receiver: null, parameters: [] },
+    { type: 'throw', frameId: 'origin', objectId: 'failure', className: 'pkg.Failure', message: null, explicit: true },
+    { type: 'unwind', frameId: 'origin', objectId: 'failure' },
+    { type: 'unwind', frameId: 'caller', objectId: 'failure' },
+  ].map((item, seq) => ({ v: 1, seq, threadId: '1', className: 'C', methodName: 'main', descriptor: '()V', line: seq + 1, site: seq, ...item })) as RawRuntimeEvent[]
+  const trace = normalizeTrace(raw, { sources: [], classes: [] }, { status: 'program_crashed', exitCode: 1, diagnostic: null }).trace
+  const layout = createLayoutEngine(); layout.append(trace.events)
+  const projector = createSceneProjector(trace)
+  const throwIndex = trace.events.findIndex(event => event.type === 'THROW_EXCEPTION')
+  const unwindIndex = trace.events.findIndex(event => event.type === 'UNWIND_EXCEPTION')
+  const callerUnwindIndex = trace.events.findIndex(event => event.type === 'UNWIND_EXCEPTION' && event.frameId === 'jvm:frame:caller')
+  expect(throwIndex).toBeGreaterThan(0); expect(unwindIndex).toBeGreaterThan(throwIndex); expect(callerUnwindIndex).toBeGreaterThan(unwindIndex)
+  const cursors = [throwIndex + 1, throwIndex + 2, unwindIndex + 1, unwindIndex + 2, trace.events.length, throwIndex + 2, unwindIndex + 2]
+  for (const cursor of cursors) {
+    const runtime = seek(trace, cursor), before = JSON.stringify(runtime)
+    const scene = projector.project(runtime, layout.state, { sessionEnded: true, pausedAtLiveHead: false, liveHead: trace.events.length,
+      recording: { state: 'FULL', reason: null, budget: null, lastRecordedSeq: null, executionContinued: false } })
+    const origin = scene.entities['jvm:frame:origin']
+    expect(origin).toMatchObject({ kind: 'frame', exceptionRole: 'origin', status: { kind: 'threw', exception: 'Failure' } })
+    expect(scene.exception!.unwound).toEqual(cursor <= unwindIndex ? [] : cursor > callerUnwindIndex ? ['jvm:frame:origin', 'jvm:frame:caller'] : ['jvm:frame:origin'])
+    if (cursor === trace.events.length) expect(scene.entities['jvm:frame:caller']).toMatchObject({ kind: 'frame', exceptionRole: 'unwound', status: { kind: 'unwound', exception: 'Failure' } })
+    expect(origin.anchor).toBe(layout.state.anchors['jvm:frame:origin'])
+    expect(JSON.stringify(runtime)).toBe(before)
+  }
+})
 
 function input(extra: Partial<FrameStatusInputs> = {}): FrameStatusInputs {
   const frame: RuntimeFrame = { id: 'f', callerFrameId: null, className: 'C', methodName: 'm', depth: 0, status: 'active', locals: {}, enteredAt: 'enter' }

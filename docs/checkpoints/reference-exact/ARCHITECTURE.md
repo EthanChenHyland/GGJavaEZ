@@ -344,3 +344,8 @@ RuntimeSolid separates memoized label content from the face fade. FaceTextOpacit
 ## Source Escape and IDE browser successors — 2026-11-03
 
 Source chrome now consumes plain Escape only while expanded over an existing World, preserving editor/input/widget ownership. The existing workbench.source action restores run/debug presentation sizing without changing Cursor, runtime, Focus or camera contracts. [Regression and ownership](migration/ide-browser-successors.md).
+
+
+## Debugger browser successors — 2026-11-03
+
+Debugger successors use the current World, Dock, Inspector, native timeline and source boundaries. Production and shared contracts remain unchanged. The explicit requirement 9.11 distinction between throw-origin status and recorded propagation is preserved; the temporary contrary experiment is rejected and archived. [Assertions, rejected experiment, exact source and evidence](migration/debugger-browser-successors.md). Whole A–G remains OPEN.

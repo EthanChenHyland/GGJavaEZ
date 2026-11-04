@@ -236,3 +236,8 @@ Fifty-two native PNG originals are archived; five receive root review for Hero, 
 ## Source Escape and IDE browser successors — 2026-11-03
 
 Twenty-nine originals are archived; four receive root review for import/Console, stopped Scanner, narrow debugger Source and curated object Focus. UI reachability and captured facts hold; clipping, aliasing, Header wrap and scene/Dock hierarchy remain unapproved. [Review/source boundary](migration/ide-browser-successors.md). Whole A–G remains OPEN.
+
+
+## Debugger browser successors — 2026-11-03
+
+The 23-case integration archives 32 original PNGs, four root-reviewed and 28 unreviewed, plus six exception comparisons. Native geometry and current controls are exercised; text aliasing/cutoff, matte surfaces, crossing glow, Header wrapping and peripheral clipping remain unapproved. Functional passes do not establish reference convergence. [Assertions, rejected experiment, exact source and evidence](migration/debugger-browser-successors.md). Whole A–G remains OPEN.
