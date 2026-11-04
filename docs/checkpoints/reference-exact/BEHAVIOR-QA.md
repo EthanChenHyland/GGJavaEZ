@@ -267,3 +267,8 @@ New ownership checks cover exact-document isolation, atomic malformed-envelope r
 ## Complete unavailable-flow snapshots — 2026-11-04
 
 The integrated implementation matches 6,840 complete parent plans across 38 recordings, 760 scenes, 476,849 unavailable entries and 102 old snapshots. New actual-JVM desktop/narrow cases page a complete list past index 4,096, verify the captured tail ID/reason, preserve Cursor/camera while selecting the real graph edge, clear evidence at Event 0 and restore it at the exact normalized head. The unchanged 1,287-byte Topology fixture is hash-qualified; failed new-driver setup attempts are retained separately. [Complete evidence, ownership and source qualification](migration/compact-unavailable-flows.md). Whole A–G remains OPEN.
+
+
+## Error Explorer applied-prefix evidence — 2026-11-04
+
+Event 0 withholds future exception metadata, stack, paths and crash status. Applied raw throw evidence cannot read an unapplied paired Graph fact. Observed paths and separately labelled future navigation are bounded by their throw episode, including catch/rethrow of the same Throwable. Explicit earlier value history retains return to its inspected failure even when an earlier caught episode remains visible. Desktop/narrow actual-JVM tests verify the return control in the active Cause column and preserve exact selection, Focus and camera. All eleven existing debugger workflows and the integrated 25-case gate pass. [Exact source, regressions and qualification](migration/error-prefix-evidence.md). Whole A–G remains OPEN.

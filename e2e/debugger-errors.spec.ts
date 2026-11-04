@@ -381,7 +381,7 @@ test('nested propagation seeks real unwind states through World navigation', asy
   expect(origin.filter(frame=>frame.role==='origin')).toHaveLength(1)
   expect(origin.filter(frame=>frame.role==='origin').every(frame=>frame.drawn)).toBe(true)
   await errorSection(page,'Stack & path')
-  await panel.locator('.exception-path button').filter({ hasText: /^Unwind/ }).first().click()
+  await panel.locator('.exception-navigation button').filter({ hasText: /^Go to recorded Unwind/ }).first().click()
   await expect(panel.locator('.exception-path [aria-current="step"]')).toHaveCount(1)
   await expect(panel.locator('.error-stack')).toContainText('unwound')
   const unwound=await page.evaluate(()=>window.__ggjavaezWorld!.scene().exception!.unwound)

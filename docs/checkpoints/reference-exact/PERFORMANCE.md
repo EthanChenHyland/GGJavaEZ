@@ -349,3 +349,8 @@ Four corrected-source parent/candidate/candidate/parent processes reduce 20,000-
 ## Complete unavailable-flow snapshots — 2026-11-04
 
 Four protected prototype controls reduce large-corpus retention from about 24.40 MB to 22.81–22.84 MB. A fresh production probe confirms 22,815,656 bytes and ratio 40.976%; all three 25% production retention gates still FAIL. LINE ratio 1.039672 passes 2x. Warm planner median ratios 0.955–1.002 have mixed tails and establish no statistical speedup. Entry gzip remains 71,733 bytes; diagnostic Shell closure 673,925 bytes. Fresh Dense 4703adda executes FULL JVM 76ccd51b, completes all ten stages without browser/lifecycle errors and exits one: seek p50/p95 100.660/132.587 ms, Focus p95 200.430 ms, Home p95 231.764 ms and cold median 5,429.025 ms all FAIL unchanged limits. Maximum frame interval is 924.8 ms; four external rows stay NOT_MEASURED. No latency/statistical gain or no-jank approval. [Complete evidence, ownership and source qualification](migration/compact-unavailable-flows.md). Whole A–G remains OPEN.
+
+
+## Error Explorer applied-prefix evidence — 2026-11-04
+
+Source `1e715790` passes current production build metrics: entry static JS gzip 72,164 bytes; application Shell static closure gzip 674,859 bytes. Error Explorer uses the recording-qualified prefix and a clamped historical throw snapshot, with separate explicit future navigation. No fresh Dense latency or isolated retention measurement is claimed for this source. The formal Dense failures on `ff2fa076` and failed 25% retention budgets recorded for the preceding milestone retain their exact source boundaries and remain OPEN. [Behavior, source qualification and regression evidence](migration/error-prefix-evidence.md).

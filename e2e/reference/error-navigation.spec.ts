@@ -30,7 +30,7 @@ for(const viewport of[{width:1440,height:900},{width:760,height:900}])test(`erro
  expect(sought.cursor).toBeLessThan(before.cursor);expect(sought.selection).toEqual(selected.selection)
  expect(sought.recording).toBe(before.recording);expect(sought.pose).toEqual(before.pose);expect(sought.focus).toEqual(before.focus)
  if(await stackTab.isVisible())await stackTab.click()
- await panel.locator('.exception-path button').filter({hasText:/^Unwind/}).last().click();await ready(page)
+ await panel.locator('.exception-navigation button').filter({hasText:/^Go to recorded Unwind/}).last().click();await ready(page)
  const unwound=await boundary(page)
  expect(unwound.cursor).toBeGreaterThan(sought.cursor);expect(unwound.selection).toEqual(selected.selection)
  expect(unwound.pose).toEqual(before.pose);expect(unwound.focus).toEqual(before.focus)
@@ -39,9 +39,18 @@ for(const viewport of[{width:1440,height:900},{width:760,height:900}])test(`erro
  expect((await (await request.get('/api/execution/current')).json()).id).toBe(session.id)
  await page.screenshot({path:`.ggjavaez/qa/reference-exact/error-navigation-${viewport.width}x${viewport.height}.png`})
  await seekCursor(page,0)
- const absent=await boundary(page),frameButton=panel.locator('.error-stack details summary button').first()
- await expect(frameButton).toBeDisabled()
- await expect(frameButton).toHaveAttribute('title','Frame is not present at the current Event')
+ const absent=await boundary(page)
+ // Before the throw, no future stack/source/seek target may be presented. The
+ // missing-current-frame action guard is covered independently by
+ // ErrorExplorer's unavailable-frame presentation unit; frame/source actions
+ // above retain their native selection/time/camera boundaries.
+ await expect(panel).toContainText('No exception has been observed at this Event')
+ await expect(panel.locator('.error-stack details summary button')).toHaveCount(0)
+ await expect(panel.locator('.debug-source')).toHaveCount(0)
+ await expect(panel.locator('.exception-path button')).toHaveCount(0)
+ await expect(panel.getByRole('button',{name:'Return to failure',exact:true})).toHaveCount(0)
+ await expect(panel.locator('h2')).toHaveCount(0)
+ await expect(panel).not.toContainText('failed shipment')
  expect(await page.evaluate(id=>!!window.__ggjavaezWorld!.scene().entities[id!],origin)).toBe(false)
  expect(await boundary(page)).toEqual(absent)
  await page.screenshot({path:`.ggjavaez/qa/reference-exact/error-navigation-absent-frame-${viewport.width}x${viewport.height}.png`})

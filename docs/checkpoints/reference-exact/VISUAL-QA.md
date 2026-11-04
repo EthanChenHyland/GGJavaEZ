@@ -261,3 +261,8 @@ Four fresh original native hero, narrow object-inspection, return and exception 
 ## Complete unavailable-flow snapshots — 2026-11-04
 
 Four current original hero, return, desktop tail and narrow selected-Flow captures are root-reviewed at full size against unchanged supplied references. The last unavailable row is actually on screen before capture; selected recorded evidence remains inspectable without inventing a drawable port. Fifty other originals are unreviewed. Aliasing, clipped titles/stack, glow/crossings, matte materials, bounded reason previews and peripheral framing remain OPEN. The separate fresh Dense original is also reviewed; it still fails five latency/load gates and shows aliasing, clipping and weak material hierarchy. No visual convergence approval follows from identical plan values. [Complete evidence, ownership and source qualification](migration/compact-unavailable-flows.md). Whole A–G remains OPEN.
+
+
+## Error Explorer applied-prefix evidence — 2026-11-04
+
+Six fresh original-size captures were reviewed on source `1e715790`: desktop/narrow empty prefix, applied throw and two-exception history bookmark. The bookmark is contained in the active Cause column; empty prefixes expose no future exception content. The final 25-case run preserves 32 originals, with 26 not root-reviewed. Comparison with reference sheet 10 retains OPEN findings for matte faces, aliasing, hierarchy, peripheral clipping and material/reference convergence. This is targeted evidence presentation approval, not whole-product visual acceptance. [Exact source, regressions and qualification](migration/error-prefix-evidence.md). Whole A–G remains OPEN.

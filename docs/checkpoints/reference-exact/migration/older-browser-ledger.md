@@ -40,3 +40,8 @@ On final driver source 7c9eaa1a, all four curated recursion cases pass inside th
 ## Complete unavailable-flow evidence cases — 2026-11-04
 
 Two new actual-JVM desktop/narrow paging and prefix cases pass in the current 49-case focused gate. They add coverage rather than migrate an older case. Fresh default discovery is 300 cases/84 files: 251 current-classified and 49 older cases remain. Neither discovery nor classification is an exhaustive passing result. The previous 135-case parent gate retains its own source boundary. [Evidence and qualification](compact-unavailable-flows.md).
+
+
+## Error Explorer prefix evidence — 2026-11-04
+
+Four new actual-JVM prefix and history-return cases cover desktop and narrow widths. Fresh default discovery on source1e715790 lists 304 cases/85 files: 255 current-classified and 49 older cases remain. The complete source validation and final 25-case native integration pass. The changed future-Unwind locators in existing navigation/debugger successors preserve their original runtime, selection, camera, Focus and JVM assertions. Event-0 future-frame presentation is replaced by stronger empty-prefix assertions; the missing-current-frame guard remains separately covered. Discovery and classification do not imply exhaustive browser acceptance. [Evidence and source boundary](error-prefix-evidence.md).

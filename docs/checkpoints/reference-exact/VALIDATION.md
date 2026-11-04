@@ -475,3 +475,8 @@ Corrected source 80f38870 (971 inputs) passes all eight checks, including 2,217 
 ## Complete unavailable-flow snapshots — 2026-11-04
 
 Product/unit source 94e01c3e passes eight checks: 2,220 default passes, 70 explicit opt-in skips, 2,290 total tests/239 files (307.42 seconds). Final driver ff2fa076 changes only the new browser test; all 973 other inputs and all 29 built resources are byte-identical, with fresh browser typecheck/protected guards. Its focused native gate passes 49/49, zero failures/skips/flaky, in 524.712 seconds, with 38 distinct attached actual JVM IDs and 54 originals (four reviewed/50 unreviewed). The older 135-case parent execution is not relabelled fresh. AST: 692 modules/2,433 literal edges/265 reachable/41 nonliteral/zero obsolete targets. [Complete evidence, ownership and source qualification](migration/compact-unavailable-flows.md). Whole A–G remains OPEN.
+
+
+## Error Explorer applied-prefix evidence — 2026-11-04
+
+Source `1e715790` (976 inputs) passes all eight checks: 2,232 default passes, 70 explicit opt-in skips, 2,302 total tests/240 files (292.27 seconds). Final native integration passes 25/25 with zero failures/skips/flaky in 242.972 seconds. The standard attachments identify 23 distinct actual JVM IDs across 23 cases; the archive contains 32 originals (six reviewed/26 unreviewed). Default browser discovery is 304 cases/85 files, not an exhaustive passing result. AST: 694 modules/2,446 literal edges/265 reachable/41 nonliteral/zero obsolete targets. [Exact source, regressions and qualification](migration/error-prefix-evidence.md). Whole A–G remains OPEN.

@@ -369,3 +369,8 @@ Scene projection and FlowCatalog share one exact-document event-ID index through
 ## Complete unavailable-flow snapshots — 2026-11-04
 
 Unavailable-flow evidence now uses a complete read-only Array facade over privately captured IDs and an immutable on-heap reason string. It captures no mutable catalog or future prefix and preserves every ID, exact reason, index, count, iteration and JSON value. Stable identity is the recorded Flow ID; Inspector has no per-DTO identity cache or mutation. No runtime, Graph, event, history, camera, source or material contract changes. [Complete evidence, ownership and source qualification](migration/compact-unavailable-flows.md). Whole A–G remains OPEN.
+
+
+## Error Explorer applied-prefix evidence — 2026-11-04
+
+Error Explorer reads the existing recording-qualified RuntimeState and clamps its historical throw snapshot to the applied prefix. Accepted later Events remain explicit navigation targets outside the observed path. A user-created return bookmark is qualified by recording and throw witness, independently of the currently visible earlier episode. Runtime/Graph schemas, normalization, history, camera and navigation contracts remain unchanged; no CSS or alternate scene system is added. [Exact source, regressions and qualification](migration/error-prefix-evidence.md). Whole A–G remains OPEN.
