@@ -11,6 +11,7 @@ import { frameTitle } from './frameTitle'
 import { consoleIoSummaries, graphIoSummaries } from './ioSummary'
 import { stringValueText, valueText,hasRecordedValuePort } from './valueText'
 import {createRecordedReferenceBindings} from './recordedReferenceBindings'
+import {acceptedEventIndex} from './acceptedEventIndex'
 import {recordedReturnDestination} from './returnEvidence'
 import {currentStorage} from './currentStorage'
 
@@ -149,7 +150,7 @@ function referenceSnapshot(groups: readonly ReferenceGroup[]): readonly SceneRef
 export function createSceneProjector(trace: TraceDocument): SceneProjector {
   let events: readonly TraceEvent[] = trace.events, indexed = 0, invocationNumber = 0, revision = 0
   const owners = new Map<string, OwnerHistory>(), slotOwners = new Map<string, string>()
-  const bindingHistory=createRecordedReferenceBindings(trace.demoId)
+  const bindingHistory=createRecordedReferenceBindings(trace.demoId,acceptedEventIndex(trace))
   const byEvent=bindingHistory.events
   const frameCache = new WeakMap<RuntimeFrame, CachedNode<SceneFrame>>()
   const objectCache = new WeakMap<RuntimeObject, CachedNode<SceneObject | SceneArray | SceneCollection>>()

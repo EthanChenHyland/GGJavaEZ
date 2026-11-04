@@ -251,3 +251,8 @@ The 39-case integration archives 49 original PNGs: four root-reviewed, 45 unrevi
 ## Captured return expressions and recursion successors — 2026-11-03
 
 The final 37-case integration archives 49 original PNGs, four root-reviewed/45 unreviewed. Captured return 6/expression 3×2 and completed 120/expression 5×24 are visible on real invocations; the graph-free curated recording gains no invented flows. Actual JVM depth/returns remain. Matte faces, aliasing, long-stack clipping, label/heading placement and return-label crowding remain unapproved. [Exact assertions, source boundaries and evidence](migration/recursion-browser-successors.md). Whole A–G remains OPEN.
+
+
+## Shared presentation event witnesses — 2026-11-04
+
+Four fresh original native hero, narrow object-inspection, return and exception captures have been root-reviewed at full size against best.png and references 07/08/10. None establishes visual convergence: aliasing, matte faces, connector glow/crossings, heading placement and stack/return clipping remain OPEN. The second native gate passes 135/135 and archives 188 originals (four reviewed/184 unreviewed); the separate fresh Dense original is also reviewed with aliasing, cutoff labels, array/body clipping and weak material hierarchy still OPEN. Fresh Dense still fails five latency/load limits. Functional output equivalence is not visual approval. [Ownership contract, rejected candidate and measurements](migration/shared-presentation-events.md). Whole A–G remains OPEN.

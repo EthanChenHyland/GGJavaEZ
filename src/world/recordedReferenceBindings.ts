@@ -1,20 +1,20 @@
 import {arrayElementSlotId,type RuntimeSlot,type RuntimeValue,type TraceEvent} from '../contracts/runtime'
 import type {SceneReference} from '../contracts/world'
 import {createReferenceBindingHistory,type BindingObservation} from './referenceBindingHistory'
+import {createAcceptedEventIndex,type AcceptedEventIndex} from './acceptedEventIndex'
 
 /** Presentation index of accepted normalized slot facts. Graph value versions
  * and mirrored EXECUTION_FACT edges are deliberately not additional bindings.
  * No RuntimeState transition, writer, Java operation or future value is inferred.
  */
-export function createRecordedReferenceBindings(recordingId:string){
+export function createRecordedReferenceBindings(recordingId:string,index:AcceptedEventIndex=createAcceptedEventIndex()){
  const history=createReferenceBindingHistory(recordingId)
  const fields=new Map<string,Set<string>>(),summaries=new Map<string,Set<string>>()
  const locals=new Map<string,Map<string,string|undefined>>()
- const eventsById=new Map<string,TraceEvent>()
  // The envelope validator owns these accepted witnesses. Consumers receive
  // lookup only, so projection need not retain a duplicate event-ID index.
- const eventLookup=Object.freeze({get:(id:string)=>eventsById.get(id)})
  let indexed=0,lastEventId:string|undefined
+ const eventLookup=Object.freeze({get:(id:string)=>{const event=index.get(id);return event&&event.seq<indexed?event:undefined}})
  return{
   get length(){return indexed},
   get events(){return eventLookup},
@@ -23,12 +23,7 @@ export function createRecordedReferenceBindings(recordingId:string){
   append(events:readonly TraceEvent[]){
    if(events.length<indexed||indexed&&events[indexed-1].eventId!==lastEventId)throw new Error('Reference bindings require one append-only accepted recording')
    // Validate this append's envelope before indexing any new event.
-   const incoming=new Set<string>()
-   for(let i=indexed;i<events.length;i++){
-    const event=events[i]
-    if(event.seq!==i||!event.eventId||eventsById.has(event.eventId)||incoming.has(event.eventId))throw new Error('Reference bindings require unique event IDs and contiguous normalized ordinals')
-    incoming.add(event.eventId)
-   }
+   index=index.accept(events,indexed)
    for(;indexed<events.length;indexed++){
     const event=events[indexed],observations=new Map<string,BindingObservation>()
     const add=(sourceId:string,sourceSlotId:string,value:RuntimeValue|null,role:SceneReference['role'],mode:BindingObservation['mode']='observe')=>observations.set(JSON.stringify([sourceId,sourceSlotId]),{sourceId,sourceSlotId,value,role,mode})
@@ -95,7 +90,7 @@ export function createRecordedReferenceBindings(recordingId:string){
      case 'RETURN_VALUE':if(event.destination)add(event.destination.frameId,event.destination.slotId,event.value,'frame-object','write');break
     }
     if(observations.size)history.append(event.seq,event.eventId,[...observations.values()])
-    eventsById.set(event.eventId,event);lastEventId=event.eventId
+    lastEventId=event.eventId
    }
   },
  }

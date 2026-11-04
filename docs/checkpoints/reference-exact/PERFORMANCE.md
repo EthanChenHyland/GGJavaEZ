@@ -339,3 +339,8 @@ Main-entry gzip is 71,734 bytes; diagnostic Shell closure 673,157 bytes. All 76 
 ## Captured return expressions and recursion successors — 2026-11-03
 
 Main-entry gzip remains 71,734 bytes; diagnostic Shell closure 673,229 bytes. All 76 protected Node benchmark dependency inputs are unchanged. No new Dense or presentation-retention approval is claimed; historical failures retain their source boundaries. [Exact assertions, source boundaries and evidence](migration/recursion-browser-successors.md). Whole A–G remains OPEN.
+
+
+## Shared presentation event witnesses — 2026-11-04
+
+Four corrected-source parent/candidate/candidate/parent processes reduce 20,000-event presentation retention from 26.218 MB to 24.402–24.403 MB (about 6.9%). The ratio remains 43.804–43.823%; all twelve unchanged 25% retention gates FAIL. All four LINE scaling gates pass. These are Node generated-provenance measurements; no browser latency, JVM/GPU or statistical gain approval follows. Entry gzip is 71,733 bytes; diagnostic Shell closure 673,481 bytes. Fresh Dense run 42fcf420 executes FULL JVM 8ef308bb (7,492 raw/9,852 normalized), completes all ten stages without browser/lifecycle errors, and exits one: seek p50/p95 99.232/116.754 ms, Focus p95 183.950 ms, Home p95 200.423 ms and cold median 5,442.190 ms all FAIL unchanged limits. Maximum frame interval 836.7 ms prevents no-jank approval; four external browser rows remain NOT_MEASURED. [Ownership contract, rejected candidate and measurements](migration/shared-presentation-events.md). Whole A–G remains OPEN.

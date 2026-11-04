@@ -58,7 +58,7 @@ export function WorldSurface({ trace, onSourceChange, onRevealSource, onRuntimeC
     const reducedMotion=motionPreference.os||motionPreference.inApp;
     useEffect(()=>{useCameraStore.getState().setReducedMotion(reducedMotion)},[reducedMotion]);
     useEffect(()=>{useQualityStore.getState().setActivity({scrubbing:playback.state.scrubbing,liveTrailing:playback.state.lens==='LIVE'&&execution?.phase==='RUNNING'})},[playback.state.scrubbing,playback.state.lens,execution?.phase]);
-    const compiler = useMemo(() => ({ layout: createLayoutEngine(), projector: createSceneProjector(trace), flows: createFlowCatalog(), router:createConnectorRouter(), previous: null as SceneModel | null, previousPlan: null as PresentationPlan | null, windows: new Map<string,ArrayWindow>() }), [trace.demoId]);
+    const compiler = useMemo(() => ({ layout: createLayoutEngine(), projector: createSceneProjector(trace), flows: createFlowCatalog(trace), router:createConnectorRouter(), previous: null as SceneModel | null, previousPlan: null as PresentationPlan | null, windows: new Map<string,ArrayWindow>() }), [trace.demoId]);
     const layout = useMemo(() => { compiler.layout.append(trace.events); return compiler.layout.state; }, [compiler, trace.events, trace.events.length]);
     const flows = useMemo(() => { const graph = seek(trace, liveCursor).executionGraph; if (graph) compiler.flows.extend(graph, trace); return graph ? compiler.flows : undefined; }, [compiler, trace, liveCursor]);
     const ended = execution ? ['COMPLETED', 'FAILED', 'STOPPED'].includes(execution.phase) : trace.events.length > 0;

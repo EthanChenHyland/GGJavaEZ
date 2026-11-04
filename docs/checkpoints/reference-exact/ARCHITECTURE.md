@@ -359,3 +359,8 @@ Error Explorer now uses distinct callbacks for captured-source reveal, frame sel
 ## Captured return expressions and recursion successors — 2026-11-03
 
 Invocation inspection now exposes only the selected invocation’s existing, prefix-visible ReturnTransfer expression. Missing expressions stay unavailable; no Java parsing, arithmetic inference, graph edge or standalone return entity is added. A read-only QA navigation observer and maintained browser typecheck support four migrated recursion cases. Semantic/runtime/camera contracts stay unchanged. [Exact assertions, source boundaries and evidence](migration/recursion-browser-successors.md). Whole A–G remains OPEN.
+
+
+## Shared presentation event witnesses — 2026-11-04
+
+Scene projection and FlowCatalog share one exact-document event-ID index through a registry with weak keys and weak values. Live readers retain their owner and qualify every lookup by their own admitted prefix; differing mutable incoming witnesses fork privately. The World compiler binds both readers to its original document across streaming wrappers. No RuntimeState, Graph, history, JVM or camera contract changes. [Ownership contract, rejected candidate and measurements](migration/shared-presentation-events.md). Whole A–G remains OPEN.

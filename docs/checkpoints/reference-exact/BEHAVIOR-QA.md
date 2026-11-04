@@ -257,3 +257,8 @@ A real-JVM RED shows source reveal moving Cursor 66→45 and adding HISTORY/Sele
 ## Captured return expressions and recursion successors — 2026-11-03
 
 The four original curated recursion cases preserve exact positions, six invocation identities/anchors, five returns, main result 120, playback stop/replay, reverse seeks, user input over Follow, Focus/Home and Person switching. Captured expression 3×2 is restored in invocation details. Final 37/37 passes; the unrelated terminal Errors toggle prerequisite is corrected and verified with four fresh-JVM repeats. [Exact assertions, source boundaries and evidence](migration/recursion-browser-successors.md). Whole A–G remains OPEN.
+
+
+## Shared presentation event witnesses — 2026-11-04
+
+New ownership checks cover exact-document isolation, atomic malformed-envelope rejection, lagging readers, independent admitted prefixes, streamed document wrappers, mutable-fixture compatibility and graph-edge admission. The original collection test caught a rejected strict-identity candidate and now passes unchanged. Thirty-eight input recordings reproduce complete parent scene/flow/plan behavior; explicit-GC diagnostics distinguish an unused index from its retained trace. All 135 unchanged native successors pass in the second complete gate, including live delta ingestion, references, debugger/error/source boundaries, selection, camera control and context recovery. [Ownership contract, rejected candidate and measurements](migration/shared-presentation-events.md). Whole A–G remains OPEN.

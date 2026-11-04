@@ -1,4 +1,4 @@
-import type { RuntimeState, RuntimeValue, TraceDocument, TraceEvent } from '../contracts/runtime'
+import type { RuntimeState, RuntimeValue, TraceDocument } from '../contracts/runtime'
 import type { ExecutionGraph, GraphEdge } from '../contracts/executionGraph'
 import type { Evidence, SceneModel } from '../contracts/world'
 import { graphTransition, type FlowEndpoint } from '../motion/semanticTransition'
@@ -6,6 +6,7 @@ import { seek } from '../runtime'
 import { valueText,hasRecordedValuePort } from './valueText'
 import {collectionEntryFace} from './collectionFace'
 import {consumingWriteDestination,recordedReturnDestination} from './returnEvidence'
+import {acceptedEventIndex,type AcceptedEventIndex} from './acceptedEventIndex'
 export type FlowKind='argument'|'receiver'|'local-field'|'field-read'|'assignment'|'reference'|'array-read'|'array-write'|'return'|'input'|'output'|'throw'|'unwind'|'catch'
 export interface SceneFlow {id:string;edgeIndex:number;kind:FlowKind;from:FlowEndpoint|null;to:FlowEndpoint;evidenceEventIds:readonly string[];evidenceSeqs:readonly number[];valueText:string|null}
 export interface RecordedFlow extends Omit<SceneFlow,'to'> {to:FlowEndpoint|null}
@@ -29,7 +30,7 @@ const endpointCode=(point:FlowEndpoint|null):number=>!point?0:point.kind==='slot
 const endpointFromCode=(code:number,id:string|null|undefined):FlowEndpoint|null=>code===1?{kind:'slot',id:id!}:code===2?{kind:'frame',id:id!}:code===3?{kind:'object',id:id!}:code===4?{kind:'class',id:id!}:code===5?{kind:'io',id:'stdin'}:code===6?{kind:'io',id:'stdout'}:code===7?{kind:'io',id:'stderr'}:null
 const kinds:Partial<Record<GraphEdge['kind'],FlowKind>>={ARGUMENT_BIND:'argument',RECEIVER_BIND:'receiver',ASSIGN:'assignment',FIELD_WRITE:'local-field',STATIC_WRITE:'local-field',FIELD_READ:'field-read',STATIC_READ:'field-read',REFERENCE_BIND:'reference',ARRAY_READ:'array-read',ARRAY_WRITE:'array-write',RETURN:'return',INPUT_CONSUME:'input',OUTPUT:'output',THROW:'throw',UNWIND:'unwind',CATCH:'catch'}
 /** Complete recorded adjacency is independent of drawable-flow filtering; all IDs are looked up explicitly. */
-export function createFlowCatalog():FlowCatalog {
+export function createFlowCatalog(initialTrace?:TraceDocument):FlowCatalog {
  let graph:ExecutionGraph|null=null,acceptedTrace:TraceDocument|null=null,indexedEvents=0,indexedEdges=0,lastScene:SceneModel|null=null
  // History owns retained semantic prefixes. Derived endpoint records belong
  // only to the currently resolved graph, rather than multiplying across every
@@ -51,7 +52,9 @@ export function createFlowCatalog():FlowCatalog {
  }
  // Edge ordinals already resolve through the accepted graph and opaque edge ID.
  // Keep one candidate owner; most events need no separately allocated list.
- const events=new Map<string,TraceEvent>(),byId=new Map<string,Candidate>(),byEvent=new Map<string,Candidate|Candidate[]>()
+ let eventIndex:AcceptedEventIndex|undefined=initialTrace?acceptedEventIndex(initialTrace):undefined
+ const events={get:(id:string)=>{const event=eventIndex?.get(id);return event&&event.seq<indexedEvents?event:undefined}}
+ const byId=new Map<string,Candidate>(),byEvent=new Map<string,Candidate|Candidate[]>()
  let prefixCache:{scene:SceneModel;cursor:number;indexedEdges:number;items:readonly RecordedFlow[]}|undefined
  const physical=(id:string,state:RuntimeState):FlowEndpoint|null=>{
   const storage=state.executionGraph?.storage[id]
@@ -138,7 +141,9 @@ export function createFlowCatalog():FlowCatalog {
  const api:FlowCatalog={
   extend(next,trace){
    if(next.edges.length<indexedEdges||trace.events.length<indexedEvents)throw new Error('FlowCatalog requires one append-only accepted recording')
-   for(;indexedEvents<trace.events.length;indexedEvents++){const event=trace.events[indexedEvents];if(events.has(event.eventId)||event.seq!==indexedEvents)throw new Error('FlowCatalog requires unique event identities and semantic ordinals');events.set(event.eventId,event)}
+   eventIndex??=acceptedEventIndex(trace)
+   eventIndex=eventIndex.accept(trace.events,indexedEvents)
+   indexedEvents=trace.events.length
    graph=next;acceptedTrace=trace
    if(indexedEdges===next.edges.length)return
    for(;indexedEdges<next.edges.length;indexedEdges++){

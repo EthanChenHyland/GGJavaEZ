@@ -465,3 +465,8 @@ Source 44fd57fa (969 inputs) passes all eight checks: 2,210 default passes, 70 e
 ## Captured return expressions and recursion successors — 2026-11-03
 
 Product/unit source c66556e3 passes eight checks: 2,211 default passes/70 explicit opt-in skips/2,281 total/237 files (295.71 seconds). Final driver source 7c9eaa1a changes only one browser readiness prerequisite afterward; 968 other inputs and all build resources are byte-identical, with fresh browser typecheck/protected guards. Final 37/37 passes in 356.900 seconds, zero failures/skips/flaky, 29 attached distinct actual JVM IDs and 49 archived originals. Four curated cases are migrated; 49 older cases remain. Earlier unit/build executions are not relabelled as fresh driver executions. [Exact assertions, source boundaries and evidence](migration/recursion-browser-successors.md). Whole A–G remains OPEN.
+
+
+## Shared presentation event witnesses — 2026-11-04
+
+Corrected source 80f38870 (971 inputs) passes all eight checks, including 2,217 default passes, 70 explicit opt-in skips and 2,287 total tests/238 files (297.58 seconds). Focused checks pass 35/35; parent equivalence covers 912 scenes, 1,632 plans and 9,696 flow queries. AST is 689 modules/2,426 literal edges/264 reachable/41 nonliteral/zero obsolete targets. The complete second native gate passes 135/135, zero failures/skips/flaky, in 1,343.236 seconds, with 95 distinct attached actual JVM session IDs across 94 cases. It preserves 188 originals, four root-reviewed. The first 134-pass/one-HTTP-504-failure run and three unchanged successful repetitions remain archived separately. [Ownership contract, rejected candidate and measurements](migration/shared-presentation-events.md). Whole A–G remains OPEN.
