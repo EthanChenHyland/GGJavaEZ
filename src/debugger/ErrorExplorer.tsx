@@ -1,14 +1,16 @@
 import { useMemo, useState } from 'react'
 import type { Selection } from '../contracts/interaction'
-import type { RuntimeSlot, RuntimeState, SlotOwner, TraceDocument } from '../contracts/runtime'
+import type { RuntimeSlot, RuntimeState, SlotOwner, SourceLocation, TraceDocument } from '../contracts/runtime'
 import { seek } from '../runtime'
 import { formatValue } from './formatValue'
 import { causeHistory, type CauseTarget } from './causality'
 import { committedExceptionCursor } from './exceptionCursor'
 
-export function ErrorExplorer({ trace, runtime, selection, stderr, onNavigate }: {
+export function ErrorExplorer({ trace, runtime, selection, stderr, onNavigate, onRevealSource, onSelectFrame }: {
   trace: TraceDocument; runtime: RuntimeState | null; selection: Selection; stderr: string
   onNavigate: (cursor: number, selection?: Selection) => void
+  onRevealSource: (location: SourceLocation) => void
+  onSelectFrame: (frameId: string) => void
 }) {
   const eventCount = trace.events.length
   const complete = useMemo(() => seek(trace, eventCount), [trace, eventCount])
@@ -39,6 +41,7 @@ export function ErrorExplorer({ trace, runtime, selection, stderr, onNavigate }:
   }}><span>{slot.name}<small>{slot.role === 'parameter' ? 'parameter · ' : ''}{slot.javaType}</small></span><code className={slot.value.kind === 'null' ? 'is-null' : ''}>{slot.value.kind === 'uninitialized' ? 'unavailable' : formatValue(slot.value, snapshot.objects)}</code></button>
   if (!failure) return <p className="debug-empty">No exception was observed in this execution.</p>
   const sourceLine = failure.source ? trace.sourceFiles.find((file) => file.fileId === failure.source!.fileId)?.content.split('\n')[failure.source.line - 1] : null
+  const sourceAvailable = !!failure.source && Number.isInteger(failure.source.line) && failure.source.line > 0 && sourceLine !== null && sourceLine !== undefined
   const lifecycle = trace.events.flatMap((event, index) => 'exceptionId' in event && event.exceptionId === failure.exceptionId ? [{ event, cursor: committedExceptionCursor(trace, index) }] : [])
   const liveFailure = runtime?.exceptions.find((item) => item.eventId === failure.eventId)
   const terminalEvent = trace.events.at(-1)
@@ -53,16 +56,17 @@ export function ErrorExplorer({ trace, runtime, selection, stderr, onNavigate }:
       <span className="debug-eyebrow">ERROR EXPLORER · {failure.caughtBy ? 'CAUGHT' : 'OBSERVED'}{runCrashed ? ' · RUN CRASHED' : ''}</span>
       {failures.length > 1 && <select aria-label="Exception episode" value={failure.eventId} onChange={(event) => { setChosen(event.target.value); setTarget(null); setTracing(false); setSection('failure') }}>{failures.map((item, index) => <option key={item.eventId} value={item.eventId}>{index + 1} · {item.className}</option>)}</select>}
       <h2>{failure.className.split('.').at(-1)}</h2><p>{failure.message || 'Message unavailable or empty'}</p>
-      <button className="debug-source" onClick={() => onNavigate(throwCursor, { kind: 'frame', id: failure.frameIds.at(-1)! })}>{failure.source ? `${failure.source.fileId}:${failure.source.line}` : 'Source unavailable'}<code>{sourceLine?.trim()}</code></button>
-      <button className="debug-action" onClick={() => onNavigate(throwCursor)}>Return to failure</button>
+      <button className="debug-source" disabled={!sourceAvailable} title={sourceAvailable ? 'Reveal captured source without moving execution or Selection' : 'Recorded source is unavailable'} onClick={() => { if (sourceAvailable && failure.source) onRevealSource(failure.source) }}><span>Reveal Source · {failure.source ? `${failure.source.fileId}:${failure.source.line}` : 'Source unavailable'}</span><code>{sourceLine?.trim()}</code></button>
+      <button className="debug-action" title="Go to the recorded throw without changing Selection" onClick={() => onNavigate(throwCursor)}>Return to failure</button>
       <details><summary>Actual JVM stderr / stack trace</summary><pre>{stderr || 'No terminal stack trace yet; the JVM may be paused at the throw.'}</pre></details>
     </div>
     <div className="error-stack"><h3>Stack at throw</h3>{failure.frameIds.slice().reverse().map((id) => {
       const frame = snapshot.frames[id]
       if (!frame) return null
       const status = liveFailure?.unwoundFrameIds.includes(id) ? 'unwound' : liveFailure?.caughtBy === id ? 'caught here' : 'at throw'
-      return <details key={id} open={id === failure.frameIds.at(-1)}><summary><button onClick={() => onNavigate(throwCursor, { kind: 'frame', id })}>{frame.className}.{frame.methodName}()</button><span>{status}</span></summary>{Object.values(frame.locals).map((slot) => valueRow(slot, { kind: 'frame', frameId: id, slotId: slot.id }))}</details>
-    })}<h3>Observed exception path</h3><div className="exception-path">{lifecycle.map(({ event, cursor }) => <button key={event.eventId} aria-current={runtime?.cursor === cursor ? 'step' : undefined} onClick={() => onNavigate(cursor, 'frameId' in event ? { kind: 'frame', id: event.frameId } : undefined)}>{event.type === 'THROW_EXCEPTION' ? 'Throw' : event.type === 'UNWIND_EXCEPTION' ? 'Unwind' : event.type === 'FINALLY_ENTER' ? 'Finally / cleanup handler' : 'Catch'}<small>{event.source ? `${event.source.fileId}:${event.source.line}` : 'source unavailable'}</small></button>)}</div></div>
+      const selectable = !!runtime?.frames[id]
+      return <details key={id} open={id === failure.frameIds.at(-1)}><summary><button disabled={!selectable} aria-label={`Select frame ${frame.className}.${frame.methodName}()`} title={selectable ? 'Select this frame without moving execution or the camera' : 'Frame is not present at the current Event'} onClick={() => { if (selectable) onSelectFrame(id) }}>{frame.className}.{frame.methodName}()</button><span>{status}</span></summary>{Object.values(frame.locals).map((slot) => valueRow(slot, { kind: 'frame', frameId: id, slotId: slot.id }))}</details>
+    })}<h3>Observed exception path</h3><div className="exception-path">{lifecycle.map(({ event, cursor }) => <button key={event.eventId} title="Go to this recorded Event without changing Selection" aria-current={runtime?.cursor === cursor ? 'step' : undefined} onClick={() => onNavigate(cursor)}>{event.type === 'THROW_EXCEPTION' ? 'Throw' : event.type === 'UNWIND_EXCEPTION' ? 'Unwind' : event.type === 'FINALLY_ENTER' ? 'Finally / cleanup handler' : 'Catch'}<small>{event.source ? `${event.source.fileId}:${event.source.line}` : 'source unavailable'}</small></button>)}</div></div>
     <div className="error-causes"><h3>Trace Cause{targetLabel && <span className="error-cause-target"> · {targetLabel}</span>}</h3>
       {!effectiveTarget && <p className="debug-empty">Select a value in Stack at throw or an object below.</p>}
       {Object.values(snapshot.objects).map((object) => <details key={object.id}><summary>{object.className} #{object.displayId}</summary>{Object.values(object.fields).map((slot) => valueRow(slot, { kind: 'object', objectId: object.id, slotId: slot.id }))}{object.array?.elements.map((slot, index) => <button key={slot.id} className="debug-value" onClick={() => { setTarget({ kind: 'array', objectId: object.id, index }); setTracing(false); onNavigate(throwCursor, { kind: 'slot', id: slot.id }) }}><span>[{index}]</span><code>{formatValue(slot.value)}</code></button>)}</details>)}

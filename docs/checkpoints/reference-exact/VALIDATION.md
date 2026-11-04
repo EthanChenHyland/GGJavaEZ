@@ -455,3 +455,8 @@ Source4b798b34 passes eight fresh checks, including 2,208 defaults/70 explicit o
 ## Debugger browser successors — 2026-11-03
 
 Source4c52141b passes eight checks: 2,209 default passes, 70 explicit opt-in skips, 2,279 total in 237 files (300.71 seconds). Native integration passes 23/23, zero skips/failures/flaky, in 231.433 seconds, with 22 distinct attached actual JVM IDs. All eleven debugger cases migrate; 53 older cases remain. AST inventory is 686 modules/2,413 literal edges/263 reachable/41 nonliteral/zero obsolete targets. [Assertions, rejected experiment, exact source and evidence](migration/debugger-browser-successors.md). Whole A–G remains OPEN.
+
+
+## Independent Error Explorer actions — 2026-11-03
+
+Source 44fd57fa (969 inputs) passes all eight checks: 2,210 default passes, 70 explicit opt-in skips, 2,280 total/237 files (295.94 seconds). Native 39/39 passes with zero failures/skips/flaky in 338.169 seconds, 31 distinct attached actual JVM session IDs and 49 original captures. Default discovery is 298 cases/83 files, not a full-suite passing claim. AST is 687 modules/2,416 literal edges/263 reachable/41 nonliteral/zero obsolete targets. [Exact source, regression and evidence](migration/error-navigation.md). Whole A–G remains OPEN.

@@ -329,3 +329,8 @@ The Source Escape/IDE migration passes build metrics (71,732-byte main entry); a
 ## Debugger browser successors — 2026-11-03
 
 Production inputs and all 76 protected Node benchmark dependency inputs remain unchanged. Main-entry gzip is 71,732 bytes; Shell closure 672,897 bytes is diagnostic. No new Dense or retention approval is claimed: the latest five Dense latency/load failures and independent retention failures remain OPEN. [Assertions, rejected experiment, exact source and evidence](migration/debugger-browser-successors.md). Whole A–G remains OPEN.
+
+
+## Independent Error Explorer actions — 2026-11-03
+
+Main-entry gzip is 71,734 bytes; diagnostic Shell closure 673,157 bytes. All 76 protected Node benchmark dependency inputs are unchanged. The UI callback/source-receipt change has no new Dense performance approval; prior retention and five latest Dense latency/load failures remain OPEN. [Exact source, regression and evidence](migration/error-navigation.md). Whole A–G remains OPEN.

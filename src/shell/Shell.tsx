@@ -133,7 +133,7 @@ return <div className={`shell ide-shell ${debugSession&&activeExecution?'shell--
         </div>
         <Dock workspace={workspace} recording={recording} drawerBottom={layout.timeDock.y} viewportHeight={viewport.height}>
           {tool === 'debugger' ? <DebugDrawer session={debugSession} inspection={workspace.debugInspection} worldSessionId={visualization?.sessionId??null} breakpoints={displayedBreakpoints} onInspect={navigateRuntime} onRemove={removeBreakpoint}/>
-          : tool === 'errors' ? <ErrorsDrawer workspace={workspace} recording={recording}/>
+          : tool === 'errors' ? <ErrorsDrawer workspace={workspace} recording={recording} onRevealSource={location=>revealSource({recordingId:currentTrace.demoId,cursor:workspace.runtime?.cursor??0,targetId:worldSelection?.id??focusTargetId,location})}/>
           : tool === 'problems' ? <ProblemsDrawer build={build} language={languageProblems} onOpen={openDiagnostic}/>
           : <ConsoleDrawer workspace={workspace} recording={recording}/>}
         </Dock>

@@ -1,5 +1,5 @@
 import type {SourceLocation,TraceDocument} from '../../contracts/runtime'
-export interface SourceRevealRequest {recordingId:string;cursor:number;targetId:string;location:SourceLocation}
+export interface SourceRevealRequest {recordingId:string;cursor:number;targetId:string|null;location:SourceLocation}
 export interface SourceReveal extends SourceRevealRequest {
  revision:number
  file:TraceDocument['sourceFiles'][number]

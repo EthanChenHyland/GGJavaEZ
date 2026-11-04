@@ -2,6 +2,12 @@ import {expect,it} from 'vitest'
 import {loadPersonTrace} from '../../examples/traces'
 import {capturedSourceReveal,currentSourceReveal} from './sourceReveal'
 const trace=loadPersonTrace(),request={recordingId:trace.demoId,cursor:18,targetId:'object:person:17',location:{fileId:'Main.java',line:18}}
+it('reveals captured source without requiring or inventing a Selection',()=>{
+ const reveal=capturedSourceReveal(trace,{...request,targetId:null},1)!
+ expect(reveal).not.toBeNull();expect(currentSourceReveal(reveal,trace.demoId,18,null)).toBe(reveal)
+ expect(currentSourceReveal(reveal,trace.demoId,18,request.targetId)).toBeNull()
+ expect(currentSourceReveal(reveal,trace.demoId,17,null)).toBeNull()
+})
 it('uses exact recorded text and an independent location receipt, without changing source content',()=>{
  const before=JSON.stringify(trace),reveal=capturedSourceReveal(trace,request,1)!
  expect(reveal.file).toBe(trace.sourceFiles[0]);expect(reveal.location).toEqual(request.location);expect(reveal.location).not.toBe(request.location)

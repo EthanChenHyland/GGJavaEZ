@@ -349,3 +349,8 @@ Source chrome now consumes plain Escape only while expanded over an existing Wor
 ## Debugger browser successors — 2026-11-03
 
 Debugger successors use the current World, Dock, Inspector, native timeline and source boundaries. Production and shared contracts remain unchanged. The explicit requirement 9.11 distinction between throw-origin status and recorded propagation is preserved; the temporary contrary experiment is rejected and archived. [Assertions, rejected experiment, exact source and evidence](migration/debugger-browser-successors.md). Whole A–G remains OPEN.
+
+
+## Independent Error Explorer actions — 2026-11-03
+
+Error Explorer now uses distinct callbacks for captured-source reveal, frame selection and recorded-event seeking. Frame selection uses the existing interaction owner with recording/prefix guards; explicit seeks omit replacement Selection. Nullable presentation-only source receipts support preview without selecting an item. Semantic/runtime and camera contracts are unchanged. [Exact source, regression and evidence](migration/error-navigation.md). Whole A–G remains OPEN.

@@ -247,3 +247,8 @@ Ten IDE successors preserve original Java, editing, file revisions, output, stdi
 ## Debugger browser successors — 2026-11-03
 
 All eleven original debugger workflows pass, preserving Java programs, breakpoint and pause locations, stepping, captured identities, exception order, causal rewind, exact console prefixes and process output. Actual SceneExceptionPath unwind history remains distinct from throw-origin face status. The full 23-case integration passes. [Assertions, rejected experiment, exact source and evidence](migration/debugger-browser-successors.md). Whole A–G remains OPEN.
+
+
+## Independent Error Explorer actions — 2026-11-03
+
+A real-JVM RED shows source reveal moving Cursor 66→45 and adding HISTORY/Selection. The fix preserves time/selection/camera when revealing, preserves time when selecting, and preserves selection across explicit cross-frame event seeks. Desktop/narrow and absent-frame checks pass; all 39 integrated cases pass, including edited-draft source proof and all 11 debugger workflows. [Exact source, regression and evidence](migration/error-navigation.md). Whole A–G remains OPEN.

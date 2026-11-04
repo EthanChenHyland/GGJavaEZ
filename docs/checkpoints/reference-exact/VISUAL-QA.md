@@ -241,3 +241,8 @@ Twenty-nine originals are archived; four receive root review for import/Console,
 ## Debugger browser successors — 2026-11-03
 
 The 23-case integration archives 32 original PNGs, four root-reviewed and 28 unreviewed, plus six exception comparisons. Native geometry and current controls are exercised; text aliasing/cutoff, matte surfaces, crossing glow, Header wrapping and peripheral clipping remain unapproved. Functional passes do not establish reference convergence. [Assertions, rejected experiment, exact source and evidence](migration/debugger-browser-successors.md). Whole A–G remains OPEN.
+
+
+## Independent Error Explorer actions — 2026-11-03
+
+The 39-case integration archives 49 original PNGs: four root-reviewed, 45 unreviewed. Actual IDE source reveal shows captured readonly text while remaining LIVE at the final prefix. Existing material, typography, glow and clipping differences remain unapproved. Complete-episode evidence shown before its Event remains an open prefix-presentation gap. [Exact source, regression and evidence](migration/error-navigation.md). Whole A–G remains OPEN.
