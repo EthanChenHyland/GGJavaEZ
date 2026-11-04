@@ -252,3 +252,8 @@ All eleven original debugger workflows pass, preserving Java programs, breakpoin
 ## Independent Error Explorer actions — 2026-11-03
 
 A real-JVM RED shows source reveal moving Cursor 66→45 and adding HISTORY/Selection. The fix preserves time/selection/camera when revealing, preserves time when selecting, and preserves selection across explicit cross-frame event seeks. Desktop/narrow and absent-frame checks pass; all 39 integrated cases pass, including edited-draft source proof and all 11 debugger workflows. [Exact source, regression and evidence](migration/error-navigation.md). Whole A–G remains OPEN.
+
+
+## Captured return expressions and recursion successors — 2026-11-03
+
+The four original curated recursion cases preserve exact positions, six invocation identities/anchors, five returns, main result 120, playback stop/replay, reverse seeks, user input over Follow, Focus/Home and Person switching. Captured expression 3×2 is restored in invocation details. Final 37/37 passes; the unrelated terminal Errors toggle prerequisite is corrected and verified with four fresh-JVM repeats. [Exact assertions, source boundaries and evidence](migration/recursion-browser-successors.md). Whole A–G remains OPEN.

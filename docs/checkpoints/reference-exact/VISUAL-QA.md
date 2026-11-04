@@ -246,3 +246,8 @@ The 23-case integration archives 32 original PNGs, four root-reviewed and 28 unr
 ## Independent Error Explorer actions — 2026-11-03
 
 The 39-case integration archives 49 original PNGs: four root-reviewed, 45 unreviewed. Actual IDE source reveal shows captured readonly text while remaining LIVE at the final prefix. Existing material, typography, glow and clipping differences remain unapproved. Complete-episode evidence shown before its Event remains an open prefix-presentation gap. [Exact source, regression and evidence](migration/error-navigation.md). Whole A–G remains OPEN.
+
+
+## Captured return expressions and recursion successors — 2026-11-03
+
+The final 37-case integration archives 49 original PNGs, four root-reviewed/45 unreviewed. Captured return 6/expression 3×2 and completed 120/expression 5×24 are visible on real invocations; the graph-free curated recording gains no invented flows. Actual JVM depth/returns remain. Matte faces, aliasing, long-stack clipping, label/heading placement and return-label crowding remain unapproved. [Exact assertions, source boundaries and evidence](migration/recursion-browser-successors.md). Whole A–G remains OPEN.

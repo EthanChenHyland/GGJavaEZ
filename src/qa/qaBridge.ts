@@ -17,6 +17,7 @@ function createQaBridge(snapshot: QaSnapshot) {
     cursor: () => ({cursor: snapshot.cursor, liveHead: snapshot.liveHead}),
     shellRects: () => ({header: rect('.shell-header'), source: rect('.ide-editor-panel'), timeDock: rect('.world-timeline'), inspector: rect('.inspector'), safeFrame: snapshot.layout.safeFrame}),
     cameraPose: () => {const pose=useCameraStore.getState().pose;return {position:cameraPosition(pose),target:pose.target}},
+    navigationState: () => {const {mode,follow}=useCameraStore.getState();return {mode,follow}},
     setCameraPose: (pose: EyePose) => useCameraStore.getState().requestPose(orbitPoseFromEye(pose)),
     frameHero:()=>useCameraStore.getState().frameHero(),
     scene:()=>window.__ggjavaezWorld?.scene()??null,

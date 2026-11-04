@@ -10,6 +10,21 @@ import {valueText} from '../world/valueText'
 import {invocationInspection} from './invocationInspection'
 import {InspectorInvocationFacts} from './InspectorInvocationFacts'
 const person=loadPersonTrace(),projection=projectTrace(person)
+it('exposes only the selected invocation\'s captured return expression across forward and reverse prefixes',()=>{
+ const trace=loadRecursionTrace(),world=projectTrace(trace)
+ for(const cursor of[19,25,26,27,36,25,26,19]){
+  const runtime=seek(trace,cursor),scene=world.project(cursor),node=scene.entities['frame:factorial:3']
+  if(node.kind!=='frame')throw new Error('Missing captured invocation')
+  const before=JSON.stringify(runtime),expected=cursor>=26?'3 × 2':null
+  expect(invocationInspection(runtime,scene,node).returnExpression).toBe(expected)
+  const html=renderToStaticMarkup(<InspectorInvocationFacts runtime={runtime} scene={scene} node={node}/>)
+  expect(html.includes('Recorded return expression:')).toBe(expected!==null)
+  if(expected!==null)expect(html).toContain(expected)
+  const noExpression={...runtime,returns:runtime.returns.map(({expression,...transfer})=>{void expression;return transfer})}
+  expect(invocationInspection(noExpression,scene,node).returnExpression).toBeNull()
+  expect(JSON.stringify(runtime)).toBe(before)
+ }
+})
 function frameAt(cursor:number,id='frame:person-setAge:1'){
  const runtime=seek(person,cursor),scene=projection.project(cursor),node=scene.entities[id]
  if(node?.kind!=='frame')throw new Error('Expected explicit captured frame')

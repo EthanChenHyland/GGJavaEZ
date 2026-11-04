@@ -18,8 +18,13 @@ export function invocationInspection(runtime:RuntimeState,scene:SceneModel,node:
  const receiverState=receiver?'captured':call?.invokeKind==='static'?'none':'unavailable'
  let returned=frame?.returnValue
  if(returned===undefined&&invocation?.returnValueId)returned=graph?.values[invocation.returnValueId]?.value
+ let returnExpression:string|null=null
+ if(returned!==undefined)for(let index=runtime.returns.length-1;index>=0;index--){
+  const transfer=runtime.returns[index]
+  if(transfer.frameId===node.id){returnExpression=transfer.expression??null;break}
+ }
  const completed=frame?.status==='returned'||node.status.kind==='returned'
  const returnValue=returned!==undefined?valueText(returned,{context:'exact',objects:runtime.objects}):null
  const returnState=returnValue?'captured':!completed?'pending':frame?.returnType==='void'||invocation?.method.descriptor.endsWith(')V')?'void':'unavailable'
- return{callerId,callerKind,callerTitle,receiver,receiverId:receiverId??(receiverSlot?.value.kind==='reference'?receiverSlot.value.objectId:null),receiverState,returnValue,returnState}as const
+ return{callerId,callerKind,callerTitle,receiver,receiverId:receiverId??(receiverSlot?.value.kind==='reference'?receiverSlot.value.objectId:null),receiverState,returnValue,returnState,returnExpression}as const
 }

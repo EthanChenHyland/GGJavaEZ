@@ -15,6 +15,7 @@
     "e2e/provenance-v12.spec.ts",
     "e2e/coverage-v12-p4.spec.ts",
     "e2e/debugger-errors.spec.ts",
+    "e2e/recursion.spec.ts",
     "e2e/incremental-v12.spec.ts",
     "e2e/m11-persistence.spec.ts",
     "e2e/observer-saturation-v12.spec.ts",

@@ -460,3 +460,8 @@ Source4c52141b passes eight checks: 2,209 default passes, 70 explicit opt-in ski
 ## Independent Error Explorer actions — 2026-11-03
 
 Source 44fd57fa (969 inputs) passes all eight checks: 2,210 default passes, 70 explicit opt-in skips, 2,280 total/237 files (295.94 seconds). Native 39/39 passes with zero failures/skips/flaky in 338.169 seconds, 31 distinct attached actual JVM session IDs and 49 original captures. Default discovery is 298 cases/83 files, not a full-suite passing claim. AST is 687 modules/2,416 literal edges/263 reachable/41 nonliteral/zero obsolete targets. [Exact source, regression and evidence](migration/error-navigation.md). Whole A–G remains OPEN.
+
+
+## Captured return expressions and recursion successors — 2026-11-03
+
+Product/unit source c66556e3 passes eight checks: 2,211 default passes/70 explicit opt-in skips/2,281 total/237 files (295.71 seconds). Final driver source 7c9eaa1a changes only one browser readiness prerequisite afterward; 968 other inputs and all build resources are byte-identical, with fresh browser typecheck/protected guards. Final 37/37 passes in 356.900 seconds, zero failures/skips/flaky, 29 attached distinct actual JVM IDs and 49 archived originals. Four curated cases are migrated; 49 older cases remain. Earlier unit/build executions are not relabelled as fresh driver executions. [Exact assertions, source boundaries and evidence](migration/recursion-browser-successors.md). Whole A–G remains OPEN.

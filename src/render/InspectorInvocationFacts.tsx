@@ -10,5 +10,6 @@ export function InspectorInvocationFacts({runtime,scene,node}:{runtime:RuntimeSt
   <p>{facts.callerKind}: {facts.callerTitle??(facts.callerId?`${facts.callerId} · not present at this point in time`:'No caller recorded')}</p>
   <p>Receiver: {facts.receiver?<Exact value={facts.receiver}/>:facts.receiverState==='none'?'No receiver · recorded static call':facts.receiverId?`${facts.receiverId} · type not recorded`:'Not recorded'}</p>
   {facts.returnState!=='pending'&&<p>Return: {facts.returnValue?<Exact value={facts.returnValue}/>:facts.returnState==='void'?'void':'Value not recorded'}</p>}
+  {facts.returnExpression!==null&&<p>Recorded return expression: <span>{facts.returnExpression}</span></p>}
  </section>
 }

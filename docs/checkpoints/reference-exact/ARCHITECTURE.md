@@ -354,3 +354,8 @@ Debugger successors use the current World, Dock, Inspector, native timeline and 
 ## Independent Error Explorer actions — 2026-11-03
 
 Error Explorer now uses distinct callbacks for captured-source reveal, frame selection and recorded-event seeking. Frame selection uses the existing interaction owner with recording/prefix guards; explicit seeks omit replacement Selection. Nullable presentation-only source receipts support preview without selecting an item. Semantic/runtime and camera contracts are unchanged. [Exact source, regression and evidence](migration/error-navigation.md). Whole A–G remains OPEN.
+
+
+## Captured return expressions and recursion successors — 2026-11-03
+
+Invocation inspection now exposes only the selected invocation’s existing, prefix-visible ReturnTransfer expression. Missing expressions stay unavailable; no Java parsing, arithmetic inference, graph edge or standalone return entity is added. A read-only QA navigation observer and maintained browser typecheck support four migrated recursion cases. Semantic/runtime/camera contracts stay unchanged. [Exact assertions, source boundaries and evidence](migration/recursion-browser-successors.md). Whole A–G remains OPEN.

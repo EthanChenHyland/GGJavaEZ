@@ -15,7 +15,7 @@ Default inventory at f262899 discovers 294 cases in 81 files. Of these, 202 belo
 | `product-audit-m11_5.spec.ts` | 4 | OPEN |
 | `provenance-v12.spec.ts` | 1 | [Migrated; exact constructor proof retained](provenance-browser.md) |
 | `real-visualize.spec.ts` | 5 | OPEN |
-| `recursion.spec.ts` | 4 | OPEN |
+| `recursion.spec.ts` | 4 | [Migrated; captured expressions restored, unchanged trace and 37-case integration pass](recursion-browser-successors.md) |
 | `spatial-io-v12-p5.spec.ts` | 1 | OPEN |
 | `spatial-shell-v12-p5.spec.ts` | 6 | OPEN |
 | `torture-details-v12-p5_5.spec.ts` | 4 | OPEN |
@@ -33,3 +33,5 @@ On source4b798b34, all ten original IDE cases pass in the 20-case source integra
 On source4c52141b, all eleven debugger cases pass in the 23-case integration (zero skipped/failed/flaky). This reduces the remaining older disposition count from 64 to 53. The historical 296-case population now has 243 current-classified and 53 remaining older cases; this is not a passing whole-browser result. [Explicit presentation replacements, rejected status experiment and final evidence](debugger-browser-successors.md).
 
 Fresh default discovery on source44fd57fa lists 298 cases in 83 files after adding two current Error Explorer navigation cases. The historical classification is 245 current-classified/53 older still OPEN; neither classification nor the 39-case focused integration is a passing whole-browser result. [Independent source/frame/event actions](error-navigation.md).
+
+On final driver source 7c9eaa1a, all four curated recursion cases pass inside the 37-case integration. This reduces the older remainder from 53 to 49. The historical 298-case population now has 249 current-classified/49 older cases; this is not a passing whole-browser result. The curated cases launch no JVM; the related integration attaches 29 distinct actual JVM IDs. [Original assertions, return metadata fix, timing failure and qualification boundaries](recursion-browser-successors.md).

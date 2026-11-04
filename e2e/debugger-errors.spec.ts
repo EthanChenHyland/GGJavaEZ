@@ -340,6 +340,13 @@ test('null exception pause is inspectable, causal rewind selects its assignment,
   await page.getByRole('button', { name: /Return to Live/ }).click()
   await page.getByRole('button', { name: 'Continue', exact: true }).click()
   await expect.poll(async () => (await current(request))!.terminalStatus).toBe('program_crashed')
+  await expect(page.locator('.shell-state')).toHaveAttribute('data-state','FAILED')
+  const crashed=(await current(request))!
+  const finalHead=normalizeTrace(crashed.rawEvents,crashed.sourceManifest,{status:crashed.terminalStatus!,exitCode:crashed.exitCode,diagnostic:crashed.diagnostic}).trace.events.length
+  await expect(slider).toHaveAttribute('max',String(finalHead))
+  await expect(slider).toHaveValue(String(finalHead))
+  await ready(page)
+  await page.evaluate(()=>new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve()))))
   await openDock(page,'Errors')
   await panel.getByText('Actual JVM stderr / stack trace', { exact: true }).click()
   await expect(panel.locator('.error-summary pre')).toContainText('Main.main(Main.java:4)')

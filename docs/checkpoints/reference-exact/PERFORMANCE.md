@@ -334,3 +334,8 @@ Production inputs and all 76 protected Node benchmark dependency inputs remain u
 ## Independent Error Explorer actions — 2026-11-03
 
 Main-entry gzip is 71,734 bytes; diagnostic Shell closure 673,157 bytes. All 76 protected Node benchmark dependency inputs are unchanged. The UI callback/source-receipt change has no new Dense performance approval; prior retention and five latest Dense latency/load failures remain OPEN. [Exact source, regression and evidence](migration/error-navigation.md). Whole A–G remains OPEN.
+
+
+## Captured return expressions and recursion successors — 2026-11-03
+
+Main-entry gzip remains 71,734 bytes; diagnostic Shell closure 673,229 bytes. All 76 protected Node benchmark dependency inputs are unchanged. No new Dense or presentation-retention approval is claimed; historical failures retain their source boundaries. [Exact assertions, source boundaries and evidence](migration/recursion-browser-successors.md). Whole A–G remains OPEN.
