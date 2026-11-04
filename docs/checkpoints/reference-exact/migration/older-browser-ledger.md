@@ -45,3 +45,8 @@ Two new actual-JVM desktop/narrow paging and prefix cases pass in the current 49
 ## Error Explorer prefix evidence — 2026-11-04
 
 Four new actual-JVM prefix and history-return cases cover desktop and narrow widths. Fresh default discovery on source1e715790 lists 304 cases/85 files: 255 current-classified and 49 older cases remain. The complete source validation and final 25-case native integration pass. The changed future-Unwind locators in existing navigation/debugger successors preserve their original runtime, selection, camera, Focus and JVM assertions. Event-0 future-frame presentation is replaced by stronger empty-prefix assertions; the missing-current-frame guard remains separately covered. Discovery and classification do not imply exhaustive browser acceptance. [Evidence and source boundary](error-prefix-evidence.md).
+
+
+## Arbitrary Java workflows — 2026-11-04
+
+All five `real-visualize.spec.ts` cases pass on driver source `efaa1bb2` with the six original Java sources byte-equivalent and original execution assertions preserved. The older remainder drops 49→44; fresh discovery remains 304 cases/85 files, with 260 current-classified. This is a focused passing result, not exhaustive browser acceptance. The prior source's full units/build and 25-case gate retain their exact qualification boundary. [Retired-surface dispositions and evidence](arbitrary-java-browser-successors.md).

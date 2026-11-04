@@ -480,3 +480,8 @@ Product/unit source 94e01c3e passes eight checks: 2,220 default passes, 70 expli
 ## Error Explorer applied-prefix evidence — 2026-11-04
 
 Source `1e715790` (976 inputs) passes all eight checks: 2,232 default passes, 70 explicit opt-in skips, 2,302 total tests/240 files (292.27 seconds). Final native integration passes 25/25 with zero failures/skips/flaky in 242.972 seconds. The standard attachments identify 23 distinct actual JVM IDs across 23 cases; the archive contains 32 originals (six reviewed/26 unreviewed). Default browser discovery is 304 cases/85 files, not an exhaustive passing result. AST: 694 modules/2,446 literal edges/265 reachable/41 nonliteral/zero obsolete targets. [Exact source, regressions and qualification](migration/error-prefix-evidence.md). Whole A–G remains OPEN.
+
+
+## Arbitrary Java browser successors — 2026-11-04
+
+Browser-driver source `efaa1bb2` passes all five migrated cases in 50.326 seconds, zero failures/skips/flaky, with five distinct attached actual JVM IDs and five reviewed originals. Fresh browser types/protected guards pass. The other 975 source inputs and all 14 measured JS build resources match source `1e715790`; its 2,232-pass/70-explicit-skip validation, build and 25-case native gate retain their earlier execution boundary. Default discovery remains 304 cases/85 files; 44 older cases remain. AST: 694 modules/2,449 literal edges/265 reachable/41 nonliteral/zero obsolete targets. [Exact assertions, source boundaries and evidence](migration/arbitrary-java-browser-successors.md). Whole A–G remains OPEN.

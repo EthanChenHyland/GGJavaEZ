@@ -272,3 +272,8 @@ The integrated implementation matches 6,840 complete parent plans across 38 reco
 ## Error Explorer applied-prefix evidence — 2026-11-04
 
 Event 0 withholds future exception metadata, stack, paths and crash status. Applied raw throw evidence cannot read an unapplied paired Graph fact. Observed paths and separately labelled future navigation are bounded by their throw episode, including catch/rethrow of the same Throwable. Explicit earlier value history retains return to its inspected failure even when an earlier caught episode remains visible. Desktop/narrow actual-JVM tests verify the return control in the active Cause column and preserve exact selection, Focus and camera. All eleven existing debugger workflows and the integrated 25-case gate pass. [Exact source, regressions and qualification](migration/error-prefix-evidence.md). Whole A–G remains OPEN.
+
+
+## Arbitrary Java browser successors — 2026-11-04
+
+The five original arbitrary-Java workflows now use current Shell/World controls. Six Java sources are byte-equivalent. Real Monaco edit/save and age 19, source synchronization, stable reverse identities, factorial playback/user orbit over Follow, indexed swap values, generic array Focus, recorded stdout prefix/Return Live, and uncaught exception evidence/separate stderr all pass. Explicit retired-surface dispositions preserve the original semantic assertions; deadlines and zero retries remain. [Exact assertions, source boundaries and evidence](migration/arbitrary-java-browser-successors.md). Whole A–G remains OPEN.

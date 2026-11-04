@@ -266,3 +266,8 @@ Four current original hero, return, desktop tail and narrow selected-Flow captur
 ## Error Explorer applied-prefix evidence — 2026-11-04
 
 Six fresh original-size captures were reviewed on source `1e715790`: desktop/narrow empty prefix, applied throw and two-exception history bookmark. The bookmark is contained in the active Cause column; empty prefixes expose no future exception content. The final 25-case run preserves 32 originals, with 26 not root-reviewed. Comparison with reference sheet 10 retains OPEN findings for matte faces, aliasing, hierarchy, peripheral clipping and material/reference convergence. This is targeted evidence presentation approval, not whole-product visual acceptance. [Exact source, regressions and qualification](migration/error-prefix-evidence.md). Whole A–G remains OPEN.
+
+
+## Arbitrary Java browser successors — 2026-11-04
+
+All five original-size arbitrary-Java successor captures were reviewed on driver source `efaa1bb2` and preserved with exact hashes. They show the actual edited Person, free orbit during factorial playback, indexed array, recorded Console output and uncaught exception. Opaque/matte faces, excessive glow/crossings, clipping and material/reference convergence remain OPEN; these captures establish behavioral successors, not final reference acceptance. [Exact assertions, source boundaries and evidence](migration/arbitrary-java-browser-successors.md). Whole A–G remains OPEN.
