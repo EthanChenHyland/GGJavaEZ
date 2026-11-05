@@ -3,17 +3,22 @@ import { useThree,type ThreeEvent } from '@react-three/fiber';
 import { Color, InstancedBufferAttribute, InstancedMesh, Object3D, Vector3 } from 'three';
 import { LineSegments2 } from 'three/addons/lines/LineSegments2.js';
 import { LineSegmentsGeometry } from 'three/addons/lines/LineSegmentsGeometry.js';
-import type { PresentedCurve } from '../contracts/world';
+import type { PresentedBundle,PresentedCurve } from '../contracts/world';
 import { connectorMaterial,roleColor } from './RuntimeMaterials';
 import {instanceAlphaMaterial} from './instanceAlpha';
 import {connectorPortMarkers,type ReferenceChipPort} from './referenceChipPorts';
+import {canonicalConnectorRaycast,type ConnectorPickData} from './geometry/connectorRaycast';
 const noReferencePorts:readonly ReferenceChipPort[]=[];
+// Binding ownership wins shared paths; a residual Flow represents its grouped
+// edges and must remain inspectable beside an identical individual Flow.
+const pickPriority=(curve:PresentedCurve|PresentedBundle)=>curve.kind==='connector'||curve.kind==='binding-history'?0:'flowIds'in curve?1:2;
 type Hover=(id:string|null,pointer?:readonly[number,number])=>void;
-function Curves({ curves, halo, onSelect,onHover }: {
-    curves: readonly PresentedCurve[];
+function Curves({ curves, halo, onSelect,onHover,order }: {
+    curves: readonly (PresentedCurve|PresentedBundle)[];
     halo: boolean;
     onSelect(id: string): void;
     onHover?:Hover;
+    order:ReadonlyMap<string,number>;
 }) {
     const { size } = useThree();
     const widthPx=halo?2.5:curves[0].widthPx;
@@ -37,8 +42,10 @@ function Curves({ curves, halo, onSelect,onHover }: {
         line.computeLineDistances();
         line.frustumCulled = false;
         line.userData.runtimeBloomRole = 'emitter';
+        line.userData.runtimeConnectorPick={ids,order,halo} satisfies ConnectorPickData;
+        line.raycast=canonicalConnectorRaycast;
         return { line, ids, geometry, material };
-    }, [curves, material]);
+    }, [curves, material,order,halo]);
     useLayoutEffect(() => { data.material.resolution.set(size.width, size.height); }, [data, size.width, size.height]);
     useEffect(() => () => data.geometry.dispose(), [data]);
     return <primitive object={data.line} onPointerMove={halo&&onHover?(event:ThreeEvent<PointerEvent>)=>{
@@ -107,12 +114,13 @@ function Arrows({ curves }: {
 }
 /** Pixel-width cores and halos are merged by three bounded emphasis bands. */
 export function ConnectorBatch({ curves, onSelect,onHover,hoverId,referencePorts=noReferencePorts }: {
-    curves: readonly PresentedCurve[];
+    curves: readonly (PresentedCurve|PresentedBundle)[];
     onSelect(id: string): void;
     onHover?:Hover;
     hoverId?:string|null;
     referencePorts?:readonly ReferenceChipPort[];
 }) {
+    const order=useMemo(()=>new Map([...curves].sort((a,b)=>pickPriority(a)-pickPriority(b)).map((curve,index)=>[curve.id,index])),[curves]);
     const bands = useMemo(() => {
         const groups = new Map<string, PresentedCurve[]>();
         for (const curve of curves) {
@@ -122,5 +130,5 @@ export function ConnectorBatch({ curves, onSelect,onHover,hoverId,referencePorts
         }
         return [...groups];
     }, [curves]);
-    return <>{curves.length > 0 && <Curves curves={curves} halo onSelect={onSelect} onHover={onHover}/>} {bands.map(([key, group]) => <Curves key={key} curves={group} halo={false} onSelect={onSelect}/>)}{(curves.length>0||referencePorts.length>0)&&<Endpoints curves={curves} hoverId={hoverId} referencePorts={referencePorts}/>} {curves.length>0&&<Arrows curves={curves}/>}</>;
+    return <>{curves.length > 0 && <Curves curves={curves} order={order} halo onSelect={onSelect} onHover={onHover}/>} {bands.map(([key, group]) => <Curves key={key} curves={group} order={order} halo={false} onSelect={onSelect}/>)}{(curves.length>0||referencePorts.length>0)&&<Endpoints curves={curves} hoverId={hoverId} referencePorts={referencePorts}/>} {curves.length>0&&<Arrows curves={curves}/>}</>;
 }

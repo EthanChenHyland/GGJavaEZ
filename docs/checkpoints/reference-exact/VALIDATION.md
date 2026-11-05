@@ -1,6 +1,6 @@
 # Validation
 
-Latest qualified increment: [Array captions and precise cell Focus](migration/array-label-placement.md), full validation `e1ddb513` / native driver `3e6e9a41`, 2026-11-04. Defaults and fresh 93-case integration pass with an explicit native-driver-only qualification. All three retention budgets and four fresh Dense latency limits still fail; cold median passes only in this execution. Whole-product acceptance remains OPEN. The October table below retains its historical qualification.
+Latest functional increment: [Collection departure clearance and stable connector picking](migration/reference-departure-clearance.md), source `7338d5e2`, 2026-11-05. All eight validation checks and the fresh 101-case native integration pass. Memory, Dense timing and final visual and exhaustive acceptance remain open. Whole-product acceptance remains OPEN. The October table below retains its historical qualification.
 
 Historical implementation evidence, 2026-10-18. A–G completion is not claimed. The detailed chronological record is `docs/reports/reference-exact/VALIDATION.md`; migration ledgers live beside this file in `migration/`. Final results must be refreshed on the cleaned final commit and pushed tip.
 
@@ -515,3 +515,7 @@ Fresh source-qualified Dense completes all ten stages without workflow/lifecycle
 ## Array and collection reference chips — 2026-11-05
 
 Source `cafbcb157db3ec973d989cf64375b2df16bf3a0e5f0f6e00ec74dd4435517675` (991 inputs/23 changes) passes all eight checks. Defaults: **2,265 passed / 70 explicit opt-in skips / 2,335 total**, 244 files, 287.79 s; all steps 311.887 s. Fresh native **99/99**, zero skips/failures/flaky, 1,223.357 s (runner 1,223.925); 79 distinct standard attached JVM IDs across 79 cases; 133 original PNGs, six reviewed/127 unreviewed. Both real GPU tiers execute; eight palette samples are exact. Actual main gzip 71,732 B, static entry/Shell JS closure 72,162/677,835 B. AST: 708 modules/2,523 literal edges/272 reachable/42 nonliteral/zero inventoried obsolete. Browser discovery 320/87 is not full execution; older browser cases and exhaustive opt-ins remain open. Fresh Node retention and four Dense latency budgets still fail. [Scope, failed attempts, source qualifications and complete results](migration/structure-reference-chips.md).
+
+## Collection departure clearance and stable connector picking — 2026-11-05
+
+Source `7338d5e216212b623266b4802f468f66c360b063c9db06559a884ed29f8f8fdd` (992 inputs/13 changes) passes all eight checks: 2,274 defaults/70 explicit opt-in skips/2,344 total, 244 files, 291.81 s; all steps 316.149 s. Fresh native **101/101**, zero skips/failures/flaky, 1,211.282 s; 81 distinct standard attached JVM IDs. The archive has 137 original PNGs/five reviewed. Main gzip 71,734 B; static entry/Shell JS closures 72,164/678,366 B. AST: 709 modules/2,527 literal edges/273 reachable/42 nonliteral/zero inventoried obsolete. Discovery 320 cases/87 files is not execution. Fresh Node retention still fails; complete Dense results are recorded in the linked ledger. [Implementation, failed evidence and exact source qualification](migration/reference-departure-clearance.md).

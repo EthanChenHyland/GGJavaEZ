@@ -1,5 +1,6 @@
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { Canvas, useFrame, useThree,events as pointerEvents,type CanvasProps } from '@react-three/fiber';
+import {prioritizeConnectorIntersections} from './geometry/connectorRaycast';
 import { EnvironmentRig } from './EnvironmentRig';
 import type { Selection } from '../contracts/interaction';
 import type { LayoutState, PresentationPlan, SceneModel } from '../contracts/world';
@@ -32,6 +33,10 @@ import {StructuralLabels} from './StructuralLabels';
 import {projectedFontPixels,projectedPlaneFontPixels} from './text/textSystem';
 import type {Text} from 'troika-three-text';
 import type {StructuralLabelSpec} from './text/structuralLabelLayout';
+
+const runtimePointerEvents:NonNullable<CanvasProps['events']>=store=>({
+    ...pointerEvents(store),filter:items=>prioritizeConnectorIntersections(items),
+});
 
 function GradientBackground() {
     const texture = useMemo(() => {
@@ -70,7 +75,9 @@ function Metrics({ scene, plan, selection,trace }: {
                         const heading=group.userData.runtimeHeading as {entityId:string;kind:'title'|'identity';text:Text}|undefined;
                         if(!heading)return;
                         const text=heading.text,point=new Vector3().setFromMatrixPosition(text.matrix),scale=new Vector3().setFromMatrixScale(text.matrix).y;
-                        headings.push({entityId:heading.entityId,kind:heading.kind,text:text.text,opacity:text.fillOpacity,fontPixels:projectedFontPixels(text.fontSize*scale,point,camera,size.height),planePixels:projectedPlaneFontPixels(text.fontSize*scale,point,camera,size),widthPixels:projectedPlaneFontPixels(text.fontSize*scale,point,camera,size,'x'),position:point.toArray() as [number,number,number],localInkBounds:text.textRenderInfo?.visibleBounds??null});
+                        const ink=text.textRenderInfo?.visibleBounds;
+                        const inkCorners=ink?[ink[0],ink[2]].flatMap(x=>[ink[1],ink[3]].map(y=>new Vector3(x,y,0).applyMatrix4(text.matrix).toArray()as[number,number,number])):[];
+                        headings.push({entityId:heading.entityId,kind:heading.kind,text:text.text,opacity:text.fillOpacity,fontPixels:projectedFontPixels(text.fontSize*scale,point,camera,size.height),planePixels:projectedPlaneFontPixels(text.fontSize*scale,point,camera,size),widthPixels:projectedPlaneFontPixels(text.fontSize*scale,point,camera,size,'x'),position:point.toArray() as [number,number,number],localInkBounds:ink??null,inkCorners});
                     });return headings;
                 },
                 collectionText:()=>{
@@ -80,7 +87,9 @@ function Metrics({ scene, plan, selection,trace }: {
                         const label=group.userData.runtimeCollectionText as {entityId:string;kind:'size'|'more'|'key'|'value';slotId?:string;text:Text}|undefined;
                         if(!label)return;
                         const text=label.text,point=new Vector3().setFromMatrixPosition(text.matrix),scale=new Vector3().setFromMatrixScale(text.matrix).y;
-                        labels.push({entityId:label.entityId,kind:label.kind,slotId:label.slotId,text:text.text,opacity:text.fillOpacity,fontPixels:projectedFontPixels(text.fontSize*scale,point,camera,size.height),planePixels:projectedPlaneFontPixels(text.fontSize*scale,point,camera,size),widthPixels:projectedPlaneFontPixels(text.fontSize*scale,point,camera,size,'x')});
+                        const ink=text.textRenderInfo?.visibleBounds;
+                        const inkCorners=ink?[ink[0],ink[2]].flatMap(x=>[ink[1],ink[3]].map(y=>new Vector3(x,y,0).applyMatrix4(text.matrix).toArray()as[number,number,number])):[];
+                        labels.push({entityId:label.entityId,kind:label.kind,slotId:label.slotId,text:text.text,opacity:text.fillOpacity,fontPixels:projectedFontPixels(text.fontSize*scale,point,camera,size.height),planePixels:projectedPlaneFontPixels(text.fontSize*scale,point,camera,size),widthPixels:projectedPlaneFontPixels(text.fontSize*scale,point,camera,size,'x'),inkCorners,bounds:projectRect(inkCorners,camera,size)});
                     });return labels;
                 },
                 returnText:()=>{
@@ -287,7 +296,7 @@ export function RuntimeCanvas({ scene, plan, layout, safeFrame,focusContentFrame
                 input.current?.key(event.key, event.shiftKey);
             }
         }}>
-    {!supportsWebGL?<div className="world-graphics-status glass" role="status">The 3D World requires WebGL</div>:<Canvas frameloop="demand" shadows="percentage" dpr={[1, 1.5]} camera={{ fov: 36, position: [7, 5, 24], near: .05, far: 10000 }} gl={{ antialias: false, alpha: false, powerPreference: 'high-performance', toneMapping: ACESFilmicToneMapping }} onPointerMissed={() => { if (!moved.current)
+    {!supportsWebGL?<div className="world-graphics-status glass" role="status">The 3D World requires WebGL</div>:<Canvas events={runtimePointerEvents} frameloop="demand" shadows="percentage" dpr={[1, 1.5]} camera={{ fov: 36, position: [7, 5, 24], near: .05, far: 10000 }} gl={{ antialias: false, alpha: false, powerPreference: 'high-performance', toneMapping: ACESFilmicToneMapping }} onPointerMissed={() => { if (!moved.current)
         onSelect(null); }}>
       <GradientBackground/>
       <RegionHaze headings={plan.headings} hasRecording={scene.liveHead>0}/>

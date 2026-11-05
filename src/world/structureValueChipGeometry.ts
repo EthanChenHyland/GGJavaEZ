@@ -27,6 +27,10 @@ export function collectionReferenceChipPort(anchor:WorldAnchor,index:number,map=
  const chip=collectionChip(anchor,index,map,key)
  return chip?centredValueChipReferencePort(chip.centre,chip.width):null
 }
+/** A short right turn reaches the gap before the next row, below the header. */
+export function collectionReferenceDeparture(point:Vec3):Vec3{
+ return[point[0]+.06,point[1]+world.collection.pitch/2,point[2]]
+}
 export function collectionReferenceTextWidth(anchor:WorldAnchor,index:number,map=false):number{
  return Math.max(0,(collectionChip(anchor,index,map,false)?.width??0)-portTextReserve)
 }

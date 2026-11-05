@@ -2,15 +2,16 @@
 // React hook cleanup without a browser, GPU or a second renderer implementation.
 import {createContext,type ReactNode} from 'react'
 import Reconciler from '@react-three/fiber/react-reconciler/index.js'
-import {BoxGeometry,InstancedMesh,Matrix4,Vector3,type InstancedBufferAttribute,type Material} from 'three'
+import {BoxGeometry,InstancedMesh,Matrix4,Object3D,PerspectiveCamera,Raycaster,Vector2,Vector3,type InstancedBufferAttribute,type Intersection,type Material} from 'three'
 import {LineSegments2} from 'three/addons/lines/LineSegments2.js'
 import type {LineMaterial} from 'three/addons/lines/LineMaterial.js'
 import {afterEach,expect,it,vi} from 'vitest'
-import type {PresentedCurve,Vec3} from '../contracts/world'
+import type {PresentedBundle,PresentedCurve,Vec3} from '../contracts/world'
 const state=vi.hoisted(()=>({size:{width:1440,height:900}}))
 vi.mock('@react-three/fiber',()=>({useThree:()=>state}))
 import {ConnectorBatch} from './ConnectorBatch'
 import {createConnectorRouter} from '../world/connectorRouter'
+import {prioritizeConnectorIntersections,type ConnectorPickData} from './geometry/connectorRaycast'
 const ownedGeometry=new Set<BoxGeometry>()
 const curve=(id='ref/a',options:Partial<PresentedCurve>={}):PresentedCurve=>({id,kind:'connector',points:[[-3,1,.8],[0,2,1.2],[4,-2,.9]],colorRole:'reference',opacity:1,widthPx:2.5,arrow:false,...options})
 // Use Fiber's already installed React reconciler with inert host nodes. This
@@ -62,7 +63,96 @@ const lines=(view:ReturnType<typeof render>)=>view.nodes().filter(node=>node.pro
 const line=(node:HostNode)=>node.props!.object as LineSegments2
 const core=(view:ReturnType<typeof render>,width=2.5)=>lines(view).find(node=>(line(node).material as LineMaterial).linewidth===width)!
 const coordinates=(object:LineSegments2,name:string,index:number)=>{const attribute=object.geometry.getAttribute(name);return[attribute.getX(index),attribute.getY(index),attribute.getZ(index)]}
+// Uploaded vertices/camera from the failed narrow native hover case. Replaying
+// these floats is a geometry regression, not another JVM execution.
+const overlappingCurves=()=>[
+ curve('field',{points:[[19.020000457763672,-7.514999866485596,1.3109999895095825],[13.420000076293945,-7.514999866485596,1.3109999895095825]]}),
+ curve('collection',{points:[[18.579999923706055,-7.514999866485596,1.3109999895095825],[13.420000076293945,-7.514999866485596,1.3109999895095825]]}),
+ curve('flow',{points:[[13.420000076293945,-7.514999866485596,1.3109999895095825],[19.020000457763672,-7.514999866485596,1.3109999895095825]]}),
+]
+function capturedRay(round:(value:number)=>number=value=>value){
+ const camera=new PerspectiveCamera(36,760/900,.05,10000)
+ camera.position.set(19.122464809195577,6.728075653715443,55.460111901115994)
+ camera.lookAt(11.217859974553944,-6.384528773053349,-.7840740067049234);camera.updateMatrixWorld()
+ const ray=new Raycaster();ray.setFromCamera(new Vector2(2*round(516.9528115672443)/760-1,1-2*round(493.53108117343805)/900),camera)
+ return ray
+}
+const hitOwner=(hit:Intersection)=>{const data=hit.object.userData.runtimeConnectorPick as ConnectorPickData;return data.ids[hit.faceIndex??-1]}
 afterEach(()=>{for(const unmount of mounted)unmount();for(const geometry of ownedGeometry)geometry.dispose();ownedGeometry.clear();vi.restoreAllMocks()})
+it('keeps coincident core and halo owners stable when browser pointer coordinates round',()=>{
+ state.size={width:760,height:900}
+ try{
+  const view=render(<ConnectorBatch curves={overlappingCurves()} onSelect={()=>{}}/>)
+  for(const node of lines(view))for(const round of[(value:number)=>value,Math.round,Math.floor,Math.ceil]){
+   const object=line(node);object.updateMatrixWorld()
+   const ray=capturedRay(round),raw:Intersection[]=[]
+   LineSegments2.prototype.raycast.call(object,ray,raw)
+   expect(raw).toHaveLength(3)
+   const hits=ray.intersectObject(object,false)
+   expect(hits).toHaveLength(1);expect(hitOwner(hits[0])).toBe('field')
+   const original=raw.find(hit=>hit.faceIndex===hits[0].faceIndex)!
+   expect(hits[0].distance).toBe(original.distance);expect(hits[0].point).toEqual(original.point)
+  }
+ }finally{state.size={width:1440,height:900}}
+})
+it('uses supplied curve order across emphasis bands without selecting through a halo',()=>{
+ state.size={width:760,height:900}
+ try{
+  for(const reverse of[false,true]){
+   const input=overlappingCurves();input[1]={...input[1],widthPx:3.5};if(reverse)input.reverse()
+   const view=render(<ConnectorBatch curves={input} onSelect={()=>{}}/>),objects=lines(view).map(line)
+   objects.forEach(object=>object.updateMatrixWorld())
+   for(const round of[(value:number)=>value,Math.round,Math.floor,Math.ceil]){
+    const hits=capturedRay(round).intersectObjects(objects,false)
+    const ordered=prioritizeConnectorIntersections(hits)
+    const coreHit=ordered.find(hit=>(hit.object as LineSegments2).material.linewidth!==8)!
+    const haloHit=ordered.find(hit=>(hit.object as LineSegments2).material.linewidth===8)!
+    expect(hitOwner(coreHit)).toBe(input[0].id);expect(hitOwner(haloHit)).toBe(input[0].id)
+    expect(ordered[0]).toBe(coreHit)
+    expect(lines(view).find(node=>line(node)===haloHit.object)!.props!.onClick).toBeUndefined()
+   }
+   view.unmount()
+  }
+ }finally{state.size={width:1440,height:900}}
+})
+it('preserves real depth ordering and leaves protected-body ties in their original order',()=>{
+ state.size={width:760,height:900}
+ try{
+  const input=overlappingCurves().slice(0,2),offset=capturedRay().ray.direction.clone().multiplyScalar(-.5)
+  input[1]={...input[1],widthPx:3.5,points:input[1].points.map(point=>new Vector3(...point).add(offset).toArray() as Vec3)}
+  const view=render(<ConnectorBatch curves={input} onSelect={()=>{}}/>),objects=lines(view).map(line)
+  objects.forEach(object=>object.updateMatrixWorld())
+  const hits=capturedRay().intersectObjects(objects,false),ordered=prioritizeConnectorIntersections(hits)
+  expect(hitOwner(ordered[0])).toBe('collection');expect(hits.at(-1)!.distance-hits[0].distance).toBeGreaterThan(.49)
+  expect(ordered.slice(0,2).every(hit=>hitOwner(hit)==='collection')).toBe(true)
+  expect(ordered.every(hit=>hits.includes(hit))).toBe(true)
+  const body={...hits[0],object:new Object3D()},mixed=[hits[0],body,hits[1]]
+  expect(prioritizeConnectorIntersections(mixed)).toEqual(mixed)
+ }finally{state.size={width:1440,height:900}}
+})
+it('keeps residual Flow bundles selectable on an identical individual Flow path while preserving reference priority',()=>{
+ state.size={width:760,height:900}
+ try{
+  const captured=overlappingCurves(),individual={...captured[0],id:'individual',kind:'flow' as const,widthPx:3.5 as const}
+  const bundle:PresentedBundle={...captured[1],id:'residual',kind:'flow',from:'source',to:'target',count:2,flowIds:['edge/1','edge/2']}
+  const away=capturedRay().ray.direction.clone().multiplyScalar(.5)
+  const fartherBundle={...bundle,points:bundle.points.map(point=>new Vector3(...point).add(away).toArray()as Vec3)}
+  for(const {input,expected}of[
+   {input:[individual,bundle],expected:'residual'},
+   {input:[captured[2],individual,bundle],expected:captured[2].id},
+   {input:[individual,fartherBundle],expected:'individual'},
+  ]){
+   const view=render(<ConnectorBatch curves={input} onSelect={()=>{}}/>),objects=lines(view).map(line)
+   objects.forEach(object=>object.updateMatrixWorld())
+   for(const round of[(value:number)=>value,Math.round,Math.floor,Math.ceil]){
+    const ordered=prioritizeConnectorIntersections(capturedRay(round).intersectObjects(objects,false))
+    const coreHit=ordered.find(hit=>(hit.object as LineSegments2).material.linewidth!==8)!
+    expect(hitOwner(coreHit)).toBe(expected)
+   }
+   view.unmount()
+  }
+ }finally{state.size={width:1440,height:900}}
+})
 it('retains exact supplied XYZ terminals in visible batches without mutating the path or recorded identity',()=>{
  const input=curve(),before=JSON.stringify(input),view=render(<ConnectorBatch curves={[input]} onSelect={()=>{}}/>),object=line(core(view))
  expect(coordinates(object,'instanceStart',0)).toEqual(input.points[0].map(Math.fround))

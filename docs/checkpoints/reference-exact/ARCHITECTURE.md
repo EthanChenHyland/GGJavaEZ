@@ -398,3 +398,7 @@ One pure geometry helper now places canonical and virtualized cells and their ca
 ## Array and collection reference chips — 2026-11-05
 
 Arrays and collection entries now reuse the centered physical value-chip inset and independent right-edge reference ports. Current-reference attachments use these physical edges; canonical data-flow ports, runtime/Graph/history contracts, layout anchors, camera and goldens remain unchanged. Historical bindings retain captured storage geometry. Read-only QA observes actual uploaded transforms; no new selection/runtime setters are exposed. [Scope, failed attempts, source qualifications and complete results](migration/structure-reference-chips.md).
+
+## Collection departure clearance and stable connector picking — 2026-11-05
+
+Current collection reference ports use an internal departure waypoint through actual row gaps, retaining real owner anchors, historical storage geometry and canonical data-flow ports. Actual LineSegments2 hits use a shared arithmetic-tie order across width bands: bindings, residual Flow bundles, then other paths. Original hit depth/points and halo-only nonselection remain. Read-only QA exposes actual uploaded glyph-ink corners. Runtime/Graph/history, camera, layout and goldens stay unchanged. [Implementation, failed evidence and exact source qualification](migration/reference-departure-clearance.md).

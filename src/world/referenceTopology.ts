@@ -4,7 +4,7 @@ import type {
 } from '../contracts/world'
 import { faceRows,faceRowPort,faceRowPosition } from './faceRows'
 import {collectionEntryFace} from './collectionFace'
-import {arrayReferenceChipPort,collectionReferenceChipPort} from './structureValueChipGeometry'
+import {arrayReferenceChipPort,collectionReferenceChipPort,collectionReferenceDeparture} from './structureValueChipGeometry'
 
 export interface ReferenceTopologyInput {
   scene: SceneModel
@@ -24,6 +24,7 @@ export interface IndividualReference {
   destinationPoint: Vec3
   sourceAnchor: WorldAnchor
   destinationAnchor: WorldAnchor
+  departure?: Vec3
 }
 export interface ReferenceBundle {
   id: string
@@ -93,7 +94,7 @@ function nearestFace(anchor: WorldAnchor, origin: Vec3): Vec3 {
 
 interface Endpoint { id: string; anchor: WorldAnchor; collapsed: boolean }
 interface Candidate extends IndividualReference { from: Endpoint; to: Endpoint }
-type SourcePort = { point: Vec3; anchor: WorldAnchor } | { reason: string }
+type SourcePort = { point: Vec3; anchor: WorldAnchor; departure?: Vec3 } | { reason: string }
 
 /** Pure current-reference partition over the already chosen presentation cut.
  * Mandatory admission applies only to proven individual candidates. A mandatory
@@ -167,7 +168,7 @@ export function buildReferenceTopology(input: ReferenceTopologyInput): Reference
         }
         if (!ports.has(reference.sourceSlotId)) return { reason: 'Source collection entry is not in the visible face rows' }
         const point = ports.get(reference.sourceSlotId)
-        return validPoint(point) ? { point, anchor: source.anchor } : { reason: 'Source collection entry has no recorded port' }
+        return validPoint(point) ? { point, anchor: source.anchor,...(!input.historical?{departure:collectionReferenceDeparture(point)}:{}) } : { reason: 'Source collection entry has no recorded port' }
       }
       if (!visible.has(reference.sourceSlotId)) return { reason: 'Source slot is not in the visible face rows' }
       // Trace All attaches an ended binding to captured storage geometry even
@@ -193,7 +194,7 @@ export function buildReferenceTopology(input: ReferenceTopologyInput): Reference
       }
       const port = from.collapsed ? { point: nearestFace(from.anchor, to.anchor.position), anchor: from.anchor } : sourcePort(reference, from)
       if ('reason' in port) { unavailable.push({ reference, reason: port.reason }); continue }
-      candidates.push({ reference, from, to, sourcePoint: port.point, sourceAnchor: port.anchor,
+      candidates.push({ reference, from, to, sourcePoint: port.point, sourceAnchor: port.anchor,...(port.departure?{departure:port.departure}:{}),
         destinationPoint: nearestFace(to.anchor, port.point), destinationAnchor: to.anchor })
     }
     const rank = (a: Candidate, b: Candidate) =>
@@ -204,8 +205,8 @@ export function buildReferenceTopology(input: ReferenceTopologyInput): Reference
     const eligible = candidates.filter(item => !item.from.collapsed && !item.to.collapsed).sort(rank)
     const mandatoryCount = eligible.filter(item => input.mandatoryIds.has(item.reference.id)).length
     for (const candidate of eligible.slice(0, Math.max(input.individualLimit, mandatoryCount))) {
-      const { reference, sourcePoint, destinationPoint, sourceAnchor, destinationAnchor } = candidate
-      individual.push({ reference, sourcePoint, destinationPoint, sourceAnchor, destinationAnchor })
+      const { reference, sourcePoint, destinationPoint, sourceAnchor, destinationAnchor,departure } = candidate
+      individual.push({ reference, sourcePoint, destinationPoint, sourceAnchor, destinationAnchor,...(departure?{departure}:{}) })
     }
     const emitted = new Set(individual.map(item => item.reference.id))
     const groups = new Map<string, { from: Endpoint; to: Endpoint; references: SceneReference[] }>()

@@ -240,13 +240,13 @@ export function planPresentation(input: PlanInput, previous?: PresentationPlan):
     const traceParticipants=new Set<string>();
     const participate=(...ids:(string|undefined)[])=>{for(const id of ids){const resolved=owner(id);if(resolved)traceParticipants.add(resolved)}};
     const curves: PresentedCurve[] = [];
-    const curve = (id: string, kind: PresentedCurve['kind'], from: Vec3 | null, to: Vec3 | null, role: MaterialRole, relevant: boolean, left = false, arrow = false, label?: string, source?: WorldAnchor, target?: WorldAnchor, forensicPath = false) => {
+    const curve = (id: string, kind: PresentedCurve['kind'], from: Vec3 | null, to: Vec3 | null, role: MaterialRole, relevant: boolean, left = false, arrow = false, label?: string, source?: WorldAnchor, target?: WorldAnchor, forensicPath = false,departure?:Vec3) => {
         if (!from || !to)
             return;
         const focusCap=focused&&!forensicPath&&!focusConnection(source?.entityId,target?.entityId)?world.opacity.focusDim:1;
         const baseOpacity=forensicState?(forensicPath?1:Math.min(world.opacity.forensicDim,focused&&!relevant?.25:relevant?1:.35)):focused&&!relevant?.25:relevant?1:.35;
         const opacity=Math.min(baseOpacity,focusCap);
-        curves.push({ id, kind, points: route(from, to, source, target, left), sourceAnchor:source, destinationAnchor:target, colorRole: role, opacity, widthPx: relevant ? 3.5 : 2.5, arrow, label });
+        curves.push({ id, kind, points: route(from, to, source, target, left,departure), sourceAnchor:source, destinationAnchor:target, colorRole: role, opacity, widthPx: relevant ? 3.5 : 2.5, arrow, label });
     };
     const referenceRelevant = (ref: SceneModel['references'][number]) => trace.active&&trace.scope==='all'||ref.id===selection?.id||relevantEntities.has(ref.sourceId)||relevantEntities.has(ref.targetId);
     const referenceRole = (ref: SceneModel['references'][number]): MaterialRole => ref.overlay??(ref.role==='object-object'?'heap':ref.role==='class-object'?'class':'reference');
@@ -259,9 +259,9 @@ export function planPresentation(input: PlanInput, previous?: PresentationPlan):
     const requiredRefs=topology.individual.filter(({reference})=>reference.id===selectedRef?.id||reference.evidence.changedSeq===scene.cursorEvent?.seq);
     const requiredHistory=historicalTopology.individual.filter(({reference})=>reference.id===selectedRef?.id),requiredConnectors=[...requiredRefs,...requiredHistory];
     if(requiredConnectors.length>budget.connectors)overflow.push({category:'connectors',nominal:budget.connectors,actual:requiredConnectors.length,mandatoryIds:requiredConnectors.map(item=>item.reference.id),reasons:['selected current/historical connector or current evidence']});
-    for(const {reference:ref,sourcePoint,destinationPoint,sourceAnchor,destinationAnchor}of topology.individual){
+    for(const {reference:ref,sourcePoint,destinationPoint,sourceAnchor,destinationAnchor,departure}of topology.individual){
       const relevant=referenceRelevant(ref);
-      curve(ref.id,'connector',sourcePoint,destinationPoint,referenceRole(ref),relevant,false,ref.role==='object-object'||!!ref.overlay,undefined,sourceAnchor,destinationAnchor,ref.overlay==='exception');
+      curve(ref.id,'connector',sourcePoint,destinationPoint,referenceRole(ref),relevant,false,ref.role==='object-object'||!!ref.overlay,undefined,sourceAnchor,destinationAnchor,ref.overlay==='exception',departure);
       curves[curves.length-1].opacity=referenceOpacity([ref],relevant);
       if(relevant)participate(ref.sourceId,ref.targetId);
     }

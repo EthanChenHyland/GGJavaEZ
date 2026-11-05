@@ -8,8 +8,8 @@ export interface WorldObservation {
   selection(): Selection
   recordedEvents():readonly TraceEvent[]
   worldProjection():WorldProjection
-  runtimeHeadings():readonly {entityId:string;kind:'title'|'identity';text:string;opacity:number;fontPixels:number;planePixels:number;widthPixels:number;position:Vec3;localInkBounds:readonly[number,number,number,number]|null}[]
-  collectionText():readonly {entityId:string;kind:'size'|'more'|'key'|'value';slotId?:string;text:string;opacity:number;fontPixels:number;planePixels:number;widthPixels:number}[]
+  runtimeHeadings():readonly {entityId:string;kind:'title'|'identity';text:string;opacity:number;fontPixels:number;planePixels:number;widthPixels:number;position:Vec3;localInkBounds:readonly[number,number,number,number]|null;inkCorners:readonly Vec3[]}[]
+  collectionText():readonly {entityId:string;kind:'size'|'more'|'key'|'value';slotId?:string;text:string;opacity:number;fontPixels:number;planePixels:number;widthPixels:number;inkCorners:readonly Vec3[];bounds:import('./worldProjection').ProjectedRect|null}[]
   returnText():readonly {flowId:string;kind:'value'|'operands';text:string;opacity:number;fontPixels:number}[]
   frameText():readonly {entityId:string;kind:'scope'|'name'|'value';slotId?:string;text:string;position:readonly[number,number,number];opacity:number;fontPixels:number}[]
   arrayText():readonly {entityId:string;slotId:string;kind:'index'|'value';text:string;position:Vec3;opacity:number;fontPixels:number;localInkBounds:readonly number[]|null;bounds:import('./worldProjection').ProjectedRect|null}[]

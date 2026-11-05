@@ -45,12 +45,12 @@ export function prepareConnectorFaceClearance(bodies:readonly WorldAnchor[]){
   // extending that caption space behind the back would erase real deck gaps.
   const face=(body:WorldAnchor)=>({id:body.entityId,...rectangle(body),front:body.position[2]+body.size[2]/2+.75,back:body.position[2]-body.size[2]/2})
   const faces=bodies.map(face)
-  return (points:readonly Vec3[],source:WorldAnchor,target:WorldAnchor):boolean=>{
+  return (points:readonly Vec3[],source:WorldAnchor,target:WorldAnchor,departure?:Vec3):boolean=>{
   if(points.length<2)return false
   const sourceRect=face(source),targetRect=face(target)
   const inside = (point: Vec3, rect: ReturnType<typeof face>) => point[0] > rect.left && point[0] < rect.right && point[1] > rect.bottom && point[1] < rect.top&&point[2]>=rect.back&&point[2]<=rect.front
-  let departure = 1, arrival = points.length - 1
-  while (departure < points.length - 1 && inside(points[departure], sourceRect)) departure++
+  let departureEnd = 1, arrival = points.length - 1
+  while (departureEnd < points.length - 1 && inside(points[departureEnd], sourceRect)) departureEnd++
   while (arrival > 1 && inside(points[arrival - 1], targetRect)) arrival--
   const bounds=new Float64Array(Math.max(0,points.length-1)*6),extent=[Infinity,-Infinity,Infinity,-Infinity,Infinity,-Infinity]
   for(let i=1;i<points.length;i++){
@@ -81,6 +81,18 @@ export function prepareConnectorFaceClearance(bodies:readonly WorldAnchor[]){
       }
       if(enter>leave)continue
       const terminal=(point:Vec3,body:WorldAnchor,departing:boolean)=>{
+        if(departing&&departure){
+          // Collection ports belong to chip right edges, including left-hand
+          // columns. Their real column/row gaps form a caption-free channel;
+          // choosing an exit from the owner's centre would cross its values.
+          for(const t of[enter,leave]){
+            const x=a[0]+(b[0]-a[0])*t,y=a[1]+(b[1]-a[1])*t
+            const stem=x>=point[0]-1e-7&&x<=departure[0]+.025+1e-7&&y>=point[1]-.025-1e-7&&y<=departure[1]+.025+1e-7
+            const gap=Math.abs(y-departure[1])<=.025+1e-7
+            if(!stem&&!gap)return false
+          }
+          return true
+        }
         const side=point[0]>=body.position[0]?1:-1
         if((b[0]-a[0])*side*(departing?1:-1)<-1e-7)return false
         for(const t of[enter,leave]){
@@ -89,7 +101,7 @@ export function prepareConnectorFaceClearance(bodies:readonly WorldAnchor[]){
         }
         return true
       }
-      if(rect.id===source.entityId&&i<=departure&&terminal(points[0],source,true))continue
+      if(rect.id===source.entityId&&i<=departureEnd&&terminal(points[0],source,true))continue
       if(rect.id===target.entityId&&i>=arrival&&terminal(points.at(-1)!,target,false))continue
       return false
     }
@@ -100,7 +112,12 @@ export function prepareConnectorFaceClearance(bodies:readonly WorldAnchor[]){
 
 /** Connect real ports through exterior side/roof channels. Geometry, IDs and
  * values are untouched; the detour protects information faces from crossings. */
-export function surfaceConnectorPoints(from: Vec3, to: Vec3, source: WorldAnchor, target: WorldAnchor, obstacles: readonly WorldAnchor[] = []): Vec3[] {
+export function surfaceConnectorPoints(from: Vec3, to: Vec3, source: WorldAnchor, target: WorldAnchor, obstacles: readonly WorldAnchor[] = [],departure?:Vec3): Vec3[] {
+  if(departure){
+    const side=to[0]<source.position[0]?-1:1
+    const outside:Vec3=[source.position[0]+side*(source.size[0]/2+.5),departure[1],from[2]]
+    return[from,[departure[0],from[1],from[2]],departure,...surfaceConnectorPoints(outside,to,source,target,obstacles)]
+  }
   const outward = (point: Vec3, anchor: WorldAnchor) => {
     const side = point[0] >= anchor.position[0] ? 1 : -1
     // Array cells have only 0.16 units between them. A half-unit exit would

@@ -30,6 +30,14 @@ async function selectStructure(page:Page,target:Target){
   await page.locator('.world-canvas').focus();await page.keyboard.press('Tab');await ready(page)
   const list=page.getByRole('listbox',{name:'Runtime entities',exact:true})
   for(let pageIndex=0;pageIndex<32;pageIndex++){
+   // A complete virtual catalog scan cannot reveal geometry outside the
+   // viewport. Dolly first unless a real cell or containing cluster can offer
+   // the target; then retain the same native catalog/member selection below.
+   const represented=await page.evaluate(id=>{
+    const world=window.__ggjavaezWorld!,plan=world.plan()
+    return world.projectedPoint(id)?.visible||[...(plan.cellWindows.get(id)?.mapping.keys()??[])].some(slot=>world.projectedPoint(slot)?.visible)||plan.clusters.some(cluster=>cluster.memberIds.includes(id))
+   },target.id)
+   if(!represented)break
    const offered=await list.getByRole('option').evaluateAll(options=>options.map(option=>decodeURIComponent(option.id.slice('world-entity-'.length))))
    navigation.push(await page.evaluate(({target,offered,attempt,pageIndex})=>({attempt,pageIndex,offered,point:window.__ggjavaezWorld!.projectedPoint(target.id),detail:window.__ggjavaezWorld!.plan().detailLevel,pose:window.__ggjavaezQA!.cameraPose()}),{target,offered,attempt,pageIndex}))
    const direct=offered.find(id=>id===target.id||target.kind==='array'&&id.startsWith(`${target.id}:element:`))
@@ -88,11 +96,33 @@ for(const viewport of[{width:1440,height:900},{width:760,height:900}])for(const 
    return{recordingId:scene.recordingId,cursor:scene.cursor,node,references,
     chips:world.valueChips().filter(chip=>chip.part==='reference-chip'&&ids.has(chip.slotId)),ports:world.connectorPorts().filter(port=>port.referenceChip),
     curves:world.plan().curves.filter(curve=>references.some(ref=>ref.id===curve.id)),
-    labels:world.arrayText().filter(label=>label.entityId===target.id),pose:window.__ggjavaezQA!.cameraPose(),focus:window.__ggjavaezQA!.focusTarget(),selection:window.__ggjavaezQA!.selection()}
+    labels:world.arrayText().filter(label=>label.entityId===target.id),collectionLabels:world.collectionText().filter(label=>label.entityId===target.id),headings:world.runtimeHeadings().filter(label=>label.entityId===target.id),pose:window.__ggjavaezQA!.cameraPose(),focus:window.__ggjavaezQA!.focusTarget(),selection:window.__ggjavaezQA!.selection()}
   },target)
   await writeFile(`.ggjavaez/qa/reference-exact/${capture}.json`,JSON.stringify({sessionId:session.id,target,before,errors},null,2)+'\n')
   expect(before.chips).toHaveLength(before.references.length);expect(before.chips.length).toBeGreaterThan(0)
   expect(before.chips.map(chip=>chip.slotId).sort()).toEqual(before.references.map(reference=>reference.sourceSlotId).sort())
+  if(target.kind==='collection'){
+   expect(before.collectionLabels.filter(label=>label.kind==='key'||label.kind==='value').length).toBeGreaterThan(0)
+   for(const curve of before.curves){
+    const owner=before.node.anchor,exit=curve.points.find(point=>Math.abs(point[0]-owner.position[0])>owner.size[0]/2+.035)
+    expect(exit).toBeDefined();expect(Math.sign(exit![0]-owner.position[0])).toBe(curve.points.at(-1)![0]<owner.position[0]?-1:1)
+   }
+   for(const label of [...before.collectionLabels,...before.headings].filter(label=>label.opacity>0)){
+    expect(label.inkCorners).toHaveLength(4)
+    const lower=[Math.min(...label.inkCorners.map(point=>point[0])),Math.min(...label.inkCorners.map(point=>point[1])),before.node.anchor.position[2]+before.node.anchor.size[2]/2+.02]
+    const upper=[Math.max(...label.inkCorners.map(point=>point[0])),Math.max(...label.inkCorners.map(point=>point[1])),Infinity]
+    for(const curve of before.curves)for(let segment=1;segment<curve.points.length;segment++){
+     const a=curve.points[segment-1],b=curve.points[segment];let enter=0,leave=1
+     for(let axis=0;axis<3&&enter<=leave;axis++){
+      const delta=b[axis]-a[axis]
+      if(Math.abs(delta)<1e-12){if(a[axis]<lower[axis]||a[axis]>upper[axis])enter=2;continue}
+      const first=(lower[axis]-a[axis])/delta,last=(upper[axis]-a[axis])/delta
+      enter=Math.max(enter,Math.min(first,last));leave=Math.min(leave,Math.max(first,last))
+     }
+     expect(enter<=leave,`${curve.id} crosses captured ${label.kind} ink ${label.text} in segment ${segment}`).toBe(false)
+    }
+   }
+  }
   const matches=(a:readonly number[],b:readonly number[])=>a.every((value,index)=>Math.abs(value-b[index])<1e-4)
   for(const chip of before.chips){
    // Observe uploaded Float32 instance transforms, not buildSolidBatch output.

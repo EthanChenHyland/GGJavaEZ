@@ -295,3 +295,7 @@ The fresh exact-driver 93-case gate preserves 117 original PNGs, six root-review
 ## Array and collection reference chips — 2026-11-05
 
 Reviewed fresh actual Hero, object inspection, recursion and narrow array/List/Map captures at full size. The integrated archive contains 133 originals, six reviewed/127 unreviewed, all tied to the tested source/run; the separate fresh Dense PNG is also reviewed. Reference insets and right-edge ports are visible; actual null elements remain plain, and exact cell Focus caps persist. Global route glow, routes over collection glyphs, acrylic material quality, antialiasing and clipping still prevent whole-world visual approval. Passing interactions and exact palette probes do not close those findings. [Scope, failed attempts, source qualifications and complete results](migration/structure-reference-chips.md).
+
+## Collection departure clearance and stable connector picking — 2026-11-05
+
+Five current-source originals receive full-size root review: hero, object inspection, desktop Map and narrow List/Map. Current collection references leave their actual right-edge ports through row gaps without crossing captured key/value/size/more/heading ink. Both real GPU tiers execute and all eight face/chip RGB samples remain exact. Of 137 originals, 132 remain unreviewed; this is not final reference approval. Strong glow, hard fronts, jagged outlines, global routes and clipping remain open. [Implementation, failed evidence and exact source qualification](migration/reference-departure-clearance.md).

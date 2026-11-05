@@ -2,7 +2,7 @@ import {expect,it} from 'vitest'
 import fc from 'fast-check'
 import type {Vec3,WorldAnchor} from '../contracts/world'
 import {createConnectorRouter} from './connectorRouter'
-import {connectorClearsFaces} from './connectorRouting'
+import {connectorClearsFaces,prepareConnectorFaceClearance} from './connectorRouting'
 const anchor=(id:string,position:Vec3):WorldAnchor=>({entityId:id,position,size:[4,3,1.7],region:'heap',ports:{},bodyPort:position})
 it('reuses exact immutable routes across equivalent coordinate wrappers',()=>{
  const bodies=[anchor('from',[-8,0,0]),anchor('to',[8,0,0])],router=createConnectorRouter()
@@ -57,5 +57,31 @@ it('preserves arbitrary actual left/right row terminals and clears intervening f
   const points=createConnectorRouter().forBodies(bodies)(from,to,bodies[0],bodies[1])
   expect(points[0]).toEqual(from);expect(points.at(-1)).toEqual(to)
   expect(connectorClearsFaces(points,bodies[0],bodies[1],bodies)).toBe(true)
+ }),{numRuns:100})
+})
+
+it('includes collection departure geometry in its bounded route cache without changing semantic terminal bodies',()=>{
+ const source=anchor('source',[-8,0,0]),target=anchor('target',[8,0,0]),bodies=[source,target],router=createConnectorRouter()
+ const from:Vec3=[-8.145,-.4,.931],to:Vec3=[6,0,.9],departure:Vec3=[from[0]+.06,from[1]+.28,from[2]]
+ const route=router.forBodies(bodies),points=route(from,to,source,target,false,departure)
+ expect(route([...from],[...to],source,target,false,[...departure])).toBe(points)
+ const changed:Vec3=[departure[0],departure[1]+.1,departure[2]]
+ expect(route(from,to,source,target,false,changed)).not.toBe(points)
+ expect(route(from,to,source,target,false,departure)).toBe(points)
+ expect(points[0]).toEqual(from);expect(points.at(-1)).toEqual(to)
+ expect(prepareConnectorFaceClearance(bodies)(points,source,target,departure)).toBe(true)
+ expect(router.stats()).toEqual({contexts:1,routes:2,computedRoutes:2})
+})
+
+it('keeps collection departures in their row gap while retaining foreign-body clearance (100 runs)',()=>{
+ fc.assert(fc.property(fc.integer({min:-8,max:8}),fc.integer({min:-8,max:8}),fc.integer({min:-6,max:6}),fc.boolean(),(sourceY,targetY,blockerY,reverse)=>{
+  const x=reverse?8:-8,source=anchor('source',[x,sourceY,0]),target=anchor('target',[-x,targetY,0]),bodies=[source,target,anchor('blocker',[0,blockerY,0])],before=JSON.stringify(bodies)
+  const from:Vec3=[x-.145,sourceY-.4,.931],to:Vec3=[-x+(reverse?2:-2),targetY,.9],departure:Vec3=[from[0]+.06,from[1]+.28,from[2]]
+  const points=createConnectorRouter().forBodies(bodies)(from,to,source,target,false,departure)
+  expect(points[0]).toEqual(from);expect(points.at(-1)).toEqual(to);expect(points[1][0]).toBeGreaterThan(from[0])
+  const exit=points.find(point=>Math.abs(point[0]-source.position[0])>source.size[0]/2+.035)
+  expect(exit).toBeDefined();expect(Math.sign(exit![0]-source.position[0])).toBe(reverse?-1:1)
+  expect(prepareConnectorFaceClearance(bodies)(points,source,target,departure)).toBe(true)
+  expect(JSON.stringify(bodies)).toBe(before)
  }),{numRuns:100})
 })

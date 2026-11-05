@@ -1,7 +1,7 @@
 import type {Vec3,WorldAnchor} from '../contracts/world'
 import {curvedPath,prepareConnectorFaceClearance,roundedConnectorPoints,surfaceConnectorPoints} from './connectorRouting'
 
-type Route=(from:Vec3,to:Vec3,source?:WorldAnchor,target?:WorldAnchor,left?:boolean)=>readonly Vec3[]
+type Route=(from:Vec3,to:Vec3,source?:WorldAnchor,target?:WorldAnchor,left?:boolean,departure?:Vec3)=>readonly Vec3[]
 export interface ConnectorRouter {
  forBodies(bodies:readonly WorldAnchor[]):Route
  stats():{contexts:number;routes:number;computedRoutes:number}
@@ -23,16 +23,16 @@ export function createConnectorRouter():ConnectorRouter {
    const key=JSON.stringify(bodies.map(geometry)),prior=contexts.get(key)
    if(prior){contexts.delete(key);contexts.set(key,prior);return prior.route}
    const clears=prepareConnectorFaceClearance(bodies),paths=new Map<string,readonly Vec3[]>()
-   const route:Route=(from,to,source,target,left=false)=>{
-    const key=JSON.stringify([from,to,geometry(source),geometry(target),left]),cached=paths.get(key)
+   const route:Route=(from,to,source,target,left=false,departure)=>{
+    const key=JSON.stringify([from,to,geometry(source),geometry(target),left,departure]),cached=paths.get(key)
     if(cached){paths.delete(key);paths.set(key,cached);return cached}
     let points=curvedPath(from,to,left)
-    if(source&&target&&!clears(points,source,target)){
-     const corridor=surfaceConnectorPoints(from,to,source,target,bodies)
+    if(source&&target&&(departure||!clears(points,source,target))){
+     const corridor=surfaceConnectorPoints(from,to,source,target,bodies,departure)
      points=roundedConnectorPoints(corridor)
      for(const radius of [.35,.18,.08]){
       const rounded=roundedConnectorPoints(corridor,radius)
-      if(clears(rounded,source,target)){points=rounded;break}
+      if(clears(rounded,source,target,departure)){points=rounded;break}
      }
     }
     const immutable=Object.freeze(points.map(point=>Object.freeze([...point]) as Vec3))

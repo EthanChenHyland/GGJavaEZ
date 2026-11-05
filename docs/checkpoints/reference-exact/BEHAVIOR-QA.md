@@ -301,3 +301,7 @@ Full eight-check source `e1ddb513` passes 2,261 defaults / 70 explicit opt-in sk
 ## Array and collection reference chips — 2026-11-05
 
 Fresh native integration passes **99/99**, zero skips/failures/flaky, 1,223.357 seconds; 79 distinct standard attached JVM session IDs across 79 cases. Desktop/narrow × normal/reduced structure cases use actual captured arrays/List/Map, native catalog/cluster navigation and real chip raycasts, then retain chips/ports after Current scope removes the curves. Full defaults pass 2,265 with 70 existing explicit opt-in skips. The earlier catalog, fixture setup and legacy geometry failures remain archived with exact sources. [Scope, failed attempts, source qualifications and complete results](migration/structure-reference-chips.md).
+
+## Collection departure clearance and stable connector picking — 2026-11-05
+
+Fresh exact-source integration passes **101/101**, zero failures/skips/flaky, 1,211.282 s (runner 1,211.850); 81 distinct standard JVM attachments across 81 cases. The original narrow hover/click mismatch and both historical Flow-bundle picks pass, along with desktop/narrow × normal/reduced collection checks. Offscreen catalog setup still uses native input and original assertions/timeouts. Defaults pass 2,274 with 70 existing opt-in skips. Failed and interrupted runs remain source-qualified. [Implementation, failed evidence and exact source qualification](migration/reference-departure-clearance.md).
