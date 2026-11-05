@@ -7,6 +7,7 @@ import { createLayoutEngine } from './layoutEngine'
 import { planPresentation } from './presentationPlanner'
 import { faceRows, faceRowPort } from './faceRows'
 import { presentedFlowPorts } from './flowTopology'
+import { buildSolidBatch } from '../render/SolidBatch'
 
 const fixture = (data: readonly object[]): TraceDocument => ({ schemaVersion: 2, demoId: 'unit/observed-faces', sourceFiles: [],
   events: data.map((item, seq) => ({ ...item, seq, eventId: `unit/observed/${seq}`, source: null, label: 'Explicit observed unit fixture', importance: 'quiet' })) as TraceEvent[] })
@@ -64,7 +65,8 @@ describe('bounded captured heap faces through the production cut', () => {
     expect(scene.references).toHaveLength(1)
     const curve = plan.curves.find(curve => curve.id === scene.references[0].id)!
     expect(curve).toBeDefined()
-    expect(curve.points[0]).toEqual(cell.port)
+    const inset=buildSolidBatch(scene,plan).find(part=>part.pick.id===slot&&part.part==='reference-chip')!.anchor
+    expect(curve.points[0]).toEqual([inset.position[0]+inset.size[0]/2,inset.position[1],inset.position[2]+inset.size[2]/2])
     expect(curve.sourceAnchor).toBe(cell.anchor)
     expect(presentedFlowPorts(scene, plan.entities, plan.cellWindows)({ kind: 'slot', id: slot })!.point).toEqual(cell.port)
     expect(cell.anchor.position).toEqual(projection.layout.anchors[slot].position)

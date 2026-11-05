@@ -7,6 +7,7 @@ import {planPresentation} from './presentationPlanner'
 import {faceRows} from './faceRows'
 import {collectionEntryFace} from './collectionFace'
 import {buildSolidBatch} from '../render/SolidBatch'
+import {referenceChipPorts} from '../render/referenceChipPorts'
 
 // Explicit normalized unit fixtures, not JVM/browser acceptance evidence.
 function fixture(map=false,source=true){
@@ -49,13 +50,19 @@ describe('collection reservations and physical entry faces',()=>{
    // at each target detail directly, without changing runtime facts.
    const presented={...plan.entities.get(node.id)!,detail};plan.entities=new Map([[node.id,presented]])
    const visible=faceRows(node,presented).visible;expect(visible.length).toBe(count)
-   const solids=buildSolidBatch(scene,plan),chips=solids.filter(solid=>solid.pick.kind==='slot')
+   const solids=buildSolidBatch(scene,plan),chips=solids.filter(solid=>solid.pick.kind==='slot'&&!solid.part)
    expect(chips.length).toBe(count*(map?2:1))
+   const insets=solids.filter(solid=>solid.part==='reference-chip'),rims=solids.filter(solid=>solid.part==='reference-chip-rim'),ports=referenceChipPorts(scene,plan)
+   expect(insets).toHaveLength(chips.length);expect(rims).toHaveLength(chips.length);expect(ports).toHaveLength(chips.length)
    for(let index=0;index<count;index++){
     const entry=node.entries[index],geometry=collectionEntryFace(node.anchor,index,map)!
     expect(entry.port).toEqual(geometry.value)
     for(const [id,port]of [[entry.slotId,entry.port],...(map?[[entry.keySlotId!,entry.keyPort!]]as const:[])]as const){
      const chip=chips.find(solid=>solid.pick.id===id)!.anchor;expect(port![0]).toBe(chip.position[0]);expect(port![1]).toBe(chip.position[1]);expect(port![2]).toBeCloseTo(chip.position[2]+chip.size[2]/2)
+     const inset=insets.find(solid=>solid.pick.id===id)!,rim=rims.find(solid=>solid.pick.id===id)!,point=ports.find(port=>port.id===id)!.point
+     expect(inset.pick).toEqual({kind:'slot',id});expect(rim.pick).toEqual(inset.pick);expect(inset.pickable).toBe(true)
+     const edge=[inset.anchor.position[0]+inset.anchor.size[0]/2,inset.anchor.position[1],inset.anchor.position[2]+inset.anchor.size[2]/2]
+     for(let axis=0;axis<3;axis++)expect(point[axis]).toBeCloseTo(edge[axis],10)
     }
    }
    const columnCounts=chips.filter(solid=>!map||node.entries.some(entry=>entry.slotId===solid.pick.id)).reduce((counts,solid)=>{counts[solid.anchor.position[0]<node.anchor.position[0]?0:1]++;return counts},[0,0])

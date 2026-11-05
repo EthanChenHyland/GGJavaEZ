@@ -15,6 +15,7 @@ import {arrayCellTargeted,arrayCellFocusOpacity} from './arrayCellStyle';
 import {faceRowColumns} from './text/faceTypography';
 import {unitRoundedChip} from './geometry/roundedChip';
 import {valueChipGeometry} from '../world/valueChipGeometry';
+import {arrayReferenceChipGeometry,collectionReferenceChipGeometry} from '../world/structureValueChipGeometry';
 type Pick = NonNullable<Selection>;
 interface SolidPress {pick:Pick;arrayPick?:ArrayWindowPick;recordingId:string}
 interface Solid {
@@ -53,8 +54,15 @@ export function buildSolidBatch(scene: SceneModel, plan: PresentationPlan): Soli
             const sizeY = top - header - sizeRow / 2;
             if (presented.detail !== 'FAR' && sizeY - sizeRow * .36 >= bottom)
                 plate(id, [x, sizeY, face + .01], [w - .45, sizeRow * .73, .05], color.heap.chip);
-            for(const entry of node.entries)if(model.visible.some(row=>row.slotId===entry.slotId)){
+            for(const [index,entry] of node.entries.entries())if(model.visible.some(row=>row.slotId===entry.slotId)){
                 rowPlate(entry.slotId);if(entry.keySlotId)rowPlate(entry.keySlotId);
+                const referenceInset=(slotId:string,value:typeof entry.value,key=false)=>{
+                    if(value.kind!=='reference'||value.observation==='UNAVAILABLE'||!scene.entities[value.targetId])return;
+                    const geometry=collectionReferenceChipGeometry(node.anchor,index,node.collectionKind==='Map',key);if(!geometry)return;
+                    plate(slotId,geometry.rim.position,geometry.rim.size,chipRims.heap,opacity,undefined,'reference-chip-rim');
+                    plate(slotId,geometry.fill.position,geometry.fill.size,color.heap.chip,opacity,undefined,'reference-chip');
+                };
+                referenceInset(entry.slotId,entry.value);if(entry.key&&entry.keySlotId)referenceInset(entry.keySlotId,entry.key,true);
             }
             continue;
         }
@@ -84,6 +92,12 @@ export function buildSolidBatch(scene: SceneModel, plan: PresentationPlan): Soli
                 const cellOpacity=opacity*cellFocusOpacity(id);
                 solids.push({ anchor: cell.anchor, pick: { kind: 'slot', id }, pickable: presented.pickable, role: 'heap', opacity:cellOpacity, tint: color.heap.core, edge: targeted(id)?color.semantic.execution:node.activity?.index === cell.index ? node.activity.kind==='write'?color.semantic.mutation:color.semantic.execution : color.heap.edge, arrayPick });
                 plate(id, [cx, cy, cz + .79], [1.4, 1.4, .025], color.heap.face, cellOpacity, arrayPick);
+                const value=node.cells.find(item=>item.index===cell.index)?.value;
+                if(value?.kind==='reference'&&value.observation!=='UNAVAILABLE'&&scene.entities[value.targetId]){
+                    const geometry=arrayReferenceChipGeometry(cell.anchor);
+                    plate(id,geometry.rim.position,geometry.rim.size,chipRims.heap,cellOpacity,arrayPick,'reference-chip-rim');
+                    plate(id,geometry.fill.position,geometry.fill.size,color.heap.chip,cellOpacity,arrayPick,'reference-chip');
+                }
             }
         }
     }
@@ -138,7 +152,7 @@ function Instances({ items, onSelect, onFocus, tier, plan, recordingId, cursor,p
             mesh.instanceColor.needsUpdate = true;
         mesh.computeBoundingSphere();
     }, [items, role]);
-    return <instancedMesh ref={ref} args={[undefined, undefined, capacity]} renderOrder={inset?1:0} geometry={role === 'face' ? inset?unitRoundedChip:unitBox : unitRoundedBox} material={role === 'face' ? faceMaterial(opacity,inset) : glassMaterial(role, opacity, tier, !!plan.framing.focus)} userData={{runtimeBloomRole:'protected'}} customDepthMaterial={role === 'face' ? undefined : roundedDepthMaterial()} customDistanceMaterial={role === 'face' ? undefined : roundedDistanceMaterial()} dispose={null} castShadow={role !== 'face'} receiveShadow raycast={items.some(item => item.pickable) ? canonicalSolidRaycast : noRaycast} onPointerDown={event=>{const item=items[event.instanceId??-1];press.current=item?.pickable?{pick:item.pick,arrayPick:item.arrayPick,recordingId}:null;if(item?.pickable)event.stopPropagation()}} onClick={event => { const item = items[event.instanceId ?? -1]; if (validPress(item)) {
+    return <instancedMesh ref={ref} args={[undefined, undefined, capacity]} renderOrder={inset?1:0} geometry={role === 'face' ? inset?unitRoundedChip:unitBox : unitRoundedBox} material={role === 'face' ? faceMaterial(opacity,inset) : glassMaterial(role, opacity, tier, !!plan.framing.focus)} userData={{runtimeBloomRole:'protected',...((import.meta.env.DEV||import.meta.env.VITE_QA==='1')&&inset?{runtimeValueChipParts:items.map(item=>({slotId:item.pick.id,part:item.part!}))}:{})}} customDepthMaterial={role === 'face' ? undefined : roundedDepthMaterial()} customDistanceMaterial={role === 'face' ? undefined : roundedDistanceMaterial()} dispose={null} castShadow={role !== 'face'} receiveShadow raycast={items.some(item => item.pickable) ? canonicalSolidRaycast : noRaycast} onPointerDown={event=>{const item=items[event.instanceId??-1];press.current=item?.pickable?{pick:item.pick,arrayPick:item.arrayPick,recordingId}:null;if(item?.pickable)event.stopPropagation()}} onClick={event => { const item = items[event.instanceId ?? -1]; if (validPress(item)) {
         event.stopPropagation();
         onSelect(item!.pick);
     } }} onDoubleClick={event => { const item = items[event.instanceId ?? -1]; if (validPress(item)) {

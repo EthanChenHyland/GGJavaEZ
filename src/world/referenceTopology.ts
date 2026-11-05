@@ -4,6 +4,7 @@ import type {
 } from '../contracts/world'
 import { faceRows,faceRowPort,faceRowPosition } from './faceRows'
 import {collectionEntryFace} from './collectionFace'
+import {arrayReferenceChipPort,collectionReferenceChipPort} from './structureValueChipGeometry'
 
 export interface ReferenceTopologyInput {
   scene: SceneModel
@@ -141,7 +142,7 @@ export function buildReferenceTopology(input: ReferenceTopologyInput): Reference
         if (!cell) return { reason: 'Source array cell is hidden in the current window' }
         if (!validPoint(cell.port) || !validAnchor(cell.anchor))
           return { reason: 'Source array cell has no valid presented geometry or port' }
-        return { point: cell.port, anchor: cell.anchor }
+        return { point: input.historical?cell.port:arrayReferenceChipPort(cell.anchor), anchor: cell.anchor }
       }
       let visible = visibleRows.get(node.id)
       if (!visible) {
@@ -158,8 +159,8 @@ export function buildReferenceTopology(input: ReferenceTopologyInput): Reference
             // An ended binding may have a current null/scalar chip. Its actual
             // visible geometry is still a source; retired/hidden chips are not.
             const geometry=input.historical?collectionEntryFace(node.anchor,index,node.collectionKind==='Map'):null
-            entries.set(entry.slotId, input.historical?geometry?.value:entry.port)
-            if (entry.keySlotId !== undefined) entries.set(entry.keySlotId, input.historical?geometry?.key:entry.keyPort)
+            entries.set(entry.slotId, input.historical?geometry?.value:entry.port?collectionReferenceChipPort(node.anchor,index,node.collectionKind==='Map'):null)
+            if (entry.keySlotId !== undefined) entries.set(entry.keySlotId, input.historical?geometry?.key:entry.keyPort?collectionReferenceChipPort(node.anchor,index,node.collectionKind==='Map',true):null)
           }
           ports = entries
           collectionPorts.set(node.id, ports)

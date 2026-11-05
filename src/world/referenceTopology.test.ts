@@ -11,6 +11,7 @@ import { createLayoutEngine } from './layoutEngine'
 import { createSceneProjector } from './sceneProjector'
 import { computeArrayWindow } from './arrayWindow'
 import { valueChipReferencePort } from './valueChipGeometry'
+import { presentedFlowPorts } from './flowTopology'
 import { buildReferenceTopology, type ReferenceTopology, type ReferenceTopologyInput } from './referenceTopology'
 
 // Synthetic geometry and explicitly normalized records below are unit fixtures,
@@ -154,19 +155,22 @@ describe('current reference topology over a presented cut', () => {
     }
   })
 
-  it('uses actual collection key/value ports only for visible entries', () => {
+  it('uses actual collection inset edges only for captured visible key/value ports', () => {
     const value = row('value slot', 'target'), key = row('key slot', 'target')
     const collection: SceneCollection = { kind: 'collection', id: 'map', displayId: 2, title: 'Map', collectionKind: 'Map', size: 1, recordedEntries: 1,
       entries: [{ slotId: value.slotId, value: value.value, port: [1, 2, 1], keySlotId: key.slotId, key: key.value, keyPort: [-1, 2, 1], evidence: evidence() }],
       mutation: null, ownership: 'JDK', anchor: anchor('map'), evidence: evidence() }
     const references: SceneReference[] = [value, key].map(item => ({ id: `unit-reference/${item.slotId}`, sourceId: collection.id, sourceSlotId: item.slotId, targetId: 'target', role: 'object-object', overlay: null, evidence: evidence() }))
-    const model = scene([collection, object('target', [], 8)], references), input = inputFor(model)
+    const model = scene([collection, object('target', [], 8)], references), input = inputFor(model),before=snapshot(input)
     const result = buildReferenceTopology(input)
-    expect(result.individual.map(item => item.sourcePoint)).toEqual([[-1, 2, 1], [1, 2, 1]])
+    const expected=[[-1.1025,7.52,1.081],[-.1025,7.52,1.081]]
+    result.individual.forEach((item,index)=>item.sourcePoint.forEach((value,axis)=>expect(value).toBeCloseTo(expected[index][axis],10)))
+    expect(collection.entries[0].keyPort).toEqual([-1,2,1]);expect(collection.entries[0].port).toEqual([1,2,1])
     const missingKey = { ...collection, entries: [{ ...collection.entries[0], keyPort: null }] }
     expect(buildReferenceTopology(inputFor(scene([missingKey, object('target', [], 8)], references))).counts).toMatchObject({ individual: 1, unavailable: 1 })
     expect(buildReferenceTopology({ ...input, entities: new Map([['map', presented('map', 'detailed', 'FAR')], ['target', presented('target')]]) }).counts.unavailable).toBe(2)
     conservation(result)
+    expect(snapshot(input)).toBe(before)
   })
 
   it('uses mapped array cell ports and actual title-plate destinations, never hidden indices or envelopes', () => {
@@ -177,7 +181,10 @@ describe('current reference topology over a presented cut', () => {
     const window = computeArrayWindow({ recordingId: 'unit/recording', arrayId: id, recordedLength: 1000, anchor: array.anchor, nominalCellBudget: 1, requestedIndices: [999] })
     const input = inputFor(scene([array, object('target', [], 12)], references), { cellWindows: new Map([[id, window]]) }), before = snapshot(input)
     const result = buildReferenceTopology(input), mapping = window.mapping.get(cells[1].slotId)!
-    expect(result.individual[0].sourcePoint).toBe(mapping.port)
+    const point=result.individual[0].sourcePoint
+    expect(point[0]).toBeCloseTo(mapping.port[0]+.67,10);expect(point[1]).toBe(mapping.port[1]);expect(point[2]).toBeCloseTo(mapping.port[2]+.081,10)
+    expect(point).not.toBe(mapping.port)
+    expect(presentedFlowPorts(input.scene,input.entities,input.cellWindows)({kind:'slot',id:cells[1].slotId})?.point).toBe(mapping.port)
     expect(result.individual[0].sourceAnchor).toBe(mapping.anchor)
     expect(result.unavailable[0].reference.sourceSlotId).toBe(cells[0].slotId)
     expect(snapshot(input)).toBe(before)

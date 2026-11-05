@@ -96,3 +96,7 @@ Private layout metadata compaction targets measured retention while preserving e
 ## Array captions and precise cell Focus — 2026-11-04
 
 Actual mounted array glyphs now verify above-cell index placement, centred values, heading/preceding-row ink clearance and exact-index Focus emphasis. Real cell front faces retain Requirement 19.5 bands and angles; reference cuts retain the focused semantic slot. Fresh 93/93 native success does not complete arrays or A–G: reference chips/ports independent of curve budgets, collection ports, trailing array-value truncation, global materials/routes/composition/motion and performance acceptance remain OPEN. [Exact scope, failed/corrected evidence and source qualification](migration/array-label-placement.md).
+
+## Array and collection reference chips — 2026-11-05
+
+Actual reference-array/List/Map values now have shared physical reference insets and right-edge ports, including independent Map key/value slots; null/primitive/unavailable/absent-target values do not gain reference insets. Chips/ports remain without curves, and array value previews use trailing ellipses with full Inspector values. Native integration passes 99/99; 133 original captures include six root-reviewed full-size originals. This is not full reference approval: strong glow, collection-label crossings, matte/hard fronts, antialiasing and peripheral clipping remain open. [Scope, failed attempts, source qualifications and complete results](migration/structure-reference-chips.md).

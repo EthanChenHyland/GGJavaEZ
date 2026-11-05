@@ -297,3 +297,7 @@ Frozen source `b5256fb3` passes all eight checks: 2,246 default passes, 70 expli
 ## Array captions and precise cell Focus — 2026-11-04
 
 Full eight-check source `e1ddb513` passes 2,261 defaults / 70 explicit opt-in skips / 2,331 total, 243 files. Final driver `3e6e9a41` differs only in the flow browser setup: real Home brings the same off-screen main frame into the viewport, with an added visibility assertion and unchanged pagination/provenance/cursor checks. Driver TypeScript and the two corrected cases pass; fresh integration passes 93/93, zero skips/failures/flaky, 73 distinct standard attached JVM IDs across 73 cases. The earlier 92/1 gate and repeated original failure are preserved; none is relabelled. [Exact scope, failed/corrected evidence and source qualification](migration/array-label-placement.md).
+
+## Array and collection reference chips — 2026-11-05
+
+Fresh native integration passes **99/99**, zero skips/failures/flaky, 1,223.357 seconds; 79 distinct standard attached JVM session IDs across 79 cases. Desktop/narrow × normal/reduced structure cases use actual captured arrays/List/Map, native catalog/cluster navigation and real chip raycasts, then retain chips/ports after Current scope removes the curves. Full defaults pass 2,265 with 70 existing explicit opt-in skips. The earlier catalog, fixture setup and legacy geometry failures remain archived with exact sources. [Scope, failed attempts, source qualifications and complete results](migration/structure-reference-chips.md).

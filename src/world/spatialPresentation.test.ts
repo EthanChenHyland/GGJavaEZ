@@ -11,6 +11,7 @@ import { clusterHierarchy, clusterId } from './clusterHierarchy'
 import { budgets } from '../theme/tokens'
 import { homeFraming } from '../camera/homeFraming'
 import { focusFraming } from '../camera/focusFraming'
+import { buildSolidBatch } from '../render/SolidBatch'
 
 type Input<T = TraceEvent> = T extends TraceEvent ? Omit<T, 'eventId' | 'seq' | 'source' | 'label' | 'importance'> : never
 const refValue = (id: string) => ({ kind: 'reference' as const, javaType: 'app.Item', objectId: id })
@@ -155,7 +156,8 @@ describe('adaptive production presentation', () => {
       { type: 'OBJECT_OBSERVE', objectId: 'array', arrayElements: [{ index: 10000, value: refValue('target') }] }])
     const reference = r.scene.references[0], plan = cut(r, 'CLOSE', { kind: 'reference', id: reference.id }), cell = plan.cellWindows.get('array')!.mapping.get(arrayElementSlotId('array', 10000))!
     expect(cell.index).toBe(10000)
-    expect(plan.curves.find(curve => curve.id === reference.id)?.points[0]).toEqual(cell.port)
+    const inset=buildSolidBatch(r.scene,plan).find(part=>part.pick.id===reference.sourceSlotId&&part.part==='reference-chip')!.anchor
+    expect(plan.curves.find(curve => curve.id === reference.id)?.points[0]).toEqual([inset.position[0]+inset.size[0]/2,inset.position[1],inset.position[2]+inset.size[2]/2])
     expect(plan.entities.get('array')?.pinned).toBe(true)
     accounted(r, plan)
   })

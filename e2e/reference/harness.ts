@@ -4,6 +4,7 @@ import {resolve,relative} from 'node:path'
 import {randomUUID} from 'node:crypto'
 import type {ExecutionSession} from '../../src/execution/contracts'
 import type {} from '../../src/qa/qaBridge'
+import {normalizeTrace} from '../../src/instrumentation/normalize'
 import manifest from '../../fixtures/reference-exact/manifest.json' with {type:'json'}
 export type FixtureName=keyof typeof manifest
 const ownedProjects=new Map<FixtureName,string>()
@@ -84,9 +85,11 @@ export async function runFixture(page:Page,request:APIRequestContext,name:Fixtur
  if('stderr' in definition)expect(session.stderr).toBe(definition.stderr)
  if('stderrContains' in definition)for(const value of definition.stderrContains)expect(session.stderr).toContain(value)
  if(definition.expectedExit==='nonzero'){expect(session.exitCode).not.toBeNull();expect(session.exitCode).not.toBe(0)}else expect(session.exitCode).toBe(definition.expectedExit)
+ const normalized=normalizeTrace(session.rawEvents,session.sourceManifest,{status:session.terminalStatus!,exitCode:session.exitCode,diagnostic:session.diagnostic,
+  ...(session.recording?{recording:session.recording}:{}),...(session.capability?{capability:session.capability}:{})},`execution:${session.id}`).trace.events.length
  await expect.poll(()=>page.evaluate(()=>window.__ggjavaezQA?.appState().dimensions.view.recordingId??null)).toBe(`execution:${session.id}`)
- const slider=page.getByRole('slider',{name:'Recorded execution position'});await slider.focus();await page.keyboard.press('End')
- await expect.poll(()=>page.evaluate(()=>{const scene=window.__ggjavaezWorld?.scene();return !!scene&&scene.cursor===scene.liveHead&&scene.liveHead>0})).toBe(true)
+ const slider=page.getByRole('slider',{name:'Recorded execution position'});await expect(slider).toHaveAttribute('aria-valuemax',String(normalized),{timeout:45000});await slider.focus();await page.keyboard.press('End')
+ await expect.poll(()=>page.evaluate(()=>window.__ggjavaezWorld?.scene().cursor)).toBe(normalized)
  await ready(page)
  const counts=await page.evaluate(()=>{const scene=window.__ggjavaezWorld!.scene();return{frames:scene.order.frames.length,objects:scene.order.objects.length,classes:scene.order.classes.length,references:scene.references.length}})
  expect(counts,'Final normalized scene matches the real-JVM fixture inventory').toEqual(definition.sceneCounts)

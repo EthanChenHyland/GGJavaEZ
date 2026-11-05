@@ -15,16 +15,17 @@ import {memo} from 'react';
 import {arrayCellTargeted,arrayCellFocusOpacity} from './arrayCellStyle';
 import {arrayCellTextGeometry} from '../world/arrayCellGeometry';
 import {arrayCellIndexLabel} from './text/arrayIndexLayout';
+import {arrayReferenceTextWidth,collectionReferenceTextWidth} from '../world/structureValueChipGeometry';
 export { WorldText } from './FaceText';
 // Observations can replace evidence/value wrappers without changing a cell's
 // face. Keep the label subtree stable using its actual presentation scalars.
-const ArrayCellLabels=memo(function ArrayCellLabels({entityId,slotId,x,y,z,indexLabel,valueText,indexTint,valueTint,opacity}:{
-    entityId:string;slotId:string;x:number;y:number;z:number;indexLabel:string;valueText:string;indexTint:string;valueTint:string;opacity:number;
+const ArrayCellLabels=memo(function ArrayCellLabels({entityId,slotId,x,y,z,indexLabel,valueText,indexTint,valueTint,opacity,valueWidth}:{
+    entityId:string;slotId:string;x:number;y:number;z:number;indexLabel:string;valueText:string;indexTint:string;valueTint:string;opacity:number;valueWidth:number;
 }){
     const geometry=arrayCellTextGeometry({position:[x,y,z],size:[world.array.cell,world.array.cell,world.array.cell]});
     return <group>
         <WorldText position={geometry.index} size={.28} weight={500} width={1.3} align="center" tint={indexTint} opacity={opacity} arrayText={{entityId,slotId,kind:'index'}}>{indexLabel}</WorldText>
-        <WorldText position={geometry.value} size={.34} weight={600} width={1.3} align="center" tint={valueTint} opacity={opacity} arrayText={{entityId,slotId,kind:'value'}}>{valueText}</WorldText>
+        <WorldText position={geometry.value} size={.34} weight={600} width={valueWidth} align="center" tint={valueTint} opacity={opacity} truncation="end" arrayText={{entityId,slotId,kind:'value'}}>{valueText}</WorldText>
     </group>;
 });
 type RuntimeSolidProps={
@@ -77,7 +78,7 @@ const RuntimeSolidLabels=memo(function RuntimeSolidLabels({node,presented,plan}:
     {model.visible.map((row, index) => {
             if(node.kind==='collection'){
                 const entryIndex=node.entries.findIndex(entry=>entry.slotId===row.slotId),entry=node.entries[entryIndex],geometry=collectionEntryFace(anchor,entryIndex,node.collectionKind==='Map');if(!geometry||!entry)return null;
-                const label=(value:typeof entry.value,point:readonly[number,number,number],kind:'key'|'value',slotId?:string)=><WorldText position={[point[0],point[1],face+.015]} align="center" size={.34} weight={600} width={geometry.valueWidth-.08} opacity={opacity} tint={value.kind==='reference'?color.semantic.execution:value.kind==='not-recorded'?color.ui.textMuted:color.ui.text} collectionText={{entityId:node.id,kind,slotId}}>{rowValueLabel(value)}</WorldText>;
+                const label=(value:typeof entry.value,point:readonly[number,number,number],kind:'key'|'value',slotId?:string)=><WorldText position={[point[0],point[1],face+.015]} align="center" size={.34} weight={600} width={value.kind==='reference'?collectionReferenceTextWidth(anchor,entryIndex,node.collectionKind==='Map'):geometry.valueWidth-.08} opacity={opacity} tint={value.kind==='reference'?color.semantic.execution:value.kind==='not-recorded'?color.ui.textMuted:color.ui.text} collectionText={{entityId:node.id,kind,slotId}}>{rowValueLabel(value)}</WorldText>;
                 return <group key={entry.slotId}>{label(entry.value,geometry.value,'value',entry.slotId)}{entry.key&&geometry.key&&label(entry.key,geometry.key,'key',entry.keySlotId)}</group>;
             }
             const ry = faceRowPosition(node,presented,row.slotId,model)?.[1] ?? top - model.header - model.pitch * (index + .5), value = row.value, mutation = node.kind === 'object' && node.mutation?.slotId === row.slotId;
@@ -96,6 +97,7 @@ const RuntimeSolidLabels=memo(function RuntimeSolidLabels({node,presented,plan}:
             const activityTint=targeted(id)?color.semantic.execution:activity==='write'?color.semantic.mutation:activity==='read'?color.semantic.execution:null;
             return <ArrayCellLabels key={id} entityId={node.id} slotId={id} x={cx} y={cy} z={cz}
                 indexLabel={arrayCellIndexLabel(cell.index,activity)} valueText={value.text}
+                valueWidth={value.kind==='reference'&&value.observation!=='UNAVAILABLE'?arrayReferenceTextWidth:1.3}
                 indexTint={activityTint??color.ui.textSecondary}
                 valueTint={activityTint??(value.kind==='reference'?color.semantic.execution:color.ui.text)} opacity={opacity*cellFocusOpacity(id)}/>;
         })}

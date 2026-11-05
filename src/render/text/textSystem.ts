@@ -20,13 +20,13 @@ export function textAdvance(text:string,weight:FontWeight=400,tracking=0):number
  return Math.max(0,advance)
 }
 /** Keep whole code points/escape groups and fit synchronously before glyph work. */
-export function fitWorldText(text:string,width:number,size:number,weight:FontWeight=400,tracking=0,limit=Infinity):string{
+export function fitWorldText(text:string,width:number,size:number,weight:FontWeight=400,tracking=0,limit=Infinity,truncation:'middle'|'end'='middle'):string{
  if(!(width>0&&size>0))return ''
  const units=Array.from(text,char=>localFontText(char,weight)),capacity=Math.max(0,Math.floor(limit))
  const fits=(candidate:string)=>textAdvance(candidate,weight,tracking)*size<=Math.max(0,width-.012)
  const complete=units.join('');if(units.length<=capacity&&fits(complete))return complete
  const ellipsis='…';if(!fits(ellipsis))return ''
- const candidate=(count:number)=>{const lead=Math.ceil(count/2),tail=count-lead;return units.slice(0,lead).join('')+ellipsis+(tail?units.slice(-tail).join(''):'')}
+ const candidate=(count:number)=>{if(truncation==='end')return units.slice(0,count).join('')+ellipsis;const lead=Math.ceil(count/2),tail=count-lead;return units.slice(0,lead).join('')+ellipsis+(tail?units.slice(-tail).join(''):'')}
  let low=0,high=Math.min(units.length-1,Math.max(0,capacity-1))
  while(low<high){const count=Math.ceil((low+high)/2);if(fits(candidate(count)))low=count;else high=count-1}
  return candidate(low)

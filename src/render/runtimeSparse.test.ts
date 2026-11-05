@@ -78,7 +78,9 @@ describe('production static/sparse successors',()=>{
   const slotId=arrayElementSlotId(arrayId,750000),id=referenceIdForSlot(slotId),{scene,plan,array,window,trace}=view({references:true},{kind:'reference',id})
   expect(array.componentType).toBe('Box');expect(seek(trace,trace.events.length).objects[arrayId].array!.elementType).toBe('domain.Box');expect(inspectorRows(array).at(750000).value).toMatchObject({targetId:heapId})
   expect(scene.references.find(reference=>reference.id===id)).toMatchObject({sourceId:arrayId,sourceSlotId:slotId,targetId:heapId})
-  const curve=plan.curves.find(curve=>curve.id===id)!;expect(curve.points[0]).toEqual(window.mapping.get(slotId)!.port);expect(curve.destinationAnchor?.entityId).toBe(heapId)
+  const curve=plan.curves.find(curve=>curve.id===id)!,inset=buildSolidBatch(scene,plan).find(part=>part.pick.id===slotId&&part.part==='reference-chip')!.anchor
+  expect(curve.points[0]).toEqual([inset.position[0]+inset.size[0]/2,inset.position[1],inset.position[2]+inset.size[2]/2]);expect(curve.destinationAnchor?.entityId).toBe(heapId)
+  expect(presentedFlowPorts(scene,plan.entities,plan.cellWindows)({kind:'slot',id:slotId})!.point).toEqual(window.mapping.get(slotId)!.port)
   expect(array.cells.filter(cell=>cell.index!==750000).every(cell=>cell.value.kind==='null')).toBe(true)
  })
  it('retains a selected late reference and exact separate sparse write source/destination indices',()=>{

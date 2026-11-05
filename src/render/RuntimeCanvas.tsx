@@ -166,6 +166,19 @@ function Metrics({ scene, plan, selection,trace }: {
                         }
                     });return ports;
                 },
+                valueChips:()=>{
+                    const chips:ReturnType<NonNullable<Window['__ggjavaezWorld']>['valueChips']>[number][]=[],matrix=new Matrix4(),position=new Vector3(),scale=new Vector3();
+                    world.traverseVisible(object=>{
+                        if(!(object instanceof InstancedMesh))return;
+                        const parts=object.userData.runtimeValueChipParts as {slotId:string;part:string}[]|undefined;if(!parts)return;
+                        object.updateWorldMatrix(true,false);
+                        for(let index=0;index<Math.min(object.count,parts.length);index++){
+                            object.getMatrixAt(index,matrix);matrix.premultiply(object.matrixWorld);
+                            position.setFromMatrixPosition(matrix);scale.setFromMatrixScale(matrix);
+                            chips.push({...parts[index],position:position.toArray()as[number,number,number],size:scale.toArray()as[number,number,number]});
+                        }
+                    });return chips;
+                },
                 effects:()=>({...postReadiness}),
                 atmosphere:()=>{
                     const result:ReturnType<NonNullable<Window['__ggjavaezWorld']>['atmosphere']>[number][]=[];

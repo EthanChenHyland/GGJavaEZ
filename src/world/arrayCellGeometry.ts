@@ -16,5 +16,5 @@ export function arrayCellPosition(tray: WorldAnchor, presentedSlot: number, colu
  * The front offset retains the established plate/text depth separation. */
 export function arrayCellTextGeometry(cell: Pick<WorldAnchor,'position'|'size'>): {index:Vec3;value:Vec3} {
   const [x,y,z]=cell.position,front=z+cell.size[2]/2+.055
-  return {index:[x,y+cell.size[1]/2+world.array.indexLabel,front],value:[x,y,front]}
+  return {index:[x,y+cell.size[1]/2+world.array.indexLabel,front],value:[x,y,z+cell.size[2]/2+.1]}
 }

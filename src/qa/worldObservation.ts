@@ -18,6 +18,7 @@ export interface WorldObservation {
   projectedPoint(id: string): { x:number; y:number; visible:boolean } | null
   renderer(): {calls:number;triangles:number;geometries:number;textures:number;frame:number}
   connectorPorts():readonly {position:Vec3;radius:number;opacity:number;referenceChip:boolean}[]
+  valueChips():readonly {slotId:string;part:string;position:Vec3;size:Vec3}[]
   environment():{id:string;captureVersion:number}|null
   effects():{ready:boolean;frames:number;revision:number;failure:string;cinematic:boolean}
   atmosphere():readonly {region:string;position:readonly[number,number,number];size:readonly[number,number,number];color:string;opacity:number;visible:boolean;depthWrite:boolean;depthTest:boolean;castShadow:boolean;maxLinearTint:number;maskSize:readonly[number,number]}[]

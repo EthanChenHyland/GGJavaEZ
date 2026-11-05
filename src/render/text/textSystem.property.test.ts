@@ -21,6 +21,19 @@ it('Property 64: font visibility uses the actual projected size, including clip 
  expect(worldTextVisible(11)).toBe(true);expect(worldTextVisible(10.999)).toBe(false)
  expect(worldTextVisible(11.999,12)).toBe(false);expect(worldTextVisible(12,12)).toBe(true)
 })
+it('fits trailing array previews as whole captured prefix/escape groups at the unchanged font size',()=>{
+ fc.assert(fc.property(fc.array(fc.integer({min:32,max:0x10ffff}),{maxLength:100}),fc.double({min:.01,max:10,noNaN:true}),fc.constantFrom(400 as const,500 as const,600 as const),(codes,width,weight)=>{
+  const source=String.fromCodePoint(...codes),complete=localFontText(source,weight)
+  const fitted=fitWorldText(source,width,.34,weight,0,Infinity,'end')
+  expect(textAdvance(fitted,weight)*.34).toBeLessThanOrEqual(width+1e-9)
+  if(fitted&&fitted!==complete){
+   expect(fitted.endsWith('…')).toBe(true)
+   const units=Array.from(source,char=>localFontText(char,weight)),prefix=fitted.slice(0,-1)
+   expect(Array.from({length:units.length+1},(_,length)=>units.slice(0,length).join('')).includes(prefix)).toBe(true)
+  }
+ }),{numRuns:100})
+ expect(fitWorldText('123456789012345678901234567890',1.3,.34,600,0,Infinity,'end')).toMatch(/^123.*…$/)
+})
 it('uses local glyph escapes and deterministic Inter advances including real pair kerning',()=>{
  for(const weight of [400,500,600] as const) expect(localFontText('⟨not captured⟩',weight)).toBe('⟨not captured⟩')
  expect(localFontText('😀')).toBe('\\ud83d\\ude00')

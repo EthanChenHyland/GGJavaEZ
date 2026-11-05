@@ -394,3 +394,7 @@ The private layout cache retains first slot order and latest heap declaring-clas
 ## Array captions and precise cell Focus — 2026-11-04
 
 One pure geometry helper now places canonical and virtualized cells and their caption/value origins, spending existing index padding before the first row without moving tray anchors/extents. Font-dependent clearance lives in the text renderer. Precise cell Focus admits only that index’s reference neighbours, dims other cells and masks faded text over its actual rounded body. Optional caption clearance preserves true front-face sizing/angles and camera intent/cancellation; narrow Focus sheets use 30% height. Three camera files and the independently reviewed presentation golden JSON are explicit guard exceptions; runtime/Graph/history contracts remain unchanged. [Exact scope, failed/corrected evidence and source qualification](migration/array-label-placement.md).
+
+## Array and collection reference chips — 2026-11-05
+
+Arrays and collection entries now reuse the centered physical value-chip inset and independent right-edge reference ports. Current-reference attachments use these physical edges; canonical data-flow ports, runtime/Graph/history contracts, layout anchors, camera and goldens remain unchanged. Historical bindings retain captured storage geometry. Read-only QA observes actual uploaded transforms; no new selection/runtime setters are exposed. [Scope, failed attempts, source qualifications and complete results](migration/structure-reference-chips.md).

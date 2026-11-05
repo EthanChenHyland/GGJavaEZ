@@ -148,6 +148,6 @@ it('updates only affected cell labels for actual writes, reads, reverse stepping
  const window=selected.plan.cellWindows.get(sparseArrayId)!,slotId=arrayElementSlotId(sparseArrayId,0),cell=window.mapping.get(slotId)!,[x,y,z]=cell.anchor.position
  const moved={...cell,anchor:{...cell.anchor,position:[x+2,y-1,z+.5] as const}},mapping=new Map(window.mapping).set(slotId,moved)
  view.rerender(<RuntimeSolid {...selected} presented={{...selected.presented,opacity:.35}} plan={{...selected.plan,cellWindows:new Map([[sparseArrayId,{...window,mapping}]])}}/>);
- expect(commits()).toEqual([1,3,2,2,1]);expect(groups.get(0)!.children.map(child=>child.publicInstance.position.toArray())).toEqual([[x+2,y-1+.775+.5,z+.5+.83],[x+2,y-1,z+.5+.83]])
+ expect(commits()).toEqual([1,3,2,2,1]);expect(groups.get(0)!.children.map(child=>child.publicInstance.position.toArray())).toEqual([[x+2,y-1+.775+.5,z+.5+.83],[x+2,y-1,z+.5+.875]])
  expect(state.texts).toEqual(resources)
 })

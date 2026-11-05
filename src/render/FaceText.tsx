@@ -54,6 +54,7 @@ type WorldTextProps = {
     tracking?:number;
     minimumPixels?:11|12;
     lines?:readonly string[];
+    truncation?:'middle'|'end';
     heading?:{entityId:string;kind:'title'|'identity'};
     exceptionText?:boolean;
     returnText?:{flowId:string;kind:'value'|'operands'};
@@ -80,12 +81,13 @@ function sameTextProps(previous:WorldTextProps,next:WorldTextProps){
         return false;
     });
 }
-export const WorldText=memo(function WorldText({ children, position, size = .25, tint = color.ui.text, width = 4, align = 'left', opacity = 1, weight=400, tracking=0, minimumPixels=11, lines, heading,collectionText,frameText,returnText,arrayText,exceptionText }: WorldTextProps) {
+export const WorldText=memo(function WorldText({ children, position, size = .25, tint = color.ui.text, width = 4, align = 'left', opacity = 1, weight=400, tracking=0, minimumPixels=11, lines, truncation='middle',heading,collectionText,frameText,returnText,arrayText,exceptionText }: WorldTextProps) {
     const batch = useContext(Context), anchor = useRef<Group>(null), id = useId(), text = useMemo(() => new Text(), []),lastLayout=useRef(''),syncGeneration=useRef(0);
     const invalidate=useThree(state=>state.invalidate);
     const {camera,size:viewport}=useThree(),projection=useMemo(()=>({point:new Vector3(),scratch:new Vector3()}),[]);
     useLayoutEffect(() => {
-        const content=lines?lines.map(line=>fitWorldText(line,width,size,weight,tracking)).join('\n'):fitWorldText(children,width,size,weight,tracking);
+        const fit=(value:string)=>fitWorldText(value,width,size,weight,tracking,Infinity,truncation);
+        const content=lines?lines.map(fit).join('\n'):fit(children);
         const lineHeight=lines&&lines.length>1?.9:'normal';
         const key=JSON.stringify([content,runtimeFonts[weight],tracking,size,width,align,lineHeight]);
         if(lastLayout.current===key)return;
@@ -103,7 +105,7 @@ export const WorldText=memo(function WorldText({ children, position, size = .25,
         text.matrixAutoUpdate = false;
         textReadiness.pending.add(id);
         text.sync(() => { if(generation===syncGeneration.current)textReadiness.pending.delete(id); textReadiness.lastSync = performance.now(); invalidate(); });
-    }, [text, children, size, width, align, id, weight, tracking,lines,invalidate]);
+    }, [text, children, size, width, align, id, weight, tracking,lines,truncation,invalidate]);
     useLayoutEffect(()=>{text.color=tint;text.fillOpacity=opacity},[text,tint,opacity]);
     useLayoutEffect(() => { batch?.addText(text); return () => { batch?.removeText(text); textReadiness.pending.delete(id); text.dispose(); }; }, [batch, text, id]);
     useFrame(() => { if (anchor.current) {
