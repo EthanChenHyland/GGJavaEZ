@@ -105,7 +105,9 @@ export function computeShellLayout(input: ShellLayoutInput): ShellLayout {
   let inspector: Rect | null = null
   if (input.inspector.open) {
     if (narrow) {
-      const height = shell.inspector.sheetMaxH * h
+      // A Focus target needs room for its full-size face and runtime captions.
+      // Content remains virtualized in the shorter sheet; 45% stays the cap.
+      const height = Math.min(shell.inspector.sheetMaxH,input.appState.overlays.includes('FOCUS') ? .30 : shell.inspector.sheetMaxH) * h
       inspector = { x: 0, y: h - height, width: w, height }
     } else {
       const width = Math.max(shell.inspector.w * w, shell.inspector.minPx)

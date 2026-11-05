@@ -91,3 +91,8 @@ Requirement 19.6 retains its reference-only neighborhood and now caps indirect c
 ## Private layout metadata compaction — 2026-11-04
 
 Private layout metadata compaction targets measured retention while preserving every public anchor/port/bound/placement field in exact comparisons. Current full source validation and native 69/69 pass. ABBA shows a repeated medium/large retention reduction, while every memory budget and five fresh Dense latency limits still fail. The whole-product material, array, composition and reference/motion findings remain OPEN. [Evidence and boundaries](migration/compact-layout-slot-metadata.md).
+
+
+## Array captions and precise cell Focus — 2026-11-04
+
+Actual mounted array glyphs now verify above-cell index placement, centred values, heading/preceding-row ink clearance and exact-index Focus emphasis. Real cell front faces retain Requirement 19.5 bands and angles; reference cuts retain the focused semantic slot. Fresh 93/93 native success does not complete arrays or A–G: reference chips/ports independent of curve budgets, collection ports, trailing array-value truncation, global materials/routes/composition/motion and performance acceptance remain OPEN. [Exact scope, failed/corrected evidence and source qualification](migration/array-label-placement.md).

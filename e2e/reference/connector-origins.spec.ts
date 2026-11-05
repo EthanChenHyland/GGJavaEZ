@@ -16,7 +16,7 @@ test.afterEach(async({request})=>{
  }
 })
 
-for(const viewport of[{width:1440,height:900},{width:760,height:900}])for(const reducedMotion of[false,true])test(`actual virtualized array Focus contains canonical cell ${viewport.width}x${viewport.height}${reducedMotion?' reduced motion':''}`,async({page,request})=>{
+for(const viewport of[{width:1728,height:1117},{width:1440,height:900},{width:1280,height:800},{width:760,height:900},{width:1440,height:650}])for(const reducedMotion of[false,true])test(`actual virtualized array Focus contains canonical cell ${viewport.width}x${viewport.height}${reducedMotion?' reduced motion':''}`,async({page,request})=>{
  test.setTimeout(90000);const errors=browserErrors(page);await page.setViewportSize(viewport)
  await page.emulateMedia({reducedMotion:reducedMotion?'reduce':'no-preference'})
  const session=await runOrigins(page,request)
@@ -28,7 +28,7 @@ for(const viewport of[{width:1440,height:900},{width:760,height:900}])for(const 
  const slotId=`${arrayId}:element:6500`
  const before=await page.evaluate(({arrayId,slotId})=>({pose:window.__ggjavaezQA!.cameraPose(),cell:window.__ggjavaezWorld!.plan().cellWindows.get(arrayId)!.mapping.get(slotId),cursor:window.__ggjavaezWorld!.scene().cursor}),{arrayId,slotId})
  await focusSelection(page)
- const after=await page.evaluate(({arrayId,slotId})=>({pose:window.__ggjavaezQA!.cameraPose(),cell:window.__ggjavaezWorld!.plan().cellWindows.get(arrayId)!.mapping.get(slotId),cursor:window.__ggjavaezWorld!.scene().cursor,shell:window.__ggjavaezQA!.shellRects(),focus:window.__ggjavaezQA!.focusTarget(),selection:window.__ggjavaezQA!.selection(),point:window.__ggjavaezWorld!.projectedPoint(slotId),framing:window.__ggjavaezWorld!.plan().framing,detail:window.__ggjavaezWorld!.plan().detailLevel}),{arrayId,slotId})
+ const after=await page.evaluate(({arrayId,slotId})=>({pose:window.__ggjavaezQA!.cameraPose(),cell:window.__ggjavaezWorld!.plan().cellWindows.get(arrayId)!.mapping.get(slotId),cursor:window.__ggjavaezWorld!.scene().cursor,shell:window.__ggjavaezQA!.shellRects(),focus:window.__ggjavaezQA!.focusTarget(),selection:window.__ggjavaezQA!.selection(),point:window.__ggjavaezWorld!.projectedPoint(slotId),framing:window.__ggjavaezWorld!.plan().framing,detail:window.__ggjavaezWorld!.plan().detailLevel,arrayText:window.__ggjavaezWorld!.arrayText().filter(label=>label.slotId===slotId),arrayContextText:window.__ggjavaezWorld!.arrayText().filter(label=>label.entityId===arrayId),arrayReferences:window.__ggjavaezWorld!.scene().references.filter(ref=>ref.sourceId===arrayId).map(ref=>({sourceSlotId:ref.sourceSlotId,targetId:ref.targetId,opacity:window.__ggjavaezWorld!.plan().curves.find(curve=>curve.id===ref.id)?.opacity}))}),{arrayId,slotId})
  const camera=new PerspectiveCamera(36,viewport.width/viewport.height,.05,10000);camera.position.set(...after.pose.position);camera.lookAt(...after.pose.target);camera.updateMatrixWorld()
  const anchor=after.cell!.anchor,points=[-1,1].flatMap(x=>[-1,1].map(y=>new Vector3(anchor.position[0]+x*anchor.size[0]/2,anchor.position[1]+y*anchor.size[1]/2,anchor.position[2]+anchor.size[2]/2).project(camera)))
  const face={left:Math.min(...points.map(p=>(p.x+1)*viewport.width/2)),right:Math.max(...points.map(p=>(p.x+1)*viewport.width/2)),top:Math.min(...points.map(p=>(1-p.y)*viewport.height/2)),bottom:Math.max(...points.map(p=>(1-p.y)*viewport.height/2))}
@@ -44,6 +44,27 @@ for(const viewport of[{width:1440,height:900},{width:760,height:900}])for(const 
  expect(face.left).toBeGreaterThanOrEqual(after.shell.safeFrame.x);expect(face.right).toBeLessThanOrEqual(after.shell.safeFrame.x+after.shell.safeFrame.width)
  expect(face.top).toBeGreaterThanOrEqual(after.shell.safeFrame.y);expect(face.bottom).toBeLessThanOrEqual(bottom)
  expect(face.bottom-face.top).toBeGreaterThanOrEqual(viewport.height*.38-1);expect(face.bottom-face.top).toBeLessThanOrEqual(viewport.height*.52+1)
+ // Requirement14.2 is checked against actual mounted glyph transforms, not a
+ // parallel label-position helper. Preserve all existing face/identity checks.
+ const indexText=after.arrayText.find(label=>label.kind==='index')!,valueText=after.arrayText.find(label=>label.kind==='value')!
+ expect(indexText).toBeTruthy();expect(valueText).toBeTruthy()
+ expect(indexText.position[0]).toBeCloseTo(anchor.position[0],7)
+ expect(indexText.position[1]-anchor.position[1]-anchor.size[1]/2).toBeCloseTo(.5,7)
+ expect(valueText.position[1]).toBeCloseTo(anchor.position[1],7)
+ expect(indexText.opacity).toBeGreaterThan(0);expect(indexText.fontPixels).toBeGreaterThanOrEqual(11)
+ expect(indexText.bounds?.visible).toBe(true)
+ expect(after.shell.header).not.toBeNull();expect(after.shell.timeDock).not.toBeNull()
+ expect(indexText.bounds!.y).toBeGreaterThanOrEqual(after.shell.header!.y+after.shell.header!.height)
+ const captionBottom=viewport.width<1024&&after.shell.inspector?after.shell.inspector.y:after.shell.timeDock!.y
+ expect(indexText.bounds!.y+indexText.bounds!.height).toBeLessThanOrEqual(captionBottom)
+ const background=after.arrayContextText.filter(label=>label.slotId!==slotId)
+ expect(background.length).toBeGreaterThan(0)
+ expect(background.some(label=>label.opacity>0)).toBe(true)
+ for(const label of background)expect(label.opacity).toBeLessThanOrEqual(.25)
+ const directTargets=new Set(after.arrayReferences.filter(ref=>ref.sourceSlotId===slotId).map(ref=>ref.targetId))
+ expect(directTargets.size).toBeGreaterThan(0)
+ for(const id of after.framing.focus!.neighbours)expect(directTargets.has(id)).toBe(true)
+ for(const ref of after.arrayReferences)if(ref.sourceSlotId!==slotId&&ref.opacity!==undefined)expect(ref.opacity).toBeLessThanOrEqual(.25)
  // A later LOD change caused by real input belongs to the user. Focus identity
  // remains, but the completed scripted request must not pull the camera back.
  await page.mouse.move(after.shell.safeFrame.x+after.shell.safeFrame.width*.7,after.shell.safeFrame.y+25)
@@ -59,11 +80,69 @@ for(const viewport of[{width:1440,height:900},{width:760,height:900}])for(const 
  expect(errors).toEqual([])
 })
 
-async function runOrigins(page:Page,request:APIRequestContext):Promise<ExecutionSession>{
+for(const viewport of[{width:1440,height:900},{width:760,height:900}])for(const reducedMotion of[false,true])test(`actual small and multirow array captions clear their headers and preceding values ${viewport.width}x${viewport.height}${reducedMotion?' reduced motion':''}`,async({page,request})=>{
+ test.setTimeout(90000);const errors=browserErrors(page)
+ await page.setViewportSize(viewport);await page.emulateMedia({reducedMotion:reducedMotion?'reduce':'no-preference'})
+ // This source is compiled and executed by the real project/JVM pipeline.
+ const session=await runOrigins(page,request,{fileName:'ArrayCaptions.java',stdout:'2:32\n',content:`public class ArrayCaptions {
+ public static void main(String[] args) {
+  int[] small = {2,3,5,7,11};
+  int[] rows = {${Array.from({length:33},(_,index)=>index).join(',')}};
+  System.out.println(small[0] + ":" + rows[32]);
+ }
+}`})
+ const arrays=await page.evaluate(()=>Object.values(window.__ggjavaezWorld!.scene().entities).flatMap(node=>node.kind==='array'&&(node.length===5||node.length===33)?[{id:node.id,length:node.length}]:[]))
+ expect(arrays.map(array=>array.length).sort((a,b)=>a-b)).toEqual([5,33])
+ const observations=[]
+ for(const array of arrays)for(const index of array.length===5?[0]:[0,16]){
+  await selectArrayThroughCatalog(page,array.id)
+  const values=page.getByRole('complementary',{name:'Selection inspector',exact:true}).getByRole('list',{name:'Recorded values',exact:true})
+  await values.hover();await page.mouse.wheel(0,-5000);await ready(page)
+  if(index){await values.hover();await page.mouse.wheel(0,index*52);await ready(page)}
+  await page.getByRole('button',{name:`Reveal index ${index}`,exact:true}).click();await ready(page);await focusSelection(page)
+  const observed=await page.evaluate(arrayId=>{
+   const world=window.__ggjavaezWorld!,windowForArray=world.plan().cellWindows.get(arrayId)!
+   return{cursor:world.scene().cursor,focus:window.__ggjavaezQA!.focusTarget(),shell:window.__ggjavaezQA!.shellRects(),
+    cells:[...windowForArray.mapping].map(([slotId,cell])=>({slotId,...cell})),labels:world.arrayText().filter(label=>label.entityId===arrayId),
+    headings:world.runtimeHeadings().filter(label=>label.entityId===arrayId)}
+  },array.id)
+  expect(observed.focus?.targetId).toBe(`${array.id}:element:${index}`)
+  expect(observed.cells).toHaveLength(array.length)
+  for(const cell of observed.cells){
+   const label=observed.labels.find(label=>label.slotId===cell.slotId&&label.kind==='index')!
+   const value=observed.labels.find(label=>label.slotId===cell.slotId&&label.kind==='value')!
+   expect(label).toBeTruthy();expect(value).toBeTruthy();expect(label.localInkBounds).not.toBeNull();expect(value.localInkBounds).not.toBeNull()
+   expect(label.position[1]-cell.anchor.position[1]-cell.anchor.size[1]/2).toBeCloseTo(.5,7)
+   expect(value.position[1]).toBeCloseTo(cell.anchor.position[1],7)
+   if(cell.presentedSlot<16){
+    for(const heading of observed.headings){
+     expect(heading.localInkBounds).not.toBeNull()
+     expect(label.position[1]+label.localInkBounds![3]).toBeLessThan(heading.position[1]+heading.localInkBounds![1])
+    }
+   }
+   const above=observed.cells.find(other=>other.presentedSlot===cell.presentedSlot-16)
+   if(above){
+    const aboveValue=observed.labels.find(label=>label.slotId===above.slotId&&label.kind==='value')!
+    expect(label.position[1]+label.localInkBounds![3]).toBeLessThan(aboveValue.position[1]+aboveValue.localInkBounds![1])
+   }
+  }
+  const focused=observed.labels.find(label=>label.slotId===`${array.id}:element:${index}`&&label.kind==='index')!
+  expect(focused.opacity).toBe(1);expect(focused.fontPixels).toBeGreaterThanOrEqual(11)
+  expect(focused.bounds!.y).toBeGreaterThanOrEqual(observed.shell.header!.height)
+  const capture=`array-caption-spacing-${array.length}-${index}-${viewport.width}x${viewport.height}${reducedMotion?'-reduced':''}`
+  await page.screenshot({path:`.ggjavaez/qa/reference-exact/${capture}.png`})
+  observations.push({array,index,...observed,capture})
+ }
+ expect(new Set(observations.map(item=>item.cursor)).size).toBe(1)
+ await writeFile(`.ggjavaez/qa/reference-exact/array-caption-spacing-${viewport.width}x${viewport.height}${reducedMotion?'-reduced':''}.json`,JSON.stringify({sessionId:session.id,observations,errors},null,2)+'\n')
+ expect(errors).toEqual([])
+})
+
+async function runOrigins(page:Page,request:APIRequestContext,program?:{fileName:string;content:string;stdout:string}):Promise<ExecutionSession>{
  const previous=await currentSession(request)
  expect(previous===null||!activePhases.includes(previous.phase),'Do not interrupt another active JVM').toBe(true)
- const content=await readFile('fixtures/reference-exact/hover-origins/HoverOrigins.java','utf8')
- const imported=await request.post('/api/projects/import',{data:{name:`Connector origins ${randomUUID()}`,files:[{path:'HoverOrigins.java',content}]}})
+ const content=program?.content??await readFile('fixtures/reference-exact/hover-origins/HoverOrigins.java','utf8')
+ const imported=await request.post('/api/projects/import',{data:{name:`Connector origins ${randomUUID()}`,files:[{path:program?.fileName??'HoverOrigins.java',content}]}})
  expect(imported.ok(),await imported.text()).toBe(true)
  const projectId=(await imported.json()).id as string;ownedProjects.add(projectId)
  await page.addInitScript(id=>localStorage.setItem('ggjavaez:project',id),projectId)
@@ -77,7 +156,7 @@ async function runOrigins(page:Page,request:APIRequestContext):Promise<Execution
  await expect.poll(async()=>{const current=await currentSession(request);return current?.id===started.id?current.phase:null},{timeout:45000}).toBe('COMPLETED')
  const session=(await currentSession(request))!
  expect(session.id).toBe(started.id);expect(session.projectId).toBe(projectId)
- expect(session.stdout).toBe('7:9\n');expect(session.stderr).toBe('');expect(session.exitCode).toBe(0)
+ expect(session.stdout).toBe(program?.stdout??'7:9\n');expect(session.stderr).toBe('');expect(session.exitCode).toBe(0)
  expect(session.build?.success).toBe(true);expect(session.recording?.state).toBe('FULL');expect(session.terminalStatus).toBe('complete')
  expect(session.rawEvents.length).toBeGreaterThan(0)
  const oracle=normalizeTrace(session.rawEvents,session.sourceManifest,{

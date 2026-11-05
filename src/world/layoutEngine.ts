@@ -7,6 +7,7 @@ import { persistentAppend, persistentPut, persistentRecord } from '../runtime/st
 import {ownershipObservation} from './recordedOwnership';
 import {firstObjectPresentation,compactLibraryFace} from './firstObjectPresentation';
 import {createClusterMembershipIndex} from './clusterMemberships';
+import {arrayCellPosition} from './arrayCellGeometry';
 export type { LayoutState } from '../contracts/world';
 export type WorldLayoutTokens = typeof worldLayoutTokens;
 export interface LayoutEngine {
@@ -153,7 +154,7 @@ export function createLayoutEngine(t: WorldLayoutTokens = worldLayoutTokens): La
         else if (isArray && count <= 128) {
             const cellPorts: Record<string, Vec3> = {};
             for (let index = 0; index < count; index++) {
-                const cellId = arrayElementSlotId(event.objectId, index), x = position![0] - realSize[0] / 2 + t.array.cell / 2 + (index % cols) * (t.array.cell + t.array.gap), y = position![1] + realSize[1] / 2 - t.array.titlePlate - t.array.cell / 2 - Math.floor(index / cols) * (t.array.cell + t.array.gap), z = position![2] + realSize[2] / 2 - t.array.cell / 2;
+                const cellId = arrayElementSlotId(event.objectId, index), [x,y,z] = arrayCellPosition(anchor,index,cols,t.array);
                 const port: Vec3 = [x, y, z + t.array.cell / 2];
                 cellPorts[cellId] = port;
                 anchors = persistentPut(anchors, cellId, { entityId: cellId, region, position: [x, y, z], size: [t.array.cell, t.array.cell, t.array.cell], ports: {}, bodyPort: port });

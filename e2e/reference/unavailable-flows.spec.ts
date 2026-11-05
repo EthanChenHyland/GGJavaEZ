@@ -4,7 +4,7 @@ import {randomUUID} from 'node:crypto'
 import type {ExecutionSession} from '../../src/execution/contracts'
 import {normalizeTrace} from '../../src/instrumentation/normalize'
 import {historyForTrace} from '../../src/runtime/history'
-import {browserErrors,currentSession,ready,seekCursor,selectEntity} from './harness'
+import {browserErrors,currentSession,home,ready,seekCursor,selectEntity} from './harness'
 
 test.describe.configure({timeout:90000})
 let ownedProject:string|null=null
@@ -47,7 +47,15 @@ for(const viewport of[{width:1440,height:900},{width:760,height:900}])test(`comp
  const graph=historyForTrace(trace)!.state.executionGraph!
  await info.attach('actual-jvm-session',{body:JSON.stringify({id:session.id,rawEvents:session.rawEvents.length,normalizedEvents:trace.events.length}),contentType:'application/json'})
  const target=await page.evaluate(()=>{const world=window.__ggjavaezWorld!,scene=world.scene();return scene.order.frames.find(id=>world.plan().entities.has(id))})
- expect(target).toBeTruthy();await selectEntity(page,target!);await ready(page)
+ expect(target).toBeTruthy()
+ // A represented frame may be outside Hero's current viewport in this dense
+ // world. Use real navigation before entering the viewport-bound catalog.
+ const beforeHome=await page.evaluate(id=>({pose:window.__ggjavaezQA!.cameraPose(),point:window.__ggjavaezWorld!.projectedPoint(id)}),target!)
+ await home(page)
+ const afterHome=await page.evaluate(id=>({pose:window.__ggjavaezQA!.cameraPose(),point:window.__ggjavaezWorld!.projectedPoint(id)}),target!)
+ expect(afterHome.point?.visible).toBe(true)
+ await info.attach('native-frame-navigation',{body:JSON.stringify({sessionId:session.id,target,beforeHome,afterHome}),contentType:'application/json'})
+ await selectEntity(page,target!);await ready(page)
  const card=page.getByRole('complementary',{name:'Selection inspector'})
  await card.locator('summary').filter({hasText:/^Flow presentation/}).click()
  const list=card.getByRole('list',{name:'Unavailable flow ports',exact:true})

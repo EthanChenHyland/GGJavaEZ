@@ -389,3 +389,8 @@ The root preserves the original six-neighbor reference ranking and caps every co
 ## Private layout metadata compaction — 2026-11-04
 
 The private layout cache retains first slot order and latest heap declaring-class strings instead of complete RuntimeSlot/value wrappers. Omitted group metadata survives partial observations; supplied absent metadata clears it; empty maps are removed. Permanent geometry/ports and all runtime/Graph/history/camera contracts stay unchanged. [Ownership proof and complete parent/candidate comparison](migration/compact-layout-slot-metadata.md).
+
+
+## Array captions and precise cell Focus — 2026-11-04
+
+One pure geometry helper now places canonical and virtualized cells and their caption/value origins, spending existing index padding before the first row without moving tray anchors/extents. Font-dependent clearance lives in the text renderer. Precise cell Focus admits only that index’s reference neighbours, dims other cells and masks faded text over its actual rounded body. Optional caption clearance preserves true front-face sizing/angles and camera intent/cancellation; narrow Focus sheets use 30% height. Three camera files and the independently reviewed presentation golden JSON are explicit guard exceptions; runtime/Graph/history contracts remain unchanged. [Exact scope, failed/corrected evidence and source qualification](migration/array-label-placement.md).

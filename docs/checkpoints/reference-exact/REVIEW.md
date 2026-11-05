@@ -65,3 +65,8 @@ The root reviews eight originals from exact source `18463b85` against the existi
 ## Private layout metadata compaction — 2026-11-04
 
 The root reviews the two-file layout change and explicit-GC value-release proof, with exact parent/candidate geometry comparisons across 57 traces. No runtime semantics or design token is changed. Existing visual review rows remain OPEN; removing unused private metadata does not close them. [Proof, source and remaining gates](migration/compact-layout-slot-metadata.md).
+
+
+## Array captions and precise cell Focus — 2026-11-04
+
+The root reviews the shared geometry, text-only font dependency, optional camera clearance and explicit guard exceptions. The unchanged presentation golden test remains; independent complete-state comparison accounts for all 98 cases, with only 40 array hashes changing by the intended cell/port offset and 58 identical. A read-only delegated review finds no additional scoped issues; it runs no functional tests. Six fresh original PNGs receive root full-size review; 111 remain unreviewed. Matte caps, route/outline glow, crossings, dense context and clipping remain OPEN. [Exact scope, failed/corrected evidence and source qualification](migration/array-label-placement.md).

@@ -103,6 +103,18 @@ function Metrics({ scene, plan, selection,trace }: {
                         labels.push({entityId:label.entityId,kind:label.kind,slotId:label.slotId,text:text.text,position:point.toArray() as [number,number,number],opacity:text.fillOpacity,fontPixels:projectedFontPixels(text.fontSize*scale,point,camera,size.height)});
                     });return labels;
                 },
+                arrayText:()=>{
+                    const labels:ReturnType<NonNullable<Window['__ggjavaezWorld']>['arrayText']>[number][]=[];
+                    if(!(camera instanceof PerspectiveCamera))return labels;
+                    world.traverse(group=>{
+                        const label=group.userData.runtimeArrayText as {entityId:string;slotId:string;kind:'index'|'value';text:Text}|undefined;
+                        if(!label)return;
+                        const text=label.text,point=new Vector3().setFromMatrixPosition(text.matrix),scale=new Vector3().setFromMatrixScale(text.matrix).y;
+                        const block=text.textRenderInfo?.visibleBounds;
+                        const points=block?[block[0],block[2]].flatMap(x=>[block[1],block[3]].map(y=>new Vector3(x,y,0).applyMatrix4(text.matrix).toArray() as [number,number,number])):[];
+                        labels.push({entityId:label.entityId,slotId:label.slotId,kind:label.kind,text:text.text,position:point.toArray() as [number,number,number],opacity:text.fillOpacity,fontPixels:projectedFontPixels(text.fontSize*scale,point,camera,size.height),localInkBounds:block??null,bounds:projectRect(points,camera,size)});
+                    });return labels;
+                },
                 exceptionText:()=>{
                     const labels:ReturnType<NonNullable<Window['__ggjavaezWorld']>['exceptionText']>[number][]=[];
                     world.getObjectByName('exception-panel')?.traverse(group=>{
@@ -197,11 +209,12 @@ function AccessibleCatalog({scene,plan,publish}:{scene:SceneModel;plan:Presentat
  })
  return null
 }
-export function RuntimeCanvas({ scene, plan, layout, safeFrame,inspectorRect, selection, onSelect, onFocus,trace,timeline }: {
+export function RuntimeCanvas({ scene, plan, layout, safeFrame,focusContentFrame,inspectorRect, selection, onSelect, onFocus,trace,timeline }: {
     scene: SceneModel;
     plan: PresentationPlan;
     layout: LayoutState;
     safeFrame: Rect;
+    focusContentFrame?:Rect;
     inspectorRect?:Rect|null;
     selection: Selection;
     onSelect(selection: Selection): void;
@@ -214,6 +227,12 @@ export function RuntimeCanvas({ scene, plan, layout, safeFrame,inspectorRect, se
     const [accessible,setAccessible]=useState<AccessibleEntity[]>([]),list=useRef<HTMLDivElement>(null);
     const curves=useMemo(()=>[...plan.curves,...plan.bundles],[plan.curves,plan.bundles]);
     const focusNode=plan.framing.focus?scene.entities[plan.framing.focus.targetId]:null;
+    const focusMaskAnchor=useMemo(()=>{
+        if(focusNode?.kind!=='array')return focusNode?.anchor??null;
+        const window=plan.cellWindows.get(focusNode.id);
+        const focused=[...(window?.budgetOverflow.reasons??[])].find(([,flags])=>flags.includes('focused'))?.[0];
+        return focused?window?.mapping.get(focused)?.anchor??null:null;
+    },[focusNode,plan.cellWindows]);
     const activeIndex=accessible.findIndex(item=>item.id===selection?.id);
     const worldElement=useRef<HTMLDivElement>(null)
     const input = useRef<CameraInput | null>(null), pointer = useRef<{
@@ -267,7 +286,7 @@ export function RuntimeCanvas({ scene, plan, layout, safeFrame,inspectorRect, se
         {!contextLost&&<EnvironmentRig/>}
         <Floor layout={layout} plan={plan} scene={scene} quality={quality}/>
         <SolidBatch scene={scene} plan={plan} onSelect={select} onFocus={onFocus}/>
-        <FaceTextBatch focusAnchor={focusNode&&focusNode.kind!=='array'?focusNode.anchor:null}>
+        <FaceTextBatch focusAnchor={focusMaskAnchor}>
         {[...plan.entities].map(([id, presented]) => <RuntimeSolid key={id} node={scene.entities[id]} presented={presented} plan={plan}/>)}
         <StructuralLabels scene={scene} plan={plan} safeFrame={safeFrame} inspectorRect={inspectorRect}/>
         <InteractiveConnectors scene={scene} plan={plan} curves={curves} onSelect={id => { if(plan.bundles.some(bundle=>bundle.id===id))select({kind:'bundle',id}); else if (scene.references.some(ref => ref.id === id)||scene.historicalBindings.some(binding=>binding.id===id))
@@ -277,7 +296,7 @@ export function RuntimeCanvas({ scene, plan, layout, safeFrame,inspectorRect, se
         {scene.io.map(io => <group key={io.id} position={[...io.anchor.position]}><mesh><boxGeometry args={[...io.anchor.size]}/><meshStandardMaterial color={roleColor[io.id]} emissive={roleColor[io.id]} emissiveIntensity={.2}/></mesh><WorldText position={[-.75, .02, .17]} size={.2} width={1.5}>{`${io.id} · ${io.lines}`}</WorldText></group>)}
         </FaceTextBatch>
       </Suspense>
-      <CameraRig scene={scene} plan={plan} event={trace.events[scene.cursor-1]??null} layout={layout} safeFrame={safeFrame} inspectorRect={inspectorRect} input={input}/>
+      <CameraRig scene={scene} plan={plan} event={trace.events[scene.cursor-1]??null} layout={layout} safeFrame={safeFrame} focusContentFrame={focusContentFrame} inspectorRect={inspectorRect} input={input}/>
       <QualityRuntime guidedMoving={() => cameraReadiness.moving}/>
       <MotionLayer trace={trace} timeline={timeline} scene={scene} plan={plan}/>
       <AccessibleCatalog scene={scene} plan={plan} publish={setAccessible}/>

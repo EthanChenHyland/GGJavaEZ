@@ -11,7 +11,7 @@ import { facePlate } from '../world/facePlate';
 import { useQualityStore, type QualityTier } from './quality/qualityStore';
 import { resolveArrayWindowPick, type ArrayWindowPick } from '../world/arrayWindow';
 import { useCameraStore } from '../camera/cameraStore';
-import {arrayCellTargeted} from './arrayCellStyle';
+import {arrayCellTargeted,arrayCellFocusOpacity} from './arrayCellStyle';
 import {faceRowColumns} from './text/faceTypography';
 import {unitRoundedChip} from './geometry/roundedChip';
 import {valueChipGeometry} from '../world/valueChipGeometry';
@@ -77,11 +77,13 @@ export function buildSolidBatch(scene: SceneModel, plan: PresentationPlan): Soli
         if (node.kind === 'array') {
             const window=plan.cellWindows.get(node.id);
             const targeted=window?arrayCellTargeted(presented,window):()=>false;
+            const cellFocusOpacity=window?arrayCellFocusOpacity(window):()=>1;
             for (const [id, cell] of window?.mapping ?? []) {
                 const [cx, cy, cz] = cell.anchor.position;
                 const arrayPick: ArrayWindowPick={recordingId:window!.recordingId,arrayId:node.id,windowRevision:window!.windowRevision,index:cell.index,slotId:id,presentedSlot:cell.presentedSlot};
-                solids.push({ anchor: cell.anchor, pick: { kind: 'slot', id }, pickable: presented.pickable, role: 'heap', opacity, tint: color.heap.core, edge: targeted(id)?color.semantic.execution:node.activity?.index === cell.index ? node.activity.kind==='write'?color.semantic.mutation:color.semantic.execution : color.heap.edge, arrayPick });
-                plate(id, [cx, cy, cz + .79], [1.4, 1.4, .025], color.heap.face, opacity, arrayPick);
+                const cellOpacity=opacity*cellFocusOpacity(id);
+                solids.push({ anchor: cell.anchor, pick: { kind: 'slot', id }, pickable: presented.pickable, role: 'heap', opacity:cellOpacity, tint: color.heap.core, edge: targeted(id)?color.semantic.execution:node.activity?.index === cell.index ? node.activity.kind==='write'?color.semantic.mutation:color.semantic.execution : color.heap.edge, arrayPick });
+                plate(id, [cx, cy, cz + .79], [1.4, 1.4, .025], color.heap.face, cellOpacity, arrayPick);
             }
         }
     }

@@ -1,6 +1,6 @@
 # Validation
 
-Latest qualified increment: [Private layout metadata compaction](migration/compact-layout-slot-metadata.md), source `b5256fb3`, 2026-11-04. Defaults and the 69-case integration pass; all retention budgets still fail despite a repeated medium/large reduction. Fresh Dense completes all ten stages without workflow errors but fails five latency limits. Whole-product acceptance remains OPEN. The October table below retains its historical qualification.
+Latest qualified increment: [Array captions and precise cell Focus](migration/array-label-placement.md), full validation `e1ddb513` / native driver `3e6e9a41`, 2026-11-04. Defaults and fresh 93-case integration pass with an explicit native-driver-only qualification. All three retention budgets and four fresh Dense latency limits still fail; cold median passes only in this execution. Whole-product acceptance remains OPEN. The October table below retains its historical qualification.
 
 Historical implementation evidence, 2026-10-18. A–G completion is not claimed. The detailed chronological record is `docs/reports/reference-exact/VALIDATION.md`; migration ledgers live beside this file in `migration/`. Final results must be refreshed on the cleaned final commit and pushed tip.
 
@@ -504,3 +504,10 @@ Fresh source-qualified performance completes all ten Dense stages without workfl
 ## Private layout metadata compaction — 2026-11-04
 
 Exact two-file source `b5256fb366ed6f189133ff2640bf5f725c8a9eab99cf28ee5e9e392ce9814217` passes all eight checks: 2,246 defaults, 70 explicit opt-in skips, 2,316 total/241 files, 302.24 seconds, plus typecheck/browser types/lint/build/metrics/references/protected guards. Entry gzip 72,162 bytes; Shell static JS closure 676,213 bytes. AST 699 modules/2,476 literal edges/268 production-reachable/42 nonliteral sites/zero inventoried obsolete targets. Fresh native 69/69 passes in 700.802 seconds, zero failures/skips/flaky; 53 distinct standard attached JVM IDs across 53 cases; 79 originals, four reviewed/75 unreviewed. ABBA confirms lower medium/large total retention while all 12 memory budgets still fail; fresh Dense completes with five latency failures. [Evidence](migration/compact-layout-slot-metadata.md).
+
+
+## Array captions and precise cell Focus — 2026-11-04
+
+Full source `e1ddb513` passes all eight checks: 2,261 default passes / 70 explicit opt-in skips / 2,331 total, 243 files, 296.17 s (all eight steps 320.872 s). Final driver `3e6e9a41` differs only in the corrected native flow setup; production/unit/fixture/benchmark inputs are byte-identical, and the explicit qualification plus fresh browser TypeScript is retained. Fresh native integration passes 93/93 in 938.597 s (runner 939.149 s), zero skips/failures/flaky; 73 distinct standard attached JVM IDs across 73 cases; 117 original PNGs, six reviewed. The earlier 92/1 and repeated original catalog failure remain archived. Entry gzip 72,162 B; Shell static JS closure 677,214 B. AST: 704 modules / 2,497 literal edges / 271 reachable / 42 nonliteral / zero inventoried obsolete. Browser discovery 316/86 is not full execution; 44 older cases and final exhaustive opt-ins remain OPEN. [Exact scope, failed/corrected evidence and source qualification](migration/array-label-placement.md).
+
+Fresh source-qualified Dense completes all ten stages without workflow/lifecycle errors, with four latency failures and one passing cold median. Protected Node still fails all three 25% retention limits; large ratio 0.401609676. Source-bound measurements, maxima, soak scope and unchanged workload SHAs are retained in [the array evidence ledger](migration/array-label-placement.md).

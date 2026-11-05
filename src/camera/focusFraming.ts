@@ -10,6 +10,7 @@ const desiredHeight = .45;
 const iterations = 40;
 // Stay inside projection.ts's 100000 u far plane. All searches are bounded.
 const maxDistance = 90000;
+export interface FocusContent {points:readonly Vec3[];area:Rect}
 
 /** Requirement 19.5: height takes precedence over the preferred width band.
  * `safe` supplies the projected face centre, not a smaller width-fitting box.
@@ -23,6 +24,7 @@ export function focusFraming(
     angles: { yaw: number; pitch: number },
     safe: Rect,
     viewport: Size,
+    content?: FocusContent,
 ): OrbitPose {
     const fallback: OrbitPose = {
         target: anchor.position.every(Number.isFinite) ? [...anchor.position] : [0, 0, 0],
@@ -33,23 +35,25 @@ export function focusFraming(
     if (![...anchor.position, ...anchor.size, safe.x, safe.y, safe.width, safe.height,
         viewport.width, viewport.height, angles.yaw, angles.pitch].every(Number.isFinite)
         || anchor.size.some(value => value <= 0) || safe.width <= 0 || safe.height <= 0
-        || viewport.width <= 0 || viewport.height <= 0) return fallback;
+        || viewport.width <= 0 || viewport.height <= 0
+        || content&&(![content.area.x,content.area.y,content.area.width,content.area.height].every(Number.isFinite)||content.area.width<=0||content.area.height<=0)) return fallback;
 
     const points = frontFace(anchor);
-    if (!points.every(point => point.every(Number.isFinite))) return fallback;
+    if (![...points,...(content?.points??[])].every(point => point.every(Number.isFinite))) return fallback;
     const center: Vec3 = [anchor.position[0], anchor.position[1], anchor.position[2] + anchor.size[2] / 2];
     const basis = projectionCamera({ ...fallback, target: center }, viewport);
     const right = new Vector3().setFromMatrixColumn(basis.matrixWorld, 0);
     const up = new Vector3().setFromMatrixColumn(basis.matrixWorld, 1);
     const towardEye = new Vector3().setFromMatrixColumn(basis.matrixWorld, 2);
-    const local = points.map(point => {
+    const coordinates = (point:Vec3) => {
         const offset = new Vector3(...point).sub(new Vector3(...center));
         return { x: offset.dot(right), y: offset.dot(up), z: offset.dot(towardEye) };
-    });
+    };
+    const local = points.map(coordinates),annotation=content?.points.map(coordinates)??[];
     const focalPixels = basis.projectionMatrix.elements[5] * viewport.height / 2;
     const desiredX = (safe.x + safe.width / 2 - viewport.width / 2) / focalPixels;
     const desiredY = (viewport.height / 2 - safe.y - safe.height / 2) / focalPixels;
-    const minDistance = Math.max(.02, ...local.map(point => point.z + .02));
+    const minDistance = Math.max(.02, ...local.map(point => point.z + .02),...annotation.map(point=>point.z+.02));
     if (!Number.isFinite(minDistance) || minDistance >= maxDistance) return fallback;
 
     // Right/up translation leaves orientation and each corner's depth intact.
@@ -64,7 +68,18 @@ export function focusFraming(
             if ((Math.min(...coordinates) + Math.max(...coordinates)) / 2 > desired) lo = shift;
             else hi = shift;
         }
-        return (lo + hi) / 2;
+        const centered=(lo+hi)/2;
+        if(!content||!annotation.length)return centered;
+        // Keep the real face in its Safe Frame, and its real annotation in
+        // uncovered World pixels. Extra caption clearance never sizes the face.
+        const interval=(points:typeof local,area:Rect)=>{
+            const min=axis==='x'?(area.x-viewport.width/2)/focalPixels:(viewport.height/2-area.y-area.height)/focalPixels;
+            const max=axis==='x'?(area.x+area.width-viewport.width/2)/focalPixels:(viewport.height/2-area.y)/focalPixels;
+            return [Math.max(...points.map(point=>point[axis]-max*(distance-point.z))),Math.min(...points.map(point=>point[axis]-min*(distance-point.z)))];
+        };
+        const body=interval(local,safe),caption=interval(annotation,content.area);
+        const lower=Math.max(body[0],caption[0]),upper=Math.min(body[1],caption[1]);
+        return lower<=upper?Math.max(lower,Math.min(upper,centered)):(lower+upper)/2;
     };
     const measure = (distance: number) => {
         const shift = right.clone().multiplyScalar(centerShift('x', desiredX, distance))

@@ -2,6 +2,7 @@ import { arrayElementSlotId, type ObjectId, type SlotId } from '../contracts/run
 import type { ArrayWindow, ArrayIndexReason, ArrayEllipsis, ArrayWindowPick, ArrayWindowSlot, Vec3, WorldAnchor } from '../contracts/world'
 export type { ArrayWindow, ArrayIndexReason, ArrayEllipsis, ArrayWindowPick, ArrayWindowSlot } from '../contracts/world'
 import { world } from '../theme/tokens'
+import { arrayCellPosition } from './arrayCellGeometry'
 
 export interface ArrayWindowInput {
   recordingId: string
@@ -93,18 +94,12 @@ export function computeArrayWindow(input: ArrayWindowInput): ArrayWindow {
   const reservedRows = virtualized ? 8 : Math.ceil(length / columns)
   const mapping = new Map<SlotId, ArrayWindowSlot>()
   let presentedRows = 0
-  const pitch = world.array.cell + world.array.gap
   for (let slot = 0; slot < visible.length; slot++) {
     const index = visible[slot]
     const presentedSlot = virtualized ? slot : index
     const row = Math.floor(presentedSlot / columns)
-    const column = presentedSlot % columns
     presentedRows = Math.max(presentedRows, row + 1)
-    const position: Vec3 = [
-      input.anchor.position[0] - input.anchor.size[0] / 2 + world.array.cell / 2 + column * pitch,
-      input.anchor.position[1] + input.anchor.size[1] / 2 - world.array.titlePlate - world.array.cell / 2 - row * pitch,
-      input.anchor.position[2] + input.anchor.size[2] / 2 - world.array.cell / 2,
-    ]
+    const position = arrayCellPosition(input.anchor,presentedSlot,columns)
     const port: Vec3 = [position[0], position[1], position[2] + world.array.cell / 2]
     const id = arrayElementSlotId(input.arrayId, index)
     const anchor: WorldAnchor = {

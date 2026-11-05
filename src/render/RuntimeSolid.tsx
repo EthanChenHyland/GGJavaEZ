@@ -12,16 +12,19 @@ import {collectionEntryFace} from '../world/collectionFace';
 import {world} from '../theme/tokens';
 import {compactLibraryFace} from '../world/firstObjectPresentation';
 import {memo} from 'react';
-import {arrayCellTargeted} from './arrayCellStyle';
+import {arrayCellTargeted,arrayCellFocusOpacity} from './arrayCellStyle';
+import {arrayCellTextGeometry} from '../world/arrayCellGeometry';
+import {arrayCellIndexLabel} from './text/arrayIndexLayout';
 export { WorldText } from './FaceText';
 // Observations can replace evidence/value wrappers without changing a cell's
 // face. Keep the label subtree stable using its actual presentation scalars.
-const ArrayCellLabels=memo(function ArrayCellLabels({x,y,z,indexLabel,valueText,indexTint,valueTint,opacity}:{
-    x:number;y:number;z:number;indexLabel:string;valueText:string;indexTint:string;valueTint:string;opacity:number;
+const ArrayCellLabels=memo(function ArrayCellLabels({entityId,slotId,x,y,z,indexLabel,valueText,indexTint,valueTint,opacity}:{
+    entityId:string;slotId:string;x:number;y:number;z:number;indexLabel:string;valueText:string;indexTint:string;valueTint:string;opacity:number;
 }){
+    const geometry=arrayCellTextGeometry({position:[x,y,z],size:[world.array.cell,world.array.cell,world.array.cell]});
     return <group>
-        <WorldText position={[x,y+.38,z+.83]} size={.28} weight={500} width={1.3} align="center" tint={indexTint} opacity={opacity}>{indexLabel}</WorldText>
-        <WorldText position={[x,y-.1,z+.83]} size={.34} weight={600} width={1.3} align="center" tint={valueTint} opacity={opacity}>{valueText}</WorldText>
+        <WorldText position={geometry.index} size={.28} weight={500} width={1.3} align="center" tint={indexTint} opacity={opacity} arrayText={{entityId,slotId,kind:'index'}}>{indexLabel}</WorldText>
+        <WorldText position={geometry.value} size={.34} weight={600} width={1.3} align="center" tint={valueTint} opacity={opacity} arrayText={{entityId,slotId,kind:'value'}}>{valueText}</WorldText>
     </group>;
 });
 type RuntimeSolidProps={
@@ -48,6 +51,7 @@ const RuntimeSolidLabels=memo(function RuntimeSolidLabels({node,presented,plan}:
     const model = faceRows(node, presented);
     const arrayWindow=node.kind==='array'?plan.cellWindows.get(node.id):undefined;
     const targeted=arrayWindow?arrayCellTargeted(presented,arrayWindow):()=>false;
+    const cellFocusOpacity=arrayWindow?arrayCellFocusOpacity(arrayWindow):()=>1;
     const compact=compactLibraryFace(anchor);
     const identity=node.kind==='frame'?`#${node.invocationNumber}`:node.kind==='class'?'':`#${node.displayId}`;
     const heading=faceHeading(node),titleSize=heading.title.size;
@@ -90,10 +94,10 @@ const RuntimeSolidLabels=memo(function RuntimeSolidLabels({node,presented,plan}:
             const captured = node.cells.find(c => c.index === cell.index), value = captured?.value ?? notRecordedValue(), [cx, cy, cz] = cell.anchor.position;
             const activity=node.activity?.index===cell.index?node.activity.kind:null;
             const activityTint=targeted(id)?color.semantic.execution:activity==='write'?color.semantic.mutation:activity==='read'?color.semantic.execution:null;
-            return <ArrayCellLabels key={id} x={cx} y={cy} z={cz}
-                indexLabel={`[${cell.index}]${activity==='write'?' ←':activity==='read'?' →':''}`} valueText={value.text}
+            return <ArrayCellLabels key={id} entityId={node.id} slotId={id} x={cx} y={cy} z={cz}
+                indexLabel={arrayCellIndexLabel(cell.index,activity)} valueText={value.text}
                 indexTint={activityTint??color.ui.textSecondary}
-                valueTint={activityTint??(value.kind==='reference'?color.semantic.execution:color.ui.text)} opacity={opacity}/>;
+                valueTint={activityTint??(value.kind==='reference'?color.semantic.execution:color.ui.text)} opacity={opacity*cellFocusOpacity(id)}/>;
         })}
   </>;
 },sameFaceLabels);

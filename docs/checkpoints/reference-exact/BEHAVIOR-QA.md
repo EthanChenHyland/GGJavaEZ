@@ -292,3 +292,8 @@ Source `18463b85` passes all eight validation checks: 2,245 defaults passed, 70 
 ## Private layout metadata compaction — 2026-11-04
 
 Frozen source `b5256fb3` passes all eight checks: 2,246 default passes, 70 explicit opt-in skips, 2,316 total/241 files. Focused checks pass 17/17; the saved actual-JVM/curated/generated/explicit-unit comparison checks 57 traces and 1,157 complete public layout prefixes with no geometry tolerance. Fresh native integration passes 69/69 with zero failures/skips/flaky; no earlier gate is relabelled current. [Exact evidence and qualification](migration/compact-layout-slot-metadata.md).
+
+
+## Array captions and precise cell Focus — 2026-11-04
+
+Full eight-check source `e1ddb513` passes 2,261 defaults / 70 explicit opt-in skips / 2,331 total, 243 files. Final driver `3e6e9a41` differs only in the flow browser setup: real Home brings the same off-screen main frame into the viewport, with an added visibility assertion and unchanged pagination/provenance/cursor checks. Driver TypeScript and the two corrected cases pass; fresh integration passes 93/93, zero skips/failures/flaky, 73 distinct standard attached JVM IDs across 73 cases. The earlier 92/1 gate and repeated original failure are preserved; none is relabelled. [Exact scope, failed/corrected evidence and source qualification](migration/array-label-placement.md).

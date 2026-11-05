@@ -31,7 +31,7 @@ import {color} from '../theme/tokens'
 type ProbeText=Text&{syncs:number;disposed:number}
 const glyph=()=>state.texts[0] as ProbeText
 const group=(view:ReturnType<typeof render>)=>view.nodes().find(node=>node.props?.position)!
-const props=():ComponentProps<typeof WorldText>=>({children:'18',position:[0,0,-5],lines:['18'],heading:{entityId:'frame/a',kind:'title'},frameText:{entityId:'frame/a',kind:'value',slotId:'local/a'},returnText:{flowId:'return/a',kind:'value'},collectionText:{entityId:'map/a',kind:'value',slotId:'entry/a'}})
+const props=():ComponentProps<typeof WorldText>=>({children:'18',position:[0,0,-5],lines:['18'],heading:{entityId:'frame/a',kind:'title'},frameText:{entityId:'frame/a',kind:'value',slotId:'local/a'},returnText:{flowId:'return/a',kind:'value'},collectionText:{entityId:'map/a',kind:'value',slotId:'entry/a'},arrayText:{entityId:'array/a',kind:'index',slotId:'array/a/0'}})
 const renderer={}
 const refresh=(height:number)=>{state.snapshot={gl:renderer,camera:new PerspectiveCamera(36,1,.1,1000),size:{width:1440,height},invalidate:()=>state.invalidations++};for(const notify of state.listeners)notify();reconciler.flushSyncWork();reconciler.flushPassiveEffects()}
 const frame=()=>{for(const callback of state.frames)callback()}
@@ -45,9 +45,9 @@ it('skips unchanged text host commits across 100 reconstructed coordinate, line 
 })
 it('updates all semantic identities without rerasterizing unchanged glyphs',()=>{
  const initial=props(),view=render(<WorldText {...initial}/>),text=glyph(),syncs=text.syncs
- const next={...initial,heading:{entityId:'frame/b',kind:'identity' as const},frameText:{entityId:'frame/b',kind:'name' as const,slotId:'local/b'},returnText:{flowId:'return/b',kind:'operands' as const},collectionText:{entityId:'map/b',kind:'key' as const,slotId:'entry/b'},exceptionText:true}
+ const next={...initial,heading:{entityId:'frame/b',kind:'identity' as const},frameText:{entityId:'frame/b',kind:'name' as const,slotId:'local/b'},returnText:{flowId:'return/b',kind:'operands' as const},collectionText:{entityId:'map/b',kind:'key' as const,slotId:'entry/b'},arrayText:{entityId:'array/b',kind:'value' as const,slotId:'array/b/1'},exceptionText:true}
  view.rerender(<WorldText {...next}/>);const data=group(view).publicInstance.userData
- expect(data.runtimeHeading).toEqual({...next.heading,text});expect(data.runtimeFrameText).toEqual({...next.frameText,text});expect(data.runtimeReturnText).toEqual({...next.returnText,text});expect(data.runtimeCollectionText).toEqual({...next.collectionText,text});expect(data.runtimeExceptionText).toEqual({text});expect(text.syncs).toBe(syncs)
+ expect(data.runtimeHeading).toEqual({...next.heading,text});expect(data.runtimeFrameText).toEqual({...next.frameText,text});expect(data.runtimeReturnText).toEqual({...next.returnText,text});expect(data.runtimeCollectionText).toEqual({...next.collectionText,text});expect(data.runtimeArrayText).toEqual({...next.arrayText,text});expect(data.runtimeExceptionText).toEqual({text});expect(text.syncs).toBe(syncs)
  view.rerender(<WorldText children="18" position={[0,0,-5]}/>);expect(group(view).publicInstance.userData).toEqual({})
 })
 it('keeps camera visibility active when parent props are skipped and store dimensions change',()=>{
@@ -148,6 +148,6 @@ it('updates only affected cell labels for actual writes, reads, reverse stepping
  const window=selected.plan.cellWindows.get(sparseArrayId)!,slotId=arrayElementSlotId(sparseArrayId,0),cell=window.mapping.get(slotId)!,[x,y,z]=cell.anchor.position
  const moved={...cell,anchor:{...cell.anchor,position:[x+2,y-1,z+.5] as const}},mapping=new Map(window.mapping).set(slotId,moved)
  view.rerender(<RuntimeSolid {...selected} presented={{...selected.presented,opacity:.35}} plan={{...selected.plan,cellWindows:new Map([[sparseArrayId,{...window,mapping}]])}}/>);
- expect(commits()).toEqual([1,3,2,2,1]);expect(groups.get(0)!.children.map(child=>child.publicInstance.position.toArray())).toEqual([[x+2,y-1+.38,z+.5+.83],[x+2,y-1-.1,z+.5+.83]])
+ expect(commits()).toEqual([1,3,2,2,1]);expect(groups.get(0)!.children.map(child=>child.publicInstance.position.toArray())).toEqual([[x+2,y-1+.775+.5,z+.5+.83],[x+2,y-1,z+.5+.83]])
  expect(state.texts).toEqual(resources)
 })

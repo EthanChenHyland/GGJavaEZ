@@ -41,6 +41,16 @@ describe('viewportClass', () => {
 })
 
 describe('computeShellLayout reference rectangles', () => {
+  it('leaves room above the narrow Focus sheet for the actual cell face and its above-cell caption',()=>{
+    const normal=computeShellLayout(input(760,900,{inspector:{open:true,side:'right'}}));
+    const focused=computeShellLayout(input(760,900,{appState:state('COMPLETED',['FOCUS']),inspector:{open:true,side:'right'}}));
+    expect(normal.inspector!.height).toBe(405);
+    expect(focused.inspector!.height).toBe(270);
+    expect(focused.inspector!.y+focused.inspector!.height).toBe(900);
+    expect(focused.inspector!.height).toBeLessThanOrEqual(900*.45);
+    expect(focused.safeFrame).toEqual(normal.safeFrame);
+    expect(focused.timeDock).toEqual(normal.timeDock);
+  });
   it('reserves the actual left Inspector as well as source chrome without moving the narrow World',()=>{
     const desktop=computeShellLayout(input(1440,900,{inspector:{open:true,side:'left'}}))
     expect(desktop.inspector!.x+desktop.inspector!.width).toBeLessThan(720)

@@ -20,6 +20,7 @@ import {followPathFraming} from './followPathFraming'
 import {clusterFraming} from './clusterFraming'
 import {guidedTravel,travelPose,type GuidedTravel} from './guidedTravel'
 import {noteRequestedAnimationFrame,requestAnimationFrameRender} from '../render/renderActivity'
+import {arrayCellCaptionPoints,arrayCellIndexLabel} from '../render/text/arrayIndexLayout'
 import {productionClock} from '../motion/clock'
 export interface CameraInput {cancel():void;orbit():void;key(key:string,shift:boolean):void;wheel(dx:number,dy:number,pixelPan:boolean):void;shift(value:boolean):void}
 export const cameraReadiness={moving:false}
@@ -30,7 +31,7 @@ export function orbitPoseFromEye(eye:EyePose):OrbitPose {
  return{target:eye.target,distance,yawDeg:Math.atan2(delta.x,delta.z)*180/Math.PI,pitchDeg:-Math.asin(Math.max(-1,Math.min(1,delta.y/Math.max(distance,1e-9))))*180/Math.PI}
 }
 /** One owner commits semantic poses, then applies optional visual travel. Camera input cancels synchronously. */
-export function CameraRig({scene,plan,event,layout,safeFrame,inspectorRect,input}:{scene:SceneModel;plan:PresentationPlan;event:TraceEvent|null;layout:LayoutState;safeFrame:Rect;inspectorRect?:Rect|null;input:RefObject<CameraInput|null>}) {
+export function CameraRig({scene,plan,event,layout,safeFrame,focusContentFrame,inspectorRect,input}:{scene:SceneModel;plan:PresentationPlan;event:TraceEvent|null;layout:LayoutState;safeFrame:Rect;focusContentFrame?:Rect;inspectorRect?:Rect|null;input:RefObject<CameraInput|null>}) {
  const {camera,size,invalidate}=useThree(),controls=useRef<Controls>(null),intentRevision=useCameraStore(state=>state.intentRevision)
  useEffect(()=>productionClock.subscribe(invalidate),[invalidate])
  const move=useRef<(GuidedTravel&{start:number;duration:number;home:boolean;homeKey?:string;settledFrames?:number;flowId?:string;flowPrefix?:{recordingId:string;cursor:number}})|null>(null)
@@ -49,10 +50,17 @@ export function CameraRig({scene,plan,event,layout,safeFrame,inspectorRect,input
  const framingCutKey=JSON.stringify([scene.recordingId,scene.cursor,plan.detailLevel,[...plan.entities.keys()],[...plan.pinned],plan.clusters.map(cluster=>cluster.id),safeFrame,size.width,size.height])
  const handledIntent=useRef(-1)
  const focusRequest=useRef<{revision:number;anchorKey:string;deadline:number}|null>(null)
+ const cellForFocus=(targetId:string)=>{
+  const {scene,plan}=latest.current
+  for(const window of plan.cellWindows.values()){
+   const cell=window.mapping.get(targetId)
+   if(cell)return{cell,array:scene.entities[window.arrayId]}
+  }
+  return null
+ }
  const anchorForFocus=(targetId:string)=>{
   const {scene,plan}=latest.current,owner=plan.framing.focus?.targetId??targetId
-  const cell=[...plan.cellWindows.values()].flatMap(window=>[...window.mapping.values()]).find(cell=>cell.anchor.entityId===targetId)
-  return cell?.anchor??scene.entities[owner]?.anchor??plan.clusters.find(cluster=>cluster.id===targetId)?.anchor
+  return cellForFocus(targetId)?.cell.anchor??scene.entities[owner]?.anchor??plan.clusters.find(cluster=>cluster.id===targetId)?.anchor
  }
  const reduced=()=>useCameraStore.getState().reducedMotion||matchMedia('(prefers-reduced-motion: reduce)').matches
  const beginWaypoints=(poses:readonly OrbitPose[],duration:number,home=false,flowId?:string)=>{
@@ -98,7 +106,12 @@ export function CameraRig({scene,plan,event,layout,safeFrame,inspectorRect,input
    // User input clears the intent, so later exploration never triggers refits.
    const deadline=refitFocus?focusRequest.current!.deadline:productionClock.now()+(reduced()?0:motion.focusMs)
    focusRequest.current={revision:intentRevision,anchorKey:focusAnchorKey!,deadline}
-   begin(focusFraming(anchor,focusAngles(anchor,neighbours,useInteractionStore.getState().focus?.kind==='cluster'),area,size),Math.max(0,deadline-productionClock.now()))
+   const focusedCell=cellForFocus(intent.targetId)
+   const free=focusContentFrame??area
+   const captionArea={...free,x:area.x,width:area.width,height:Math.max(0,Math.min(free.y+free.height,size.width<1024&&inspectorRect?inspectorRect.y:Infinity)-free.y)}
+   const activity=focusedCell?.array?.kind==='array'&&focusedCell.array.activity?.index===focusedCell.cell.index?focusedCell.array.activity.kind:null
+   const content=focusedCell?{points:arrayCellCaptionPoints(focusedCell.cell.anchor,arrayCellIndexLabel(focusedCell.cell.index,activity)),area:captionArea}:undefined
+   begin(focusFraming(anchor,focusAngles(anchor,neighbours,useInteractionStore.getState().focus?.kind==='cluster'),area,size,content),Math.max(0,deadline-productionClock.now()))
   }
   if(intent.kind==='exitFocus')begin(intent.pose,motion.exitFocusMs)
   if(intent.kind==='zoom'){move.current=null;const pivot=controls.current?.target??new Vector3();camera.position.sub(pivot).multiplyScalar(intent.factor).add(pivot)}

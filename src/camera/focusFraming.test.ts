@@ -3,6 +3,7 @@ import { Vector3 } from 'three';
 import type { Vec3, WorldAnchor } from '../contracts/world';
 import type { Rect } from '../shell/shellLayout';
 import { focusFraming } from './focusFraming';
+import { arrayCellCaptionPoints } from '../render/text/arrayIndexLayout';
 import { fitToSafeFrame, projectionCamera, screenPoint, type OrbitPose, type Size } from './projection';
 
 const viewports: Size[] = [
@@ -66,6 +67,51 @@ it('fixes the narrow 5.2 × 6.75 face height lost by fitting to a hard .30 W box
     expect(observed.width / viewport.width).toBeGreaterThanOrEqual(.25 - 1e-6);
     expect(observed.width / viewport.width).toBeLessThanOrEqual(.35 + 1e-6);
     expect(observed.bottom).toBeLessThanOrEqual(viewport.height * .55 + 1e-4);
+});
+
+it('centers real array caption clearance while retaining the required actual front-face bands and angles', () => {
+    for(const viewport of viewports)for(const yaw of [-21,21]){
+        const safe=viewport.width<1024?{x:40,y:56,width:viewport.width-40,height:viewport.height*.7-56-9}:safeFrame(viewport);
+        const cell=anchor([1.55,1.55,1.55],[38.625,-7.665,.06]);
+        // The measured [6500] advance is .914 u; a 1-u ink allowance and
+        // the .28-u font em bound this caption without reserving the entire
+        // 1.3-u text column. The real cell front face remains 1.55 u.
+        const caption:Vec3[]=[-.5,.5].flatMap(x=>[-.14,.14].map(y=>[cell.position[0]+x,cell.position[1]+.775+.5+y,cell.position[2]+.775+.055] as Vec3));
+        const free=viewport.width<1024?{...safe,height:viewport.height*.7-safe.y}:viewport.height<760?{...safe,y:56,height:viewport.height-viewport.height*.025-84-56}:safe;
+        const pose=focusFraming(cell,{yaw,pitch:-8},safe,viewport,{points:caption,area:free}),observed=observe(cell,pose,viewport);
+        expect(observed.height/viewport.height).toBeGreaterThanOrEqual(.38-1e-6);
+        expect(observed.height/viewport.height).toBeLessThanOrEqual(.52+1e-6);
+        expect(observed.yaw).toBeCloseTo(yaw,8);expect(observed.pitch).toBeCloseTo(-8,8);
+        const camera=projectionCamera(pose,viewport);
+        for(const [points,area]of [[corners(cell),safe],[caption,free]] as const)for(const point of points.map(point=>screenPoint(point,camera,viewport))){
+            expect(point.x).toBeGreaterThanOrEqual(area.x-1e-6);expect(point.x).toBeLessThanOrEqual(area.x+area.width+1e-6);
+            expect(point.y).toBeGreaterThanOrEqual(area.y-1e-6);expect(point.y).toBeLessThanOrEqual(area.y+area.height+1e-6);
+        }
+        const width=observed.width/viewport.width,height=observed.height/viewport.height;
+        if(width<.25-1e-6)expect(height).toBeCloseTo(.52,6);
+        else if(width>.35+1e-6)expect(height).toBeCloseTo(.38,6);
+    }
+});
+
+it('fits actual index ink and the cell face in the short viewport without spending reserved shell margins', () => {
+    // Observed native 1440x650 Focus with left Inspector. The previous symmetric
+    // em bound pushed the real face .733 px past this unchanged SafeFrame.
+    const viewport={width:1440,height:650};
+    const safe={x:654.24,y:65,width:764.16,height:472.4};
+    const free={...safe,y:56,height:549.75-56};
+    const cell=anchor([1.55,1.55,1.55],[38.625,-7.665,.06]);
+    const caption=arrayCellCaptionPoints(cell,'[6500]');
+    for(const yaw of [-21,21]){
+        const pose=focusFraming(cell,{yaw,pitch:-8},safe,viewport,{points:caption,area:free});
+        const face=observe(cell,pose,viewport),camera=projectionCamera(pose,viewport);
+        expect(face.height/viewport.height).toBeCloseTo(.52,6);
+        expect(face.bottom).toBeLessThanOrEqual(safe.y+safe.height+1e-6);
+        expect(face.top).toBeGreaterThanOrEqual(safe.y-1e-6);
+        for(const point of caption.map(point=>screenPoint(point,camera,viewport))){
+            expect(point.y).toBeGreaterThanOrEqual(free.y-1e-6);
+            expect(point.y).toBeLessThanOrEqual(free.y+free.height+1e-6);
+        }
+    }
 });
 
 for (const viewport of viewports) {

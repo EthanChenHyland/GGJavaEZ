@@ -406,3 +406,10 @@ The original Dense image is root-reviewed; array/index readability, matte
 materials, route glow, aliasing and peripheral clipping remain OPEN.
 
 [Ownership proof, equivalence and source](migration/compact-layout-slot-metadata.md).
+
+
+## Array captions and precise cell Focus — 2026-11-04
+
+Source `3e6e9a41` has a fresh unchanged protected Node execution: exit 1, 22.711 s; retained presentation 1,551,320 / 6,013,264 / 22,361,344 B versus semantic 927,288 / 12,373,200 / 55,679,296 B. All three 25% limits fail; large ratio 0.401609676. LINE scaling 1.298379274 passes 2×. Raw corpus SHAs remain identical, and the 80-input dependency closure imports no font metrics. No isolated speedup claim follows.
+
+Fresh Dense run `d82fde06-1ec2-4b69-a71c-1ede4d076268`, actual FULL JVM `2f04c9a8-8c95-47d8-9719-812eb52a8798` (7,492 raw / 9,852 normalized), completes all ten stages with zero browser/stage/lifecycle errors and zero suspended requests. Runner 482.541 s; benchmark exit 1 / archive 0. Seek p50/p95 109.449/134.347 ms fail 55/112; Focus p95 219.538 fails 125; Home p95 295.945 fails 152. Cold median 5,146.973 ms passes 5,300 in this execution. All five orbit medians 16.7 ms; p95 17.4/17.5/17.8/17.2/17.6; CPU p95 3.4/3.1/3.7/3.0/4.2 ms; maximum calls 102. Maximum intervals 530.5/114.5/258.4/798.3/455.4 ms retain stall findings. The 61,447.4 ms soak shows zero median drift and +0.041295% whole-frontend post-GC heap growth, not isolated presentation retention. Four external rows remain NOT_MEASURED. Full profiles/snapshot/environment/original root-reviewed PNG are preserved under `performance-array-label-placement/`. No causal/statistical or whole-product approval is claimed. [Source and functional qualification](migration/array-label-placement.md).

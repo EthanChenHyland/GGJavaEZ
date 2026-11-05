@@ -286,3 +286,8 @@ The fresh 69-case run preserves 79 originals; eight receive full-size root revie
 ## Private layout metadata compaction — 2026-11-04
 
 The layout compaction is constrained by exact parent/candidate equality of every public LayoutState field, not a visual-token change. Fresh hero/object originals retain their arrangement and readable selected values. Matte faces, glow/crossings, clipping, return composition and full reference/motion approval remain OPEN. Fresh native 69/69 preserves 79 originals,4reviewed full-size/75unreviewed, with source-qualified hashes. [Scope and evidence](migration/compact-layout-slot-metadata.md).
+
+
+## Array captions and precise cell Focus — 2026-11-04
+
+The fresh exact-driver 93-case gate preserves 117 original PNGs, six root-reviewed full size / 111 unreviewed. Reference 09 is reopened at original size. Selected array indices fit Header/Time Dock at all five QA viewports in both motion modes; small/multirow actual ink clears headings and preceding values. Cell Focus masks faded context using its actual geometry; IDs/values remain stable through navigation/replay. Both real GPU tiers execute and all eight palette samples match. Reference-array chips/ports, centre-origin glow over reference text, matte faces, overbright/crossing routes, aliasing, clipping and broader reference/motion acceptance remain OPEN. [Exact scope, failed/corrected evidence and source qualification](migration/array-label-placement.md).
