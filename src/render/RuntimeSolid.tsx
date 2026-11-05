@@ -1,4 +1,4 @@
-import type { PresentationPlan, PresentedEntity, SceneEntity } from '../contracts/world';
+import type { ArrayWindow, PresentedEntity, SceneEntity } from '../contracts/world';
 import { color } from '../theme/tokens';
 import { frameStatusText } from '../world/frameStatus';
 import { notRecordedValue, truncateFrameText } from '../world/valueText';
@@ -31,26 +31,25 @@ const ArrayCellLabels=memo(function ArrayCellLabels({entityId,slotId,x,y,z,index
 type RuntimeSolidProps={
     node: SceneEntity;
     presented: PresentedEntity;
-    plan: PresentationPlan;
+    arrayWindow?: ArrayWindow;
 };
 function sameFaceLabels(prior:RuntimeSolidProps,next:RuntimeSolidProps){
     return prior.node===next.node
         &&prior.presented.mode===next.presented.mode&&prior.presented.detail===next.presented.detail
         &&prior.presented.highlight===next.presented.highlight
         &&prior.presented.rowSlotIds===next.presented.rowSlotIds
-        &&(next.node.kind!=='array'||prior.plan.cellWindows.get(next.node.id)===next.plan.cellWindows.get(next.node.id));
+        &&prior.arrayWindow===next.arrayWindow;
 }
 /** Face labels share the solid/row geometry model and one glyph batch. */
 export const RuntimeSolid=memo(function RuntimeSolid(props:RuntimeSolidProps){
     if(props.presented.mode!=='detailed')return null;
     return <FaceTextOpacity opacity={props.presented.opacity}><RuntimeSolidLabels {...props}/></FaceTextOpacity>;
 },(prior,next)=>prior.presented.opacity===next.presented.opacity&&sameFaceLabels(prior,next));
-const RuntimeSolidLabels=memo(function RuntimeSolidLabels({node,presented,plan}:RuntimeSolidProps) {
+const RuntimeSolidLabels=memo(function RuntimeSolidLabels({node,presented,arrayWindow}:RuntimeSolidProps) {
     if (presented.mode !== 'detailed')
         return null;
     const { anchor } = node, [x, y, z] = anchor.position, [w, h, d] = anchor.size, top = y + h / 2, face = z + d / 2 + .085, left = x - w / 2 + .28, opacity = 1;
     const model = faceRows(node, presented);
-    const arrayWindow=node.kind==='array'?plan.cellWindows.get(node.id):undefined;
     const targeted=arrayWindow?arrayCellTargeted(presented,arrayWindow):()=>false;
     const cellFocusOpacity=arrayWindow?arrayCellFocusOpacity(arrayWindow):()=>1;
     const compact=compactLibraryFace(anchor);

@@ -27,7 +27,7 @@ function fixture(count=20){
 }
 function render(node:SceneEntity,plan:PresentationPlan,detail:DetailLevel='CLOSE'){
  const presented={...plan.entities.get(node.id)!,mode:'detailed' as const,detail}
- renderToStaticMarkup(<RuntimeSolid node={node} presented={presented} plan={plan}/>)
+ renderToStaticMarkup(<RuntimeSolid node={node} presented={presented} arrayWindow={plan.cellWindows.get(node.id)}/>)
  return presented
 }
 const texts=()=>captured.labels.map(label=>label.children)

@@ -4,7 +4,7 @@ import {useThree} from '@react-three/fiber'
 import {createFloorReflection} from './floorReflection'
 import {createFloorContact} from './floorContact'
 import { Color, Group, Mesh, InstancedBufferAttribute, InstancedMesh, MeshBasicMaterial, Object3D, type ShaderMaterial } from 'three'
-import type { LayoutState, PresentationPlan, SceneModel } from '../contracts/world'
+import type { WorldRenderSnapshot } from './worldRenderSnapshot'
 import {useQualityStore,type QualityTier} from './quality/qualityStore'
 import { contactFootprints, floorModel, floorStyle, type ContactFootprint } from './floorModel'
 import {registerAuxiliaryPass} from './post/auxiliaryPasses'
@@ -39,7 +39,8 @@ function ContactBlobs({ footprints }: { footprints: ContactFootprint[] }) {
   </instancedMesh>
 }
 
-export function Floor({ layout, plan, scene, quality }: { layout: LayoutState; plan: PresentationPlan; scene: SceneModel; quality: QualityTier }) {
+export function Floor({ snapshot, quality }: { snapshot: WorldRenderSnapshot; quality: QualityTier }) {
+  const { layout, plan, scene } = snapshot.read()
   const floor = floorModel(layout, quality, scene.liveHead > 0)
   const footprints = useMemo(() => contactFootprints(scene, plan, floor.position[1]), [scene, plan, floor.position[1]])
   const {gl,scene:world,camera}=useThree(), group=useRef<Group>(null), surface=useRef<Mesh>(null)

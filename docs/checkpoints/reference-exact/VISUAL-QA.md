@@ -299,3 +299,7 @@ Reviewed fresh actual Hero, object inspection, recursion and narrow array/List/M
 ## Collection departure clearance and stable connector picking — 2026-11-05
 
 Five current-source originals receive full-size root review: hero, object inspection, desktop Map and narrow List/Map. Current collection references leave their actual right-edge ports through row gaps without crossing captured key/value/size/more/heading ink. Both real GPU tiers execute and all eight face/chip RGB samples remain exact. Of 137 originals, 132 remain unreviewed; this is not final reference approval. Strong glow, hard fronts, jagged outlines, global routes and clipping remain open. [Implementation, failed evidence and exact source qualification](migration/reference-departure-clearance.md).
+
+## Shared world inputs and glyph preparation — 2026-11-05
+
+Full-size reviews cover hero, object inspection, narrow recursion, narrow Map and narrow exception scenes. The Dense original is reviewed separately. Both GPU palettes match all eight samples. The read-only pixel comparisons show two exact narrow hover crops and six or seven changed pixels in the desktop crops. Bright routes, jagged outlines, clipped context and overlapping recursion titles remain visible. [Implementation and source evidence](migration/render-frame-preparation.md).

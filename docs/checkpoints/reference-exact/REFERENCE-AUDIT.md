@@ -104,3 +104,7 @@ Actual reference-array/List/Map values now have shared physical reference insets
 ## Collection departure clearance and stable connector picking — 2026-11-05
 
 The current collection departure correction protects actual captured data faces and shortens target-facing detours without moving runtime structures. Stable picking preserves original nearest-hit geometry and makes coincident residual Flows inspectable. All 101 affected native cases pass; A–G approval remains open for materials/glare/AA/composition/motion, remaining browser coverage, exhaustive opt-ins and performance budgets. [Implementation, failed evidence and exact source qualification](migration/reference-departure-clearance.md).
+
+## Shared world inputs and glyph preparation — 2026-11-05
+
+The renderer milestone preserves the world composition while sharing the data passed between render stages. The 110-case gate adds visible exception ink and graphics recovery. Remaining work includes material and composition polish, motion review, broader browser and JVM gates, and the performance limits recorded below. [Implementation and source evidence](migration/render-frame-preparation.md).

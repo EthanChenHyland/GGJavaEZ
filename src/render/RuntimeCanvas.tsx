@@ -3,7 +3,7 @@ import { Canvas, useFrame, useThree,events as pointerEvents,type CanvasProps } f
 import {prioritizeConnectorIntersections} from './geometry/connectorRaycast';
 import { EnvironmentRig } from './EnvironmentRig';
 import type { Selection } from '../contracts/interaction';
-import type { LayoutState, PresentationPlan, SceneModel } from '../contracts/world';
+import type { WorldRenderSnapshot } from './worldRenderSnapshot';
 import type { Rect } from '../shell/shellLayout';
 import { CameraRig, cameraReadiness, type CameraInput } from '../camera/CameraRig';
 import { color } from '../theme/tokens';
@@ -53,12 +53,12 @@ function GradientBackground() {
     useEffect(() => () => texture.dispose(), [texture]);
     return <primitive object={texture} attach="background"/>;
 }
-function Metrics({ scene, plan, selection,trace }: {
-    scene: SceneModel;
-    plan: PresentationPlan;
+function Metrics({ snapshot, selection,trace }: {
+    snapshot: WorldRenderSnapshot;
     selection:Selection;
     trace:TraceDocument;
 }) {
+    const { scene, plan } = snapshot.read();
     const { gl, camera, scene:world, size,invalidate } = useThree();
     const latest=useRef({scene,plan,size});latest.current={scene,plan,size};
     const displayFrame=useRef(0);
@@ -221,7 +221,8 @@ function Metrics({ scene, plan, selection,trace }: {
     });
     return null;
 }
-function AccessibleCatalog({scene,plan,publish}:{scene:SceneModel;plan:PresentationPlan;publish(items:AccessibleEntity[]):void}) {
+function AccessibleCatalog({snapshot,publish}:{snapshot:WorldRenderSnapshot;publish(items:AccessibleEntity[]):void}) {
+ const { scene, plan } = snapshot.read();
  const{camera,size}=useThree(),last=useRef(0),revision=useRef(-1),ids=useRef('')
  // Selection may change represented geometry without changing runtime truth.
  // Publish each committed cut immediately; throttle only unchanged-cut orbit.
@@ -231,10 +232,8 @@ function AccessibleCatalog({scene,plan,publish}:{scene:SceneModel;plan:Presentat
  })
  return null
 }
-export function RuntimeCanvas({ scene, plan, layout, safeFrame,focusContentFrame,inspectorRect, selection, onSelect, onFocus,trace,timeline }: {
-    scene: SceneModel;
-    plan: PresentationPlan;
-    layout: LayoutState;
+export function RuntimeCanvas({ snapshot, safeFrame,focusContentFrame,inspectorRect, selection, onSelect, onFocus,trace,timeline }: {
+    snapshot: WorldRenderSnapshot;
     safeFrame: Rect;
     focusContentFrame?:Rect;
     inspectorRect?:Rect|null;
@@ -243,6 +242,7 @@ export function RuntimeCanvas({ scene, plan, layout, safeFrame,focusContentFrame
     onFocus(selection: NonNullable<Selection>): void;
     trace:TraceDocument;timeline:TimelineStore;
 }) {
+    const { scene, plan, layout } = snapshot.read();
     const quality = useQualityStore(state => state.active);
     const contextLost=useQualityStore(state=>state.contextLost),notice=useQualityStore(state=>state.notice);
     const supportsWebGL=useMemo(supportsRuntimeWebGL,[]);
@@ -306,12 +306,12 @@ export function RuntimeCanvas({ scene, plan, layout, safeFrame,focusContentFrame
       <directionalLight position={[lightTarget.x, lightTarget.y + 10, 8]} intensity={.6} color="#C9D6FF"/>
       <Suspense fallback={null}>
         {!contextLost&&<EnvironmentRig/>}
-        <Floor layout={layout} plan={plan} scene={scene} quality={quality}/>
-        <SolidBatch scene={scene} plan={plan} onSelect={select} onFocus={onFocus}/>
+        <Floor snapshot={snapshot} quality={quality}/>
+        <SolidBatch snapshot={snapshot} onSelect={select} onFocus={onFocus}/>
         <FaceTextBatch focusAnchor={focusMaskAnchor}>
-        {[...plan.entities].map(([id, presented]) => <RuntimeSolid key={id} node={scene.entities[id]} presented={presented} plan={plan}/>)}
-        <StructuralLabels scene={scene} plan={plan} safeFrame={safeFrame} inspectorRect={inspectorRect}/>
-        <InteractiveConnectors scene={scene} plan={plan} curves={curves} onSelect={id => { if(plan.bundles.some(bundle=>bundle.id===id))select({kind:'bundle',id}); else if (scene.references.some(ref => ref.id === id)||scene.historicalBindings.some(binding=>binding.id===id))
+        {[...plan.entities].map(([id, presented]) => <RuntimeSolid key={id} node={scene.entities[id]} presented={presented} arrayWindow={plan.cellWindows.get(id)}/>)}
+        <StructuralLabels snapshot={snapshot} safeFrame={safeFrame} inspectorRect={inspectorRect}/>
+        <InteractiveConnectors snapshot={snapshot} curves={curves} onSelect={id => { if(plan.bundles.some(bundle=>bundle.id===id))select({kind:'bundle',id}); else if (scene.references.some(ref => ref.id === id)||scene.historicalBindings.some(binding=>binding.id===id))
         select({ kind: 'reference', id }); else if(plan.curves.some(curve=>curve.id===id)) select({kind:'flow',id}); }}/>
         {plan.structural.map(item => <WorldText key={item.id} position={item.position} size={.3} width={5} tint={color.ui.textSecondary}>{item.text}</WorldText>)}
         <ExceptionPanel panel={plan.exceptionPanel} recordingState={scene.recording.state} safeFrame={safeFrame}/>
@@ -320,12 +320,12 @@ export function RuntimeCanvas({ scene, plan, layout, safeFrame,focusContentFrame
       </Suspense>
       <CameraRig scene={scene} plan={plan} event={trace.events[scene.cursor-1]??null} layout={layout} safeFrame={safeFrame} focusContentFrame={focusContentFrame} inspectorRect={inspectorRect} input={input}/>
       <QualityRuntime guidedMoving={() => cameraReadiness.moving}/>
-      <MotionLayer trace={trace} timeline={timeline} scene={scene} plan={plan}/>
-      <AccessibleCatalog scene={scene} plan={plan} publish={setAccessible}/>
-      <Metrics scene={scene} plan={plan} selection={selection} trace={trace}/>
+      <MotionLayer trace={trace} timeline={timeline} snapshot={snapshot}/>
+      <AccessibleCatalog snapshot={snapshot} publish={setAccessible}/>
+      <Metrics snapshot={snapshot} selection={selection} trace={trace}/>
       <PostPipeline/>
     </Canvas>}
-    {!contextLost&&supportsWebGL&&<ConnectorTooltip scene={scene} plan={plan}/>}
+    {!contextLost&&supportsWebGL&&<ConnectorTooltip snapshot={snapshot}/>}
     {contextLost&&<div className="world-graphics-status glass" role="alert">{notice??'Restoring the World…'}{notice==='The World could not be restored'&&<button onClick={()=>graphicsRecovery.retry?.()}>Retry</button>}</div>}
     <div ref={list} className="gg-world-entities" role="listbox" tabIndex={-1} aria-label="Runtime entities" aria-activedescendant={selection&&activeIndex>=0?`world-entity-${encodeURIComponent(selection.id)}`:undefined}>
       {accessible.slice(Math.max(0,activeIndex-20),Math.max(40,activeIndex+21)).map((item,index)=><div key={item.id} id={`world-entity-${encodeURIComponent(item.id)}`} role="option" aria-selected={selection?.id===item.id} aria-posinset={Math.max(0,activeIndex-20)+index+1} aria-setsize={accessible.length}>{item.label}</div>)}

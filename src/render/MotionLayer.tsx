@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import { Box3, Color, Frustum, InstancedBufferAttribute, InstancedBufferGeometry, InstancedMesh, Matrix4, MeshBasicMaterial, Object3D, ShaderMaterial, SphereGeometry, Vector3 } from 'three'
-import type { SceneModel, PresentationPlan } from '../contracts/world'
+import type { WorldRenderSnapshot } from './worldRenderSnapshot'
 import type { TraceDocument } from '../contracts/runtime'
 import type { TimelineStore } from '../timeline/timelineStore'
 import { useQualityStore } from './quality/qualityStore'
@@ -48,7 +48,8 @@ function tokenBatch(capacity: number) {
 }
 
 /** Transient cuboid emphasis and tokens; canonical solids, faces and camera stay untouched. */
-export function MotionLayer({ trace, timeline, scene, plan }: { trace: TraceDocument; timeline: TimelineStore; scene: SceneModel; plan: PresentationPlan }) {
+export function MotionLayer({ trace, timeline, snapshot }: { trace: TraceDocument; timeline: TimelineStore; snapshot: WorldRenderSnapshot }) {
+  const { scene, plan } = snapshot.read()
   const tokens = useRef<InstancedMesh>(null), { camera,invalidate } = useThree()
   useEffect(()=>productionClock.subscribe(invalidate),[invalidate])
   const preference = useQualityStore(state => state.reducedMotion), reduced = preference.inApp || preference.os

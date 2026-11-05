@@ -1,15 +1,16 @@
 import {useEffect,useLayoutEffect,useMemo,useRef} from 'react'
-import type {PresentationPlan,PresentedCurve,SceneModel} from '../contracts/world'
+import type {PresentedCurve} from '../contracts/world'
+import type {WorldRenderSnapshot} from './worldRenderSnapshot'
 import {useInteractionStore} from '../interaction/interactionStore'
 import {ConnectorBatch} from './ConnectorBatch'
 import {connectorHoverLabel,currentConnectorHover} from './connectorHover'
 import {SurfacePortal} from '../shell/dialogs/SurfacePortal'
 import {useCameraStore} from '../camera/cameraStore'
 import {referenceChipPorts} from './referenceChipPorts'
-interface Context {scene:SceneModel;plan:PresentationPlan}
 
 /** Moving pointer coordinates update only the tooltip, never the World planner. */
-export function InteractiveConnectors({scene,plan,curves,onSelect}:{curves:readonly PresentedCurve[];onSelect(id:string):void}&Context){
+export function InteractiveConnectors({snapshot,curves,onSelect}:{snapshot:WorldRenderSnapshot;curves:readonly PresentedCurve[];onSelect(id:string):void}){
+ const { scene, plan } = snapshot.read()
  const hoverId=useInteractionStore(state=>currentConnectorHover(state.hover,scene,plan))
  const ports=useMemo(()=>referenceChipPorts(scene,plan),[scene,plan])
  const clear=(id?:string)=>{
@@ -28,7 +29,8 @@ export function InteractiveConnectors({scene,plan,curves,onSelect}:{curves:reado
   state.setHover({kind:curve?.kind==='connector'||curve?.kind==='binding-history'?'connector':'flow',id,pointer,presentation:{recordingId:scene.recordingId,cursor:scene.cursor,revision:plan.revision}})
  }}/>
 }
-export function ConnectorTooltip({scene,plan}:Context){
+export function ConnectorTooltip({snapshot}:{snapshot:WorldRenderSnapshot}){
+ const { scene, plan } = snapshot.read()
  const hover=useInteractionStore(state=>state.hover),id=currentConnectorHover(hover,scene,plan)
  const label=useMemo(()=>id?connectorHoverLabel(scene,plan,id):null,[scene,plan,id]),tip=useRef<HTMLDivElement>(null)
  useLayoutEffect(()=>{

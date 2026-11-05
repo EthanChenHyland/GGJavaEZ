@@ -78,3 +78,7 @@ Reviewed the shared geometry, independent port generation, current-versus-histor
 ## Collection departure clearance and stable connector picking — 2026-11-05
 
 Reviewed actual-port departure geometry, narrow source-caption clearance, untouched owner anchors/cache bounds, machine-roundoff picking and residual Flow-bundle priority. Original hover/history cases exposed the two picker defects; their failures, read-only diagnostics and new failing regressions are preserved. Separate trace evidence identifies offscreen catalog scans; only test setup changes, retaining native selection, assertions and timeout. Current full8/native 101/101 pass; memory and broader visual acceptance remain open. [Implementation, failed evidence and exact source qualification](migration/reference-departure-clearance.md).
+
+## Shared world inputs and glyph preparation — 2026-11-05
+
+Reviewed the private render snapshot, narrowed mesh and label inputs, and the frame-scoped glyph reuse. Mask reuse requires inheritance from the batch material and the same uniform table. The regression checks both compatible masks, an independent pass and the next frame. The retained failures include the pre-fix unit exercise and test-only type errors. [Implementation and source evidence](migration/render-frame-preparation.md).

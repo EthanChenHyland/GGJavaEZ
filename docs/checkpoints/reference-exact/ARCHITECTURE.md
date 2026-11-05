@@ -402,3 +402,7 @@ Arrays and collection entries now reuse the centered physical value-chip inset a
 ## Collection departure clearance and stable connector picking — 2026-11-05
 
 Current collection reference ports use an internal departure waypoint through actual row gaps, retaining real owner anchors, historical storage geometry and canonical data-flow ports. Actual LineSegments2 hits use a shared arithmetic-tie order across width bands: bindings, residual Flow bundles, then other paths. Original hit depth/points and halo-only nonselection remain. Read-only QA exposes actual uploaded glyph-ink corners. Runtime/Graph/history, camera, layout and goldens stay unchanged. [Implementation, failed evidence and exact source qualification](migration/reference-departure-clearance.md).
+
+## Shared world inputs and glyph preparation — 2026-11-05
+
+The renderer carries one committed scene, plan and layout through a private snapshot. Array labels receive their own windows and mesh batches receive the state required for picking. The text batch prepares one glyph payload for the main material and compatible masks per frame. Each draw still sets the Focus mask for its camera. [Implementation and source evidence](migration/render-frame-preparation.md).

@@ -305,3 +305,7 @@ Fresh native integration passes **99/99**, zero skips/failures/flaky, 1,223.357 
 ## Collection departure clearance and stable connector picking — 2026-11-05
 
 Fresh exact-source integration passes **101/101**, zero failures/skips/flaky, 1,211.282 s (runner 1,211.850); 81 distinct standard JVM attachments across 81 cases. The original narrow hover/click mismatch and both historical Flow-bundle picks pass, along with desktop/narrow × normal/reduced collection checks. Offscreen catalog setup still uses native input and original assertions/timeouts. Defaults pass 2,274 with 70 existing opt-in skips. Failed and interrupted runs remain source-qualified. [Implementation, failed evidence and exact source qualification](migration/reference-departure-clearance.md).
+
+## Shared world inputs and glyph preparation — 2026-11-05
+
+The combined renderer source passes 110 native cases, with zero failures, skips or flaky retries. The new gate checks actual exception ink at all five viewport sizes, demand rendering, context recovery and fallback Java execution. The 2,275 default passes include the glyph preparation regression. [Implementation and source evidence](migration/render-frame-preparation.md).

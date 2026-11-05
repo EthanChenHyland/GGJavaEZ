@@ -1,24 +1,35 @@
 // Real React memo/effect lifetimes with inert Three groups. Glyph rasterization
 // and the Fiber store/frame hooks are controlled; no GPU performance is claimed.
 import {type ComponentProps} from 'react'
-import {PerspectiveCamera,Vector3} from 'three'
+import {Group,PerspectiveCamera,Scene,Vector3,type Material,type Mesh} from 'three'
 import {renderThreeLifetime as render,threeLifetimeReconciler as reconciler,unmountThreeLifetimes} from '../testing/reactThreeLifetime'
 import {afterEach,beforeEach,expect,it,vi} from 'vitest'
-const state=vi.hoisted(()=>({frames:new Set<()=>void>(),listeners:new Set<()=>void>(),snapshot:null as unknown,invalidations:0,texts:[] as unknown[],batches:[] as unknown[]}))
+const state=vi.hoisted(()=>({frames:new Set<(snapshot:unknown)=>void>(),listeners:new Set<()=>void>(),snapshot:null as unknown,invalidations:0,texts:[] as unknown[],batches:[] as unknown[]}))
 vi.mock('@react-three/fiber',async()=>{
  const {useEffect,useSyncExternalStore}=await import('react')
  return {
   useThree:(selector?:(value:unknown)=>unknown)=>{const value=useSyncExternalStore(callback=>{state.listeners.add(callback);return()=>{state.listeners.delete(callback)}},()=>state.snapshot);return selector?selector(value):value},
-  useFrame:(callback:()=>void)=>useEffect(()=>{state.frames.add(callback);return()=>{state.frames.delete(callback)}},[callback]),
+  useFrame:(callback:(snapshot:unknown)=>void)=>useEffect(()=>{state.frames.add(callback);return()=>{state.frames.delete(callback)}},[callback]),
  }
 })
 vi.mock('troika-three-text',async()=>{
  const {Group}=await import('three')
  class Text extends Group{syncs=0;disposed=0;text='';font='';fontSize=0;maxWidth=0;anchorX='';fillOpacity=1;color='';constructor(){super();state.texts.push(this)}sync(callback:()=>void){this.syncs++;callback()}dispose(){this.disposed++}}
- class BatchedText extends Group{added:unknown[]=[];removed:unknown[]=[];disposed=0;material={dispose(){}};constructor(){super();state.batches.push(this)}addText(text:unknown){this.added.push(text)}removeText(text:unknown){this.removed.push(text)}dispose(){this.disposed++}}
+ class BatchedText extends Group {
+  added: unknown[] = []
+  removed: unknown[] = []
+  prepared: unknown[] = []
+  disposed = 0
+  material = { dispose() {} }
+  constructor() { super(); state.batches.push(this) }
+  addText(text: unknown) { this.added.push(text) }
+  removeText(text: unknown) { this.removed.push(text) }
+  onBeforeRender(...args: Parameters<Mesh['onBeforeRender']>) { this.prepared.push(args[4]) }
+  dispose() { this.disposed++ }
+ }
  return {Text,BatchedText}
 })
-import {Text} from 'troika-three-text'
+import {Text,type BatchedText} from 'troika-three-text'
 import {FaceTextBatch,FaceTextOpacity,WorldText,textReadiness} from './FaceText'
 import {RuntimeSolid} from './RuntimeSolid'
 import {sparseTrace,sparseArrayId,sparseInt} from '../testing/sparseTrace'
@@ -27,14 +38,15 @@ import {planPresentation} from '../world/presentationPlanner'
 import type {Selection} from '../contracts/interaction'
 import {arrayElementSlotId} from '../contracts/runtime'
 import {color} from '../theme/tokens'
+import {createMaskMaterial} from './post/maskMaterials'
 
 type ProbeText=Text&{syncs:number;disposed:number}
 const glyph=()=>state.texts[0] as ProbeText
 const group=(view:ReturnType<typeof render>)=>view.nodes().find(node=>node.props?.position)!
 const props=():ComponentProps<typeof WorldText>=>({children:'18',position:[0,0,-5],lines:['18'],heading:{entityId:'frame/a',kind:'title'},frameText:{entityId:'frame/a',kind:'value',slotId:'local/a'},returnText:{flowId:'return/a',kind:'value'},collectionText:{entityId:'map/a',kind:'value',slotId:'entry/a'},arrayText:{entityId:'array/a',kind:'index',slotId:'array/a/0'}})
-const renderer={}
+const renderer={info:{render:{frame:0}}}
 const refresh=(height:number)=>{state.snapshot={gl:renderer,camera:new PerspectiveCamera(36,1,.1,1000),size:{width:1440,height},invalidate:()=>state.invalidations++};for(const notify of state.listeners)notify();reconciler.flushSyncWork();reconciler.flushPassiveEffects()}
-const frame=()=>{for(const callback of state.frames)callback()}
+const frame=()=>{renderer.info.render.frame++;for(const callback of state.frames)callback(state.snapshot)}
 beforeEach(()=>{state.texts=[];state.batches=[];state.invalidations=0;refresh(900)})
 afterEach(()=>{unmountThreeLifetimes();expect(state.frames.size).toBe(0);expect(state.listeners.size).toBe(0);expect(textReadiness.pending.size).toBe(0);vi.restoreAllMocks()})
 it('skips unchanged text host commits across 100 reconstructed coordinate, line and semantic wrappers',()=>{
@@ -77,6 +89,22 @@ it('preserves one batch registration through skipped parents and releases it on 
  expect(batch.added).toEqual([text]);expect(batch.removed).toEqual([]);expect(state.texts).toHaveLength(1)
  view.unmount();expect(batch.removed).toEqual([text]);expect(batch.disposed).toBe(1);expect(text.disposed).toBe(1);expect(textReadiness.mounted).toBe(false);expect(disposed).toHaveBeenCalledOnce()
 })
+it('shares the current glyph preparation with mask draws and refreshes it on the next frame',()=>{
+ const view=render(<FaceTextBatch><WorldText {...props()}/></FaceTextBatch>)
+ const batch=state.batches[0] as BatchedText & {prepared:unknown[]}
+ const material=Object.assign(batch.material,{uniforms:{},isTroikaTextMaterial:true})
+ const black=createMaskMaterial(material,0),white=createMaskMaterial(material,1)
+ const independent=Object.assign(Object.create(material),{uniforms:{}})
+ const scene=new Scene(),camera=new PerspectiveCamera(),group=new Group()
+ const draw=(pass:Material)=>batch.onBeforeRender(renderer as Parameters<Mesh['onBeforeRender']>[0],scene,camera,batch.geometry,pass,group)
+ frame()
+ draw(material);draw(black);draw(white);draw(independent)
+ expect(batch.prepared).toEqual([material,independent])
+ frame()
+ draw(white);draw(material)
+ expect(batch.prepared).toEqual([material,independent,material])
+ black.dispose();white.dispose();view.unmount()
+})
 it('inherits changing face opacity through memoized glyphs without changing layout, transforms or visibility rules',()=>{
  const content=(opacity:number)=><FaceTextOpacity opacity={opacity}><group position={[1,2,0]}><FaceTextOpacity opacity={.5}><WorldText children="18" position={[0,0,-5]} opacity={.8}/></FaceTextOpacity></group></FaceTextOpacity>
  const view=render(content(.5)),anchor=view.nodes().find(node=>(node.props?.position as number[]|undefined)?.[2]===-5)!,text=glyph(),syncs=text.syncs
@@ -94,7 +122,7 @@ function arrayLifetime(extra:object[]=[]){
   const scene=projection.project(cursor),node=scene.entities[sparseArrayId]
   if(node.kind!=='array')throw new Error('Expected captured array')
   const plan=planPresentation({scene,layout:projection.layout,detailLevel:'CLOSE',selection,focusTargetId:null,trace:{active:false,scope:'relevant'}})
-  return {node,plan,presented:plan.entities.get(node.id)!}
+  return {node,arrayWindow:plan.cellWindows.get(node.id)!,presented:plan.entities.get(node.id)!}
  }
  return {at,initial,indices}
 }
@@ -145,9 +173,9 @@ it('updates only affected cell labels for actual writes, reads, reverse stepping
  const selected=fixture.at(fixture.initial,{kind:'slot',id:arrayElementSlotId(sparseArrayId,4)})
  view.rerender(<RuntimeSolid {...selected} presented={{...selected.presented,opacity:.35}}/>);
  expect(commits()).toEqual([0,3,2,2,1]);frame();for(const index of fixture.indices)expect((state.texts as ProbeText[]).find(text=>text.text===String(index))!.fillOpacity).toBe(.35)
- const window=selected.plan.cellWindows.get(sparseArrayId)!,slotId=arrayElementSlotId(sparseArrayId,0),cell=window.mapping.get(slotId)!,[x,y,z]=cell.anchor.position
+ const window=selected.arrayWindow,slotId=arrayElementSlotId(sparseArrayId,0),cell=window.mapping.get(slotId)!,[x,y,z]=cell.anchor.position
  const moved={...cell,anchor:{...cell.anchor,position:[x+2,y-1,z+.5] as const}},mapping=new Map(window.mapping).set(slotId,moved)
- view.rerender(<RuntimeSolid {...selected} presented={{...selected.presented,opacity:.35}} plan={{...selected.plan,cellWindows:new Map([[sparseArrayId,{...window,mapping}]])}}/>);
+ view.rerender(<RuntimeSolid {...selected} presented={{...selected.presented,opacity:.35}} arrayWindow={{...window,mapping}}/>);
  expect(commits()).toEqual([1,3,2,2,1]);expect(groups.get(0)!.children.map(child=>child.publicInstance.position.toArray())).toEqual([[x+2,y-1+.775+.5,z+.5+.83],[x+2,y-1,z+.5+.875]])
  expect(state.texts).toEqual(resources)
 })

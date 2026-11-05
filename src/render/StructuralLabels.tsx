@@ -1,7 +1,7 @@
 import {useMemo,useRef} from 'react'
 import {useFrame,useThree} from '@react-three/fiber'
 import {Group,PerspectiveCamera} from 'three'
-import type {PresentationPlan,SceneModel} from '../contracts/world'
+import type {WorldRenderSnapshot} from './worldRenderSnapshot'
 import type {Rect} from '../shell/shellLayout'
 import {color} from '../theme/tokens'
 import {ClusterLabels,clusterLabelParts,clusterLabelNames} from './ClusterLabels'
@@ -12,7 +12,8 @@ import {buildSolidBatch} from './SolidBatch'
 import {exceptionPanelAnchor} from '../world/exceptionPanelPlacement'
 import {returnCaptions} from './returnCaptions'
 
-export function StructuralLabels({scene,plan,safeFrame,inspectorRect}:{scene:SceneModel;plan:PresentationPlan;safeFrame:Rect;inspectorRect?:Rect|null}) {
+export function StructuralLabels({snapshot,safeFrame,inspectorRect}:{snapshot:WorldRenderSnapshot;safeFrame:Rect;inspectorRect?:Rect|null}) {
+ const { scene, plan } = snapshot.read()
  const {camera,size}=useThree(),groups=useRef(new Map<string,Group>()),cache=useRef<{entries:readonly StructuralLabelSpec[];bodies:readonly unknown[];key:string}|null>(null)
  const displayNames=useMemo(()=>clusterLabelNames(plan.clusters),[plan.clusters])
  const captions=useMemo(()=>returnCaptions(scene,plan.curves),[scene.returnFlows,plan.curves])
