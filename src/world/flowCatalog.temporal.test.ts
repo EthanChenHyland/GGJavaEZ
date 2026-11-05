@@ -160,3 +160,19 @@ it('reuses semantic endpoint derivation for repeated planning and invalidates it
   spy.mockClear();expect([...catalog.iteratePrefix(scene.cursor,scene)]).toEqual(first);expect(spy).toHaveBeenCalled()
  }finally{spy.mockRestore()}
 })
+
+it('resumes a streamed return after a rewind without adopting the other cursor’s endpoints',()=>{
+ const trace=recording(),layout=createLayoutEngine();layout.append(trace.events)
+ const projector=createSceneProjector(trace),graph=seek(trace,trace.events.length).executionGraph!
+ const catalog=createFlowCatalog(),oracle=createFlowCatalog();catalog.extend(graph,trace);oracle.extend(graph,trace)
+ const write=trace.events.find(event=>event.type==='EXECUTION_FACT'&&event.fact.kind==='write'&&event.fact.origin.kind==='call_result')!
+ const context={sessionEnded:false,pausedAtLiveHead:false,liveHead:trace.events.length,recording:{state:'FULL' as const,reason:null,budget:null,lastRecordedSeq:null,executionContinued:false}}
+ const before=projector.project(seek(trace,write.seq),layout.state,context),after=projector.project(seek(trace,write.seq+1),layout.state,context)
+ const expected=oracle.prefix(after.cursor,after),returned=expected.findIndex(flow=>flow.kind==='return')
+ expect(returned).toBeGreaterThan(0);expect(expected[returned].to?.kind).toBe('slot')
+ const active=catalog.iteratePrefix(after.cursor,after)[Symbol.iterator](),first=active.next()
+ expect(first.value).toEqual(expected[0])
+ const rewound=[...catalog.iteratePrefix(before.cursor,before)]
+ expect(rewound.find(flow=>flow.kind==='return')?.to).toBeNull()
+ expect([first.value,...Array.from({[Symbol.iterator]:()=>active})]).toEqual(expected)
+})

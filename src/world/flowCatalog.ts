@@ -40,15 +40,18 @@ export function createFlowCatalog(initialTrace?:TraceDocument):FlowCatalog {
  // a DTO list and an object pair for every edge. Bit 6 also caches null/null.
  let endpointTags=new Uint8Array(0),endpointFromIds:(string|null)[]=[],endpointToIds:(string|null)[]=[]
  let currentPrefix:{trace:TraceDocument;cursor:number;length:number;state:RuntimeState}|undefined
- const stateAt=(cursor:number):RuntimeState|null=>{
-  if(!acceptedTrace)return null
-  const length=acceptedTrace.events.length
-  if(currentPrefix?.trace===acceptedTrace&&currentPrefix.cursor===cursor&&currentPrefix.length===length)return currentPrefix.state
-  const state=seek(acceptedTrace,cursor)
+ const restorePrefix=(trace:TraceDocument,cursor:number,length:number):RuntimeState=>{
+  const state=seek(trace,cursor)
   resolvedCache.clear()
   endpointTags=new Uint8Array(0);endpointFromIds=[];endpointToIds=[]
-  currentPrefix={trace:acceptedTrace,cursor,length,state}
+  currentPrefix={trace,cursor,length,state}
   return state
+ }
+ const stateAt=(cursor:number):RuntimeState|null=>{
+  const trace=acceptedTrace
+  if(!trace)return null
+  const prefix=currentPrefix,length=trace.events.length
+  return prefix?.cursor===cursor&&prefix.trace===trace&&prefix.length===length?prefix.state:restorePrefix(trace,cursor,length)
  }
  // Edge ordinals already resolve through the accepted graph and opaque edge ID.
  // Keep one candidate owner; most events need no separately allocated list.
@@ -84,9 +87,7 @@ export function createFlowCatalog(initialTrace?:TraceDocument):FlowCatalog {
  }
  const resolve=(candidate:Candidate,cursor:number,retain=true):{from:FlowEndpoint|null;to:FlowEndpoint|null}=>{
   const state=stateAt(cursor)
-  if(!state)return{from:null,to:null}
-  const prefix=state.executionGraph,event=events.get(candidate.edge.eventId)!
-  if(!prefix||candidate.seq>=cursor)return{from:null,to:null}
+  if(!state||candidate.seq>=cursor)return{from:null,to:null}
   const prior=resolvedCache.get(candidate.edgeIndex);if(prior)return prior
   const tag=endpointTags[candidate.edgeIndex]
   if(tag){
@@ -94,7 +95,9 @@ export function createFlowCatalog(initialTrace?:TraceDocument):FlowCatalog {
    if(retain)resolvedCache.set(candidate.edgeIndex,result)
    return result
   }
-  const edge=candidate.edge,transition=graphTransition(event,edge,state,prefix,true)
+  const prefix=state.executionGraph
+  if(!prefix)return{from:null,to:null}
+  const edge=candidate.edge,event=events.get(edge.eventId)!,transition=graphTransition(event,edge,state,prefix,true)
   let from=transition?.from??(edge.evidence==='unknown'?null:physical(edge.originSlotId??edge.from,state)),to=transition?.to??physical(edge.to,state)
   const consumingDestination=(valueId:string)=>{
    const storage=consumingWriteDestination(prefix,valueId,events)

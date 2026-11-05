@@ -427,3 +427,7 @@ The fresh Dense run completed all ten stages with zero browser, stage, lifecycle
 ## Shared world inputs and glyph preparation — 2026-11-05
 
 Fresh Dense seek p50 and p95 are 83.389 and 117.335 ms. Focus and Home p95 are 185.257 and 209.727 ms. Cold load is 6,041.041 ms. All five exceed their limits. The five orbit windows pass the median, p95, draw-call and CPU budgets while the longest observed interval remains 997.2 ms. The fresh Node run passes LINE scaling at 1.501130931× and exceeds all three retention limits. [Implementation and source evidence](migration/render-frame-preparation.md).
+
+## Flow prefix and connector routing — 2026-11-05
+
+The fresh Dense run measures 83.507 and 116.383 ms for seek p50 and p95, 169.305 and 202.479 ms for Focus and Home p95, and 5,742.960 ms for cold load. All five rows exceed their limits. All five orbit windows pass with 103 draw calls, with a longest observed interval of 951.3 ms. Node LINE scaling passes at 1.252336762×. Its retention ratios of 1.936554777, 0.474984674 and 0.399839359 exceed 25%. [Exact source, route equivalence and measured evidence](migration/flow-routing-work.md).
