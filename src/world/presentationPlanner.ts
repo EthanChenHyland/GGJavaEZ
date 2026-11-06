@@ -239,6 +239,7 @@ export function planPresentation(input: PlanInput, previous?: PresentationPlan):
     const relevantEntities=new Set([selected,focused,...(scene.cursorEvent?.subjects??[]).map(owner)].filter((id):id is string=>!!id));
     const traceParticipants=new Set<string>();
     const participate=(...ids:(string|undefined)[])=>{for(const id of ids){const resolved=owner(id);if(resolved)traceParticipants.add(resolved)}};
+    const coreWidth=(id:string):PresentedCurve['widthPx']=>id===selection?.id?3.5:2.5;
     const curves: PresentedCurve[] = [];
     const curve = (id: string, kind: PresentedCurve['kind'], from: Vec3 | null, to: Vec3 | null, role: MaterialRole, relevant: boolean, left = false, arrow = false, label?: string, source?: WorldAnchor, target?: WorldAnchor, forensicPath = false,departure?:Vec3) => {
         if (!from || !to)
@@ -246,7 +247,7 @@ export function planPresentation(input: PlanInput, previous?: PresentationPlan):
         const focusCap=focused&&!forensicPath&&!focusConnection(source?.entityId,target?.entityId)?world.opacity.focusDim:1;
         const baseOpacity=forensicState?(forensicPath?1:Math.min(world.opacity.forensicDim,focused&&!relevant?.25:relevant?1:.35)):focused&&!relevant?.25:relevant?1:.35;
         const opacity=Math.min(baseOpacity,focusCap);
-        curves.push({ id, kind, points: route(from, to, source, target, left,departure), sourceAnchor:source, destinationAnchor:target, colorRole: role, opacity, widthPx: relevant ? 3.5 : 2.5, arrow, label });
+        curves.push({ id, kind, points: route(from, to, source, target, left,departure), sourceAnchor:source, destinationAnchor:target, colorRole: role, opacity, widthPx: coreWidth(id), arrow, label });
     };
     const referenceRelevant = (ref: SceneModel['references'][number]) => trace.active&&trace.scope==='all'||ref.id===selection?.id||relevantEntities.has(ref.sourceId)||relevantEntities.has(ref.targetId);
     const referenceRole = (ref: SceneModel['references'][number]): MaterialRole => ref.overlay??(ref.role==='object-object'?'heap':ref.role==='class-object'?'class':'reference');
@@ -292,16 +293,16 @@ export function planPresentation(input: PlanInput, previous?: PresentationPlan):
       const relevant=bundle.id===selection?.id||bundle.references.some(referenceRelevant),roles=new Set(bundle.references.map(referenceRole));
       const opacity=referenceOpacity(bundle.references,relevant);
       if(relevant)for(const ref of bundle.references)participate(ref.sourceId,ref.targetId);
-      return{id:bundle.id,kind:'connector',from:bundle.from,to:bundle.to,count:bundle.count,points:route(bundle.sourcePoint,bundle.destinationPoint,bundle.sourceAnchor,bundle.destinationAnchor),colorRole:roles.size===1?[...roles][0]:'reference',opacity,widthPx:relevant?3.5:2.5,arrow:bundle.references.every(ref=>ref.role==='object-object'||!!ref.overlay),referenceIds:bundle.references.map(ref=>ref.id)};
+      return{id:bundle.id,kind:'connector',from:bundle.from,to:bundle.to,count:bundle.count,points:route(bundle.sourcePoint,bundle.destinationPoint,bundle.sourceAnchor,bundle.destinationAnchor),colorRole:roles.size===1?[...roles][0]:'reference',opacity,widthPx:coreWidth(bundle.id),arrow:bundle.references.every(ref=>ref.role==='object-object'||!!ref.overlay),referenceIds:bundle.references.map(ref=>ref.id)};
     });
     for(const bundle of historicalTopology.bundles){
       const roles=new Set(bundle.references.map(referenceRole));
-      bundles.push({id:bundle.id,kind:'binding-history',from:bundle.from,to:bundle.to,count:bundle.count,points:route(bundle.sourcePoint,bundle.destinationPoint,bundle.sourceAnchor,bundle.destinationAnchor),colorRole:roles.size===1?[...roles][0]:'reference',opacity:Math.min(.25,referenceOpacity(bundle.references,true)),widthPx:bundle.id===selection?.id?3.5:2.5,arrow:bundle.references.every(ref=>ref.role==='object-object'),referenceIds:bundle.references.map(ref=>ref.id)});
+      bundles.push({id:bundle.id,kind:'binding-history',from:bundle.from,to:bundle.to,count:bundle.count,points:route(bundle.sourcePoint,bundle.destinationPoint,bundle.sourceAnchor,bundle.destinationAnchor),colorRole:roles.size===1?[...roles][0]:'reference',opacity:Math.min(.25,referenceOpacity(bundle.references,true)),widthPx:coreWidth(bundle.id),arrow:bundle.references.every(ref=>ref.role==='object-object'),referenceIds:bundle.references.map(ref=>ref.id)});
       for(const ref of bundle.references)participate(ref.sourceId,ref.targetId);
     }
     for (const bundle of flowTopology.bundles) {
       const exemplar=bundle.flows[0],exception=['throw','unwind','catch'].includes(exemplar.kind),returned=exemplar.kind==='return';
-      bundles.push({id:bundle.id,kind:'flow',from:exemplar.from!.id,to:exemplar.to.id,count:bundle.flows.length,points:route(bundle.from.point,bundle.to.point,bundle.from.anchor,bundle.to.anchor),colorRole:exception?'exception':returned?'return':exemplar.kind==='input'?'stdin':exemplar.kind==='output'?exemplar.to.kind==='io'&&exemplar.to.id==='stderr'?'stderr':'stdout':'reference',opacity:Math.min(.35,focused?world.opacity.focusDim:1),widthPx:bundle.id===selection?.id?3.5:2.5,arrow:exception||returned,flowIds:bundle.flows.map(flow=>flow.id)});
+      bundles.push({id:bundle.id,kind:'flow',from:exemplar.from!.id,to:exemplar.to.id,count:bundle.flows.length,points:route(bundle.from.point,bundle.to.point,bundle.from.anchor,bundle.to.anchor),colorRole:exception?'exception':returned?'return':exemplar.kind==='input'?'stdin':exemplar.kind==='output'?exemplar.to.kind==='io'&&exemplar.to.id==='stderr'?'stderr':'stdout':'reference',opacity:Math.min(.35,focused?world.opacity.focusDim:1),widthPx:coreWidth(bundle.id),arrow:exception||returned,flowIds:bundle.flows.map(flow=>flow.id)});
       participate(exemplar.from!.id,exemplar.to.id);
     }
     if(trace.active)for(const[id,presented]of entities)if(!traceParticipants.has(id)&&!(forensicState&&mandatory.get(id)?.has('exception evidence')))entities.set(id,{...presented,opacity:Math.min(presented.opacity,world.opacity.traceDim)});

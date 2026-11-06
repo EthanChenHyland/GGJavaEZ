@@ -431,3 +431,7 @@ Fresh Dense seek p50 and p95 are 83.389 and 117.335 ms. Focus and Home p95 are 1
 ## Flow prefix and connector routing — 2026-11-05
 
 The fresh Dense run measures 83.507 and 116.383 ms for seek p50 and p95, 169.305 and 202.479 ms for Focus and Home p95, and 5,742.960 ms for cold load. All five rows exceed their limits. All five orbit windows pass with 103 draw calls, with a longest observed interval of 951.3 ms. Node LINE scaling passes at 1.252336762×. Its retention ratios of 1.936554777, 0.474984674 and 0.399839359 exceed 25%. [Exact source, route equivalence and measured evidence](migration/flow-routing-work.md).
+
+## Connector selection width and bloom spread — 2026-11-05
+
+Dense cold load passes at 5,008.656 ms. Seek p50 and p95 are 83.837 and 116.852 ms, and Focus and Home p95 are 183.821 and 183.191 ms. Those four rows exceed their limits. All orbit windows pass with 99 draw calls and a maximum observed interval of 880.1 ms. Node LINE scaling passes at 1.330088861×. Its three retention ratios still exceed 25%. [Exact source, visual review and benchmark evidence](migration/connector-core-and-bloom.md).

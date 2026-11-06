@@ -9,7 +9,8 @@ export class SelectiveBloomPass extends Pass {
   private protection = new WebGLRenderTarget(1, 1, { type: HalfFloatType })
   private masks = new BloomMaskMaterials()
   get protectionTexture() { return this.protection.texture }
-  readonly bloom = new UnrealBloomPass(new Vector2(1, 1), .55, .35, 1)
+  // Weight the finer bloom mips so neighbouring routes keep distinct halos.
+  readonly bloom = new UnrealBloomPass(new Vector2(1, 1), .55, .12, 1)
   private material = new ShaderMaterial({ depthTest: false, depthWrite: false, toneMapped: false,
     uniforms: { base: { value: null }, glow: { value: null }, protectedPixels: { value: null } },
     vertexShader: 'varying vec2 vUv; void main(){vUv=uv; gl_Position=vec4(position.xy,0.,1.);}',

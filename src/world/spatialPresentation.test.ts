@@ -58,6 +58,21 @@ function fanIn() {
 const fan = fanIn()
 
 describe('adaptive production presentation', () => {
+  it('reserves the wider connector core for selection even when all references are emphasized', () => {
+    const r = rig([object('first'), object('second'), enter('root', null, [slot('firstLink', 'first'), slot('secondLink', 'second')])], false)
+    const references = (plan: PresentationPlan) => plan.curves.filter(curve => curve.kind === 'connector')
+    const ordinary = references(cut(r, 'CLOSE', null, null, 'all'))
+    expect(ordinary).toHaveLength(2)
+    expect(ordinary.map(curve => [curve.opacity, curve.widthPx])).toEqual([[1, 2.5], [1, 2.5]])
+    const selectedId = ordinary[0].id
+    const selected = references(cut(r, 'CLOSE', { kind: 'reference', id: selectedId }, null, 'all'))
+    expect(selected).toHaveLength(2)
+    for (const curve of selected) {
+      expect(curve.opacity).toBe(1)
+      expect(curve.widthPx).toBe(curve.id === selectedId ? 3.5 : 2.5)
+      expect(curve.points).toEqual(ordinary.find(prior => prior.id === curve.id)?.points)
+    }
+  })
   it.each<DetailLevel>(['FAR', 'MEDIUM', 'CLOSE'])('accounts for every %s identity and reference under the original 1000-frame/1000-object/4000-link fan-in', level => {
     const plan = cut(fan, level, { kind: 'object', id: 'o999' }, null, 'all')
     expect(fan.scene.order.frames).toHaveLength(1000); expect(fan.scene.order.objects).toHaveLength(1000); expect(fan.scene.references).toHaveLength(4000)
