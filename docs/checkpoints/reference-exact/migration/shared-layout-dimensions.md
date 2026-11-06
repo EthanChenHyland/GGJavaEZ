@@ -1,0 +1,9 @@
+# Shared immutable layout dimensions
+
+Layout reservations now share an empty port table, the common array-cell dimensions and the frame dimensions for each row capacity. Sizes are shared within one layout engine, so each token set owns its dimensions. Each body and cell retains its own position and anchor identity. A recorded port still creates a new port table on that anchor.
+
+The snapshot comparison matches the complete layout and scene on one saved actual Dense recording and 32 generated traces across append, rewind and partial-prefix projection. Earlier layout snapshots remain byte-equivalent after later appends.
+
+Four alternating runs use the unchanged Node corpus, sample counts and explicit-GC measurements. The three generated corpus hashes match throughout. The largest presentation delta falls from 21,276,400 to 21,029,936 B and from 21,293,352 to 21,030,000 B. The two candidate ratios are 37.782% and 37.780% against 25%. All three retention rows remain over their limit. Both candidate LINE scaling ratios pass at 1.159× and 1.267× against 2×.
+
+Source `f78c2e67a62f954360b235aad11e213f9c60b645df64512904d805438db6f14a` passes all six native cases in 76.325 seconds with zero failures, skips or flakes. Desktop and narrow cases cover real small arrays, reduced-motion Focus on virtualized cell `[6500]`, and recursive Follow with manual input and return to the Hero angles. The ten original captures include two narrow array stills reviewed at full size. One shows an endpoint marker over the reference value caption. Full source validation takes 300.415 seconds and passes all eight checks, including 2,281 default unit cases and 70 opt-in skips. Production main-entry gzip is 71,733 B. The comparison, reports and captures are under `.ggjavaez/qa/reference-exact/layout-immutable-geometry-prototype/`.

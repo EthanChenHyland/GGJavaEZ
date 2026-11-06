@@ -465,3 +465,7 @@ Run `70cce285-b634-4fde-8eb0-0a7a7fdc0cf8` completes all ten stages in 452.100 s
 All five orbit windows pass. Frame intervals have a 16.7 ms median and 17.2–17.6 ms p95. CPU p95 spans 2.4–3.1 ms and the maximum draw count is 99. The longest observed interval is 799.2 ms. The 61.281-second soak passes with zero median drift and +0.189085% whole-frontend heap growth after CDP GC. The independent presentation-retention limit remains open. The root-reviewed original shows visible peripheral clipping, edge aliasing and overlapping connector glow in the dense world.
 
 The full report, exact JVM capture, profiles, build manifests and reviewed original are under `.ggjavaez/qa/reference-exact/stack-heading-retention/production-browser/`. This run uses a later revision and a different serving mode from the development-server run. The timing difference cannot isolate a single source or serving-mode effect.
+
+## Shared immutable layout dimensions — 2026-11-06
+
+Both alternating candidate runs retain about 0.25 MB less presentation memory on the largest unchanged generated corpus. The largest candidate ratio is about 37.8% against 25%, and all three corpus ratios remain over budget. LINE scaling passes in both runs. [Exact measurements and snapshot equivalence](migration/shared-layout-dimensions.md).

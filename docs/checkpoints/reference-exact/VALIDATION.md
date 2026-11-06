@@ -555,3 +555,7 @@ Source `965b4939` passes all eight source checks, 2,281 default unit cases and t
 ## Existing Java history motion — 2026-11-06
 
 Source `0598422c` passes the migrated opt-in motion case with one completed actual JVM recording, seven original stills and a native video. Default discovery stays at 320 cases in 87 files. [Exact source and evidence](migration/motion-browser-successor.md).
+
+## Shared immutable layout dimensions — 2026-11-06
+
+Source `f78c2e67` passes all eight source checks and six targeted native array and recursion cases. The complete layout and scene comparison passes on a saved actual JVM recording and 32 generated traces. [Exact source, capture evidence and remaining limits](migration/shared-layout-dimensions.md).

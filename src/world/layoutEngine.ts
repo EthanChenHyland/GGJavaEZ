@@ -15,6 +15,8 @@ export interface LayoutEngine {
     append(events: readonly TraceEvent[], from?: number): void;
     readonly state: LayoutState;
 }
+const emptyPorts: WorldAnchor['ports'] = Object.freeze({});
+
 function boundsOf(anchors: readonly WorldAnchor[]): WorldBounds | null {
     if (!anchors.length)
         return null;
@@ -28,6 +30,9 @@ function boundsOf(anchors: readonly WorldAnchor[]): WorldBounds | null {
 }
 /** Call-tree and first-observation geography. It never reads a cursor, camera or mutable value. */
 export function createLayoutEngine(t: WorldLayoutTokens = worldLayoutTokens): LayoutEngine {
+    // Dimensions are shared only within this engine so custom token sets remain independent.
+    const cellSize: Vec3 = Object.freeze([t.array.cell, t.array.cell, t.array.cell] as const);
+    const frameSizes = new Map<number, Vec3>();
     let length = 0, anchors: Record<string, WorldAnchor> = persistentRecord({}), placement: Record<string, PlacementInfo> = persistentRecord({});
     let snapshot: LayoutState | null = null;
     const memberships=createClusterMembershipIndex();
@@ -144,10 +149,10 @@ export function createLayoutEngine(t: WorldLayoutTokens = worldLayoutTokens): La
             do {
                 const slot = column.next++;
                 position = [column.left + size[0] / 2, t.regions.heapTopY - (slot % t.object.tiers) * (column.height + t.object.tierGap) - size[1] / 2, Math.floor(slot / t.object.tiers) * t.object.pageStepZ];
-                candidate = { entityId: event.objectId, region, position, size, ports: {}, bodyPort: [position[0] - size[0] / 2, position[1], position[2] + size[2] / 2] };
+                candidate = { entityId: event.objectId, region, position, size, ports: emptyPorts, bodyPort: [position[0] - size[0] / 2, position[1], position[2] + size[2] / 2] };
             } while (heapOccupancy.intersects(candidate));
         }
-        const anchor: WorldAnchor = { entityId: event.objectId, region, position: position!, size: realSize, ports: {}, bodyPort: [position![0] - realSize[0] / 2, position![1], position![2] + realSize[2] / 2] };
+        const anchor: WorldAnchor = { entityId: event.objectId, region, position: position!, size: realSize, ports: emptyPorts, bodyPort: [position![0] - realSize[0] / 2, position![1], position![2] + realSize[2] / 2] };
         add(anchor, event.seq, className, event.metadata?.packageName ?? className.slice(0, Math.max(0, className.lastIndexOf('.'))), event.metadata?.ownership, Math.min(count, 13));
         if (!isArray) {
             const compact=compactLibraryFace(anchor,t);
@@ -159,7 +164,7 @@ export function createLayoutEngine(t: WorldLayoutTokens = worldLayoutTokens): La
                 const cellId = arrayElementSlotId(event.objectId, index), [x,y,z] = arrayCellPosition(anchor,index,cols,t.array);
                 const port: Vec3 = [x, y, z + t.array.cell / 2];
                 cellPorts[cellId] = port;
-                anchors = persistentPut(anchors, cellId, { entityId: cellId, region, position: [x, y, z], size: [t.array.cell, t.array.cell, t.array.cell], ports: {}, bodyPort: port });
+                anchors = persistentPut(anchors, cellId, { entityId: cellId, region, position: [x, y, z], size: cellSize, ports: emptyPorts, bodyPort: port });
             }
             anchors = persistentPut(anchors, event.objectId, { ...anchor, ports: cellPorts });
         }
@@ -175,13 +180,18 @@ export function createLayoutEngine(t: WorldLayoutTokens = worldLayoutTokens): La
                 const event = events[i];
                 if (event.type === 'ENTER_METHOD' && !anchors[event.frameId]) {
                     const capacity = Math.max(t.frame.rowsMin, Math.min(t.frame.rowsMax, event.locals.filter(slot => slot.role === 'parameter' || slot.name === 'this').length + t.frame.rowAllowance));
-                    const size: Vec3 = [t.frame.w, t.frame.header + t.frame.pad + t.frame.row * capacity, t.frame.depth], parent = event.callerFrameId ? anchors[event.callerFrameId] : null, sibling = lastChild.get(event.callerFrameId);
+                    let size = frameSizes.get(capacity);
+                    if (!size) {
+                        size = Object.freeze([t.frame.w, t.frame.header + t.frame.pad + t.frame.row * capacity, t.frame.depth] as const);
+                        frameSizes.set(capacity, size);
+                    }
+                    const parent = event.callerFrameId ? anchors[event.callerFrameId] : null, sibling = lastChild.get(event.callerFrameId);
                     const top = sibling ? sibling.position[1] + sibling.size[1] / 2 : parent ? parent.position[1] - parent.size[1] / 2 - t.frame.stackGap : 0;
                     let front = sibling ? sibling.position[2] + sibling.size[2] / 2 + t.frame.depth + t.frame.deckGapZ : parent ? parent.position[2] + parent.size[2] / 2 - t.frame.depthStepZ : t.frame.depth / 2;
                     let anchor: WorldAnchor;
                     for (;;) {
                         const position: Vec3 = [0, top - size[1] / 2, front - size[2] / 2];
-                        anchor = { entityId: event.frameId, region: 'stack', position, size, ports: {}, bodyPort: [-size[0] / 2, top - .5, front] };
+                        anchor = { entityId: event.frameId, region: 'stack', position, size, ports: emptyPorts, bodyPort: [-size[0] / 2, top - .5, front] };
                         if (!stackOccupancy.intersects(anchor))
                             break;
                         front += t.frame.depth + t.frame.deckGapZ;
@@ -208,14 +218,14 @@ export function createLayoutEngine(t: WorldLayoutTokens = worldLayoutTokens): La
                 else if (event.type === 'CLASS_OBSERVE' && !anchors[event.classId]) {
                     const capacity = Math.min(event.fields.length, t.classShelf.rowsMax) + 1, height = t.classShelf.header + t.frame.pad + t.classShelf.row * capacity;
                     const position: Vec3 = [-t.frame.w / 2 + classes.length * t.classShelf.pitchX + t.classShelf.w / 2, 2.175 + height / 2, -2];
-                    const anchor: WorldAnchor = { entityId: event.classId, region: 'class', position, size: [t.classShelf.w, height, t.classShelf.depth], ports: {}, bodyPort: [position[0], position[1], position[2] + t.classShelf.depth / 2] };
+                    const anchor: WorldAnchor = { entityId: event.classId, region: 'class', position, size: [t.classShelf.w, height, t.classShelf.depth], ports: emptyPorts, bodyPort: [position[0], position[1], position[2] + t.classShelf.depth / 2] };
                     add(anchor, event.seq, event.className, event.metadata?.packageName ?? event.className.slice(0,Math.max(0,event.className.lastIndexOf('.'))), event.metadata?.ownership, capacity);
                     ports(anchor, event.fields, capacity, t.classShelf.header, t.classShelf.row);
                 }
                 const channel = event.type === 'CONSOLE_WRITE' ? event.channel : event.type === 'OUTPUT_WRITE' ? 'stdout' : event.type === 'CONSOLE_INPUT' || event.type === 'INPUT_READ' ? 'stdin' : null;
                 if (channel && !anchors[channel]) {
                     const index = ['stdin', 'stdout', 'stderr'].indexOf(channel), position: Vec3 = [t.io.x, t.io.y[index], t.io.z];
-                    add({ entityId: channel, region: 'io', position, size: t.io.size as unknown as Vec3, ports: {}, bodyPort: [position[0], position[1], position[2] + t.io.size[2] / 2] }, event.seq, channel, '', undefined);
+                    add({ entityId: channel, region: 'io', position, size: t.io.size as unknown as Vec3, ports: emptyPorts, bodyPort: [position[0], position[1], position[2] + t.io.size[2] / 2] }, event.seq, channel, '', undefined);
                 }
                 const observation=ownershipObservation(event);
                 if(observation&&placement[observation.id]){
@@ -240,7 +250,7 @@ export function createLayoutEngine(t: WorldLayoutTokens = worldLayoutTokens): La
             if (snapshot)
                 return snapshot;
             const regions = { stack: regionBounds.stack, heap: regionBounds.heap, library: regionBounds.library, classState: regionBounds.class, io: regionBounds.io };
-            return snapshot = { anchors, placement, regions, bounds: boundsOf(Object.entries(regionBounds).flatMap(([region, bounds]) => bounds ? [{ entityId: region, region: region as Region, position: bounds.center, size: bounds.size, bodyPort: bounds.center, ports: {} }] : [])), headings: { stack: [0, .75, root?.position[2] ?? 0], heap: [5.8, .3, 0], classState: classes.length ? [classes[0].position[0], classes[0].position[1] + classes[0].size[1] / 2 + .7, -2] : null, returns: [2.95, -.5, 1] } };
+            return snapshot = { anchors, placement, regions, bounds: boundsOf(Object.entries(regionBounds).flatMap(([region, bounds]) => bounds ? [{ entityId: region, region: region as Region, position: bounds.center, size: bounds.size, bodyPort: bounds.center, ports: emptyPorts }] : [])), headings: { stack: [0, .75, root?.position[2] ?? 0], heap: [5.8, .3, 0], classState: classes.length ? [classes[0].position[0], classes[0].position[1] + classes[0].size[1] / 2 + .7, -2] : null, returns: [2.95, -.5, 1] } };
         },
     };
 }
