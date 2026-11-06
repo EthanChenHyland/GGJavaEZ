@@ -45,6 +45,28 @@ describe('graphless authored I/O through the production projection', () => {
     expect(trace.events.filter(event => event.type === 'OUTPUT_WRITE')).toHaveLength(4)
   })
 
+  it('preserves exact line counts and marks a 60-code-point preview across writes and reverse seeks', () => {
+    const output = trace.events[firstOutput]
+    if (output.type !== 'OUTPUT_WRITE') throw new Error('Expected output event')
+    const prefix = trace.events.slice(0, firstOutput)
+    const sixty = '🟣' + 'x'.repeat(59)
+    const chunks = ['old\r', '\n' + sixty, 'overflow', '\r', '\nlast']
+    const events: TraceEvent[] = [...prefix, ...chunks.map((text, index): TraceEvent => ({
+      type: 'CONSOLE_WRITE', channel: 'stdout', frameId: output.frameId, text, source: output.source,
+      label: 'Recorded stdout chunk', importance: 'normal', seq: firstOutput + index, eventId: `unit/preview/${index}`,
+    }))]
+    const project = projectTrace({ ...trace, schemaVersion: 2, events }).project
+    const at = (writes: number) => project(firstOutput + writes).io.find(io => io.id === 'stdout')
+    expect(at(0)).toBeUndefined()
+    expect(at(1)).toMatchObject({ lines: 1, preview: 'old' })
+    expect(at(2)).toMatchObject({ lines: 2, preview: sixty })
+    expect(at(3)).toMatchObject({ lines: 2, preview: sixty + '…' })
+    expect(at(4)).toMatchObject({ lines: 2, preview: sixty + '…' })
+    expect(at(5)).toMatchObject({ lines: 3, preview: 'last' })
+    expect(at(2)).toMatchObject({ lines: 2, preview: sixty })
+    expect(at(3)).toMatchObject({ lines: 2, preview: sixty + '…' })
+  })
+
   it('does not turn submitted console bytes into consumed input geometry', () => {
     const submitted: TraceDocument = { ...trace, schemaVersion: 2, events: [...trace.events.slice(0, firstInput), {
       type: 'CONSOLE_INPUT', eventId: 'unit/submitted-only', seq: firstInput, source: null,

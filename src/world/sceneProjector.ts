@@ -44,7 +44,8 @@ type DependencyTargets = string | ReadonlySet<string>
 const dependencyValues = (value: DependencyTargets | undefined): Iterable<string> => typeof value === 'string' ? [value] : value ?? []
 const hasDependency = (value: DependencyTargets | undefined, id: string): boolean => typeof value === 'string' ? value === id : value?.has(id) ?? false
 interface CachedNode<T> { anchor: WorldAnchor; signature: string; dependencies: readonly (RuntimeObject | undefined)[]; node: T }
-interface LineSummary { breaks: number; partial: boolean; pendingCR: boolean; current: string; last: string; first: string; changed: string }
+const ioPreviewCharacters = 60
+interface LineSummary { breaks: number; partial: boolean; pendingCR: boolean; current: string; currentLength: number; last: string; first: string; changed: string }
 type Channels = Map<SceneIo['id'], LineSummary>
 const unavailable = (reason: string): Evidence => ({ kind: 'unavailable', introducedSeq: null, changedSeq: null, eventIds: [], unavailableReason: reason })
 
@@ -520,11 +521,32 @@ export function createSceneProjector(trace: TraceDocument): SceneProjector {
   }
   function addIo(channels: Channels, id: SceneIo['id'], text: string, eventId: string) {
     const old = channels.get(id)
-    const summary: LineSummary = old ? { ...old, changed: eventId } : { breaks: 0, partial: false, pendingCR: false, current: '', last: '', first: eventId, changed: eventId }
+    const summary: LineSummary = old ? { ...old, changed: eventId } : {
+      breaks: 0, partial: false, pendingCR: false, current: '', currentLength: 0, last: '', first: eventId, changed: eventId,
+    }
     for (const char of text) {
-      if (char === '\n' && summary.pendingCR) { summary.pendingCR = false; continue }
-      if (char === '\n' || char === '\r') { summary.breaks++; summary.last = summary.current; summary.current = ''; summary.partial = false; summary.pendingCR = char === '\r' }
-      else { summary.pendingCR = false; summary.partial = true; if (Array.from(summary.current).length < 60) summary.current += char }
+      if (char === '\n' && summary.pendingCR) {
+        summary.pendingCR = false
+        continue
+      }
+      if (char === '\n' || char === '\r') {
+        summary.breaks++
+        summary.last = summary.current
+        summary.current = ''
+        summary.currentLength = 0
+        summary.partial = false
+        summary.pendingCR = char === '\r'
+        continue
+      }
+      summary.pendingCR = false
+      summary.partial = true
+      if (summary.currentLength < ioPreviewCharacters) {
+        summary.current += char
+        summary.currentLength++
+      } else if (summary.currentLength === ioPreviewCharacters) {
+        summary.current += '…'
+        summary.currentLength++
+      }
     }
     channels.set(id, summary)
   }
