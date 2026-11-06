@@ -559,3 +559,7 @@ Source `0598422c` passes the migrated opt-in motion case with one completed actu
 ## Shared immutable layout dimensions — 2026-11-06
 
 Source `f78c2e67` passes all eight source checks and six targeted native array and recursion cases. The complete layout and scene comparison passes on a saved actual JVM recording and 32 generated traces. [Exact source, capture evidence and remaining limits](migration/shared-layout-dimensions.md).
+
+## Reference array Flow endpoints — 2026-11-06
+
+Source `94420b20` passes 12 native cases and the paired desktop/narrow comparison. Final source `e492d144` adds the corrected sparse reference-cell unit assertion and passes all eight source checks with 2,281 default passes. [Exact source, failures and capture evidence](migration/array-flow-port.md).

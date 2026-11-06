@@ -68,7 +68,7 @@ describe('bounded captured heap faces through the production cut', () => {
     const inset=buildSolidBatch(scene,plan).find(part=>part.pick.id===slot&&part.part==='reference-chip')!.anchor
     expect(curve.points[0]).toEqual([inset.position[0]+inset.size[0]/2,inset.position[1],inset.position[2]+inset.size[2]/2])
     expect(curve.sourceAnchor).toBe(cell.anchor)
-    expect(presentedFlowPorts(scene, plan.entities, plan.cellWindows)({ kind: 'slot', id: slot })!.point).toEqual(cell.port)
+    expect(presentedFlowPorts(scene, plan.entities, plan.cellWindows)({ kind: 'slot', id: slot })!.point).toEqual(curve.points[0])
     expect(cell.anchor.position).toEqual(projection.layout.anchors[slot].position)
     const target=scene.entities.target.anchor
     expect(curve.destinationAnchor).toBe(target)

@@ -5,6 +5,7 @@ import type {RecordedFlow,SceneFlow} from './flowCatalog'
 import {faceRows,faceRowPort} from './faceRows'
 import {collectionEntryFace} from './collectionFace'
 import {hasRecordedValuePort} from './valueText'
+import {arrayReferenceChipPort} from './structureValueChipGeometry'
 
 export interface FlowPort {point:Vec3;anchor:WorldAnchor}
 export interface DrawableFlow {flow:SceneFlow;from:FlowPort;to:FlowPort}
@@ -26,8 +27,13 @@ export function presentedFlowPorts(scene:SceneModel,entities:ReadonlyMap<string,
   if(node.kind==='array'){
    const window=windows.get(id)
    if(window?.recordingId===scene.recordingId&&window.arrayId===id&&window.mapping.size){
-    const observed=new Set(node.cells.filter(cell=>hasRecordedValuePort(cell.value)).map(cell=>cell.slotId))
-    for(const[slot,cell]of window.mapping)if(observed.has(slot))slots.set(slot,{point:cell.port,anchor:cell.anchor})
+    for(const observed of node.cells){
+     const cell=window.mapping.get(observed.slotId),value=observed.value
+     if(!cell||!hasRecordedValuePort(value))continue
+     const point=value.kind==='reference'&&value.observation!=='UNAVAILABLE'&&scene.entities[value.targetId]
+      ?arrayReferenceChipPort(cell.anchor):cell.port
+     slots.set(observed.slotId,{point,anchor:cell.anchor})
+    }
    }
   }else{
    const model=faceRows(node,presented),visible=model.visible

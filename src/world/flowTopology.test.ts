@@ -14,6 +14,7 @@ import {generateRawTrace} from '../testing/traceGen'
 import {normalizeTrace} from '../instrumentation/normalize'
 import {computeArrayWindow} from './arrayWindow'
 import {faceRowPort} from './faceRows'
+import {arrayReferenceChipPort} from './structureValueChipGeometry'
 
 // Explicit normalized geometry and synthetic edge records are unit fixtures,
 // not claimed Java/JVM execution evidence.
@@ -70,7 +71,8 @@ it('withholds null or unavailable array and Map-key ports without moving survivi
  const scene={...f.scene,entities:{...f.scene.entities,array:{...array,cells:array.cells.map((cell,index)=>index<2?{...cell,value:index===0?nullValue:missing}:cell)},map:{...map,entries:map.entries.map(entry=>({...entry,key:nullValue,value:array.cells[2].value}))}}}
  const port=presentedFlowPorts(scene,f.plan.entities,f.plan.cellWindows)
  expect(port({kind:'slot',id:array.cells[0].slotId})).toBeNull();expect(port({kind:'slot',id:array.cells[1].slotId})).toBeNull()
- expect(port({kind:'slot',id:array.cells[2].slotId})?.point).toEqual(f.plan.cellWindows.get(array.id)!.mapping.get(array.cells[2].slotId)!.port)
+ const cell=f.plan.cellWindows.get(array.id)!.mapping.get(array.cells[2].slotId)!
+ expect(port({kind:'slot',id:array.cells[2].slotId})).toEqual({point:arrayReferenceChipPort(cell.anchor),anchor:cell.anchor})
  expect(port({kind:'slot',id:map.entries[0].keySlotId!})).toBeNull();expect(port({kind:'slot',id:map.entries[0].slotId})?.point).toEqual(collectionEntryFace(map.anchor,0,true)!.value)
 })
 it('retains every drawable mandatory flow over budget and records scope exclusions separately (100 runs)',()=>{
@@ -114,7 +116,7 @@ it('maps a tail array window with a linear number of captured-cell reads',()=>{
  const window=computeArrayWindow({recordingId:scene.recordingId,arrayId:'array',recordedLength:1000,anchor:array.anchor,nominalCellBudget:128,requestedIndices:[999]})
  windows.set('array',window)
  const port=presentedFlowPorts(scene,f.plan.entities,windows)
- for(const[id,cell]of window.mapping)expect(port({kind:'slot',id})?.point).toEqual(cell.port)
+ for(const[id,cell]of window.mapping)expect(port({kind:'slot',id})?.point).toEqual(arrayReferenceChipPort(cell.anchor))
  expect(port({kind:'slot',id:'array:element:1000'})).toBeNull()
  expect(reads).toBeLessThanOrEqual(cells.length+window.mapping.size*4)
 })

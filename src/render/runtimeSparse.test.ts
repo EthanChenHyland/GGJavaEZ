@@ -80,7 +80,7 @@ describe('production static/sparse successors',()=>{
   expect(scene.references.find(reference=>reference.id===id)).toMatchObject({sourceId:arrayId,sourceSlotId:slotId,targetId:heapId})
   const curve=plan.curves.find(curve=>curve.id===id)!,inset=buildSolidBatch(scene,plan).find(part=>part.pick.id===slotId&&part.part==='reference-chip')!.anchor
   expect(curve.points[0]).toEqual([inset.position[0]+inset.size[0]/2,inset.position[1],inset.position[2]+inset.size[2]/2]);expect(curve.destinationAnchor?.entityId).toBe(heapId)
-  expect(presentedFlowPorts(scene,plan.entities,plan.cellWindows)({kind:'slot',id:slotId})!.point).toEqual(window.mapping.get(slotId)!.port)
+  expect(presentedFlowPorts(scene,plan.entities,plan.cellWindows)({kind:'slot',id:slotId})).toEqual({point:curve.points[0],anchor:window.mapping.get(slotId)!.anchor})
   expect(array.cells.filter(cell=>cell.index!==750000).every(cell=>cell.value.kind==='null')).toBe(true)
  })
  it('retains a selected late reference and exact separate sparse write source/destination indices',()=>{

@@ -41,6 +41,24 @@ for(const viewport of[{width:1728,height:1117},{width:1440,height:900},{width:12
  const bottom=viewport.width<1024&&after.shell.inspector?after.shell.inspector.y:after.shell.safeFrame.y+after.shell.safeFrame.height
  expect(after.point!.y).toBeGreaterThanOrEqual(after.shell.safeFrame.y);expect(after.point!.y).toBeLessThanOrEqual(bottom)
  expect(after.cell!.index).toBe(6500)
+ const endpoints=await page.evaluate(slotId=>{
+  const world=window.__ggjavaezWorld!,scene=world.scene(),curves=world.plan().curves
+  const reference=scene.references.find(ref=>ref.sourceSlotId===slotId)
+  return{
+   chip:curves.find(curve=>curve.id===reference?.id)?.points[0],
+   flows:curves.filter(curve=>curve.kind==='flow').flatMap(curve=>[
+    ...(curve.sourceAnchor?.entityId===slotId?[curve.points[0]]:[]),
+    ...(curve.destinationAnchor?.entityId===slotId?[curve.points.at(-1)!]:[]),
+   ]),
+   markers:world.connectorPorts(),
+  }
+ },slotId)
+ expect(endpoints.chip).toBeDefined()
+ expect(endpoints.flows.length).toBeGreaterThan(0)
+ for(const endpoint of endpoints.flows)expect(endpoint).toEqual(endpoints.chip)
+ const at=(point:readonly number[])=>endpoints.markers.filter(marker=>marker.opacity>0&&marker.position.every((coordinate,axis)=>Math.abs(coordinate-point[axis])<1e-4))
+ expect(at(after.cell!.port)).toEqual([])
+ expect(at(endpoints.chip!)).toMatchObject([{referenceChip:true}])
  expect(face.left).toBeGreaterThanOrEqual(after.shell.safeFrame.x);expect(face.right).toBeLessThanOrEqual(after.shell.safeFrame.x+after.shell.safeFrame.width)
  expect(face.top).toBeGreaterThanOrEqual(after.shell.safeFrame.y);expect(face.bottom).toBeLessThanOrEqual(bottom)
  expect(face.bottom-face.top).toBeGreaterThanOrEqual(viewport.height*.38-1);expect(face.bottom-face.top).toBeLessThanOrEqual(viewport.height*.52+1)

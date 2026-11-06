@@ -184,7 +184,7 @@ describe('current reference topology over a presented cut', () => {
     const point=result.individual[0].sourcePoint
     expect(point[0]).toBeCloseTo(mapping.port[0]+.67,10);expect(point[1]).toBe(mapping.port[1]);expect(point[2]).toBeCloseTo(mapping.port[2]+.081,10)
     expect(point).not.toBe(mapping.port)
-    expect(presentedFlowPorts(input.scene,input.entities,input.cellWindows)({kind:'slot',id:cells[1].slotId})?.point).toBe(mapping.port)
+    expect(presentedFlowPorts(input.scene,input.entities,input.cellWindows)({kind:'slot',id:cells[1].slotId})?.point).toEqual(point)
     expect(result.individual[0].sourceAnchor).toBe(mapping.anchor)
     expect(result.unavailable[0].reference.sourceSlotId).toBe(cells[0].slotId)
     expect(snapshot(input)).toBe(before)
