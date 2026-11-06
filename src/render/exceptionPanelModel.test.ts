@@ -44,3 +44,17 @@ it('states pathological face truncation and keeps the full message in the captur
  expect(content.message).toHaveLength(8000)
  for(const line of layout.lines)expect(textAdvance(line.text,line.weight)*line.size).toBeLessThanOrEqual(layout.textWidth-.012)
 })
+
+it('breaks before intact exception names and whole evidence words when they fit',()=>{
+ const header='java.lang.IllegalStateException'
+ const titleWidth=textAdvance('IllegalStateException',600)*.4+.02
+ const title=wrapExceptionPanelText(header,titleWidth,.4,600,16)
+ expect(title.lines).toEqual(['java.lang.','IllegalStateException'])
+ expect(title.lines.join('')).toBe(header)
+ const caption='No captured stack-text fact'
+ const captionWidth=textAdvance('No capture',400)*.27+.02
+ const wrapped=wrapExceptionPanelText(caption,captionWidth,.27,400,16)
+ expect(wrapped.lines[0]).toBe('No ')
+ expect(wrapped.lines[1]).toMatch(/^captured /)
+ expect(wrapped.lines.join('')).toBe(caption)
+})

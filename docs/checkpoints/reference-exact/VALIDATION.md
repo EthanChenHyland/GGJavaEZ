@@ -539,3 +539,7 @@ Source `1639c63e` passes the eight source checks, nine focused native cases and 
 ## Shared text-parent transforms — 2026-11-06
 
 Source `6cf20bb6` passes all eight source checks and 12 targeted native cases, including real recursion, forensic ink, both GPU palettes and narrow array captions. The six paired Safe Frames match measured geometry and text. The 127-case combined result above belongs to the connector checkpoint. [Regression, exact-source measurements and capture evidence](migration/text-parent-transforms.md).
+
+## Forensic text wrapping — 2026-11-06
+
+Source `7f7d3fac` passes all eight source checks, 2,280 default unit cases and 11 targeted native cases. Short and narrow captures preserve the same text and panel placement while keeping exception names and evidence words readable. [Exact source and paired capture evidence](migration/forensic-word-wrap.md).

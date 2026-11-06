@@ -88,13 +88,15 @@ export function wrapExceptionPanelText(
         return { lines: [], truncated: text.length > 0, escaped: false };
     const lines: string[] = [];
     const limit = Math.floor(maxLines);
-    let line = '', escaped = false;
+    let line = '', escaped = false, breakAt = 0;
     const fits = (candidate: string) => textAdvance(candidate, weight) * size <= width - .012;
     for (const character of text) {
         const unit = localFontText(character, weight);
+        const boundary = /[\s.$·]/u.test(character);
         escaped ||= unit !== character;
         if (fits(line + unit)) {
             line += unit;
+            if (boundary) breakAt = line.length;
             continue;
         }
         // Never submit an over-wide escape group to WorldText's ellipsis fitter.
@@ -102,8 +104,17 @@ export function wrapExceptionPanelText(
             if (line) lines.push(line);
             return { lines, truncated: true, escaped };
         }
-        lines.push(line);
-        line = unit;
+        // Keep words and qualified-name segments whole when they fit a new
+        // line. Preserve the boundary itself so joined lines retain all text.
+        const tail = breakAt ? line.slice(breakAt) + unit : unit;
+        if (breakAt && fits(tail)) {
+            lines.push(line.slice(0, breakAt));
+            line = tail;
+        } else {
+            lines.push(line);
+            line = unit;
+        }
+        breakAt = boundary ? line.length : 0;
     }
     lines.push(line);
     return { lines, truncated: false, escaped };
