@@ -3,17 +3,26 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import type { ExecutionSession } from '../src/execution/contracts'
 import { normalizeTrace } from '../src/instrumentation/normalize'
 import { seek } from '../src/runtime/seek'
-const output='.ggjavaez/qa/v12-p5_5/lifecycle'
+import {focusSelection,home,ready,seekCursor,selectEntity} from './reference/harness'
+const output=process.env.VJ_QA_OUTPUT_ROOT??'.ggjavaez/qa/v12-p5_5/lifecycle'
+const ownedProjects=new Set<string>()
+const activePhases=['BUILDING','STARTING','RUNNING','WAITING_FOR_INPUT','PAUSED']
 test.use({video:{mode:'on',size:{width:1440,height:900}}})
 async function imported(request:APIRequestContext,name:string,files:Array<{path:string;content:string}>) {
   const response=await request.post('/api/projects/import',{data:{name,files}})
-  expect(response.ok(),await response.text()).toBe(true);return (await response.json()).id as string
+  expect(response.ok(),await response.text()).toBe(true)
+  const id=(await response.json()).id as string;ownedProjects.add(id);return id
 }
-async function open(page:Page,id:string){await page.addInitScript(id=>localStorage.setItem('ggjavaez:project',id),id);await page.goto('/ide');await expect(page.locator('.monaco-editor')).toBeVisible()}
+async function open(page:Page,id:string){
+  await page.addInitScript(id=>localStorage.setItem('ggjavaez:project',id),id);await page.goto('/?qa=1')
+  await expect(page.getByRole('button',{name:'Project menu',exact:true})).toHaveAttribute('data-project-id',id)
+  await expect(page.locator('.monaco-editor')).toBeVisible()
+  await expect.poll(()=>page.evaluate(()=>window.__ggjavaezQA?.source()?.modelUri)).toContain(`inmemory://ggjavaez/${id}/`)
+}
 async function current(request:APIRequestContext){return (await (await request.get('/api/execution/current')).json()) as ExecutionSession|null}
 async function phase(request:APIRequestContext,id:string,expected:string){await expect.poll(async()=>{const session=await current(request);return session?.projectId===id?session.phase:'other'},{timeout:60000,intervals:[100,250,500]}).toBe(expected);return (await current(request))!}
 async function paused(request:APIRequestContext,id:string,after=-1){await expect.poll(async()=>{const session=await current(request);return session?.projectId===id&&session.phase==='PAUSED'&&(session.pause?.rawEventCount??-1)>after},{timeout:30000,intervals:[100,250,500]}).toBe(true);return (await current(request))!}
-test.afterEach(async({request})=>{const session=await current(request);if(session&&['BUILDING','STARTING','RUNNING','WAITING_FOR_INPUT','PAUSED'].includes(session.phase))await request.post(`/api/execution/${session.id}/stop?transport=delta`,{data:{}})})
+test.afterEach(async({request})=>{const session=await current(request);if(session&&ownedProjects.has(session.projectId)&&activePhases.includes(session.phase))await request.post(`/api/execution/${session.id}/stop?transport=delta`,{data:{}})})
 
 test('fresh Debug preserves a 35-second pause, constructor/array/recursive steps and the independent history cursor',async({page,request})=>{
   test.setTimeout(150000)
@@ -28,7 +37,7 @@ test('fresh Debug preserves a 35-second pause, constructor/array/recursive steps
     await page.getByRole('button',{name:command,exact:true}).click();session=await paused(request,id,before)
     steps.push({command,pause:session.pause}); console.log(JSON.stringify(steps.at(-1)));expect(session.id).toBe(sessionId);expect(session.pause?.methodName,command).toBe(method)
   }
-  await page.getByRole('slider',{name:'Scrub execution'}).fill('0')
+  await seekCursor(page,0)
   await expect(page.getByRole('button',{name:/Return to Live/})).toBeVisible();expect((await current(request))!.phase).toBe('PAUSED')
   await page.getByRole('button',{name:/Return to Live/}).click()
   await page.getByRole('button',{name:'Continue',exact:true}).click();const done=await phase(request,id,'COMPLETED')
@@ -58,13 +67,17 @@ test('actual displaced JDT Retry reopens its own project and retains an unsaved 
   test.setTimeout(120000)
   const disk='public class Main { public static void main(String[] args) {} }\n'
   const first=await imported(request,'Torture JDT first',[{path:'Main.java',content:disk}]);await open(page,first)
-  await expect(page.locator('.ide-status-language')).toContainText('JDT ready',{timeout:40000})
+  await expect(page.getByRole('button',{name:'Java language service ready',exact:true})).toBeVisible({timeout:40000})
   const draft='public class Main { MissingType retainedUnsavedDraft; public static void main(String[] args) {} }\n'
   await page.locator('.monaco-editor').click();await page.keyboard.press('ControlOrMeta+A');await page.keyboard.insertText(draft);await expect(page.locator('.ide-dirty')).toHaveCount(1)
   const second=await imported(request,'Torture JDT second',[{path:'Main.java',content:disk}]);const other=await context.newPage();await open(other,second)
-  await expect(other.locator('.ide-status-language')).toContainText('JDT ready',{timeout:40000})
-  await expect(page.getByRole('button',{name:'Retry Java',exact:true})).toBeVisible({timeout:10000})
-  await page.getByRole('button',{name:'Retry Java',exact:true}).click();await expect(page.locator('.ide-status-language')).toContainText('JDT ready',{timeout:40000})
+  await expect(other.getByRole('button',{name:'Java language service ready',exact:true})).toBeVisible({timeout:40000})
+  await page.getByRole('button',{name:/^Java language service /}).click()
+  const status=page.getByRole('dialog',{name:'Workspace status',exact:true})
+  const retry=status.getByRole('button',{name:'Retry Java',exact:true})
+  await expect(retry).toBeVisible({timeout:10000});await retry.click()
+  await expect(page.getByRole('button',{name:'Java language service ready',exact:true})).toBeVisible({timeout:40000})
+  await status.getByRole('button',{name:'Close workspace status',exact:true}).click()
   await expect(page.locator('.ide-dirty')).toHaveCount(1)
   expect((await (await request.get(`/api/projects/${first}/files?path=Main.java`)).json()).content).toBe(disk)
   await expect.poll(async()=>JSON.stringify(await (await request.get(`/api/projects/${first}/language`)).json()),{timeout:20000}).toContain('MissingType')
@@ -90,7 +103,6 @@ test('five edited real Runs replace the world in one page; failed build and repa
   test.setTimeout(150000)
   const source = (value:number) => `public class Repeated { static class Cell { int value; } public static void main(String[] args) { Cell cell=new Cell(); cell.value=${value}; System.out.println("VALUE ${value}"); } }\n`
   const id = await imported(request, 'Torture repeated world ownership', [{ path:'Repeated.java', content:source(1) }])
-  await page.addInitScript(() => { window.__VJ_QA_RENDER_METRICS__ = true })
   await open(page,id)
   const cdp=await page.context().newCDPSession(page)
   await cdp.send('Performance.enable');await cdp.send('HeapProfiler.enable')
@@ -111,20 +123,21 @@ test('five edited real Runs replace the world in one page; failed build and repa
     const state=seek(trace,trace.events.length)
     const cell=Object.values(state.objects).find(object=>object.className.endsWith('$Cell'))!
     expect(Object.values(cell.fields).find(field=>field.name==='value')!.value).toEqual({kind:'primitive',javaType:'int',value})
-    const slider=page.getByRole('slider',{name:'Scrub execution'})
-    await expect(slider).toHaveAttribute('max',String(trace.events.length),{timeout:30000});await slider.fill(String(trace.events.length))
-    const picker=page.getByRole('combobox',{name:'Select runtime entity'});await picker.selectOption(cell.id)
-    await page.getByRole('complementary',{name:'Runtime inspector'}).getByRole('button',{name:'Focus',exact:true}).click();await page.waitForTimeout(700)
-    await expect.poll(()=>page.evaluate(()=>Boolean(window.__VJ_RENDER_METRICS__))).toBe(true)
+    const slider=page.getByRole('slider',{name:'Recorded execution position'})
+    await expect.poll(()=>page.evaluate(()=>window.__ggjavaezQA?.appState().dimensions.view.recordingId)).toBe(`execution:${done.id}`)
+    await expect(slider).toHaveAttribute('aria-valuemax',String(trace.events.length),{timeout:30000})
+    await seekCursor(page,trace.events.length);await home(page);await selectEntity(page,cell.id);await focusSelection(page)
+    await expect(page.getByRole('complementary',{name:'Selection inspector',exact:true})).toContainText(String(value))
+    await expect.poll(()=>page.evaluate(()=>window.__ggjavaezWorld?.renderer().calls??0)).toBeGreaterThan(0)
     await cdp.send('HeapProfiler.collectGarbage')
     const metrics=await cdp.send('Performance.getMetrics')
-    samples.push({sessionId:done.id,value,heap:metrics.metrics.find(item=>item.name==='JSHeapUsedSize')!.value,renderer:await page.evaluate(()=>window.__VJ_RENDER_METRICS__)})
-    await page.getByRole('button',{name:'Return to world',exact:true}).click()
+    samples.push({sessionId:done.id,value,heap:metrics.metrics.find(item=>item.name==='JSHeapUsedSize')!.value,renderer:await page.evaluate(()=>window.__ggjavaezWorld!.renderer())})
+    await page.getByRole('button',{name:'Return to World',exact:true}).click();await ready(page)
     if(value===3) {
       await edit('public class Repeated { this is not Java; }\n')
       await page.getByRole('button',{name:'Run',exact:true}).click();const failed=await phase(request,id,'FAILED')
       expect(failed.failureKind).toBe('build');expect(failed.id).not.toBe(done.id);expect(failed.rawEvents).toEqual([])
-      await expect(page.getByRole('status',{name:'Previous recording'})).toBeVisible()
+      await expect(page.getByRole('status').filter({hasText:'Previous run'})).toBeVisible()
       await expect(page.locator('.monaco-editor .executing-line')).toHaveCount(0)
     }
   }

@@ -19,7 +19,7 @@ Default inventory at f262899 discovers 294 cases in 81 files. Of these, 202 belo
 | `spatial-io-v12-p5.spec.ts` | 1 | [Migrated with its original curated recording and captured read/write evidence](io-labels-and-shell-workflows.md) |
 | `spatial-shell-v12-p5.spec.ts` | 6 | [Migrated with the same managed files, actions and assertions](io-labels-and-shell-workflows.md) |
 | `torture-details-v12-p5_5.spec.ts` | 4 | OPEN |
-| `torture-lifecycle-v12-p5_5.spec.ts` | 5 | OPEN |
+| `torture-lifecycle-v12-p5_5.spec.ts` | 5 | [Migrated; original JVM, JDT, large picker and repair workloads pass](lifecycle-browser-successors.md) |
 | `torture-motion-v12-p5_5.spec.ts` | 1 | OPEN |
 | `torture-v12-p5_5.spec.ts` | 9 | OPEN |
 | `unified-m10.spec.ts` | 9 | OPEN |
@@ -63,3 +63,8 @@ remain separately qualified. Discovery is not exhaustive passing acceptance.
 ## I/O and shell workflows — 2026-11-06
 
 All seven original cases pass in the 12-case native gate on source `a3ab39c5`. The default inventory still discovers 320 cases in 87 files, with 283 classified against current surfaces and 37 still open in the table. [Exact results and retained assertions](io-labels-and-shell-workflows.md).
+
+
+## Existing lifecycle workflows — 2026-11-06
+
+All five original lifecycle cases pass on source `a0aa0467`. Default discovery stays at 320 cases in 87 files, with 288 classified against current surfaces and 32 open in the table. This is a focused browser result. [Preserved workloads, prerequisite and exact-source evidence](lifecycle-browser-successors.md).

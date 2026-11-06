@@ -543,3 +543,7 @@ Source `6cf20bb6` passes all eight source checks and 12 targeted native cases, i
 ## Forensic text wrapping — 2026-11-06
 
 Source `7f7d3fac` passes all eight source checks, 2,280 default unit cases and 11 targeted native cases. Short and narrow captures preserve the same text and panel placement while keeping exception names and evidence words readable. [Exact source and paired capture evidence](migration/forensic-word-wrap.md).
+
+## Existing lifecycle workflows — 2026-11-06
+
+Source `a0aa0467` passes all five original lifecycle cases on current controls with seven distinct completed JVM executions. Strict TypeScript and default browser discovery pass. The 320-case default inventory has 32 remaining older cases. [Workload and artifact details](migration/lifecycle-browser-successors.md).
