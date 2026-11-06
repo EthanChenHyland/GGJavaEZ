@@ -212,6 +212,11 @@ export async function captureComparison(page:Page,request:APIRequestContext,stat
  await writeFile(resolve(base,'diff',`${id}.png`),Buffer.from(composed.diff,'base64'))
  const misses=measurementFailures({...before,stateId:state.id})
  if(state.id==='recursion')misses.push(...recursiveHeadingFailures(before.scene,before.world,before.pose.position,before.runtimeHeadings))
+ if(state.id==='io')for(const io of before.scene.io){
+  const label=before.runtimeHeadings.find(heading=>heading.entityId===io.id&&heading.kind==='title')
+  const exactText=[`${io.id} · ${io.lines}`,`${io.id}\n${io.lines}`]
+  if(!label||!exactText.includes(label.text)||label.opacity<=0||label.fontPixels<11||label.inkCorners.length!==4)misses.push(`I/O channel ${io.id} has no readable recorded label`)
+ }
  if(state.id==='runtime-hero'){
   const safe=before.shell.safeFrame
   for(const body of before.world.entities.filter(body=>body.live||body.region==='heap'&&!body.structural)){

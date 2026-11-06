@@ -1,3 +1,4 @@
+import type {} from '../src/qa/qaBridge'
 import { expect, test, type APIRequestContext, type Page } from '@playwright/test'
 
 test.use({ permissions: ['clipboard-read', 'clipboard-write'] })
@@ -20,18 +21,30 @@ async function openProject(page: Page, request: APIRequestContext) {
   const { id } = await response.json() as { id: string }
   await page.addInitScript(({ id, paths }) => {
     localStorage.setItem('ggjavaez:project', id)
-    localStorage.setItem('ggjavaez:m8:explorer', 'open')
-    localStorage.setItem('ggjavaez:p5:source-width', '38')
     localStorage.setItem(`ggjavaez:session:${id}`, JSON.stringify({ paths, active: 'accounts/Gamma.java' }))
   }, { id, paths })
-  await page.goto('/ide')
+  await page.goto('/?qa=1')
+  await expect(page.getByRole('button', { name: 'Project menu', exact: true })).toHaveAttribute('data-project-id', id)
   await expect(page.locator('.ide-tab')).toHaveCount(4)
   await expect(page.locator('.monaco-editor')).toBeVisible()
-  await expect(page.getByRole('tree', { name: 'Project explorer' })).toBeVisible()
+  await expect.poll(() => page.evaluate(() => window.__ggjavaezQA?.source()?.modelUri)).toBe(`inmemory://ggjavaez/${id}/accounts/Gamma.java`)
+  await setExplorer(page, false)
   return id
 }
 const tab = (page: Page, path: string) => page.getByRole('tab').filter({ has: page.getByRole('button', { name: `Close ${path}`, exact: true }) })
 const row = (page: Page, path: string) => page.locator(`.ide-tree-name[title="${path}"]`)
+async function setExplorer(page: Page, open: boolean) {
+  const tree = page.getByRole('tree', { name: 'Project explorer', exact: true })
+  if (await tree.isVisible() !== open) await page.keyboard.press('Alt+Shift+e')
+  if (open) await expect(tree).toBeVisible()
+  else await expect(tree).toBeHidden()
+}
+async function openAccountsFolder(page: Page) {
+  await setExplorer(page, true)
+  const accounts = page.getByRole('treeitem', { name: 'accounts', exact: true })
+  if (await accounts.getAttribute('aria-expanded') === 'false') await row(page, 'accounts').click()
+  await expect(accounts).toHaveAttribute('aria-expanded', 'true')
+}
 async function tabMenu(page: Page, path: string) {
   await tab(page, path).click({ button: 'right' })
   const menu = page.getByRole('menu', { name: `Tab actions for ${path}`, exact: true })
@@ -45,7 +58,8 @@ async function chooseTabAction(page: Page, path: string, name: string) {
 }
 async function makeBetaDirty(page: Page) {
   await tab(page, 'accounts/Beta.java').locator('button').first().click()
-  await page.locator('.monaco-editor').click()
+  await page.getByRole('textbox', { name: 'Editor content', exact: true }).focus()
+  await expect(page.getByRole('textbox', { name: 'Editor content', exact: true })).toBeFocused()
   await page.keyboard.press('ControlOrMeta+A')
   await page.keyboard.insertText(dirtyBeta)
   await expect(tab(page, 'accounts/Beta.java').locator('.ide-dirty')).toBeVisible()
@@ -54,6 +68,7 @@ async function makeBetaDirty(page: Page) {
 
 test('folder/file menus Reveal and Copy the explicit target; keyboard dismissal restores focus', async ({ page, request }) => {
   await openProject(page, request)
+  await openAccountsFolder(page)
   const folder = row(page, 'accounts')
   await folder.click({ button: 'right' })
   const menu = page.getByRole('menu', { name: 'Actions for accounts', exact: true })
@@ -94,11 +109,14 @@ test('seven tab actions retain the clicked inactive target for Copy, Reveal, Ren
   await expect(menu).toHaveCount(0)
   await chooseTabAction(page, 'accounts/Alpha.java', 'Copy Path')
   await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())).toBe('accounts/Alpha.java')
+  await openAccountsFolder(page)
   await row(page, 'accounts').click()
   await expect(row(page, 'accounts/Alpha.java')).toHaveCount(0)
+  await setExplorer(page, false)
   await chooseTabAction(page, 'accounts/Alpha.java', 'Reveal in Explorer')
   await expect(row(page, 'accounts/Alpha.java')).toBeVisible()
   await expect(row(page, 'accounts/Alpha.java')).toBeFocused()
+  await setExplorer(page, false)
   await chooseTabAction(page, 'accounts/Alpha.java', 'Rename')
   const rename = page.getByRole('dialog', { name: 'Rename', exact: true })
   await expect(rename.getByRole('textbox')).toHaveValue('accounts/Alpha.java')
@@ -126,7 +144,7 @@ test('Close to Right uses tab order and Close Others Cancel preserves all dirty 
   await expect(tab(page, 'accounts/Beta.java').locator('.ide-dirty')).toBeVisible()
   expect((await (await request.get(`/api/projects/${id}/files?path=accounts%2FBeta.java`)).json()).content).toBe(files[2].content)
   await chooseTabAction(page, 'accounts/Alpha.java', 'Close Others')
-  await decision.getByRole('button', { name: 'Discard', exact: true }).click()
+  await decision.getByRole('button', { name: "Don't Save", exact: true }).click()
   await expect(page.locator('.ide-tab')).toHaveCount(1)
   await expect(tab(page, 'accounts/Alpha.java')).toHaveAttribute('aria-selected', 'true')
   expect((await (await request.get(`/api/projects/${id}/files?path=accounts%2FBeta.java`)).json()).content).toBe(files[2].content)
@@ -171,11 +189,17 @@ test('Quick Open fuzzy paths and command palette work from Monaco with keyboard 
   await expect(palette.getByRole('option')).toHaveCount(1)
   await command.press('Enter')
   await expect(palette).toHaveCount(0)
-  await expect(page.locator('.ide-shell')).toHaveClass(/ide-shell--bottom-open/)
-  await expect(page.locator('.ide-console')).toBeVisible()
+  const consoleDrawer = page.getByRole('region', { name: 'Console drawer', exact: true })
+  await expect(consoleDrawer.getByRole('region', { name: 'Current console', exact: true })).toBeVisible()
+  await page.setViewportSize({ width: 760, height: 900 })
+  const sourcePeek = page.getByRole('button', { name: 'Show source drawer', exact: true })
+  if (await sourcePeek.isVisible()) await sourcePeek.click()
+  await expect(page.locator('.monaco-editor')).toBeVisible()
   await page.keyboard.press('ControlOrMeta+Shift+P')
   await command.fill('workbench.source')
   await command.press('Enter')
+  await expect(palette).toHaveCount(0)
+  await expect(sourcePeek).toBeVisible()
   await expect(page.locator('.monaco-editor')).not.toBeVisible()
   await page.keyboard.press('ControlOrMeta+P')
   await search.fill('accts alj')
@@ -202,7 +226,11 @@ test('Quick Open fuzzy paths and command palette work from Monaco with keyboard 
 
 test('New Java Class uses the selected real package and keeps invalid input correctable', async ({ page, request }) => {
   const id = await openProject(page, request)
-  await expect(page.locator('.ide-status-language')).toContainText(' · plain · ')
+  await page.getByRole('button', { name: /^Java language service / }).click()
+  const status = page.getByRole('dialog', { name: 'Workspace status', exact: true })
+  await expect(status.locator('dt').filter({ hasText: /^Build system$/ }).locator('xpath=following-sibling::dd[1]')).toContainText('plain')
+  await status.getByRole('button', { name: 'Close workspace status', exact: true }).click()
+  await openAccountsFolder(page)
   await row(page, 'accounts').click({ button: 'right' })
   await page.getByRole('menu', { name: 'Actions for accounts', exact: true }).getByRole('menuitem', { name: 'New Java Class', exact: true }).click()
   const dialog = page.getByRole('dialog', { name: 'New Java Class', exact: true })

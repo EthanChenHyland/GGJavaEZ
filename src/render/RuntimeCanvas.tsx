@@ -30,7 +30,7 @@ import {ExceptionPanel} from './ExceptionPanel';
 import {projectBodies,projectInstancedBody,projectRect} from '../qa/worldProjection';
 import {anchorCorners} from '../world/presentationPlanner';
 import {StructuralLabels} from './StructuralLabels';
-import {projectedFontPixels,projectedPlaneFontPixels} from './text/textSystem';
+import {projectedFontPixels,projectedPlaneFontPixels,textAdvance} from './text/textSystem';
 import type {Text} from 'troika-three-text';
 import type {StructuralLabelSpec} from './text/structuralLabelLayout';
 
@@ -315,7 +315,15 @@ export function RuntimeCanvas({ snapshot, safeFrame,focusContentFrame,inspectorR
         select({ kind: 'reference', id }); else if(plan.curves.some(curve=>curve.id===id)) select({kind:'flow',id}); }}/>
         {plan.structural.map(item => <WorldText key={item.id} position={item.position} size={.3} width={5} tint={color.ui.textSecondary}>{item.text}</WorldText>)}
         <ExceptionPanel panel={plan.exceptionPanel} recordingState={scene.recording.state} safeFrame={safeFrame}/>
-        {scene.io.map(io => <group key={io.id} position={[...io.anchor.position]}><mesh><boxGeometry args={[...io.anchor.size]}/><meshStandardMaterial color={roleColor[io.id]} emissive={roleColor[io.id]} emissiveIntensity={.2}/></mesh><WorldText position={[-.75, .02, .17]} size={.2} width={1.5}>{`${io.id} · ${io.lines}`}</WorldText></group>)}
+        {scene.io.map(io => {
+            const [width,,depth] = io.anchor.size, textWidth = width - .24, size = .32, weight = 500;
+            const countLabel = `${io.id} · ${io.lines}`;
+            const lines = textAdvance(countLabel, weight) * size > textWidth - .012 ? [io.id, String(io.lines)] : undefined;
+            return <group key={io.id} position={[...io.anchor.position]}>
+                <mesh><boxGeometry args={[...io.anchor.size]}/><meshStandardMaterial color={roleColor[io.id]} emissive={roleColor[io.id]} emissiveIntensity={.2}/></mesh>
+                <WorldText position={[-width/2+.12,.02,depth/2+.02]} size={size} weight={weight} width={textWidth} tint={color.stack.chip} lines={lines} heading={{entityId:io.id,kind:'title'}}>{countLabel}</WorldText>
+            </group>;
+        })}
         </FaceTextBatch>
       </Suspense>
       <CameraRig scene={scene} plan={plan} event={trace.events[scene.cursor-1]??null} layout={layout} safeFrame={safeFrame} focusContentFrame={focusContentFrame} inspectorRect={inspectorRect} input={input}/>
