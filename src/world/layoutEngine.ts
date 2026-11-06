@@ -1,7 +1,7 @@
 import { createOccupancy } from './occupancy';
 import type { TraceEvent, RuntimeSlot } from '../contracts/runtime';
 import { arrayElementSlotId } from '../contracts/runtime';
-import type { LayoutState, WorldAnchor, WorldBounds, Vec3, PlacementInfo, Region, Ownership } from '../contracts/world';
+import type { ClusterKey, LayoutState, WorldAnchor, WorldBounds, Vec3, PlacementInfo, Region, Ownership } from '../contracts/world';
 import { world as worldLayoutTokens } from '../theme/tokens';
 import { persistentAppend, persistentPut, persistentRecord } from '../runtime/storage';
 import {ownershipObservation} from './recordedOwnership';
@@ -50,9 +50,22 @@ export function createLayoutEngine(t: WorldLayoutTokens = worldLayoutTokens): La
     // Geometry needs slot order and heap declaring-class labels, never values.
     const rowGroups = new Map<string, Map<string, string>>();
     let nextLeft = t.frame.w / 2 + t.regions.stackHeapGap, root: WorldAnchor | null = null;
+    const clusterPaths = new Map<string, readonly ClusterKey[]>();
+    const clusterPath = (type: string, packageName: string, ownership: Ownership | undefined, firstSeq: number): readonly ClusterKey[] => {
+        const age = String(Math.floor(firstSeq / 4096));
+        const key = JSON.stringify([type, packageName, ownership, age]);
+        const known = clusterPaths.get(key);
+        if (known) return known;
+        const path: ClusterKey[] = [{ kind: 'class', value: type }, { kind: 'type', value: type }, { kind: 'package', value: packageName }];
+        if (ownership) path.push({ kind: 'ownership', value: ownership });
+        path.push({ kind: 'execution-age', value: age });
+        clusterPaths.set(key, path);
+        if (clusterPaths.size > 256) clusterPaths.delete(clusterPaths.keys().next().value!);
+        return path;
+    };
     const add = (anchor: WorldAnchor, firstSeq: number, type: string, packageName: string, ownership: Ownership | undefined, capacity?: number) => {
         anchors = persistentPut(anchors, anchor.entityId, anchor);
-        placement = persistentPut(placement, anchor.entityId, { firstSeq, clusterPath: [{ kind: 'class', value: type }, { kind: 'type', value: type }, { kind: 'package', value: packageName }, ...(ownership?[{kind:'ownership' as const,value:ownership}]:[]), {kind:'execution-age',value:String(Math.floor(firstSeq/4096))}], ...(capacity === undefined ? {} : { frameRows: capacity }), ...(memberships.history(anchor.entityId).length?{clusterMemberships:memberships.history(anchor.entityId)}:{}) });
+        placement = persistentPut(placement, anchor.entityId, { firstSeq, clusterPath: clusterPath(type, packageName, ownership, firstSeq), ...(capacity === undefined ? {} : { frameRows: capacity }), ...(memberships.history(anchor.entityId).length?{clusterMemberships:memberships.history(anchor.entityId)}:{}) });
         const prior = regionBounds[anchor.region];
         const boxes = prior ? [{ ...anchor, position: prior.center, size: prior.size }, anchor] : [anchor];
         regionBounds[anchor.region] = boundsOf(boxes);

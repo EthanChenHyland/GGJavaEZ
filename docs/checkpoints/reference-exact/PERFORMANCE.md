@@ -439,3 +439,7 @@ Dense cold load passes at 5,008.656 ms. Seek p50 and p95 are 83.837 and 116.852 
 ## Cold Flow endpoints and compact layout indexes — 2026-11-05
 
 Cold Flow prefix resolution is faster in paired CPU diagnostics with exact outputs. The fresh Dense run measures 83.419 and 116.560 ms for seek p50 and p95, 200.073 and 198.438 ms for Focus and Home p95, and 5,655.839 ms for cold load. All five rows exceed their limits. All orbit windows pass with 99 draw calls. Node LINE scaling passes at 1.113996127×. The largest corpus retains 21,906,128 presentation bytes at 39.3%, and all three retention ratios exceed 25%. [Equivalence, source and benchmark evidence](migration/flow-endpoints-and-layout-retention.md).
+
+## Compact slot evidence and committed Focus framing — 2026-11-05
+
+The protected Node run passes LINE scaling at 1.240093×. The largest corpus retains 21,291,416 presentation bytes at 38.246%, and all three retention ratios exceed 25%. Dense completes ten stages with zero browser or stage errors and exceeds all five latency limits. All five orbit windows and the soak pass, with a longest observed interval of 725.4 ms. [Full measurements and exact source](migration/recursive-headings-and-slot-retention.md).

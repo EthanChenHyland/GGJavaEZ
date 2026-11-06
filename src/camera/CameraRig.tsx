@@ -1,4 +1,4 @@
-import {useEffect,useMemo,useRef,type RefObject} from 'react'
+import {useEffect,useLayoutEffect,useMemo,useRef,type RefObject} from 'react'
 import {useFrame,useThree} from '@react-three/fiber'
 import {OrbitControls} from '@react-three/drei'
 import {PerspectiveCamera,Vector3,MOUSE} from 'three'
@@ -83,36 +83,15 @@ export function CameraRig({scene,plan,event,layout,safeFrame,focusContentFrame,i
  },[scene.recordingId,camera])
  useEffect(()=>{
   const state=useCameraStore.getState(),intent=state.intent
-  const sameIntent=handledIntent.current===intentRevision
-  const refitFocus=sameIntent&&intent?.kind==='focus'&&focusAnchorKey!==null
-   &&focusRequest.current?.revision===intentRevision&&focusRequest.current.anchorKey!==focusAnchorKey
-  if(sameIntent&&intent?.kind!=='hero'&&!refitFocus)return
+  if(intent?.kind==='focus')return
+  if(handledIntent.current===intentRevision&&intent?.kind!=='hero')return
   handledIntent.current=intentRevision
-  if(intent?.kind!=='focus')focusRequest.current=null
+  focusRequest.current=null
   if(!intent){move.current=null;return}
   invalidate()
   if(intent.kind==='pose'){move.current=null;camera.position.set(...cameraPosition(intent.pose));controls.current?.target.set(...intent.pose.target);previous.current=eye();return}
   if(intent.kind==='home')begin(home(),motion.homeMs,true)
   if(intent.kind==='recording'||intent.kind==='hero')begin(heroFraming(scene,plan,safeFrame,size),scene.cursor?600:0)
-  if(intent.kind==='focus'){
-   const anchor=anchorForFocus(intent.targetId)
-   if(!anchor)return
-   // Opening a narrow sheet never moves the camera by itself. An explicit
-   // Focus request uses the free rectangle above that actual visible sheet.
-   const area=commandArea()
-   const neighbours=(plan.framing.focus?.neighbours??[]).flatMap(id=>scene.entities[id]?[scene.entities[id].anchor]:[])
-   // Semantic zoom can repack a virtualized cell during this command. Follow
-   // its current anchor without extending the original arrival deadline.
-   // User input clears the intent, so later exploration never triggers refits.
-   const deadline=refitFocus?focusRequest.current!.deadline:productionClock.now()+(reduced()?0:motion.focusMs)
-   focusRequest.current={revision:intentRevision,anchorKey:focusAnchorKey!,deadline}
-   const focusedCell=cellForFocus(intent.targetId)
-   const free=focusContentFrame??area
-   const captionArea={...free,x:area.x,width:area.width,height:Math.max(0,Math.min(free.y+free.height,size.width<1024&&inspectorRect?inspectorRect.y:Infinity)-free.y)}
-   const activity=focusedCell?.array?.kind==='array'&&focusedCell.array.activity?.index===focusedCell.cell.index?focusedCell.array.activity.kind:null
-   const content=focusedCell?{points:arrayCellCaptionPoints(focusedCell.cell.anchor,arrayCellIndexLabel(focusedCell.cell.index,activity)),area:captionArea}:undefined
-   begin(focusFraming(anchor,focusAngles(anchor,neighbours,useInteractionStore.getState().focus?.kind==='cluster'),area,size,content),Math.max(0,deadline-productionClock.now()))
-  }
   if(intent.kind==='exitFocus')begin(intent.pose,motion.exitFocusMs)
   if(intent.kind==='zoom'){move.current=null;const pivot=controls.current?.target??new Vector3();camera.position.sub(pivot).multiplyScalar(intent.factor).add(pivot)}
   if(intent.kind==='followPath'){
@@ -137,7 +116,32 @@ export function CameraRig({scene,plan,event,layout,safeFrame,focusContentFrame,i
    move.current={...route,start:productionClock.now(),duration:reduced()?0:900,home:false}
    invalidate()
   }
- },[intentRevision,framingCutKey,focusAnchorKey])
+ },[intentRevision,framingCutKey])
+ // Fit against the committed presentation before it can draw. A reduced
+ // motion move may finish in one frame and trigger another cell mapping.
+ useLayoutEffect(()=>{
+  const {intent,intentRevision:revision}=useCameraStore.getState()
+  if(intent?.kind!=='focus'||revision!==intentRevision||!focusAnchor||!focusAnchorKey)return
+  const prior=focusRequest.current
+  if(prior?.revision===revision&&prior.anchorKey===focusAnchorKey)return
+  const anchor=focusAnchor
+  // Opening a narrow sheet never moves the camera by itself. An explicit
+  // Focus request uses the free rectangle above that actual visible sheet.
+  const area=commandArea()
+  const neighbours=(plan.framing.focus?.neighbours??[]).flatMap(id=>scene.entities[id]?[scene.entities[id].anchor]:[])
+  // Semantic zoom can repack a virtualized cell during this command. Follow
+  // its current anchor without extending the original arrival deadline.
+  // User input clears the intent, so later exploration never triggers refits.
+  const deadline=prior?.revision===intentRevision?prior.deadline:productionClock.now()+(reduced()?0:motion.focusMs)
+  focusRequest.current={revision:intentRevision,anchorKey:focusAnchorKey,deadline}
+  const focusedCell=cellForFocus(intent.targetId)
+  const free=focusContentFrame??area
+  const captionArea={...free,x:area.x,width:area.width,height:Math.max(0,Math.min(free.y+free.height,size.width<1024&&inspectorRect?inspectorRect.y:Infinity)-free.y)}
+  const activity=focusedCell?.array?.kind==='array'&&focusedCell.array.activity?.index===focusedCell.cell.index?focusedCell.array.activity.kind:null
+  const content=focusedCell?{points:arrayCellCaptionPoints(focusedCell.cell.anchor,arrayCellIndexLabel(focusedCell.cell.index,activity)),area:captionArea}:undefined
+  cameraReadiness.moving=true
+  begin(focusFraming(anchor,focusAngles(anchor,neighbours,useInteractionStore.getState().focus?.kind==='cluster'),area,size,content),Math.max(0,deadline-productionClock.now()))
+ },[intentRevision,focusAnchorKey])
  useEffect(()=>{
   const cancel=()=>{move.current=null;lastFollow.current=-1;useCameraStore.getState().setPose(orbitPoseFromEye(eye()));useCameraStore.getState().userInput();invalidate()}
   const orbit=()=>{

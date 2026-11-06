@@ -7,10 +7,11 @@ import {fitWorldText,localFontText,textAdvance} from './textSystem'
 import {truncateFrameText} from '../../world/valueText'
 /** Preserve the qualified signature within the existing header before falling
  * back to a width summary. Break only between complete captured code points. */
-export function frameTitleLines(title:string,width:number,size=.4):readonly string[]{
+function frameTitleLayout(title:string,width:number,size:number,tightTracking:number):{lines:readonly string[];tracking:number}{
  const bounded=truncateFrameText(title),units=Array.from(bounded,char=>localFontText(char,600)),complete=units.join('')
- const fits=(text:string)=>textAdvance(text,600)*size<=Math.max(0,width-.012)
- if(fits(complete))return[complete]
+ const fits=(text:string,tracking=0)=>textAdvance(text,600,tracking)*size<=Math.max(0,width-.012)
+ if(fits(complete))return{lines:[complete],tracking:0}
+ if(tightTracking&&fits(complete,tightTracking))return{lines:[complete],tracking:tightTracking}
  let best:{lines:string[];semantic:number;imbalance:number}|undefined
  for(let split=1;split<units.length;split++){
   const left=units.slice(0,split).join(''),right=units.slice(split).join('')
@@ -18,7 +19,10 @@ export function frameTitleLines(title:string,width:number,size=.4):readonly stri
   const semantic=left.endsWith('.')?0:1,imbalance=Math.abs(textAdvance(left,600)-textAdvance(right,600))
   if(!best||semantic<best.semantic||semantic===best.semantic&&imbalance<best.imbalance)best={lines:[left,right],semantic,imbalance}
  }
- return best?.lines??[fitWorldText(bounded,width,size,600,0,28)]
+ return{lines:best?.lines??[fitWorldText(bounded,width,size,600,0,28)],tracking:0}
+}
+export function frameTitleLines(title:string,width:number,size=.4):readonly string[]{
+ return frameTitleLayout(title,width,size,0).lines
 }
 /** The renderer and camera admission use the same physical title/identity
  * planes. These sizes never depend on the semantic zoom metric. */
@@ -27,9 +31,14 @@ export function faceHeading(node:SceneEntity){
  const size=compactLibraryFace(anchor)?.3:.4,identity=node.kind==='frame'?`#${node.invocationNumber}`:node.kind==='class'?'':`#${node.displayId}`
  const identitySize=node.kind==='collection'?.34:.28,identityWidth=identity?textAdvance(identity,500)*identitySize+.04:0
  const lengthLabel=node.kind==='array'?`length ${node.length}`:null,metadataWidth=Math.max(identityWidth,lengthLabel?textAdvance(lengthLabel)*.25+.04:0)
- const width=Math.max(.1,w-.56-metadataWidth-(metadataWidth?.2:0)),lines=node.kind==='frame'?frameTitleLines(node.title,width,size):undefined
- return{title:{position:[x-w/2+.28,top-(lines&&lines.length>1?.39:.45),face] as Vec3,size,width,lines},identityWidth,metadataWidth,
-  identity:node.kind==='class'?null:{position:[x+w/2-.28,top-(node.kind==='array'?.66:.45),face] as Vec3,size:identitySize}}
+ const width=Math.max(.1,w-.56-metadataWidth-(metadataWidth?.2:0))
+ const frameLayout=node.kind==='frame'?frameTitleLayout(node.title,width,size,-.025):undefined
+ const lines=frameLayout?.lines,singleFrameLine=lines?.length===1
+ // A single line fits below the portion of the header a nearer slab can cover.
+ const titleOffset=singleFrameLine?.61:lines?.length===2?.39:.45
+ const identityOffset=singleFrameLine?.61:node.kind==='array'?.66:.45
+ return{title:{position:[x-w/2+.28,top-titleOffset,face] as Vec3,size,width,lines,tracking:frameLayout?.tracking??0},identityWidth,metadataWidth,
+  identity:node.kind==='class'?null:{position:[x+w/2-.28,top-identityOffset,face] as Vec3,size:identitySize}}
 }
 /** Preserve the bounded captured preview, including runtime reference type,
  * identity and known summary lengths. The type column is the declared type. */

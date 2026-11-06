@@ -523,3 +523,7 @@ Source `7338d5e216212b623266b4802f468f66c360b063c9db06559a884ed29f8f8fdd` (992 i
 ## Shared world inputs and glyph preparation — 2026-11-05
 
 Source `46dd60be` passes all eight checks in 325.266 s. The default suite records 2,275 passes and 70 explicit opt-in skips. Native integration passes 110/110 in 1,250.659 s with 86 standard JVM attachments and 145 original PNGs. Main gzip is 71,732 B. Memory and five Dense timing limits remain open. [Implementation and source evidence](migration/render-frame-preparation.md).
+
+## Recursive headings, slot evidence and array Focus — 2026-11-05
+
+Source `0bd89e66` inventories 993 inputs and passes all eight source checks. The separate native Focus trial passes 24 cases, and the corrected integration passes 120 cases with zero failures, skips or flakes. The earlier 118/120 run remains archived with both traces and its own source inventory. The full browser corpus, opt-in suites, reference review and performance acceptance remain open. [Exact results and capture evidence](migration/recursive-headings-and-slot-retention.md).

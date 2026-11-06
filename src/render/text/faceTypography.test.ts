@@ -1,5 +1,6 @@
 import{expect,it}from'vitest'
-import{frameTitleLines,rowValueLabel}from'./faceTypography'
+import{faceHeading,frameTitleLines,rowValueLabel}from'./faceTypography'
+import type{SceneFrame}from'../../contracts/world'
 import{valueText,truncateFrameText}from'../../world/valueText'
 import{fitWorldText,textAdvance}from'./textSystem'
 it('retains the declaring type and method signature in two fixed-font header lines',()=>{
@@ -22,6 +23,19 @@ it('preserves the single 28-character title summary and bounds extremely wide fa
   for(const line of fitted)expect(textAdvance(line,600)*.4).toBeLessThanOrEqual(width)
   expect(fitted.join('').match(/…/g)?.length??0).toBeLessThanOrEqual(1)
  }
+})
+it('keeps a slightly overwide signature on one lower header line with its invocation identity',()=>{
+ const frame:SceneFrame={kind:'frame',id:'child',invocationNumber:7,title:'SeriesApp.total(int)',callerId:'parent',depth:3,rows:[],status:{kind:'running',line:9},live:true,topOfStack:false,exceptionRole:null,sourceLine:null,ownership:'PROJECT',anchor:{entityId:'child',region:'stack',position:[0,-2,-1.25],size:[4.8,4,1.1],ports:{},bodyPort:[-2.4,0,-.7]},evidence:{kind:'observed',introducedSeq:1,changedSeq:1,eventIds:['entry']}}
+ const {title,identity}=faceHeading(frame)
+ expect(title.lines).toEqual([frame.title])
+ expect(title.tracking).toBeLessThan(0)
+ expect(title.tracking).toBeGreaterThanOrEqual(-.025)
+ expect(fitWorldText(frame.title,title.width,title.size,600,title.tracking)).toBe(frame.title)
+ expect(title.position[1]).toBeCloseTo(-.61)
+ expect(identity?.position[1]).toBe(title.position[1])
+ const longer=faceHeading({...frame,title:'InventoryApp.main(String[])'}).title
+ expect(longer.lines).toEqual(['InventoryApp.','main(String[])'])
+ expect(longer.tracking).toBe(0)
 })
 it('retains runtime reference types, identities and String length alongside the declared type column',()=>{
  const ref=valueText({kind:'reference',javaType:'Person',objectId:'person'}, {target:{id:'person',displayId:17,className:'Person',fields:{},allocatedAt:'allocation'}})

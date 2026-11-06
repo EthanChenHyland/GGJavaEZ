@@ -62,7 +62,7 @@ const RuntimeSolidLabels=memo(function RuntimeSolidLabels({node,presented,arrayW
     const emphasis = presented.highlight === 'exception' ? color.semantic.exception : presented.highlight === 'mutation' ? color.semantic.mutation : color.ui.textSecondary;
     const string = node.kind === 'object' ? node.groups.flatMap(g => g.rows).find(row => row.slotId.endsWith(':captured-string')) : null;
     return <>
-    <WorldText position={heading.title.position} weight={600} size={titleSize} width={titleWidth} lines={titleLines} opacity={opacity} heading={{entityId:node.id,kind:'title'}}>{title}</WorldText>
+    <WorldText position={heading.title.position} weight={600} size={titleSize} width={titleWidth} tracking={heading.title.tracking} lines={titleLines} opacity={opacity} heading={{entityId:node.id,kind:'title'}}>{title}</WorldText>
     {identity&&heading.identity&&<WorldText position={heading.identity.position} weight={500} size={heading.identity.size} align="right" width={identityWidth} opacity={opacity} heading={{entityId:node.id,kind:'identity'}}>{identity}</WorldText>}
     {node.kind === 'frame' && <WorldText position={[left, top - .94, face]} size={.25} tint={emphasis} opacity={opacity}>{frameStatusText(node.status)}</WorldText>}
     {node.kind === 'class' && <WorldText position={[left, top - .85, face]} size={.23} tint={color.ui.textSecondary} opacity={opacity}>{`static · ${node.initialization}`}</WorldText>}

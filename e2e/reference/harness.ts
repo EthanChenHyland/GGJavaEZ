@@ -166,7 +166,7 @@ export interface ReferenceState {id:string;name:string;fixture:FixtureName;twin:
 export async function captureComparison(page:Page,request:APIRequestContext,state:ReferenceState,sessionId:string,viewportLabel:string):Promise<void>{
  const {mkdir,writeFile}=await import('node:fs/promises')
  const {createHash}=await import('node:crypto')
- const {measurementFailures}=await import('./measurements')
+ const {measurementFailures,recursiveHeadingFailures}=await import('./measurements')
  await ready(page)
  // CSS surface resizing is independent of the presentation clock; wait for the
  // actual running width/height transitions, including interrupted transitions.
@@ -211,6 +211,7 @@ export async function captureComparison(page:Page,request:APIRequestContext,stat
  await writeFile(resolve(base,'side-by-side',`${id}.png`),Buffer.from(composed.paired,'base64'))
  await writeFile(resolve(base,'diff',`${id}.png`),Buffer.from(composed.diff,'base64'))
  const misses=measurementFailures({...before,stateId:state.id})
+ if(state.id==='recursion')misses.push(...recursiveHeadingFailures(before.scene,before.world,before.pose.position,before.runtimeHeadings))
  if(state.id==='runtime-hero'){
   const safe=before.shell.safeFrame
   for(const body of before.world.entities.filter(body=>body.live||body.region==='heap'&&!body.structural)){

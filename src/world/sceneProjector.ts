@@ -31,7 +31,14 @@ export interface SceneProjector {
 // observation ordinal for exact seek evidence; keep singletons inline and
 // allocate a list only when observations repeat.
 type OrdinalHistory = number | number[] | undefined
-interface SlotHistory { introduced: number; firstAssignment: number; observations: OrdinalHistory; firstWrite: number }
+interface SlotChanges { introduced: number; firstAssignment: number; observations: OrdinalHistory; firstWrite: number }
+// Most slots have one captured observation. Encode its ordinal and the two
+// first-evidence flags inline until a later event needs a separate history.
+type SlotHistory = number | SlotChanges
+const initialSlot = (seq: number, written: boolean, assigned: boolean) => seq * 4 + Number(written) + 2 * Number(assigned)
+const slotIntroduced = (history: SlotHistory | undefined) => typeof history === 'number' ? Math.floor(history / 4) : history?.introduced
+const firstSlotWrite = (history: SlotHistory | undefined) => typeof history === 'number' ? (history % 2 ? Math.floor(history / 4) : Infinity) : history?.firstWrite ?? Infinity
+const firstSlotAssignment = (history: SlotHistory | undefined) => typeof history === 'number' ? (history % 4 >= 2 ? Math.floor(history / 4) : Infinity) : history?.firstAssignment ?? Infinity
 interface OwnerHistory { introduced: number; changes: OrdinalHistory; sources: OrdinalHistory; slots?: Map<string, SlotHistory>; invocationNumber: number }
 type DependencyTargets = string | ReadonlySet<string>
 const dependencyValues = (value: DependencyTargets | undefined): Iterable<string> => typeof value === 'string' ? [value] : value ?? []
@@ -190,19 +197,27 @@ export function createSceneProjector(trace: TraceDocument): SceneProjector {
     if (!value) { value = { introduced: seq, changes: undefined, sources: undefined, invocationNumber: 0 }; owners.set(id, value) }
     return value
   }
-  function observeSlot(id: string, slot: RuntimeSlot, seq: number, written: boolean, assigned = written) {
-    const history = owner(id, seq)
-    const slots = history.slots ??= new Map()
-    let record = slots.get(slot.id)
-    if (!record) { record = { introduced: seq, firstAssignment: Infinity, observations: undefined, firstWrite: Infinity }; slots.set(slot.id, record) }
-    slotOwners.set(slot.id, id)
+  function appendSlotChange(slots: Map<string, SlotHistory>, slotId: string, history: SlotHistory, seq: number, written: boolean, assigned: boolean) {
+    let record: SlotChanges
+    if (typeof history === 'number') {
+      const introduced = Math.floor(history / 4)
+      record = { introduced, observations: introduced, firstWrite: firstSlotWrite(history), firstAssignment: firstSlotAssignment(history) }
+      slots.set(slotId, record)
+    } else record = history
     record.observations = appendOrdinal(record.observations, seq)
     if (written) record.firstWrite = Math.min(record.firstWrite, seq)
-    if (assigned && slot.value.kind !== 'uninitialized') record.firstAssignment = Math.min(record.firstAssignment, seq)
+    if (assigned) record.firstAssignment = Math.min(record.firstAssignment, seq)
+  }
+  function observeSlot(id: string, slot: RuntimeSlot, seq: number, written: boolean, assigned = written) {
+    const history = owner(id, seq), slots = history.slots ??= new Map()
+    const record = slots.get(slot.id), assignedValue = assigned && slot.value.kind !== 'uninitialized'
+    if (record === undefined) slots.set(slot.id, initialSlot(seq, written, assignedValue))
+    else appendSlotChange(slots, slot.id, record, seq, written, assignedValue)
+    slotOwners.set(slot.id, id)
   }
   function updateSlot(id: string, slotId: string, seq: number, written = true) {
-    const record = owner(id, seq).slots?.get(slotId)
-    if (record) { record.observations = appendOrdinal(record.observations, seq); if (written) record.firstWrite = Math.min(record.firstWrite, seq); record.firstAssignment = Math.min(record.firstAssignment, seq) }
+    const slots = owner(id, seq).slots, record = slots?.get(slotId)
+    if (slots && record !== undefined) appendSlotChange(slots, slotId, record, seq, written, true)
   }
   function eventOwners(event: TraceEvent, graph?: ExecutionGraph): Set<string> {
     const result = new Set<string>()
@@ -264,7 +279,7 @@ export function createSceneProjector(trace: TraceDocument): SceneProjector {
         case 'SET_FIELD': updateSlot(event.objectId, event.slotId, event.seq); break
         case 'ARRAY_WRITE': case 'ARRAY_READ': {
           const id = arrayElementSlotId(event.objectId, event.index), record = owners.get(event.objectId)?.slots?.get(id)
-          if (record) updateSlot(event.objectId, id, event.seq, event.type === 'ARRAY_WRITE')
+          if (record !== undefined) updateSlot(event.objectId, id, event.seq, event.type === 'ARRAY_WRITE')
           else observeSlot(event.objectId, { id, name: `[${event.index}]`, javaType: '', value: event.value }, event.seq, event.type === 'ARRAY_WRITE')
           if (event.type === 'ARRAY_READ' && event.destinationSlotId) updateSlot(event.frameId, event.destinationSlotId, event.seq)
           break
@@ -287,12 +302,19 @@ export function createSceneProjector(trace: TraceDocument): SceneProjector {
     const eventId = state.frames[id]?.enteredAt ?? state.objects[id]?.allocatedAt ?? state.classes?.[id]?.observedAt
     return eventId === undefined ? Infinity : byEvent.get(eventId)?.seq ?? Infinity
   }
+  let lastSingleEvidence: Evidence | undefined
   function evidence(introduced: number | null, changed: number | null, cursor: number): Evidence {
     const first = introduced !== null && introduced < cursor ? introduced : null
     const last = changed !== null && changed < cursor ? changed : null
     if (first === null && last === null) return unavailable('No captured introducing or changing event in this semantic prefix')
-    return { kind: 'observed', introducedSeq: first, changedSeq: last,
-      eventIds: [...new Set([first, last].flatMap(seq => seq === null ? [] : [events[seq].eventId]))] }
+    if (first !== null && first === last) {
+      const eventId = events[first].eventId
+      if (lastSingleEvidence?.introducedSeq === first && lastSingleEvidence.eventIds[0] === eventId) return lastSingleEvidence
+      lastSingleEvidence = freezeValue({ kind: 'observed', introducedSeq: first, changedSeq: last, eventIds: [eventId] })
+      return lastSingleEvidence
+    }
+    const eventIds = first === null ? [events[last!].eventId] : last === null ? [events[first].eventId] : [events[first].eventId, events[last].eventId]
+    return { kind: 'observed', introducedSeq: first, changedSeq: last, eventIds }
   }
   function ownerEvidence(id: string, cursor: number): Evidence {
     const history = owners.get(id)
@@ -300,7 +322,9 @@ export function createSceneProjector(trace: TraceDocument): SceneProjector {
   }
   function slotEvidence(ownerId: string, slot: RuntimeSlot, cursor: number): Evidence {
     const history = owners.get(ownerId)?.slots?.get(slot.id)
-    return evidence(history?.introduced ?? seqOf(slot.observedAt, cursor), history ? lastBefore(history.observations, cursor) : seqOf(slot.changedAt ?? slot.observedAt, cursor), cursor)
+    const introduced = slotIntroduced(history)
+    const observed = typeof history === 'number' ? introduced : history?.observations
+    return evidence(introduced ?? seqOf(slot.observedAt, cursor), history === undefined ? seqOf(slot.changedAt ?? slot.observedAt, cursor) : lastBefore(observed, cursor), cursor)
   }
   // Accepted events own captured locations; histories retain only their ordinals.
   function sourceAt(id: string, cursor: number): SourceLocation | null {
@@ -350,10 +374,10 @@ export function createSceneProjector(trace: TraceDocument): SceneProjector {
     const slots = Object.values(frame.locals), deps = targetDependencies(slots, state), cached = frameCache.get(frame)
     if (cached?.anchor === anchor && cached.signature === signature && sameDependencies(cached.dependencies, deps)) return cached.node
     const history = owners.get(frame.id)
-    const ordered = slots.filter(slot => slot.name === 'this' || slot.role === 'parameter' || (history?.slots?.get(slot.id)?.firstAssignment ?? Infinity) < state.cursor)
+    const ordered = slots.filter(slot => slot.name === 'this' || slot.role === 'parameter' || firstSlotAssignment(history?.slots?.get(slot.id)) < state.cursor)
       .sort((a, b) => {
         const category = (slot: RuntimeSlot) => slot.name === 'this' ? 0 : slot.role === 'parameter' ? 1 : 2
-        const rank = (slot: RuntimeSlot) => { const entry = history?.slots?.get(slot.id); return category(slot) === 2 ? entry?.firstAssignment ?? Infinity : entry?.introduced ?? Infinity }
+        const rank = (slot: RuntimeSlot) => { const entry = history?.slots?.get(slot.id); return category(slot) === 2 ? firstSlotAssignment(entry) : slotIntroduced(entry) ?? Infinity }
         return category(a) - category(b) || rank(a) - rank(b)
       })
     const rows = ordered.map(slot => row(slot, slot.name === 'this' ? 'this' : slot.role === 'parameter' ? 'parameter' : 'local', frame.id, state, anchor))
@@ -418,7 +442,7 @@ export function createSceneProjector(trace: TraceDocument): SceneProjector {
   }
   function classNode(value: RuntimeClass, anchor: WorldAnchor, state: RuntimeState): SceneClass {
     const history = owners.get(value.id), ev = ownerEvidence(value.id, state.cursor)
-    const slots = Object.values(value.statics).filter(slot => (history?.slots?.get(slot.id)?.firstWrite ?? Infinity) < state.cursor)
+    const slots = Object.values(value.statics).filter(slot => firstSlotWrite(history?.slots?.get(slot.id)) < state.cursor)
     const deps = targetDependencies(slots, state), signature = JSON.stringify(ev), cached = classCache.get(value)
     if (cached?.anchor === anchor && cached.signature === signature && sameDependencies(cached.dependencies, deps)) return cached.node
     const node: SceneClass = freezeValue({ kind: 'class', id: value.id, title: displayType(value.className), packageName: value.metadata?.packageName ?? value.className.slice(0, Math.max(0, value.className.lastIndexOf('.'))),
