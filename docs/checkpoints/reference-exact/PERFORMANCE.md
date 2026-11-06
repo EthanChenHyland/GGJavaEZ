@@ -447,3 +447,21 @@ The protected Node run passes LINE scaling at 1.240093×. The largest corpus ret
 ## Shared text-parent transforms — 2026-11-06
 
 The exact matrix probe reduces parent update work while matching all 57,600 sampled label matrices. The fresh Dense run passes cold load, all orbit windows, and soak. Seek, Focus, and Home still exceed four latency limits, and the longest frame interval is 957.8 ms. [Exact source, native pixel comparison and benchmark results](migration/text-parent-transforms.md).
+
+## Built application diagnostic — 2026-11-06
+
+Revision `92dd058` (source `965b49394a5dda42c921dc11b569ce47436f7846e8936ca7db2756904152e1cc`) runs the unchanged protected Dense workload against the built application with QA observation enabled and the real local execution bridge. This is a separate production-mode diagnostic. The preceding development-server report, profiles, capture and normal build resources are preserved with matching hashes.
+
+Run `70cce285-b634-4fde-8eb0-0a7a7fdc0cf8` completes all ten stages in 452.100 seconds with zero browser or stage errors. FULL JVM session `e721cba9-1a19-4f2e-b66e-b6dd4dcdf58d` supplies 7,492 raw and 9,852 normalized events. The raw resource log retains aborted EventSource connections and two canceled language requests. The wrapper including build and archival finishes in 466.881 seconds. The browser gate fails on two unchanged limits.
+
+| Measurement | Measured | Limit | Result |
+| --- | ---: | ---: | --- |
+| Cold load median | 4,596.878 ms | 5,300 ms | Pass |
+| Seek p50 | 66.248 ms | 55 ms | Over |
+| Seek p95 | 82.790 ms | 112 ms | Pass |
+| Focus p95 | 150.950 ms | 125 ms | Over |
+| Home p95 | 140.679 ms | 152 ms | Pass |
+
+All five orbit windows pass. Frame intervals have a 16.7 ms median and 17.2–17.6 ms p95. CPU p95 spans 2.4–3.1 ms and the maximum draw count is 99. The longest observed interval is 799.2 ms. The 61.281-second soak passes with zero median drift and +0.189085% whole-frontend heap growth after CDP GC. The independent presentation-retention limit remains open. The root-reviewed original shows visible peripheral clipping, edge aliasing and overlapping connector glow in the dense world.
+
+The full report, exact JVM capture, profiles, build manifests and reviewed original are under `.ggjavaez/qa/reference-exact/stack-heading-retention/production-browser/`. This run uses a later revision and a different serving mode from the development-server run. The timing difference cannot isolate a single source or serving-mode effect.
