@@ -1,7 +1,7 @@
 import type { RuntimeState, RuntimeValue, TraceDocument } from '../contracts/runtime'
 import type { ExecutionGraph, GraphEdge } from '../contracts/executionGraph'
 import type { Evidence, SceneModel } from '../contracts/world'
-import { graphTransition, type FlowEndpoint } from '../motion/semanticTransition'
+import { graphTransitionEndpoints, type FlowEndpoint } from '../motion/semanticTransition'
 import { seek } from '../runtime'
 import { valueText,hasRecordedValuePort } from './valueText'
 import {collectionEntryFace} from './collectionFace'
@@ -97,18 +97,21 @@ export function createFlowCatalog(initialTrace?:TraceDocument):FlowCatalog {
   }
   const prefix=state.executionGraph
   if(!prefix)return{from:null,to:null}
-  const edge=candidate.edge,event=events.get(edge.eventId)!,transition=graphTransition(event,edge,state,prefix,true)
-  let from=transition?.from??(edge.evidence==='unknown'?null:physical(edge.originSlotId??edge.from,state)),to=transition?.to??physical(edge.to,state)
-  const consumingDestination=(valueId:string)=>{
-   const storage=consumingWriteDestination(prefix,valueId,events)
-   return storage?{kind:'slot' as const,id:storage.id}:null
-  }
+  const edge=candidate.edge
+  let from:FlowEndpoint|null,to:FlowEndpoint|null
   if(edge.kind==='RETURN'){
-   const returned=recordedReturnDestination(prefix,edge,event,events)
+   const returned=recordedReturnDestination(prefix,edge,events.get(edge.eventId)!,events)
    from=returned&&state.frames[returned.frameId]?{kind:'frame',id:returned.frameId}:null
    to=returned?{kind:'slot',id:returned.destination.id}:null
-  }else if(edge.kind==='FIELD_READ'||edge.kind==='STATIC_READ'||edge.kind==='ARRAY_READ'){from=physical(edge.from,state);to=consumingDestination(edge.to)}
-  else if(edge.kind==='INPUT_CONSUME'){from=physical(edge.from,state);to=consumingDestination(edge.to)}
+  }else if(edge.kind==='FIELD_READ'||edge.kind==='STATIC_READ'||edge.kind==='ARRAY_READ'||edge.kind==='INPUT_CONSUME'){
+   from=physical(edge.from,state)
+   const storage=consumingWriteDestination(prefix,edge.to,events)
+   to=storage?{kind:'slot',id:storage.id}:null
+  }else{
+   const endpoints=graphTransitionEndpoints(events.get(edge.eventId)!,edge,state,prefix)
+   from=endpoints.from??(edge.evidence==='unknown'?null:physical(edge.originSlotId??edge.from,state))
+   to=endpoints.to??physical(edge.to,state)
+  }
   if(from?.kind==='slot'&&from.id.startsWith('return:')){const id=from.id.slice('return:'.length),invocation=prefix.invocations[id];from=invocation?.returnValueId&&invocation.returnValueId===edge.from&&state.frames[id]?{kind:'frame',id}:null}
   if(from?.id===to?.id&&from?.kind===to?.kind)from=null
   const result={from:from??null,to:to??null}

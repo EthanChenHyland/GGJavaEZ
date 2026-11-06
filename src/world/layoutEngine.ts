@@ -31,7 +31,7 @@ export function createLayoutEngine(t: WorldLayoutTokens = worldLayoutTokens): La
     let length = 0, anchors: Record<string, WorldAnchor> = persistentRecord({}), placement: Record<string, PlacementInfo> = persistentRecord({});
     let snapshot: LayoutState | null = null;
     const memberships=createClusterMembershipIndex();
-    const stack: WorldAnchor[] = [], heap: WorldAnchor[] = [], library: WorldAnchor[] = [], classes: WorldAnchor[] = [], io: WorldAnchor[] = [];
+    const classes: WorldAnchor[] = [];
     const columns = new Map<string, {
         left: number;
         width: number;
@@ -56,21 +56,10 @@ export function createLayoutEngine(t: WorldLayoutTokens = worldLayoutTokens): La
         const prior = regionBounds[anchor.region];
         const boxes = prior ? [{ ...anchor, position: prior.center, size: prior.size }, anchor] : [anchor];
         regionBounds[anchor.region] = boundsOf(boxes);
-        if (anchor.region === 'stack') {
-            stack.push(anchor);
-            stackOccupancy.add(anchor);
-        }
-        else if (anchor.region === 'heap') {
-            heap.push(anchor);
-            heapOccupancy.add(anchor);
-        }
-        else if (anchor.region === 'library'){
-            library.push(anchor);libraryOccupancy.add(anchor);
-        }
-        else if (anchor.region === 'class')
-            classes.push(anchor);
-        else
-            io.push(anchor);
+        if (anchor.region === 'stack') stackOccupancy.add(anchor);
+        else if (anchor.region === 'heap') heapOccupancy.add(anchor);
+        else if (anchor.region === 'library') libraryOccupancy.add(anchor);
+        else if (anchor.region === 'class') classes.push(anchor);
     };
     const ports = (anchor: WorldAnchor, slots: readonly RuntimeSlot[], capacity: number, header: number, pitch: number) => {
         const names = rows.get(anchor.entityId) ?? [];
@@ -87,18 +76,18 @@ export function createLayoutEngine(t: WorldLayoutTokens = worldLayoutTokens): La
             if (!names.includes(slot.id))
                 names.push(slot.id);
         if(names.length)rows.set(anchor.entityId, names);
-        const next = { ...anchor.ports };
+        let next: Record<string, Vec3> | undefined;
         let groupOffset=0,previousGroup:string|undefined;
         for (let i = 0; i < Math.min(capacity, names.length); i++) {
             const group=groups?.get(names[i]);
             if(anchor.region==='heap'&&group&&group!==previousGroup){groupOffset+=.6;previousGroup=group}
-            if(next[names[i]])continue;
+            if(anchor.ports[names[i]])continue;
             const rowY=anchor.position[1]+anchor.size[1]/2-header-groupOffset-pitch*(i+.5);
             if(rowY<anchor.position[1]-anchor.size[1]/2+.2)continue;
-            next[names[i]] = [anchor.position[0] + anchor.size[0] / 2, anchor.position[1] + anchor.size[1] / 2 - header - groupOffset - pitch * (i + .5), anchor.position[2] + anchor.size[2] / 2 + .06];
+            (next ??= { ...anchor.ports })[names[i]] = [anchor.position[0] + anchor.size[0] / 2, anchor.position[1] + anchor.size[1] / 2 - header - groupOffset - pitch * (i + .5), anchor.position[2] + anchor.size[2] / 2 + .06];
         }
         // Slots only gain recorded attachment ports; body identity and extent stay fixed.
-        anchors = persistentPut(anchors, anchor.entityId, { ...anchor, ports: next });
+        if (next) anchors = persistentPut(anchors, anchor.entityId, { ...anchor, ports: next });
     };
     const object = (event: Extract<TraceEvent, {
         type: 'ALLOCATE_OBJECT' | 'ALLOCATE_ARRAY';

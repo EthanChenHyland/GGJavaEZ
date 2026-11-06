@@ -151,7 +151,7 @@ it('reuses semantic endpoint derivation for repeated planning and invalidates it
  const trace=recording(),layout=createLayoutEngine();layout.append(trace.events)
  const projector=createSceneProjector(trace),catalog=createFlowCatalog();catalog.extend(seek(trace,trace.events.length).executionGraph!,trace)
  const context={sessionEnded:false,pausedAtLiveHead:false,liveHead:trace.events.length,recording:{state:'FULL' as const,reason:null,budget:null,lastRecordedSeq:null,executionContinued:false}}
- const scene=projector.project(seek(trace,trace.events.length),layout.state,context),spy=vi.spyOn(transitions,'graphTransition')
+ const scene=projector.project(seek(trace,trace.events.length),layout.state,context),spy=vi.spyOn(transitions,'graphTransitionEndpoints')
  try{
   const first=[...catalog.iteratePrefix(scene.cursor,scene)];expect(first.length).toBeGreaterThan(0);expect(spy).toHaveBeenCalled()
   spy.mockClear();expect([...catalog.iteratePrefix(scene.cursor,scene)]).toEqual(first);expect(spy).not.toHaveBeenCalled()

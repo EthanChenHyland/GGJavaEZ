@@ -435,3 +435,7 @@ The fresh Dense run measures 83.507 and 116.383 ms for seek p50 and p95, 169.305
 ## Connector selection width and bloom spread — 2026-11-05
 
 Dense cold load passes at 5,008.656 ms. Seek p50 and p95 are 83.837 and 116.852 ms, and Focus and Home p95 are 183.821 and 183.191 ms. Those four rows exceed their limits. All orbit windows pass with 99 draw calls and a maximum observed interval of 880.1 ms. Node LINE scaling passes at 1.330088861×. Its three retention ratios still exceed 25%. [Exact source, visual review and benchmark evidence](migration/connector-core-and-bloom.md).
+
+## Cold Flow endpoints and compact layout indexes — 2026-11-05
+
+Cold Flow prefix resolution is faster in paired CPU diagnostics with exact outputs. The fresh Dense run measures 83.419 and 116.560 ms for seek p50 and p95, 200.073 and 198.438 ms for Focus and Home p95, and 5,655.839 ms for cold load. All five rows exceed their limits. All orbit windows pass with 99 draw calls. Node LINE scaling passes at 1.113996127×. The largest corpus retains 21,906,128 presentation bytes at 39.3%, and all three retention ratios exceed 25%. [Equivalence, source and benchmark evidence](migration/flow-endpoints-and-layout-retention.md).

@@ -40,13 +40,12 @@ function graphEndpoint(id: string, state: RuntimeState, graph: ExecutionGraph, r
   if (--budget.remaining < 0) return undefined
   const storage = graph.storage[id]
   if (storage) {
-    const owner = storage.kind === 'variable' ? state.frames[storage.ownerId] : storage.kind === 'static' ? state.classes?.[storage.ownerId] : state.objects[storage.ownerId]
-    if (!owner) return undefined
-    if (storage.kind === 'variable') return state.frames[storage.ownerId].locals[id] ? slot(id) : undefined
+    if (storage.kind === 'variable') return state.frames[storage.ownerId]?.locals[id] ? slot(id) : undefined
     if (storage.kind === 'static') return state.classes?.[storage.ownerId]?.statics[id] ? slot(id) : undefined
-    if (storage.kind === 'field') return state.objects[storage.ownerId].fields[id] ? slot(id) : undefined
-    // Indexed cell IDs belong to the common array slot contract; no label parsing.
-    const array = state.objects[storage.ownerId].array
+    const owner = state.objects[storage.ownerId]
+    if (storage.kind === 'field') return owner?.fields[id] ? slot(id) : undefined
+    // Indexed cell IDs belong to the common array slot contract.
+    const array = owner?.array
     if (array && id.startsWith(`${storage.ownerId}:element:`)) {
       const index = Number(id.slice(`${storage.ownerId}:element:`.length))
       if (Number.isInteger(index) && index >= 0 && (array.elements[index]?.id === id || array.sparseElements?.[index]?.id === id)) return slot(id)
@@ -89,9 +88,8 @@ const edgeKinds: Partial<Record<GraphEdgeKind, SemanticTransitionKind>> = {
   THROW: 'exception', UNWIND: 'exception', CATCH: 'exception', CONSTRUCT: 'allocation',
 }
 
-export function graphTransition(event: TraceEvent, edge: GraphEdge, state: RuntimeState, graph: ExecutionGraph, includeStructural = false): SemanticTransition | null {
-  const kind = edgeKinds[edge.kind]
-  if (!kind) return null // COMPUTE has no physical value geometry yet.
+/** Resolve the physical endpoints without constructing motion presentation data. */
+export function graphTransitionEndpoints(event: TraceEvent, edge: GraphEdge, state: RuntimeState, graph: ExecutionGraph): { from: FlowEndpoint | undefined; to: FlowEndpoint | undefined } {
   let to = graphEndpoint(edge.to, state, graph)
   let from = edge.evidence === 'unknown' ? undefined : graphEndpoint(edge.originSlotId ?? edge.from, state, graph)
   if (event.type === 'EXECUTION_FACT' && edge.evidence !== 'unknown' && !edge.originSlotId) {
@@ -114,6 +112,13 @@ export function graphTransition(event: TraceEvent, edge: GraphEdge, state: Runti
     // A read into an evaluation operand emphasizes its actual source subdivision.
     if (!to) { to = from; from = undefined }
   }
+  return { from, to }
+}
+
+export function graphTransition(event: TraceEvent, edge: GraphEdge, state: RuntimeState, graph: ExecutionGraph, includeStructural = false): SemanticTransition | null {
+  const kind = edgeKinds[edge.kind]
+  if (!kind) return null // COMPUTE has no physical value geometry yet.
+  const { from, to } = graphTransitionEndpoints(event, edge, state, graph)
   if (!to && !includeStructural) return null
   const valueId = graph.storage[edge.from]?.valueId
   const value = graph.values[edge.from] ?? graph.values[edge.to] ?? (valueId ? graph.values[valueId] : undefined)

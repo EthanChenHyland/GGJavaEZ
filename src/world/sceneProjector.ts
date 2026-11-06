@@ -32,7 +32,7 @@ export interface SceneProjector {
 // allocate a list only when observations repeat.
 type OrdinalHistory = number | number[] | undefined
 interface SlotHistory { introduced: number; firstAssignment: number; observations: OrdinalHistory; firstWrite: number }
-interface OwnerHistory { introduced: number; changes: OrdinalHistory; sources: OrdinalHistory; slots: Map<string, SlotHistory>; invocationNumber: number }
+interface OwnerHistory { introduced: number; changes: OrdinalHistory; sources: OrdinalHistory; slots?: Map<string, SlotHistory>; invocationNumber: number }
 type DependencyTargets = string | ReadonlySet<string>
 const dependencyValues = (value: DependencyTargets | undefined): Iterable<string> => typeof value === 'string' ? [value] : value ?? []
 const hasDependency = (value: DependencyTargets | undefined, id: string): boolean => typeof value === 'string' ? value === id : value?.has(id) ?? false
@@ -160,11 +160,9 @@ export function createSceneProjector(trace: TraceDocument): SceneProjector {
   let priorGraphIo: { graph: ExecutionGraph; channels: Channels } | null = null
   let priorConsoleIo: { entries: RuntimeState['console']; channels: Channels } | null = null
   let previous: { state: RuntimeState; layout: LayoutState; scene: SceneModel; context: ProjectionContext } | null = null
-  let refsByOwner: Record<string, readonly SceneReference[]> = persistentRecord({})
   let referenceGroups: ReferenceGroup[] = []
-  const referenceOwners = new Map<string, { category: ReferenceCategory; index: number }>()
+  const referenceOwners = new Map<string, { category: ReferenceCategory; index: number; values: readonly SceneReference[] }>()
   function resetReferences() {
-    refsByOwner = persistentRecord({})
     referenceGroups = Array.from({ length: 3 }, () => ({ root: null, depth: 0, owners: 0 }))
     referenceOwners.clear()
   }
@@ -172,16 +170,15 @@ export function createSceneProjector(trace: TraceDocument): SceneProjector {
     let position = referenceOwners.get(node.id)
     if (!position) {
       const category = referenceCategory(node), group = referenceGroups[category]
-      position = { category, index: group.owners++ }
+      position = { category, index: group.owners++, values }
       referenceOwners.set(node.id, position)
-    }
+    } else position.values = values
     const group = referenceGroups[position.category]
     while (position.index >= 2 ** group.depth) {
       group.root = group.root ? { count: group.root.count, left: group.root, right: null } : null
       group.depth++
     }
     group.root = putReferenceBlock(group.root, group.depth, position.index, values)
-    refsByOwner = persistentPut(refsByOwner, node.id, values)
   }
   // Reverse dependencies keep target String/collection summaries fresh without scanning every owner.
   // Empty forward lists need no entry; singleton targets need no Set.
@@ -190,20 +187,21 @@ export function createSceneProjector(trace: TraceDocument): SceneProjector {
 
   function owner(id: string, seq: number): OwnerHistory {
     let value = owners.get(id)
-    if (!value) { value = { introduced: seq, changes: undefined, sources: undefined, slots: new Map(), invocationNumber: 0 }; owners.set(id, value) }
+    if (!value) { value = { introduced: seq, changes: undefined, sources: undefined, invocationNumber: 0 }; owners.set(id, value) }
     return value
   }
   function observeSlot(id: string, slot: RuntimeSlot, seq: number, written: boolean, assigned = written) {
     const history = owner(id, seq)
-    let record = history.slots.get(slot.id)
-    if (!record) { record = { introduced: seq, firstAssignment: Infinity, observations: undefined, firstWrite: Infinity }; history.slots.set(slot.id, record) }
+    const slots = history.slots ??= new Map()
+    let record = slots.get(slot.id)
+    if (!record) { record = { introduced: seq, firstAssignment: Infinity, observations: undefined, firstWrite: Infinity }; slots.set(slot.id, record) }
     slotOwners.set(slot.id, id)
     record.observations = appendOrdinal(record.observations, seq)
     if (written) record.firstWrite = Math.min(record.firstWrite, seq)
     if (assigned && slot.value.kind !== 'uninitialized') record.firstAssignment = Math.min(record.firstAssignment, seq)
   }
   function updateSlot(id: string, slotId: string, seq: number, written = true) {
-    const record = owner(id, seq).slots.get(slotId)
+    const record = owner(id, seq).slots?.get(slotId)
     if (record) { record.observations = appendOrdinal(record.observations, seq); if (written) record.firstWrite = Math.min(record.firstWrite, seq); record.firstAssignment = Math.min(record.firstAssignment, seq) }
   }
   function eventOwners(event: TraceEvent, graph?: ExecutionGraph): Set<string> {
@@ -265,7 +263,7 @@ export function createSceneProjector(trace: TraceDocument): SceneProjector {
         case 'SET_STATIC': updateSlot(event.classId, event.slotId, event.seq); break
         case 'SET_FIELD': updateSlot(event.objectId, event.slotId, event.seq); break
         case 'ARRAY_WRITE': case 'ARRAY_READ': {
-          const id = arrayElementSlotId(event.objectId, event.index), record = owners.get(event.objectId)?.slots.get(id)
+          const id = arrayElementSlotId(event.objectId, event.index), record = owners.get(event.objectId)?.slots?.get(id)
           if (record) updateSlot(event.objectId, id, event.seq, event.type === 'ARRAY_WRITE')
           else observeSlot(event.objectId, { id, name: `[${event.index}]`, javaType: '', value: event.value }, event.seq, event.type === 'ARRAY_WRITE')
           if (event.type === 'ARRAY_READ' && event.destinationSlotId) updateSlot(event.frameId, event.destinationSlotId, event.seq)
@@ -301,7 +299,7 @@ export function createSceneProjector(trace: TraceDocument): SceneProjector {
     return evidence(history?.introduced ?? null, history ? lastBefore(history.changes, cursor) : null, cursor)
   }
   function slotEvidence(ownerId: string, slot: RuntimeSlot, cursor: number): Evidence {
-    const history = owners.get(ownerId)?.slots.get(slot.id)
+    const history = owners.get(ownerId)?.slots?.get(slot.id)
     return evidence(history?.introduced ?? seqOf(slot.observedAt, cursor), history ? lastBefore(history.observations, cursor) : seqOf(slot.changedAt ?? slot.observedAt, cursor), cursor)
   }
   // Accepted events own captured locations; histories retain only their ordinals.
@@ -352,10 +350,10 @@ export function createSceneProjector(trace: TraceDocument): SceneProjector {
     const slots = Object.values(frame.locals), deps = targetDependencies(slots, state), cached = frameCache.get(frame)
     if (cached?.anchor === anchor && cached.signature === signature && sameDependencies(cached.dependencies, deps)) return cached.node
     const history = owners.get(frame.id)
-    const ordered = slots.filter(slot => slot.name === 'this' || slot.role === 'parameter' || (history?.slots.get(slot.id)?.firstAssignment ?? Infinity) < state.cursor)
+    const ordered = slots.filter(slot => slot.name === 'this' || slot.role === 'parameter' || (history?.slots?.get(slot.id)?.firstAssignment ?? Infinity) < state.cursor)
       .sort((a, b) => {
         const category = (slot: RuntimeSlot) => slot.name === 'this' ? 0 : slot.role === 'parameter' ? 1 : 2
-        const rank = (slot: RuntimeSlot) => { const entry = history?.slots.get(slot.id); return category(slot) === 2 ? entry?.firstAssignment ?? Infinity : entry?.introduced ?? Infinity }
+        const rank = (slot: RuntimeSlot) => { const entry = history?.slots?.get(slot.id); return category(slot) === 2 ? entry?.firstAssignment ?? Infinity : entry?.introduced ?? Infinity }
         return category(a) - category(b) || rank(a) - rank(b)
       })
     const rows = ordered.map(slot => row(slot, slot.name === 'this' ? 'this' : slot.role === 'parameter' ? 'parameter' : 'local', frame.id, state, anchor))
@@ -420,7 +418,7 @@ export function createSceneProjector(trace: TraceDocument): SceneProjector {
   }
   function classNode(value: RuntimeClass, anchor: WorldAnchor, state: RuntimeState): SceneClass {
     const history = owners.get(value.id), ev = ownerEvidence(value.id, state.cursor)
-    const slots = Object.values(value.statics).filter(slot => (history?.slots.get(slot.id)?.firstWrite ?? Infinity) < state.cursor)
+    const slots = Object.values(value.statics).filter(slot => (history?.slots?.get(slot.id)?.firstWrite ?? Infinity) < state.cursor)
     const deps = targetDependencies(slots, state), signature = JSON.stringify(ev), cached = classCache.get(value)
     if (cached?.anchor === anchor && cached.signature === signature && sameDependencies(cached.dependencies, deps)) return cached.node
     const node: SceneClass = freezeValue({ kind: 'class', id: value.id, title: displayType(value.className), packageName: value.metadata?.packageName ?? value.className.slice(0, Math.max(0, value.className.lastIndexOf('.'))),
@@ -641,7 +639,7 @@ export function createSceneProjector(trace: TraceDocument): SceneProjector {
           else objects = persistentAppend(objects, id)
         }
         const current = refs(node)
-        const changed = !sameReferences(refsByOwner[id] ?? [], current)
+        const changed = !sameReferences(referenceOwners.get(id)?.values ?? [], current)
         if (!old || changed) {
           indexReferences(node, current)
           referencesChanged ||= changed

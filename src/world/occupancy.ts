@@ -1,7 +1,10 @@
 import type { Vec3, WorldAnchor } from '../contracts/world';
 /** Region-local spatial hash; collision work depends on nearby reservations. */
 export function createOccupancy(cellSize = 4.8) {
-    const buckets = new Map<string, Set<WorldAnchor>>();
+    // Sparse spatial cells usually have four reservations. Keep those cells
+    // compact and retain constant-time deduplication in dense cells.
+    const buckets = new Map<string, WorldAnchor[] | Set<WorldAnchor>>();
+    const shortBucketLimit = 8;
     const keys = (position: Vec3, size: Vec3) => {
         const lo = position.map((v, i) => Math.floor((v - size[i] / 2) / cellSize)), hi = position.map((v, i) => Math.floor((v + size[i] / 2 - 1e-6) / cellSize));
         const result: string[] = [];
@@ -13,12 +16,13 @@ export function createOccupancy(cellSize = 4.8) {
     };
     return {
         add(anchor: WorldAnchor) { for (const key of keys(anchor.position, anchor.size)) {
-            let bucket = buckets.get(key);
-            if (!bucket) {
-                bucket = new Set();
-                buckets.set(key, bucket);
+            const bucket = buckets.get(key);
+            if (!bucket) buckets.set(key, [anchor]);
+            else if (bucket instanceof Set) bucket.add(anchor);
+            else if (!bucket.includes(anchor)) {
+                const next = bucket.concat(anchor);
+                buckets.set(key, next.length <= shortBucketLimit ? next : new Set(next));
             }
-            bucket.add(anchor);
         } },
         intersects(anchor: WorldAnchor) {
             const visited = new Set<WorldAnchor>();
