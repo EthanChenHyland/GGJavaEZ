@@ -20,7 +20,7 @@ Default inventory at f262899 discovers 294 cases in 81 files. Of these, 202 belo
 | `spatial-shell-v12-p5.spec.ts` | 6 | [Migrated with the same managed files, actions and assertions](io-labels-and-shell-workflows.md) |
 | `torture-details-v12-p5_5.spec.ts` | 4 | OPEN |
 | `torture-lifecycle-v12-p5_5.spec.ts` | 5 | [Migrated; original JVM, JDT, large picker and repair workloads pass](lifecycle-browser-successors.md) |
-| `torture-motion-v12-p5_5.spec.ts` | 1 | OPEN |
+| `torture-motion-v12-p5_5.spec.ts` | 1 | [Migrated; native opt-in capture and same-recording replay pass](motion-browser-successor.md) |
 | `torture-v12-p5_5.spec.ts` | 9 | OPEN |
 | `unified-m10.spec.ts` | 9 | OPEN |
 | `workspace-m8.spec.ts` | 5 | OPEN |
@@ -68,3 +68,8 @@ All seven original cases pass in the 12-case native gate on source `a3ab39c5`. T
 ## Existing lifecycle workflows — 2026-11-06
 
 All five original lifecycle cases pass on source `a0aa0467`. Default discovery stays at 320 cases in 87 files, with 288 classified against current surfaces and 32 open in the table. This is a focused browser result. [Preserved workloads, prerequisite and exact-source evidence](lifecycle-browser-successors.md).
+
+
+## Existing Java history motion — 2026-11-06
+
+The original opt-in motion case passes on source `0598422c`. Default discovery remains 320 cases in 87 files, with 289 classified against current surfaces and 31 still open in the table. The motion case retains its explicit opt-in. [Exact-source video and cursor evidence](motion-browser-successor.md).

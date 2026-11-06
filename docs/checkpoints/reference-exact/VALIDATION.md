@@ -551,3 +551,7 @@ Source `a0aa0467` passes all five original lifecycle cases on current controls w
 ## Recorded stdout preview projection — 2026-11-06
 
 Source `965b4939` passes all eight source checks, 2,281 default unit cases and two desktop and narrow actual-JVM browser probes. These probes qualify recorded preview data and deterministic timeline projection. [Exact source and evidence](migration/io-preview-projection.md).
+
+## Existing Java history motion — 2026-11-06
+
+Source `0598422c` passes the migrated opt-in motion case with one completed actual JVM recording, seven original stills and a native video. Default discovery stays at 320 cases in 87 files. [Exact source and evidence](migration/motion-browser-successor.md).
