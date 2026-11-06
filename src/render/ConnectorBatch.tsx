@@ -27,7 +27,10 @@ function Curves({ curves, halo, onSelect,onHover,order }: {
     const data = useMemo(() => {
         const positions: number[] = [], colors: number[] = [], opacity: number[] = [], ids: string[] = [], color = new Color();
         for (const curve of curves) {
-            color.set(roleColor[curve.colorRole]).multiplyScalar(1.1);
+            // Quiet links retain their local halo. Only explicit selection and
+            // strong semantic accents enter the wider HDR bloom on the core.
+            const accent = curve.widthPx === 3.5 || curve.colorRole === 'exception' || curve.colorRole === 'mutation' || curve.colorRole === 'return';
+            color.set(roleColor[curve.colorRole]).multiplyScalar(accent ? 1.1 : .98);
             for (let i = 1; i < curve.points.length; i++) {
                 positions.push(...curve.points[i - 1], ...curve.points[i]);
                 colors.push(color.r, color.g, color.b, color.r, color.g, color.b);

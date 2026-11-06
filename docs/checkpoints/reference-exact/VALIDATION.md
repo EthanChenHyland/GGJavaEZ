@@ -531,3 +531,7 @@ Source `0bd89e66` inventories 993 inputs and passes all eight source checks. The
 ## I/O labels and existing shell workflows — 2026-11-06
 
 Source `a3ab39c5` passes all eight source checks and all 12 targeted browser cases. Five actual JVM runs validate mounted I/O count labels across the five viewport sizes. Seven existing browser cases now exercise the current shell and recorded-I/O surfaces. The two earlier trials and their failures remain archived. [Exact source, scope and capture evidence](migration/io-labels-and-shell-workflows.md).
+
+## Connector radiance — 2026-11-06
+
+Source `1639c63e` passes the eight source checks, nine focused native cases and a fresh 127-case combined run with zero skips, failures or flakes. The combined archive contains 157 originals and 96 distinct actual JVM session attachments. The remaining browser, performance, and reference acceptance work stays open. [Paired native evidence and exact source](migration/connector-radiance.md).

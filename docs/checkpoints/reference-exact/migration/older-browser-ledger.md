@@ -16,8 +16,8 @@ Default inventory at f262899 discovers 294 cases in 81 files. Of these, 202 belo
 | `provenance-v12.spec.ts` | 1 | [Migrated; exact constructor proof retained](provenance-browser.md) |
 | `real-visualize.spec.ts` | 5 | [Migrated; five preserved cases and six original Java sources](arbitrary-java-browser-successors.md) |
 | `recursion.spec.ts` | 4 | [Migrated; captured expressions restored, unchanged trace and 37-case integration pass](recursion-browser-successors.md) |
-| `spatial-io-v12-p5.spec.ts` | 1 | OPEN |
-| `spatial-shell-v12-p5.spec.ts` | 6 | OPEN |
+| `spatial-io-v12-p5.spec.ts` | 1 | [Migrated with its original curated recording and captured read/write evidence](io-labels-and-shell-workflows.md) |
+| `spatial-shell-v12-p5.spec.ts` | 6 | [Migrated with the same managed files, actions and assertions](io-labels-and-shell-workflows.md) |
 | `torture-details-v12-p5_5.spec.ts` | 4 | OPEN |
 | `torture-lifecycle-v12-p5_5.spec.ts` | 5 | OPEN |
 | `torture-motion-v12-p5_5.spec.ts` | 1 | OPEN |
@@ -59,3 +59,7 @@ without retiring an older case. Their exact-source preflight passes 2/2; the
 first larger gate's failures, unchanged confirmations and fresh full rerun
 remain separately qualified. Discovery is not exhaustive passing acceptance.
 [Behavior, visual findings and source boundaries](focus-connection-mask.md).
+
+## I/O and shell workflows — 2026-11-06
+
+All seven original cases pass in the 12-case native gate on source `a3ab39c5`. The default inventory still discovers 320 cases in 87 files, with 283 classified against current surfaces and 37 still open in the table. [Exact results and retained assertions](io-labels-and-shell-workflows.md).

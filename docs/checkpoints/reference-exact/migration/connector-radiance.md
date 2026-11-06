@@ -1,0 +1,11 @@
+# Connector radiance
+
+Ordinary connector cores now use a 0.98 radiance multiplier with the existing local halo. Selection and exception, mutation and return accents retain the 1.10 multiplier. The renderer keeps the existing route geometry, width bands, alpha, colors and hit testing. Lowering ordinary core radiance reduces the wide bloom around parallel routes while preserving the visible individual lines and endpoints.
+
+Three paired native captures use the same recorded fixture prefix, camera pose and measured geometry. Bright cyan pixels in the sampled gaps fall from 4,128 to 1,871 in the 1440×900 Hero, from 2,224 to 1,468 in the 760×900 Hero, and from 3,240 to 1,836 in the 1440×900 object inspection. These samples characterize the visible glare in those gaps. Clipped context, jagged outlines and weak floor reflections remain visible in the reviewed originals.
+
+The parent source passes all three baseline captures. The one-file candidate source `1639c63ed61ce0527251a8c9809f7204030411398f11f58a32e71a3a1af18b97` passes all nine targeted native cases in 122.399 seconds. These cover five Hero viewports, object inspection, native connector hover at desktop and narrow widths, and the actual face and chip palette in both GPU tiers. The exact source, original captures, reports and paired pixel measurements are under `.ggjavaez/qa/reference-exact/quiet-connector-radiance-prototype/`.
+
+The same 993-input source passes all eight source checks in 320.064 seconds. The default suite records 2,278 passes and 70 explicit opt-in skips. Production main-entry gzip is 71,731 bytes. The 679,073-byte Shell closure is a sum of separately compressed static JS files.
+
+The combined run passes 127 native cases in 1,446.868 seconds with zero failures, skips or flakes. It includes the seven migrated I/O and shell workflows, 96 distinct actual JVM session attachments and 157 original captures. Six originals received full-size review. The archived source, reports, images and reviews are in `quiet-connector-radiance-prototype/candidate/integrated-archive/`. The last Dense and Node retention results retain the source boundary recorded in the [recursive-heading and array Focus checkpoint](recursive-headings-and-slot-retention.md). Whole A–G acceptance remains open.
