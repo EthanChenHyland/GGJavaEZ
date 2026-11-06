@@ -535,3 +535,7 @@ Source `a3ab39c5` passes all eight source checks and all 12 targeted browser cas
 ## Connector radiance — 2026-11-06
 
 Source `1639c63e` passes the eight source checks, nine focused native cases and a fresh 127-case combined run with zero skips, failures or flakes. The combined archive contains 157 originals and 96 distinct actual JVM session attachments. The remaining browser, performance, and reference acceptance work stays open. [Paired native evidence and exact source](migration/connector-radiance.md).
+
+## Shared text-parent transforms — 2026-11-06
+
+Source `6cf20bb6` passes all eight source checks and 12 targeted native cases, including real recursion, forensic ink, both GPU palettes and narrow array captions. The six paired Safe Frames match measured geometry and text. The 127-case combined result above belongs to the connector checkpoint. [Regression, exact-source measurements and capture evidence](migration/text-parent-transforms.md).

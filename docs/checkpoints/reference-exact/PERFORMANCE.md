@@ -443,3 +443,7 @@ Cold Flow prefix resolution is faster in paired CPU diagnostics with exact outpu
 ## Compact slot evidence and committed Focus framing — 2026-11-05
 
 The protected Node run passes LINE scaling at 1.240093×. The largest corpus retains 21,291,416 presentation bytes at 38.246%, and all three retention ratios exceed 25%. Dense completes ten stages with zero browser or stage errors and exceeds all five latency limits. All five orbit windows and the soak pass, with a longest observed interval of 725.4 ms. [Full measurements and exact source](migration/recursive-headings-and-slot-retention.md).
+
+## Shared text-parent transforms — 2026-11-06
+
+The exact matrix probe reduces parent update work while matching all 57,600 sampled label matrices. The fresh Dense run passes cold load, all orbit windows, and soak. Seek, Focus, and Home still exceed four latency limits, and the longest frame interval is 957.8 ms. [Exact source, native pixel comparison and benchmark results](migration/text-parent-transforms.md).

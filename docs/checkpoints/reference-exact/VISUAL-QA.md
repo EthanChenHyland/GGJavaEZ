@@ -303,3 +303,11 @@ Five current-source originals receive full-size root review: hero, object inspec
 ## Shared world inputs and glyph preparation — 2026-11-05
 
 Full-size reviews cover hero, object inspection, narrow recursion, narrow Map and narrow exception scenes. The Dense original is reviewed separately. Both GPU palettes match all eight samples. The read-only pixel comparisons show two exact narrow hover crops and six or seven changed pixels in the desktop crops. Bright routes, jagged outlines, clipped context and overlapping recursion titles remain visible. [Implementation and source evidence](migration/render-frame-preparation.md).
+
+## Connector glare and floor reflection — 2026-11-06
+
+The connector checkpoint reduces wide spill around ordinary routes. Paired native captures preserve the measured geometry and camera, with 34–55% fewer bright cyan pixels in the three sampled gaps. Fine edge aliasing and peripheral clipping remain visible. [Exact source and paired captures](migration/connector-radiance.md).
+
+A separate floor shader trial passes 12 native cases and 11 focused tests. The reviewed wide Hero capture shows no meaningful reflection recovery. All four preselected floor regions gain less than one unit of mean encoded luminance, with zero pixels gaining eight units. The original floor shader remains in production.
+
+A fresh two-viewport diagnostic uses actual JVM recordings, the production layout and floor calculations, and the displayed camera. The floor is at world y −21.76. The highest projected reflected body begins at y 1,130.45 px in the 1,440×900 Hero and y 1,278.43 px in the 760×900 Hero. All measured mirrored body bounds lie below the viewport. The geometry reports, paired originals and shader trial are under `.ggjavaez/qa/reference-exact/floor-reflection-mix-prototype/`. These bounds explain the missing Hero reflections in those views. Floor composition remains open.

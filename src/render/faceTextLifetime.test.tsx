@@ -4,12 +4,12 @@ import {type ComponentProps} from 'react'
 import {Group,PerspectiveCamera,Scene,Vector3,type Material,type Mesh} from 'three'
 import {renderThreeLifetime as render,threeLifetimeReconciler as reconciler,unmountThreeLifetimes} from '../testing/reactThreeLifetime'
 import {afterEach,beforeEach,expect,it,vi} from 'vitest'
-const state=vi.hoisted(()=>({frames:new Set<(snapshot:unknown)=>void>(),listeners:new Set<()=>void>(),snapshot:null as unknown,invalidations:0,texts:[] as unknown[],batches:[] as unknown[]}))
+const state=vi.hoisted(()=>({frames:new Map<(snapshot:unknown)=>void,number>(),listeners:new Set<()=>void>(),snapshot:null as unknown,invalidations:0,texts:[] as unknown[],batches:[] as unknown[]}))
 vi.mock('@react-three/fiber',async()=>{
  const {useEffect,useSyncExternalStore}=await import('react')
  return {
   useThree:(selector?:(value:unknown)=>unknown)=>{const value=useSyncExternalStore(callback=>{state.listeners.add(callback);return()=>{state.listeners.delete(callback)}},()=>state.snapshot);return selector?selector(value):value},
-  useFrame:(callback:(snapshot:unknown)=>void)=>useEffect(()=>{state.frames.add(callback);return()=>{state.frames.delete(callback)}},[callback]),
+  useFrame:(callback:(snapshot:unknown)=>void,priority=0)=>useEffect(()=>{state.frames.set(callback,priority);return()=>{state.frames.delete(callback)}},[callback,priority]),
  }
 })
 vi.mock('troika-three-text',async()=>{
@@ -46,7 +46,7 @@ const group=(view:ReturnType<typeof render>)=>view.nodes().find(node=>node.props
 const props=():ComponentProps<typeof WorldText>=>({children:'18',position:[0,0,-5],lines:['18'],heading:{entityId:'frame/a',kind:'title'},frameText:{entityId:'frame/a',kind:'value',slotId:'local/a'},returnText:{flowId:'return/a',kind:'value'},collectionText:{entityId:'map/a',kind:'value',slotId:'entry/a'},arrayText:{entityId:'array/a',kind:'index',slotId:'array/a/0'}})
 const renderer={info:{render:{frame:0}}}
 const refresh=(height:number)=>{state.snapshot={gl:renderer,camera:new PerspectiveCamera(36,1,.1,1000),size:{width:1440,height},invalidate:()=>state.invalidations++};for(const notify of state.listeners)notify();reconciler.flushSyncWork();reconciler.flushPassiveEffects()}
-const frame=()=>{renderer.info.render.frame++;for(const callback of state.frames)callback(state.snapshot)}
+const frame=()=>{renderer.info.render.frame++;for(const [callback] of [...state.frames].sort(([,a],[,b])=>a-b))callback(state.snapshot)}
 beforeEach(()=>{state.texts=[];state.batches=[];state.invalidations=0;refresh(900)})
 afterEach(()=>{unmountThreeLifetimes();expect(state.frames.size).toBe(0);expect(state.listeners.size).toBe(0);expect(textReadiness.pending.size).toBe(0);vi.restoreAllMocks()})
 it('skips unchanged text host commits across 100 reconstructed coordinate, line and semantic wrappers',()=>{
@@ -178,4 +178,27 @@ it('updates only affected cell labels for actual writes, reads, reverse stepping
  view.rerender(<RuntimeSolid {...selected} presented={{...selected.presented,opacity:.35}} arrayWindow={{...window,mapping}}/>);
  expect(commits()).toEqual([1,3,2,2,1]);expect(groups.get(0)!.children.map(child=>child.publicInstance.position.toArray())).toEqual([[x+2,y-1+.775+.5,z+.5+.83],[x+2,y-1,z+.5+.875]])
  expect(state.texts).toEqual(resources)
+})
+
+it('updates a shared moving text parent once per frame while retaining both glyph poses and opacity',()=>{
+ const view=render(<FaceTextBatch><group name="moving-parent" position={[0,0,-5]}>
+  <WorldText position={[1,0,0]}>left</WorldText>
+  <WorldText position={[-1,0,0]}>right</WorldText>
+ </group></FaceTextBatch>)
+ const parent=view.nodes().find(node=>node.props?.name==='moving-parent')!.publicInstance
+ const update=vi.spyOn(parent,'updateWorldMatrix')
+ const texts=state.texts as ProbeText[]
+ const positions=()=>texts.map(text=>new Vector3().setFromMatrixPosition(text.matrix).toArray())
+ frame()
+ expect(update).toHaveBeenCalledTimes(1)
+ expect(positions()).toEqual([[1,0,-5],[-1,0,-5]])
+ parent.position.set(2,3,-6);parent.scale.setScalar(2);parent.userData.runtimeTextOpacity=.35
+ frame()
+ expect(update).toHaveBeenCalledTimes(2)
+ expect(positions()).toEqual([[4,3,-6],[0,3,-6]])
+ expect(texts.map(text=>text.fillOpacity)).toEqual([.35,.35])
+ parent.visible=false
+ frame()
+ expect(update).toHaveBeenCalledTimes(3)
+ expect(texts.map(text=>text.fillOpacity)).toEqual([0,0])
 })
