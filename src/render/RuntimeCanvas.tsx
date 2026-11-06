@@ -317,8 +317,9 @@ export function RuntimeCanvas({ snapshot, safeFrame,focusContentFrame,inspectorR
         <ExceptionPanel panel={plan.exceptionPanel} recordingState={scene.recording.state} safeFrame={safeFrame}/>
         {scene.io.map(io => {
             const [width,,depth] = io.anchor.size, textWidth = width - .24, size = .32, weight = 500;
-            const countLabel = `${io.id} · ${io.lines}`;
-            const lines = textAdvance(countLabel, weight) * size > textWidth - .012 ? [io.id, String(io.lines)] : undefined;
+            const channelLabel = io.id === 'stderr' ? '⚠ stderr' : io.id;
+            const countLabel = `${channelLabel} · ${io.lines}`;
+            const lines = textAdvance(countLabel, weight) * size > textWidth - .012 ? [channelLabel, String(io.lines)] : undefined;
             return <group key={io.id} position={[...io.anchor.position]}>
                 <mesh><boxGeometry args={[...io.anchor.size]}/><meshStandardMaterial color={roleColor[io.id]} emissive={roleColor[io.id]} emissiveIntensity={.2}/></mesh>
                 <WorldText position={[-width/2+.12,.02,depth/2+.02]} size={size} weight={weight} width={textWidth} tint={color.stack.chip} lines={lines} heading={{entityId:io.id,kind:'title'}}>{countLabel}</WorldText>

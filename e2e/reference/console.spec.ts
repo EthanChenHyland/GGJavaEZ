@@ -96,7 +96,9 @@ for (const viewport of [{ width: 1440, height: 900 }, { width: 760, height: 900 
   await page.locator('.ide-console-terminal summary').click()
   await expect(console).toContainText('cross-channel order not recorded')
   await expect(console.getByRole('list', {name:'stdout rows'})).toContainText('Hello Ada & <exact>')
-  await expect(console.getByRole('list', {name:'stderr rows'})).toContainText('warning only')
+  const stderr = console.getByRole('list', {name:'stderr rows'})
+  await expect(stderr).toContainText('warning only')
+  await expect(stderr.locator('.console-line-glyph')).toHaveText('⚠\uFE0E')
   await console.getByRole('list', {name:'stderr rows'}).scrollIntoViewIfNeeded()
   await expect(console.getByRole('list', {name:'stderr rows'}).getByRole('listitem')).toBeVisible()
   const last = await currentSession(request)
@@ -114,6 +116,8 @@ for (const viewport of [{ width: 1440, height: 900 }, { width: 760, height: 900 
   await page.evaluate(()=>window.__ggjavaezWorld!.ready())
   const worldBefore=await page.evaluate(()=>({cursor:window.__ggjavaezWorld!.scene().cursor,recording:window.__ggjavaezWorld!.scene().recordingId,pose:window.__ggjavaezQA!.cameraPose(),selection:window.__ggjavaezQA!.selection(),io:window.__ggjavaezWorld!.scene().io}))
   expect(worldBefore.io.map(channel=>channel.id).sort()).toEqual(['stderr','stdin','stdout'])
+  const warning = await page.evaluate(()=>window.__ggjavaezWorld!.runtimeHeadings().find(heading=>heading.entityId==='stderr'))
+  expect(warning?.text).toMatch(/^⚠ stderr(?: · |\n)1$/)
   for(const channel of worldBefore.io){
     // Exercise the real CameraRig intent/recovery path. This is a QA pose
     // request into observed geometry, not a claim of native pointer input.

@@ -563,3 +563,7 @@ Source `f78c2e67` passes all eight source checks and six targeted native array a
 ## Reference array Flow endpoints — 2026-11-06
 
 Source `94420b20` passes 12 native cases and the paired desktop/narrow comparison. Final source `e492d144` adds the corrected sparse reference-cell unit assertion and passes all eight source checks with 2,281 default passes. [Exact source, failures and capture evidence](migration/array-flow-port.md).
+
+## Stderr warning glyph — 2026-11-06
+
+Source `fc08fa44` passes all eight source checks, the million-line Console case and two real-JVM desktop and narrow Console cases. [Exact source, glyph evidence and reviewed capture](migration/stderr-warning-glyph.md).

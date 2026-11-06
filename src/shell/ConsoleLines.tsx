@@ -3,7 +3,7 @@ import { ConsoleLineIndex, type ConsoleChunk } from './consoleLineIndex'
 import { virtualPageRows, virtualRange } from './virtualRange'
 
 const rowHeight = 24
-const glyph = { stdout: '↗', stderr: '!', stdin: '›', exit: '■' }
+const glyph = { stdout: '↗', stderr: '⚠\uFE0E', stdin: '›', exit: '■' }
 
 /** Console owns following independently of World/Source. Manual navigation
  * stops following; the Last action explicitly returns to live output. */
