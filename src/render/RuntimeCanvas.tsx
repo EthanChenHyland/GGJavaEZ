@@ -1,8 +1,9 @@
-import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Canvas, useFrame, useThree,events as pointerEvents,type CanvasProps } from '@react-three/fiber';
 import {prioritizeConnectorIntersections} from './geometry/connectorRaycast';
 import { EnvironmentRig } from './EnvironmentRig';
 import type { Selection } from '../contracts/interaction';
+import type { SceneIo } from '../contracts/world';
 import type { WorldRenderSnapshot } from './worldRenderSnapshot';
 import type { Rect } from '../shell/shellLayout';
 import { CameraRig, cameraReadiness, type CameraInput } from '../camera/CameraRig';
@@ -232,6 +233,31 @@ function AccessibleCatalog({snapshot,publish}:{snapshot:WorldRenderSnapshot;publ
  })
  return null
 }
+function RecordedIoPort({io}:{io:SceneIo}) {
+    const [publishedCount, setPublishedCount] = useState(io.lines);
+    const lastPublished = useRef(0);
+    useLayoutEffect(() => { lastPublished.current = performance.now(); }, [publishedCount]);
+    useLayoutEffect(() => {
+        if (io.id !== 'stdout' || io.lines === publishedCount) return;
+        let timer: number | undefined;
+        const publish = () => {
+            const remaining = 100 - (performance.now() - lastPublished.current);
+            if (remaining > 0) timer = window.setTimeout(publish, remaining);
+            else setPublishedCount(io.lines);
+        };
+        publish();
+        return () => window.clearTimeout(timer);
+    }, [io.id, io.lines, publishedCount]);
+    const [width,,depth] = io.anchor.size, textWidth = width - .24, size = .32, weight = 500;
+    const channelLabel = io.id === 'stderr' ? '⚠ stderr' : io.id;
+    const count = io.id === 'stdout' ? publishedCount : io.lines;
+    const countLabel = `${channelLabel} · ${count}`;
+    const lines = textAdvance(countLabel, weight) * size > textWidth - .012 ? [channelLabel, String(count)] : undefined;
+    return <group position={[...io.anchor.position]}>
+        <mesh><boxGeometry args={[...io.anchor.size]}/><meshStandardMaterial color={roleColor[io.id]} emissive={roleColor[io.id]} emissiveIntensity={.2}/></mesh>
+        <WorldText position={[-width/2+.12,.02,depth/2+.02]} size={size} weight={weight} width={textWidth} tint={color.stack.chip} lines={lines} heading={{entityId:io.id,kind:'title'}}>{countLabel}</WorldText>
+    </group>;
+}
 export function RuntimeCanvas({ snapshot, safeFrame,focusContentFrame,inspectorRect, selection, onSelect, onFocus,trace,timeline }: {
     snapshot: WorldRenderSnapshot;
     safeFrame: Rect;
@@ -315,16 +341,7 @@ export function RuntimeCanvas({ snapshot, safeFrame,focusContentFrame,inspectorR
         select({ kind: 'reference', id }); else if(plan.curves.some(curve=>curve.id===id)) select({kind:'flow',id}); }}/>
         {plan.structural.map(item => <WorldText key={item.id} position={item.position} size={.3} width={5} tint={color.ui.textSecondary}>{item.text}</WorldText>)}
         <ExceptionPanel panel={plan.exceptionPanel} recordingState={scene.recording.state} safeFrame={safeFrame}/>
-        {scene.io.map(io => {
-            const [width,,depth] = io.anchor.size, textWidth = width - .24, size = .32, weight = 500;
-            const channelLabel = io.id === 'stderr' ? '⚠ stderr' : io.id;
-            const countLabel = `${channelLabel} · ${io.lines}`;
-            const lines = textAdvance(countLabel, weight) * size > textWidth - .012 ? [channelLabel, String(io.lines)] : undefined;
-            return <group key={io.id} position={[...io.anchor.position]}>
-                <mesh><boxGeometry args={[...io.anchor.size]}/><meshStandardMaterial color={roleColor[io.id]} emissive={roleColor[io.id]} emissiveIntensity={.2}/></mesh>
-                <WorldText position={[-width/2+.12,.02,depth/2+.02]} size={size} weight={weight} width={textWidth} tint={color.stack.chip} lines={lines} heading={{entityId:io.id,kind:'title'}}>{countLabel}</WorldText>
-            </group>;
-        })}
+        {scene.io.map(io => <RecordedIoPort key={`${scene.recordingId}:${io.id}`} io={io}/>)}
         </FaceTextBatch>
       </Suspense>
       <CameraRig scene={scene} plan={plan} event={trace.events[scene.cursor-1]??null} layout={layout} safeFrame={safeFrame} focusContentFrame={focusContentFrame} inspectorRect={inspectorRect} input={input}/>

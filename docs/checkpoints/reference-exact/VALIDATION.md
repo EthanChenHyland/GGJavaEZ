@@ -567,3 +567,7 @@ Source `94420b20` passes 12 native cases and the paired desktop/narrow compariso
 ## Stderr warning glyph — 2026-11-06
 
 Source `fc08fa44` passes all eight source checks, the million-line Console case and two real-JVM desktop and narrow Console cases. [Exact source, glyph evidence and reviewed capture](migration/stderr-warning-glyph.md).
+
+## World stdout count cadence — 2026-11-12
+
+Source `1859444d` passes all eight source checks. The actual JVM scrub records 20 visible count changes after the first observation, down from 63 at baseline. [Exact source and native measurements](migration/stdout-count-cadence.md).
