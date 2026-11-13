@@ -571,3 +571,7 @@ Source `fc08fa44` passes all eight source checks, the million-line Console case 
 ## World stdout count cadence — 2026-11-12
 
 Source `1859444d` passes all eight source checks. The actual JVM scrub records 20 visible count changes after the first observation, down from 63 at baseline. [Exact source and native measurements](migration/stdout-count-cadence.md).
+
+## Existing Java torture browser workflows — 2026-11-12
+
+Source `f7b30fab` passes all nine migrated browser cases with 90 original screenshots and nine distinct JVM sessions. Strict TypeScript and browser discovery pass. The ledger has 22 older cases open. [Exact source, fixture evidence and visual findings](migration/torture-browser-successors.md).

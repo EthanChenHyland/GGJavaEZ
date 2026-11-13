@@ -1,0 +1,9 @@
+# Existing Java torture browser workflows
+
+The nine original Phase 5.5 fixtures run through the current workspace. The driver verifies the project, executes Java, checks the existing output and input assertions, and saves each actual session for replay evidence. The current World catalog and cluster-member list reach the requested recorded entity before Focus. Each case captures Home and Focus at all five original viewport sizes and checks Inspector row spacing, selection, Focus identity and a rewind to the same execution.
+
+The first run passes five cases. The startup failure waits on the project button while the cold workspace is still opening. The other three failures occur when keyboard navigation cannot reach an entity after the cut changes. The revised driver waits for the published workspace and follows the current catalog selection through its cluster members. Both reports and the four failed traces are archived.
+
+Source `f7b30fabe604c4185b6475742350b6b3ab90353219361652688dbf21a599ffb2` passes all nine cases in 306.392 seconds with zero skips, failures or flakes. The archive includes nine distinct JVM sessions and 90 original PNGs. The recursion and output stress recordings preserve their recorded limit status. The uncaught exception fixture retains its actual failed process result and full recording. Strict TypeScript and default discovery pass, with 320 discovered cases in 87 files. The source inventory, failure traces, captures and payloads are under `.ggjavaez/qa/reference-exact/torture-browser-successor/`.
+
+Focus projection records ten faces outside the Safe Frame across the empty array and exception fixture targets. Full-size review also shows clipped context and overlapping glow in the exception overview and abbreviated text in the narrow 100-field Focus view. The interaction checks pass while those visual findings remain open.

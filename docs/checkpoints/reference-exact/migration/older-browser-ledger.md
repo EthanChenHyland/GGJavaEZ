@@ -21,7 +21,7 @@ Default inventory at f262899 discovers 294 cases in 81 files. Of these, 202 belo
 | `torture-details-v12-p5_5.spec.ts` | 4 | OPEN |
 | `torture-lifecycle-v12-p5_5.spec.ts` | 5 | [Migrated; original JVM, JDT, large picker and repair workloads pass](lifecycle-browser-successors.md) |
 | `torture-motion-v12-p5_5.spec.ts` | 1 | [Migrated; native opt-in capture and same-recording replay pass](motion-browser-successor.md) |
-| `torture-v12-p5_5.spec.ts` | 9 | OPEN |
+| `torture-v12-p5_5.spec.ts` | 9 | [Migrated; nine actual JVM fixtures pass at the five viewport sizes](torture-browser-successors.md) |
 | `unified-m10.spec.ts` | 9 | OPEN |
 | `workspace-m8.spec.ts` | 5 | OPEN |
 
@@ -73,3 +73,8 @@ All five original lifecycle cases pass on source `a0aa0467`. Default discovery s
 ## Existing Java history motion — 2026-11-06
 
 The original opt-in motion case passes on source `0598422c`. Default discovery remains 320 cases in 87 files, with 289 classified against current surfaces and 31 still open in the table. The motion case retains its explicit opt-in. [Exact-source video and cursor evidence](motion-browser-successor.md).
+
+
+## Existing Java torture browser workflows — 2026-11-12
+
+All nine migrated cases pass on source `f7b30fab`. Default discovery remains 320 cases in 87 files, with 298 classified against current surfaces and 22 open in the table. [Execution evidence, captures and remaining visual findings](torture-browser-successors.md).
