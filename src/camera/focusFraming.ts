@@ -1,7 +1,7 @@
 import { Vector3 } from 'three';
 import type { Vec3, WorldAnchor } from '../contracts/world';
 import type { Rect } from '../shell/shellLayout';
-import { frontFace, projectionCamera, screenPoint, type OrbitPose, type Size } from './projection';
+import { frontFace, projectionCamera, type OrbitPose, type Size } from './projection';
 
 // Subpixel interior margins keep floating-point extrema within closed bounds.
 const heightRange = [.38 + 1e-9, .52 - 1e-9] as const;
@@ -56,19 +56,23 @@ export function focusFraming(
     const minDistance = Math.max(.02, ...local.map(point => point.z + .02),...annotation.map(point=>point.z+.02));
     if (!Number.isFinite(minDistance) || minDistance >= maxDistance) return fallback;
 
-    // Right/up translation leaves orientation and each corner's depth intact.
-    // The extrema's midpoint is continuous and strictly decreasing in shift;
-    // corner-wise roots bracket it even when the extreme corner changes.
+    // Center when max(projected) + min(projected) is zero relative to the
+    // desired screen coordinate. For each corner i, some corner j must make
+    // their sum nonpositive. The first shift satisfying all i is the root.
     const centerShift = (axis: 'x' | 'y', desired: number, distance: number): number => {
-        const roots = local.map(point => point[axis] - desired * (distance - point.z));
-        let lo = Math.min(...roots), hi = Math.max(...roots);
-        for (let i = 0; i < iterations; i++) {
-            const shift = (lo + hi) / 2;
-            const coordinates = local.map(point => (point[axis] - shift) / (distance - point.z));
-            if ((Math.min(...coordinates) + Math.max(...coordinates)) / 2 > desired) lo = shift;
-            else hi = shift;
+        let centered = -Infinity;
+        for (const a of local) {
+            const depthA = distance - a.z;
+            const rootA = a[axis] - desired * depthA;
+            let firstNonpositive = Infinity;
+            for (const b of local) {
+                const depthB = distance - b.z;
+                const rootB = b[axis] - desired * depthB;
+                const pairRoot = (rootA * depthB + rootB * depthA) / (depthA + depthB);
+                firstNonpositive = Math.min(firstNonpositive, pairRoot);
+            }
+            centered = Math.max(centered, firstNonpositive);
         }
-        const centered=(lo+hi)/2;
         if(!content||!annotation.length)return centered;
         // Keep the real face in its Safe Frame, and its real annotation in
         // uncovered World pixels. Extra caption clearance never sizes the face.
@@ -82,19 +86,17 @@ export function focusFraming(
         return lower<=upper?Math.max(lower,Math.min(upper,centered)):(lower+upper)/2;
     };
     const measure = (distance: number) => {
-        const shift = right.clone().multiplyScalar(centerShift('x', desiredX, distance))
-            .addScaledVector(up, centerShift('y', desiredY, distance));
-        const pose: OrbitPose = {
-            target: [center[0] + shift.x, center[1] + shift.y, center[2] + shift.z],
-            distance, yawDeg: angles.yaw, pitchDeg: angles.pitch,
-        };
-        const camera = projectionCamera(pose, viewport);
-        const projected = points.map(point => screenPoint(point, camera, viewport));
-        return {
-            pose,
-            width: Math.max(...projected.map(point => point.x)) - Math.min(...projected.map(point => point.x)),
-            height: Math.max(...projected.map(point => point.y)) - Math.min(...projected.map(point => point.y)),
-        };
+        const xShift = centerShift('x', desiredX, distance), yShift = centerShift('y', desiredY, distance);
+        let left = Infinity, rightEdge = -Infinity, bottom = Infinity, top = -Infinity;
+        for (const point of local) {
+            const depth = distance - point.z;
+            const x = (point.x - xShift) / depth, y = (point.y - yShift) / depth;
+            left = Math.min(left, x);
+            rightEdge = Math.max(rightEdge, x);
+            bottom = Math.min(bottom, y);
+            top = Math.max(top, y);
+        }
+        return { xShift, yShift, width: (rightEdge - left) * focalPixels, height: (top - bottom) * focalPixels };
     };
     // At a fixed screen centre each candidate corner-pair span has a constant
     // numerator divided by (2 * distance - zi - zj). Its maximum therefore
@@ -123,6 +125,7 @@ export function focusFraming(
         distance = Math.max(widthNear, Math.min(widthFar, preferred));
     }
     const result = measure(distance);
-    return [...result.pose.target, result.width, result.height, distance].every(Number.isFinite)
-        ? result.pose : fallback;
+    const target = new Vector3(...center).addScaledVector(right, result.xShift).addScaledVector(up, result.yShift).toArray();
+    return [...target, result.width, result.height, distance].every(Number.isFinite)
+        ? { target, distance, yawDeg: angles.yaw, pitchDeg: angles.pitch } : fallback;
 }

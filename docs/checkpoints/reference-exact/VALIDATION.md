@@ -591,3 +591,7 @@ Source `af03a4e5` passes all eight source checks and 2,281 default tests with 70
 ### Unified execution workflows — 2026-11-13
 
 Source `2198f118` passes 9/9 native cases in 84.455 seconds with zero failures, skips or flakes. Twelve JVM sessions and a separate pre-launch Stop attempt are recorded. Nine older browser cases remain open. [Preserved workloads and exact source evidence](migration/unified-browser-successors.md).
+
+### Focus camera projection cost — 2026-11-13
+
+Source `4b8f9f0b` passes all eight source checks and 26 native browser cases with zero failures, skips or flakes. The production Dense run completes ten stages and still fails seek p50 and Focus p95. The paired solver diagnostic and exact camera/visual evidence are archived. [Measurements and remaining limits](migration/focus-solver.md).
