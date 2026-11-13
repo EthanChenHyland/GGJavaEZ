@@ -23,7 +23,7 @@ Default inventory at f262899 discovers 294 cases in 81 files. Of these, 202 belo
 | `torture-motion-v12-p5_5.spec.ts` | 1 | [Migrated; native opt-in capture and same-recording replay pass](motion-browser-successor.md) |
 | `torture-v12-p5_5.spec.ts` | 9 | [Migrated; nine actual JVM fixtures pass at the five viewport sizes](torture-browser-successors.md) |
 | `unified-m10.spec.ts` | 9 | [Migrated with nine passing cases and 12 distinct JVM sessions](unified-browser-successors.md) |
-| `workspace-m8.spec.ts` | 5 | OPEN |
+| `workspace-m8.spec.ts` | 5 | [Migrated to the current Source, Focus and Dock contracts](workspace-browser-successors.md) |
 
 No original case is removed or marked skipped by this ledger. Saved discovery list and per-file counts are in the ignored QA evidence directory. Each later disposition must link its preserved assertions, exact source and actual executed result.
 
@@ -86,3 +86,7 @@ All four retained detail cases and four prerequisite runs pass on source `80e77e
 ## Unified execution workflows — 2026-11-13
 
 All nine unified cases pass on source `2198f118`. Default discovery remains 323 cases in 88 files, with 314 classified against current surfaces and nine open in the table. [Source, earlier failures and session evidence](unified-browser-successors.md).
+
+## Workspace workflows — 2026-11-13
+
+All five workspace cases pass on source `1a704c41`. Default discovery remains 323 cases in 88 files, with 319 classified against current surfaces and four product-audit cases still open. [Source and fixture dispositions](workspace-browser-successors.md).

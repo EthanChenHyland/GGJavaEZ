@@ -5,6 +5,8 @@ import type { VisualizeResponse } from '../src/ide/contracts'
 import type { ExecutionSession, StartExecutionRequest } from '../src/execution/contracts'
 import { normalizeTrace } from '../src/instrumentation/normalize'
 import type { RawRuntimeEvent } from '../src/instrumentation/contracts'
+import { home, ready, seekCursor, selectEntity } from './reference/harness'
+import { openDock } from './reference/dockActions'
 
 const projectId = 'm8-workspace-fixture'
 const widthKey = 'ggjavaez:p5:source-width'
@@ -92,21 +94,23 @@ async function workspace(page: Page, payload = person) {
     await route.fulfill({ json: body })
   })
   await page.addInitScript((id) => localStorage.setItem('ggjavaez:project', id), projectId)
-  await page.goto('/ide')
-  await expect(page.locator('.monaco-editor')).toBeVisible()
+  await page.goto('/?qa=1')
+  await page.waitForFunction(() => typeof window.__ggjavaezQA?.ready === 'function')
+  await expect(page.getByRole('button', { name: 'Project menu', exact: true })).toHaveAttribute('data-project-id', projectId)
+  if (page.viewportSize()!.width >= 1024) await expect(page.locator('.monaco-editor')).toBeVisible()
   await expect(page.getByRole('button', { name: 'Run', exact: true })).toBeEnabled()
   return { files, saved, starts }
 }
 
 async function visualize(page: Page, payload = person) {
   await page.getByRole('button', { name: 'Run', exact: true }).click()
-  await expect(page.locator('.ide-shell')).toHaveClass(/ide-shell--visualize/)
-  await expect(page.locator('.spatial-view canvas')).toBeVisible()
+  await expect(canvas(page)).toBeVisible()
   const trace = normalizeTrace(payload.rawEvents, payload.sourceManifest, {
     status: payload.status === 'compile_failed' ? 'complete' : payload.status,
     exitCode: payload.exitCode, diagnostic: payload.diagnostic,
   }).trace
-  await expect(page.getByRole('slider', { name: 'Scrub execution' })).toHaveAttribute('max', String(trace.events.length))
+  await expect(timeline(page)).toHaveAttribute('aria-valuemax', String(trace.events.length))
+  await ready(page)
   return trace
 }
 
@@ -114,15 +118,31 @@ async function selectPerson(page: Page) {
   const trace = await visualize(page)
   const mutation = trace.events.findIndex((event) => event.type === 'SET_FIELD' && event.value.kind === 'primitive' && event.value.value === 18)
   expect(mutation).toBeGreaterThan(-1)
-  const cursor = String(mutation + 1)
-  await page.getByRole('slider', { name: 'Scrub execution' }).fill(cursor)
-  const picker = page.getByRole('combobox', { name: 'Select runtime entity' })
-  const id = await picker.locator('option').filter({ hasText: /^Person #/ }).first().getAttribute('value')
-  expect(id).toBeTruthy()
-  await picker.selectOption(id!)
-  await expect(page.getByRole('complementary', { name: 'Runtime inspector' })).toContainText('18')
+  const cursor = mutation + 1
+  const event = trace.events[mutation]
+  if (event.type !== 'SET_FIELD') throw new Error('Expected the captured Person mutation')
+  await seekCursor(page, cursor)
+  await home(page)
+  await selectEntity(page, event.objectId)
+  await expect(inspector(page)).toContainText('18')
   await expect(page.locator('.ide-tab.is-active')).toContainText('Person.java')
-  return { cursor, id: id! }
+  return { cursor, id: event.objectId }
+}
+
+const timeline = (page: Page) => page.getByRole('slider', { name: 'Recorded execution position', exact: true })
+const canvas = (page: Page) => page.locator('.world-canvas canvas')
+const inspector = (page: Page) => page.getByRole('complementary', { name: 'Selection inspector', exact: true })
+const editor = (page: Page) => page.locator('.ide-editor-panel')
+const sourceButton = (page: Page) => page.getByRole('button', { name: 'Show source drawer', exact: true })
+const runWidth = (width: number) => Math.max(340, Math.min(470, width * .25))
+
+async function sameSelection(page: Page, selected: { cursor: number; id: string }) {
+  await expect(timeline(page)).toHaveAttribute('aria-valuenow', String(selected.cursor))
+  expect(await page.evaluate(() => window.__ggjavaezQA!.selection()?.id)).toBe(selected.id)
+}
+
+async function sourceWidth(page: Page, pixels: number) {
+  await expect.poll(async () => Math.abs((await editor(page).boundingBox())!.width - pixels)).toBeLessThan(2)
 }
 
 async function dimensions(page: Page, selector: string) {
@@ -131,59 +151,45 @@ async function dimensions(page: Page, selector: string) {
   return box!
 }
 
-// Source disclosure is available from both the activity rail and runtime header.
-// Exercise the visible world control without relying on duplicate-label ordering.
-function runtimeAction(page: Page, name: string) {
-  return page.locator('.ide-runtime-heading-actions').getByRole('button', { name, exact: true })
-}
-
 test('source expands for editing, Run restores the runtime wing, and Focus preserves cursor and selection', async ({ page }) => {
   const fixture = await workspace(page)
-  await expect(page.locator('.ide-shell')).toHaveClass(/ide-shell--code/)
-  await expect(page.locator('.ide-runtime-panel')).toBeVisible()
+  const width = page.viewportSize()!.width
   await expect(page.getByLabel('Runtime ready')).toBeVisible()
-  // Phase 5 deliberately starts with a 38% source wing instead of M8's 72%
-  // Code pane; the explicit editing action expands source to 64%.
-  await expect.poll(async () => (await dimensions(page, '.ide-editor-panel')).width / (await dimensions(page, '.ide-upper')).width).toBeCloseTo(0.38, 2)
+  await sourceWidth(page, width * .48)
   await page.getByRole('button', { name: 'Expand source for editing', exact: true }).click()
-  await expect(page.locator('.ide-shell')).toHaveClass(/ide-shell--code/)
-  await expect.poll(async () => (await dimensions(page, '.ide-editor-panel')).width / (await dimensions(page, '.ide-upper')).width).toBeCloseTo(0.64, 2)
+  await sourceWidth(page, width * .48)
   const selected = await selectPerson(page)
   expect(fixture.starts).toHaveLength(1)
-  const canvas = await page.locator('.spatial-view canvas').elementHandle()
-  const editor = await page.locator('.monaco-editor').elementHandle()
-  expect(canvas).not.toBeNull()
-  expect(editor).not.toBeNull()
+  const originalCanvas = await canvas(page).elementHandle()
+  const sourceState = () => page.evaluate(() => {
+    const qa = window.__ggjavaezQA!, source = qa.source()
+    return { modelUri: source?.modelUri, position: source?.position, selection: source?.selection, models: qa.editorModels().modelUris }
+  })
+  const originalSource = await sourceState()
+  expect(originalCanvas).not.toBeNull()
+  expect(originalSource.modelUri).toContain('/Person.java')
   await expect(page.locator('.ide-project-panel')).toBeHidden()
-  await expect(page.locator('.ide-editor-panel')).toBeVisible()
+  await expect(editor(page)).toBeVisible()
   await expect(page.locator('.executing-line')).toBeVisible()
-  await expect.poll(async () => (await dimensions(page, '.ide-editor-panel')).width / (await dimensions(page, '.ide-upper')).width).toBeCloseTo(0.30, 2)
-  await expect.poll(async () => (await dimensions(page, '.ide-editor-panel')).width / (await dimensions(page, '.ide-upper')).width).toBeLessThan(0.4)
-  await expect.poll(async () => (await dimensions(page, '.ide-runtime-panel')).width / (await dimensions(page, '.ide-upper')).width).toBeGreaterThan(0.6)
-  await page.getByRole('button', { name: 'Collapse source', exact: true }).click()
-  await expect(page.locator('.ide-editor-panel')).toBeHidden()
-  await runtimeAction(page, 'Show source').click()
-  await expect(page.locator('.monaco-editor')).toBeVisible()
-  await expect(page.locator('.executing-line')).toBeVisible()
-  await expect(page.getByRole('slider', { name: 'Scrub execution' })).toHaveValue(selected.cursor)
-  await expect(page.getByRole('combobox', { name: 'Select runtime entity' })).toHaveValue(selected.id)
-  expect(await canvas!.evaluate((element) => element === document.querySelector('.spatial-view canvas'))).toBe(true)
-  expect(await editor!.evaluate((element) => element === document.querySelector('.monaco-editor'))).toBe(true)
+  await sourceWidth(page, runWidth(width))
   for (let cycle = 0; cycle < 2; cycle++) {
-    await runtimeAction(page, 'Expand runtime').click()
-    await expect(page.locator('.ide-editor-panel')).toBeHidden()
-    await expect.poll(async () => (await dimensions(page, '.ide-runtime-panel')).width / page.viewportSize()!.width).toBeGreaterThan(0.95)
-    await runtimeAction(page, 'Show source drawer').click()
-    await expect(page.locator('.monaco-editor')).toBeVisible()
+    await page.getByRole('button', { name: 'Expand source for editing', exact: true }).click()
+    await sourceWidth(page, width * .48)
+    expect(await sourceState()).toEqual(originalSource)
+    await page.getByRole('button', { name: 'Collapse source', exact: true }).click()
+    await sourceWidth(page, runWidth(width))
+    await inspector(page).getByRole('button', { name: 'Focus selection', exact: true }).click()
+    await ready(page)
+    await sourceWidth(page, width * .22)
     await expect(page.locator('.executing-line')).toBeVisible()
-    await page.getByRole('button', { name: 'Close source drawer', exact: true }).click()
-    await runtimeAction(page, 'Restore IDE layout').click()
-    await expect(page.locator('.executing-line')).toBeVisible()
-    await expect(page.getByRole('slider', { name: 'Scrub execution' })).toHaveValue(selected.cursor)
-    await expect(page.getByRole('combobox', { name: 'Select runtime entity' })).toHaveValue(selected.id)
-    await expect(page.getByRole('complementary', { name: 'Runtime inspector' })).toContainText('18')
-    expect(await canvas!.evaluate((element) => element === document.querySelector('.spatial-view canvas'))).toBe(true)
-    expect(await editor!.evaluate((element) => element === document.querySelector('.monaco-editor'))).toBe(true)
+    await sameSelection(page, selected)
+    await inspector(page).getByRole('button', { name: 'Return to World', exact: true }).click()
+    await ready(page)
+    await sourceWidth(page, runWidth(width))
+    await expect(inspector(page)).toContainText('18')
+    await sameSelection(page, selected)
+    expect(await originalCanvas!.evaluate(node => node === document.querySelector('.world-canvas canvas'))).toBe(true)
+    await expect.poll(sourceState).toMatchObject({ modelUri: originalSource.modelUri, position: originalSource.position, selection: originalSource.selection })
   }
 })
 
@@ -192,8 +198,9 @@ test('keyboard explorer, bottom tools, inspector and Save All remain usable from
   const selected = await selectPerson(page)
   // Open and dirty two real Monaco models; saving all must reach both files.
   for (const path of ['Main.java', 'Person.java']) {
-    if (await page.getByRole('button', { name: 'Show project explorer', exact: true }).isVisible()) await page.keyboard.press('Alt+Shift+E')
+    if (!await page.locator('.ide-project-panel').isVisible()) await page.keyboard.press('Alt+Shift+E')
     await page.locator('.ide-tree-name').filter({ hasText: path }).click()
+    await page.keyboard.press('Alt+Shift+E')
     await page.locator('.monaco-editor .view-lines').click()
     await page.keyboard.press('ControlOrMeta+End')
     await page.keyboard.insertText('\n// M8 save all\n')
@@ -204,29 +211,25 @@ test('keyboard explorer, bottom tools, inspector and Save All remain usable from
   expect(fixture.saved.sort()).toEqual(['Main.java', 'Person.java'])
   expect([...fixture.files.values()].every((file) => file.content.includes('// M8 save all'))).toBe(true)
   expect([...fixture.files.values()].every((file) => file.content.endsWith('\n// M8 save all\n'))).toBe(true)
-  await expect(page.getByRole('slider', { name: 'Scrub execution' })).toHaveValue(selected.cursor)
-  await expect(page.getByRole('combobox', { name: 'Select runtime entity' })).toHaveValue(selected.id)
-  await page.keyboard.press('Alt+Shift+E')
+  await sameSelection(page, selected)
   await expect(page.locator('.ide-project-panel')).toBeHidden()
   // macOS Option+Shift+E reports an accented symbol while code stays KeyE.
   await page.evaluate(() => window.dispatchEvent(new KeyboardEvent('keydown', { key: '´', code: 'KeyE', altKey: true, shiftKey: true, bubbles: true, cancelable: true })))
   await expect(page.locator('.ide-project-panel')).toBeVisible()
-  // Completed runs collapse unpinned Console in Spatial 2.0; pending input
-  // remains open. Normalize either state before the keyboard round trip.
-  const collapse = page.getByRole('button', { name: 'Collapse bottom panel', exact: true })
-  if (await collapse.isVisible()) await collapse.click()
-  await expect(page.getByRole('button', { name: 'Expand bottom panel', exact: true })).toBeVisible()
-  // Monaco may use native EditContext instead of a textarea in Chrome.
+  await page.keyboard.press('Alt+Shift+E')
+  const dock = page.getByRole('navigation', { name: 'Dock', exact: true })
+  const console = dock.getByRole('button', { name: 'Console', exact: true })
+  if (await console.getAttribute('aria-expanded') === 'true') await console.click()
   await page.locator('.monaco-editor .view-lines').click()
   await page.keyboard.press('Alt+Shift+B')
-  await expect(page.getByRole('button', { name: 'Collapse bottom panel', exact: true })).toBeVisible()
-  await expect(page.getByRole('button', { name: 'CONSOLE', exact: true })).toBeVisible()
+  await expect(console).toHaveAttribute('aria-expanded', 'true')
+  await expect(page.getByRole('region', { name: 'Console drawer', exact: true })).toBeVisible()
   await page.keyboard.press('Alt+Shift+B')
-  await expect(page.getByRole('button', { name: 'Expand bottom panel', exact: true })).toBeVisible()
+  await expect(console).toHaveAttribute('aria-expanded', 'false')
   await page.keyboard.press('Alt+Shift+I')
-  await expect(page.getByRole('complementary', { name: 'Runtime inspector' })).toHaveCount(0)
+  await expect(inspector(page)).toHaveCount(0)
   await page.keyboard.press('Alt+Shift+I')
-  await expect(page.getByRole('complementary', { name: 'Runtime inspector' })).toContainText('18')
+  await expect(inspector(page)).toContainText('18')
 })
 
 test('crossing the narrow breakpoint collapses explorer and Focus keeps executing source reachable', async ({ page }, testInfo) => {
@@ -236,40 +239,37 @@ test('crossing the narrow breakpoint collapses explorer and Focus keeps executin
   await expect(page.locator('.ide-project-panel')).toBeVisible()
   await page.setViewportSize({ width: 760, height: 900 })
   await expect(page.locator('.ide-project-panel')).toBeHidden()
-  await expect(page.getByRole('button', { name: 'Show project explorer', exact: true })).toBeVisible()
-  await expect(page.locator('.executing-line')).toBeVisible()
+  await expect(sourceButton(page)).toBeVisible()
+  const allocation = await page.evaluate(id => {
+    const node = window.__ggjavaezWorld!.scene().entities[id]
+    return node?.kind === 'object' ? node.allocationSite : null
+  }, selected.id)
+  expect(allocation).toBeTruthy()
   await page.keyboard.press('Alt+Shift+F')
-  await expect(page.locator('.ide-editor-panel')).toBeHidden()
-  // Wait for the pane transition and canvas resize after entering Focus.
-  await expect.poll(async () => (await dimensions(page, '.spatial-view canvas')).width).toBeGreaterThan(650)
-  await expect.poll(async () => (await dimensions(page, '.spatial-view canvas')).height).toBeGreaterThan(450)
-  await runtimeAction(page, 'Show source drawer').click()
+  await ready(page)
+  await expect(editor(page)).toBeHidden()
+  expect((await dimensions(page, '.world-canvas canvas')).width).toBeGreaterThan(650)
+  expect((await dimensions(page, '.world-canvas canvas')).height).toBeGreaterThan(450)
+  await sourceButton(page).click()
   await expect(page.locator('.executing-line')).toBeVisible()
-  await expect(page.locator('.ide-tab.is-active')).toContainText('Person.java')
-  await page.getByRole('button', { name: 'Close source drawer', exact: true }).click()
-  await page.keyboard.press('Alt+Shift+F')
-  await expect(page.getByRole('slider', { name: 'Scrub execution' })).toHaveValue(selected.cursor)
-  await expect(page.getByRole('combobox', { name: 'Select runtime entity' })).toHaveValue(selected.id)
+  await expect.poll(() => page.evaluate(() => window.__ggjavaezQA!.source()?.target)).toMatchObject({ mark: 'focus', line: allocation!.line })
+  await expect(page.locator('.ide-tab.is-active')).toContainText(allocation!.fileId.split('/').at(-1)!)
   await page.keyboard.press('Alt+Shift+E')
   await expect(page.locator('.ide-tree-name').filter({ hasText: 'Main.java' })).toBeVisible()
   await page.keyboard.press('Alt+Shift+E')
   await expect(page.locator('.ide-project-panel')).toBeHidden()
-  await expect(page.locator('.ide-runtime-panel')).toBeVisible()
-  await expect(page.locator('.ide-editor-panel')).toBeVisible()
-  await page.keyboard.press('Alt+Shift+F')
-  await expect(page.locator('.ide-runtime-panel')).toBeVisible()
-  await expect(page.locator('.ide-editor-panel')).toBeHidden()
-  await expect.poll(async () => (await dimensions(page, '.spatial-view canvas')).height).toBeGreaterThan(450)
-  await page.getByRole('button', { name: 'Overview', exact: true }).click()
-  await page.waitForTimeout(650)
+  await expect(editor(page)).toBeVisible()
+  await page.getByRole('button', { name: 'Collapse source', exact: true }).click()
+  await expect(editor(page)).toBeHidden()
+  await sameSelection(page, selected)
+  await inspector(page).getByRole('button', { name: 'Return to World', exact: true }).click()
+  await home(page)
   await page.screenshot({ path: testInfo.outputPath('focus-from-code-760x900.png'), animations: 'disabled' })
-  await runtimeAction(page, 'Show source drawer').click()
+  await sourceButton(page).click()
   await expect(page.locator('.executing-line')).toBeVisible()
-  await runtimeAction(page, 'Restore IDE layout').click()
-  await expect(page.locator('.ide-runtime-panel')).toBeVisible()
-  await expect(page.locator('.ide-editor-panel')).toBeVisible()
-  await expect(page.getByRole('slider', { name: 'Scrub execution' })).toHaveValue(selected.cursor)
-  await expect(page.getByRole('combobox', { name: 'Select runtime entity' })).toHaveValue(selected.id)
+  await expect(page.locator('.ide-tab.is-active')).toContainText('Person.java')
+  await expect(canvas(page)).toBeVisible()
+  await sameSelection(page, selected)
 })
 
 test('narrow Error Explorer exposes source, cause rewind, stderr and return to failure while keeping the world', async ({ page }) => {
@@ -277,13 +277,15 @@ test('narrow Error Explorer exposes source, cause rewind, stderr and return to f
   const payload = failureFixture()
   await workspace(page, payload)
   const trace = await visualize(page, payload)
-  const throwCursor = String(trace.events.findIndex((event) => event.type === 'THROW_EXCEPTION') + 1)
+  const throwCursor = trace.events.findIndex((event) => event.type === 'THROW_EXCEPTION') + 1
+  await seekCursor(page, trace.events.length)
+  await openDock(page, 'Errors')
   const panel = page.getByRole('region', { name: 'Error Explorer', exact: true })
   await expect(panel.getByRole('heading', { name: 'NullPointerException', exact: true })).toBeVisible()
-  await expect(page.locator('.spatial-view canvas')).toBeVisible()
-  await expect(page.locator('.executing-line')).toBeVisible()
+  await expect(canvas(page)).toBeVisible()
   await panel.locator('.debug-source').click()
-  await expect(page.locator('.executing-line')).toBeVisible()
+  await expect(editor(page)).toBeVisible()
+  await expect.poll(() => page.evaluate(() => window.__ggjavaezQA!.source()?.target?.line)).toBe(4)
   await panel.getByText('Actual JVM stderr / stack trace', { exact: true }).click()
   await expect(panel.locator('.error-summary pre')).toContainText('Main.main(Main.java:4)')
   await panel.getByRole('button', { name: 'Stack & path', exact: true }).click()
@@ -291,48 +293,42 @@ test('narrow Error Explorer exposes source, cause rewind, stderr and return to f
   await panel.getByRole('button', { name: 'Trace Cause', exact: true }).click()
   await expect(panel.locator('.cause-list button')).toHaveCount(1)
   await panel.locator('.cause-list button').click()
-  await expect.poll(async () => Number(await page.getByRole('slider', { name: 'Scrub execution' }).inputValue())).toBeLessThan(Number(throwCursor))
+  await expect.poll(async () => Number(await timeline(page).getAttribute('aria-valuenow'))).toBeLessThan(throwCursor)
   await expect(panel.locator('.cause-list button')).toHaveAttribute('aria-current', 'step')
-  await panel.getByRole('button', { name: 'Failure', exact: true }).click()
   await panel.getByRole('button', { name: 'Return to failure', exact: true }).click()
-  await expect(page.getByRole('slider', { name: 'Scrub execution' })).toHaveValue(throwCursor)
+  await expect(timeline(page)).toHaveAttribute('aria-valuenow', String(throwCursor))
+  await panel.getByRole('button', { name: 'Failure', exact: true }).click()
   await page.keyboard.press('Alt+Shift+B')
   await expect(panel).toBeHidden()
-  expect((await dimensions(page, '.spatial-view canvas')).height).toBeGreaterThan(250)
+  expect((await dimensions(page, '.world-canvas canvas')).height).toBeGreaterThan(250)
   await page.keyboard.press('Alt+Shift+B')
   await expect(panel.getByRole('heading', { name: 'NullPointerException', exact: true })).toBeVisible()
 })
 
-test('manual Runtime width survives reload and Focus under reduced motion', async ({ page }) => {
+test('specified Source widths hold across reload, Run and Focus under reduced motion', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.addInitScript(key => localStorage.setItem(key, '34'), widthKey)
   await workspace(page)
-  await expect(page.locator('.ide-shell')).toHaveClass(/ide-shell--code/)
-  await expect(page.locator('.ide-runtime-panel')).toBeVisible()
-  // Phase 5's fresh source wing is 38%; the world remains the primary surface
-  // even while idle. Manual widths still must survive reload and Focus.
-  await expect.poll(async () => (await dimensions(page, '.ide-editor-panel')).width / (await dimensions(page, '.ide-upper')).width).toBeCloseTo(0.38, 2)
-  await visualize(page)
-  const divider = page.getByRole('separator', { name: 'Resize runtime pane', exact: true })
-  await divider.focus()
-  await page.keyboard.press('ArrowRight')
-  await page.keyboard.press('ArrowRight')
-  const runtimeWidth = (await dimensions(page, '.ide-editor-panel')).width / (await dimensions(page, '.ide-upper')).width
-  expect(runtimeWidth).toBeCloseTo(0.34, 2)
-  await expect.poll(async () => page.evaluate((key) => Number(localStorage.getItem(key)), widthKey)).toBeCloseTo(runtimeWidth * 100, 0)
-  expect(await page.locator('.ide-editor-panel').evaluate((element) => getComputedStyle(element).transitionDuration)).toBe('0s')
+  const width = page.viewportSize()!.width
+  await expect(canvas(page)).toBeVisible()
+  await sourceWidth(page, width * .48)
+  const selected = await selectPerson(page)
+  await sourceWidth(page, runWidth(width))
+  expect(await page.evaluate(key => localStorage.getItem(key), widthKey)).toBeNull()
+  expect(await editor(page).evaluate(element => getComputedStyle(element).transitionDuration)).toBe('0s')
   await page.reload()
   await expect(page.locator('.monaco-editor')).toBeVisible()
-  await expect(page.locator('.ide-shell')).toHaveClass(/ide-shell--code/)
-  await expect(page.locator('.ide-runtime-panel')).toBeVisible()
-  await expect.poll(async () => (await dimensions(page, '.ide-editor-panel')).width / (await dimensions(page, '.ide-upper')).width).toBeCloseTo(runtimeWidth, 2)
-  expect(await page.locator('.ide-editor-panel').evaluate((element) => getComputedStyle(element).transitionDuration)).toBe('0s')
-  await visualize(page)
-  // Retain the manual-width contract across rerun as well as reload. The
-  // shell's current execution entry path must preserve the remembered width.
-  await expect.poll(async () => (await dimensions(page, '.ide-editor-panel')).width / (await dimensions(page, '.ide-upper')).width).toBeCloseTo(runtimeWidth, 2)
+  await expect(canvas(page)).toBeVisible()
+  await sourceWidth(page, width * .48)
+  expect(await editor(page).evaluate(element => getComputedStyle(element).transitionDuration)).toBe('0s')
+  expect(await selectPerson(page)).toEqual(selected)
+  await sourceWidth(page, runWidth(width))
   await page.keyboard.press('Alt+Shift+F')
-  await expect(page.locator('.ide-editor-panel')).toBeHidden()
-  await page.keyboard.press('Alt+Shift+F')
-  await expect(page.locator('.ide-editor-panel')).toBeVisible()
-  await expect.poll(async () => (await dimensions(page, '.ide-editor-panel')).width / (await dimensions(page, '.ide-upper')).width).toBeCloseTo(runtimeWidth, 2)
+  await ready(page)
+  await sourceWidth(page, width * .22)
+  await sameSelection(page, selected)
+  await inspector(page).getByRole('button', { name: 'Return to World', exact: true }).click()
+  await ready(page)
+  await sourceWidth(page, runWidth(width))
+  await sameSelection(page, selected)
 })

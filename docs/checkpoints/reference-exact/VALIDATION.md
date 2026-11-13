@@ -595,3 +595,7 @@ Source `2198f118` passes 9/9 native cases in 84.455 seconds with zero failures, 
 ### Focus camera projection cost — 2026-11-13
 
 Source `4b8f9f0b` passes all eight source checks and 26 native browser cases with zero failures, skips or flakes. The production Dense run completes ten stages and still fails seek p50 and Focus p95. The paired solver diagnostic and exact camera/visual evidence are archived. [Measurements and remaining limits](migration/focus-solver.md).
+
+### Workspace browser workflows — 2026-11-13
+
+Source `1a704c41` passes all five original workspace cases on their preserved protocol fixtures in 36.769 seconds, with zero failures, skips or flakes. Four older product-audit browser cases remain. [Source geometry, fixture scope and earlier failures](migration/workspace-browser-successors.md).
