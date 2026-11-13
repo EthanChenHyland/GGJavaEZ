@@ -25,7 +25,7 @@ const sessionArb: fc.Arbitrary<NonNullable<AppStateInputs['session']>> = fc.reco
   support: fc.constantFrom('FULL', 'PARTIAL', 'RUN_ONLY'), supportReason: fc.option(fc.string(), { nil: null }),
   failureKind: fc.constantFrom(null, 'build', 'launch', 'runtime', 'capture'), exitCode: fc.option(fc.integer(), { nil: null }),
   terminalStatus: fc.constantFrom(null, 'complete', 'program_crashed', 'instrumentation_failed', 'limit_exceeded', 'unsupported'),
-  recording: recordingArb, diagnostic: fc.option(fc.string(), { nil: null }), startedAt: fc.constant('2026-10-08T12:00:00.000Z'),
+  recording: recordingArb, diagnostic: fc.option(fc.string(), { nil: null }), durationMs: fc.option(fc.nat(100_000), { nil: null }),
   build: fc.option(fc.array(fc.constantFrom('error' as const, 'warning' as const, 'note' as const), { maxLength: 8 }).map((severities) => ({
     success: false, diagnostics: severities.map((severity, i) => ({ id: String(i), location: { path: 'Main.java', line: i + 1, column: 1 }, severity, message: 'captured diagnostic', raw: '' })),
     rawOutput: '', elapsedMs: 0, mainClasses: [], jdk: { available: true, home: null, javaPath: null, javacPath: null, version: null, error: null },
@@ -33,7 +33,6 @@ const sessionArb: fc.Arbitrary<NonNullable<AppStateInputs['session']>> = fc.reco
 })
 const inputsArb: fc.Arbitrary<AppStateInputs> = fc.record({
   session: fc.option(sessionArb, { nil: null }), sessionEventCount: fc.nat(1000), dimensions: dimensionsArb,
-  endedAt: fc.option(fc.integer({ min: 0, max: 100_000 }).map((ms) => new Date(Date.parse('2026-10-08T12:00:00.000Z') + ms).toISOString()), { nil: null }),
   debug: fc.option(fc.record({ status: fc.constantFrom('starting' as const, 'running' as const, 'paused' as const, 'exited' as const, 'stopped' as const, 'failed' as const), pause: fc.constant(null) }), { nil: null }),
   world: viewArb.chain((view) => fc.record({ origin: fc.constantFrom('none' as const, 'session' as const, 'prior' as const, 'recording' as const), eventCount: fc.constant(view.liveHead), cursor: fc.constant(view.cursor), lens: fc.constant(view.lens) })),
   focusTargetId: fc.option(fc.string(), { nil: null }), recordingViewer: fc.option(fc.record({ status: recordingArb, ended: fc.boolean() }), { nil: null }),
@@ -76,8 +75,8 @@ function reference(input: AppStateInputs): AppState {
     }
   }
   let termination: Termination | null = null
-  if (s && terminal && input.endedAt) {
-    const durationMs = Date.parse(input.endedAt) - Date.parse(s.startedAt)
+  if (s && terminal && typeof s.durationMs === 'number') {
+    const durationMs = s.durationMs
     if (Number.isFinite(durationMs) && durationMs >= 0) {
       if (s.phase === 'STOPPED') termination = { kind: 'user-stop', durationMs }
       else if (s.exitCode !== null) termination = { kind: 'exit', durationMs, exitCode: s.exitCode }
@@ -136,8 +135,8 @@ it('Property 3: labels preserve state details and ordered overlays; icons are di
     const state = deriveAppState(input)
     expect(state.label).toBe(reference(input).label)
     expect(state.icon).toBe(presentation[state.execution][1])
-    const session = { ...referenceSession(), phase: 'COMPLETED' as const, exitCode }
-    const terminal: AppStateInputs = { ...input, session, dimensions: { ...input.dimensions, recording: fullRecording() }, endedAt: new Date(Date.parse(session.startedAt) + durationMs).toISOString(), world: { ...input.world, cursor: input.world.eventCount }, focusTargetId: null }
+    const session = { ...referenceSession(), phase: 'COMPLETED' as const, exitCode, durationMs }
+    const terminal: AppStateInputs = { ...input, session, dimensions: { ...input.dimensions, recording: fullRecording() }, world: { ...input.world, cursor: input.world.eventCount }, focusTargetId: null }
     expect(deriveAppState(terminal).label).toBe(`Completed · ${(durationMs / 1000).toFixed(2)} s · Exit code ${exitCode}`)
     expect(deriveAppState({ ...terminal, session: { ...session, phase: 'STOPPED' } }).label).toBe(`Completed · ${(durationMs / 1000).toFixed(2)} s · Stopped by user`)
   }), { numRuns: 100 })
@@ -172,5 +171,5 @@ function fullRecording(): RecordingStatus {
 }
 function referenceSession(): NonNullable<AppStateInputs['session']> {
   return { id: 'session', kind: 'run', phase: 'RUNNING', support: 'FULL', supportReason: null, failureKind: null, exitCode: 0,
-    terminalStatus: 'complete', recording: fullRecording(), build: null, diagnostic: null, startedAt: '2026-10-08T12:00:00.000Z' }
+    terminalStatus: 'complete', recording: fullRecording(), build: null, diagnostic: null, durationMs: null }
 }

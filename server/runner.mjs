@@ -1,6 +1,7 @@
 import { spawn } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
 import { isAbsolute, relative, sep } from 'node:path'
+import { performance } from 'node:perf_hooks'
 import { parseRuntimeException } from './exceptions.mjs'
 import { javaLaunchArgs, launchRequest } from './launch.mjs'
 
@@ -80,6 +81,9 @@ export class RunManager {
         detached: process.platform !== 'win32',
         windowsHide: true,
       })
+      const processStartedAt = performance.now()
+      let elapsedMs = null
+      const recordExit = () => { elapsedMs ??= performance.now() - processStartedAt }
       const run = {
         runId: randomUUID(), projectId, mainClass, status: 'running',
         startedAt: new Date().toISOString(), events: [], exitCode: null, exception: null,
@@ -115,8 +119,12 @@ export class RunManager {
         collect('stderr', `${error.message}\n`)
       })
       // Reap processes launched in the JVM's inherited group when its main process exits.
-      child.once('exit', () => { if (process.platform !== 'win32') this.#signal(run, 'SIGKILL') })
+      child.once('exit', () => {
+        recordExit()
+        if (process.platform !== 'win32') this.#signal(run, 'SIGKILL')
+      })
       child.once('close', (exitCode, signal) => {
+        if (!run.launchError) recordExit()
         collect('stdout', stdoutDecoder.decode())
         collect('stderr', stderrDecoder.decode())
         run.exitCode = exitCode
@@ -126,7 +134,7 @@ export class RunManager {
         run.status = 'exited'
         this.#emit(run, {
           kind: 'exit', exitCode, signal,
-          elapsedMs: Math.max(0, Date.now() - Date.parse(run.startedAt)),
+          ...(elapsedMs !== null ? { elapsedMs: Math.round(elapsedMs) } : {}),
           exception: run.exception,
         })
         run.listeners.clear()

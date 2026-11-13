@@ -9,12 +9,12 @@ function inputs(): AppStateInputs {
   return {
     session: { id: 'attempt-1', kind: 'run', phase: 'RUNNING', support: 'FULL', supportReason: null,
       failureKind: null, exitCode: null, terminalStatus: null, recording: full, build: null,
-      diagnostic: null, startedAt: '2026-10-08T12:00:00.000Z' },
+      diagnostic: null, durationMs: null },
     sessionEventCount: 8,
     dimensions: { attemptId: 'attempt-1', build: 'ready', instrumentation: 'recording', process: 'alive',
       recording: full, debugger: 'inactive', input: { available: true, wait: 'not-waiting' },
       view: { recordingId: 'recording-1', cursor: 8, liveHead: 8, lens: 'LIVE' } },
-    endedAt: null, debug: null, world: { origin: 'session', eventCount: 8, cursor: 8, lens: 'LIVE' },
+    debug: null, world: { origin: 'session', eventCount: 8, cursor: 8, lens: 'LIVE' },
     focusTargetId: null, recordingViewer: null,
   }
 }
@@ -24,7 +24,7 @@ function completed(input = inputs()) {
   input.session!.exitCode = 0
   input.session!.terminalStatus = 'complete'
   input.dimensions.process = 'ended'
-  input.endedAt = '2026-10-08T12:00:01.235Z'
+  input.session!.durationMs = 1235
   return input
 }
 
@@ -186,13 +186,13 @@ describe('deriveAppState', () => {
     input.session!.exitCode = null
     expect(deriveAppState(input).termination).toBeNull()
     input.session!.exitCode = 0
-    input.endedAt = null
+    delete input.session!.durationMs
     expect(deriveAppState(input).label).toBe('Completed')
     input.session!.phase = 'STOPPED'
     expect(deriveAppState(input).label).toBe('Completed · Stopped by user')
-    input.endedAt = 'invalid'
+    input.session!.durationMs = NaN
     expect(deriveAppState(input).termination).toBeNull()
-    input.endedAt = '2026-10-08T11:59:00.000Z'
+    input.session!.durationMs = -60000
     expect(deriveAppState(input).termination).toBeNull()
   })
 

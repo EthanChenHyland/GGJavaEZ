@@ -117,8 +117,8 @@ export class ExecutionManager {
     const dto = { id: randomUUID(), revision: 0, projectId, mainClass: null, kind, phase: 'BUILDING',
       support: 'RUN_ONLY', supportReason: null, build: null, rawEvents: [], rawEventCount: 0, transportVersion: 1, recording: fullRecording(), sourceManifest: clone(EMPTY_MANIFEST),
       capability: null, stdout: '', stderr: '', runEvents: [], pause: null, breakpoints: [],
-      terminalStatus: null, exitCode: null, diagnostic: null, failureKind: null, startedAt: new Date().toISOString() };
-    const record = { dto, backend: null, backendId: null, stopped: false, listeners: new Map(), unsubscribe: null,
+      terminalStatus: null, exitCode: null, durationMs: null, diagnostic: null, failureKind: null, startedAt: new Date().toISOString() };
+    const record = { dto, backend: null, backendId: null, launching: false, stopped: false, listeners: new Map(), unsubscribe: null,
       publishTimer: null, lastPublishedAt: 0, task: null, observedCount: -1, observedCapability: null,
       counts: Object.create(null), legacyRawEvents: [], observedSupport: 'RUN_ONLY', observedDiagnostic: null, observedTerminal: null, observedRecording: null };
     this.sessions.set(dto.id, record); this.latest = record;
@@ -166,6 +166,7 @@ export class ExecutionManager {
       if (record.stopped) return;
       this.#update(record, { sourceManifest });
       try {
+        record.launching = true;
         const session = await this.debuggerSessions.start({ ...base, sourceManifest, build: dto.build,
           breakpoints: dto.kind === 'debug' ? breakpoints : [], control: dto.kind === 'debug',
           rawEventLimit: 20000, rawByteLimit: 8 * 1024 * 1024, timeoutMs: 30000 }, { transport: 'delta' });
@@ -178,7 +179,7 @@ export class ExecutionManager {
         if (dto.kind === 'run' && failure.preparationFailed && !record.stopped)
           return await this.#plain(record, base, `Instrumentation preparation failed: ${failure.message}`);
         throw failure;
-      }
+      } finally { record.launching = false; }
     } catch (failure) {
       this.#fail(record, failure, 'launch');
     }
@@ -187,7 +188,8 @@ export class ExecutionManager {
   async #plain(record, base, reason) {
     if (record.stopped) return;
     this.#update(record, { support: 'RUN_ONLY', supportReason: reason });
-    const run = await this.runs.start(base);
+    record.launching = true;
+    const run = await this.runs.start(base).finally(() => { record.launching = false; });
     record.backend = 'plain'; record.backendId = run.runId;
     this.#plainSnapshot(record, run);
     record.unsubscribe = this.runs.subscribe(run.runId, () => this.#plainSnapshot(record, this.runs.snapshot(run.runId)));
@@ -200,8 +202,9 @@ export class ExecutionManager {
     const stderr = run.events.filter((event) => event.kind === 'stderr').map((event) => event.text).join('');
     const ended = run.status === 'exited';
     const failed = ended && run.exitCode !== 0 && !record.stopped;
-    this.#update(record, { phase: record.stopped ? 'STOPPED' : ended ? failed ? 'FAILED' : 'COMPLETED' : 'RUNNING',
+    this.#update(record, { phase: record.stopped && ended ? 'STOPPED' : ended ? failed ? 'FAILED' : 'COMPLETED' : 'RUNNING',
       runEvents: run.events, stdout, stderr, exitCode: run.exitCode,
+      durationMs: ended ? run.events.at(-1)?.elapsedMs ?? null : null,
       failureKind: failed ? 'runtime' : null,
       diagnostic: failed ? run.exception?.message ?? `JVM exited with code ${run.exitCode}` : record.dto.diagnostic }, ended);
   }
@@ -224,7 +227,7 @@ export class ExecutionManager {
       || session.terminalStatus && !['complete', 'unsupported'].includes(session.terminalStatus));
     const waitingForInput = session.waitingForInput ?? session.rawEvents.at(-1)?.type === 'stdin_wait';
     const recordingKey = JSON.stringify(session.recording ?? null);
-    const phase = record.stopped || session.status === 'stopped' ? 'STOPPED'
+    const phase = terminal && (record.stopped || session.status === 'stopped') ? 'STOPPED'
       : terminal ? failed ? 'FAILED' : 'COMPLETED'
         : session.status === 'paused' ? 'PAUSED' : session.status === 'starting' ? 'STARTING'
           : waitingForInput ? 'WAITING_FOR_INPUT' : 'RUNNING';
@@ -246,7 +249,8 @@ export class ExecutionManager {
     recording: session.recording ?? fullRecording(), outputTruncated: session.outputTruncated,
     outputArchiveAvailable: session.outputArchiveAvailable, outputArchiveError: session.outputArchiveError,
     stdout: session.stdout, stderr: session.stderr, pause: session.pause, breakpoints: session.breakpoints,
-    terminalStatus: session.terminalStatus, exitCode: session.exitCode, diagnostic: session.diagnostic,
+    terminalStatus: session.terminalStatus, exitCode: session.exitCode, durationMs: terminal ? session.durationMs ?? null : null,
+    diagnostic: phase === 'STOPPED' ? 'Execution stopped by user' : session.diagnostic,
     failureKind: failed ? session.terminalStatus === 'program_crashed' ? 'runtime' : 'capture' : null },
     terminal || session.status === 'paused' || record.dto.phase === 'PAUSED');
   }
@@ -284,6 +288,7 @@ export class ExecutionManager {
   async command(id, command, options = {}) {
     const record = this.#get(id);
     if (command === 'stop') return this.stop(id, options);
+    if (record.stopped) throw fault('Execution is stopping');
     if (record.dto.kind !== 'debug' || record.backend !== 'recorder' || !record.backendId)
       throw fault('This execution has no debugger control', 400);
     await this.debuggerSessions.command(record.backendId, command, { transport: 'delta' });
@@ -292,7 +297,7 @@ export class ExecutionManager {
 
   async input(id, text) {
     const record = this.#get(id);
-    if (!record.backendId || !['RUNNING', 'PAUSED', 'WAITING_FOR_INPUT'].includes(record.dto.phase)) throw fault('Execution is not accepting input');
+    if (record.stopped || !record.backendId || !['RUNNING', 'PAUSED', 'WAITING_FOR_INPUT'].includes(record.dto.phase)) throw fault('Execution is not accepting input');
     const result = record.backend === 'recorder'
       ? await this.debuggerSessions.input(record.backendId, text)
       : await this.runs.input(record.backendId, text);
@@ -312,12 +317,19 @@ export class ExecutionManager {
     const record = id ? this.#get(id) : this.latest;
     if (!record) return null;
     if (TERMINAL.has(record.dto.phase)) return this.#snapshot(record, options);
+    // Once a child exists, publish Stop together with its measured exit.
     record.stopped = true;
-    this.#update(record, { phase: 'STOPPED', diagnostic: 'Execution stopped by user' }, true);
-    if (record.backendId) {
-      if (record.backend === 'recorder') await this.debuggerSessions.stop(record.backendId, { transport: 'delta' });
-      else await this.runs.stop(record.backendId);
+    if (record.launching && !record.backendId) await record.task;
+    if (!TERMINAL.has(record.dto.phase) && record.backendId) {
+      if (record.backend === 'recorder') {
+        const terminal = await this.debuggerSessions.stop(record.backendId, { transport: 'delta' });
+        if (!TERMINAL.has(record.dto.phase) && terminal) this.#recorderSnapshot(record, terminal);
+      } else {
+        const terminal = await this.runs.stop(record.backendId);
+        if (!TERMINAL.has(record.dto.phase) && terminal) this.#plainSnapshot(record, terminal);
+      }
     }
+    if (!TERMINAL.has(record.dto.phase)) this.#update(record, { phase: 'STOPPED', diagnostic: 'Execution stopped by user' }, true);
     return this.#snapshot(record, options);
   }
 }

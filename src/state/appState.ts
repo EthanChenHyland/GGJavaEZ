@@ -23,11 +23,10 @@ export interface ExecutionDimensions {
 
 export interface AppStateInputs {
   session: Pick<ExecutionSession, 'id' | 'kind' | 'phase' | 'support' | 'supportReason' | 'failureKind' | 'exitCode'
-    | 'terminalStatus' | 'recording' | 'build' | 'diagnostic' | 'startedAt'> | null
+    | 'terminalStatus' | 'recording' | 'build' | 'diagnostic' | 'durationMs'> | null
   /** Normalized events ingested for session; never a raw recorder sequence. */
   sessionEventCount: number
   dimensions: ExecutionDimensions
-  endedAt: string | null
   debug: { status: DebugSession['status']; pause: DebugPause | null } | null
   world: { origin: WorldOrigin; eventCount: number; cursor: number; lens: TimelineLens }
   focusTargetId: string | null
@@ -76,11 +75,9 @@ function failureOf(session: NonNullable<AppStateInputs['session']>, dimensions: 
 }
 
 function terminationOf(inputs: AppStateInputs): Termination | null {
-  const { session, endedAt } = inputs
-  if (!session || !endedAt || !['STOPPED', 'COMPLETED', 'FAILED'].includes(session.phase)) return null
-  const durationMs = Date.parse(endedAt) - Date.parse(session.startedAt)
-  // An absent/invalid time or exit code stays unavailable; no clock reads or guessed zeroes.
-  if (!Number.isFinite(durationMs) || durationMs < 0) return null
+  const session = inputs.session, durationMs = session?.durationMs
+  if (!session || typeof durationMs !== 'number' || !Number.isFinite(durationMs) || durationMs < 0
+    || !['STOPPED', 'COMPLETED', 'FAILED'].includes(session.phase)) return null
   if (session.phase === 'STOPPED') return { kind: 'user-stop', durationMs }
   return session.exitCode === null ? null : { kind: 'exit', exitCode: session.exitCode, durationMs }
 }

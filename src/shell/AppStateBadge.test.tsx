@@ -4,7 +4,7 @@ import {deriveAppState,type AppStateInputs,type ExecutionState} from '../state/a
 import {AppStateBadge} from './AppStateBadge'
 function inputs():AppStateInputs{
  const recording={state:'FULL',reason:null,budget:null,lastRecordedSeq:null,executionContinued:false} as const
- return{session:{id:'attempt',kind:'run',phase:'RUNNING',support:'FULL',supportReason:null,failureKind:null,exitCode:null,terminalStatus:null,recording,build:null,diagnostic:null,startedAt:'2026-10-19T12:00:00Z'},sessionEventCount:8,dimensions:{attemptId:'attempt',build:'ready',instrumentation:'recording',process:'alive',recording,debugger:'inactive',input:{available:true,wait:'not-waiting'},view:{recordingId:'recording',cursor:8,liveHead:8,lens:'LIVE'}},endedAt:null,debug:null,world:{origin:'session',eventCount:8,cursor:8,lens:'LIVE'},focusTargetId:null,recordingViewer:null}
+ return{session:{id:'attempt',kind:'run',phase:'RUNNING',support:'FULL',supportReason:null,failureKind:null,exitCode:null,terminalStatus:null,recording,build:null,diagnostic:null,durationMs:null},sessionEventCount:8,dimensions:{attemptId:'attempt',build:'ready',instrumentation:'recording',process:'alive',recording,debugger:'inactive',input:{available:true,wait:'not-waiting'},view:{recordingId:'recording',cursor:8,liveHead:8,lens:'LIVE'}},debug:null,world:{origin:'session',eventCount:8,cursor:8,lens:'LIVE'},focusTargetId:null,recordingViewer:null}
 }
 it('renders eight distinct glyphs from derived AppState and an indeterminate progress role only for Building',()=>{
  const states:ExecutionState[]=['EDIT','BUILDING','RUNNING','WAITING_INPUT','DEBUG_PAUSED','COMPLETED','FAILED','PARTIAL_RECORDING'],glyphs:string[]=[]
@@ -14,7 +14,7 @@ it('renders eight distinct glyphs from derived AppState and an indeterminate pro
   if(execution==='BUILDING'){value.session!.phase='BUILDING';value.dimensions.build='building'}
   if(execution==='WAITING_INPUT'){value.session!.phase='WAITING_FOR_INPUT';value.dimensions.input.wait='waiting'}
   if(execution==='DEBUG_PAUSED'){value.session!.kind='debug';value.session!.phase='PAUSED';value.dimensions.debugger='paused'}
-  if(execution==='COMPLETED'){value.session!.phase='COMPLETED';value.session!.terminalStatus='complete';value.session!.exitCode=0;value.dimensions.process='ended';value.endedAt='2026-10-19T12:00:01Z'}
+  if(execution==='COMPLETED'){value.session!.phase='COMPLETED';value.session!.terminalStatus='complete';value.session!.exitCode=0;value.dimensions.process='ended';value.session!.durationMs=1000}
   if(execution==='FAILED'){value.session!.phase='FAILED';value.session!.failureKind='build';value.dimensions.build='failed'}
   if(execution==='PARTIAL_RECORDING'){value.dimensions.recording={state:'STOPPED_LIMIT',reason:'Event budget reached',budget:'events',lastRecordedSeq:8,executionContinued:true};value.session!.recording=value.dimensions.recording}
   const state=deriveAppState(value);expect(state.execution).toBe(execution)

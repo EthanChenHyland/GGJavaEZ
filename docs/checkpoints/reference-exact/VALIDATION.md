@@ -583,3 +583,7 @@ Revision `379d01d` and source `f7b30fab` execute all 195 assertions in 222.953 s
 ### Retained Java torture detail views — 2026-11-12
 
 Source `80e77e5e` passes four fresh JVM prerequisites and four retained detail cases in 342.385 seconds with zero failures, skips or flakes. Each reopened ID matches its original JVM recording. The archive contains 14 original detail PNGs. Strict browser TypeScript passes, and 18 older browser cases remain open. [Evidence, earlier driver failures and visual findings](migration/torture-detail-successors.md).
+
+### Retained completion duration — 2026-11-12
+
+Source `af03a4e5` passes all eight source checks and 2,281 default tests with 70 explicit opt-in skips. Three real-JVM reload failures become three passes. The broader 13-case browser integration passes without failures, skips or flakes. [Measured durations, exact source and regression evidence](migration/terminal-duration.md).

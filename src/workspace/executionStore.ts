@@ -6,7 +6,6 @@ import type { VisualizationCapabilityReport } from '../instrumentation/contracts
 
 export interface ExecutionState {
   build: BuildResult | null
-  endedAt: string | null
   execution: ExecutionSession | null
   /** Process/archives associated with the committed World, retained until its replacement. */
   worldExecution: ExecutionSession | null
@@ -16,7 +15,6 @@ export interface ExecutionState {
 }
 export const executionStore = createStore<ExecutionState>(() => ({
   build: null,
-  endedAt: null,
   execution: null,
   worldExecution: null,
   visualization: null,

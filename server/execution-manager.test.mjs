@@ -28,8 +28,8 @@ function harness(overrides = {}) {
       return structuredClone(debugSnapshot);
     }),
     subscribe: vi.fn((id, listener) => { debuggerListener = listener; listener(structuredClone(debugSnapshot)); return () => {}; }),
-    stop: vi.fn(async () => { if (debugSnapshot) {
-      debugSnapshot = { ...debugSnapshot, status: 'stopped', terminalStatus: 'unsupported' };
+    stop: vi.fn(async () => { if (debugSnapshot && !['stopped', 'exited', 'failed'].includes(debugSnapshot.status)) {
+      debugSnapshot = { ...debugSnapshot, status: 'stopped', terminalStatus: 'unsupported', durationMs: 218 };
       debuggerListener?.(structuredClone(debugSnapshot));
     } }),
     input: vi.fn(async () => ({ ok: true })),
@@ -79,8 +79,10 @@ test('Run returns BUILDING immediately, streams one recorder prefix and complete
   expect(h.runs.start).not.toHaveBeenCalled();
   h.emitDebug({ rawEvents: [observed, { ...observed, seq: 1, type: 'line' }], stdout: 'Hello\n' });
   expect(h.manager.current()).toMatchObject({ phase: 'RUNNING', support: 'PARTIAL', stdout: 'Hello\n' });
-  h.emitDebug({ status: 'exited', terminalStatus: 'complete', exitCode: 0 });
-  expect(h.manager.snapshot(initial.id)).toMatchObject({ phase: 'COMPLETED', support: 'FULL', rawEvents: [{ seq: 0 }, { seq: 1 }], exitCode: 0 });
+  expect(h.manager.snapshot(initial.id, { transport: 'delta' }).durationMs).toBeNull();
+  h.emitDebug({ status: 'exited', terminalStatus: 'complete', exitCode: 0, durationMs: 728 });
+  expect(h.manager.snapshot(initial.id)).toMatchObject({ phase: 'COMPLETED', support: 'FULL', rawEvents: [{ seq: 0 }, { seq: 1 }], exitCode: 0, durationMs: 728 });
+  expect(h.manager.snapshot(initial.id, { transport: 'delta' }).durationMs).toBe(728);
   expect(h.manager.snapshot(initial.id).id).toBe(live.id);
   expect(h.runs.start).not.toHaveBeenCalled();
 });
@@ -111,8 +113,8 @@ test('preparation failure alone falls back to one plain run with truthful RUN_ON
   await until(h.manager, (session) => session.phase === 'RUNNING');
   expect(h.runs.start).toHaveBeenCalledOnce();
   expect(h.manager.current()).toMatchObject({ support: 'RUN_ONLY', supportReason: 'Instrumentation preparation failed: ASM unavailable' });
-  h.emitRun({ status: 'exited', exitCode: 0, events: [{ id: 1, kind: 'stdout', text: 'Hello\n' }, { id: 2, kind: 'exit', exitCode: 0 }] });
-  expect(h.manager.current()).toMatchObject({ phase: 'COMPLETED', stdout: 'Hello\n' });
+  h.emitRun({ status: 'exited', exitCode: 0, events: [{ id: 1, kind: 'stdout', text: 'Hello\n' }, { id: 2, kind: 'exit', exitCode: 0, elapsedMs: 422 }] });
+  expect(h.manager.current()).toMatchObject({ phase: 'COMPLETED', stdout: 'Hello\n', durationMs: 422 });
 });
 
 test('advanced Run without visualization launches only the plain runner', async () => {
@@ -176,13 +178,17 @@ test('Stop during build prevents launch; Stop after start stops the existing chi
   await h.manager.stop(early.id);
   release();
   await h.manager.startQueue;
-  expect(h.manager.snapshot(early.id).phase).toBe('STOPPED');
+  expect(h.manager.snapshot(early.id)).toMatchObject({ phase: 'STOPPED', durationMs: null });
   expect(h.debug.start).not.toHaveBeenCalled();
   const live = h.manager.start({ projectId: 'p1' });
   await until(h.manager, (session) => session.phase === 'RUNNING');
+  const published = [];
+  const unsubscribe = h.manager.subscribe(live.id, snapshot => published.push(snapshot));
   await h.manager.stop(live.id);
+  unsubscribe();
   expect(h.debug.stop).toHaveBeenCalledWith('debug-1', { transport: 'delta' });
-  expect(h.manager.snapshot(live.id).phase).toBe('STOPPED');
+  expect(published.find(snapshot => snapshot.phase === 'STOPPED')?.durationMs).toBe(218);
+  expect(h.manager.snapshot(live.id)).toMatchObject({ phase: 'STOPPED', durationMs: 218 });
 });
 
 test('recorder Run mode uses one fake child, streams its trace and output, and never opens debug control', async () => {
@@ -215,7 +221,8 @@ test('recorder Run mode uses one fake child, streams its trace and output, and n
     child.stdout.end(); child.stderr.end(); child.emit('close', 0);
     for (let attempt = 0; attempt < 50 && manager.current().status !== 'exited'; attempt++)
       await new Promise((resolve) => setTimeout(resolve, 10));
-    expect(manager.current()).toMatchObject({ status: 'exited', terminalStatus: 'complete', exitCode: 0 });
+    expect(manager.current()).toMatchObject({ status: 'exited', terminalStatus: 'complete', exitCode: 0, durationMs: expect.any(Number) });
+    expect(manager.current().durationMs).toBeGreaterThanOrEqual(0);
     expect(spawnProcess).toHaveBeenCalledOnce();
   } finally { await manager.dispose(); await rm(directory, { recursive: true, force: true }); }
 });
