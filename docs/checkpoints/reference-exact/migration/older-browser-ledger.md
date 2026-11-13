@@ -18,7 +18,7 @@ Default inventory at f262899 discovers 294 cases in 81 files. Of these, 202 belo
 | `recursion.spec.ts` | 4 | [Migrated; captured expressions restored, unchanged trace and 37-case integration pass](recursion-browser-successors.md) |
 | `spatial-io-v12-p5.spec.ts` | 1 | [Migrated with its original curated recording and captured read/write evidence](io-labels-and-shell-workflows.md) |
 | `spatial-shell-v12-p5.spec.ts` | 6 | [Migrated with the same managed files, actions and assertions](io-labels-and-shell-workflows.md) |
-| `torture-details-v12-p5_5.spec.ts` | 4 | OPEN |
+| `torture-details-v12-p5_5.spec.ts` | 4 | [Migrated with four matching retained JVM session IDs](torture-detail-successors.md) |
 | `torture-lifecycle-v12-p5_5.spec.ts` | 5 | [Migrated; original JVM, JDT, large picker and repair workloads pass](lifecycle-browser-successors.md) |
 | `torture-motion-v12-p5_5.spec.ts` | 1 | [Migrated; native opt-in capture and same-recording replay pass](motion-browser-successor.md) |
 | `torture-v12-p5_5.spec.ts` | 9 | [Migrated; nine actual JVM fixtures pass at the five viewport sizes](torture-browser-successors.md) |
@@ -78,3 +78,7 @@ The original opt-in motion case passes on source `0598422c`. Default discovery r
 ## Existing Java torture browser workflows — 2026-11-12
 
 All nine migrated cases pass on source `f7b30fab`. Default discovery remains 320 cases in 87 files, with 298 classified against current surfaces and 22 open in the table. [Execution evidence, captures and remaining visual findings](torture-browser-successors.md).
+
+## Retained Java torture detail views — 2026-11-12
+
+All four retained detail cases and four prerequisite runs pass on source `80e77e5e`. Default discovery remains 320 cases in 87 files, with 302 classified against current surfaces and 18 open in the table. [Preserved targets, source-qualified results and visual findings](torture-detail-successors.md).

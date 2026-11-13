@@ -575,3 +575,11 @@ Source `1859444d` passes all eight source checks. The actual JVM scrub records 2
 ## Existing Java torture browser workflows — 2026-11-12
 
 Source `f7b30fab` passes all nine migrated browser cases with 90 original screenshots and nine distinct JVM sessions. Strict TypeScript and browser discovery pass. The ledger has 22 older cases open. [Exact source, fixture evidence and visual findings](migration/torture-browser-successors.md).
+
+### Counted Java acceptance rerun — 2026-11-12
+
+Revision `379d01d` and source `f7b30fab` execute all 195 assertions in 222.953 seconds with 191 ordinary passes and four preserved expected failures (`allMembers`, `allFollows`, `largeHistory`, `manyInvocations`). The gate observed 47 distinct actual JVM launches and no unexpected failures, skips or todos. The source inventory, JVM launch log and both reports are under `.ggjavaez/qa/reference-exact/acceptance-torture-successor/`.
+
+### Retained Java torture detail views — 2026-11-12
+
+Source `80e77e5e` passes four fresh JVM prerequisites and four retained detail cases in 342.385 seconds with zero failures, skips or flakes. Each reopened ID matches its original JVM recording. The archive contains 14 original detail PNGs. Strict browser TypeScript passes, and 18 older browser cases remain open. [Evidence, earlier driver failures and visual findings](migration/torture-detail-successors.md).

@@ -3,8 +3,8 @@ import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import type { ExecutionSession } from '../src/execution/contracts'
 import { normalizeTrace } from '../src/instrumentation/normalize'
-import { browserErrors, focusSelection, home, ready, seekCursor } from './reference/harness'
-import { clickCluster } from './reference/clusterInteractions'
+import { browserErrors, focusSelection, home, seekCursor } from './reference/harness'
+import { clearTortureSelection, pickTortureEntity } from './reference/tortureNavigation'
 
 const output = process.env.VJ_TORTURE_BROWSER_OUTPUT ?? '.ggjavaez/qa/v12-p5_5/browser'
 const payloads = process.env.VJ_TORTURE_BROWSER_PAYLOADS ?? '.ggjavaez/qa/v12-p5_5/payloads'
@@ -32,66 +32,6 @@ const inspector = (page: Page) => page.getByRole('complementary',{name:'Selectio
 async function closeTools(page: Page) {
   const button = page.getByRole('navigation',{name:'Dock',exact:true}).locator('button[data-dock-tool][aria-expanded="true"]')
   if (await button.count()) await button.click()
-}
-async function clearSelection(page:Page) {
-  await page.locator('.world-canvas').focus()
-  await page.keyboard.press('Escape')
-  await ready(page)
-}
-async function selectClusterMember(page: Page, id: string, memberIndex: number) {
-  const members=inspector(page).getByRole('list',{name:'Cluster members',exact:true})
-  const member=members.getByRole('button').and(members.locator(`button[title=${JSON.stringify(id)}]`))
-  if(!await member.count()){
-    await members.hover()
-    await page.mouse.wheel(0,memberIndex*52)
-    await ready(page)
-  }
-  await member.click()
-  await ready(page)
-}
-async function pickRecorded(page:Page,id:string) {
-  const canvas=page.locator('.world-canvas')
-  const catalogue=page.getByRole('listbox',{name:'Runtime entities',exact:true})
-  for(let attempt=0;attempt<20;attempt++){
-    await canvas.focus()
-    await page.keyboard.press('Escape')
-    await page.keyboard.press('Tab')
-    for(let step=0;step<64;step++){
-      if(!await catalogue.evaluate(node=>node===document.activeElement))break
-      const snapshot=await page.evaluate(target=>{
-        const world=window.__ggjavaezWorld!,selection=world.selection(),plan=world.plan()
-        const cluster=selection?.kind==='cluster'?plan.clusters.find(item=>item.id===selection.id):undefined
-        return {selected:selection?.id,memberIndex:cluster?.memberIds.indexOf(target)??-1}
-      },id)
-      if(snapshot.selected===id){await ready(page);return}
-      if(snapshot.memberIndex>=0){
-        await selectClusterMember(page,id,snapshot.memberIndex)
-        return
-      }
-      const selected=catalogue.locator('[aria-selected="true"]')
-      if(!await selected.count())break
-      const ordinal=Number(await selected.getAttribute('aria-posinset'))
-      const size=Number(await selected.getAttribute('aria-setsize'))
-      if(ordinal>=size)break
-      await page.keyboard.press('ArrowDown')
-      await page.evaluate(()=>new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve()))))
-    }
-    const cluster=await page.evaluate(target=>{
-      const world=window.__ggjavaezWorld!
-      const clusters=world.plan().clusters.filter(item=>item.pickable&&item.memberIds.includes(target))
-      return clusters.length>0&&world.worldProjection().entities.some(body=>body.bounds?.visible&&clusters.some(item=>item.id===body.id))
-    },id)
-    if(cluster){
-      const picked=await clickCluster(page,false,undefined,false,id)
-      await ready(page)
-      await selectClusterMember(page,id,picked.memberIds.indexOf(id))
-      return
-    }
-    await canvas.focus()
-    await page.keyboard.press('-')
-    await ready(page)
-  }
-  throw new Error(`Captured target ${id} could not be reached through the native World controls`)
 }
 test.afterEach(async ({request})=>{
   const session=await current(request)
@@ -160,10 +100,10 @@ for(const [name,preferred] of cases) test(`Phase 5.5 ${name}: actual Java and fi
   const views=[]
   for(const [width,height] of sizes) {
     await page.setViewportSize({width,height})
-    await clearSelection(page);await home(page);await page.waitForTimeout(750)
+    await clearTortureSelection(page);await home(page);await page.waitForTimeout(750)
     await page.screenshot({path:`${output}/${name}/overview-${width}x${height}.png`})
     views.push({width,height,mode:'overview',metrics:await page.evaluate(()=>window.__ggjavaezWorld!.renderer())})
-    await pickRecorded(page,chosen!.id)
+    await pickTortureEntity(page,chosen!.id)
     await expect(inspector(page)).toBeVisible()
     await focusSelection(page);await page.waitForTimeout(750)
     const rows=await inspector(page).locator('.inspector-value').evaluateAll(nodes=>nodes.slice(0,6).map(node=>{
