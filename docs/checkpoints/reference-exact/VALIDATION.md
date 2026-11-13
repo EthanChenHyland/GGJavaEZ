@@ -599,3 +599,7 @@ Source `4b8f9f0b` passes all eight source checks and 26 native browser cases wit
 ### Workspace browser workflows — 2026-11-13
 
 Source `1a704c41` passes all five original workspace cases on their preserved protocol fixtures in 36.769 seconds, with zero failures, skips or flakes. Four older product-audit browser cases remain. [Source geometry, fixture scope and earlier failures](migration/workspace-browser-successors.md).
+
+### Product audit browser workflows — 2026-11-13
+
+Source `53073db8` passes all four original product-audit cases in 274.074 seconds with zero failures, skips or flakes. Six actual JVM sessions, 74 PNGs and four videos are indexed. The legacy browser ledger has no remaining open entries. Visual findings and whole-browser, performance and formal matrix gates remain open. [Evidence and scope](migration/product-audit-browser-successors.md).

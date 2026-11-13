@@ -12,7 +12,7 @@ Default inventory at f262899 discovers 294 cases in 81 files. Of these, 202 belo
 | `incremental-v12.spec.ts` | 2 | [Migrated; unchanged workload and transport proof; wider Console latency failure retained](incremental-browser.md) |
 | `m11-persistence.spec.ts` | 2 | [Migrated; original Java, history/replay and editing preserved](persistence-browser.md) |
 | `observer-saturation-v12.spec.ts` | 2 | [Migrated; exact saturation/thread corpus and captured prefix retained](observer-browser.md) |
-| `product-audit-m11_5.spec.ts` | 4 | OPEN |
+| `product-audit-m11_5.spec.ts` | 4 | [Migrated with four passing cases and six actual JVM sessions](product-audit-browser-successors.md) |
 | `provenance-v12.spec.ts` | 1 | [Migrated; exact constructor proof retained](provenance-browser.md) |
 | `real-visualize.spec.ts` | 5 | [Migrated; five preserved cases and six original Java sources](arbitrary-java-browser-successors.md) |
 | `recursion.spec.ts` | 4 | [Migrated; captured expressions restored, unchanged trace and 37-case integration pass](recursion-browser-successors.md) |
@@ -90,3 +90,7 @@ All nine unified cases pass on source `2198f118`. Default discovery remains 323 
 ## Workspace workflows — 2026-11-13
 
 All five workspace cases pass on source `1a704c41`. Default discovery remains 323 cases in 88 files, with 319 classified against current surfaces and four product-audit cases still open. [Source and fixture dispositions](workspace-browser-successors.md).
+
+## Product audit workflows — 2026-11-13
+
+All four product-audit cases pass on source `53073db8`. Default discovery remains 323 cases in 88 files, with every case classified against current surfaces. The whole-browser run, formal reference matrix, and visual acceptance remain open. [Preserved workflows and original capture evidence](product-audit-browser-successors.md).
