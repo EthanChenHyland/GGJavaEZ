@@ -22,7 +22,7 @@ Default inventory at f262899 discovers 294 cases in 81 files. Of these, 202 belo
 | `torture-lifecycle-v12-p5_5.spec.ts` | 5 | [Migrated; original JVM, JDT, large picker and repair workloads pass](lifecycle-browser-successors.md) |
 | `torture-motion-v12-p5_5.spec.ts` | 1 | [Migrated; native opt-in capture and same-recording replay pass](motion-browser-successor.md) |
 | `torture-v12-p5_5.spec.ts` | 9 | [Migrated; nine actual JVM fixtures pass at the five viewport sizes](torture-browser-successors.md) |
-| `unified-m10.spec.ts` | 9 | OPEN |
+| `unified-m10.spec.ts` | 9 | [Migrated with nine passing cases and 12 distinct JVM sessions](unified-browser-successors.md) |
 | `workspace-m8.spec.ts` | 5 | OPEN |
 
 No original case is removed or marked skipped by this ledger. Saved discovery list and per-file counts are in the ignored QA evidence directory. Each later disposition must link its preserved assertions, exact source and actual executed result.
@@ -82,3 +82,7 @@ All nine migrated cases pass on source `f7b30fab`. Default discovery remains 320
 ## Retained Java torture detail views — 2026-11-12
 
 All four retained detail cases and four prerequisite runs pass on source `80e77e5e`. Default discovery remains 320 cases in 87 files, with 302 classified against current surfaces and 18 open in the table. [Preserved targets, source-qualified results and visual findings](torture-detail-successors.md).
+
+## Unified execution workflows — 2026-11-13
+
+All nine unified cases pass on source `2198f118`. Default discovery remains 323 cases in 88 files, with 314 classified against current surfaces and nine open in the table. [Source, earlier failures and session evidence](unified-browser-successors.md).

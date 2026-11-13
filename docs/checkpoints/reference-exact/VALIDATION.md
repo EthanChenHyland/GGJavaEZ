@@ -587,3 +587,7 @@ Source `80e77e5e` passes four fresh JVM prerequisites and four retained detail c
 ### Retained completion duration — 2026-11-12
 
 Source `af03a4e5` passes all eight source checks and 2,281 default tests with 70 explicit opt-in skips. Three real-JVM reload failures become three passes. The broader 13-case browser integration passes without failures, skips or flakes. [Measured durations, exact source and regression evidence](migration/terminal-duration.md).
+
+### Unified execution workflows — 2026-11-13
+
+Source `2198f118` passes 9/9 native cases in 84.455 seconds with zero failures, skips or flakes. Twelve JVM sessions and a separate pre-launch Stop attempt are recorded. Nine older browser cases remain open. [Preserved workloads and exact source evidence](migration/unified-browser-successors.md).
