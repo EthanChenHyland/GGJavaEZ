@@ -1,7 +1,7 @@
 import { MeshReflectorMaterial } from '@react-three/drei/materials/MeshReflectorMaterial'
 import { BlurPass } from '@react-three/drei/materials/BlurPass'
 import { Color, HalfFloatType, LinearFilter, Matrix4, PerspectiveCamera, Plane, Vector3, Vector4, WebGLRenderTarget } from 'three'
-import type { Camera, Group, Mesh, WebGLRenderer, Scene } from 'three'
+import type { Camera, Group, Mesh, WebGLProgramParametersWithUniforms, WebGLRenderer, Scene } from 'three'
 import type { FloorModel } from './floorModel'
 import { floorStyle } from './floorModel'
 
@@ -53,13 +53,41 @@ export function createFloorReflection(gl: WebGLRenderer, model: Pick<FloorModel,
   material.tDiffuseBlur = blurred?.texture ?? target.texture
   material.textureMatrix = textureMatrix
   material.mirror = model.mirror
-  material.mixStrength = 1.8
   material.mixBlur = blurred ? .8 : 0
   material.hasBlur = !!blurred
   // The old .7..1.2 perspective-depth threshold reduced reflections to 0.0001.
   // No reflection clipping/fading is inferred from those unrelated depth values.
   material.depthScale = 0
   material.defines = { USE_UV: '', ...(blurred ? { USE_BLUR: '' } : {}) }
+  const reflectorCompile = material.onBeforeCompile
+  material.onBeforeCompile = function (shader: WebGLProgramParametersWithUniforms) {
+    reflectorCompile.call(this, shader)
+    shader.uniforms.runtimeReflectionStep = { value: .75 / model.resolution }
+    // Keep the dark floor albedo. Blend the planar reflection into linear
+    // lighting so the floor tint cannot erase the reflected hues.
+    shader.fragmentShader = shader.fragmentShader
+      .replace('uniform sampler2D tDiffuse;', 'uniform sampler2D tDiffuse;\nuniform float runtimeReflectionStep;')
+      .replace('vec4 base = texture2DProj(tDiffuse, new_vUv);', `
+        vec4 base = texture2DProj(tDiffuse, new_vUv);
+        #ifndef USE_BLUR
+          vec2 reflectedUv = new_vUv.xy / new_vUv.w;
+          vec2 stepX = vec2(runtimeReflectionStep, 0.0);
+          vec2 stepY = vec2(0.0, runtimeReflectionStep);
+          base = 0.5 * base + 0.125 * (
+            texture2D(tDiffuse, reflectedUv + stepX) + texture2D(tDiffuse, reflectedUv - stepX)
+            + texture2D(tDiffuse, reflectedUv + stepY) + texture2D(tDiffuse, reflectedUv - stepY)
+          );
+        #endif
+      `)
+      .replace('diffuseColor.rgb = diffuseColor.rgb * ((1.0 - min(1.0, mirror)) + newMerge.rgb * mixStrength);', `
+        diffuseColor.rgb *= 1.0 - min(1.0, mirror);
+        vec3 runtimePlanarLight = max(newMerge.rgb, vec3(0.0)) * (mirror * 0.48);
+        float runtimePlanarPeak = max(max(runtimePlanarLight.r, runtimePlanarLight.g), runtimePlanarLight.b);
+        runtimePlanarLight *= 0.08 / max(0.08, runtimePlanarPeak);
+      `)
+      .replace('#include <opaque_fragment>', 'outgoingLight += runtimePlanarLight;\n#include <opaque_fragment>')
+  }
+  material.customProgramCacheKey = () => 'runtime-floor-planar-light-v2'
   return {
     material, target, blurred, camera, textureMatrix,
     render(scene: Scene, worldCamera: Camera, floor: Mesh, floorGroup: Group) {

@@ -611,3 +611,7 @@ The serial suite on `feb7623` completed **314 passed, four failed and five expli
 ### Array title plate — 2026-11-18
 
 Exact source `f53a0819` passes eight source checks and **27 of 27** native integration cases, with no failures, flakes or skips. Default units record **2,284 passes and 70 explicit opt-in skips** across 244 files. The actual-Java tests verify title glyph placement on the rendered geometry and preserve array cell and connector behavior. Twenty-one distinct JVM sessions and 31 original captures are archived. [Geometry, test boundaries and remaining visual work](migration/array-title-plate.md).
+
+### Floor reflections — 2026-11-18
+
+Source `7d9fe4bd` passes **5 of 5** targeted browser cases and **35** focused unit checks, with typechecks, lint, build and reference guards passing. In the paired array capture the floor renders distinct cyan and violet reflections on the existing geometry. [Measurements and remaining visual and performance checks](migration/floor-reflection-blend.md).
