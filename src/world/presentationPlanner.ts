@@ -1,3 +1,4 @@
+import { arrayTitlePlate } from './arrayCellGeometry';
 import {exceptionPanelFor,exceptionPanelAnchor} from './exceptionPanelPlacement'
 import type { Selection } from '../contracts/interaction';
 import type { ArrayIndexReason, DetailLevel, EntityId, LayoutState, MaterialRole, PresentationPlan, PresentedCurve, PresentedEntity, SceneEntity, SceneModel, TraceScope, Vec3, WorldAnchor } from '../contracts/world';
@@ -231,7 +232,7 @@ export function planPresentation(input: PlanInput, previous?: PresentationPlan):
       const node = scene.entities[id], anchor = node.anchor;
       // An array's reserved envelope is not a visible face. Route around the
       // actual header and the current cell mapping, never future/hidden cells.
-      bodyAnchors.set(id, node.kind === 'array' ? { ...anchor, position: [anchor.position[0], anchor.position[1] + anchor.size[1] / 2 - .45, anchor.position[2]], size: [anchor.size[0], .9, .12] } : anchor);
+      bodyAnchors.set(id, node.kind === 'array' ? arrayTitlePlate(anchor) : anchor);
     }
     const cellAnchors = new Map([...cellWindows.values()].flatMap(window => [...window.mapping].map(([id, cell]) => [id, cell.anchor] as const)));
     const routeBodies = [...bodyAnchors.values(), ...cellAnchors.values(), ...scene.io.map(io => io.anchor), ...clusters.map(cluster => cluster.anchor),...(exceptionPanel?[exceptionPanelAnchor(exceptionPanel,scene.recording)]:[])];

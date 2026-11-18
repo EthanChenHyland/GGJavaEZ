@@ -55,8 +55,7 @@ const RuntimeSolidLabels=memo(function RuntimeSolidLabels({node,presented,arrayW
     const compact=compactLibraryFace(anchor);
     const identity=node.kind==='frame'?`#${node.invocationNumber}`:node.kind==='class'?'':`#${node.displayId}`;
     const heading=faceHeading(node),titleSize=heading.title.size;
-    const {identityWidth,metadataWidth}=heading;
-    const lengthLabel=node.kind==='array'?`length ${node.length}`:null;
+    const {identityWidth,length}=heading;
     const titleWidth=heading.title.width,titleLines=heading.title.lines,title=titleLines?.join('')??fitWorldText(truncateFrameText(node.title),titleWidth,titleSize,600,0,28);
     const columns=faceRowColumns(node,presented,model);
     const emphasis = presented.highlight === 'exception' ? color.semantic.exception : presented.highlight === 'mutation' ? color.semantic.mutation : color.ui.textSecondary;
@@ -67,7 +66,7 @@ const RuntimeSolidLabels=memo(function RuntimeSolidLabels({node,presented,arrayW
     {node.kind === 'frame' && <WorldText position={[left, top - .94, face]} size={.25} tint={emphasis} opacity={opacity}>{frameStatusText(node.status)}</WorldText>}
     {node.kind === 'class' && <WorldText position={[left, top - .85, face]} size={.23} tint={color.ui.textSecondary} opacity={opacity}>{`static · ${node.initialization}`}</WorldText>}
     {string && <WorldText position={[left, top - 1.2, face]} size={.3} width={w - .55} opacity={opacity}>{string.value.text}</WorldText>}
-    {lengthLabel && <WorldText position={[x + w / 2 - .28, top - .28, face]} size={.25} tint={color.ui.textSecondary} align="right" width={metadataWidth} opacity={opacity}>{lengthLabel}</WorldText>}
+    {length && <WorldText position={length.position} size={length.size} tint={color.ui.textSecondary} align="right" width={length.width} opacity={opacity} heading={{entityId:node.id,kind:'length'}}>{length.text}</WorldText>}
     {node.kind==='collection'&&presented.detail!=='FAR'&&top-world.object.header-world.collection.sizeRow*.86>=y-h/2+world.object.pad&&<WorldText position={[left,top-world.object.header-world.collection.sizeRow/2,face+.015]} size={.34} width={w-.56} opacity={opacity} tint={color.ui.textSecondary} collectionText={{entityId:node.id,kind:'size'}}>{`size = ${node.size}`}</WorldText>}
     {node.kind==='object'&&node.anchor.region!=='library'&&node.groups.map(group=>{
       const first=group.rows.find(row=>row.declaringClass&&model.visible.some(visible=>visible.slotId===row.slotId)),point=first?faceRowPosition(node,presented,first.slotId,model):null;

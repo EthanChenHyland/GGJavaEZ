@@ -73,7 +73,7 @@ function Metrics({ snapshot, selection,trace }: {
                     const headings:ReturnType<NonNullable<Window['__ggjavaezWorld']>['runtimeHeadings']>[number][]=[];
                     if(!(camera instanceof PerspectiveCamera))return headings;
                     world.traverse(group=>{
-                        const heading=group.userData.runtimeHeading as {entityId:string;kind:'title'|'identity';text:Text}|undefined;
+                        const heading=group.userData.runtimeHeading as {entityId:string;kind:'title'|'identity'|'length';text:Text}|undefined;
                         if(!heading)return;
                         const text=heading.text,point=new Vector3().setFromMatrixPosition(text.matrix),scale=new Vector3().setFromMatrixScale(text.matrix).y;
                         const ink=text.textRenderInfo?.visibleBounds;
@@ -175,6 +175,21 @@ function Metrics({ snapshot, selection,trace }: {
                             ports.push({position:position.toArray()as[number,number,number],radius:object.geometry.parameters.radius*Math.max(scale.x,scale.y,scale.z),opacity:alpha?.getX(index)??1,referenceChip:index<chips});
                         }
                     });return ports;
+                },
+                arrayTitleParts:()=>{
+                    const result:ReturnType<NonNullable<Window['__ggjavaezWorld']>['arrayTitleParts']>[number][]=[],matrix=new Matrix4(),position=new Vector3(),scale=new Vector3();
+                    world.traverseVisible(object=>{
+                        if(!(object instanceof InstancedMesh))return;
+                        const parts=object.userData.runtimeArrayTitleParts as ({id:string;part:'slab'|'face'}|null)[]|undefined;
+                        if(!parts)return;
+                        object.updateWorldMatrix(true,false);
+                        for(let index=0;index<Math.min(object.count,parts.length);index++){
+                            const part=parts[index];if(!part)continue;
+                            object.getMatrixAt(index,matrix);matrix.premultiply(object.matrixWorld);
+                            position.setFromMatrixPosition(matrix);scale.setFromMatrixScale(matrix);
+                            result.push({...part,position:position.toArray(),size:scale.toArray()});
+                        }
+                    });return result;
                 },
                 valueChips:()=>{
                     const chips:ReturnType<NonNullable<Window['__ggjavaezWorld']>['valueChips']>[number][]=[],matrix=new Matrix4(),position=new Vector3(),scale=new Vector3();

@@ -1,6 +1,14 @@
 import type { Vec3, WorldAnchor } from '../contracts/world'
 import { world } from '../theme/tokens'
 
+export function arrayTitlePlate(tray: WorldAnchor): WorldAnchor {
+  const { titlePlate, backplate } = world.array
+  const [x, y, z] = tray.position
+  const centerY = y + tray.size[1] / 2 - titlePlate / 2
+  return { ...tray, position: [x, centerY, z], size: [tray.size[0], titlePlate, backplate],
+    ports: {}, bodyPort: [x, centerY, z + backplate / 2] }
+}
+
 /** The tray already reserves indexLabel space in its initial height. Spend
  * that space before the first row, clear of the title, rather than below it. */
 export function arrayCellPosition(tray: WorldAnchor, presentedSlot: number, columns: number, tokens=world.array): Vec3 {

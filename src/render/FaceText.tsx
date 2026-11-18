@@ -84,7 +84,7 @@ type WorldTextProps = {
     minimumPixels?:11|12;
     lines?:readonly string[];
     truncation?:'middle'|'end';
-    heading?:{entityId:string;kind:'title'|'identity'};
+    heading?:{entityId:string;kind:'title'|'identity'|'length'};
     exceptionText?:boolean;
     returnText?:{flowId:string;kind:'value'|'operands'};
     frameText?:{entityId:string;kind:'scope'|'name'|'value';slotId?:string};

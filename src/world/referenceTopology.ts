@@ -1,3 +1,4 @@
+import { arrayTitlePlate } from './arrayCellGeometry'
 import type {
   ArrayWindow, PresentedCluster, PresentedEntity, SceneEntity, SceneModel,
   SceneReference, Vec3, WorldAnchor,
@@ -67,11 +68,7 @@ const validAnchor = (anchor: WorldAnchor): boolean => validPoint(anchor.position
  * These dimensions match SolidBatch/buildSolidBatch; no canonical anchor changes.
  */
 function representedBody(node: SceneEntity): WorldAnchor {
-  if (node.kind !== 'array') return node.anchor
-  const [x, y, z] = node.anchor.position
-  const position: Vec3 = [x, y + node.anchor.size[1] / 2 - .45, z]
-  return { ...node.anchor, position, size: [node.anchor.size[0], .9, .12],
-    ports: {}, bodyPort: [position[0], position[1], z + .06] }
+  return node.kind === 'array' ? arrayTitlePlate(node.anchor) : node.anchor
 }
 
 /** Stable tie order: +X, -X, +Y, -Y, +Z, -Z. Distance is measured to

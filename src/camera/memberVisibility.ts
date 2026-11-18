@@ -1,3 +1,4 @@
+import { arrayTitlePlate } from '../world/arrayCellGeometry'
 import {Box3,Vector3} from 'three'
 import type {SceneEntity,SceneModel,Vec3,WorldAnchor} from '../contracts/world'
 import {cameraSegmentHit} from './cameraConstraints'
@@ -6,7 +7,7 @@ import {cameraSegmentHit} from './cameraConstraints'
  * semantic zoom metric. An array envelope is reserved space, not a solid:
  * only its actual title plate participates here. Visible cells are verified
  * by native picking at the final production destination. */
-const solidAnchor=(node:SceneEntity):WorldAnchor=>node.kind==='array'?{...node.anchor,position:[node.anchor.position[0],node.anchor.position[1]+node.anchor.size[1]/2-.45,node.anchor.position[2]],size:[node.anchor.size[0],.9,.12]}:node.anchor
+const solidAnchor=(node:SceneEntity):WorldAnchor=>node.kind==='array'?arrayTitlePlate(node.anchor):node.anchor
 export function createMemberVisibility(scene:Pick<SceneModel,'entities'>){
  const bodies=Object.values(scene.entities).map(node=>{const anchor=solidAnchor(node);return{id:node.id,box:new Box3().setFromCenterAndSize(new Vector3(...anchor.position),new Vector3(...anchor.size))}})
  return(node:SceneEntity,position:Vec3):{blocked:number;centreBlocked:boolean}=>{

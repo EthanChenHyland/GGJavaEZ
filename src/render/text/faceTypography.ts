@@ -3,6 +3,7 @@ import {compactLibraryFace} from '../../world/firstObjectPresentation'
 import {faceRows} from '../../world/faceRows'
 import {displayType} from '../../world/displayType'
 import {world} from '../../theme/tokens'
+import {arrayTitlePlate} from '../../world/arrayCellGeometry'
 import {fitWorldText,localFontText,textAdvance} from './textSystem'
 import {truncateFrameText} from '../../world/valueText'
 /** Preserve the qualified signature within the existing header before falling
@@ -24,20 +25,35 @@ function frameTitleLayout(title:string,width:number,size:number,tightTracking:nu
 export function frameTitleLines(title:string,width:number,size=.4):readonly string[]{
  return frameTitleLayout(title,width,size,0).lines
 }
+/** Preserve the array suffix when the full recorded type exceeds its title area. */
+function fitArrayTitle(title:string,suffix:string,width:number,size:number):string {
+ const local=localFontText(title,600)
+ if(textAdvance(local,600)*size<=width-.012)return local
+ const base=title.slice(0,-suffix.length),available=width-textAdvance(suffix,600)*size-.024
+ if(available>0){
+  const shortened=fitWorldText(base,available,size,600)
+  if(shortened&&textAdvance(shortened+suffix,600)*size<=width-.012)return shortened+suffix
+ }
+ return fitWorldText(local,width,size,600,0,Infinity,'middle')
+}
 /** The renderer and camera admission use the same physical title/identity
  * planes. These sizes never depend on the semantic zoom metric. */
 export function faceHeading(node:SceneEntity){
- const {anchor}=node,[x,y,z]=anchor.position,[w,h,d]=anchor.size,top=y+h/2,face=z+d/2+.085
+ const {anchor}=node,plate=node.kind==='array'?arrayTitlePlate(anchor):anchor
+ const [x,y,z]=plate.position,[w,h,d]=plate.size,top=y+h/2,face=z+d/2+.085
  const size=compactLibraryFace(anchor)?.3:.4,identity=node.kind==='frame'?`#${node.invocationNumber}`:node.kind==='class'?'':`#${node.displayId}`
  const identitySize=node.kind==='collection'?.34:.28,identityWidth=identity?textAdvance(identity,500)*identitySize+.04:0
- const lengthLabel=node.kind==='array'?`length ${node.length}`:null,metadataWidth=Math.max(identityWidth,lengthLabel?textAdvance(lengthLabel)*.25+.04:0)
+ const lengthLabel=node.kind==='array'?`length = ${node.length}`:null,metadataWidth=Math.max(identityWidth,lengthLabel?textAdvance(lengthLabel)*.25+.04:0)
  const width=Math.max(.1,w-.56-metadataWidth-(metadataWidth?.2:0))
+ const arraySuffix=node.kind==='array'?node.title.match(/(?:\[\])+$/)?.[0]:undefined
+ const arrayTitle=arraySuffix?fitArrayTitle(node.title,arraySuffix,width,size):undefined
  const frameLayout=node.kind==='frame'?frameTitleLayout(node.title,width,size,-.025):undefined
- const lines=frameLayout?.lines,singleFrameLine=lines?.length===1
+ const lines=frameLayout?.lines??(arrayTitle?[arrayTitle]:undefined),singleFrameLine=frameLayout?.lines.length===1
  // A single line fits below the portion of the header a nearer slab can cover.
- const titleOffset=singleFrameLine?.61:lines?.length===2?.39:.45
- const identityOffset=singleFrameLine?.61:node.kind==='array'?.66:.45
- return{title:{position:[x-w/2+.28,top-titleOffset,face] as Vec3,size,width,lines,tracking:frameLayout?.tracking??0},identityWidth,metadataWidth,
+ const titleOffset=singleFrameLine?.61:frameLayout?.lines.length===2?.39:.45
+ const identityOffset=singleFrameLine?.61:node.kind==='array'?.65:.45
+ return{title:{position:[x-w/2+.28,top-titleOffset,face] as Vec3,size,width,lines,tracking:frameLayout?.tracking??0},identityWidth,
+  length:lengthLabel?{text:lengthLabel,position:[x+w/2-.28,top-.25,face] as Vec3,size:.25,width:metadataWidth}:null,
   identity:node.kind==='class'?null:{position:[x+w/2-.28,top-identityOffset,face] as Vec3,size:identitySize}}
 }
 /** Preserve the bounded captured preview, including runtime reference type,

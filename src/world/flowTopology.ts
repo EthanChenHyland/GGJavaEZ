@@ -1,3 +1,4 @@
+import { arrayTitlePlate } from './arrayCellGeometry'
 import{unavailableFlowSnapshot}from'./unavailableFlowSnapshot'
 import type {ArrayWindow,FlowPresentation,PresentedEntity,SceneModel,Vec3,WorldAnchor} from '../contracts/world'
 import type {FlowEndpoint} from '../motion/semanticTransition'
@@ -21,7 +22,7 @@ export function presentedFlowPorts(scene:SceneModel,entities:ReadonlyMap<string,
  const slots=new Map<string,FlowPort>(),bodies=new Map<string,WorldAnchor>()
  for(const[id,presented]of entities){
   const node=scene.entities[id];if(!node)continue
-  const anchor=node.kind==='array'?{...node.anchor,position:[node.anchor.position[0],node.anchor.position[1]+node.anchor.size[1]/2-.45,node.anchor.position[2]]as Vec3,size:[node.anchor.size[0],.9,.12]as Vec3,bodyPort:[node.anchor.position[0],node.anchor.position[1]+node.anchor.size[1]/2-.45,node.anchor.position[2]+.06]as Vec3}:node.anchor
+  const anchor=node.kind==='array'?arrayTitlePlate(node.anchor):node.anchor
   bodies.set(id,anchor)
   if(presented.mode!=='detailed')continue
   if(node.kind==='array'){

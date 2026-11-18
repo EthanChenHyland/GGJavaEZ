@@ -45,7 +45,7 @@ export function measurementFailures({viewport:{width:w,height:h},stateId,app,sce
 }
 
 export function recursiveHeadingFailures(scene:Pick<SceneModel,'entities'|'liveStack'>,world:WorldProjection,eye:Vec3,
- headings:readonly {entityId:string;kind:'title'|'identity';inkCorners:readonly Vec3[];fontPixels:number;opacity:number}[]):string[]{
+ headings:readonly {entityId:string;kind:'title'|'identity'|'length';inkCorners:readonly Vec3[];fontPixels:number;opacity:number}[]):string[]{
  const origin=new Vector3(...eye),hit=new Vector3(),direction=new Vector3(),ray=new Ray(origin,direction)
  const frames=world.entities.flatMap(body=>{
   const frame=scene.entities[body.id]

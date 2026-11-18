@@ -607,3 +607,7 @@ Source `53073db8` passes all four original product-audit cases in 274.074 second
 ### Full default browser run and targeted recovery — 2026-11-18
 
 The serial suite on `feb7623` completed **314 passed, four failed and five explicit opt-in skips** across 323 cases and 88 files. Source `9dfe1f99` passes **24 of 24** targeted recovery trials, zero failures, skips or flakes. Six real-project Quick Open trials meet the unchanged 200 ms limit for focus and query updates. Three real JVM Stop trials receive the shutdown recording before retiring observation. The local-asset and byte/half-float mask trials pass on the repaired drivers. A fresh default suite and whole A–G acceptance remain open. [Source, results and first failures](migration/default-browser-recovery.md).
+
+### Array title plate — 2026-11-18
+
+Exact source `f53a0819` passes eight source checks and **27 of 27** native integration cases, with no failures, flakes or skips. Default units record **2,284 passes and 70 explicit opt-in skips** across 244 files. The actual-Java tests verify title glyph placement on the rendered geometry and preserve array cell and connector behavior. Twenty-one distinct JVM sessions and 31 original captures are archived. [Geometry, test boundaries and remaining visual work](migration/array-title-plate.md).

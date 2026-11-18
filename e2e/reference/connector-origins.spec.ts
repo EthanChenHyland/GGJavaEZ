@@ -120,12 +120,29 @@ for(const viewport of[{width:1440,height:900},{width:760,height:900}])for(const 
   await page.getByRole('button',{name:`Reveal index ${index}`,exact:true}).click();await ready(page);await focusSelection(page)
   const observed=await page.evaluate(arrayId=>{
    const world=window.__ggjavaezWorld!,windowForArray=world.plan().cellWindows.get(arrayId)!
+   const node=world.scene().entities[arrayId]
+   if(node?.kind!=='array')throw new Error('Expected the recorded array')
    return{cursor:world.scene().cursor,focus:window.__ggjavaezQA!.focusTarget(),shell:window.__ggjavaezQA!.shellRects(),
     cells:[...windowForArray.mapping].map(([slotId,cell])=>({slotId,...cell})),labels:world.arrayText().filter(label=>label.entityId===arrayId),
-    headings:world.runtimeHeadings().filter(label=>label.entityId===arrayId)}
+    headings:world.runtimeHeadings().filter(label=>label.entityId===arrayId),
+    titleParts:world.arrayTitleParts().filter(part=>part.id===arrayId),
+    title:node.title,displayId:node.displayId}
   },array.id)
   expect(observed.focus?.targetId).toBe(`${array.id}:element:${index}`)
   expect(observed.cells).toHaveLength(array.length)
+  expect(observed.titleParts.map(part=>part.part).sort()).toEqual(['face','slab'])
+  const slab=observed.titleParts.find(part=>part.part==='slab')!,face=observed.titleParts.find(part=>part.part==='face')!
+  expect(slab.size[1]).toBeCloseTo(.9,5);expect(slab.size[2]).toBeCloseTo(.12,5)
+  const plane=face.position[2]+face.size[2]/2
+  expect(observed.headings.map(label=>label.text).sort()).toEqual([observed.title,`#${observed.displayId}`,`length = ${array.length}`].sort())
+  for(const heading of observed.headings){
+   expect(heading.inkCorners).toHaveLength(4)
+   for(const [x,y,z] of heading.inkCorners){
+    expect(z).toBeGreaterThan(plane);expect(z).toBeLessThan(plane+.08)
+    expect(Math.abs(x-face.position[0])).toBeLessThan(face.size[0]/2)
+    expect(Math.abs(y-face.position[1])).toBeLessThan(face.size[1]/2)
+   }
+  }
   for(const cell of observed.cells){
    const label=observed.labels.find(label=>label.slotId===cell.slotId&&label.kind==='index')!
    const value=observed.labels.find(label=>label.slotId===cell.slotId&&label.kind==='value')!

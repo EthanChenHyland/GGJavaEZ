@@ -10,6 +10,7 @@ import { expandRoundedBoxVertex, unitRoundedBox, unitRoundedOutline } from './ge
 import { faceRows } from './faceModel';
 import { facePlate } from '../world/facePlate';
 import { useQualityStore, type QualityTier } from './quality/qualityStore';
+import { arrayTitlePlate } from '../world/arrayCellGeometry';
 import { resolveArrayWindowPick, type ArrayWindowPick } from '../world/arrayWindow';
 import { useCameraStore } from '../camera/cameraStore';
 import {arrayCellTargeted,arrayCellFocusOpacity} from './arrayCellStyle';
@@ -28,6 +29,7 @@ interface Solid {
     tint: string;
     edge?: string;
     arrayPick?: ArrayWindowPick;
+    arrayTitlePart?: 'slab' | 'face';
     part?: 'reference-chip-rim' | 'reference-chip' | 'primitive-chip-rim' | 'primitive-chip' | 'value-chip-rim' | 'value-chip';
 }
 function entityPick(node: SceneEntity): Pick { return { kind: node.kind === 'frame' ? 'frame' : node.kind === 'class' ? 'class' : 'object', id: node.id }; }
@@ -41,12 +43,16 @@ export function buildSolidBatch(scene: SceneModel, plan: PresentationPlan): Soli
         const [x, y, z] = node.anchor.position, [w, h, d] = node.anchor.size, top = y + h / 2, face = z + d / 2 + .025;
         const pick = entityPick(node), opacity = presented.opacity;
         const edge = presented.highlight === 'exception' ? color.semantic.exception : presented.highlight === 'mutation' ? color.semantic.mutation : presented.highlight ? color.semantic.execution : palette.edge;
-        solids.push({ anchor: node.kind === 'array' ? { ...node.anchor, position: [x, top - .45, z], size: [w, .9, .12] } : node.anchor, pick, pickable: presented.pickable, role, opacity, tint: palette.core, edge });
-        const plate = (slot: string, position: Vec3, size: Vec3, tint: string, plateOpacity = opacity, arrayPick?: ArrayWindowPick,part?:Solid['part']) => solids.push({ anchor: { ...node.anchor, entityId: slot, position, size, ports: {}, bodyPort: position }, pick: slot === id ? pick : { kind: 'slot', id: slot }, pickable: presented.pickable, role: 'face', opacity: plateOpacity, tint, arrayPick,part });
+        const body = node.kind === 'array' ? arrayTitlePlate(node.anchor) : node.anchor;
+        solids.push({ anchor: body, pick, pickable: presented.pickable, role, opacity, tint: palette.core, edge, ...(node.kind==='array'?{arrayTitlePart:'slab' as const}:{}) });
+        const plate = (slot: string, position: Vec3, size: Vec3, tint: string, plateOpacity = opacity, arrayPick?: ArrayWindowPick,part?:Solid['part'],arrayTitlePart?:Solid['arrayTitlePart']) => solids.push({ anchor: { ...node.anchor, entityId: slot, position, size, ports: {}, bodyPort: position }, pick: slot === id ? pick : { kind: 'slot', id: slot }, pickable: presented.pickable, role: 'face', opacity: plateOpacity, tint, arrayPick,part,arrayTitlePart });
         if (presented.mode !== 'detailed')
             continue;
-        if (node.kind !== 'array')
+        if (node.kind === 'array') {
+            plate(id, [x, body.position[1], z + body.size[2] / 2 + .015], [w - .18, body.size[1] - .18, .035], palette.face, opacity, undefined, undefined, 'face');
+        } else {
             plate(id, [x, y, face - .01], [w - .18, h - .18, .035], palette.face);
+        }
         const model=faceRows(node,presented);
         const rowPlate=(slotId:string)=>{const anchor=facePlate(node,presented,slotId,model);if(anchor)solids.push({anchor,pick:{kind:'slot',id:slotId},pickable:presented.pickable,role:'face',opacity,tint:'chip' in palette?palette.chip:palette.face})};
         if (node.kind === 'collection') {
@@ -154,7 +160,9 @@ function Instances({ items, onSelect, onFocus, tier, cellWindows, focused, recor
             mesh.instanceColor.needsUpdate = true;
         mesh.computeBoundingSphere();
     }, [items, role]);
-    return <instancedMesh ref={ref} args={[undefined, undefined, capacity]} renderOrder={inset?1:0} geometry={role === 'face' ? inset?unitRoundedChip:unitBox : unitRoundedBox} material={role === 'face' ? faceMaterial(opacity,inset) : glassMaterial(role, opacity, tier, focused)} userData={{runtimeBloomRole:'protected',...((import.meta.env.DEV||import.meta.env.VITE_QA==='1')&&inset?{runtimeValueChipParts:items.map(item=>({slotId:item.pick.id,part:item.part!}))}:{})}} customDepthMaterial={role === 'face' ? undefined : roundedDepthMaterial()} customDistanceMaterial={role === 'face' ? undefined : roundedDistanceMaterial()} dispose={null} castShadow={role !== 'face'} receiveShadow raycast={items.some(item => item.pickable) ? canonicalSolidRaycast : noRaycast} onPointerDown={event=>{const item=items[event.instanceId??-1];press.current=item?.pickable?{pick:item.pick,arrayPick:item.arrayPick,recordingId}:null;if(item?.pickable)event.stopPropagation()}} onClick={event => { const item = items[event.instanceId ?? -1]; if (validPress(item)) {
+    const titleParts=(import.meta.env.DEV||import.meta.env.VITE_QA==='1')&&items.some(item=>item.arrayTitlePart)
+        ?items.map(item=>item.arrayTitlePart?{id:item.pick.id,part:item.arrayTitlePart}:null):undefined;
+    return <instancedMesh ref={ref} args={[undefined, undefined, capacity]} renderOrder={inset?1:0} geometry={role === 'face' ? inset?unitRoundedChip:unitBox : unitRoundedBox} material={role === 'face' ? faceMaterial(opacity,inset) : glassMaterial(role, opacity, tier, focused)} userData={{runtimeBloomRole:'protected',runtimeArrayTitleParts:titleParts,...((import.meta.env.DEV||import.meta.env.VITE_QA==='1')&&inset?{runtimeValueChipParts:items.map(item=>({slotId:item.pick.id,part:item.part!}))}:{})}} customDepthMaterial={role === 'face' ? undefined : roundedDepthMaterial()} customDistanceMaterial={role === 'face' ? undefined : roundedDistanceMaterial()} dispose={null} castShadow={role !== 'face'} receiveShadow raycast={items.some(item => item.pickable) ? canonicalSolidRaycast : noRaycast} onPointerDown={event=>{const item=items[event.instanceId??-1];press.current=item?.pickable?{pick:item.pick,arrayPick:item.arrayPick,recordingId}:null;if(item?.pickable)event.stopPropagation()}} onClick={event => { const item = items[event.instanceId ?? -1]; if (validPress(item)) {
         event.stopPropagation();
         onSelect(item!.pick);
     } }} onDoubleClick={event => { const item = items[event.instanceId ?? -1]; if (validPress(item)) {

@@ -1,8 +1,9 @@
 import{expect,it}from'vitest'
 import{faceHeading,frameTitleLines,rowValueLabel}from'./faceTypography'
-import type{SceneFrame}from'../../contracts/world'
+import type{SceneArray,SceneFrame}from'../../contracts/world'
 import{valueText,truncateFrameText}from'../../world/valueText'
 import{fitWorldText,textAdvance}from'./textSystem'
+import{world}from'../../theme/tokens'
 it('retains the declaring type and method signature in two fixed-font header lines',()=>{
  const title='InventoryApp.main(String[])',width=3.6
  expect(fitWorldText(title,width,.4,600)).not.toBe(title)
@@ -57,4 +58,24 @@ it('keeps bounded String previews and array/collection summary sizes without cha
  expect(rowValueLabel(array)).toBe('int[5] #23')
  const collection=valueText({kind:'reference',javaType:'Object',objectId:'list'},{target:{id:'list',displayId:31,className:'java.util.ArrayList',fields:{},allocatedAt:'allocation',library:{kind:'LIST',size:3,items:[],truncated:true}}})
  expect(rowValueLabel(collection)).toBe('List · size 3 #31')
+})
+
+
+it.each([0,12,2147483647])('places the array type, identity and length %i on the title plate',length=>{
+ const anchor={entityId:'array',region:'heap' as const,position:[18,-4,8] as const,size:[6.44,1.35,1.67] as const,ports:{},bodyPort:[18,-4,8] as const}
+ const array:SceneArray={kind:'array',id:'array',title:'int[]',componentType:'int',displayId:23,length,cells:[],activity:null,outOfBounds:null,anchor,ownership:'PROJECT',evidence:{kind:'observed',introducedSeq:1,changedSeq:1,eventIds:['array']}}
+ const {title,identity,length:label}=faceHeading(array)
+ const top=anchor.position[1]+anchor.size[1]/2,front=anchor.position[2]+world.array.backplate/2
+ for(const text of [title,identity!,label!]){
+  expect(text.position[2]).toBeGreaterThan(front)
+  expect(text.position[2]).toBeLessThan(front+.1)
+  expect(text.position[1]+text.size/2).toBeLessThan(top)
+  expect(text.position[1]-text.size/2).toBeGreaterThan(top-world.array.titlePlate)
+ }
+ expect(label!.text).toBe(`length = ${length}`)
+ expect(fitWorldText(label!.text,label!.width,label!.size)).toBe(label!.text)
+ expect(title.lines).toEqual([array.title])
+ const nested=faceHeading({...array,title:'ExtremelyLongRecordedComponentClassName[][]'}).title
+ expect(nested.lines?.[0]).toMatch(/….*\[\]\[\]$/)
+ expect(fitWorldText(nested.lines![0],nested.width,nested.size,600)).toBe(nested.lines![0])
 })
