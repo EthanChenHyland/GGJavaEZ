@@ -95,9 +95,15 @@ test('reduced motion and arbitrary scrubbing retain exact source and object stat
  await page.getByRole('button',{name:'Focus',exact:true}).click();await ready(page);expect(await page.evaluate(()=>window.__ggjavaezQA!.focusTarget()?.targetId)).toBe(person)
  await expect(age(page)).toHaveText('18');await expect(rail(page)).toHaveAttribute('aria-valuenow','18');expect(errors).toEqual([])
 })
-test('the runtime and source load using local assets only',async({page})=>{
- const errors=browserErrors(page),remote:string[]=[]
- await page.route('**/*',route=>{const url=new URL(route.request().url());if(url.hostname==='127.0.0.1'||url.protocol==='data:'||url.protocol==='blob:')return route.continue();remote.push(url.origin);return route.abort()})
+test('the runtime and source load using local assets only',async({page,baseURL})=>{
+ if(!baseURL)throw new Error('Local asset verification requires a configured application origin')
+ const origin=new URL(baseURL).origin,errors=browserErrors(page),remote:string[]=[]
+ await page.route('**/*',route=>{
+  const url=new URL(route.request().url())
+  if(url.origin===origin||url.protocol==='data:')return route.continue()
+  remote.push(url.origin)
+  return route.abort()
+ })
  await open(page);await seekCursor(page,18);await home(page);await selectEntity(page,person);await expect(inspector(page)).toContainText('Person #17');await expect(age(page)).toHaveText('18');await sourceAt(page,18)
  await page.waitForTimeout(400);expect(errors).toEqual([]);expect(remote).toEqual([])
 })

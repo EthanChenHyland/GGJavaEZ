@@ -4,6 +4,7 @@ import {browserErrors,currentSession,ready,runFixture,startFixture,stopOwnedSess
 import {normalizeTrace} from '../../src/instrumentation/normalize'
 import manifest from '../../fixtures/reference-exact/manifest.json' with {type:'json'}
 
+interface SessionNotification {phase:string;terminalStatus:string|null;rawEventCount:number;readyState:number}
 async function observeStreams(page:Page){
  await page.addInitScript(()=>{
   const NativeEventSource=window.EventSource
@@ -14,13 +15,21 @@ async function observeStreams(page:Page){
     super(url,options)
     if(new URL(String(url),location.href).pathname.startsWith('/api/execution/')){
      observed.push(this)
-     this.addEventListener('session',event=>{const data=JSON.parse((event as MessageEvent<string>).data);Reflect.set(this,'__observedSession',{phase:data.phase,terminalStatus:data.terminalStatus,rawEventCount:data.rawEventCount})})
+     const notifications:SessionNotification[]=[]
+     Reflect.set(this,'__observedSessions',notifications)
+     this.addEventListener('session',event=>{
+      const {phase,terminalStatus,rawEventCount}=JSON.parse((event as MessageEvent<string>).data)
+      notifications.push({phase,terminalStatus,rawEventCount,readyState:this.readyState})
+     })
     }
    }
   }
  })
 }
-async function streams(page:Page){return page.evaluate(()=>((window as unknown as {__nativeExecutionStreams:EventSource[]}).__nativeExecutionStreams).map(source=>({url:source.url,readyState:source.readyState,session:Reflect.get(source,'__observedSession') as {phase:string;terminalStatus:string|null;rawEventCount:number}|undefined})))}
+async function streams(page:Page){return page.evaluate(()=>((window as unknown as {__nativeExecutionStreams:EventSource[]}).__nativeExecutionStreams).map(source=>{
+ const notifications=Reflect.get(source,'__observedSessions') as SessionNotification[]
+ return{url:source.url,readyState:source.readyState,session:notifications.at(-1),notifications}
+}))}
 let stopProject:string|null=null
 test.afterEach(async({request})=>{
  if(stopProject){const session=await currentSession(request);if(session?.projectId===stopProject&&!['COMPLETED','FAILED','STOPPED'].includes(session.phase))await request.post(`/api/execution/${session.id}/stop`,{data:{}});stopProject=null}
@@ -56,14 +65,20 @@ test('a stop request still receives the shutdown recording before retiring obser
  await page.addInitScript(id=>localStorage.setItem('ggjavaez:project',id),project);await page.goto('/?qa=1');await page.waitForFunction(id=>document.querySelector('[data-project-id]')?.getAttribute('data-project-id')===id,project);await expect(page.getByRole('button',{name:'Run',exact:true})).toBeEnabled();await page.getByRole('button',{name:'Run',exact:true}).click()
  await expect.poll(async()=>{const s=await currentSession(request);return s?.projectId===project?s.phase:null},{timeout:45000}).toBe('WAITING_FOR_INPUT')
  const waiting=(await currentSession(request))!;await ready(page)
- await page.getByRole('button',{name:'Stop',exact:true}).click()
- await expect.poll(async()=>(await streams(page)).some(source=>source.session?.phase==='STOPPED'&&source.session.terminalStatus===null),{timeout:5000}).toBe(true)
- const pendingStop=await streams(page);await writeFile('.ggjavaez/qa/reference-exact/stream-stop-pending-native.json',JSON.stringify({sessionId:waiting.id,pendingStop,errors},null,2)+'\n')
- expect(pendingStop.some(source=>source.readyState===1)).toBe(true)
+ const streamFor=(url:string)=>new URL(url).pathname===`/api/execution/${waiting.id}/events`
+ await expect.poll(async()=>(await streams(page)).some(source=>streamFor(source.url)&&source.readyState===1&&source.session?.phase==='WAITING_FOR_INPUT')).toBe(true)
+ const beforeStop=await streams(page)
+ const [responseToStop]=await Promise.all([
+  page.waitForResponse(response=>new URL(response.url()).pathname===`/api/execution/${waiting.id}/stop`&&response.request().method()==='POST'),
+  page.getByRole('button',{name:'Stop',exact:true}).click(),
+ ])
+ expect(responseToStop.ok()).toBe(true)
  await expect.poll(async()=>{const s=await currentSession(request);return s?.id===waiting.id&&s.phase==='STOPPED'&&s.terminalStatus!==null},{timeout:30000}).toBe(true)
  const session=(await currentSession(request))!;expect(session.stdout).toContain('LATE 4');expect(session.rawEvents.length).toBeGreaterThan(waiting.rawEvents.length)
+ await expect.poll(async()=>(await streams(page)).filter(source=>streamFor(source.url)).flatMap(source=>source.notifications).find(event=>event.phase==='STOPPED'&&event.terminalStatus===session.terminalStatus),{timeout:5000})
+  .toMatchObject({readyState:1,rawEventCount:session.rawEvents.length})
  const expected=normalizeTrace(session.rawEvents,session.sourceManifest,{status:session.terminalStatus!,exitCode:session.exitCode,diagnostic:session.diagnostic},`execution:${session.id}`)
- await writeFile('.ggjavaez/qa/reference-exact/stream-stop-native.json',JSON.stringify({sessionId:session.id,waitingRawEvents:waiting.rawEvents.length,finalRawEvents:session.rawEvents.length,expectedNormalizedEvents:expected.trace.events.length,actualNormalizedEvents:await page.evaluate(()=>window.__ggjavaezWorld!.recordedEvents().length),streams:await streams(page),errors},null,2)+'\n')
+ await writeFile('.ggjavaez/qa/reference-exact/stream-stop-native.json',JSON.stringify({sessionId:session.id,waitingRawEvents:waiting.rawEvents.length,finalRawEvents:session.rawEvents.length,expectedNormalizedEvents:expected.trace.events.length,actualNormalizedEvents:await page.evaluate(()=>window.__ggjavaezWorld!.recordedEvents().length),beforeStop,streams:await streams(page),errors},null,2)+'\n')
  await expect.poll(()=>page.evaluate(()=>window.__ggjavaezWorld!.recordedEvents().length),{timeout:5000}).toBe(expected.trace.events.length)
  await expect.poll(async()=>(await streams(page)).every(source=>source.readyState===2),{timeout:5000}).toBe(true);expect(errors).toEqual([])
 })

@@ -603,3 +603,7 @@ Source `1a704c41` passes all five original workspace cases on their preserved pr
 ### Product audit browser workflows — 2026-11-13
 
 Source `53073db8` passes all four original product-audit cases in 274.074 seconds with zero failures, skips or flakes. Six actual JVM sessions, 74 PNGs and four videos are indexed. The legacy browser ledger has no remaining open entries. Visual findings and whole-browser, performance and formal matrix gates remain open. [Evidence and scope](migration/product-audit-browser-successors.md).
+
+### Full default browser run and targeted recovery — 2026-11-18
+
+The serial suite on `feb7623` completed **314 passed, four failed and five explicit opt-in skips** across 323 cases and 88 files. Source `9dfe1f99` passes **24 of 24** targeted recovery trials, zero failures, skips or flakes. Six real-project Quick Open trials meet the unchanged 200 ms limit for focus and query updates. Three real JVM Stop trials receive the shutdown recording before retiring observation. The local-asset and byte/half-float mask trials pass on the repaired drivers. A fresh default suite and whole A–G acceptance remain open. [Source, results and first failures](migration/default-browser-recovery.md).

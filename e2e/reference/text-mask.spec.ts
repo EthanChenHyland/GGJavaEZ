@@ -3,7 +3,10 @@ import { writeFile } from 'node:fs/promises'
 
 for (const halfFloat of [false, true]) {
   test(`Troika coverage preserves the unlit face (${halfFloat ? 'production half float' : 'byte control'})`, async ({ page }) => {
-    await page.goto('/')
+    // Give the isolated renderer its own document and glyph atlas while
+    // retaining the app origin for the actual Vite modules and font files.
+    await page.route('**/__qa_troika_mask__', route => route.fulfill({contentType:'text/html',body:'<!doctype html><meta charset="utf-8">'}))
+    await page.goto('/__qa_troika_mask__')
     const result = await page.evaluate(async (halfFloat) => {
       const entry = '/e2e/reference/fixtures/text-mask-entry.ts'
       const {
