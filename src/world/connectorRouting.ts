@@ -1,5 +1,7 @@
 import type { Vec3, WorldAnchor } from '../contracts/world'
 
+export interface ConnectorObstacle extends WorldAnchor { frontClearance?: number }
+
 export function curvedPath(from: Vec3, to: Vec3, left = false): Vec3[] {
   const reach = Math.max(.6, Math.min(3, Math.abs(to[0] - from[0]) * .35 + Math.abs(to[1] - from[1]) * .1));
   const a: Vec3 = [from[0] + (left ? -reach : reach), from[1], from[2] + .5];
@@ -34,24 +36,24 @@ export function roundedConnectorPoints(points: readonly Vec3[], radius = .025): 
 
 /** Face clearance admits only the departure and arrival inside their own
  * terminals. A path that returns through an intervening face is rejected. */
-export function connectorClearsFaces(points: readonly Vec3[], source: WorldAnchor, target: WorldAnchor, bodies: readonly WorldAnchor[]): boolean {
+export function connectorClearsFaces(points: readonly Vec3[], source: WorldAnchor, target: WorldAnchor, bodies: readonly ConnectorObstacle[]): boolean {
   return prepareConnectorFaceClearance(bodies)(points,source,target)
 }
 
 // Captions extend the front face. The real back face leaves deck gaps open.
-const faceBounds = (body: WorldAnchor) => ({
+const faceBounds = (body: ConnectorObstacle) => ({
   id: body.entityId,
   left: body.position[0] - body.size[0] / 2 - .035,
   right: body.position[0] + body.size[0] / 2 + .035,
   bottom: body.position[1] - body.size[1] / 2 - .14,
   top: body.position[1] + body.size[1] / 2 + .14,
-  front: body.position[2] + body.size[2] / 2 + .75,
+  front: body.position[2] + body.size[2] / 2 + (body.frontClearance ?? .75),
   back: body.position[2] - body.size[2] / 2,
 })
 type FaceBounds = ReturnType<typeof faceBounds>
 
 /** Share represented face bounds between clipping and corridor search. */
-export function prepareConnectorRouting(bodies: readonly WorldAnchor[]) {
+export function prepareConnectorRouting(bodies: readonly ConnectorObstacle[]) {
   const faces = bodies.map(faceBounds)
   return {
     clears: (points: readonly Vec3[], source: WorldAnchor, target: WorldAnchor, departure?: Vec3) => clearsFaces(points, source, target, faces, departure),
@@ -59,7 +61,7 @@ export function prepareConnectorRouting(bodies: readonly WorldAnchor[]) {
   }
 }
 
-export function prepareConnectorFaceClearance(bodies: readonly WorldAnchor[]) {
+export function prepareConnectorFaceClearance(bodies: readonly ConnectorObstacle[]) {
   return prepareConnectorRouting(bodies).clears
 }
 
@@ -133,7 +135,7 @@ function clearsFaces(points: readonly Vec3[], source: WorldAnchor, target: World
 
 /** Connect real ports through exterior side/roof channels. Geometry, IDs and
  * values are untouched; the detour protects information faces from crossings. */
-export function surfaceConnectorPoints(from: Vec3, to: Vec3, source: WorldAnchor, target: WorldAnchor, obstacles: readonly WorldAnchor[] = [],departure?:Vec3): Vec3[] {
+export function surfaceConnectorPoints(from: Vec3, to: Vec3, source: WorldAnchor, target: WorldAnchor, obstacles: readonly ConnectorObstacle[] = [],departure?:Vec3): Vec3[] {
   return surfacePath(from, to, source, target, obstacles.map(faceBounds), departure)
 }
 

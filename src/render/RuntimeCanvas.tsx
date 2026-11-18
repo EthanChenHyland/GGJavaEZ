@@ -176,11 +176,11 @@ function Metrics({ snapshot, selection,trace }: {
                         }
                     });return ports;
                 },
-                arrayTitleParts:()=>{
-                    const result:ReturnType<NonNullable<Window['__ggjavaezWorld']>['arrayTitleParts']>[number][]=[],matrix=new Matrix4(),position=new Vector3(),scale=new Vector3();
+                arrayTrayParts:()=>{
+                    const result:ReturnType<NonNullable<Window['__ggjavaezWorld']>['arrayTrayParts']>[number][]=[],matrix=new Matrix4(),position=new Vector3(),scale=new Vector3();
                     world.traverseVisible(object=>{
                         if(!(object instanceof InstancedMesh))return;
-                        const parts=object.userData.runtimeArrayTitleParts as ({id:string;part:'slab'|'face'}|null)[]|undefined;
+                        const parts=object.userData.runtimeArrayTrayParts as ({id:string;part:'slab'|'face'|'backplate'}|null)[]|undefined;
                         if(!parts)return;
                         object.updateWorldMatrix(true,false);
                         for(let index=0;index<Math.min(object.count,parts.length);index++){

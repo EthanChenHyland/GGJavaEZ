@@ -23,9 +23,10 @@ it('ranks blocked central faces behind actual cuboids and clear alternate sightl
  expect(visibility(target,[10,10,3])).toEqual({blocked:0,centreBlocked:false})
  expect(JSON.stringify(entities)).toBe(before)
 })
-it('does not count an array reserved envelope as a solid, while its actual title plate can obstruct a face',()=>{
+it('uses the physical tray backing to block covered faces and allows paths around it',()=>{
  const target=placed(object,'unit-target',[0,0,0],[2,2,2]),tray=placed(array,'unit-tray',[0,0,4],[6,8,2]),visibility=createMemberVisibility({entities:{target,tray}})
- expect(visibility(target,[0,0,10])).toEqual({blocked:0,centreBlocked:false})
+ expect(visibility(target,[0,0,10])).toEqual({blocked:5,centreBlocked:true})
+ expect(visibility(target,[20,0,10])).toEqual({blocked:0,centreBlocked:false})
  const headerTarget=placed(target,'unit-target',[0,3.55,0],[2,2,2])
  expect(visibility(headerTarget,[0,3.55,10]).centreBlocked).toBe(true)
 })

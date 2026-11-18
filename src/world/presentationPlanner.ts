@@ -1,4 +1,4 @@
-import { arrayTitlePlate } from './arrayCellGeometry';
+import { arrayBackplate,arrayTitlePlate } from './arrayCellGeometry';
 import {exceptionPanelFor,exceptionPanelAnchor} from './exceptionPanelPlacement'
 import type { Selection } from '../contracts/interaction';
 import type { ArrayIndexReason, DetailLevel, EntityId, LayoutState, MaterialRole, PresentationPlan, PresentedCurve, PresentedEntity, SceneEntity, SceneModel, TraceScope, Vec3, WorldAnchor } from '../contracts/world';
@@ -227,15 +227,16 @@ export function planPresentation(input: PlanInput, previous?: PresentationPlan):
         cellWindows.set(id, window); remainingCells -= window.visible.length; mandatoryCells.push(...window.budgetOverflow.mandatoryIds);
     }
     if (remainingCells < 0) overflow.push({ category: 'cells', nominal: budget.cells, actual: budget.cells - remainingCells, mandatoryIds: mandatoryCells, reasons: ['selected, focused or current semantic cell'] });
-    const bodyAnchors = new Map<string, WorldAnchor>();
-    for (const id of entities.keys()) {
+    const bodyAnchors = new Map<string, WorldAnchor>(), backs:ReturnType<typeof arrayBackplate>[]=[];
+    for (const [id,presented] of entities) {
       const node = scene.entities[id], anchor = node.anchor;
       // An array's reserved envelope is not a visible face. Route around the
-      // actual header and the current cell mapping, never future/hidden cells.
+      // actual header, plate and current cell mapping.
       bodyAnchors.set(id, node.kind === 'array' ? arrayTitlePlate(anchor) : anchor);
+      if (node.kind==='array'&&presented.mode==='detailed') backs.push(arrayBackplate(anchor));
     }
     const cellAnchors = new Map([...cellWindows.values()].flatMap(window => [...window.mapping].map(([id, cell]) => [id, cell.anchor] as const)));
-    const routeBodies = [...bodyAnchors.values(), ...cellAnchors.values(), ...scene.io.map(io => io.anchor), ...clusters.map(cluster => cluster.anchor),...(exceptionPanel?[exceptionPanelAnchor(exceptionPanel,scene.recording)]:[])];
+    const routeBodies = [...bodyAnchors.values(), ...backs, ...cellAnchors.values(), ...scene.io.map(io => io.anchor), ...clusters.map(cluster => cluster.anchor),...(exceptionPanel?[exceptionPanelAnchor(exceptionPanel,scene.recording)]:[])];
     const route = (input.router??createConnectorRouter()).forBodies(routeBodies);
     const relevantEntities=new Set([selected,focused,...(scene.cursorEvent?.subjects??[]).map(owner)].filter((id):id is string=>!!id));
     const traceParticipants=new Set<string>();

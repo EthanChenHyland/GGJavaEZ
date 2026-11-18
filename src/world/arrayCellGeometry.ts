@@ -1,5 +1,6 @@
 import type { Vec3, WorldAnchor } from '../contracts/world'
 import { world } from '../theme/tokens'
+import type { ConnectorObstacle } from './connectorRouting'
 
 export function arrayTitlePlate(tray: WorldAnchor): WorldAnchor {
   const { titlePlate, backplate } = world.array
@@ -7,6 +8,17 @@ export function arrayTitlePlate(tray: WorldAnchor): WorldAnchor {
   const centerY = y + tray.size[1] / 2 - titlePlate / 2
   return { ...tray, position: [x, centerY, z], size: [tray.size[0], titlePlate, backplate],
     ports: {}, bodyPort: [x, centerY, z + backplate / 2] }
+}
+
+/** The tray reserves its rear sheet from allocation. Window changes only
+ * reassign front cell slots, so the backing stays fixed through time. */
+export function arrayBackplate(tray: WorldAnchor): ConnectorObstacle {
+  const thickness = world.array.backplate
+  const [x,y,z] = tray.position
+  const back = z - tray.size[2] / 2
+  return { ...tray, entityId: `${tray.entityId}:backplate`, position: [x,y,back + thickness / 2],
+    size: [tray.size[0],tray.size[1],thickness], ports: {}, bodyPort: [x,y,back + thickness],
+    frontClearance: 0 }
 }
 
 /** The tray already reserves indexLabel space in its initial height. Spend

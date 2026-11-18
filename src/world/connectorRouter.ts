@@ -1,13 +1,15 @@
 import type {Vec3,WorldAnchor} from '../contracts/world'
-import {curvedPath,prepareConnectorRouting,roundedConnectorPoints} from './connectorRouting'
+import {curvedPath,prepareConnectorRouting,roundedConnectorPoints,type ConnectorObstacle} from './connectorRouting'
 
 type Route=(from:Vec3,to:Vec3,source?:WorldAnchor,target?:WorldAnchor,left?:boolean,departure?:Vec3)=>readonly Vec3[]
 export interface ConnectorRouter {
- forBodies(bodies:readonly WorldAnchor[]):Route
+ forBodies(bodies:readonly ConnectorObstacle[]):Route
  stats():{contexts:number;routes:number;computedRoutes:number}
 }
 const contextLimit=2,routeLimit=256
-const geometry=(anchor:WorldAnchor|undefined)=>anchor?[anchor.entityId,anchor.position,anchor.size]:null
+const geometry=(anchor:ConnectorObstacle|undefined)=>anchor
+ ?[anchor.entityId,anchor.position,anchor.size,...(anchor.frontClearance===undefined?[]:[anchor.frontClearance])]
+ :null
 
 /** Only represented geometry and exact terminal coordinates determine a route.
  * Two bounded contexts support returning from inspection to the same World.

@@ -125,14 +125,19 @@ for(const viewport of[{width:1440,height:900},{width:760,height:900}])for(const 
    return{cursor:world.scene().cursor,focus:window.__ggjavaezQA!.focusTarget(),shell:window.__ggjavaezQA!.shellRects(),
     cells:[...windowForArray.mapping].map(([slotId,cell])=>({slotId,...cell})),labels:world.arrayText().filter(label=>label.entityId===arrayId),
     headings:world.runtimeHeadings().filter(label=>label.entityId===arrayId),
-    titleParts:world.arrayTitleParts().filter(part=>part.id===arrayId),
+    trayParts:world.arrayTrayParts().filter(part=>part.id===arrayId),
     title:node.title,displayId:node.displayId}
   },array.id)
   expect(observed.focus?.targetId).toBe(`${array.id}:element:${index}`)
   expect(observed.cells).toHaveLength(array.length)
-  expect(observed.titleParts.map(part=>part.part).sort()).toEqual(['face','slab'])
-  const slab=observed.titleParts.find(part=>part.part==='slab')!,face=observed.titleParts.find(part=>part.part==='face')!
+  expect(observed.trayParts.map(part=>part.part).sort()).toEqual(['backplate','face','slab'])
+  const slab=observed.trayParts.find(part=>part.part==='slab')!,face=observed.trayParts.find(part=>part.part==='face')!
   expect(slab.size[1]).toBeCloseTo(.9,5);expect(slab.size[2]).toBeCloseTo(.12,5)
+  const back=observed.trayParts.find(part=>part.part==='backplate')!
+  expect(back.size[2]).toBeCloseTo(.12,5)
+  for(const cell of observed.cells){
+   expect(cell.anchor.position[2]-cell.anchor.size[2]/2).toBeCloseTo(back.position[2]+back.size[2]/2,5)
+  }
   const plane=face.position[2]+face.size[2]/2
   expect(observed.headings.map(label=>label.text).sort()).toEqual([observed.title,`#${observed.displayId}`,`length = ${array.length}`].sort())
   for(const heading of observed.headings){
@@ -170,6 +175,40 @@ for(const viewport of[{width:1440,height:900},{width:760,height:900}])for(const 
  }
  expect(new Set(observations.map(item=>item.cursor)).size).toBe(1)
  await writeFile(`.ggjavaez/qa/reference-exact/array-caption-spacing-${viewport.width}x${viewport.height}${reducedMotion?'-reduced':''}.json`,JSON.stringify({sessionId:session.id,observations,errors},null,2)+'\n')
+ expect(errors).toEqual([])
+})
+
+test('an actual empty Java array retains a title and glass backplate without cells', async ({page,request})=>{
+ test.setTimeout(90000)
+ const errors=browserErrors(page)
+ await page.emulateMedia({reducedMotion:'reduce'})
+ const session=await runOrigins(page,request,{fileName:'EmptyArray.java',stdout:'0\n',content:`public class EmptyArray {
+ public static void main(String[] args) {
+  int[] empty = new int[0];
+  System.out.println(empty.length);
+ }
+}`})
+ const id=await page.evaluate(()=>Object.values(window.__ggjavaezWorld!.scene().entities)
+  .find(node=>node.kind==='array'&&node.title==='int[]'&&node.length===0)?.id)
+ expect(id).toBeDefined()
+ await selectArrayThroughCatalog(page,id!)
+ const observed=await page.evaluate(id=>{
+  const world=window.__ggjavaezWorld!
+  return{
+   parts:world.arrayTrayParts().filter(part=>part.id===id),
+   title:world.runtimeHeadings().filter(heading=>heading.entityId===id).map(heading=>heading.text),
+   cells:world.plan().cellWindows.get(id)?.mapping.size??0,
+   labels:world.arrayText().filter(label=>label.entityId===id),
+  }
+ },id!)
+ expect(observed.parts.map(part=>part.part).sort()).toEqual(['backplate','face','slab'])
+ expect(observed.parts.find(part=>part.part==='backplate')?.size[2]).toBeCloseTo(.12,5)
+ expect(observed.title.sort()).toEqual(expect.arrayContaining(['int[]','length = 0',expect.stringMatching(/^#\d+$/)]))
+ expect(observed.title).toHaveLength(3)
+ expect(observed.cells).toBe(0)
+ expect(observed.labels).toEqual([])
+ await page.screenshot({path:'.ggjavaez/qa/reference-exact/array-empty-backplate-native.png'})
+ await writeFile('.ggjavaez/qa/reference-exact/array-empty-backplate-native.json',JSON.stringify({sessionId:session.id,observed,errors},null,2)+'\n')
  expect(errors).toEqual([])
 })
 

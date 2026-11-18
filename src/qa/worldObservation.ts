@@ -18,7 +18,7 @@ export interface WorldObservation {
   projectedPoint(id: string): { x:number; y:number; visible:boolean } | null
   renderer(): {calls:number;triangles:number;geometries:number;textures:number;frame:number}
   connectorPorts():readonly {position:Vec3;radius:number;opacity:number;referenceChip:boolean}[]
-  arrayTitleParts():readonly {id:string;part:'slab'|'face';position:Vec3;size:Vec3}[]
+  arrayTrayParts():readonly {id:string;part:'slab'|'face'|'backplate';position:Vec3;size:Vec3}[]
   valueChips():readonly {slotId:string;part:string;position:Vec3;size:Vec3}[]
   environment():{id:string;captureVersion:number}|null
   effects():{ready:boolean;frames:number;revision:number;failure:string;cinematic:boolean}

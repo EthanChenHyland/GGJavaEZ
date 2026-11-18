@@ -106,7 +106,9 @@ it('keeps captured comparison facts and committed indexed values independent of 
 it('ignores another array activity and emphasizes all subdivisions for object selection',()=>{
  const actual=view();expect(facts({...actual.runtime,arrayActivity:{...compare,objectId:'other'}})).toBe('')
  const solids=buildSolidBatch(actual.scene,actual.plan).filter(body=>body.role==='heap')
- expect(solids).toHaveLength(4);expect(solids.every(body=>body.edge===color.semantic.execution)).toBe(true)
+ expect(solids).toHaveLength(5)
+ expect(solids.find(body=>body.arrayTrayPart==='backplate')?.anchor.size[2]).toBeCloseTo(.12,8)
+ expect(solids.every(body=>body.edge===color.semantic.execution)).toBe(true)
 })
 it('keeps sparse indices 29 and 511 and their exact values without expanding a 512-cell recording',()=>{
  const trace=sparseTrace({indices:[0,29,511],length:512,extra:[{type:'OBJECT_OBSERVE',objectId:sparseArrayId,arrayElements:[{index:0,value:int(8)},{index:29,value:int(1)},{index:511,value:int(1)}]}]}),projection=projectTrace(trace),scene=projection.project(trace.events.length),node=scene.entities[sparseArrayId]

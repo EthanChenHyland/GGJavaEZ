@@ -4,7 +4,7 @@ import type { TraceEvent } from '../contracts/runtime'
 import { world } from '../theme/tokens'
 import { createLayoutEngine } from './layoutEngine'
 import { computeArrayWindow } from './arrayWindow'
-import { arrayCellTextGeometry } from './arrayCellGeometry'
+import { arrayBackplate,arrayCellTextGeometry } from './arrayCellGeometry'
 import { arrayCellCaptionPoints } from '../render/text/arrayIndexLayout'
 
 it('binds index clearance to the actual bundled font and its middle-anchor ink', () => {
@@ -25,6 +25,10 @@ it.each([0, 1, 5, 8, 9, 128, 129, 10001])('uses reserved index space above the c
   const columns=Math.max(world.array.cellsPerRowMin,Math.min(world.array.cellsPerRowMax,length))
   const rows=length>128?8:Math.ceil(length/columns)
   expect(tray.size[1]).toBe(world.array.titlePlate+(rows?rows*(world.array.cell+world.array.gap)+world.array.indexLabel:.45))
+  const backplate=arrayBackplate(tray)
+  expect(backplate.size).toEqual([tray.size[0],tray.size[1],.12])
+  expect(backplate.position.slice(0,2)).toEqual(tray.position.slice(0,2))
+  expect(backplate.position[2]-backplate.size[2]/2).toBeCloseTo(tray.position[2]-tray.size[2]/2,10)
   const window=computeArrayWindow({recordingId:'unit',arrayId:'array',recordedLength:length,anchor:tray,nominalCellBudget:length>128?48:128,requestedIndices:length?[length-1]:[]})
   for(const[id,cell]of window.mapping){
     const row=Math.floor(cell.presentedSlot/columns)
@@ -33,6 +37,7 @@ it.each([0, 1, 5, 8, 9, 128, 129, 10001])('uses reserved index space above the c
     const captionY=cell.anchor.position[1]+cell.anchor.size[1]/2+.5
     expect(captionY).toBeCloseTo(top-.9-row*1.63,10)
     expect(cell.anchor.size).toEqual([1.55,1.55,1.55])
+    expect(cell.anchor.position[2]-cell.anchor.size[2]/2).toBeCloseTo(backplate.position[2]+backplate.size[2]/2,10)
     if(length<=128){
       expect(engine.state.anchors[id].position).toEqual(cell.anchor.position)
       expect(engine.state.anchors[id].size).toEqual(cell.anchor.size)
