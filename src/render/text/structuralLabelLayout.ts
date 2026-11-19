@@ -82,7 +82,7 @@ export function placeStructuralLabels(specs:readonly StructuralLabelSpec[],camer
   // Tracked region titles can need to clear both a body and another heading.
   // Keep the same bounded world plane rather than hiding a required lane title
   // after only the first two, still-obstructed candidates.
-  for(const lift of spec.kind==='heading'?[0,.5,1,2,4]:spec.kind==='cluster'?[0,1,2,3,4]:[0,1,2]){
+  for(const lift of spec.kind==='heading'?[0,.5,1,2,4]:spec.kind==='cluster'?[0,1,2,3,4]:spec.kind==='return'?[0,-1,-2,-3,-4,-5,-6,1,2,3,4,5,6]:[0,1,2]){
    if(lift)label=projectStructuralLabel(spec,camera,viewport,lift);const rect=label.bounds
    if(!rect||!inside(rect,safe)||blocked.some(area=>(area.nearDepth===undefined||label.farDepth===undefined||area.nearDepth<=label.farDepth)&&structuralRectsOverlap(rect,area))||occupied.some(area=>structuralRectsOverlap(rect,area)))continue
    label.visible=true;occupied.push(rect);break

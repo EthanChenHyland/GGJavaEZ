@@ -20,7 +20,7 @@ export interface FlowCatalog {
  atEvent(cursor:number,scene:SceneModel):SceneFlow[]
  /** Complete supported-edge prefix, including evidence without spatial endpoints. */
  prefix(cursor:number,scene:SceneModel):readonly RecordedFlow[]
- /** One complete, ordered pass over the accepted edge boundary; no retained DTO list. */
+ /** One complete, ordered accepted boundary; reuse only the most recent immutable cut. */
  iteratePrefix(cursor:number,scene:SceneModel):Iterable<RecordedFlow>
  recordedProvenanceOf(valueOrSlotId:string,cursor:number):readonly RecordedProvenance[]
  drawableFlowsOf(valueOrSlotId:string,cursor:number,scene:SceneModel):readonly SceneFlow[]
@@ -134,9 +134,9 @@ export function createFlowCatalog(initialTrace?:TraceDocument):FlowCatalog {
   }
   return result
  }
- // Eager public snapshots retain their existing cache/identity contract. The
- // planner consumes this pass directly, so off-cut DTOs and endpoint pairs do
- // not become long-lived owners merely because a plan accounts for them.
+ // Public snapshots and repeated plans share one evaluated immutable cut.
+ // A different scene or accepted edge boundary replaces that cache; retained
+ // caller snapshots remain independent of later replay and graph extension.
  function* iterate(cursor:number,scene:SceneModel,retain:boolean,edgeLimit:number):IterableIterator<RecordedFlow>{
   lastScene=scene
   for(let index=0;index<edgeLimit&&edgeEventOrdinals[index]<cursor;index++){
@@ -214,7 +214,10 @@ export function createFlowCatalog(initialTrace?:TraceDocument):FlowCatalog {
   },
   iteratePrefix(cursor,scene){
    lastScene=scene
-   return prefixCache?.scene===scene&&prefixCache.cursor===cursor&&prefixCache.indexedEdges===indexedEdges?prefixCache.items:iterate(cursor,scene,false,indexedEdges)
+   if(prefixCache?.scene===scene&&prefixCache.cursor===cursor&&prefixCache.indexedEdges===indexedEdges)return prefixCache.items
+   const items=Object.freeze([...iterate(cursor,scene,false,indexedEdges)])
+   prefixCache={scene,cursor,indexedEdges,items}
+   return items
   },
   bundles({cursor,scene,exclude}){
    lastScene=scene;const groups=new Map<string,FlowBundle>()

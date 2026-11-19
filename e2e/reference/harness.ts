@@ -54,7 +54,12 @@ export async function openFixture(page:Page,request:APIRequestContext,name:Fixtu
  if(page.viewportSize()!.width<1024){
   const peek=page.getByRole('button',{name:'Show source drawer',exact:true})
   await expect(peek).toBeVisible();await expect(peek).toContainText('.java')
- }else await expect(page.locator('.monaco-editor')).toBeVisible()
+ }else{
+  // A selected ID precedes the asynchronous tree/file restore. Start the
+  // editor mount check once the actual active file has reached its Source tab.
+  await expect(page.locator('.ide-tab.is-active')).toBeVisible()
+  await expect(page.locator('.monaco-editor')).toBeVisible()
+ }
  await expect(page.getByRole('button',{name:'Run',exact:true})).toBeEnabled()
  return id
 }
@@ -175,7 +180,7 @@ export async function captureComparison(page:Page,request:APIRequestContext,stat
  await page.evaluate(async()=>{await Promise.all(document.getAnimations().filter(animation=>animation.playState==='running'&&animation.effect instanceof KeyframeEffect&&animation.effect.target instanceof Element&&animation.effect.target.closest('.ide-editor-panel')).map(animation=>animation.finished.catch(()=>undefined)))})
  const observe=()=>page.evaluate(()=>{
   const qa=window.__ggjavaezQA!,world=window.__ggjavaezWorld!,scene=world.scene()
-  return{viewport:{width:innerWidth,height:innerHeight},app:qa.appState(),scene,shell:qa.shellRects(),world:qa.worldProjection()!,structuralLabels:world.structuralLabels(),runtimeHeadings:world.runtimeHeadings(),frameText:world.frameText(),ioText:world.ioText(),atmosphere:world.atmosphere(),selection:qa.selection(),pose:qa.cameraPose(),plan:qa.planStats(),renderer:world.renderer(),effects:world.effects(),quality:world.quality(),prefix:{recordingId:scene.recordingId,cursor:scene.cursor,liveHead:scene.liveHead,eventId:scene.cursorEvent?.id??null}}
+  return{viewport:{width:innerWidth,height:innerHeight},app:qa.appState(),scene,shell:qa.shellRects(),world:qa.worldProjection()!,structuralLabels:world.structuralLabels(),runtimeHeadings:world.runtimeHeadings(),frameText:world.frameText(),ioText:world.ioText(),returnText:world.returnText(),atmosphere:world.atmosphere(),selection:qa.selection(),pose:qa.cameraPose(),plan:qa.planStats(),renderer:world.renderer(),effects:world.effects(),quality:world.quality(),prefix:{recordingId:scene.recordingId,cursor:scene.cursor,liveHead:scene.liveHead,eventId:scene.cursorEvent?.id??null}}
  })
  const before=await observe(),session=(await currentSession(request))!
  expect(session?.id,'Capture belongs to the actual fixture JVM').toBe(sessionId)
@@ -214,6 +219,13 @@ export async function captureComparison(page:Page,request:APIRequestContext,stat
  await writeFile(resolve(base,'diff',`${id}.png`),Buffer.from(composed.diff,'base64'))
  const misses=measurementFailures({...before,stateId:state.id})
  if(state.id==='recursion')misses.push(...recursiveHeadingFailures(before.scene,before.world,before.pose.position,before.runtimeHeadings))
+ if(state.id==='return'){
+  const heading=before.structuralLabels.find(label=>label.id==='RETURNS'),safe=before.shell.safeFrame
+  const inside=(bounds:{x:number;y:number;width:number;height:number}|null)=>!!bounds&&bounds.x>=safe.x-.001&&bounds.y>=safe.y-.001&&bounds.x+bounds.width<=safe.x+safe.width+.001&&bounds.y+bounds.height<=safe.y+safe.height+.001
+  if(!heading?.visible||heading.minimumFontPixels<12||!inside(heading.bounds))misses.push('The amber RETURNS heading is not readable inside the Safe Frame')
+  if(!before.returnText.some(label=>label.kind==='value'&&label.opacity>0&&label.fontPixels>=12))misses.push('The recorded return value has no readable glyphs')
+  if(!before.structuralLabels.some(label=>label.kind==='return'&&label.visible&&inside(label.bounds)))misses.push('The recorded return caption is outside the Safe Frame')
+ }
  if(state.id==='io')for(const io of before.scene.io){
   const label=before.ioText.find(label=>label.channel===io.id),preview=ioPortPreview(io)
   const glyph=io.id==='stderr'?'⚠':io.id==='stdout'?'→':'←'

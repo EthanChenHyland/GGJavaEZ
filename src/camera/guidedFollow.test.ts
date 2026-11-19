@@ -12,6 +12,7 @@ import {exceptionPanelAnchor,exceptionPanelFor} from '../world/exceptionPanelPla
 import type {SceneExceptionPath} from '../contracts/world'
 import {followInvocations,guidedFollow,isFollowSubjectEvent} from './guidedFollow'
 import {projectionCamera,screenPoint,type OrbitPose} from './projection'
+import {valueText} from '../world/valueText'
 const raw=generateRawTrace({seed:17,rawEvents:80,callRate:.95,maxDepth:9,allocateRate:.1})
 const trace=normalizeTrace(raw.rawEvents,raw.manifest,{status:'complete',exitCode:0,diagnostic:null}).trace
 const layout=createLayoutEngine();layout.append(trace.events)
@@ -23,6 +24,18 @@ function fixture(depth:number){
  return{scene,plan,event}
 }
 const current:OrbitPose={target:[4,-2,0],distance:100,yawDeg:8,pitchDeg:-13}
+it('explicit Follow includes the two recorded owners of a visible return without pinning it on later steps',()=>{
+ const {scene,plan,event}=fixture(7),child=scene.liveStack.at(-1)!,parent=scene.liveStack.at(-2)!
+ const source=scene.entities[child].anchor,destination=scene.entities[parent].anchor,id='unit:proved-return'
+ const returning={...scene,liveStack:scene.liveStack.slice(0,-1),returnFlows:[{id,frameId:child,destination:{entityId:parent,slotId:'unit:destination'},value:valueText({kind:'primitive',javaType:'int',value:7}),operands:null,returnSeq:event.seq}]}
+ const presented={...plan,headings:[{id:'RETURNS' as const,position:[source.position[0]+source.size[0]/2+.45,source.position[1]+source.size[1]/2+.75,source.position[2]+source.size[2]/2] as const,opacity:1}],curves:[{id,kind:'return' as const,points:[source.bodyPort,destination.bodyPort],sourceAnchor:source,destinationAnchor:destination,colorRole:'return' as const,opacity:1,widthPx:2.5 as const,arrow:true}]}
+ const viewport={width:760,height:900},safe={x:16,y:90,width:728,height:650}
+ const entered=guidedFollow(returning,presented,null,current,safe,viewport,null)
+ expect(entered.ids).toContain(child);expect(entered.ids).toContain(parent)
+ expect(entered.ids).toEqual([...followInvocations(returning).slice(-4),child])
+ for(const point of entered.points){const p=screenPoint(point,projectionCamera(entered.pose!,viewport),viewport);expect(p.x).toBeGreaterThanOrEqual(safe.x+11.99);expect(p.x).toBeLessThanOrEqual(safe.x+safe.width-11.99);expect(p.y).toBeGreaterThanOrEqual(safe.y+11.99);expect(p.y).toBeLessThanOrEqual(safe.y+safe.height-11.99)}
+ expect(guidedFollow(returning,presented,null,entered.pose!,safe,viewport,true).ids).not.toContain(child)
+})
 it('Property 51: recursive Follow fits the four actual nearest callers and preserves monotone screen centres (100 viewports)',()=>{
  const{scene,plan,event}=fixture(7),before=JSON.stringify(scene),chain=followInvocations(scene)
  fc.assert(fc.property(fc.integer({min:760,max:1920}),fc.integer({min:650,max:1117}),(width,height)=>{

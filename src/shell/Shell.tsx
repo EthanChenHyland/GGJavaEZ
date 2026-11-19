@@ -67,6 +67,10 @@ export function Shell({ recording, recordingChoices }: ShellProps) {
   const editorVisible=layout.source.size!=='DRAWER_COLLAPSED'&&!!(activeReveal??(recording?recordedFile:workspace.recordedView??workspace.activeTab))
   const [sourceEditorOpened,setSourceEditorOpened]=useState(editorVisible)
   const mountSourceEditor=sourceEditorOpened||layout.source.size!=='DRAWER_COLLAPSED'
+  // A visible workspace Source panel already owns the editor request. Prepare
+  // its runtime while its first file loads, preserving the collapsed drawer's
+  // first-display boundary and the empty workspace's lazy-loading contract.
+  useEffect(()=>{if(!recording&&workspace.projectId&&layout.source.size!=='DRAWER_COLLAPSED')void loadJavaEditorRuntime().catch(workspace.fail)},[recording,workspace.projectId,layout.source.size])
   // First display owns the lazy load. Later collapse preserves models/view state.
   useLayoutEffect(()=>{if(editorVisible)setSourceEditorOpened(true)},[editorVisible])
   useLayoutEffect(() => exposeQaBridge({ appState, layout, cursor: workspace.runtime?.cursor ?? 0, liveHead: recording?.events.length ?? workspace.visualization?.trace.events.length ?? 0 }))

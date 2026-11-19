@@ -1,6 +1,6 @@
 # Behavior QA
 
-Current integration, 2026-11-19: **22/22** corrected browser cases pass with no skips or flakes, covering Header, native I/O, held-request restoration races, real-project Quick Open and existing workspace protocols. The full current-source suite and opt-in gates remain required. [Counts and test boundaries](migration/recorded-io-and-retained-world.md). The 69-case discussion below is historical.
+Current convergence, 2026-11-19: all 195 acceptance, 85 prior coverage/provenance, seven reference and nine torture cases pass at source `38dedb9b`, with explicit launch-count verification and no skips. Acceptance retains four declared expected-failure contracts. Ten native recursion/return cases pass across five viewports at the separately qualified source. The complete 330-case default browser corpus and final cross-state/motion gates remain required. [Exact source boundaries, failures and validation](migration/return-follow-and-flow-cut.md).
 
 Current evidence, 2026-10-13; final acceptance, torture, hands-on motion and exhaustive browser approval remain open.
 

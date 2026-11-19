@@ -1,6 +1,6 @@
 # Visual QA
 
-Current integration, 2026-11-19: an actual-Java array test verifies visible glyph pixels in all five cells over four forward/reverse cuts. Recorded I/O now has a bounded face preview and selectable expansion. These targeted checks do not replace the fresh 96-image formal review. [Exact scope and preserved failed captures](migration/recorded-io-and-retained-world.md).
+Current convergence, 2026-11-19: the root reviews all 12 fresh original-size recursion/return captures from ten actual JVM sessions; all ten targeted viewport tests pass. Recorded signatures, amber return heading, value caption and narrow edge clearance are corrected. Short-view context text and shared material/grid/outline differences remain open. This review does not approve the pending coherent 80-session/96-capture final matrix. [Exact source boundaries, failures and validation](migration/return-follow-and-flow-cut.md).
 
 As of 2026-10-13, visual convergence remains open. Real spatial geometry, passing interaction checks and hardware-gated Cinematic behavior do not establish reference-exact finish by themselves.
 

@@ -11,7 +11,7 @@ import {regionHeadingSpec,structuralLabelFitPoints} from '../render/text/structu
 export {contextInvocations as homeInvocations} from '../world/invocationContext'
 export function homeFraming(scene:SceneModel,plan:PresentationPlan,safeFrame:Rect,viewport:Size,layout?:LayoutState):{pose:OrbitPose;ids:readonly string[];points:readonly Vec3[]} {
  const frames=homeInvocations(scene),angles=tokens.hero
- const requiredHeadings=plan.headings.filter(heading=>heading.id==='STACK'||heading.id==='HEAP')
+ const requiredHeadings=plan.headings.filter(heading=>heading.id==='STACK'||heading.id==='HEAP'||heading.id==='RETURNS')
  const specs=requiredHeadings.map(heading=>regionHeadingSpec(heading.id,heading.position))
  const bodies=[...[...plan.entities.keys()].map(id=>scene.entities[id].anchor),...plan.clusters.map(cluster=>cluster.anchor),...scene.io.map(io=>io.anchor),...(plan.exceptionPanel?[exceptionPanelAnchor(plan.exceptionPanel,scene.recording)]:[])]
  const evidence=plan.exceptionPanel?{anchor:exceptionPanelAnchor(plan.exceptionPanel,scene.recording),layout:layoutExceptionPanel(buildExceptionPanelModel(plan.exceptionPanel.content,scene.recording.state))}:null

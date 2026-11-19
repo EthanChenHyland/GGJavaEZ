@@ -405,7 +405,7 @@ export function createSceneProjector(trace: TraceDocument): SceneProjector {
       lastScope = slot.scopeId
     } })
     const entry = history ? events[history.introduced] : undefined
-    const parameters = entry?.type === 'ENTER_METHOD' && (entry.locals.length===0 || entry.locals.some(slot=>slot.role==='parameter')) ? entry.locals.filter(slot => slot.name !== 'this' && slot.role === 'parameter').map(slot => slot.javaType) : undefined
+    const parameters = entry?.type === 'ENTER_METHOD' && entry.locals.some(slot=>slot.role==='parameter') ? entry.locals.filter(slot => slot.name !== 'this' && slot.role === 'parameter').map(slot => slot.javaType) : undefined
     const node: SceneFrame = freezeValue({ kind: 'frame', id: frame.id, invocationNumber: history?.invocationNumber ?? 0,
       title: frameTitle(frame, invocation ? { method: invocation.method } : { parameterTypes: parameters }), callerId: frame.callerFrameId, depth: frame.depth,
       rows, ...(scopeDividers.length ? { scopeDividers } : {}), status, live, topOfStack, exceptionRole, sourceLine, anchor,

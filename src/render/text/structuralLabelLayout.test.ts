@@ -5,6 +5,15 @@ import {placeStructuralLabels,projectStructuralLabel,structuralRectsOverlap,regi
 import {projectedPlaneFontPixels} from './textSystem'
 const spec=(id:string,x:number,priority=2):StructuralLabelSpec=>({id,kind:'cluster',position:[x,0,0],size:.3,localBounds:[-1,1,.08,.83],priority,count:12})
 const cameraAt=(distance:number)=>{const camera=new PerspectiveCamera(36,16/9,.05,10000);camera.position.set(0,8,distance);camera.lookAt(0,0,0);camera.updateMatrixWorld();return camera}
+it('keeps the recorded return caption below an occupying lane heading on its same world plane',()=>{
+ const viewport={width:1440,height:900},safe={x:200,y:90,width:1220,height:675},camera=cameraAt(24)
+ const heading=regionHeadingSpec('RETURNS',[0,0,0]),caption:StructuralLabelSpec={id:'unit:recorded-return',kind:'return',position:[0,0,0],size:.28,localBounds:[0,1.2,-.2,.2],priority:0,count:1}
+ const labels=placeStructuralLabels([heading,caption],camera,viewport,safe),title=labels.find(label=>label.id==='RETURNS')!,value=labels.find(label=>label.id===caption.id)!
+ expect(title.visible).toBe(true);expect(value.visible).toBe(true)
+ expect(value.position[1]).toBeLessThan(caption.position[1])
+ expect(value.position[0]).toBe(caption.position[0]);expect(value.position[2]).toBe(caption.position[2])
+ expect(structuralRectsOverlap(title.bounds!,value.bounds!)).toBe(false)
+})
 it('keeps the selected structural caption at its anchor before placing region headings',()=>{
  const camera=cameraAt(40),viewport={width:1440,height:900},safe={x:0,y:0,width:1440,height:900}
  const selected=spec('selected',0,-3),heading=regionHeadingSpec('HEAP',[0,0,0])

@@ -63,6 +63,10 @@ it('return destinations require prefix-visible assignment evidence, even when th
  const plan=planPresentation({...input,flows:catalog})
  expect(plan.curves.filter(curve=>curve.kind==='return').map(curve=>curve.id)).toEqual([sourceEdge.id])
  expect(plan.headings.filter(heading=>heading.id==='RETURNS')).toHaveLength(1)
+ const returnHeading=plan.headings.find(heading=>heading.id==='RETURNS')!,returnBody=plan.curves.find(curve=>curve.kind==='return')!.sourceAnchor!
+ const headingClearance=returnHeading.position[1]-(returnBody.position[1]+returnBody.size[1]/2)
+ expect(headingClearance,'The return lane label follows its proved source rather than a distant root frame').toBeGreaterThanOrEqual(.5)
+ expect(headingClearance).toBeLessThanOrEqual(1)
  expect(returnCaptions(scene,plan.curves)).toMatchObject([{flowId:sourceEdge.id,primary:'return 7',operands:null}])
  expect(returned[0].from).toEqual({kind:'frame',id:'jvm:frame:child'});expect(returned[0].to).toEqual({kind:'slot',id:'jvm:frame:main:local:2:2:0:999'})
  expect(query(trace.events.length).filter(flow=>flow.kind==='return')).toEqual([])

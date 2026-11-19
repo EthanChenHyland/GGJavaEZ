@@ -1,6 +1,6 @@
 # Performance evidence
 
-Current integration, 2026-11-19: paired actual-Dense retention probes pass at 16.372%/16.343% presentation retention and 34.554/34.523 MiB semantics. The broader generated stress ratios still fail; they are separate workloads. The fresh fixed browser run completes ten stages and fails seek p50 and Focus/Home latency; its raw median boundary failures also remain recorded. [Methods and exact source](migration/recorded-io-and-retained-world.md). Earlier completed browser results below are historical.
+Current convergence, 2026-11-19: a qualified Flow-cache overlay brings Focus/Home p95 to **118.11 / 130.93 ms**, passing 125/152; seek p50 **66.36 ms** still fails 55. Its full raw report remains unchanged. A later seek-only Canvas experiment fails and is removed. Current build passes at **71,754 main-entry gzip bytes**. New time comparisons remove only sub-nanosecond subtraction roundoff and retain raw samples and fixed budgets. Generated presentation-retention and final-source Dense gates remain open. [Exact source boundaries, failures and validation](migration/return-follow-and-flow-cut.md).
 
 As of 2026-10-17, performance approval is incomplete. Budgets and required sample counts are unchanged. Historical and current methods are distinguished; passing a frame probe does not waive command latency or memory failures.
 

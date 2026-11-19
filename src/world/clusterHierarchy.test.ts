@@ -67,9 +67,9 @@ it('labels the exact residual live depth with the most frequent signature, ties 
  const projection=projectTrace(record([enter('a',null,'first'),enter('b','a','second'),enter('c','b','first'),enter('d','c','second')]),{sessionEnded:false}),scene=projection.project(5)
  const clusters=presentationClusters(scene,projection.layout,scene.liveStack,'FAR',20,null,false)
  expect(clusters).toHaveLength(1)
- expect(clusters[0]).toMatchObject({id:liveDepthId,members:4,label:'Live depth · Work.second()',memberIds:['a','b','c','d']})
+ expect(clusters[0]).toMatchObject({id:liveDepthId,members:4,label:'Live depth · Work.second(⟨parameters not recorded⟩)',memberIds:['a','b','c','d']})
  const cut=presentationClusters(scene,projection.layout,['a','c'],'FAR',20,null,false)[0]
- expect(cut).toMatchObject({members:2,label:'Live depth · Work.first()'});expect(cut.anchor).toBe(clusters[0].anchor)
+ expect(cut).toMatchObject({members:2,label:'Live depth · Work.first(⟨parameters not recorded⟩)'});expect(cut.anchor).toBe(clusters[0].anchor)
 })
 
 it('uses normalized execution-age buckets of 4096, independently of raw recorder ordinals',()=>{

@@ -82,3 +82,8 @@ Reviewed actual-port departure geometry, narrow source-caption clearance, untouc
 ## Shared world inputs and glyph preparation — 2026-11-05
 
 Reviewed the private render snapshot, narrowed mesh and label inputs, and the frame-scoped glyph reuse. Mask reuse requires inheritance from the batch material and the same uniform table. The regression checks both compatible masks, an independent pass and the next frame. The retained failures include the pre-fix unit exercise and test-only type errors. [Implementation and source evidence](migration/render-frame-preparation.md).
+
+
+## Recorded return and recursion convergence — 2026-11-19
+
+The root reviews all 12 originals from ten actual JVM sessions at source `bbf5f0af`: five recursion/return viewport pairs and their native resizes. Recorded signatures and readable amber return/value captions are corrected, including a visible narrow edge gutter. Some short-view context rows still fall below the text admission threshold; opaque-looking face caps, bright floor grid, uniform outlines and weak material/atmospheric depth remain open. This scoped review does not replace or approve the 96-row matrix above. Full-size findings, original hashes, earlier failures and exact source boundaries are recorded in [the convergence ledger](migration/return-follow-and-flow-cut.md).

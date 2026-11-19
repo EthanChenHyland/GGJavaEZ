@@ -1,3 +1,4 @@
+import {withinMillisecondBudget} from '../src/qa/millisecondBudget'
 import {expect, test, type APIRequestContext, type Page} from '@playwright/test'
 import {createHash, randomUUID} from 'node:crypto'
 import {mkdir, readFile, writeFile} from 'node:fs/promises'
@@ -245,7 +246,8 @@ test('modern native Dense_Sample browser performance — fixed full measurement 
   const report={version:1,recordedAt:new Date().toISOString(),runId:randomUUID(),workload:'Dense_Sample',
     sourcePayload,sourceHash,browser:{name:browserName,version:browser.version(),platform:process.platform,arch:process.arch,
       configuredChannel:testInfo.project.use.channel??null,headless:testInfo.project.use.headless??true},
-    deviceScaleFactor:1,thresholdsAreFixed:true,jdt:'Actual language service remains enabled; no request routing or fake responses',
+    deviceScaleFactor:1,thresholdsAreFixed:true,
+    millisecondComparison:{precisionNanoseconds:1,rawSamplesUnchanged:true,reason:'Remove binary subtraction roundoff below browser clock resolution; fixed budgets are unchanged'},jdt:'Actual language service remains enabled; no request routing or fake responses',
     methodology:'Native commands + UI cursor/mode commit + two real rAF callbacks for first composition; readiness outside command windows. Whole-owner submitted frames during continuous native pointer input; snapshots only at window boundaries. No physical-display FPS claim.',
     baseline:{seekP50Ms:50.45,seekP95Ms:101.24,focusP95Ms:110.97,homeP95Ms:138.49,cpuP95Ms:3.70,
       coldLoadMs:4816,coldLoadBaselineSamples:1,coldLoadBaselineExcludedJdt:true,richSemanticMiB:354.56},
@@ -278,7 +280,7 @@ test('modern native Dense_Sample browser performance — fixed full measurement 
     item.status='NOT_MEASURED';item.reason=reason;item.cause='Outside this browser measurement boundary';item.mitigationDecision='Keep whole-product approval incomplete until the independent root gate supplies actual evidence'}
   const measure=(id:string,value:number|null,sufficient:boolean,reason:string)=>{
     const item=budgets.find(budget=>budget.id===id)!
-    item.measured=value;item.status=!sufficient||value===null||!Number.isFinite(value)?'NOT_MEASURED':value<=item.budget?'PASS':'BUDGET_EXCEEDED'
+    item.measured=value;item.status=!sufficient||value===null||!Number.isFinite(value)?'NOT_MEASURED':(item.unit==='ms'?withinMillisecondBudget(value,item.budget):value<=item.budget)?'PASS':'BUDGET_EXCEEDED'
     item.reason=item.status==='PASS'?null:reason
     item.cause=item.status==='PASS'?null:item.status==='NOT_MEASURED'?'Required measurement or sample count was not obtained':'Observed value exceeds the unchanged fixed budget'
     item.mitigationDecision=item.status==='PASS'?null:'Root must investigate the recorded evidence and rerun after a measured fix; do not reduce sample counts or relax thresholds'

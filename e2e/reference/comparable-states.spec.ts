@@ -46,7 +46,9 @@ async function prepare(page:Page,request:APIRequestContext,state:ReferenceState)
   expect(event,'Recorded domain setter mutates a field to 18').toBeTruthy();cursor=event!.seq+1
  }
  if(state.id==='recursion'){
-  const entries=events.filter(event=>event.type==='ENTER_METHOD');expect(entries.length).toBeGreaterThanOrEqual(6);cursor=entries.at(-1)!.seq+1
+  const entries=events.filter(event=>event.type==='ENTER_METHOD');expect(entries.length).toBeGreaterThanOrEqual(6)
+  const entry=entries.at(-1)!,signature=events.find(event=>event.type==='EXECUTION_FACT'&&event.fact.kind==='enter'&&event.fact.invocationId===entry.frameId)
+  expect(signature,'Deepest invocation has recorded signature and parameter evidence').toBeTruthy();cursor=signature!.seq+1
  }
  if(state.id==='return'){
   // The preserved JVM pipeline proves a destination when the returned value
@@ -60,7 +62,7 @@ async function prepare(page:Page,request:APIRequestContext,state:ReferenceState)
  }
  if(cursor!==events.length)await seekCursor(page,cursor)
  await home(page)
- if(state.id==='recursion')await follow(page)
+ if(state.id==='recursion'||state.id==='return')await follow(page)
  if(state.id==='runtime-hero'){await page.evaluate(()=>window.__ggjavaezQA!.frameHero());await ready(page)}
  if(['focus','object-inspection'].includes(state.id)){
   const id=await page.evaluate(()=>{const scene=window.__ggjavaezWorld!.scene();return scene.order.objects.find(id=>scene.entities[id].kind==='object'&&scene.entities[id].ownership==='PROJECT')})
@@ -110,7 +112,7 @@ for(const definition of states.states){
     // same selected target through its explicit command after native resize.
     if(['focus','object-inspection'].includes(state.id)){await focusSelection(page)}else if(state.id==='runtime-hero'){await page.evaluate(()=>window.__ggjavaezQA!.frameHero());await ready(page)}else if(!['far','medium','close','free'].includes(state.id))await home(page)
     if(['far','medium','close'].includes(state.id))await zoom(page,state.id.toUpperCase() as DetailLevel)
-    if(state.id==='recursion')await follow(page)
+    if(state.id==='recursion'||state.id==='return')await follow(page)
     try{await captureComparison(page,request,state,session.id,'native')}catch(error){captureErrors.push(error)}
    }
    expect(errors).toEqual([])

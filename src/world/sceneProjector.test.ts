@@ -21,6 +21,20 @@ function generated(seed: number, rawEvents = 20) {
   return{...trace,events:trace.events.map((event,index)=>({...event,eventId:`opaque/${seed}/record-${index.toString(36)}`}))}
 }
 
+it('keeps a signature unavailable until its recorded entry fact reaches the cursor',()=>{
+  const trace=generated(42,80),signature=trace.events.find(event=>event.type==='EXECUTION_FACT'&&event.fact.kind==='enter'&&event.fact.method.descriptor==='(I)I')
+  if(signature?.type!=='EXECUTION_FACT'||signature.fact.kind!=='enter')throw Error('Generated fixture lacks its captured int signature')
+  const frameId=signature.fact.invocationId,entry=trace.events.find((event):event is Extract<TraceEvent,{type:'ENTER_METHOD'}>=>event.type==='ENTER_METHOD'&&event.frameId===frameId)!
+  expect(entry.locals).toHaveLength(0);expect(signature).toBeDefined()
+  const layout=createLayoutEngine();layout.append(trace.events)
+  const projector=createSceneProjector(trace)
+  const before=projector.project(seek(trace,entry.seq+1),layout.state,context(trace)).entities[entry.frameId]
+  const after=projector.project(seek(trace,signature.seq+1),layout.state,context(trace)).entities[entry.frameId]
+  expect(before.title).toContain('⟨parameters not recorded⟩')
+  expect(after.title).toContain('(int)')
+  expect(after.id).toBe(before.id);expect(after.anchor).toBe(before.anchor)
+})
+
 it('reuses unchanged primitive array observations without visiting every captured member',()=>{
   const trace=loadArrayTrace(),event=trace.events.find((event):event is Extract<TraceEvent,{type:'ALLOCATE_ARRAY'}>=>event.type==='ALLOCATE_ARRAY')!
   const state=seek(trace,event.seq+1),array=state.objects[event.objectId]
