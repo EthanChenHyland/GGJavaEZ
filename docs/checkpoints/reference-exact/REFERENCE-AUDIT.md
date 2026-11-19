@@ -1,5 +1,7 @@
 # Reference audit
 
+Current audit, 2026-11-19: all six original image roots and their twins remain byte-identical; all seven protected local inputs retain their hashes and ownership. I/O face fitting uses a reviewed bounded-preview expansion deviation. The final 80-session/96-capture visual review remains required. [Scope and evidence](migration/recorded-io-and-retained-world.md).
+
 Implementation evidence as of 2026-10-13; final reference convergence remains open. The authoritative interpretation is the corrected specification at commit 68b394c98eee45c5e07a1f3b6340049449185941, especially audit.md. This report records the implementation's comparison boundary, not approval of all captures.
 
 ## Original images

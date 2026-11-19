@@ -98,7 +98,9 @@ for(const scenario of scenarios)test(`actual JVM ownership collapse and native C
  await page.evaluate(()=>window.__ggjavaezQA!.clock.resume());await ready(page)
  const headings=await page.evaluate(id=>window.__ggjavaezWorld!.runtimeHeadings().filter(heading=>heading.entityId===id),reached)
  expect(headings.find(heading=>heading.kind==='title')?.text).toBeTruthy()
- expect(headings.map(heading=>heading.kind).sort()).toEqual(result.members.find(member=>member.id===reached)!.node.kind==='class'?['title']:['identity','title'])
+ const reachedNode=result.members.find(member=>member.id===reached)!.node
+ expect(headings.map(heading=>heading.kind).sort()).toEqual(reachedNode.kind==='class'?['title']:reachedNode.kind==='array'?['identity','length','title']:['identity','title'])
+ if(reachedNode.kind==='array')expect(headings.find(heading=>heading.kind==='length')?.text).toBe(`length = ${reachedNode.length}`)
  for(const heading of headings){expect(heading.opacity).toBeGreaterThan(0);expect(heading.fontPixels).toBeGreaterThanOrEqual(12-.001);expect(heading.planePixels).toBeGreaterThanOrEqual(12-.001);expect(heading.widthPixels).toBeGreaterThanOrEqual(12-.001)}
  expect(await page.evaluate(()=>window.__ggjavaezQA!.cameraPose())).toEqual(result.pose);expect(await facts()).toEqual(before)
  await page.screenshot({path:`.ggjavaez/qa/reference-exact/ownership-travel-${scenario.width}x${scenario.height}${'reduced'in scenario?'-reduced':''}.png`})

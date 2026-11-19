@@ -65,6 +65,7 @@ async function workspace(page: Page, payload = person) {
     }
     let body: unknown
     if (url.pathname === '/api/projects') body = [{ id: projectId, name: 'M8 workspace fixture', createdAt: '2026-09-28T00:00:00Z' }]
+    else if (url.pathname === '/api/projects/' + projectId) body = { id: projectId, name: 'M8 workspace fixture', createdAt: '2026-09-28T00:00:00Z' }
     else if (url.pathname === '/api/health') body = { jdk: payload.build.jdk }
     else if (url.pathname === '/api/execution/current') body = null
     else if (url.pathname === '/api/projects/' + projectId + '/tree') body = [...files.values()].map(({ path }) => ({ path, name: path, kind: 'file' }))

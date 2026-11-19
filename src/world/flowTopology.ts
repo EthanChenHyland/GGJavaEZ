@@ -1,3 +1,4 @@
+import { observedArrayCell } from './arrayCellTarget'
 import { arrayTitlePlate } from './arrayCellGeometry'
 import{unavailableFlowSnapshot}from'./unavailableFlowSnapshot'
 import type {ArrayWindow,FlowPresentation,PresentedEntity,SceneModel,Vec3,WorldAnchor} from '../contracts/world'
@@ -28,12 +29,13 @@ export function presentedFlowPorts(scene:SceneModel,entities:ReadonlyMap<string,
   if(node.kind==='array'){
    const window=windows.get(id)
    if(window?.recordingId===scene.recordingId&&window.arrayId===id&&window.mapping.size){
-    for(const observed of node.cells){
-     const cell=window.mapping.get(observed.slotId),value=observed.value
-     if(!cell||!hasRecordedValuePort(value))continue
+    for(const[slot,cell]of window.mapping){
+     const observed=observedArrayCell(node.cells,cell.index)
+     if(observed?.slotId!==slot||!hasRecordedValuePort(observed.value))continue
+     const value=observed.value
      const point=value.kind==='reference'&&value.observation!=='UNAVAILABLE'&&scene.entities[value.targetId]
       ?arrayReferenceChipPort(cell.anchor):cell.port
-     slots.set(observed.slotId,{point,anchor:cell.anchor})
+     slots.set(slot,{point,anchor:cell.anchor})
     }
    }
   }else{

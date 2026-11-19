@@ -1,5 +1,7 @@
 # Behavior QA
 
+Current integration, 2026-11-19: **22/22** corrected browser cases pass with no skips or flakes, covering Header, native I/O, held-request restoration races, real-project Quick Open and existing workspace protocols. The full current-source suite and opt-in gates remain required. [Counts and test boundaries](migration/recorded-io-and-retained-world.md). The 69-case discussion below is historical.
+
 Current evidence, 2026-10-13; final acceptance, torture, hands-on motion and exhaustive browser approval remain open.
 
 The reconstruction's native browser gate contains 69 cases. It exercises actual commands and accessible controls against the production Shell, including native mouse/keyboard travel and real JVM source/output/metadata. Read-only observations verify runtime cursor, entity IDs, anchors, reference accounting, graphics ownership and camera poses; setter-driven camera/runtime state is not substituted for native behavior.

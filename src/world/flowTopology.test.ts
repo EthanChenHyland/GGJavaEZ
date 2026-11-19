@@ -106,7 +106,7 @@ it('accounts every supported accepted graph edge exactly once across cuts, scope
  }),{numRuns:100})
 })
 
-it('maps a tail array window with a linear number of captured-cell reads',()=>{
+it('maps a tail array window without scanning the densely captured prefix',()=>{
  const f=fixture(),array=f.scene.entities.array
  if(array.kind!=='array')throw new Error('Expected array')
  const cells=Array.from({length:1000},(_,index)=>({...array.cells[0],index,slotId:`array:element:${index}`}))
@@ -118,7 +118,7 @@ it('maps a tail array window with a linear number of captured-cell reads',()=>{
  const port=presentedFlowPorts(scene,f.plan.entities,windows)
  for(const[id,cell]of window.mapping)expect(port({kind:'slot',id})?.point).toEqual(arrayReferenceChipPort(cell.anchor))
  expect(port({kind:'slot',id:'array:element:1000'})).toBeNull()
- expect(reads).toBeLessThanOrEqual(cells.length+window.mapping.size*4)
+ expect(reads).toBeLessThanOrEqual(window.mapping.size)
 })
 
 it('bounds priority-policy queries to one per drawable flow while preserving the complete partition',()=>{

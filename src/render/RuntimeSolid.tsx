@@ -1,3 +1,4 @@
+import { observedArrayCell } from '../world/arrayCellTarget'
 import type { ArrayWindow, PresentedEntity, SceneEntity } from '../contracts/world';
 import { color } from '../theme/tokens';
 import { frameStatusText } from '../world/frameStatus';
@@ -90,7 +91,7 @@ const RuntimeSolidLabels=memo(function RuntimeSolidLabels({node,presented,arrayW
     {(node.kind==='collection'?node.size:model.rows.length)>model.visible.length && presented.detail !== 'FAR' && <WorldText position={[left, y - h / 2 + .3, face]} size={node.kind==='collection'?.34:.22} width={w-.56} tint={color.ui.textSecondary} opacity={opacity} collectionText={node.kind==='collection'?{entityId:node.id,kind:'more'}:undefined}>{`+${(node.kind==='collection'?node.size:model.rows.length) - model.visible.length} more`}</WorldText>}
     {node.kind === 'object' && node.summaryUnavailable && <WorldText position={[left, top - 1.2, face]} size={.23} tint={color.ui.textMuted} opacity={opacity}>summary not recorded</WorldText>}
     {node.kind === 'array' && [...(arrayWindow?.mapping ?? [])].map(([id, cell]) => {
-            const captured = node.cells.find(c => c.index === cell.index), value = captured?.value ?? notRecordedValue(), [cx, cy, cz] = cell.anchor.position;
+            const captured = observedArrayCell(node.cells,cell.index), value = captured?.value ?? notRecordedValue(), [cx, cy, cz] = cell.anchor.position;
             const activity=node.activity?.index===cell.index?node.activity.kind:null;
             const activityTint=targeted(id)?color.semantic.execution:activity==='write'?color.semantic.mutation:activity==='read'?color.semantic.execution:null;
             return <ArrayCellLabels key={id} entityId={node.id} slotId={id} x={cx} y={cy} z={cz}

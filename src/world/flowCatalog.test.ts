@@ -7,6 +7,19 @@ import { createLayoutEngine } from './layoutEngine'
 import { createSceneProjector } from './sceneProjector'
 import { createFlowCatalog } from './flowCatalog'
 
+it.each(['constructor','hasOwnProperty','__defineGetter__','__defineSetter__','__lookupGetter__','__lookupSetter__','__proto__','toString','toLocaleString','valueOf','isPrototypeOf','propertyIsEnumerable'])('ignores inherited adjacency for the opaque ID %s',id=>{
+ const raw=generateRawTrace({seed:42,rawEvents:20,provenance:true}),trace=normalizeTrace(raw.rawEvents,raw.manifest,{status:'complete',exitCode:0,diagnostic:null}).trace
+ const state=seek(trace,trace.events.length),graph=state.executionGraph!
+ const catalog=createFlowCatalog();catalog.extend({...graph,incoming:{...graph.incoming},outgoing:{...graph.outgoing}},trace)
+ const layout=createLayoutEngine();layout.append(trace.events)
+ const scene=createSceneProjector(trace).project(state,layout.state,{liveHead:trace.events.length,sessionEnded:true,pausedAtLiveHead:false,recording:{state:'FULL',reason:null,budget:null,lastRecordedSeq:null,executionContinued:false}})
+ const priority={selectedIds:new Set<string>(),focusedIds:new Set<string>(),currentIds:new Set<string>()}
+ const expected=catalog.query({cursor:scene.cursor,scene,priority,limit:6})
+ expect(catalog.recordedProvenanceOf(id,scene.cursor)).toEqual([])
+ expect(catalog.drawableFlowsOf(id,scene.cursor,scene)).toEqual([])
+ expect(catalog.query({cursor:scene.cursor,scene,priority:{...priority,selectedIds:new Set([id])},limit:6})).toEqual(expected)
+})
+
 it('complete recorded adjacency survives non-drawable evidence and opaque IDs (100 runs)',()=>{
  fc.assert(fc.property(fc.integer({min:1,max:100000}),seed=>{
   const raw=generateRawTrace({seed,rawEvents:45,maxDepth:4,classes:3,callRate:.4,provenance:true}),trace=normalizeTrace(raw.rawEvents,raw.manifest,{status:'complete',exitCode:0,diagnostic:null}).trace

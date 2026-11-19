@@ -426,16 +426,22 @@ export function useWorkspace(recordingViewer = false) {
   useEffect(() => {
     if (recordingViewer) return
     let alive = true
-    Promise.all([bridge.projects(), bridge.health(), bridge.executionCurrent()]).then(async ([items, health, current]) => {
-      if (!alive) return
-      setProjects(items)
-      setJdk(health.jdk)
-      setJdkInput(health.jdk.home ?? '')
-      const chosen = items.find((item) => item.id === localStorage.getItem('ggjavaez:project'))
+    // Opening the saved workspace needs only its validated summary. A growing
+    // catalog must not hold source restoration behind every other project.
+    const generation = workspaceGeneration.current, savedId = localStorage.getItem('ggjavaez:project'), catalog = bridge.projects()
+    void catalog.then(items => { if (alive) setProjects(items) }, error => { if (alive) fail(error) })
+    const selected = savedId ? bridge.project(savedId).catch(() => catalog.then(items => items.find(item => item.id === savedId))) : Promise.resolve(undefined)
+    const health = bridge.health().then(value => {
+      if (alive) { setJdk(value.jdk); setJdkInput(value.jdk.home ?? '') }
+      return value
+    })
+    Promise.all([selected, health, bridge.executionCurrent()]).then(async ([chosen, , current]) => {
+      if (!alive || workspaceGeneration.current !== generation) return
+      if (chosen) setProjects(items => items.some(item => item.id === chosen.id) ? items : [...items, chosen])
       if (chosen) await switchProject(chosen.id, false)
       // A launch can begin as soon as hydrated source is visible. The snapshot
       // fetched before hydration must never replace that newer session.
-      if (!alive || activeExecutionId.current) return
+      if (!alive || workspaceGeneration.current !== generation + (chosen ? 1 : 0) || activeExecutionId.current) return
       if (current && current.projectId === chosen?.id) { activeExecutionId.current = current.id; acceptExecution(current) }
       else if (current && ['BUILDING', 'STARTING', 'RUNNING', 'WAITING_FOR_INPUT', 'PAUSED'].includes(current.phase)) await bridge.executionStop(current.id)
     }).catch(fail)

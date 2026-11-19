@@ -1,3 +1,4 @@
+import { observedArrayCell } from '../world/arrayCellTarget'
 import type {MaterialRole,PresentationPlan,PresentedCurve,SceneModel,Vec3} from '../contracts/world'
 import {faceRows,faceRowPort} from '../world/faceRows'
 import {arrayReferenceChipPort,collectionReferenceChipPort} from '../world/structureValueChipGeometry'
@@ -16,7 +17,7 @@ export function referenceChipPorts(scene:SceneModel,plan:PresentationPlan):Refer
    const window=plan.cellWindows.get(id);if(!window)continue
    const emphasis=arrayCellFocusOpacity(window)
    for(const[slotId,cell]of window.mapping){
-    const value=node.cells.find(item=>item.index===cell.index)?.value
+    const value=observedArrayCell(node.cells,cell.index)?.value
     if(value?.kind==='reference'&&value.observation!=='UNAVAILABLE'&&scene.entities[value.targetId])ports.push({id:slotId,point:arrayReferenceChipPort(cell.anchor),opacity:presented.opacity*emphasis(slotId),colorRole:presented.highlight==='exception'?'exception':'reference'})
    }
    continue

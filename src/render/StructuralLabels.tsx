@@ -8,7 +8,7 @@ import {ClusterLabels,clusterLabelParts,clusterLabelNames} from './ClusterLabels
 import {WorldText} from './FaceText'
 import {textAdvance} from './text/textSystem'
 import {placeStructuralLabels,projectStructuralObstacle,regionHeadingSpec,regionHeadingStyle,type StructuralLabelSpec,type StructuralObstacle} from './text/structuralLabelLayout'
-import {buildSolidBatch} from './SolidBatch'
+import {solidsInSnapshot} from './SolidBatch'
 import {exceptionPanelAnchor} from '../world/exceptionPanelPlacement'
 import {returnCaptions} from './returnCaptions'
 
@@ -23,7 +23,7 @@ export function StructuralLabels({snapshot,safeFrame,inspectorRect}:{snapshot:Wo
   ...plan.headings.map(heading=>regionHeadingSpec(heading.id,heading.position)),
   ...plan.bundles.map(bundle=>{const text=`${bundle.count} ${bundle.kind==='flow'?'flows':bundle.kind==='binding-history'?'past bindings':'references'}`,width=textAdvance(text,500)*.3;return{id:bundle.id,kind:'bundle' as const,position:bundle.points[Math.floor(bundle.points.length/2)],size:.3,localBounds:[-width/2,width/2,-.15,.15] as const,priority:bundle.widthPx===3.5?0:3,count:bundle.count}}),
  ],[plan.clusters,plan.headings,plan.bundles,captions])
- const bodies=useMemo(()=>[...buildSolidBatch(scene,plan).filter(solid=>solid.role!=='face').map(solid=>solid.anchor),...scene.io.map(io=>io.anchor),...(plan.exceptionPanel?[exceptionPanelAnchor(plan.exceptionPanel,scene.recording)]:[])],[scene,plan])
+ const bodies=useMemo(()=>[...solidsInSnapshot(snapshot).filter(solid=>solid.role!=='face').map(solid=>solid.anchor),...scene.io.map(io=>io.anchor),...(plan.exceptionPanel?[exceptionPanelAnchor(plan.exceptionPanel,scene.recording)]:[])],[snapshot,scene.io,scene.recording,plan.exceptionPanel])
  useFrame(()=>{
   if(!(camera instanceof PerspectiveCamera))return
   const key=JSON.stringify([camera.matrixWorld.elements,camera.projectionMatrix.elements,size.width,size.height,safeFrame,inspectorRect])

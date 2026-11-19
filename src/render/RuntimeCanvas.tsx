@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { Canvas, useFrame, useThree,events as pointerEvents,type CanvasProps } from '@react-three/fiber';
 import {prioritizeConnectorIntersections} from './geometry/connectorRaycast';
 import { EnvironmentRig } from './EnvironmentRig';
@@ -11,11 +11,12 @@ import { color } from '../theme/tokens';
 import { useCameraStore } from '../camera/cameraStore';
 import { useInteractionStore } from '../interaction/interactionStore';
 import { RuntimeSolid, WorldText } from './RuntimeSolid';
-import { roleColor } from './RuntimeMaterials';
+import {RecordedIoPort} from './RecordedIoPort';
+import {IoPreviewDialog} from '../shell/dock/IoPreviewDialog';
 import { FaceTextBatch, textReadiness } from './FaceText';
 import { ACESFilmicToneMapping, Color, DataTexture, InstancedMesh, Matrix4, PerspectiveCamera, RGBAFormat, SphereGeometry, Sprite, SRGBColorSpace, UnsignedByteType, Vector3 } from 'three';
 import type {} from '../qa/worldObservation';
-import { SolidBatch,buildSolidBatch } from './SolidBatch';
+import { SolidBatch,solidsInSnapshot } from './SolidBatch';
 import { ConnectorTooltip,InteractiveConnectors } from './ConnectorInteraction';
 import {accessibleEntities,type AccessibleEntity} from '../interaction/accessibleEntities';
 import { QualityRuntime } from './quality/QualityRuntime';
@@ -31,7 +32,7 @@ import {ExceptionPanel} from './ExceptionPanel';
 import {projectBodies,projectInstancedBody,projectRect} from '../qa/worldProjection';
 import {anchorCorners} from '../world/presentationPlanner';
 import {StructuralLabels} from './StructuralLabels';
-import {projectedFontPixels,projectedPlaneFontPixels,textAdvance} from './text/textSystem';
+import {projectedFontPixels,projectedPlaneFontPixels} from './text/textSystem';
 import type {Text} from 'troika-three-text';
 import type {StructuralLabelSpec} from './text/structuralLabelLayout';
 
@@ -125,6 +126,18 @@ function Metrics({ snapshot, selection,trace }: {
                         labels.push({entityId:label.entityId,slotId:label.slotId,kind:label.kind,text:text.text,position:point.toArray() as [number,number,number],opacity:text.fillOpacity,fontPixels:projectedFontPixels(text.fontSize*scale,point,camera,size.height),localInkBounds:block??null,bounds:projectRect(points,camera,size)});
                     });return labels;
                 },
+                ioText:()=>{
+                    const labels:ReturnType<NonNullable<Window['__ggjavaezWorld']>['ioText']>[number][]=[];
+                    if(!(camera instanceof PerspectiveCamera))return labels;
+                    world.traverse(group=>{
+                        const label=group.userData.runtimeIoText as {channel:SceneIo['id'];text:Text}|undefined;
+                        if(!label)return;
+                        const text=label.text,point=new Vector3().setFromMatrixPosition(text.matrix),scale=new Vector3().setFromMatrixScale(text.matrix).y;
+                        const ink=text.textRenderInfo?.visibleBounds;
+                        const points=ink?[ink[0],ink[2]].flatMap(x=>[ink[1],ink[3]].map(y=>new Vector3(x,y,0).applyMatrix4(text.matrix).toArray()as[number,number,number])):[];
+                        labels.push({channel:label.channel,text:text.text,position:point.toArray()as[number,number,number],opacity:text.fillOpacity,fontPixels:projectedFontPixels(text.fontSize*scale,point,camera,size.height),bounds:projectRect(points,camera,size)});
+                    });return labels;
+                },
                 exceptionText:()=>{
                     const labels:ReturnType<NonNullable<Window['__ggjavaezWorld']>['exceptionText']>[number][]=[];
                     world.getObjectByName('exception-panel')?.traverse(group=>{
@@ -146,7 +159,7 @@ function Metrics({ snapshot, selection,trace }: {
                     });
                 },
                 worldProjection:()=>{const projection=projectBodies([
-                    ...buildSolidBatch(scene,plan).filter(solid=>solid.role!=='face').map(solid=>{
+                    ...solidsInSnapshot(snapshot).filter(solid=>solid.role!=='face').map(solid=>{
                       const cluster=solid.pick.kind==='cluster'?plan.clusters.find(cluster=>cluster.id===solid.pick.id):null;
                       const live=cluster?cluster.memberIds.some(id=>scene.entities[id]?.kind==='frame'&&(scene.entities[id] as {live:boolean}).live):scene.entities[solid.anchor.entityId]?.kind==='frame'&&(scene.entities[solid.anchor.entityId] as {live:boolean}).live;
                       return{anchor:solid.anchor,live,structural:solid.pick.kind==='cluster'};
@@ -157,7 +170,7 @@ function Metrics({ snapshot, selection,trace }: {
                  return{...projection,exception:panel?{bounds:panelBody instanceof InstancedMesh?projectInstancedBody(panelBody,0,camera,size):null,throwFrame:frame?projectRect(anchorCorners(frame.anchor),camera,size):null}:null};
                 },
                 projectedPoint:(id)=>{
-                    const position=scene.entities[id]?.anchor.position??[...plan.cellWindows.values()].flatMap(window=>[...window.mapping.values()]).find(cell=>cell.anchor.entityId===id)?.anchor.position;
+                    const position=scene.entities[id]?.anchor.position??scene.io.find(io=>io.id===id)?.anchor.position??[...plan.cellWindows.values()].flatMap(window=>[...window.mapping.values()]).find(cell=>cell.anchor.entityId===id)?.anchor.position;
                     if(!position)return null;
                     const p=new Vector3(...position).project(camera);
                     return{x:(p.x+1)*size.width/2,y:(1-p.y)*size.height/2,visible:Math.abs(p.x)<=1&&Math.abs(p.y)<=1&&p.z>=-1&&p.z<=1};
@@ -220,7 +233,7 @@ function Metrics({ snapshot, selection,trace }: {
                     const check=()=>{
                         const quality=useQualityStore.getState(),busy=quality.activity.scrubbing||quality.activity.liveTrailing||quality.activity.cameraMoving;
                         const qualityReady=!quality.contextLost&&quality.cinematicStatus!=='loading'&&(quality.setting!=='CINEMATIC'||busy||quality.active==='CINEMATIC'&&quality.compiled);
-                        if(performance.now()-started>10000){reject(new Error(`World readiness timed out: ${textReadiness.pending.size} glyph layouts pending; environment ${!!world.environment}; camera moving ${cameraReadiness.moving}; motion ${motionReadiness.animating}; quality ${quality.setting}/${quality.active}/${quality.cinematicStatus}`));return}
+                        if(performance.now()-started>10000){reject(new Error(`World readiness timed out: ${textReadiness.pending.size} text jobs pending (${[...textReadiness.pending].join(', ')}); environment ${!!world.environment}; camera moving ${cameraReadiness.moving}; motion ${motionReadiness.animating}; quality ${quality.setting}/${quality.active}/${quality.cinematicStatus}`));return}
                         const current=latest.current;
                         const key=JSON.stringify([current.scene.recordingId,current.scene.revision,current.plan.revision,
                             [...current.plan.cellWindows].map(([id,window])=>[id,window.windowRevision]),current.size.width,current.size.height,
@@ -248,31 +261,6 @@ function AccessibleCatalog({snapshot,publish}:{snapshot:WorldRenderSnapshot;publ
  })
  return null
 }
-function RecordedIoPort({io}:{io:SceneIo}) {
-    const [publishedCount, setPublishedCount] = useState(io.lines);
-    const lastPublished = useRef(0);
-    useLayoutEffect(() => { lastPublished.current = performance.now(); }, [publishedCount]);
-    useLayoutEffect(() => {
-        if (io.id !== 'stdout' || io.lines === publishedCount) return;
-        let timer: number | undefined;
-        const publish = () => {
-            const remaining = 100 - (performance.now() - lastPublished.current);
-            if (remaining > 0) timer = window.setTimeout(publish, remaining);
-            else setPublishedCount(io.lines);
-        };
-        publish();
-        return () => window.clearTimeout(timer);
-    }, [io.id, io.lines, publishedCount]);
-    const [width,,depth] = io.anchor.size, textWidth = width - .24, size = .32, weight = 500;
-    const channelLabel = io.id === 'stderr' ? '⚠ stderr' : io.id;
-    const count = io.id === 'stdout' ? publishedCount : io.lines;
-    const countLabel = `${channelLabel} · ${count}`;
-    const lines = textAdvance(countLabel, weight) * size > textWidth - .012 ? [channelLabel, String(count)] : undefined;
-    return <group position={[...io.anchor.position]}>
-        <mesh><boxGeometry args={[...io.anchor.size]}/><meshStandardMaterial color={roleColor[io.id]} emissive={roleColor[io.id]} emissiveIntensity={.2}/></mesh>
-        <WorldText position={[-width/2+.12,.02,depth/2+.02]} size={size} weight={weight} width={textWidth} tint={color.stack.chip} lines={lines} heading={{entityId:io.id,kind:'title'}}>{countLabel}</WorldText>
-    </group>;
-}
 export function RuntimeCanvas({ snapshot, safeFrame,focusContentFrame,inspectorRect, selection, onSelect, onFocus,trace,timeline }: {
     snapshot: WorldRenderSnapshot;
     safeFrame: Rect;
@@ -284,6 +272,9 @@ export function RuntimeCanvas({ snapshot, safeFrame,focusContentFrame,inspectorR
     trace:TraceDocument;timeline:TimelineStore;
 }) {
     const { scene, plan, layout } = snapshot.read();
+    const [inspectingIo,setInspectingIo]=useState<{recordingId:string;channel:SceneIo['id']}|null>(null);
+    const inspectedIo=inspectingIo?.recordingId===scene.recordingId?scene.io.find(io=>io.id===inspectingIo.channel):undefined;
+    useEffect(()=>{if(inspectingIo&&!inspectedIo)setInspectingIo(null)},[inspectingIo,inspectedIo]);
     const quality = useQualityStore(state => state.active);
     const contextLost=useQualityStore(state=>state.contextLost),notice=useQualityStore(state=>state.notice);
     const supportsWebGL=useMemo(supportsRuntimeWebGL,[]);
@@ -313,12 +304,13 @@ export function RuntimeCanvas({ snapshot, safeFrame,focusContentFrame,inspectorR
     },[])
     const select = (next: Selection) => { if (!moved.current)
         onSelect(next); };
-    return <div ref={worldElement} className="world-canvas" role="application" tabIndex={0} aria-label="Three-dimensional Java runtime world" onContextMenu={event => event.preventDefault()} onPointerLeave={()=>useInteractionStore.getState().setHover(null)} onPointerDownCapture={event => { useInteractionStore.getState().setHover(null);event.currentTarget.focus(); pointer.current = { x: event.clientX, y: event.clientY,button:event.button,orbitStarted:false }; moved.current = false; input.current?.shift(event.shiftKey); input.current?.cancel(); }} onPointerMoveCapture={event => {
+    return <div ref={worldElement} className="world-canvas" role="application" tabIndex={0} aria-label="Three-dimensional Java runtime world" onContextMenu={event => event.preventDefault()} onPointerLeave={()=>useInteractionStore.getState().setHover(null)} onPointerDownCapture={event => { if(event.target instanceof Element&&event.target.closest('button,input,textarea,[role=dialog]'))return;useInteractionStore.getState().setHover(null);event.currentTarget.focus(); pointer.current = { x: event.clientX, y: event.clientY,button:event.button,orbitStarted:false }; moved.current = false; input.current?.shift(event.shiftKey); input.current?.cancel(); }} onPointerMoveCapture={event => {
         const gesture=pointer.current;if(!gesture)return;
         const distance=Math.hypot(event.clientX-gesture.x,event.clientY-gesture.y);
         if(distance>0&&!gesture.orbitStarted&&gesture.button===0&&(event.buttons&1)&&!event.shiftKey){input.current?.orbit();gesture.orbitStarted=true}
         if(distance>4)moved.current=true;
     }} onPointerUpCapture={() => { pointer.current = null; }} onPointerCancelCapture={() => {pointer.current=null}} onKeyDown={event => {
+            if(event.target!==event.currentTarget&&event.target!==list.current)return;
             if(event.key==='Tab'&&accessible.length){const index=activeIndex+(event.shiftKey?-1:1),next=accessible[index];if(next){event.preventDefault();onSelect(next.selection);list.current?.focus()}return}
             if(event.target===list.current&&event.key.startsWith('Arrow')){event.preventDefault();const index=Math.min(accessible.length-1,Math.max(0,activeIndex+(event.key==='ArrowUp'||event.key==='ArrowLeft'?-1:1)));if(accessible[index])onSelect(accessible[index].selection);return}
             if (event.key === 'Escape') {
@@ -356,7 +348,7 @@ export function RuntimeCanvas({ snapshot, safeFrame,focusContentFrame,inspectorR
         select({ kind: 'reference', id }); else if(plan.curves.some(curve=>curve.id===id)) select({kind:'flow',id}); }}/>
         {plan.structural.map(item => <WorldText key={item.id} position={item.position} size={.3} width={5} tint={color.ui.textSecondary}>{item.text}</WorldText>)}
         <ExceptionPanel panel={plan.exceptionPanel} recordingState={scene.recording.state} safeFrame={safeFrame}/>
-        {scene.io.map(io => <RecordedIoPort key={`${scene.recordingId}:${io.id}`} io={io}/>)}
+        {scene.io.map(io => <RecordedIoPort key={`${scene.recordingId}:${io.id}`} io={io} onInspect={()=>{if(!moved.current)setInspectingIo({recordingId:scene.recordingId,channel:io.id})}}/>)}
         </FaceTextBatch>
       </Suspense>
       <CameraRig scene={scene} plan={plan} event={trace.events[scene.cursor-1]??null} layout={layout} safeFrame={safeFrame} focusContentFrame={focusContentFrame} inspectorRect={inspectorRect} input={input}/>
@@ -368,6 +360,8 @@ export function RuntimeCanvas({ snapshot, safeFrame,focusContentFrame,inspectorR
     </Canvas>}
     {!contextLost&&supportsWebGL&&<ConnectorTooltip snapshot={snapshot}/>}
     {contextLost&&<div className="world-graphics-status glass" role="alert">{notice??'Restoring the World…'}{notice==='The World could not be restored'&&<button onClick={()=>graphicsRecovery.retry?.()}>Retry</button>}</div>}
+    {scene.io.length>0&&<div className="world-io-navigation" role="group" aria-label="Recorded I/O endpoints">{scene.io.map(io=><button key={io.id} className="world-io-access glass" onClick={()=>setInspectingIo({recordingId:scene.recordingId,channel:io.id})}>Inspect recorded {io.id}</button>)}</div>}
+    {inspectedIo&&<IoPreviewDialog io={inspectedIo} recordingId={scene.recordingId} cursor={scene.cursor} onClose={()=>setInspectingIo(null)}/>}
     <div ref={list} className="gg-world-entities" role="listbox" tabIndex={-1} aria-label="Runtime entities" aria-activedescendant={selection&&activeIndex>=0?`world-entity-${encodeURIComponent(selection.id)}`:undefined}>
       {accessible.slice(Math.max(0,activeIndex-20),Math.max(40,activeIndex+21)).map((item,index)=><div key={item.id} id={`world-entity-${encodeURIComponent(item.id)}`} role="option" aria-selected={selection?.id===item.id} aria-posinset={Math.max(0,activeIndex-20)+index+1} aria-setsize={accessible.length}>{item.label}</div>)}
     </div>

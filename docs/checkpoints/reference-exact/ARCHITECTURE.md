@@ -1,5 +1,7 @@
 # Architecture
 
+Current integration, 2026-11-19: recorded I/O expansion, independent saved-project restoration, committed Explorer callbacks and shared immutable world preparation are implemented. Runtime facts, IDs and instrumentation remain unchanged. See [implementation and evidence](migration/recorded-io-and-retained-world.md). Whole-product release qualification remains in progress.
+
 Current implementation, 2026-10-18. Whole-product convergence, presentation-memory approval and legacy removal are still open. This is an implementation record, not a completed milestone claim.
 
 ## Runtime boundary

@@ -2,8 +2,10 @@ import { createContext, memo, useContext, useEffect, useId, useLayoutEffect, use
 import { useFrame,useThree } from '@react-three/fiber';
 import { BatchedText, Text } from 'troika-three-text';
 import { Group, MeshBasicMaterial,Vector3,type Material,type Object3D } from 'three';
-import type { Vec3, WorldAnchor } from '../contracts/world';
+import type { Vec3, WorldAnchor, SceneIo } from '../contracts/world';
 import { color, runtimeFonts } from '../theme/tokens';
+import {prepareRuntimeText} from '../theme/runtimeFont';
+import {observeTextPreparation} from './text/textPreparation';
 import {fitWorldText,projectedFontPixels,worldTextVisible} from './text/textSystem';
 import {FocusTextMask} from './post/focusTextMask';
 import {registerAuxiliaryPass} from './post/auxiliaryPasses';
@@ -26,7 +28,7 @@ export function FaceTextBatch({ children, focusAnchor=null }: {
     children: ReactNode;
     focusAnchor?:WorldAnchor|null;
 }) {
-    const {gl,camera}=useThree(),focusMask=useMemo(()=>new FocusTextMask(),[]);
+    const {gl,camera,invalidate}=useThree(),focusMask=useMemo(()=>new FocusTextMask(),[]),preparationId=useId();
     const {context,material,preparation} = useMemo(() => {
         const object = new BatchedText();
         const material = new MeshBasicMaterial({ color: 'white', transparent: true, depthWrite: false, toneMapped: false });
@@ -60,6 +62,7 @@ export function FaceTextBatch({ children, focusAnchor=null }: {
         const context:FaceTextContext={batch:object,frame:0,parents:new WeakMap()};
         return {context,material,preparation};
     }, [focusMask]);
+    useLayoutEffect(()=>observeTextPreparation(context.batch,textReadiness,preparationId,prepareRuntimeText(),invalidate),[context,preparationId,invalidate]);
     useLayoutEffect(()=>{focusMask.anchor=focusAnchor},[focusMask,focusAnchor]);
     useEffect(()=>registerAuxiliaryPass(gl,'focus-text',()=>focusMask.render(gl,camera)),[gl,camera,focusMask]);
     useLayoutEffect(()=>{textReadiness.mounted=true;return()=>{textReadiness.mounted=false}},[]);
@@ -86,6 +89,7 @@ type WorldTextProps = {
     truncation?:'middle'|'end';
     heading?:{entityId:string;kind:'title'|'identity'|'length'};
     exceptionText?:boolean;
+    ioText?:{channel:SceneIo['id']};
     returnText?:{flowId:string;kind:'value'|'operands'};
     frameText?:{entityId:string;kind:'scope'|'name'|'value';slotId?:string};
     collectionText?:{entityId:string;kind:'size'|'more'|'key'|'value';slotId?:string};
@@ -102,7 +106,7 @@ function sameTextProps(previous:WorldTextProps,next:WorldTextProps){
         const left=a[key],right=b[key];
         if(Object.is(left,right))return true;
         if(key==='position'||key==='lines')return Array.isArray(left)&&Array.isArray(right)&&left.length===right.length&&left.every((value,index)=>Object.is(value,right[index]));
-        if(key==='heading'||key==='frameText'||key==='collectionText'||key==='returnText'||key==='arrayText'){
+        if(key==='heading'||key==='frameText'||key==='collectionText'||key==='returnText'||key==='arrayText'||key==='ioText'){
             if(!left||!right||typeof left!=='object'||typeof right!=='object')return false;
             const fields=Object.keys(left),other=right as Record<string,unknown>;
             return fields.length===Object.keys(right).length&&fields.every(field=>Object.hasOwn(other,field)&&Object.is((left as Record<string,unknown>)[field],other[field]));
@@ -110,7 +114,7 @@ function sameTextProps(previous:WorldTextProps,next:WorldTextProps){
         return false;
     });
 }
-export const WorldText=memo(function WorldText({ children, position, size = .25, tint = color.ui.text, width = 4, align = 'left', opacity = 1, weight=400, tracking=0, minimumPixels=11, lines, truncation='middle',heading,collectionText,frameText,returnText,arrayText,exceptionText }: WorldTextProps) {
+export const WorldText=memo(function WorldText({ children, position, size = .25, tint = color.ui.text, width = 4, align = 'left', opacity = 1, weight=400, tracking=0, minimumPixels=11, lines, truncation='middle',heading,collectionText,frameText,returnText,arrayText,exceptionText,ioText }: WorldTextProps) {
     const context = useContext(Context), anchor = useRef<Group>(null), id = useId(), text = useMemo(() => new Text(), []),lastLayout=useRef(''),syncGeneration=useRef(0);
     const invalidate=useThree(state=>state.invalidate);
     const {camera,size:viewport}=useThree(),projection=useMemo(()=>({point:new Vector3(),scratch:new Vector3()}),[]);
@@ -154,5 +158,5 @@ export const WorldText=memo(function WorldText({ children, position, size = .25,
         const pixels=projectedFontPixels(size*scale,projection.point,camera,viewport.height,projection.scratch);
         text.fillOpacity=visible&&worldTextVisible(pixels,minimumPixels)?opacity*inheritedOpacity:0;
     } },.5);
-    return <group ref={anchor} position={[...position]} userData={{...(exceptionText?{runtimeExceptionText:{text}}:{}),...(heading?{runtimeHeading:{...heading,text}}:{}),...(collectionText?{runtimeCollectionText:{...collectionText,text}}:{}),...(frameText?{runtimeFrameText:{...frameText,text}}:{}),...(returnText?{runtimeReturnText:{...returnText,text}}:{}),...(arrayText?{runtimeArrayText:{...arrayText,text}}:{})}}/>;
+    return <group ref={anchor} position={[...position]} userData={{...(ioText?{runtimeIoText:{...ioText,text}}:{}),...(exceptionText?{runtimeExceptionText:{text}}:{}),...(heading?{runtimeHeading:{...heading,text}}:{}),...(collectionText?{runtimeCollectionText:{...collectionText,text}}:{}),...(frameText?{runtimeFrameText:{...frameText,text}}:{}),...(returnText?{runtimeReturnText:{...returnText,text}}:{}),...(arrayText?{runtimeArrayText:{...arrayText,text}}:{})}}/>;
 },sameTextProps);

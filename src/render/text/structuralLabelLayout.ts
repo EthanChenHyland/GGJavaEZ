@@ -4,7 +4,6 @@ import type {Rect} from '../../shell/shellLayout'
 import type {Size} from '../../camera/projection'
 import {fitWorldText,projectedPlaneFontPixels,textAdvance} from './textSystem'
 import {typography} from '../../theme/tokens'
-import {anchorCorners} from '../../world/anchorGeometry'
 export const regionHeadingStyle={size:.6,...typography.world.heading,weight:600,viewportCapRatio:.029} as const
 export interface StructuralLabelSpec {
  id:string;kind:'cluster'|'heading'|'bundle'|'return';position:Vec3;size:number;
@@ -15,10 +14,18 @@ export interface StructuralObstacle extends Rect {nearDepth?:number}
 /** Keep body depth: a proxy behind a real text plane is background, while
  * actual foreground occlusion and screen-space UI still require clearance. */
 export function projectStructuralObstacle(anchor:WorldAnchor,camera:PerspectiveCamera,viewport:Size):StructuralObstacle|null{
- const corners=anchorCorners(anchor).map(point=>new Vector3(...point)),projected=corners.map(point=>point.clone().project(camera))
- if(!projected.some(point=>point.z>-1&&point.z<1))return null
- const xs=projected.map(point=>(point.x+1)*viewport.width/2),ys=projected.map(point=>(1-point.y)*viewport.height/2)
- return{x:Math.min(...xs),y:Math.min(...ys),width:Math.max(...xs)-Math.min(...xs),height:Math.max(...ys)-Math.min(...ys),nearDepth:Math.min(...corners.map(point=>-point.applyMatrix4(camera.matrixWorldInverse).z))}
+ const [x,y,z]=anchor.position,[w,h,d]=anchor.size
+ const corner=new Vector3(),projected=new Vector3()
+ let left=Infinity,right=-Infinity,top=Infinity,bottom=-Infinity,nearDepth=Infinity,visible=false
+ for(const dx of [-1,1])for(const dy of [-1,1])for(const dz of [-1,1]){
+  corner.set(x+dx*w/2,y+dy*h/2,z+dz*d/2)
+  projected.copy(corner).project(camera)
+  const screenX=(projected.x+1)*viewport.width/2,screenY=(1-projected.y)*viewport.height/2
+  left=Math.min(left,screenX);right=Math.max(right,screenX);top=Math.min(top,screenY);bottom=Math.max(bottom,screenY)
+  nearDepth=Math.min(nearDepth,-corner.applyMatrix4(camera.matrixWorldInverse).z)
+  visible||=projected.z>-1&&projected.z<1
+ }
+ return visible?{x:left,y:top,width:right-left,height:bottom-top,nearDepth}:null
 }
 /** Required lane titles precede optional bundle/cluster captions. Camera
  * admission uses this same glyph footprint rather than a guessed rectangle. */

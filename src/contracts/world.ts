@@ -134,7 +134,7 @@ export interface SceneArray {
         slotId: SlotId;
         value: ValueText;
         evidence: Evidence;
-    }[]; // observed/sparse cells, not length-sized geometry
+    }[]; // observed/sparse cells in unique ascending index order, not length-sized geometry
     activity: {
         kind: 'read' | 'write';
         index: number;

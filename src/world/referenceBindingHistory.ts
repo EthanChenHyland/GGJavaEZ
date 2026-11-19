@@ -27,6 +27,11 @@ interface Interval {
   ending: ReferenceBinding | null
 }
 
+// A first, still-open binding needs neither an Interval wrapper nor an array.
+// Closing promotes it to an Interval; reopening promotes that to an ordered list.
+// The discriminant is a private wrapper property, never an opaque captured ID.
+type BindingHistory = ReferenceBinding | Interval | Interval[]
+
 interface PreparedObservation {
   readonly key: string
   readonly sourceId: string
@@ -87,7 +92,7 @@ function closedPrefix(items: readonly ReferenceBinding[], length: number): reado
  */
 export function createReferenceBindingHistory(recordingId: string): ReferenceBindingHistory {
   if (typeof recordingId !== 'string') throw new TypeError('recordingId must be a string')
-  const histories = new Map<string, Interval[]>()
+  const histories = new Map<string, BindingHistory>()
   const closed: ReferenceBinding[] = []
   const eventIds = new Set<string>()
   let lastSeq = -1, accepted = 0
@@ -142,13 +147,20 @@ export function createReferenceBindingHistory(recordingId: string): ReferenceBin
 
       for (const item of prepared) {
         let history = histories.get(item.key)
-        const prior = history?.[history.length - 1]
-        const active = prior && prior.ending === null ? prior : undefined
-        if (item.mode === 'observe' && active && item.targetId === active.introduction.targetId) continue
+        const prior = Array.isArray(history) ? history[history.length - 1] : history
+        const active = prior !== undefined && (!('introduction' in prior) || prior.ending === null) ? prior : undefined
+        const activeIntroduction = active === undefined ? undefined : 'introduction' in active ? active.introduction : active
+        if (item.mode === 'observe' && activeIntroduction && item.targetId === activeIntroduction.targetId) continue
 
-        if (active) {
-          const ending: ReferenceBinding = Object.freeze({ ...active.introduction, endSeq: seq, endEventId: eventId, endKind: item.endKind })
-          active.ending = ending
+        if (active && activeIntroduction) {
+          const ending: ReferenceBinding = Object.freeze({ ...activeIntroduction, endSeq: seq, endEventId: eventId, endKind: item.endKind })
+          if ('introduction' in active) active.ending = ending
+          else {
+            // Preserve the frozen introduction for every earlier cursor and
+            // every previously published current() snapshot.
+            history = { introduction: activeIntroduction, ending }
+            histories.set(item.key, history)
+          }
           closed.push(ending)
         }
         if (item.mode === 'retire' || item.targetId === null) continue
@@ -159,8 +171,15 @@ export function createReferenceBindingHistory(recordingId: string): ReferenceBin
           sourceId: item.sourceId, sourceSlotId: item.sourceSlotId, targetId: item.targetId, role: item.role,
           introducedSeq: seq, introducedEventId: eventId, endSeq: null, endEventId: null, endKind: null,
         })
-        if (!history) { history = []; histories.set(item.key, history) }
-        history.push({ introduction, ending: null })
+        if (history === undefined) histories.set(item.key, introduction)
+        else if (Array.isArray(history)) history.push({ introduction, ending: null })
+        else {
+          // A first interval was closed above (or by an earlier retire/null).
+          // Never replace the map entry by deleting/reinserting its opaque key:
+          // current() order is the pair's original introduction order.
+          const first = history as Interval
+          histories.set(item.key, [first, { introduction, ending: null }])
+        }
       }
       lastSeq = seq
       eventIds.add(eventId)
@@ -178,11 +197,17 @@ export function createReferenceBindingHistory(recordingId: string): ReferenceBin
       requireOrdinal(cursor, 'cursor')
       const result: ReferenceBinding[] = []
       for (const history of histories.values()) {
-        const count = prefixLength(history, cursor, interval => interval.introduction.introducedSeq)
-        if (count === 0) continue
-        const interval = history[count - 1]
-        if (interval.ending !== null && interval.ending.endSeq! < cursor) continue
-        result.push(interval.introduction)
+        if (Array.isArray(history)) {
+          const count = prefixLength(history, cursor, interval => interval.introduction.introducedSeq)
+          if (count === 0) continue
+          const interval = history[count - 1]
+          if (interval.ending !== null && interval.ending.endSeq! < cursor) continue
+          result.push(interval.introduction)
+        } else if ('introduction' in history) {
+          if (history.introduction.introducedSeq >= cursor) continue
+          if (history.ending !== null && history.ending.endSeq! < cursor) continue
+          result.push(history.introduction)
+        } else if (history.introducedSeq < cursor) result.push(history)
       }
       return Object.freeze(result)
     },

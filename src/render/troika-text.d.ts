@@ -1,6 +1,6 @@
 declare module 'troika-three-text' {
-  import type { Mesh, Material, ColorRepresentation } from 'three'
-  export class Text extends Mesh {
+  import type { Mesh, Material, ColorRepresentation, BufferGeometry, Object3DEventMap } from 'three'
+  export class Text extends Mesh<BufferGeometry, Material, Object3DEventMap & { syncstart: object; synccomplete: object }> {
     text: string
     font: string
     letterSpacing: number

@@ -1,5 +1,5 @@
 import { PerspectiveCamera, Vector3, type Camera } from 'three'
-import data from './interMetrics.json'
+import data from './interMetrics.json' with {type:'json'}
 export type FontWeight=400|500|600
 interface Metrics{advances:Record<string,number>;kerning:Record<string,number>;missingAdvance:number}
 const metrics=data as Record<FontWeight,Metrics>

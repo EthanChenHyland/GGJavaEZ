@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import fc from 'fast-check'
-import { loadPersonTrace } from '../examples/traces'
+import { loadArrayTrace, loadPersonTrace } from '../examples/traces'
 import { normalizeTrace } from '../instrumentation/normalize'
 import { createReductionEngine } from '../runtime/engine'
 import { seek } from '../runtime'
@@ -20,6 +20,24 @@ function generated(seed: number, rawEvents = 20) {
   const trace=normalizeTrace(raw.rawEvents, raw.manifest, { status: 'complete', exitCode: 0, diagnostic: null }).trace
   return{...trace,events:trace.events.map((event,index)=>({...event,eventId:`opaque/${seed}/record-${index.toString(36)}`}))}
 }
+
+it('reuses unchanged primitive array observations without visiting every captured member',()=>{
+  const trace=loadArrayTrace(),event=trace.events.find((event):event is Extract<TraceEvent,{type:'ALLOCATE_ARRAY'}>=>event.type==='ALLOCATE_ARRAY')!
+  const state=seek(trace,event.seq+1),array=state.objects[event.objectId]
+  let reads=0
+  const elements=new Proxy(array.array!.elements,{get(target,key,receiver){if(typeof key==='string'&&/^\d+$/.test(key))reads++;return Reflect.get(target,key,receiver)}})
+  const observed=Object.freeze({...array,array:Object.freeze({...array.array!,elements})})
+  const cut=Object.freeze({...state,objects:Object.freeze({...state.objects,[array.id]:observed})})
+  const layout=createLayoutEngine();layout.append(trace.events)
+  const projector=createSceneProjector(trace),first=projector.project(cut,layout.state,context(trace))
+  expect(reads).toBeGreaterThan(0)
+  const node=first.entities[array.id]
+  expect(node.kind).toBe('array');if(node.kind!=='array')throw Error('Missing observed array')
+  expect(node.cells).toHaveLength(5)
+  reads=0
+  expect(projector.project(cut,layout.state,context(trace)).entities[array.id]).toBe(node)
+  expect(reads,'Unchanged cache hits inspect reference targets, not all primitive members').toBe(0)
+})
 
 describe('complete prefix scene catalog', () => {
   it('refreshes collection observation evidence even when values and change ordinals are unchanged',()=>{

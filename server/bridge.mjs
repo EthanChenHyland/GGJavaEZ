@@ -138,6 +138,9 @@ const server = http.createServer(async (request, response) => {
       const { name, files } = await body(request)
       return json(response, 201, await projects.importProject(name, files))
     }
+    if (parts[0] === 'api' && parts[1] === 'projects' && parts[2] && parts.length === 3 && method === 'GET') {
+      return json(response, 200, await projects.projectSummary(parts[2]))
+    }
     if (parts[0] === 'api' && parts[1] === 'projects' && parts[2] && parts.length >= 4) {
       const id = parts[2]
       const action = parts[3]

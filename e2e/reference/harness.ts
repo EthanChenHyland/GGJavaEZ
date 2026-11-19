@@ -5,6 +5,8 @@ import {randomUUID} from 'node:crypto'
 import type {ExecutionSession} from '../../src/execution/contracts'
 import type {} from '../../src/qa/qaBridge'
 import {normalizeTrace} from '../../src/instrumentation/normalize'
+import {ioPortPreview} from '../../src/world/ioPortText'
+import {fitWorldText} from '../../src/render/text/textSystem'
 import manifest from '../../fixtures/reference-exact/manifest.json' with {type:'json'}
 export type FixtureName=keyof typeof manifest
 const ownedProjects=new Map<FixtureName,string>()
@@ -173,7 +175,7 @@ export async function captureComparison(page:Page,request:APIRequestContext,stat
  await page.evaluate(async()=>{await Promise.all(document.getAnimations().filter(animation=>animation.playState==='running'&&animation.effect instanceof KeyframeEffect&&animation.effect.target instanceof Element&&animation.effect.target.closest('.ide-editor-panel')).map(animation=>animation.finished.catch(()=>undefined)))})
  const observe=()=>page.evaluate(()=>{
   const qa=window.__ggjavaezQA!,world=window.__ggjavaezWorld!,scene=world.scene()
-  return{viewport:{width:innerWidth,height:innerHeight},app:qa.appState(),scene,shell:qa.shellRects(),world:qa.worldProjection()!,structuralLabels:world.structuralLabels(),runtimeHeadings:world.runtimeHeadings(),frameText:world.frameText(),atmosphere:world.atmosphere(),selection:qa.selection(),pose:qa.cameraPose(),plan:qa.planStats(),renderer:world.renderer(),effects:world.effects(),quality:world.quality(),prefix:{recordingId:scene.recordingId,cursor:scene.cursor,liveHead:scene.liveHead,eventId:scene.cursorEvent?.id??null}}
+  return{viewport:{width:innerWidth,height:innerHeight},app:qa.appState(),scene,shell:qa.shellRects(),world:qa.worldProjection()!,structuralLabels:world.structuralLabels(),runtimeHeadings:world.runtimeHeadings(),frameText:world.frameText(),ioText:world.ioText(),atmosphere:world.atmosphere(),selection:qa.selection(),pose:qa.cameraPose(),plan:qa.planStats(),renderer:world.renderer(),effects:world.effects(),quality:world.quality(),prefix:{recordingId:scene.recordingId,cursor:scene.cursor,liveHead:scene.liveHead,eventId:scene.cursorEvent?.id??null}}
  })
  const before=await observe(),session=(await currentSession(request))!
  expect(session?.id,'Capture belongs to the actual fixture JVM').toBe(sessionId)
@@ -213,9 +215,11 @@ export async function captureComparison(page:Page,request:APIRequestContext,stat
  const misses=measurementFailures({...before,stateId:state.id})
  if(state.id==='recursion')misses.push(...recursiveHeadingFailures(before.scene,before.world,before.pose.position,before.runtimeHeadings))
  if(state.id==='io')for(const io of before.scene.io){
-  const label=before.runtimeHeadings.find(heading=>heading.entityId===io.id&&heading.kind==='title')
-  const exactText=[`${io.id} · ${io.lines}`,`${io.id}\n${io.lines}`]
-  if(!label||!exactText.includes(label.text)||label.opacity<=0||label.fontPixels<11||label.inkCorners.length!==4)misses.push(`I/O channel ${io.id} has no readable recorded label`)
+  const label=before.ioText.find(label=>label.channel===io.id),preview=ioPortPreview(io)
+  const glyph=io.id==='stderr'?'⚠':io.id==='stdout'?'→':'←'
+  const row=`${glyph} ${preview.available?preview.displayText||'""':'—'}`
+  const exactText=`${io.lines}\n${fitWorldText(row,io.anchor.size[0]-.24,.32,500,0,Infinity,'end')}`
+  if(!label||label.text!==exactText||label.opacity<=0||label.fontPixels<11||!label.bounds||label.bounds.width<=0||label.bounds.height<=0)misses.push(`I/O channel ${io.id} has no readable exact count and bounded preview`)
  }
  if(state.id==='runtime-hero'){
   const safe=before.shell.safeFrame

@@ -1,5 +1,7 @@
 # Visual QA
 
+Current integration, 2026-11-19: an actual-Java array test verifies visible glyph pixels in all five cells over four forward/reverse cuts. Recorded I/O now has a bounded face preview and selectable expansion. These targeted checks do not replace the fresh 96-image formal review. [Exact scope and preserved failed captures](migration/recorded-io-and-retained-world.md).
+
 As of 2026-10-13, visual convergence remains open. Real spatial geometry, passing interaction checks and hardware-gated Cinematic behavior do not establish reference-exact finish by themselves.
 
 The comparison contract is 16 real-JVM states × five QA viewport sizes plus 16 native captures: 80 cases and 96 images. `e2e/reference/states.json` declares every pairing and sheet crop. `REVIEW.md` binds each state/viewport review to the actual PNG SHA256 and records the largest discrepancy, category, fix and any necessary runtime-truth deviation. `scripts/reference/convergence.mjs` rejects missing captures/assets, stale hashes, missing real-JVM evidence, failed geometry checks and unresolved reviews.

@@ -1,5 +1,7 @@
 # Performance evidence
 
+Current integration, 2026-11-19: paired actual-Dense retention probes pass at 16.372%/16.343% presentation retention and 34.554/34.523 MiB semantics. The broader generated stress ratios still fail; they are separate workloads. The fresh fixed browser run completes ten stages and fails seek p50 and Focus/Home latency; its raw median boundary failures also remain recorded. [Methods and exact source](migration/recorded-io-and-retained-world.md). Earlier completed browser results below are historical.
+
 As of 2026-10-17, performance approval is incomplete. Budgets and required sample counts are unchanged. Historical and current methods are distinguished; passing a frame probe does not waive command latency or memory failures.
 
 ## Complete native Dense sample

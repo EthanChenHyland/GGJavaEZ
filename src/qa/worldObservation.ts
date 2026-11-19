@@ -13,6 +13,7 @@ export interface WorldObservation {
   returnText():readonly {flowId:string;kind:'value'|'operands';text:string;opacity:number;fontPixels:number}[]
   frameText():readonly {entityId:string;kind:'scope'|'name'|'value';slotId?:string;text:string;position:readonly[number,number,number];opacity:number;fontPixels:number}[]
   arrayText():readonly {entityId:string;slotId:string;kind:'index'|'value';text:string;position:Vec3;opacity:number;fontPixels:number;localInkBounds:readonly number[]|null;bounds:import('./worldProjection').ProjectedRect|null}[]
+  ioText():readonly {channel:'stdin'|'stdout'|'stderr';text:string;opacity:number;fontPixels:number;position:Vec3;bounds:import('./worldProjection').ProjectedRect|null}[]
   exceptionText():readonly {text:string;opacity:number;fontPixels:number;position:readonly[number,number,number];bounds:import('./worldProjection').ProjectedRect|null}[]
   structuralLabels():readonly {id:string;kind:'cluster'|'heading'|'bundle'|'return';visible:boolean;minimumFontPixels:number;bounds:import('../shell/shellLayout').Rect|null}[]
   projectedPoint(id: string): { x:number; y:number; visible:boolean } | null

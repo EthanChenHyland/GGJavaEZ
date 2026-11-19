@@ -43,7 +43,7 @@ interface OwnerHistory { introduced: number; changes: OrdinalHistory; sources: O
 type DependencyTargets = string | ReadonlySet<string>
 const dependencyValues = (value: DependencyTargets | undefined): Iterable<string> => typeof value === 'string' ? [value] : value ?? []
 const hasDependency = (value: DependencyTargets | undefined, id: string): boolean => typeof value === 'string' ? value === id : value?.has(id) ?? false
-interface CachedNode<T> { anchor: WorldAnchor; signature: string; dependencies: readonly (RuntimeObject | undefined)[]; node: T }
+interface CachedNode<T> { anchor: WorldAnchor; fingerprint: readonly unknown[]; dependencies: readonly (RuntimeObject | string)[]; node: T }
 const ioPreviewCharacters = 60
 interface LineSummary { breaks: number; partial: boolean; pendingCR: boolean; current: string; currentLength: number; last: string; first: string; changed: string }
 type Channels = Map<SceneIo['id'], LineSummary>
@@ -65,9 +65,23 @@ function lastBefore(values: number | readonly number[] | undefined, cursor: numb
   while (low < high) { const mid = (low + high) >>> 1; if (values[mid] < cursor) low = mid + 1; else high = mid }
   return low ? values[low - 1] : null
 }
-function sameDependencies(a: readonly (RuntimeObject | undefined)[], b: readonly (RuntimeObject | undefined)[]): boolean {
-  return a.length === b.length && a.every((value, index) => value === b[index])
+/** Compare the small immutable projection inputs directly. Serializing them
+ * retained copies of long source/type/value strings beside the scene itself. */
+function sameProjectionKey(left: unknown, right: unknown): boolean {
+  if (Object.is(left, right)) return true
+  if (!left || !right || typeof left !== 'object' || typeof right !== 'object') return false
+  if (Array.isArray(left) !== Array.isArray(right)) return false
+  if (Array.isArray(left) && Array.isArray(right) && left.length !== right.length) return false
+  const a = left as Record<string, unknown>, b = right as Record<string, unknown>, keys = Object.keys(a)
+  return keys.length === Object.keys(b).length && keys.every(key => Object.hasOwn(b, key) && sameProjectionKey(a[key], b[key]))
 }
+/** The runtime leaf owns its fixed reference IDs. On a cache hit, inspect
+ * only those targets rather than rebuilding/sorting every captured member.
+ * An absent target retains its opaque ID so a later observation invalidates it. */
+function dependenciesCurrent(dependencies: readonly (RuntimeObject | string)[], state: RuntimeState): boolean {
+  return dependencies.every(value => typeof value === 'string' ? state.objects[value] === undefined : state.objects[value.id] === value)
+}
+
 function sameReferences(a: readonly SceneReference[], b: readonly SceneReference[]): boolean {
   return a.length === b.length && a.every((ref, i) => ref.id === b[i].id && ref.targetId === b[i].targetId && ref.overlay === b[i].overlay
     && ref.evidence.changedSeq === b[i].evidence.changedSeq && ref.evidence.introducedSeq === b[i].evidence.introducedSeq
@@ -340,8 +354,8 @@ export function createSceneProjector(trace: TraceDocument): SceneProjector {
       ...(slot.scopeId && state.scopes[slot.scopeId] ? { scopeDepth: state.scopes[slot.scopeId].depth } : {}),
       port: hasRecordedValuePort(value)?anchor.ports[slot.id] ?? null:null, evidence: slotEvidence(id, slot, state.cursor) }
   }
-  function targetDependencies(slots: readonly RuntimeSlot[], state: RuntimeState): readonly (RuntimeObject | undefined)[] {
-    return slots.flatMap(slot => slot.value.kind === 'reference' ? [state.objects[slot.value.objectId]] : [])
+  function targetDependencies(slots: readonly RuntimeSlot[], state: RuntimeState): readonly (RuntimeObject | string)[] {
+    return slots.flatMap(slot => slot.value.kind === 'reference' ? [state.objects[slot.value.objectId] ?? slot.value.objectId] : [])
   }
   function updateReturnIndex(state: RuntimeState) {
     const length = indexedReturns?.length ?? 0
@@ -371,9 +385,10 @@ export function createSceneProjector(trace: TraceDocument): SceneProjector {
     const live = frame.status === 'active' && !(context.sessionEnded && state.cursor === context.liveHead)
     const topOfStack = live && state.activeFrameIds.at(-1) === frame.id
     const ev = ownerEvidence(frame.id, state.cursor)
-    const signature = JSON.stringify([status, sourceLine, live, topOfStack, exceptionRole, ev, invocation?.method, invocation?.metadata?.ownership])
-    const slots = Object.values(frame.locals), deps = targetDependencies(slots, state), cached = frameCache.get(frame)
-    if (cached?.anchor === anchor && cached.signature === signature && sameDependencies(cached.dependencies, deps)) return cached.node
+    const fingerprint = [status, sourceLine, live, topOfStack, exceptionRole, ev, invocation?.method, invocation?.metadata?.ownership]
+    const cached = frameCache.get(frame)
+    if (cached?.anchor === anchor && sameProjectionKey(cached.fingerprint, fingerprint) && dependenciesCurrent(cached.dependencies, state)) return cached.node
+    const slots = Object.values(frame.locals), deps = targetDependencies(slots, state)
     const history = owners.get(frame.id)
     const ordered = slots.filter(slot => slot.name === 'this' || slot.role === 'parameter' || firstSlotAssignment(history?.slots?.get(slot.id)) < state.cursor)
       .sort((a, b) => {
@@ -395,7 +410,7 @@ export function createSceneProjector(trace: TraceDocument): SceneProjector {
       title: frameTitle(frame, invocation ? { method: invocation.method } : { parameterTypes: parameters }), callerId: frame.callerFrameId, depth: frame.depth,
       rows, ...(scopeDividers.length ? { scopeDividers } : {}), status, live, topOfStack, exceptionRole, sourceLine, anchor,
       ownership: invocation?.metadata?.ownership ?? 'PROJECT', evidence: ev })
-    frameCache.set(frame, { anchor, signature, dependencies: deps, node }); return node
+    frameCache.set(frame, { anchor, fingerprint, dependencies: deps, node }); return node
   }
   function objectNode(object: RuntimeObject, anchor: WorldAnchor, state: RuntimeState): SceneObject | SceneArray | SceneCollection {
     const event = state.cursor ? events[state.cursor - 1] : null
@@ -403,12 +418,11 @@ export function createSceneProjector(trace: TraceDocument): SceneProjector {
     const mutation = event?.type === 'SET_FIELD' && event.objectId === object.id ? { slotId: event.slotId }
       : event?.type === 'CREATE_REFERENCE' && event.sourceSlot.kind === 'object' && event.sourceSlot.objectId === object.id ? { slotId: event.sourceSlot.slotId } : null
     const ev = ownerEvidence(object.id, state.cursor)
+    const fingerprint = [ev, mutation, activity], cached = objectCache.get(object)
+    if (cached?.anchor === anchor && sameProjectionKey(cached.fingerprint, fingerprint) && dependenciesCurrent(cached.dependencies, state)) return cached.node
     const cells = object.array ? [...object.array.elements.map((slot, index) => ({ slot, index })), ...Object.entries(object.array.sparseElements ?? {}).map(([index, slot]) => ({ slot, index: Number(index) }))].sort((a, b) => a.index - b.index) : []
     const fields = Object.values(object.fields).filter(slot => !slot.static)
     const deps = targetDependencies([...fields, ...cells.map(cell => cell.slot)], state)
-    const signature = JSON.stringify([ev, mutation, activity])
-    const cached = objectCache.get(object)
-    if (cached?.anchor === anchor && cached.signature === signature && sameDependencies(cached.dependencies, deps)) return cached.node
     let node: SceneObject | SceneArray | SceneCollection
     if (object.array) {
       const observed = new Map(cells.map(cell => [cell.index, cell]))
@@ -419,7 +433,7 @@ export function createSceneProjector(trace: TraceDocument): SceneProjector {
         outOfBounds: null, anchor, ownership: object.metadata?.ownership ?? (anchor.region==='heap'?'PROJECT':'LIBRARY'), evidence: ev }
     } else if (object.library && ['LIST','SET','MAP','QUEUE','DEQUE'].includes(object.library.kind)) {
       const summary=collectionSummary(object,anchor,{cursor:state.cursor,eventSeq:id=>seqOf(id,state.cursor),objects:state.objects});
-      if(summary){freezeValue(summary);objectCache.set(object,{anchor,signature,dependencies:deps,node:summary});return summary}
+      if(summary){freezeValue(summary);objectCache.set(object,{anchor,fingerprint,dependencies:deps,node:summary});return summary}
       node={kind:'object',id:object.id,displayId:object.displayId,title:displayType(object.className),groups:[],fieldCount:fields.length,summaryUnavailable:true,allocationSite:byEvent.get(object.allocatedAt)?.source??null,anchor,ownership:object.metadata?.ownership??(anchor.region==='heap'?'PROJECT':'LIBRARY'),evidence:ev,mutation:null}
     } else {
       const groups = new Map<string, SceneRow[]>()
@@ -439,16 +453,17 @@ export function createSceneProjector(trace: TraceDocument): SceneProjector {
         ...(object.library ? { summaryUnavailable: true } : {}), allocationSite: allocation?.source ?? null,
         anchor, ownership: object.metadata?.ownership ?? (anchor.region==='heap'?'PROJECT':'LIBRARY'), evidence: ev, mutation }
     }
-    freezeValue(node); objectCache.set(object, { anchor, signature, dependencies: deps, node }); return node
+    freezeValue(node); objectCache.set(object, { anchor, fingerprint, dependencies: deps, node }); return node
   }
   function classNode(value: RuntimeClass, anchor: WorldAnchor, state: RuntimeState): SceneClass {
     const history = owners.get(value.id), ev = ownerEvidence(value.id, state.cursor)
+    const fingerprint = [ev], cached = classCache.get(value)
+    if (cached?.anchor === anchor && sameProjectionKey(cached.fingerprint, fingerprint) && dependenciesCurrent(cached.dependencies, state)) return cached.node
     const slots = Object.values(value.statics).filter(slot => firstSlotWrite(history?.slots?.get(slot.id)) < state.cursor)
-    const deps = targetDependencies(slots, state), signature = JSON.stringify(ev), cached = classCache.get(value)
-    if (cached?.anchor === anchor && cached.signature === signature && sameDependencies(cached.dependencies, deps)) return cached.node
+    const deps = targetDependencies(slots, state)
     const node: SceneClass = freezeValue({ kind: 'class', id: value.id, title: displayType(value.className), packageName: value.metadata?.packageName ?? value.className.slice(0, Math.max(0, value.className.lastIndexOf('.'))),
       initialization: value.initialization, rows: slots.map(slot => row(slot, 'static', value.id, state, anchor)), anchor, evidence: ev })
-    classCache.set(value, { anchor, signature, dependencies: deps, node }); return node
+    classCache.set(value, { anchor, fingerprint, dependencies: deps, node }); return node
   }
   function refs(node: SceneEntity): readonly SceneReference[] {
     const cached = referencesCache.get(node)

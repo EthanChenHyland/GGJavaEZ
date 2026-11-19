@@ -1,3 +1,4 @@
+import { observedArrayCell } from '../world/arrayCellTarget'
 import { useEffect, useLayoutEffect, useMemo, useRef,memo,type RefObject } from 'react';
 import { BufferGeometry, Float32BufferAttribute, InstancedMesh, Object3D, Color, Vector3 } from 'three';
 import type { Intersection, Raycaster } from 'three';
@@ -100,7 +101,7 @@ export function buildSolidBatch(scene: SceneModel, plan: PresentationPlan): Soli
                 const cellOpacity=opacity*cellFocusOpacity(id);
                 solids.push({ anchor: cell.anchor, pick: { kind: 'slot', id }, pickable: presented.pickable, role: 'heap', opacity:cellOpacity, tint: color.heap.core, edge: targeted(id)?color.semantic.execution:node.activity?.index === cell.index ? node.activity.kind==='write'?color.semantic.mutation:color.semantic.execution : color.heap.edge, arrayPick });
                 plate(id, [cx, cy, cz + .79], [1.4, 1.4, .025], color.heap.face, cellOpacity, arrayPick);
-                const value=node.cells.find(item=>item.index===cell.index)?.value;
+                const value=observedArrayCell(node.cells,cell.index)?.value;
                 if(value?.kind==='reference'&&value.observation!=='UNAVAILABLE'&&scene.entities[value.targetId]){
                     const geometry=arrayReferenceChipGeometry(cell.anchor);
                     plate(id,geometry.rim.position,geometry.rim.size,chipRims.heap,cellOpacity,arrayPick,'reference-chip-rim');
@@ -211,6 +212,20 @@ const EdgeGeometry=memo(function EdgeGeometry({ items }: {
 export function SolidEdges({items}:{items:Solid[]}) {
     return <lineSegments userData={{runtimeBloomRole:'emitter'}} raycast={noRaycast}><EdgeGeometry items={items}/><lineBasicMaterial vertexColors transparent depthWrite={false} opacity={items[0].opacity} toneMapped={false}/></lineSegments>;
 }
+const snapshotSolids = new WeakMap<WorldRenderSnapshot, readonly Solid[]>();
+
+/** The solid renderer, label clearance and observations share a committed cut.
+ * A discarded render snapshot drops the geometry it prepared. */
+export function solidsInSnapshot(snapshot: WorldRenderSnapshot): readonly Solid[] {
+    let solids = snapshotSolids.get(snapshot);
+    if (!solids) {
+        const { scene, plan } = snapshot.read();
+        solids = buildSolidBatch(scene, plan);
+        snapshotSolids.set(snapshot, solids);
+    }
+    return solids;
+}
+
 export function SolidBatch({ snapshot, onSelect, onFocus }: {
     snapshot: WorldRenderSnapshot;
     onSelect(selection: Pick): void;
@@ -224,7 +239,7 @@ export function SolidBatch({ snapshot, onSelect, onFocus }: {
     const press=useRef<SolidPress|null>(null);
     const batches = useMemo(() => {
         const groups = new Map<string, Solid[]>(), edges = new Map<number, Solid[]>();
-        for (const item of buildSolidBatch(scene, plan)) {
+        for (const item of solidsInSnapshot(snapshot)) {
             const key = `${item.role}:${item.opacity}:${item.part?'inset':'surface'}`, group = groups.get(key) ?? [];
             group.push(item);
             groups.set(key, group);
@@ -235,6 +250,6 @@ export function SolidBatch({ snapshot, onSelect, onFocus }: {
             }
         }
         return { groups, edges };
-    }, [scene, plan]);
+    }, [snapshot]);
     return <>{[...batches.groups].map(([key, items]) => <Instances key={key} items={items} tier={tier} cellWindows={plan.cellWindows} focused={!!plan.framing.focus} recordingId={scene.recordingId} cursor={scene.cursor} press={press} onSelect={onSelect} onFocus={onFocus}/>)}{[...batches.edges].map(([key, items]) => <SolidEdges key={key} items={items}/>)}</>;
 }

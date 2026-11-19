@@ -53,11 +53,22 @@ export function createFlowCatalog(initialTrace?:TraceDocument):FlowCatalog {
   const prefix=currentPrefix,length=trace.events.length
   return prefix?.cursor===cursor&&prefix.trace===trace&&prefix.length===length?prefix.state:restorePrefix(trace,cursor,length)
  }
- // Edge ordinals already resolve through the accepted graph and opaque edge ID.
- // Keep one candidate owner; most events need no separately allocated list.
+ // Capture each supported edge's append-time value, and keep its event ordinal
+ // beside the accepted graph's ordered edge vector. Keep opaque ID lookup for
+ // selection without retaining a second edge DTO and per-event bucket.
  let eventIndex:AcceptedEventIndex|undefined=initialTrace?acceptedEventIndex(initialTrace):undefined
  const events={get:(id:string)=>{const event=eventIndex?.get(id);return event&&event.seq<indexedEvents?event:undefined}}
- const byId=new Map<string,Candidate>(),byEvent=new Map<string,Candidate|Candidate[]>()
+ const byId=new Map<string,number>(), capturedValues:(RuntimeValue|undefined)[]=[]
+ let edgeEventOrdinals=new Uint32Array(0)
+ const lowerBound=(cursor:number,limit=indexedEdges)=>{
+  let low=0,high=limit
+  while(low<high){
+   const middle=low+Math.floor((high-low)/2)
+   if(edgeEventOrdinals[middle]<cursor)low=middle+1
+   else high=middle
+  }
+  return low
+ }
  let prefixCache:{scene:SceneModel;cursor:number;indexedEdges:number;items:readonly RecordedFlow[]}|undefined
  const physical=(id:string,state:RuntimeState):FlowEndpoint|null=>{
   const storage=state.executionGraph?.storage[id]
@@ -128,8 +139,9 @@ export function createFlowCatalog(initialTrace?:TraceDocument):FlowCatalog {
  // not become long-lived owners merely because a plan accounts for them.
  function* iterate(cursor:number,scene:SceneModel,retain:boolean,edgeLimit:number):IterableIterator<RecordedFlow>{
   lastScene=scene
-  for(const candidate of byId.values()){
-   if(candidate.edgeIndex>=edgeLimit||candidate.seq>=cursor)break
+  for(let index=0;index<edgeLimit&&edgeEventOrdinals[index]<cursor;index++){
+   const candidate=candidateAt(index)
+   if(!candidate)continue
    const points=resolve(candidate,cursor,retain),flow=formatted(candidate,scene,points)
    yield flow??{id:candidate.edge.id,edgeIndex:candidate.edgeIndex,kind:candidate.kind,from:points.from,to:points.to,evidenceEventIds:[candidate.edge.eventId],evidenceSeqs:[candidate.seq],valueText:null}
   }
@@ -137,13 +149,20 @@ export function createFlowCatalog(initialTrace?:TraceDocument):FlowCatalog {
  const drawable=(candidate:Candidate,scene:SceneModel)=>{const points=resolve(candidate,scene.cursor);return mapped(points.from,scene)&&mapped(points.to,scene)}
  const adjacency=(ids:ReadonlySet<string>,result:Set<number>,tail:number,cursor=Infinity)=>{
   if(!graph)return
-  for(const id of ids)for(const indices of[graph.incoming[id],graph.outgoing[id]])if(indices){
+  for(const id of ids)for(const record of[graph.incoming,graph.outgoing]){
+   // Opaque IDs may name Object.prototype members; only recorded entries count.
+   const indices=Object.hasOwn(record,id)?record[id]:undefined
+   if(!indices)continue
    let lo=0,hi=indices.length
    while(lo<hi){const mid=(lo+hi)>>>1,seq=events.get(graph.edges[indices[mid]].eventId)!.seq;if(seq<cursor)lo=mid+1;else hi=mid}
    for(let i=Math.max(0,lo-tail);i<lo;i++)result.add(indices[i])
   }
  }
- const candidateAt=(index:number):Candidate|undefined=>{const edge=graph?.edges[index];return edge?byId.get(edge.id):undefined}
+ const candidateAt=(edgeIndex:number):Candidate|undefined=>{
+  const edge=graph?.edges[edgeIndex],kind=edge?kinds[edge.kind]:undefined
+  if(!edge||!kind||edgeIndex>=indexedEdges)return undefined
+  return{edgeIndex,edge,seq:edgeEventOrdinals[edgeIndex],kind,value:capturedValues[edgeIndex]}
+ }
  const api:FlowCatalog={
   extend(next,trace){
    if(next.edges.length<indexedEdges||trace.events.length<indexedEvents)throw new Error('FlowCatalog requires one append-only accepted recording')
@@ -152,17 +171,18 @@ export function createFlowCatalog(initialTrace?:TraceDocument):FlowCatalog {
    indexedEvents=trace.events.length
    graph=next;acceptedTrace=trace
    if(indexedEdges===next.edges.length)return
+   if(edgeEventOrdinals.length<next.edges.length){
+    const ordinals=new Uint32Array(Math.max(next.edges.length,edgeEventOrdinals.length*2))
+    ordinals.set(edgeEventOrdinals)
+    edgeEventOrdinals=ordinals
+   }
    for(;indexedEdges<next.edges.length;indexedEdges++){
     const edge=next.edges[indexedEdges],event=events.get(edge.eventId),kind=kinds[edge.kind]
     if(!event)throw new Error(`Graph edge lacks accepted event ${edge.eventId}`)
+    edgeEventOrdinals[indexedEdges]=event.seq
     if(!kind)continue
-    const capturedValue=next.values[edge.from]?.value??next.values[edge.to]?.value??(event.type==='EXECUTION_FACT'&&'value'in event.fact?event.fact.value:undefined)
-    const candidate:Candidate={edgeIndex:indexedEdges,edge,seq:event.seq,kind,value:capturedValue}
-    byId.set(edge.id,candidate)
-    const prior=byEvent.get(event.eventId)
-    if(!prior)byEvent.set(event.eventId,candidate)
-    else if(Array.isArray(prior))prior.push(candidate)
-    else byEvent.set(event.eventId,[prior,candidate])
+    capturedValues[indexedEdges]=next.values[edge.from]?.value??next.values[edge.to]?.value??(event.type==='EXECUTION_FACT'&&'value'in event.fact?event.fact.value:undefined)
+    byId.set(edge.id,indexedEdges)
    }
   },
   query({cursor,scene,priority,limit}){
@@ -170,11 +190,23 @@ export function createFlowCatalog(initialTrace?:TraceDocument):FlowCatalog {
    if(limit<=0)return[]
    const tiers=[priority.selectedIds,priority.focusedIds,priority.currentIds],seen=new Set<number>(),result:SceneFlow[]=[]
    const add=(indices:Iterable<number>)=>{for(const index of[...indices].sort((a,b)=>b-a)){if(seen.has(index))continue;seen.add(index);const candidate=candidateAt(index);if(candidate&&candidate.seq<cursor&&drawable(candidate,scene)){const flow=formatted(candidate,scene);if(flow)result.push(flow)}if(result.length>=limit)return}}
-   for(const ids of tiers){const indices=new Set<number>();for(const id of ids){const candidate=byId.get(id);if(candidate)indices.add(candidate.edgeIndex)}adjacency(ids,indices,128,cursor);add(indices);if(result.length>=limit)return result.slice(0,limit)}
-   if(graph){let lo=0,hi=graph.edges.length;while(lo<hi){const mid=(lo+hi)>>>1;if(events.get(graph.edges[mid].eventId)!.seq<cursor)lo=mid+1;else hi=mid}add(Array.from({length:Math.min(256,lo)},(_,i)=>lo-1-i))}
+   for(const ids of tiers){const indices=new Set<number>();for(const id of ids){const edgeIndex=byId.get(id);if(edgeIndex!==undefined)indices.add(edgeIndex)}adjacency(ids,indices,128,cursor);add(indices);if(result.length>=limit)return result.slice(0,limit)}
+   const boundary=lowerBound(cursor)
+   add(Array.from({length:Math.min(256,boundary)},(_,i)=>boundary-1-i))
    return result.slice(0,Math.max(0,limit))
   },
-  atEvent(cursor,scene){lastScene=scene;if(!cursor||!scene.cursorEvent)return[];const entry=byEvent.get(scene.cursorEvent.id),items=entry?Array.isArray(entry)?entry:[entry]:[];return items.filter(c=>c.seq===cursor-1&&drawable(c,scene)).flatMap(c=>{const flow=formatted(c,scene);return flow?[flow]:[]})},
+  atEvent(cursor,scene){
+   lastScene=scene
+   if(!cursor||!scene.cursorEvent)return[]
+   const flows:SceneFlow[]=[],seq=cursor-1
+   for(let index=lowerBound(seq);index<indexedEdges&&edgeEventOrdinals[index]===seq;index++){
+    const candidate=candidateAt(index)
+    if(candidate?.edge.eventId!==scene.cursorEvent.id||!drawable(candidate,scene))continue
+    const flow=formatted(candidate,scene)
+    if(flow)flows.push(flow)
+   }
+   return flows
+  },
   prefix(cursor,scene){
    lastScene=scene
    if(prefixCache?.scene===scene&&prefixCache.cursor===cursor&&prefixCache.indexedEdges===indexedEdges)return prefixCache.items
@@ -200,7 +232,7 @@ export function createFlowCatalog(initialTrace?:TraceDocument):FlowCatalog {
    const indices=new Set<number>();adjacency(new Set([id]),indices,Infinity)
    return[...indices].sort((a,b)=>a-b).flatMap(index=>{
     const edge=graph!.edges[index],event=events.get(edge.eventId);if(!event||event.seq>=cursor)return[]
-    const candidate=byId.get(edge.id),canDraw=!!candidate&&lastScene?.cursor===cursor&&drawable(candidate,lastScene)
+    const candidate=candidateAt(index),canDraw=!!candidate&&lastScene?.cursor===cursor&&drawable(candidate,lastScene)
     return[{edgeId:edge.id,edgeIndex:index,kind:edge.kind,from:edge.from,to:edge.to,originSlotId:edge.originSlotId??null,eventId:edge.eventId,graphEvidence:edge.evidence,evidence:{kind:edge.evidence==='observed'?'observed' as const:edge.evidence==='bytecode-derived'?'derived' as const:'unavailable' as const,introducedSeq:event.seq,changedSeq:event.seq,eventIds:[edge.eventId],...(edge.evidence==='unknown'?{unavailableReason:'Recorder marks provenance unknown'}:{})},spatial:{drawable:canDraw,reason:canDraw?null:'Recorded evidence has no evaluated drawable mapping at this prefix'}}]
    })
   },

@@ -65,7 +65,7 @@ test('Header tooltip waits for hover, persists over its text, and opens immediat
    document.removeEventListener('pointerover',start);const at=performance.now(),observer=new MutationObserver(()=>{if(document.querySelector('[role=tooltip]')){observer.disconnect();resolve(performance.now()-at)}});observer.observe(document.body,{childList:true,subtree:true})
   };document.addEventListener('pointerover',start)
  }))
- const debug=page.getByRole('button',{name:'Debug',exact:true});await debug.hover();await expect(page.getByRole('tooltip')).toBeVisible({timeout:1000});const elapsed=await timing;expect(elapsed).toBeGreaterThanOrEqual(790);expect(elapsed).toBeLessThanOrEqual(1000)
+ const debug=page.getByRole('button',{name:'Debug',exact:true});await debug.hover();const elapsed=await timing;expect(elapsed).toBeGreaterThanOrEqual(790);expect(elapsed).toBeLessThanOrEqual(1000);await expect(page.getByRole('tooltip')).toBeVisible({timeout:1000})
  await expect(page.getByRole('tooltip')).toContainText('Debug');const tip=(await page.getByRole('tooltip').boundingBox())!;await page.mouse.move(tip.x+tip.width/2,tip.y+tip.height/2)
  await page.evaluate(()=>new Promise<void>(resolve=>{const start=performance.now();function frame(){if(performance.now()-start>=300)resolve();else requestAnimationFrame(frame)}requestAnimationFrame(frame)}));await expect(page.getByRole('tooltip')).toBeVisible()
  await page.getByRole('button',{name:'Stop',exact:true}).hover();await expect(page.getByRole('tooltip')).toContainText('Stop',{timeout:1000});await expect(page.getByRole('tooltip')).toContainText('No active execution')

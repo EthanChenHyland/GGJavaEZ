@@ -78,6 +78,7 @@ export const bridge = {
   health: () => request<{ jdk: JdkStatus }>('/api/health'),
   detectJdk: (home: string | null) => request<JdkStatus>('/api/jdk/detect', 'POST', { home }),
   projects: () => request<ProjectSummary[]>('/api/projects'),
+  project: (id: string) => request<ProjectSummary>(project(id)),
   createProject: (name: string) => request<ProjectSummary>('/api/projects', 'POST', { name }),
   importProject: (name: string, files: { path: string; content: string; encoding?: 'base64' }[]) => request<ProjectSummary>('/api/projects/import', 'POST', { name, files }),
   javaProject: (id: string) => request<JavaProject>(`${project(id)}/java-project`),

@@ -1,5 +1,7 @@
 # Validation
 
+Latest integrated source `490322d3`, 2026-11-19: all eight source checks pass, including **2,322 default tests** and 70 explicit opt-in skips. Corrected targeted browsers pass **22/22**, with no failures, skips or flakes. Fresh Dense completes all stages but fails three latency limits. Full browser, formal reference review and explicit JVM gates remain required. [Qualification and earlier failures](migration/recorded-io-and-retained-world.md).
+
 Latest functional increment is [Array glass backplate](migration/array-backplate.md) at source `75a7d72d`, 2026-11-18. All eight source checks and 28 native cases pass. Default units record 2,285 passes and 70 explicit opt-in skips. Performance and final product acceptance remain open. The October table records its original run.
 
 Historical implementation evidence, 2026-10-18. A–G completion is not claimed. The detailed chronological record is `docs/reports/reference-exact/VALIDATION.md`; migration ledgers live beside this file in `migration/`. Final results must be refreshed on the cleaned final commit and pushed tip.
