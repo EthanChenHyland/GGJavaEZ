@@ -19,9 +19,9 @@ async function zoom(page:Page,level:DetailLevel):Promise<void>{
   await page.evaluate(({target,distance})=>{const yaw=8*Math.PI/180,pitch=13*Math.PI/180;window.__ggjavaezQA!.setCameraPose({target,position:[target[0]+Math.sin(yaw)*Math.cos(pitch)*distance,target[1]+Math.sin(pitch)*distance,target[2]+Math.cos(yaw)*Math.cos(pitch)*distance]})},{target,distance})
   // This advances the real camera/LOD clock, leaving execution unchanged.
   await page.evaluate(async()=>{window.__ggjavaezQA!.clock.step(250);await new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve())))})
-  const actual=await page.evaluate(()=>window.__ggjavaezQA!.planStats()!.detailLevel)
-  if(actual===level){await page.evaluate(()=>window.__ggjavaezQA!.clock.resume());await ready(page);return}
-  distance*=level==='FAR'?1.35:level==='CLOSE'?.75:actual==='FAR'?.8:1.2
+  const {actual,ratio:measured}=await page.evaluate(()=>({actual:window.__ggjavaezQA!.planStats()!.detailLevel,ratio:(window.__ggjavaezWorld!.canonicalFaceHeight()??0)/innerHeight}))
+  if(actual===level&&Math.abs(measured-ratio)<=ratio*.2){await page.evaluate(()=>window.__ggjavaezQA!.clock.resume());await ready(page);return}
+  distance*=measured>0?Math.max(.2,Math.min(5,measured/ratio)):level==='FAR'?1.35:level==='CLOSE'?.75:actual==='FAR'?.8:1.2
  }
  throw new Error(`Actual semantic zoom never reached ${level}`)
 }

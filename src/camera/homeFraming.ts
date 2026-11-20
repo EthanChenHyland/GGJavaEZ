@@ -1,3 +1,5 @@
+import {Vector3} from 'three'
+import {projectedPlaneFontPixels} from '../render/text/textSystem'
 import type {PresentationPlan,SceneModel,Vec3,LayoutState} from '../contracts/world'
 import type {Rect} from '../shell/shellLayout'
 import {exceptionPanelAnchor} from '../world/exceptionPanelPlacement'
@@ -36,6 +38,7 @@ export function homeFraming(scene:SceneModel,plan:PresentationPlan,safeFrame:Rec
  })
  const ids=[...frames],points=[...headings,...frames.flatMap(id=>anchorCorners(scene.entities[id].anchor)),...(plan.exceptionPanel?anchorCorners(exceptionPanelAnchor(plan.exceptionPanel,scene.recording)):[])]
  let fitted=fit(points)
+ const selected=(id:string)=>{const highlight=plan.entities.get(id)?.highlight;return highlight==='selected'||highlight==='focus'}
  const candidates=scene.order.objects.map(id=>scene.entities[id]).filter(node=>node.anchor.region==='heap'||node.anchor.region==='library').sort((a,b)=>Number(a.anchor.region==='library')-Number(b.anchor.region==='library')||Math.hypot(...a.anchor.position)-Math.hypot(...b.anchor.position)||a.id.localeCompare(b.id))
  const groups=new Set<string>()
  let project=0,external=0
@@ -44,7 +47,11 @@ export function homeFraming(scene:SceneModel,plan:PresentationPlan,safeFrame:Rec
   const path=layout?.placement[node.id]?.clusterPath,group=`${node.anchor.region}:${path?JSON.stringify(path):`${node.ownership}:${node.title}`}`
   if(groups.has(group)||(node.anchor.region==='heap'?project>=12:external>=2))continue
   const proposed=[...points,...anchorCorners(node.anchor)],candidate=fit(proposed),camera=projectionCamera(candidate.pose,viewport)
-  const readable=[...ids,node.id].every(id=>{const screen=frontFace(scene.entities[id].anchor).map(point=>screenPoint(point,camera,viewport));return Math.max(...screen.map(point=>point.y))-Math.min(...screen.map(point=>point.y))>=viewport.height*.04})
+  // An optional group must not erase fixed-size glyphs from the useful view.
+  // Keep an explicitly selected/focused owner recoverable even when its
+  // canonical sparse envelope needs Focus for individual cell readability.
+  // Canonical bodies and the closest-fit solver remain unchanged.
+  const readable=[...ids,node.id].every(id=>{const screen=frontFace(scene.entities[id].anchor).map(point=>screenPoint(point,camera,viewport));return Math.max(...screen.map(point=>point.y))-Math.min(...screen.map(point=>point.y))>=viewport.height*.04&&(selected(node.id)||frontFace(scene.entities[id].anchor).every(point=>projectedPlaneFontPixels(.32,new Vector3(...point),camera,viewport)>=11))})
   if(!readable)continue
   groups.add(group);fitted=candidate;points.push(...anchorCorners(node.anchor));ids.push(node.id);if(node.anchor.region==='heap')project++;else external++
  }

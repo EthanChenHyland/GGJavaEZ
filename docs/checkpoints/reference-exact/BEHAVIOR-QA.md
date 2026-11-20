@@ -1,5 +1,9 @@
 # Behavior QA
 
+Development preview qualified 2026-11-20 at source `7c172d1c`: **2,330 tests passed / 70 declared opt-in skips / zero failed**, 249 files; all eight source/build/scan checks pass. **23 browser cases pass**, zero skips/flakes, covering editing, actual Java Run/Debug, plain/Maven/Gradle projects, I/O, arrays, failures and hardware-gated Cinematic. npm audit reports zero known vulnerabilities. Original visual convergence and performance acceptance remain open. [Preview scope, source hashes, failures and checks](migration/home-readability-and-matrix-review.md).
+
+Current overview convergence, 2026-11-19: the integrated array/quality run passes 12/12 cases, zero skips/flakes. Ten array cases prove ten distinct actual JVM sessions; a real forensic quality case and a separate curated quality/lazy-load case are counted explicitly. All captured array indices and values are readable across all five QA sizes. Existing sparse-owner regressions remain asserted; the corrected camera/floor group passes 153/153. [Source boundaries, regressions and evidence](migration/home-readability-and-matrix-review.md).
+
 Current convergence, 2026-11-19: all 195 acceptance, 85 prior coverage/provenance, seven reference and nine torture cases pass at source `38dedb9b`, with explicit launch-count verification and no skips. Acceptance retains four declared expected-failure contracts. Ten native recursion/return cases pass across five viewports at the separately qualified source. The complete 330-case default browser corpus and final cross-state/motion gates remain required. [Exact source boundaries, failures and validation](migration/return-follow-and-flow-cut.md).
 
 Current evidence, 2026-10-13; final acceptance, torture, hands-on motion and exhaustive browser approval remain open.

@@ -1,3 +1,4 @@
+import {representativeFaceHeight} from '../camera/projection'
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { Canvas, useFrame, useThree,events as pointerEvents,type CanvasProps } from '@react-three/fiber';
 import {prioritizeConnectorIntersections} from './geometry/connectorRaycast';
@@ -70,6 +71,7 @@ function Metrics({ snapshot, selection,trace }: {
             window.__ggjavaezWorld={ scene: () => scene, plan: () => plan, selection:()=>selection,
                 recordedEvents:()=>trace.events,
                 environment:()=>world.environment?{id:world.environment.uuid,captureVersion:world.environment.pmremVersion}:null,
+                canonicalFaceHeight:()=>camera instanceof PerspectiveCamera?representativeFaceHeight(scene,camera,size):null,
                 runtimeHeadings:()=>{
                     const headings:ReturnType<NonNullable<Window['__ggjavaezWorld']>['runtimeHeadings']>[number][]=[];
                     if(!(camera instanceof PerspectiveCamera))return headings;

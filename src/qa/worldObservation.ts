@@ -8,6 +8,7 @@ export interface WorldObservation {
   selection(): Selection
   recordedEvents():readonly TraceEvent[]
   worldProjection():WorldProjection
+  canonicalFaceHeight():number|null
   runtimeHeadings():readonly {entityId:string;kind:'title'|'identity'|'length';text:string;opacity:number;fontPixels:number;planePixels:number;widthPixels:number;position:Vec3;localInkBounds:readonly[number,number,number,number]|null;inkCorners:readonly Vec3[]}[]
   collectionText():readonly {entityId:string;kind:'size'|'more'|'key'|'value';slotId?:string;text:string;opacity:number;fontPixels:number;planePixels:number;widthPixels:number;inkCorners:readonly Vec3[];bounds:import('./worldProjection').ProjectedRect|null}[]
   returnText():readonly {flowId:string;kind:'value'|'operands';text:string;opacity:number;fontPixels:number}[]

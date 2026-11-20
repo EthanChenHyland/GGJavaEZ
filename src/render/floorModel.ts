@@ -6,7 +6,7 @@ export const floorStyle = Object.freeze({
   minor: '#1B3A7A', major: '#2A5BC0', surface: '#172745', contact: '#03050C',
   minorSpacing: 1, majorSpacing: 4, minExtent: 80, extentScale: 2.5,
   clearance: .5, contactLift: .012, gridLift: .03,
-  gridFadeExtent: 1.5, gridFadeStrength: 2,
+  gridFadeExtent: 1.5, gridFadeStrength: 2, gridCoverage: .35,
 })
 
 export interface FloorModel {

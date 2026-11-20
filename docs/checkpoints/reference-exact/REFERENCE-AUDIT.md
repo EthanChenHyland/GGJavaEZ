@@ -1,5 +1,9 @@
 # Reference audit
 
+Development preview qualified 2026-11-20 at source `7c172d1c`: **2,330 tests passed / 70 declared opt-in skips / zero failed**, 249 files; all eight source/build/scan checks pass. **23 browser cases pass**, zero skips/flakes, covering editing, actual Java Run/Debug, plain/Maven/Gradle projects, I/O, arrays, failures and hardware-gated Cinematic. npm audit reports zero known vulnerabilities. Original visual convergence and performance acceptance remain open. [Preview scope, source hashes, failures and checks](migration/home-readability-and-matrix-review.md).
+
+Current root review, 2026-11-19: the complete formal matrix passes 80/80 actual-JVM cases and archives all 96 originals at parent source `38dedb9b`. Root has inspected every original and records 96 current hash-bound OPEN rows in REVIEW.md. Geometry success does not approve visual convergence; Home typography, shared surfaces and route hierarchy still need convergence. [Source boundaries, regressions and evidence](migration/home-readability-and-matrix-review.md).
+
 Current convergence, 2026-11-19: all seven protected local inputs retain their hashes and ownership; the six root image references remain untouched. Twelve new actual-JVM recursion/return originals receive hash-bound root review. The single runtime Shell/renderer and semantic golden boundary survive the independent diff audit. Final 96-image convergence and whole-product acceptance remain open. [Exact source boundaries, failures and validation](migration/return-follow-and-flow-cut.md).
 
 Implementation evidence as of 2026-10-13; final reference convergence remains open. The authoritative interpretation is the corrected specification at commit 68b394c98eee45c5e07a1f3b6340049449185941, especially audit.md. This report records the implementation's comparison boundary, not approval of all captures.

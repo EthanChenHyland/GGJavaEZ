@@ -1,5 +1,9 @@
 # Visual QA
 
+Development preview qualified 2026-11-20 at source `7c172d1c`: **2,330 tests passed / 70 declared opt-in skips / zero failed**, 249 files; all eight source/build/scan checks pass. **23 browser cases pass**, zero skips/flakes, covering editing, actual Java Run/Debug, plain/Maven/Gradle projects, I/O, arrays, failures and hardware-gated Cinematic. npm audit reports zero known vulnerabilities. Original visual convergence and performance acceptance remain open. [Preview scope, source hashes, failures and checks](migration/home-readability-and-matrix-review.md).
+
+Current root review, 2026-11-19: all 96 formal-matrix originals have current hash-bound OPEN reviews. The separate Home/zoom diagnostic passes 12/12 actual-JVM cases with 18 reviewed originals. Integrated confirmation adds twelve reviewed array originals and two reviewed quality originals, restoring narrow array values and quieter floor hierarchy. Actual Cinematic executes on the hardware GPU; matte-looking caps, dense direct routes, blank simplified context and Interactive reflection quality remain open. [Source boundaries, regressions and evidence](migration/home-readability-and-matrix-review.md).
+
 Current convergence, 2026-11-19: the root reviews all 12 fresh original-size recursion/return captures from ten actual JVM sessions; all ten targeted viewport tests pass. Recorded signatures, amber return heading, value caption and narrow edge clearance are corrected. Short-view context text and shared material/grid/outline differences remain open. This review does not approve the pending coherent 80-session/96-capture final matrix. [Exact source boundaries, failures and validation](migration/return-follow-and-flow-cut.md).
 
 As of 2026-10-13, visual convergence remains open. Real spatial geometry, passing interaction checks and hardware-gated Cinematic behavior do not establish reference-exact finish by themselves.

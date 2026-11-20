@@ -1,5 +1,9 @@
 # Architecture
 
+Development preview qualified 2026-11-20 at source `7c172d1c`: **2,330 tests passed / 70 declared opt-in skips / zero failed**, 249 files; all eight source/build/scan checks pass. **23 browser cases pass**, zero skips/flakes, covering editing, actual Java Run/Debug, plain/Maven/Gradle projects, I/O, arrays, failures and hardware-gated Cinematic. npm audit reports zero known vulnerabilities. Original visual convergence and performance acceptance remain open. [Preview scope, source hashes, failures and checks](migration/home-readability-and-matrix-review.md).
+
+Current overview convergence, 2026-11-19: Home retains the closest-fit solver and canonical anchors while admitting readable optional context and preserving selected sparse owners. A QA-only observation exposes the existing canonical-face metric for useful semantic-zoom comparison poses. Floor grid coverage is centralized; runtime, provenance, history and LOD contracts remain unchanged. [Source boundaries, regressions and evidence](migration/home-readability-and-matrix-review.md).
+
 Current convergence source `38dedb9b`, 2026-11-19: repeated plans share one evaluated immutable Flow cut; recorded return framing and caption clearance use actual graph-proven endpoints. Missing method-signature evidence stays explicitly unavailable. Visible Source panels prepare Monaco during file restore. The retired runtime display helper and unused CSS selectors are removed. Runtime schema, reduction, history, graph identities and instrumentation remain preserved. [Exact source boundaries, failures and validation](migration/return-follow-and-flow-cut.md).
 
 Current implementation, 2026-10-18. Whole-product convergence, presentation-memory approval and legacy removal are still open. This is an implementation record, not a completed milestone claim.

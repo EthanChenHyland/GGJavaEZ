@@ -180,7 +180,7 @@ export async function captureComparison(page:Page,request:APIRequestContext,stat
  await page.evaluate(async()=>{await Promise.all(document.getAnimations().filter(animation=>animation.playState==='running'&&animation.effect instanceof KeyframeEffect&&animation.effect.target instanceof Element&&animation.effect.target.closest('.ide-editor-panel')).map(animation=>animation.finished.catch(()=>undefined)))})
  const observe=()=>page.evaluate(()=>{
   const qa=window.__ggjavaezQA!,world=window.__ggjavaezWorld!,scene=world.scene()
-  return{viewport:{width:innerWidth,height:innerHeight},app:qa.appState(),scene,shell:qa.shellRects(),world:qa.worldProjection()!,structuralLabels:world.structuralLabels(),runtimeHeadings:world.runtimeHeadings(),frameText:world.frameText(),ioText:world.ioText(),returnText:world.returnText(),atmosphere:world.atmosphere(),selection:qa.selection(),pose:qa.cameraPose(),plan:qa.planStats(),renderer:world.renderer(),effects:world.effects(),quality:world.quality(),prefix:{recordingId:scene.recordingId,cursor:scene.cursor,liveHead:scene.liveHead,eventId:scene.cursorEvent?.id??null}}
+  return{viewport:{width:innerWidth,height:innerHeight},app:qa.appState(),scene,shell:qa.shellRects(),world:qa.worldProjection()!,structuralLabels:world.structuralLabels(),runtimeHeadings:world.runtimeHeadings(),frameText:world.frameText(),arrayText:world.arrayText(),ioText:world.ioText(),returnText:world.returnText(),atmosphere:world.atmosphere(),selection:qa.selection(),pose:qa.cameraPose(),plan:qa.planStats(),renderer:world.renderer(),effects:world.effects(),quality:world.quality(),prefix:{recordingId:scene.recordingId,cursor:scene.cursor,liveHead:scene.liveHead,eventId:scene.cursorEvent?.id??null}}
  })
  const before=await observe(),session=(await currentSession(request))!
  expect(session?.id,'Capture belongs to the actual fixture JVM').toBe(sessionId)
@@ -225,6 +225,15 @@ export async function captureComparison(page:Page,request:APIRequestContext,stat
   if(!heading?.visible||heading.minimumFontPixels<12||!inside(heading.bounds))misses.push('The amber RETURNS heading is not readable inside the Safe Frame')
   if(!before.returnText.some(label=>label.kind==='value'&&label.opacity>0&&label.fontPixels>=12))misses.push('The recorded return value has no readable glyphs')
   if(!before.structuralLabels.some(label=>label.kind==='return'&&label.visible&&inside(label.bounds)))misses.push('The recorded return caption is outside the Safe Frame')
+ }
+ if(state.id==='array'||state.id==='array-operation'){
+  const array=Object.values(before.scene.entities).find(node=>node.kind==='array'&&node.componentType==='int'&&node.length===5)
+  if(!array||array.kind!=='array')misses.push('The actual five-cell integer array is missing')
+  else for(const cell of array.cells)for(const kind of ['index','value'] as const){
+   const label=before.arrayText.find(label=>label.entityId===array.id&&label.slotId===cell.slotId&&label.kind===kind)
+   if(!label||label.opacity<=0||label.fontPixels<11||!label.bounds||label.bounds.width<=0||label.bounds.height<=0)misses.push(`Captured array ${cell.index} ${kind} has no readable glyphs`)
+   if(kind==='value'&&label?.text!==cell.value.text)misses.push(`Array ${cell.index} label differs from its captured value`)
+  }
  }
  if(state.id==='io')for(const io of before.scene.io){
   const label=before.ioText.find(label=>label.channel===io.id),preview=ioPortPreview(io)
