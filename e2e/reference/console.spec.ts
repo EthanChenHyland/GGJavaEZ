@@ -3,6 +3,7 @@ import { expect, test } from '@playwright/test'
 import { writeFile } from 'node:fs/promises'
 import { browserErrors, currentSession } from './harness'
 import type {} from './fixtures/console'
+import {fitWorldText} from '../../src/render/text/textSystem'
 const ownedConsoleProjects=new Set<string>()
 test.afterEach(async({request})=>{const session=await currentSession(request);if(session&&ownedConsoleProjects.has(session.projectId)&&['BUILDING','STARTING','RUNNING','WAITING_FOR_INPUT','PAUSED'].includes(session.phase))expect((await request.post(`/api/execution/${session.id}/stop`,{data:{}})).ok()).toBe(true)})
 
@@ -116,8 +117,14 @@ for (const viewport of [{ width: 1440, height: 900 }, { width: 760, height: 900 
   await page.evaluate(()=>window.__ggjavaezWorld!.ready())
   const worldBefore=await page.evaluate(()=>({cursor:window.__ggjavaezWorld!.scene().cursor,recording:window.__ggjavaezWorld!.scene().recordingId,pose:window.__ggjavaezQA!.cameraPose(),selection:window.__ggjavaezQA!.selection(),io:window.__ggjavaezWorld!.scene().io}))
   expect(worldBefore.io.map(channel=>channel.id).sort()).toEqual(['stderr','stdin','stdout'])
-  const warning = await page.evaluate(()=>window.__ggjavaezWorld!.runtimeHeadings().find(heading=>heading.entityId==='stderr'))
-  expect(warning?.text).toMatch(/^⚠ stderr(?: · |\n)1$/)
+  const warning = await page.evaluate(()=>({port:window.__ggjavaezWorld!.scene().io.find(port=>port.id==='stderr'),labels:window.__ggjavaezWorld!.ioText().filter(label=>label.channel==='stderr')}))
+  expect(warning.port).toMatchObject({id:'stderr',lines:1,preview:'warning only'})
+  expect(warning.labels).toHaveLength(1)
+  const preview=fitWorldText('⚠ warning only',warning.port!.anchor.size[0]-.24,.32,500,0,Infinity,'end')
+  expect(warning.labels[0].text).toBe(`1\n${preview}`)
+  expect(warning.labels[0].opacity).toBeGreaterThan(0)
+  expect(warning.labels[0].bounds?.width).toBeGreaterThan(0)
+  expect(warning.labels[0].bounds?.height).toBeGreaterThan(0)
   for(const channel of worldBefore.io){
     // Exercise the real CameraRig intent/recovery path. This is a QA pose
     // request into observed geometry, not a claim of native pointer input.

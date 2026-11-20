@@ -1,7 +1,8 @@
 import {expect,test} from '@playwright/test'
 import {PerspectiveCamera,Vector3} from 'three'
 import {writeFile} from 'node:fs/promises'
-import {browserErrors,focusSelection,home,ready,runFixture,selectEntity,stopOwnedSession} from './harness'
+import {pickTortureEntity} from './tortureNavigation'
+import {browserErrors,focusSelection,home,ready,runFixture,stopOwnedSession} from './harness'
 test.afterEach(async({request})=>stopOwnedSession(request))
 for(const kind of ['reference','primitive']as const)for(const viewport of[{width:1440,height:900},{width:760,height:900}])test(`actual ${kind} value inset selects its captured slot and preserves Focus ${viewport.width}x${viewport.height}`,async({page,request})=>{
  const errors=browserErrors(page);await page.setViewportSize(viewport)
@@ -14,7 +15,7 @@ for(const kind of ['reference','primitive']as const)for(const viewport of[{width
   }
   throw new Error(`Actual execution has no project-owned ${kind} field`)
  },kind)
- await selectEntity(page,target.ownerId);await focusSelection(page);await ready(page)
+ await pickTortureEntity(page,target.ownerId);await focusSelection(page);await ready(page)
  const before=await page.evaluate(async target=>{
   const columnsPath='/src/render/text/faceTypography.ts',rowsPath='/src/world/faceRows.ts'
   const {faceRowColumns}=await import(columnsPath),{faceRows,faceRowPort}=await import(rowsPath)

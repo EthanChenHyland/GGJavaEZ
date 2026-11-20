@@ -1,6 +1,7 @@
 import {expect,test,type Page} from '@playwright/test'
 import {writeFile} from 'node:fs/promises'
-import {browserErrors,runFixture,home,selectEntity,focusSelection,ready,stopOwnedSession} from './harness'
+import {pickTortureEntity} from './tortureNavigation'
+import {browserErrors,runFixture,home,focusSelection,ready,stopOwnedSession} from './harness'
 
 test.describe.configure({timeout:90000})
 test.afterEach(async({request})=>stopOwnedSession(request))
@@ -42,7 +43,7 @@ for(const viewport of[{width:1440,height:900},{width:760,height:900}])test(`actu
  })
  const captures=[]
  for(const[kind,targetId]of[['object',targets.objectId],['frame',targets.frameId]]as const){
-  await home(page);await selectEntity(page,targetId);await focusSelection(page);await ready(page)
+  await home(page);await pickTortureEntity(page,targetId);await focusSelection(page);await ready(page)
   const before=await observation(page),beforeCounts=checkMask(before,targetId)
   expect(beforeCounts.directReferences).toBeGreaterThan(0);expect(beforeCounts.outsideCalls).toBeGreaterThan(0)
   if(kind==='object')expect(beforeCounts.outsideReferences).toBeGreaterThan(0)

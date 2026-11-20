@@ -12,6 +12,13 @@ export async function far(page:Page){
   await page.waitForTimeout(210);await page.keyboard.press('-');await ready(page)
   observations.push(await page.evaluate(()=>({pose:window.__ggjavaezQA!.cameraPose(),detail:window.__ggjavaezWorld!.plan().detailLevel,focus:window.__ggjavaezQA!.focusTarget()})))
  }
+ // A tall compact scene can reach its permitted dolly limit before FAR.
+ // Native orbit also changes the measured projected face height. Preserve the
+ // real FAR assertion and the production limits/LOD thresholds below.
+ for(let index=0;index<14&&await page.evaluate(()=>window.__ggjavaezWorld!.plan().detailLevel!=='FAR');index++){
+  await page.waitForTimeout(210);await page.keyboard.press('ArrowUp');await ready(page)
+  observations.push(await page.evaluate(()=>({input:'orbit-up',pose:window.__ggjavaezQA!.cameraPose(),detail:window.__ggjavaezWorld!.plan().detailLevel,focus:window.__ggjavaezQA!.focusTarget()})))
+ }
  if(await page.evaluate(()=>window.__ggjavaezWorld!.plan().detailLevel!=='FAR')){
   const geometry=await page.evaluate(()=>({shell:window.__ggjavaezQA!.shellRects(),entities:Object.values(window.__ggjavaezWorld!.scene().entities).map(node=>({id:node.id,kind:node.kind,anchor:node.anchor})),clusters:window.__ggjavaezWorld!.plan().clusters}))
   const path=test.info().outputPath('far-native-observations.json')

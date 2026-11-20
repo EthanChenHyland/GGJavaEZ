@@ -429,7 +429,12 @@ export function useWorkspace(recordingViewer = false) {
     // Opening the saved workspace needs only its validated summary. A growing
     // catalog must not hold source restoration behind every other project.
     const generation = workspaceGeneration.current, savedId = localStorage.getItem('ggjavaez:project'), catalog = bridge.projects()
-    void catalog.then(items => { if (alive) setProjects(items) }, error => { if (alive) fail(error) })
+    // This request can finish after a local import or validated saved-project
+    // lookup. An older snapshot must retain those independently known summaries.
+    void catalog.then(items => { if (alive) setProjects(known => {
+      const ids = new Set(items.map(item => item.id))
+      return [...items, ...known.filter(item => !ids.has(item.id))]
+    }) }, error => { if (alive) fail(error) })
     const selected = savedId ? bridge.project(savedId).catch(() => catalog.then(items => items.find(item => item.id === savedId))) : Promise.resolve(undefined)
     const health = bridge.health().then(value => {
       if (alive) { setJdk(value.jdk); setJdkInput(value.jdk.home ?? '') }
@@ -1167,7 +1172,7 @@ export function useWorkspace(recordingViewer = false) {
     if (projectDialog.kind !== 'project') return
     return action(async () => {
       const next = await bridge.createProject(projectDialog.value.trim())
-      setProjects(await bridge.projects())
+      setProjects(items => items.some(item => item.id === next.id) ? items : [...items, next])
       setProjectDialog(null)
       requestDecision('opening the new project', tabsRef.current.map((tab) => tab.path), () => switchProject(next.id))
     })
@@ -1189,7 +1194,9 @@ export function useWorkspace(recordingViewer = false) {
     const root = sources[0].path.split('/')[0]
     const normalized = sources.map((file) => ({ ...file, path: file.path.startsWith(`${root}/`) ? file.path.slice(root.length + 1) : file.path }))
     const created = await bridge.importProject(root || 'Imported Java', normalized)
-    setProjects(await bridge.projects())
+    // Import already returns the persisted summary. Opening this project must
+    // not wait for an unrelated full-catalog filesystem scan.
+    setProjects(items => items.some(item => item.id === created.id) ? items : [...items, created])
     requestDecision('opening the imported project', tabsRef.current.map((tab) => tab.path), () => switchProject(created.id))
   })
   const openDiagnostic = (item: CompileDiagnostic) => invoke('file.open', { location: item.location }, item.location.path)

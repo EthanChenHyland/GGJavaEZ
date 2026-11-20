@@ -3,6 +3,7 @@ import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import type {ExecutionSession} from '../src/execution/contracts'
 import {currentSession,focusSelection,home,ready,seekCursor,selectEntity} from './reference/harness'
+import {pickTortureEntity} from './reference/tortureNavigation'
 
 const output = `${process.env.VJ_QA_OUTPUT_ROOT ?? '.ggjavaez/qa/reference-exact'}/coverage`
 const cases = [
@@ -87,7 +88,10 @@ for (const [view, fixture, preferred] of cases) test(`Phase 4 ${view}: real proj
    const offered=await page.getByRole('listbox',{name:'Runtime entities',exact:true}).getByRole('option').evaluateAll(nodes=>nodes.map(node=>decodeURIComponent(node.id.slice('world-entity-'.length))))
    const actualCell=offered.find(id=>id.startsWith(`${chosen!.id}:element:`));expect(actualCell,'Native catalog offers a real represented array cell').toBeDefined();selectedId=actualCell!
   }
-  await selectEntity(page,selectedId)
+  // A complete scene inventory can include objects outside Home framing.
+  // Reach the same recorded identity through native exploration, not a setter.
+  if(chosen!.kind==='array')await selectEntity(page,selectedId)
+  else await pickTortureEntity(page,selectedId)
   expect(await page.evaluate(()=>window.__ggjavaezQA!.selection()?.id)).toBe(selectedId)
   const inspector=page.getByRole('complementary',{name:'Selection inspector',exact:true});await expect(inspector).toBeVisible()
   if(view==='statics')await expect(inspector).toContainText('static ·')
