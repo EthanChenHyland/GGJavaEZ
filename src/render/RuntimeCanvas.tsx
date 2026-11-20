@@ -20,6 +20,7 @@ import type {} from '../qa/worldObservation';
 import { SolidBatch,solidsInSnapshot } from './SolidBatch';
 import { ConnectorTooltip,InteractiveConnectors } from './ConnectorInteraction';
 import {accessibleEntities,type AccessibleEntity} from '../interaction/accessibleEntities';
+import {nextAccessibleEntity,type AccessibleCursor} from '../interaction/accessibleNavigation';
 import { QualityRuntime } from './quality/QualityRuntime';
 import { useQualityStore } from './quality/qualityStore';
 import {MotionLayer,motionReadiness} from './MotionLayer';
@@ -290,6 +291,16 @@ export function RuntimeCanvas({ snapshot, safeFrame,focusContentFrame,inspectorR
         return focused?window?.mapping.get(focused)?.anchor??null:null;
     },[focusNode,plan.cellWindows]);
     const activeIndex=accessible.findIndex(item=>item.id===selection?.id);
+    const catalogCursor=useRef<{cameraRevision:number;value:AccessibleCursor}|null>(null);
+    const stepCatalog=(direction:-1|1,clamp:boolean)=>{
+        const cameraRevision=useCameraStore.getState().intentRevision,previous=catalogCursor.current;
+        const next=nextAccessibleEntity({items:accessible,selectionId:selection?.id??null,
+            remembered:previous?.cameraRevision===cameraRevision?previous.value:null,
+            recordingId:scene.recordingId,cursor:scene.cursor,direction,clamp});
+        if(!next)return false;
+        catalogCursor.current={cameraRevision,value:{recordingId:scene.recordingId,cursor:scene.cursor,item:next}};
+        onSelect(next.selection);list.current?.focus();return true;
+    };
     const worldElement=useRef<HTMLDivElement>(null)
     const input = useRef<CameraInput | null>(null), pointer = useRef<{
         x: number;
@@ -313,8 +324,8 @@ export function RuntimeCanvas({ snapshot, safeFrame,focusContentFrame,inspectorR
         if(distance>4)moved.current=true;
     }} onPointerUpCapture={() => { pointer.current = null; }} onPointerCancelCapture={() => {pointer.current=null}} onKeyDown={event => {
             if(event.target!==event.currentTarget&&event.target!==list.current)return;
-            if(event.key==='Tab'&&accessible.length){const index=activeIndex+(event.shiftKey?-1:1),next=accessible[index];if(next){event.preventDefault();onSelect(next.selection);list.current?.focus()}return}
-            if(event.target===list.current&&event.key.startsWith('Arrow')){event.preventDefault();const index=Math.min(accessible.length-1,Math.max(0,activeIndex+(event.key==='ArrowUp'||event.key==='ArrowLeft'?-1:1)));if(accessible[index])onSelect(accessible[index].selection);return}
+            if(event.key==='Tab'&&accessible.length){if(stepCatalog(event.shiftKey?-1:1,false))event.preventDefault();return}
+            if(event.target===list.current&&event.key.startsWith('Arrow')){event.preventDefault();stepCatalog(event.key==='ArrowUp'||event.key==='ArrowLeft'?-1:1,true);return}
             if (event.key === 'Escape') {
                 event.preventDefault();
                 if(useInteractionStore.getState().trace.active)useCameraStore.getState().explore(); else if (useInteractionStore.getState().focus)

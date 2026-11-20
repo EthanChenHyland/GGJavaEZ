@@ -17,9 +17,16 @@ async function selectStructure(page:Page,target:Target){
   // before this offered identity is selected; keep native keys in this list.
   for(let step=0;step<64;step++){
    await list.focus()
-   if(await list.getAttribute('aria-activedescendant')===targetId){await ready(page);expect(await page.evaluate(()=>window.__ggjavaezQA!.selection()?.id)).toBe(id);return true}
+   if(await list.getAttribute('aria-activedescendant')===targetId||await page.evaluate(()=>window.__ggjavaezQA!.selection()?.id)===id){await ready(page);expect(await page.evaluate(()=>window.__ggjavaezQA!.selection()?.id)).toBe(id);return true}
    const option=list.locator(`[id="${targetId}"]`),selected=list.locator('[aria-selected="true"]')
-   if(await option.count()!==1||await selected.count()!==1)return false
+   if(await option.count()!==1)return false
+   if(await selected.count()!==1){
+    // The selected cell can leave projection after repacking. The production
+    // spatial cursor still continues through real currently visible entries.
+    await page.keyboard.press('ArrowDown')
+    await page.evaluate(()=>new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve()))))
+    continue
+   }
    const targetIndex=Number(await option.getAttribute('aria-posinset')),position=Number(await selected.getAttribute('aria-posinset'))
    await page.keyboard.press(targetIndex<position?'ArrowUp':'ArrowDown')
    await page.evaluate(()=>new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve()))))

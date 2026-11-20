@@ -1,3 +1,5 @@
+import {loadArrayTrace} from '../examples/traces'
+import {projectTrace} from '../testing/projectTrace'
 import { expect,it } from 'vitest'
 import { generateRawTrace } from '../testing/traceGen'
 import { normalizeTrace } from '../instrumentation/normalize'
@@ -61,7 +63,7 @@ it('measures CLOSE for an explicit ownership key without rewriting the scene own
   const height=representativeFaceHeight(data.scene,projectionCamera(result!.pose,viewport),viewport)
   for(const level of ['FAR','MEDIUM','CLOSE'] as const)expect(nextDetailLevel(level,height,viewport.height)).toBe('CLOSE')
   const camera=projectionCamera(result!.pose,viewport),heading=faceHeading(data.scene.entities[result!.memberId])
-  for(const label of [heading.title,...(heading.identity?[heading.identity]:[])]){
+  for(const label of [heading.title,...(heading.identity?[heading.identity]:[]),...(heading.length?[heading.length]:[])]){
     const point=new Vector3(...label.position)
     expect(projectedFontPixels(label.size,point,camera,viewport.height)).toBeGreaterThanOrEqual(12)
     expect(projectedPlaneFontPixels(label.size,point,camera,viewport)).toBeGreaterThanOrEqual(12)
@@ -95,7 +97,7 @@ it('frames a readable actual ownership member even when its retired proxy is far
   const metric=representativeFaceHeight(data.scene,camera,viewport)
   for(const level of ['FAR','MEDIUM','CLOSE']as const)expect(nextDetailLevel(level,metric,viewport.height)).toBe('CLOSE')
   const heading=faceHeading(node)
-  for(const label of [heading.title,...(heading.identity?[heading.identity]:[])]){
+  for(const label of [heading.title,...(heading.identity?[heading.identity]:[]),...(heading.length?[heading.length]:[])]){
     const point=new Vector3(...label.position)
     expect(projectedFontPixels(label.size,point,camera,viewport.height)).toBeGreaterThanOrEqual(12)
     expect(projectedPlaneFontPixels(label.size,point,camera,viewport)).toBeGreaterThanOrEqual(12)
@@ -115,4 +117,24 @@ it('accounts a travel member once, retires its pin, and never promotes a proxy o
   expect(planPresentation({...input,clusterTravelMemberId:cluster.id})).toEqual(ordinary)
   expect(planPresentation({...input,clusterTravelMemberId:'absent-slot'})).toEqual(ordinary)
   expect(planPresentation(input,plan)).toEqual({...ordinary,revision:plan.revision+1});expect(JSON.stringify(scene)).toBe(before)
+})
+
+it('keeps title, identity and length readable when framing an array ownership member',()=>{
+ const trace=loadArrayTrace(),projection=projectTrace(trace),scene=projection.project(trace.events.length)
+ const array=Object.values(scene.entities).find(node=>node.kind==='array')!
+ const template=catalog().cluster
+ const cluster={...template,key:{kind:'ownership' as const,value:'JDK'},members:1,memberIds:[array.id],anchor:{...template.anchor,position:[-10000,10000,-10000] as const}}
+ for(const viewport of [{width:1440,height:900},{width:760,height:900},{width:1440,height:650}]){
+  const safe={x:viewport.width*.3,y:viewport.height*.1,width:viewport.width*.65,height:viewport.height*.65}
+  const result=clusterFraming(scene,cluster,safe,viewport)
+  expect(result).not.toBeNull();expect(result!.memberId).toBe(array.id)
+  const camera=projectionCamera(result!.pose,viewport),heading=faceHeading(array)
+  expect(heading.length).not.toBeNull()
+  for(const label of [heading.title,heading.identity!,heading.length!]){
+   const point=new Vector3(...label.position)
+   expect(projectedFontPixels(label.size,point,camera,viewport.height)).toBeGreaterThanOrEqual(12)
+   expect(projectedPlaneFontPixels(label.size,point,camera,viewport)).toBeGreaterThanOrEqual(12)
+   expect(projectedPlaneFontPixels(label.size,point,camera,viewport,'x')).toBeGreaterThanOrEqual(12)
+  }
+ }
 })

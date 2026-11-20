@@ -54,7 +54,7 @@ export function clusterFraming(scene:SceneModel,cluster:PresentedCluster|undefin
       if(!points.every(point=>inside(screenPoint(point,camera,viewport),safe)))continue
       if(ownership){
         const heading=faceHeading(node)
-        if([heading.title,...(heading.identity?[heading.identity]:[])].some(label=>{
+        if([heading.title,...(heading.identity?[heading.identity]:[]),...(heading.length?[heading.length]:[])].some(label=>{
           const point=new Vector3(...label.position)
           return projectedFontPixels(label.size,point,camera,viewport.height)<12||projectedPlaneFontPixels(label.size,point,camera,viewport)<12||projectedPlaneFontPixels(label.size,point,camera,viewport,'x')<12
         }))continue

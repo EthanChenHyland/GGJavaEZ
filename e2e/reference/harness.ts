@@ -155,7 +155,10 @@ export async function selectEntity(page:Page,id:string):Promise<void>{
  const targetId=`world-entity-${encodeURIComponent(id)}`
  for(let step=0;step<64;step++){
   const active=await list.getAttribute('aria-activedescendant')
-  if(active===targetId){await ready(page);expect(await page.evaluate(()=>window.__ggjavaezQA!.selection()?.id)).toBe(id);return}
+  // A native selection may repack a virtualized cell window. Selection is
+  // the semantic result; the viewport catalog can change on that same frame.
+  const selectedId=await page.evaluate(()=>window.__ggjavaezQA!.selection()?.id)
+  if(active===targetId||selectedId===id){await ready(page);expect(await page.evaluate(()=>window.__ggjavaezQA!.selection()?.id)).toBe(id);return}
   const target=list.locator(`[id="${targetId}"]`),selected=list.locator('[aria-selected="true"]')
   const targetIndex=await target.count()?Number(await target.getAttribute('aria-posinset')):Infinity
   const selectedIndex=await selected.count()?Number(await selected.getAttribute('aria-posinset')):0
