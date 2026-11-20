@@ -82,8 +82,16 @@ export function worldSignature(run, { stripLines = false } = {}) {
     ...rest, ...(rest.type === 'EXECUTION_FACT' && stripLines ? { fact: { ...rest.fact, context: { ...rest.fact.context, source: rest.fact.context.source ? { fileId: rest.fact.context.source.fileId } : null } } } : {}), source: source ? { fileId: source.fileId, ...(stripLines ? {} : { line: source.line }) } : null,
     label: stripLines && /^Line \d+$/.test(label) ? 'Line' : label,
   }));
-  const frames = run.scene.frames.map((frame) => ({ id: frame.id, label: frame.label, status: frame.invocationStatus, slots: frame.slots.map((slot) => [slot.id, slot.name, slot.javaType, slot.value]) }));
-  const objects = run.scene.objects.map((object) => ({ id: object.id, label: object.label, fields: object.fields.map((slot) => [slot.id, slot.name, slot.value]) }));
+  // Keep every captured local/field in the semantic signature, including rows
+  // omitted by presentation budgets or collapsed collection/library faces.
+  const frames = run.scene.order.frames.map(id => {
+    const frame = run.scene.entities[id], observed = run.final.frames[id];
+    return { id, label: frame.title, status: frame.status.kind, slots: Object.values(observed.locals).map(slot => [slot.id, slot.name, slot.javaType, slot.value]) };
+  });
+  const objects = run.scene.order.objects.map(id => {
+    const object = run.scene.entities[id], observed = run.final.objects[id];
+    return { id, label: object.title, fields: Object.values(observed.fields).map(slot => [slot.id, slot.name, slot.value]) };
+  });
   const anchors = Object.fromEntries(Object.entries(run.layout.anchors).map(([id, anchor]) => [id, { position: anchor.position, size: anchor.size, ports: anchor.ports }]));
   return JSON.stringify({ exit: run.snapshot.exitCode, stdout: run.snapshot.stdout, stderr: run.snapshot.stderr.replace(/\/tmp\/\S+/g, ''), events, frames, objects, anchors, bounds: run.layout.bounds ?? null }).replace(/\/0x[0-9a-f]+/gi, '/<vm-address>');
 }

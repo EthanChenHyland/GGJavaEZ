@@ -1,0 +1,25 @@
+.shell-dialog-backdrop {position:fixed;inset:0;display:grid;place-items:center;padding:20px;background:color-mix(in srgb,var(--color-background-bottom)60%,transparent);backdrop-filter:blur(3px)}
+.shell-dialog {width:min(440px,100%);max-height:calc(100dvh - 40px);padding:24px;overflow:auto;color:var(--color-ui-text);font:400 13px/1.5 Inter,system-ui,sans-serif}
+.shell-dialog h2 {margin:0 0 12px;font-size:20px;font-weight:600}
+.shell-dialog p {color:var(--color-ui-text-secondary);margin:8px 0 16px;overflow-wrap:anywhere}
+.shell-dialog [role=alert] {color:var(--color-semantic-exception)}
+.shell-dialog label {display:grid;gap:6px;margin:14px 0;color:var(--color-ui-text-secondary)}
+.shell-dialog :is(input,textarea,select) {box-sizing:border-box;width:100%;min-width:0;padding:8px;border:1px solid var(--color-ui-glass-border);border-radius:6px;background:var(--color-ui-glass-fill);color:var(--color-ui-text);font:400 13px/1.5 'JetBrains Mono',monospace}
+.shell-dialog textarea {resize:vertical;min-height:48px}
+.shell-dialog small {display:block;margin:12px 0;color:var(--color-ui-text-muted);font-size:12px}
+.shell-dialog button {font:inherit;cursor:pointer;min-height:32px;padding:6px 12px;border:1px solid var(--color-ui-glass-border);border-radius:6px;background:var(--color-ui-glass-fill);color:var(--color-ui-text)}
+.shell-dialog button:disabled {opacity:.45;cursor:default}
+.shell-dialog .shell-dialog-primary {background:var(--color-semantic-execution);border-color:var(--color-semantic-execution);color:var(--color-background-bottom);font-weight:600}
+.shell-dialog-actions {display:flex;justify-content:flex-end;flex-wrap:wrap;gap:8px;margin-top:20px}
+.shell-dialog :is(button,input,textarea,select,a):focus-visible,.shell-dialog:focus-visible {outline:2px solid var(--color-ui-focus-ring);outline-offset:3px;box-shadow:0 0 0 5px var(--color-ui-focus-halo)}
+.shell-launch-dialog {width:min(600px,100%)}
+.shell-command-menu {position:fixed;width:max-content;display:flex;flex-direction:column;gap:2px;min-width:210px;max-width:calc(100vw - 16px);max-height:calc(100dvh - 16px);padding:6px;overflow:auto;color:var(--color-ui-text);font:400 13px/1.4 Inter,system-ui,sans-serif}
+.shell-command-menu button {display:flex;justify-content:space-between;align-items:center;gap:20px;min-height:32px;padding:6px 8px;text-align:left;border:0;border-radius:4px;background:transparent;color:inherit;font:inherit;cursor:pointer}
+.shell-command-menu button[aria-disabled=true] {color:var(--color-ui-text-muted);cursor:default}
+.shell-command-menu button:hover:not([aria-disabled=true]) {background:var(--color-ui-mode-active-fill)}
+.shell-command-menu small {display:block;max-width:300px;color:var(--color-ui-text-secondary);font-size:12px}
+.shell-command-menu kbd {color:var(--color-ui-text-muted);font:inherit;font-size:12px}
+.shell-command-tooltip {position:fixed;z-index:100;max-width:min(420px,calc(100vw - 16px));padding:7px 10px;overflow-wrap:anywhere;color:var(--color-ui-text);font:400 12px/1.4 Inter,system-ui,sans-serif;pointer-events:none}
+.shell-command-menu button:focus-visible,.shell-command-menu:focus-visible {outline:2px solid var(--color-ui-focus-ring);outline-offset:-2px}
+
+.ide-shell :is(button,select,a):focus-visible{outline:2px solid var(--color-ui-focus-ring);outline-offset:2px}

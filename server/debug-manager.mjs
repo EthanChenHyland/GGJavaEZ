@@ -95,7 +95,7 @@ export class DebugManager {
       const controlled = request.control !== false;
       const dto = { sessionId: randomUUID(), projectId: request.projectId, revision: 0, status: 'starting', pause: null,
         breakpoints: [], rawEvents: [], transportVersion: 1, rawEventCount: 0, rawEventCounts: {}, sourceManifest: clone(request.sourceManifest), build: clone(request.build),
-        stdout: '', stderr: '', recording: fullRecording(), waitingForInput: false, outputTruncated: false, exitCode: null, terminalStatus: null, diagnostic: null,
+        stdout: '', stderr: '', recording: fullRecording(), waitingForInput: false, outputTruncated: false, exitCode: null, durationMs: null, terminalStatus: null, diagnostic: null,
         coverage: { coveredClasses: [...prepared.coveredClasses], transformInfo: clone(prepared.transformInfo) } };
       let run;
       try { run = { dto, prepared, request, child: null, server: null, socket: null, connected: false,
@@ -103,7 +103,7 @@ export class DebugManager {
         reader: new CaptureReader(prepared), archive: new OutputArchive(), outputBytes: 0, refreshPromise: null, polling: false,
         messageQueue: Promise.resolve(), commands: Promise.resolve(), activeClockEnabled: true,
         pending: new Map(), listeners: new Map(), activeMs: 0, activeSince: performance.now(),
-        finishing: false, closing: false, stopRequested: false, failureStatus: null, timer: null, hardTimer: null,
+        finishing: false, closing: false, stopRequested: false, launchFailed: false, failureStatus: null, timer: null, hardTimer: null,
         token: randomBytes(32).toString('hex'), candidates: new Set(), queuedMessages: 0, processStartedAt: 0 }; }
       catch (failure) {
         // Archive initialization is observer preparation, before any application child.
@@ -152,10 +152,18 @@ export class DebugManager {
           stream.on('end', () => this.#output(run, name, decoder.end()));
         }
         run.child.stdin.on('error', () => {});
-        run.child.once('error', (failure) => this.#fail(run, failure.message));
+        run.child.once('error', (failure) => {
+          if (!run.child.pid) run.launchFailed = true;
+          this.#fail(run, failure.message);
+        });
         // Kill descendants immediately on parent exit so inherited pipes cannot prevent close.
-        run.child.once('exit', () => { if (process.platform !== 'win32') this.#signal(run, 'SIGKILL'); });
+        const recordExit = () => { dto.durationMs ??= Math.round(performance.now() - run.processStartedAt); };
+        run.child.once('exit', () => {
+          recordExit();
+          if (process.platform !== 'win32') this.#signal(run, 'SIGKILL');
+        });
         run.child.once('close', (code) => {
+          if (!run.launchFailed) recordExit();
           run.closing = true;
           run.messageQueue.finally(() => this.#finish(run, code)).catch(() => {});
         });
@@ -272,6 +280,9 @@ export class DebugManager {
       || !Number.isSafeInteger(message.line) || message.line < 1
       || !Number.isSafeInteger(message.rawEventCount) || message.rawEventCount < 0) throw new Error('Invalid debugger pause');
     await this.#refresh(run);
+    // The first await can join a polling read started before the JVM flushed
+    // this pause. Read once after that read settles before judging its watermark.
+    if (run.dto.rawEventCount !== message.rawEventCount && run.dto.recording.state === 'FULL') await this.#refresh(run);
     if (run.dto.rawEventCount !== message.rawEventCount) {
       if (run.dto.recording.state === 'FULL') this.#stopObservation(run, 'Pause watermark does not match flushed Recorder prefix');
       // Keep the actual control watermark; an older/malformed observer prefix may be shorter.

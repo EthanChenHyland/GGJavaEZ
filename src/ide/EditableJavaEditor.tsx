@@ -1,6 +1,6 @@
-import { useEffect, useRef } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef } from 'react'
 import Editor, { type OnMount } from '@monaco-editor/react'
-import type { editor } from 'monaco-editor'
+import type { editor, IDisposable } from 'monaco-editor'
 import * as monacoApi from 'monaco-editor/editor/editor.api.js'
 import type { CompileDiagnostic, SourceLocation } from './contracts'
 import type { ResolvedBreakpoint } from '../debugger/contracts'
@@ -9,8 +9,12 @@ import { documentUri } from '../language/protocol'
 import { isApplyingWorkspaceEdit } from '../language/workspaceEdit'
 import { ideShortcuts } from './shortcuts'
 import '../ui/monacoSetup'
+import { bindMonacoSourceScroll } from '../shell/source/monacoSourceScroll'
+import type { SourceMark } from '../shell/source/sourceScrollPolicy'
+import {sourceDecorations} from '../shell/source/sourceDecorations'
+import {rememberEditableView,restoreEditableView,publishEditableDraft} from '../workspace/editorModels'
 
-export function EditableJavaEditor({ projectId, path, value, onChange, diagnostics, navigate, onSave, executingLine = null, pausedLine = null, breakpoints = [], onToggleBreakpoint }: {
+export function EditableJavaEditor({ projectId, path, value, onChange, diagnostics, navigate, onSave, executingLine = null, pausedLine = null, breakpoints = [], onToggleBreakpoint, sourceMark='running', sourceKey='', pauseId=null, exceptionLine=null, viewportHeight }: {
   projectId: string
   path: string
   value: string
@@ -22,32 +26,60 @@ export function EditableJavaEditor({ projectId, path, value, onChange, diagnosti
   pausedLine?: number | null
   breakpoints?: ResolvedBreakpoint[]
   onToggleBreakpoint?: (line: number) => void
+  sourceMark?: SourceMark
+  sourceKey?: string
+  pauseId?: string | null
+  exceptionLine?:number|null
+  viewportHeight: number
 }) {
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null)
+  const draftRef = useRef({uri:documentUri(projectId,path),value,onChange})
+  draftRef.current={uri:documentUri(projectId,path),value,onChange}
+  const changeDraft=useCallback((next:string|undefined)=>{
+    const current=draftRef.current
+    if(!isApplyingWorkspaceEdit())publishEditableDraft(editorRef.current,current.uri,current.value,next??'',current.onChange)
+  },[])
   const decorationsRef = useRef<editor.IEditorDecorationsCollection | null>(null)
   const breakpointDecorations = useRef<editor.IEditorDecorationsCollection | null>(null)
   const breakpointRef = useRef(breakpoints)
   breakpointRef.current = breakpoints
   const toggleRef = useRef(onToggleBreakpoint)
   toggleRef.current = onToggleBreakpoint
-  const pausedRef = useRef(pausedLine)
-  pausedRef.current = pausedLine
+  const listenersRef = useRef<IDisposable[]>([])
+  const scrollRef = useRef<ReturnType<typeof bindMonacoSourceScroll> | null>(null)
+  const sourceRef = useRef({ line: pausedLine ?? executingLine, mark: sourceMark, key: sourceKey, pauseId,exceptionLine })
+  sourceRef.current = { line: pausedLine ?? executingLine, mark: sourceMark, key: sourceKey, pauseId,exceptionLine }
+  const applyCurrentLine = useCallback(() => {
+    const instance = editorRef.current
+    if(!instance)return
+    const source=sourceRef.current,count=instance.getModel()?.getLineCount()??0
+    const line=source.line&&source.line>=1&&source.line<=count?source.line:null,mark=source.mark
+    decorationsRef.current?.set(sourceDecorations(line,mark,source.exceptionLine,count))
+    scrollRef.current?.sync({mark,line,key:`${source.key}:${pathRef.current}:${line}`},source.pauseId)
+  }, [])
+  const clearEditorBindings = useCallback(() => {
+    scrollRef.current?.dispose();scrollRef.current=null
+    listenersRef.current.forEach(listener=>listener.dispose());listenersRef.current=[]
+    decorationsRef.current?.clear();decorationsRef.current=null
+    breakpointDecorations.current?.clear();breakpointDecorations.current=null
+    editorRef.current=null
+  }, [])
   const showBreakpoints = () => breakpointDecorations.current?.set(breakpointRef.current.filter((point) => point.fileId === pathRef.current).map((point) => ({
     range: { startLineNumber: point.line, endLineNumber: point.line, startColumn: 1, endColumn: 1 },
     options: { glyphMarginClassName: point.status === 'verified' || point.status === 'pending' ? 'debug-breakpoint' : 'debug-breakpoint-unverified', glyphMarginHoverMessage: { value: point.reason ?? `Breakpoint · line ${point.line}` } },
   })))
   const pathRef = useRef(path)
   pathRef.current = path
-  const executionRef = useRef(executingLine)
-  executionRef.current = executingLine
   const saveRef = useRef(onSave)
   saveRef.current = onSave
   const navigationRef = useRef(navigate)
   navigationRef.current = navigate
+  const consumedNavigation=useRef<SourceLocation|null>(null)
   const diagnosticsRef = useRef(diagnostics)
   diagnosticsRef.current = diagnostics
   const showLocation = (instance: editor.IStandaloneCodeEditor, location: SourceLocation | null) => {
-    if (!location || location.path !== pathRef.current) return
+    if (!location || location.path !== pathRef.current || consumedNavigation.current===location) return
+    consumedNavigation.current=location
     instance.setPosition({ lineNumber: location.line, column: location.column ?? 1 })
     instance.revealLineInCenter(location.line)
     instance.focus()
@@ -66,25 +98,19 @@ export function EditableJavaEditor({ projectId, path, value, onChange, diagnosti
     })))
   }
   const onMount: OnMount = (instance, monaco) => {
+    clearEditorBindings()
     editorRef.current = instance
+    restoreEditableView(instance,projectId)
+    listenersRef.current.push(instance.onDidChangeModel(()=>restoreEditableView(instance,projectId)))
     decorationsRef.current = instance.createDecorationsCollection()
     breakpointDecorations.current = instance.createDecorationsCollection()
+    scrollRef.current = bindMonacoSourceScroll(instance, monaco)
     showBreakpoints()
-    instance.onMouseDown((event) => {
+    listenersRef.current.push(instance.onMouseDown((event) => {
       if (event.target.type === monaco.editor.MouseTargetType.GUTTER_GLYPH_MARGIN && event.target.position) toggleRef.current?.(event.target.position.lineNumber)
-    })
-    if (executionRef.current && executionRef.current > 0) {
-      decorationsRef.current.set([{ range: { startLineNumber: executionRef.current, endLineNumber: executionRef.current, startColumn: 1, endColumn: 1 }, options: { isWholeLine: true, className: pausedRef.current ? 'debug-paused-line' : 'executing-line', linesDecorationsClassName: pausedRef.current ? 'debug-paused-gutter' : 'executing-gutter' } }])
-      instance.revealLineInCenter(executionRef.current)
-    }
-    // The IDE stacks panels at narrow widths. Monaco can keep its old scroll position
-    // when that resize leaves only a few source lines visible.
-    instance.onDidLayoutChange(() => {
-      const line = pausedRef.current ?? executionRef.current
-      if (line && line > 0) instance.revealLineInCenterIfOutsideViewport(line)
-    })
+    }),instance.onDidChangeModelContent(applyCurrentLine),instance.onDidDispose(clearEditorBindings))
     instance.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode[ideShortcuts.save.code], () => saveRef.current())
-    instance.addAction({
+    listenersRef.current.push(instance.addAction({
       id: 'visual-java.toggle-breakpoint',
       label: 'Toggle Breakpoint',
       keybindings: [monaco.KeyCode[ideShortcuts.breakpoint.code]],
@@ -94,15 +120,16 @@ export function EditableJavaEditor({ projectId, path, value, onChange, diagnosti
         const line = current.getPosition()?.lineNumber
         if (line) toggleRef.current?.(line)
       },
-    })
+    }))
     showLocation(instance, navigationRef.current)
     showMarkers(instance, monaco, diagnosticsRef.current)
+    applyCurrentLine()
   }
   useEffect(() => {
-    const line = pausedLine ?? executingLine
-    decorationsRef.current?.set(line && line > 0 ? [{ range: { startLineNumber: line, endLineNumber: line, startColumn: 1, endColumn: 1 }, options: { isWholeLine: true, className: pausedLine ? 'debug-paused-line' : 'executing-line', linesDecorationsClassName: pausedLine ? 'debug-paused-gutter' : 'executing-gutter' } }] : [])
-    if (line && line > 0) editorRef.current?.revealLineInCenter(line)
-  }, [executingLine, pausedLine, path])
+    applyCurrentLine()
+  }, [executingLine, pausedLine, path, sourceMark, sourceKey, pauseId, exceptionLine,applyCurrentLine])
+  useEffect(() => clearEditorBindings, [clearEditorBindings])
+  useLayoutEffect(()=>()=>{const instance=editorRef.current;if(instance)rememberEditableView(instance,projectId)},[projectId,path])
   useEffect(() => { showBreakpoints() }, [breakpoints, path])
   useEffect(() => {
     const instance = editorRef.current
@@ -119,16 +146,16 @@ export function EditableJavaEditor({ projectId, path, value, onChange, diagnosti
     language={path.endsWith('.java') ? 'java' : 'plaintext'}
     theme="visual-java"
     value={value}
-    onChange={(next) => { if (!isApplyingWorkspaceEdit()) onChange(next ?? '') }}
+    onChange={changeDraft}
     onMount={onMount}
-    saveViewState
+    saveViewState={false}
     keepCurrentModel
     options={{
       automaticLayout: true,
       minimap: { enabled: false },
-      fontFamily: typography.code,
-      fontSize: 13,
-      lineHeight: 21,
+      fontFamily: `${typography.code.family}, SFMono-Regular, Consolas, monospace`,
+      fontSize: Math.max(12, viewportHeight*.016),
+      lineHeight: Math.max(20, viewportHeight*.029),
       lineNumbersMinChars: 3,
       glyphMargin: true,
       scrollBeyondLastLine: false,

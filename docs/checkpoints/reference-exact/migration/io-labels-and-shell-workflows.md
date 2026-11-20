@@ -1,0 +1,15 @@
+# I/O labels and existing shell workflows
+
+The existing I/O boxes carry larger Inter labels on their actual front planes. Dark ink distinguishes the label from its channel color. Each label shows the recorded channel and line count. If the combined label exceeds the face width, it uses two lines. The five actual-JVM comparisons check mounted glyph text, opacity and corners against the exact prefix count. At 760×900, the first trial measures 11.79–11.91 CSS px for `stdin · 1`, `stdout · 2` and `stderr · 1`, above the 11 px readability floor. The previous narrow capture showed the three colored boxes with hidden labels.
+
+The authored Control I/O case still loads its original recording and seeks to both sides of the first captured read and write. Its current checks tie each channel and frame slot to the exact event and recorded transition endpoints. They also require the same mounted canvas and zero drawable graph Flows for this graphless recording. Actual graph-backed I/O continues to use its separate JVM cases.
+
+The six shell workflows retain their managed Java files and assertions for command order, menu focus, keyboard navigation, clipboard values, draft preservation and on-disk contents. The updated driver verifies the published project and exact Monaco model URI. It uses the current Explorer drawer, Console drawer and workspace status surfaces. The source-collapse action is exercised in the narrow layout that provides the drawer.
+
+The first combined browser trial passes 8 of 12 cases. Three tab cases encounter the open Explorer overlay and one waits for the former Console region label. The next trial passes 10 of 12 after the driver uses the Explorer toggle and actual Console drawer. Its remaining cases wait for the former discard label and for a desktop Source collapse. Both runs retain original reports and traces under `.ggjavaez/qa/reference-exact/io-label-shell-trial/` and `io-label-shell-corrected/`.
+
+The final source `a3ab39c5bf84316d157efcf74e247c60ff791e549234d12efc5a58c399abad41` passes all 12 native cases in 100.979 seconds with no failures, skips or flakes. It includes five distinct JVM sessions, one curated recording and six managed shell workflows. Both the 760×900 and 1440×900 original captures were reviewed, and each shows the recorded counts for all three channels. Six original comparison images, both review hashes, the curated capture and the exact source inventory are under `.ggjavaez/qa/reference-exact/io-label-shell-final/`.
+
+The same 993-input source passes all eight source checks in 347.325 seconds. The default suite records 2,278 passes and 70 explicit opt-in skips. The production main entry measures 71,732 gzip bytes. The Shell's static JS closure measures 679,056 gzip bytes as a sum of separately compressed files. The Dense measurements in the preceding checkpoint belong to that checkpoint's source.
+
+The current I/O scope is visible channel and count readability. Long preview content and the 100 ms publication contract still require their own checks. Visual convergence and the remaining broader browser cases remain open.

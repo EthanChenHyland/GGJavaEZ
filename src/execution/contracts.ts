@@ -39,6 +39,8 @@ export interface ExecutionSession {
   breakpoints: ResolvedBreakpoint[]
   terminalStatus: VisualizationTerminalStatus | null
   exitCode: number | null
+  /** Monotonic JVM launch-to-exit duration. Absent on older bridge snapshots. */
+  durationMs?: number | null
   diagnostic: string | null
   failureKind: 'build' | 'launch' | 'runtime' | 'capture' | null
   /** A complete prefix is retained through stop/failure; partial recording never invents a program end marker. */

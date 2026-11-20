@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { RawTraceDelta } from '../execution/contracts'
+import type { ExecutionSession, RawTraceDelta } from '../execution/contracts'
 import { bridge, type ExecutionStream } from './client'
 
 class FakeEventSource {
@@ -14,6 +14,9 @@ class FakeEventSource {
   }
   raw(data: string) {
     if (!this.closed) for (const listener of this.listeners.get('raw') ?? []) listener({ data } as MessageEvent<string>)
+  }
+  session(data: ExecutionSession) {
+    if (!this.closed) for (const listener of this.listeners.get('session') ?? []) listener({data: JSON.stringify(data)} as MessageEvent<string>)
   }
   error() { if (!this.closed) this.onerror?.() }
   close() { this.closed = true }
@@ -231,4 +234,75 @@ describe('execution delta stream', () => {
     expect(committed).toBe(1)
     expect(onError).not.toHaveBeenCalled()
   })
+})
+
+
+function metadata(phase:ExecutionSession['phase'],count:number,revision=1):ExecutionSession{
+ return {id:sessionId,revision,projectId:'project',mainClass:'Main',kind:'run',phase,support:'FULL',supportReason:null,build:null,
+  rawEvents:[],rawEventCount:count,transportVersion:1,sourceManifest:{sources:[],classes:[]},capability:null,
+  stdout:'',stderr:'',runEvents:[],pause:null,breakpoints:[],terminalStatus:phase==='COMPLETED'?'complete':phase==='STOPPED'?'unsupported':null,exitCode:phase==='COMPLETED'?0:null,
+  diagnostic:null,failureKind:null,startedAt:'1970-01-01T00:00:00.000Z'}
+}
+describe('finished execution stream ownership',()=>{
+ it('drains the terminal recorded prefix before closing and cancels a pending reconnect',async()=>{
+  let committed=0;const gate=deferred(),onError=vi.fn()
+  const {source}=open(async delta=>{if(delta.fromSequence===0)await gate.promise;committed=delta.toSequence},()=>committed,onError)
+  source.session(metadata('COMPLETED',2));expect(source.closed).toBe(false)
+  source.raw(JSON.stringify(batch(0)));source.raw(JSON.stringify(batch(1)));await flush()
+  expect(committed).toBe(0);expect(source.closed).toBe(false)
+  source.error();await vi.advanceTimersByTimeAsync(200);expect(FakeEventSource.instances).toHaveLength(1)
+  gate.resolve();await flush();await vi.advanceTimersByTimeAsync(1000)
+  expect(committed).toBe(2);expect(source.closed).toBe(true);expect(FakeEventSource.instances).toHaveLength(1)
+  expect(vi.getTimerCount()).toBe(0);expect(onError).not.toHaveBeenCalled()
+ })
+ it.each(['COMPLETED','FAILED','STOPPED'] as const)('retires a caught-up %s stream without reconnecting',async phase=>{
+  const {source}=open(vi.fn().mockResolvedValue(undefined),()=>2,vi.fn())
+  source.session(metadata(phase,2));expect(source.closed).toBe(true)
+  source.error();await vi.advanceTimersByTimeAsync(1000);expect(FakeEventSource.instances).toHaveLength(1)
+ })
+ it.each(['RUNNING','WAITING_FOR_INPUT','PAUSED'] as const)('retains %s observation even when a partial recording is caught up',async phase=>{
+  const {source}=open(vi.fn().mockResolvedValue(undefined),()=>2,vi.fn()),session=metadata(phase,2)
+  session.recording={state:'STOPPED_LIMIT',reason:'Object observation limit reached',budget:'objects',lastRecordedSeq:1,executionContinued:true}
+  source.session(session);expect(source.closed).toBe(false)
+  source.session({...session,phase:'COMPLETED',revision:2});expect(source.closed).toBe(true)
+ })
+ it('ignores older and foreign terminal heads for retirement',()=>{
+  const {source}=open(vi.fn().mockResolvedValue(undefined),()=>0,vi.fn())
+  source.session(metadata('RUNNING',0,3));source.session(metadata('COMPLETED',0,2));expect(source.closed).toBe(false)
+  source.session({...metadata('COMPLETED',0,4),id:'another-session'});expect(source.closed).toBe(false)
+  source.session(metadata('COMPLETED',0,4));expect(source.closed).toBe(true)
+ })
+ it('uses the full snapshot length for retained sessions without a delta count',async()=>{
+  let committed=1
+  const {source}=open(async delta=>{committed=delta.toSequence},()=>committed,vi.fn()),session=metadata('COMPLETED',2)
+  delete session.rawEventCount;session.rawEvents=[...batch(0).events,...batch(1).events]
+  source.session(session);expect(source.closed).toBe(false)
+  source.raw(JSON.stringify(batch(1)));await flush();expect(committed).toBe(2);expect(source.closed).toBe(true)
+ })
+})
+
+
+it('preserves raw-error reporting and reconnect when terminal metadata arrives behind a queued bad packet',async()=>{
+ const onError=vi.fn(),onRaw=vi.fn().mockResolvedValue(undefined)
+ const {source}=open(onRaw,()=>2,onError)
+ source.raw('invalid-queued-json');source.session(metadata('COMPLETED',2));await flush()
+ expect(onError).toHaveBeenCalledOnce();expect(onRaw).not.toHaveBeenCalled()
+ await vi.advanceTimersByTimeAsync(200);expect(FakeEventSource.instances).toHaveLength(2)
+ const resumed=FakeEventSource.instances[1];expect(from(resumed)).toBe('2');expect(resumed.closed).toBe(false)
+ resumed.session(metadata('COMPLETED',2,2));expect(resumed.closed).toBe(true)
+})
+
+
+it('keeps observing a stop request until the JVM terminal status and later raw head arrive',async()=>{
+ let committed=2
+ const {source}=open(async delta=>{committed=delta.toSequence},()=>committed,vi.fn())
+ source.session({...metadata('STOPPED',2),terminalStatus:null,exitCode:null});expect(source.closed).toBe(false)
+ source.session(metadata('STOPPED',3,2));expect(source.closed).toBe(false)
+ source.raw(JSON.stringify(batch(2)));await flush();expect(committed).toBe(3);expect(source.closed).toBe(true)
+})
+
+
+it('retires a stopped legacy process with its final exit code even without a terminal-status label',()=>{
+ const {source}=open(vi.fn().mockResolvedValue(undefined),()=>2,vi.fn())
+ source.session({...metadata('STOPPED',2),terminalStatus:null,exitCode:143});expect(source.closed).toBe(true)
 })

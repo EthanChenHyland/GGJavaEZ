@@ -1,0 +1,1 @@
+Drives Runtime hero view, Close object inspection, Focus, Completed execution and Time travel using a constructor, setter, captured Strings, a List and a shared object reference. Expected output: `QTY 18`, `TAGS 3`, `LINK tools`.

@@ -529,3 +529,64 @@ test('mocked Phase 1: unknown input status still has an explicit hard safety dea
     expect(result.diagnostic).toContain('Hard process safety'); expect(result.terminalStatus).toBe('limit_exceeded');
   } finally { await f.cleanup(); }
 });
+
+// Real JVM pause records are flushed before the control message. A periodic
+// reader refresh may nevertheless have started before that flush and still be
+// pending when the message arrives. Hold that earlier read deterministically.
+test('a pause refreshes again after joining a pre-flush polling read, preserving the exact JVM watermark', async () => {
+  const f = await fixture();
+  let release;
+  try {
+    const { sessionId } = await f.manager.start(f.request);
+    await paused(f.manager, 3);
+    const run = f.manager.sessions.get(sessionId), original = run.reader.refresh.bind(run.reader);
+    let started;
+    const reading = new Promise(resolve => { started = resolve; });
+    const held = new Promise(resolve => { release = resolve; });
+    let hold = true;
+    run.reader.refresh = async final => {
+      await original(final);
+      if (hold) { hold = false; started(); await held; }
+    };
+    await reading;
+    let received;
+    const incoming = new Promise(resolve => { received = resolve; });
+    let tail = '';
+    run.socket.on('data', chunk => {
+      tail += chunk;
+      let end;
+      while ((end = tail.indexOf('\n')) >= 0) {
+        const message = JSON.parse(tail.slice(0, end)); tail = tail.slice(end + 1);
+        if (message.type === 'paused') received(message);
+      }
+    });
+    await f.manager.command(sessionId, 'stepOver');
+    const watermark = await incoming;
+    expect(watermark.line).toBe(4);
+    release();
+    const hit = await paused(f.manager, 4);
+    expect(hit.recording.state).toBe('FULL');
+    expect(hit.rawEvents).toHaveLength(watermark.rawEventCount);
+    expect(hit.rawEventCount).toBe(watermark.rawEventCount);
+    expect(hit.rawEvents.at(-1)).toMatchObject({ type: 'line', line: 4, frameId: watermark.frameId });
+    await f.manager.command(sessionId, 'stepOver');
+    const next = await paused(f.manager, 5);
+    expect(next.recording.state).toBe('FULL');
+    expect(next.rawEventCount).toBe(next.pause.rawEventCount);
+  } finally { release?.(); await f.cleanup(); }
+}, 15000);
+
+test('a genuinely inconsistent pause watermark still stops observation and retains only accepted events', async () => {
+  const f = await fixture();
+  try {
+    const { sessionId } = await f.manager.start(f.request), entry = await paused(f.manager, 3);
+    const run = f.manager.sessions.get(sessionId), count = entry.rawEventCount;
+    // Inject a malformed control boundary; no recorder event is fabricated.
+    run.socket.emit('data', JSON.stringify({v:1,type:'paused',...entry.pause,rawEventCount:count+1})+'\n');
+    const rejected = await until(f.manager, session => session?.recording.state !== 'FULL');
+    expect(rejected.recording.reason).toContain('Pause watermark does not match flushed Recorder prefix');
+    expect(rejected.pause.rawEventCount).toBe(count+1);
+    expect(rejected.rawEvents.filter(event=>event.type!=='capture_saturated')).toEqual(entry.rawEvents);
+    expect(rejected.rawEvents.every((event,index)=>event.seq===index)).toBe(true);
+  } finally { await f.cleanup(); }
+}, 15000);

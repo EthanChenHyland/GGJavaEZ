@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import type { TraceDocument } from '../contracts/runtime'
-import { layoutForTrace as createLayout } from '../app/layoutForTrace'
+import { createLayoutEngine } from './layoutEngine'
 
-describe('createLayout', () => {
+describe('canonical production layout', () => {
   it('reserves stable anchors independent of playback cursor', () => {
     const trace: TraceDocument = {
       schemaVersion: 1, demoId: 'test', sourceFiles: [], events: [
@@ -10,9 +10,15 @@ describe('createLayout', () => {
         { eventId: 'e1', seq: 1, source: null, label: 'allocate', importance: 'major', type: 'ALLOCATE_OBJECT', objectId: 'person', displayId: 17, className: 'Person', fields: [] },
       ],
     }
-    const first = createLayout(trace)
-    const second = createLayout(trace)
-    expect(first).toEqual(second)
-    expect(first.anchors.main.position[2]).not.toBe(first.anchors.person.position[2])
+    const first = createLayoutEngine(), second = createLayoutEngine()
+    first.append(trace.events); second.append(trace.events)
+    expect(JSON.stringify(first.state)).toBe(JSON.stringify(second.state))
+    expect(first.state.anchors.main.position[2]).not.toBe(first.state.anchors.person.position[2])
+    const prefix = createLayoutEngine(); prefix.append(trace.events.slice(0, 1))
+    const retained = prefix.state, saved = JSON.stringify(retained)
+    prefix.append(trace.events)
+    expect(prefix.state.anchors.main).toBe(retained.anchors.main)
+    expect(JSON.stringify(retained)).toBe(saved)
+    expect(JSON.stringify(prefix.state)).toBe(JSON.stringify(first.state))
   })
 })

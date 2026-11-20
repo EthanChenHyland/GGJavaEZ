@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { detectPlatform, formatShortcut, ideShortcuts, matchesShortcut, type Platform } from './shortcuts'
+import { commandForShortcut, detectPlatform, formatShortcut, ideShortcuts, matchesShortcut, worldEscapeCommand, type Platform, type ShortcutFocus } from './shortcuts'
+import { ideCommandDefinitions } from './commands'
 
 const key = (code: string, options: Partial<{ ctrlKey: boolean; metaKey: boolean; altKey: boolean; shiftKey: boolean; key: string }> = {}) =>
   ({ code, key: options.key ?? code, ctrlKey: false, metaKey: false, altKey: false, shiftKey: false, ...options })
@@ -48,5 +49,57 @@ describe('platform shortcut contract', () => {
     expect(formatShortcut(windowsChord, 'windows')).toBe('Ctrl+Meta+S')
     expect(matchesShortcut(key('KeyS', { ctrlKey: true, metaKey: true }), windowsChord, 'windows')).toBe(true)
     expect(matchesShortcut(key('KeyS', { ctrlKey: true }), windowsChord, 'windows')).toBe(false)
+  })
+})
+
+describe('canonical shortcut dispatch scopes', () => {
+  const definitions = Object.values(ideCommandDefinitions)
+  const world: ShortcutFocus = { world: true, editor: false, textInput: false, shellSurface: false }
+  const dispatch = (event: ReturnType<typeof key>, focus = world, platform: Platform = 'mac') => commandForShortcut(event, definitions, platform, focus)?.id
+  it.each(['mac', 'windows', 'linux'] as Platform[])('uses physical H, Alt+Shift+F and both palette chords on %s', platform => {
+    expect(dispatch(key('KeyH', { key: 'h' }), world, platform)).toBe('navigation.home')
+    expect(dispatch(key('KeyF', { key: 'Ï', altKey: true, shiftKey: true }), world, platform)).toBe('navigation.focusSelection')
+    expect(dispatch(key('F1'), world, platform)).toBe('workbench.commandPalette')
+    const primary = platform === 'mac' ? { metaKey: true } : { ctrlKey: true }
+    expect(dispatch(key('KeyP', { ...primary, shiftKey: true }), world, platform)).toBe('workbench.commandPalette')
+    expect(dispatch(key('KeyH', { shiftKey: true }), world, platform)).toBeUndefined()
+    expect(dispatch(key('KeyF'), world, platform)).toBeUndefined()
+    expect(dispatch(key('KeyT'), world, platform)).toBeUndefined()
+  })
+  it('leaves Home, bare F/T and navigation chords to focused typing and shell controls', () => {
+    for (const focus of [
+      { ...world, textInput: true }, { ...world, editor: true, textInput: true },
+      { ...world, editor: true }, { ...world, world: false }, { ...world, shellSurface: true },
+    ]) expect(dispatch(key('KeyH'), focus)).toBeUndefined()
+    for (const focus of [{ ...world, textInput: true }, { ...world, editor: true }]) {
+      expect(dispatch(key('KeyF', { altKey: true, shiftKey: true }), focus)).toBeUndefined()
+      expect(dispatch(key('KeyF'), focus)).toBeUndefined()
+      expect(dispatch(key('KeyT'), focus)).toBeUndefined()
+      expect(dispatch(key('F1'), focus)).toBe('workbench.commandPalette')
+    }
+    expect(dispatch(key('F2'), world)).toBeUndefined()
+    expect(dispatch(key('F2'), { ...world, editor: true })).toBe('java.renameSymbol')
+  })
+  it('gives Escape to source/inspector/widgets before navigation and exits Focus before Trace', () => {
+    const both = { inspectorOpen: false, focusActive: true, traceActive: true }
+    expect(worldEscapeCommand(key('Escape'), world, both)).toBe('navigation.exitFocus')
+    expect(worldEscapeCommand(key('Escape'), world, { inspectorOpen: false, focusActive: false, traceActive: true })).toBe('navigation.explore')
+    expect(worldEscapeCommand(key('Escape'), world, { inspectorOpen: false, focusActive: false, traceActive: false })).toBeNull()
+    for (const focus of [{ ...world, editor: true }, { ...world, textInput: true }, { ...world, shellSurface: true }])
+      expect(worldEscapeCommand(key('Escape'), focus, both)).toBeNull()
+    expect(worldEscapeCommand(key('Escape', { shiftKey: true }), world, both)).toBeNull()
+    expect(worldEscapeCommand(key('Escape', { ctrlKey: true }), world, both)).toBeNull()
+    expect(worldEscapeCommand(key('KeyT'), world, both)).toBeNull()
+  })
+  it('closes the Inspector only from its own focused surface, leaving World Escape to Focus and Trace', () => {
+    const state = { inspectorOpen: true, focusActive: true, traceActive: true }
+    expect(worldEscapeCommand(key('Escape'), world, state)).toBe('navigation.exitFocus')
+    expect(worldEscapeCommand(key('Escape'), { ...world, world: false, shellSurface: true,inspector:true }, state)).toBe('workbench.inspector')
+    expect(worldEscapeCommand(key('Escape'), { ...world, world: false, shellSurface: true }, state)).toBeNull()
+    expect(worldEscapeCommand(key('Escape'), world, {...state,focusActive:false})).toBe('navigation.explore')
+    expect(worldEscapeCommand(key('Escape'), world, {...state,focusActive:false,traceActive:false})).toBeNull()
+    expect(worldEscapeCommand(key('Escape'), { ...world, editor: true }, state)).toBeNull()
+    expect(worldEscapeCommand(key('Escape'), { ...world, textInput: true }, state)).toBeNull()
+    expect(worldEscapeCommand(key('Escape'), world, { ...state, inspectorOpen: false })).toBe('navigation.exitFocus')
   })
 })

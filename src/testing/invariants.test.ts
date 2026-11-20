@@ -4,9 +4,8 @@ import { loadArrayTrace, loadControlTrace, loadPersonTrace, loadRecursionTrace }
 import { normalizeTrace } from '../instrumentation/normalize'
 import { deriveSemanticTransition, transitionsForTrace } from '../motion/semanticTransition'
 import { applyEvent, createInitialState, seek, validateTrace } from '../runtime'
-import { layoutForTrace } from '../app/layoutForTrace'
-import { initialAnimationQuality } from '../app/animationQuality'
-import { buildSceneModel } from '../world/sceneModel'
+import { createQualityStore } from '../render/quality/qualityStore'
+import { projectTrace } from './projectTrace'
 import { generateRawTrace } from './traceGen'
 
 /**
@@ -16,11 +15,11 @@ import { generateRawTrace } from './traceGen'
  *   INV-4  state is a pure function of events ...... here (applyEvent fold == seek)
  *   INV-5  deterministic arbitrary scrub ........... here (random seek paths) + src/runtime/seek.test.ts
  *   INV-6  stable identities ....................... here
- *   INV-7  append-only anchors ..................... src/world/liveLayout.test.ts + tests/golden/layoutGolden.test.mjs
+ *   INV-7  append-only anchors ..................... src/world/layoutEngine.test.ts + tests/golden/layoutEngineGolden.test.mjs
  *   INV-8  no provenance/name switch ............... lint (eslint/visual-java-rules.js) + acceptance invariance harness
  *   INV-10 history retained in place ............... here
  *   INV-12 user camera input wins .................. src/navigation/arrayNavigation.test.ts:189, e2e/unified-m10 orbit
- *   INV-14 motion is presentation; High default .... here
+ *   INV-14 motion is presentation; fresh quality .... here
  *   INV-15 generic ↛ examples imports .............. tests/guardrails/eslintGuardrails.test.mjs
  *   INV-2/9/11/13/16/17 are not true today; characterized in tests/characterization or targeted by phase.
  */
@@ -101,17 +100,17 @@ describe('INV-6 stable runtime identities', () => {
 
 describe('INV-10 history is retained in place', () => {
   it.each(corpus().filter(([, trace]) => trace.capture))('%s: invocations never disappear or move, and completion only changes status', (_name, trace) => {
-    const layout = layoutForTrace(trace)
+    const projection = projectTrace(trace)
     let previous = new Map<string, string>()
     for (let cursor = 0; cursor <= trace.events.length; cursor += 3) {
-      const scene = buildSceneModel(seek(trace, cursor), layout, 'meso')
-      const now = new Map(scene.frames.map((frame) => [frame.id, JSON.stringify(frame.anchor.position)]))
+      const scene = projection.project(cursor)
+      const now = new Map(scene.order.frames.map(id => [id, JSON.stringify(scene.entities[id].anchor.position)]))
       for (const [id, position] of previous) expect(now.get(id), `frame ${id} at cursor ${cursor}`).toBe(position)
       previous = now
     }
-    const final = buildSceneModel(seek(trace, trace.events.length), layout, 'meso')
-    expect(final.frames.length).toBe(Object.keys(seek(trace, trace.events.length).frames).length)
-    expect(final.frames.every((frame) => frame.invocationStatus !== 'active')).toBe(true)
+    const final = projection.project(trace.events.length)
+    expect(final.order.frames.length).toBe(Object.keys(seek(trace, trace.events.length).frames).length)
+    expect(final.order.frames.every(id => final.entities[id].kind === 'frame' && !final.entities[id].live)).toBe(true)
   })
 })
 
@@ -130,9 +129,11 @@ describe('INV-14 motion is presentation only', () => {
     transitionsForTrace(trace)
     expect(seek(trace, trace.events.length)).toEqual(before)
   })
-  it('High motion is the fresh default; stored choices are kept', () => {
-    expect(initialAnimationQuality(null)).toBe('high')
-    expect(initialAnimationQuality('medium')).toBe('balanced')
-    expect(initialAnimationQuality('low')).toBe('low')
+  it('fresh rendering is Interactive with motion enabled, and quality changes preserve the motion preference', async () => {
+    const quality = createQualityStore()
+    expect(quality.getState()).toMatchObject({ setting: 'INTERACTIVE', active: 'INTERACTIVE', reducedMotion: { os: false, inApp: false } })
+    quality.getState().setReducedMotion(true)
+    await quality.getState().selectQuality('INTERACTIVE')
+    expect(quality.getState().reducedMotion).toEqual({ os: false, inApp: true })
   })
 })

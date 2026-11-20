@@ -1,23 +1,32 @@
 import { preload } from 'suspend-react'
+import { supportsRuntimeWebGL } from '../render/graphicsRecovery'
 
-export const runtimeFont = '/fonts/Inter.ttf'
+export const runtimeFont = '/fonts/runtime/VisualJavaInter-Regular.ttf'
+export const runtimeFonts={400:runtimeFont,500:'/fonts/runtime/VisualJavaInter-Medium.ttf',600:'/fonts/runtime/VisualJavaInter-SemiBold.ttf'} as const
 // A finite shared alphabet. Other observed glyphs still load on demand.
-export const runtimeCharacters = Array.from({ length: 95 }, (_, index) => String.fromCharCode(32 + index)).join('') + '·→—×'
+export const runtimeCharacters = Array.from({ length: 95 }, (_, index) => String.fromCharCode(32 + index)).join('') + '·→—×…⟨⟩←⚠'
 let preloadPromise: Promise<void> | undefined
 
-export function preloadRuntimeText(): void {
-  if (typeof window === 'undefined') return
+export function prepareRuntimeText(): Promise<void> | null {
+  if (preloadPromise) return preloadPromise
+  // Tokens are imported before Canvas mounts. Atlas generation also needs GL;
+  // the operational fallback must not start its worker or populate these keys.
+  if (typeof window === 'undefined' || !supportsRuntimeWebGL()) return null
   // Match both Drei cache keys: shared primitives specify characters; region
-  // headings and transient cues use the font-only key. Both await one job.
+  // headings and transient cues use the font-only key. Both await all weights.
   // Import asynchronously so the shell can paint
   // while the font worker and its bounded atlas initialize ahead of Visualize.
-  const load = () => preloadPromise ??= import('troika-three-text').then(({ preloadFont }) => new Promise<void>(resolve => {
+  return preloadPromise = import('troika-three-text').then(async ({ preloadFont }) => {
     performance.mark('visual-java:text-preload-start')
-    preloadFont({ font: runtimeFont, characters: runtimeCharacters, sdfGlyphSize: 64 }, () => {
-      performance.mark('visual-java:text-preload-ready')
-      resolve()
-    })
-  }))
+    await Promise.all(Object.values(runtimeFonts).map(font=>new Promise<void>(resolve=>preloadFont({font,characters:runtimeCharacters,sdfGlyphSize:64},resolve))))
+    performance.mark('visual-java:text-preload-ready')
+  })
+}
+
+export function preloadRuntimeText(): void {
+  const ready = prepareRuntimeText()
+  if (!ready) return
+  const load = () => ready
   preload(load, ['troika-text', runtimeFont, runtimeCharacters])
   preload(load, ['troika-text', runtimeFont, undefined])
 }

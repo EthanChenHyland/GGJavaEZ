@@ -1,0 +1,623 @@
+# Validation
+
+Development preview qualified 2026-11-20 at source `7c172d1c`: **2,330 tests passed / 70 declared opt-in skips / zero failed**, 249 files; all eight source/build/scan checks pass. **23 browser cases pass**, zero skips/flakes, covering editing, actual Java Run/Debug, plain/Maven/Gradle projects, I/O, arrays, failures and hardware-gated Cinematic. npm audit reports zero known vulnerabilities. Original visual convergence and performance acceptance remain open. [Preview scope, source hashes, failures and checks](migration/home-readability-and-matrix-review.md).
+
+Current overview integration, 2026-11-19: production types, strict reference types and lint pass; the corrected camera/floor group passes 153/153. Integrated native array/quality checks pass 12/12 with zero skips/flakes, including ten explicitly evidenced array JVMs and separately counted forensic/curated quality cases. The parent formal matrix is 80/80 actual JVMs with 96 reviewed originals. Broader final-source checks and whole-product acceptance remain separate gates. [Source boundaries, regressions and evidence](migration/home-readability-and-matrix-review.md).
+
+Current convergence source `38dedb9b`, 2026-11-19: all eight source checks pass; default tests are **2,327 passed / 70 explicit opt-in skips / 0 failed**. Acceptance **195**, prior coverage/provenance **85**, reference **7** and torture **9** cases all pass with zero skips and independently verified **47 / 50 / 7 / 9** target JVM starts. Ten targeted recursion/return browser cases pass at the separately recorded native source. Final browser, matrix, motion and performance approval remain open. [Exact source boundaries, failures and validation](migration/return-follow-and-flow-cut.md).
+
+Latest functional increment is [Array glass backplate](migration/array-backplate.md) at source `75a7d72d`, 2026-11-18. All eight source checks and 28 native cases pass. Default units record 2,285 passes and 70 explicit opt-in skips. Performance and final product acceptance remain open. The October table records its original run.
+
+Historical implementation evidence, 2026-10-18. A–G completion is not claimed. The detailed chronological record is `docs/reports/reference-exact/VALIDATION.md`; migration ledgers live beside this file in `migration/`. Final results must be refreshed on the cleaned final commit and pushed tip.
+
+| Gate | Command/evidence | Historical result |
+| --- | --- | --- |
+| Default unit/property/regression | npm test; unit-hero-home-reconciled.log | 2065 pass / 70 explicit opt-in skips / 2135 total, 214 files, 175.05 s; exit 0. |
+| Source lint | npm run lint; lint-home-cut-reconciliation.log | Pass |
+| Strict reference browser TS | npm run typecheck:reference; typecheck-home-cut-reconciliation.log | Pass |
+| Strict optional performance harness TS | tsc --project .ggjavaez/qa/reference-exact/tsconfig.perf.json; typecheck-perf-seek-profile-confirmed.log | Pass, exit 0, including extra seek profile |
+| Production typecheck/build | npm run build; build-hero-home-reconciled.log | Pass; actual main entry 71,930 gzip bytes, Monaco/Cinematic separate. Large-chunk warning preserved. |
+| Full native reconstruction | playwright test e2e/reference e2e/camera-controls.spec.ts e2e/refinement.spec.ts --reporter=list | Latest complete run: 65 passed / 17 failed / zero skips, 82 cases, 9.2 min, exit 1. Targeted reconciliation passes 13 cluster/collection/ownership, five recursive Home, six camera/playback and five Hero cases in separate runs. Fresh full confirmation required. |
+| Complete Dense native browser performance | browser-world-performance-stable-materials.json and matching log | Every stage completed, no browser errors; seek/Focus/Home budgets fail |
+| Generated actual pipeline CPU/retention | perf-command-convergence/modern-world-performance.json | 100-batch update ratio 1.091262570 passes 2×; all three 0.25 retention budgets fail; exit 1 |
+| Reference integrity | node scripts/reference/check-references.mjs | Six root/twin/baseline hashes agree; tracked/untracked ownership preserved |
+| Generic source scan | node scripts/reference/scan-generic.mjs | Pass; 14 source-scan/integrity guardrail tests pass in 593 ms |
+| Formal reference matrix/convergence | npm run qa:reference | Complete matrix at 24fcd66: 76 passed / four failed / zero skips, 80 JVM cases / 96 images, 8.9 min, exit 1. Diagnostic Hero updates do not constitute a new coherent matrix; fresh full gate and visual review required. |
+| Independent acceptance/JVM/torture | Explicit opt-in suites, expected/executed/success/skip accounting | Final current-tree exhaustive reruns required |
+
+## Evidence ownership
+
+Default opt-in skips are not counted as executed JVM tests. A browser test containing mock/isolated presentation is not counted as real-JVM execution merely because adjacent tests execute Java. Raw reports retain actual session IDs, source hashes, counts, recording completeness, exact output, failures and measurement methods. A successful process alone does not approve an incomplete matrix.
+
+The interrupted 69-case archive is `.ggjavaez/qa/reference-exact/browser-command-convergence-sleep-interrupted.log` and `browser-command-sleep-interrupted-results/`. The fresh serial run uses an owned `caffeinate -i` command wrapper, preserves the original workload/thresholds and leaves unrelated user assertions/settings untouched. Physical lid sleep remains outside that idle-sleep assertion.
+
+The complete fixed Dense browser measurement on `44f5bc2` executes all stages and exits 1 for seek/Focus/Home latency: 99.188/116.456459-ms seek p50/p95 and 167.212083/199.873084-ms command p95. Cold median 3,928.589958 ms, all five continuous windows and the 60-second soak pass. Raw prefix-reuse reports/profiles preserve all 100/50/50 samples, actual fresh JVM session and zero stage/browser errors. See `PERFORMANCE.md`; full performance approval remains incomplete.
+
+## Remaining delivery checks
+
+Legacy module/test/CSS removal, contract/token/persistence consolidation, clean-replacement guardrail, current Dense semantic/presentation memory, remaining unchanged performance limits, final original-size reference review/polish and the exhaustive final gate remain required. Semantic goldens and backend contracts remain protected; final cleanup must record their identity and map replaced presentation tests/goldens to independently reviewed successors. The final diff must exclude generated output, secrets, accidental machine-local artifacts, duplicate architecture, fixture leakage and modified/staged reference roots.
+
+Final completion requires a normal push on reference-exact-rebuild, HEAD equal to origin/reference-exact-rebuild, tracked tree clean, unchanged main baseline and protected root images. No merge or history rewrite is authorized.
+
+## Production presentation-test successors — 2026-10-13, ongoing
+
+The root migrates actual acceptance/torture/instrumentation and INV-10 geometry consumers to the production layout/projector through a test-only adapter, preserving recorder limits and semantic assertions. Identifier signatures retain every captured local and field even when faces omit them. A full initial acceptance attempt fails 72 cases because required build-tool paths are omitted and hidden JVM type display exposes VM addresses without class names; that attempt is archived. The formatter preserves the captured hidden-class name and `/0x…` suffix (also descriptor/source array forms), with canonical identity untouched. The corrected full acceptance run with Maven/Gradle paths passes **191 ordinary checks + four declared expected failures, zero skips, 195 total**, in 172.70 seconds. The complete fresh torture gate passes **9 expected / 9 executed / 9 passed / 0 skipped**, in 42.80 seconds.
+
+The root reviews the replacement presentation golden: exactly all 98 old case keys remain, all 49 metadata-mode pairs now have identical production geography, and every-case batch/append/snapshot/body/port invariants hold. New hashes intentionally replace obsolete curated/theater/Spatial 2.0 geography; semantic goldens are untouched. `presentation-goldens.md` records the retired and replacement hashes and the reviewed difference. Old `layoutGolden.*` and the unused `src/app/animationQuality.ts` are removed; the current Interactive/reduced-motion assertion replaces only the retired preference case. The retained Home/ragged cases and unchanged 3×4096 array/1000 invocation projection corpus pass; the first overly broad drawable-source expectation and its precise current face-limit correction remain documented. Five successor/layout/topology files pass 26 tests.
+
+Full defaults pass **1997 tests, 70 explicit opt-in skips, 2067 total**, in 176.31 seconds; 197 passed / seven skipped files. A later bounded hidden-type array-spelling extension passes all nine focused checks. Production typecheck/build, full source lint and strict reference-browser TypeScript pass. Vite AppRoot estimates are 1151.20 kB / 352.06 kB gzip. The actual post-build SHA-256/default-gzip artifact measurement passes Requirement 32.7: main entry 71,915 gzip bytes (limit 500,000); Monaco and Cinematic passes are separate. Entry static closure 72,343 bytes and main/Shell static closure 649,587 bytes are diagnostics, not a second invented entry budget. Network request-policy checks remain independent. Evidence: `production-build.json` and `production-build-measurement.log`.
+
+The migrated full pipeline probe passes its unchanged five sizes through 100000 requested raw events, 30 random/50 adjacent seeks per size, both full-prefix controls and all three actual Java projects, exit 0 in 16.72 seconds. Stage methods are labelled as production successors; old reports are not overwritten. The complete unchanged native suite passes **69/69** in **8.2 minutes**, exit 0; evidence: `browser-presentation-migration.log`. Broader hierarchy, legacy module/test/CSS/contracts cleanup, unchanged Dense latency/retention gates and final visual/full validation remain open; no A–G completion is claimed.
+
+
+## Recorded hierarchy and Focus convergence — 2026-10-13, ongoing
+
+The production hierarchy now indexes every required key, prefix-gated captured collection lifetimes, separate live/historical frame roles, exact residual membership, zero-node anchors, class packages and canonical method frequency with innermost ties. Optional groups expand all or nothing after pins, ranked by one-hop relevance, actual project ownership and target tile; residual cuts coarsen to recorded ownership and report irreducible overflow. All 98 prior runtime geometries match independently; only presentation metadata goldens change under the reviewed explicit write flag. Semantic events/reducer/graph/history/instrumentation remain unchanged. `migration/cluster-hierarchy.md` records contracts and exact evidence.
+
+An initial full native run fails 67/2. The focused-cluster zoom failure reproduces: inward +21° traps the eye at the stack slab boundary. Structural stack/class Focus now uses outward −21° while preserving real-entity neighbour preference, angle magnitudes, pitch, collision boxes and limits. The other case exposes a guessed virtual-window sampling delay; the native scan now verifies physical scrolling and committed visible rows, preserving complete membership and the row cap. Both corrected cases pass, and the full unchanged native suite then passes **69/69**, 8.2 minutes. Earlier failures are preserved rather than converted to passes.
+
+Full default convergence passes **2009 tests / 70 explicit opt-in skips / 2079 total**, 164.07 seconds (206 files, 199 passed and seven skipped). Lint, strict reference-browser TypeScript and production typecheck/build pass. The actual built main entry is **71,911 gzip bytes**, with Monaco/Cinematic split; entry static closure 72,339 and main/Shell static closure 651,545 bytes remain diagnostics (`production-build-cluster-focus.json`). Vite AppRoot is 1157.22 kB / 354.21 kB gzip. Four further old consumers retain their original case counts and semantic assertions through the current projector. The cached CPU successor passes all three original accepted recordings, 90 seeded seeks and 270 level plans with explicit GC; the initial evidence-shape failure and precise recorded-return proof correction remain documented in `migration/presentation-tests.md`. No final milestone or reference/performance approval is claimed.
+
+## Captured frame-row windows and consumer migration — 2026-10-14, ongoing
+
+The production face now uses one bounded captured-row mapping for labels, instanced picking, references and graph-backed Flow endpoints; immutable canonical frame/slot identity and geometry remain unchanged. A proposed event-to-Flow catalogue is rejected during root review because corrected Requirement 17 requires actual graph edges; no synthesized event graph or graphless Flow is integrated. The original array/I/O cases move to the current projector/planner, preserving all 122 array prefixes, five cells, four lexical locals and seven explicit I/O transitions. Five additional row-window cases include a 100-run geometry property and a reducer-produced late graph binding. `migration/frame-row-windows.md` records the exact old/new oracle mapping and failed experiments.
+
+Focused integration passes **80 tests in nine files**, 1.52 seconds. Full defaults pass **2014 tests / 70 explicit opt-in skips / 2084 total**, 169.54 seconds (207 files, 200 passed and seven skipped). Typecheck/Vite build, source lint and strict reference-browser TypeScript pass. Actual post-build measurement passes Requirement 32.7 at **71,914 main-entry gzip bytes**; Monaco/Cinematic remain split. Entry static closure 72,342 and main/Shell static closure 651,900 bytes are diagnostics. Evidence: `unit-frame-row-window.log`, `build-frame-row-window.log`, `lint-frame-row-window.log`, `typecheck-reference-frame-row-window.log`, `production-build-frame-row-window.json/log`. AST inventory finds **626 tracked modules, 2071 literal edges, 213 production-reachable modules and 72 obsolete targets, zero production-reachable**; the obsolete files are still present, so removal is not claimed.
+
+The root mistakenly starts the broader 195-case default browser command, which includes retired Classic/Spatial/Theater selector cases. It is deliberately interrupted after **five array failures, one interrupted camera case, 189 not run, exit 130**; this is not a passing or complete full-browser gate. Log `browser-legacy-selectors-interrupted.log` and `browser-legacy-selector-failures/` preserve the diagnostics. Legacy browser migration remains required. The documented 69-case reconstruction command is then run unchanged; its result is pending. Fixed Dense latency/retention, final visual convergence and whole-product architecture removal remain open.
+
+The first frame-row reconstruction run is **67 passed / two failed**, 8.7 minutes, exit 1, with both failures in native cluster keyboard selection before the member list opens. Full failure contexts are archived. A two-case diagnostic with unchanged assertions passes in 22.8 seconds, so no deterministic test-only explanation is claimed. Root review identifies stale accessibility-cut publication: the production throttle previously used scene revision, though selection changes plan revision independently, and its identity key omitted actual cluster label/count changes. The catalogue now refreshes committed cuts immediately and includes labels in its publication key, preserving unchanged-cut orbit cadence. All-viewport targeted confirmation and a fresh full gate remain required.
+
+Final checkpoint confirmation (still not final A–G approval): the full default suite passes **2014 tests / 70 explicit opt-in skips / 2084 total**, 169.19 seconds; source lint, strict reference-browser TypeScript and production build pass. The fresh full native reconstruction run passes **69/69**, 8.1 minutes, exit 0 (`browser-row-accessibility-confirmed.log`), with the original lightweight keyboard loop restored and an additional exact accessible cluster-label/count assertion. The five corrected viewport scenarios had already passed in 47.7 seconds with read-only observations; those observations remain archived, and the earlier 67/2 and broader interrupted legacy runs remain failures. Cached production projection passes **3 expected / 3 executed / 3 passed / zero skipped**, 90 seeded seeks × three levels, explicit GC, 1.06 seconds (`cached-projection-frame-rows.log` and its `cached-projection.json`). This is reused accepted JVM CPU evidence, not fresh execution or a browser/GPU/Dense budget approval. All four guardrail files pass **19 tests**, 1.20 seconds, including the six protected reference images and semantic/provenance/fixture checks. No protected semantic-core diff is present.
+
+The final measured entry is **71,916 gzip bytes**, within 500,000, with Monaco/Cinematic split. Entry static closure 72,344 and main/Shell static closure 651,905 bytes remain diagnostics (`production-build-row-accessibility-confirmed.json/log`). Fixed Dense seek/Focus/Home and presentation-memory gates, old browser/renderer/contracts/CSS removal, and formal reference convergence remain open.
+
+## Scoped faces, navigation successors and model-owner recovery — 2026-10-15
+
+Nine legacy world consumers and six navigation consumers now test the production pipeline, preserving their existing case counts and large/sparse/recursive corpora. Scope dividers/row retirement, real root IDs, historical Focus brightness, front-only caption clearance, captured channel collisions and current-URI editable draft publication receive production fixes. Two additional editor ownership regressions bring full defaults to **2018 passed / 70 explicit opt-in skips / 2088 total**, 168.01 seconds (200 passed / seven skipped files, 207 total). Production TypeScript, full source lint, strict reference-browser TypeScript and build pass. Semantic runtime/graph/recorder/history and all goldens have no HEAD diff.
+
+The actual built main entry is **71,930 gzip bytes**, passing 500,000, with Monaco/Cinematic split. Entry static closure 72,358 and main/Shell static closure 652,506 are diagnostics (`production-build-scoped-navigation-editor.json/log`), and the Vite large-chunk warning remains visible. AST inventory after staging finds **628 tracked modules / 2129 literal edges / 214 production-reachable modules / 66 remaining legacy targets / zero production-reachable legacy targets**. The reduction from 72 targets reflects moved navigation tests, not deletion of the remaining old architecture.
+
+The first full native attempt is **65 passed / five failed**, 22.2 minutes. An observed Monaco update loop motivates stable current-model draft ownership and unchanged-draft suppression; graphics recovery now waits for the actual post-Tab selection before taking its unchanged exact recovery snapshot. Bundle navigation/build failures remain archived without an assumed external cause. All **13 affected targeted native cases pass**, 1.3 minutes, with original cluster keyboard/member assertions unchanged. All three Console cases pass, 11 seconds, including actual JVM channel bodies and production camera recovery while preserving cursor/recording/selection. Captured-control scope replay separately passes with real label/pick alignment; no fresh JVM claim is attached to that replay. `migration/scoped-faces.md` maps exact contracts, initial failures and corrected evidence.
+
+The fresh full native reconstruction run passes **70/70**, 8.3 minutes, exit 0 (`browser-scoped-navigation-editor-confirmed.log`). Cached production projection passes **3 expected / 3 executed / 3 passed / zero skipped**, 90 seeded seeks and 270 plans with explicit GC, 1.00 second (`cached-projection-scoped-navigation-editor.log` and its `cached-projection.json`); this reuses accepted recordings and does not claim fresh JVM/browser/GPU/Dense performance. All four guardrail files pass **19/19**, 1.16 seconds (`guardrails-scoped-navigation-editor.log`). The current screenshot still falls short of reference material/lighting/typography/composition quality. Legacy source/CSS/contracts removal, fixed Dense latency/retention, final formal matrix, independent exhaustive JVM/torture/regression gates and normal final-tip verification remain open. This is not A–G approval.
+
+
+## Graph-authorized return evidence and Classic successors — 2026-10-15
+
+Full default confirmation passes **2020 / 70 / 2090**, 167.50 seconds (200 passed and seven skipped files). Production TypeScript, source lint, strict reference-browser TypeScript and build pass. Main entry **71,929 gzip bytes** passes 500,000, with Monaco/Cinematic split; entry static closure 72,357 and main/Shell static closure 652,403 remain diagnostics (`production-build-return-successors.json/log`). The 40-case targeted graph/projector/return group and 13 migrated Classic scene/deep-stack cases pass. Fresh JVM native return evidence passes; the complete native reconstruction passes **71/71**, 8.4 minutes, exit 0 (`browser-return-successors-confirmed.log`). Cached production projection passes **3 expected/executed/passed, zero skipped**, 90 seeded seeks and 270 plans with explicit GC, 1.03 seconds; all four guardrail files pass **19/19**, 1.23 seconds. The cached probe reuses accepted recordings and does not claim fresh JVM/browser/GPU/Dense performance. No semantic-core or golden diff exists. migration/return-evidence.md maps exact behavior, failures and unchanged corpora. Remaining row-motion alignment, visible return captions, old source/browser/CSS/contracts cleanup, fixed performance failures and final visual/full-product gates remain open.
+
+AST inventory finds **630 tracked modules / 2152 literal edges / 215 production-reachable modules / 64 remaining legacy targets / zero production-reachable legacy targets** (`dependency-inventory-return-successors.json`). Two retired Classic test files account for the target reduction; remaining old renderers have not yet been removed. Protected semantic/golden paths remain unchanged and reference-integrity validation passes.
+
+## Physical face/Classic removal confirmation — 2026-10-15
+
+Shared chip geometry, graph-owned return captions and all 52 Classic successors converge. Defaults **2027 passed / 70 explicit opt-in skips / 2097 total**, 209 files, 173.03 seconds; production typecheck/build, source lint and strict reference-browser TypeScript pass. Fresh full native reconstruction passes **71/71**, 8.9 minutes, exit 0. Cached projection passes **3/3, zero skips**, 90 seeks/270 plans with explicit GC, 1.04 seconds; four guardrail files pass **19/19**, 1.15 seconds. Actual entry is **71,931 gzip bytes**, Monaco/Cinematic split, closures **72,359/653,050** diagnostic bytes. AST: **619 modules / 2146 literal edges / 217 production-reachable / 44 remaining legacy targets / zero production-reachable legacy**. Initial failures, corrected library raw-face defect, exact case mapping and visual findings remain in [the migration ledger](migration/face-motion-classic-removal.md). Full default browser inventory is **197 cases**, including the 71 current reconstruction cases and 126 older cases still requiring migration/confirmation; the 71-case run is not the final full-browser gate. Protected semantic-core/golden/reference paths are unchanged. No A–G completion is claimed.
+
+## Current storage and visible headings — confirmed 2026-10-16
+
+The interrupted browser process is no longer running; its completed report records **75/75 passed**, 9.4 minutes. The full default suite passes **2034 / 70 explicit opt-in skips / 2104 total**, 210 files, 182.61 seconds. Production TypeScript/build, strict browser TypeScript and lint pass. Cached projection passes **3 expected/executed/passed, zero skipped**, 90 seeks/270 plans, explicit GC, 1.03 seconds; guardrails **19/19**, four files, 1.27 seconds. Actual main entry is **71,929 gzip bytes**, Monaco/Cinematic split; closures **72,357/653,419** remain diagnostics. AST: **622 modules / 2165 literal edges / 219 production-reachable / 42 remaining legacy targets / zero production-reachable legacy**. All 18 legacy text cases have current successors. Actual heading visibility is checked in all five native recursion viewports; current captured frame storage requires no selection or fabricated provenance. Failure archives and precise contract/oracle changes remain in [the migration ledger](migration/current-storage-headings.md). Semantic-core/golden/reference paths are unchanged. The broader old browser corpus, visual convergence, fixed Dense latency/retention and final A–G gates remain open.
+
+
+## Timeline retirement and recorded catalog order — 2026-10-17
+
+Focused projector/property/timeline integration passes **29/29**, four files, 6.62 seconds; two new ordering regressions fail before the production fix. Defaults pass **2039 / 2109**, with **70 explicit opt-in skips**, 212 files (205 passed/seven skipped), 175.79 seconds (`unit-scene-order-timeline.log`). All 21 old timeline/playback cases have successors; the increase of two comes from ordering regressions. Expanded strict browser TypeScript, lint and production typecheck/build pass. Guardrails **19/19**, 1.11 seconds; protected-reference integrity passes. Two native camera successors pass **2/2**, 7.9 seconds, before removing temporary read-only layout diagnostics. The original combined run is interrupted after 26 passes without a completion report; fresh final-source combined confirmation passes **78/78, zero skips, 9.4 minutes, exit 0** (`browser-order-timeline-resumed.log`). See [the ledger](migration/timeline-retirement.md).
+
+The four old playback browser cases also pass through current native controls: **4/4, zero skips, 21.8 seconds, exit 0**, with expanded strict reference TypeScript passing. Both natural completions retain their original six-second assertion and actual browser timers. This is separate from the passing 78-case gate; the remaining 120 older browser cases are not claimed as passed. Initial 2/2 test-oracle failures and corrections are documented in [the migration ledger](migration/playback-browser.md).
+
+Measured face columns add five regressions (four reproduce before the fix); focused typography/row integration passes **43/43** and full defaults pass **2044/70 explicit opt-in skips/2114 total**, 169.95 seconds, exit 0. Current native confirmation passes **14/14**, 1.6 minutes, exit 0. Root original-size review verifies ordinary names in both actual quality tiers. See [the ledger](migration/face-columns.md). Full comparable-state matrix/reference convergence and final whole-product gates remain open.
+
+## Hero/Home reconciliation — 2026-10-18, ongoing
+
+Final defaults pass **2065 / 2135**, with **70 explicit opt-in skips**, 214 files (207 passed/seven skipped), **175.05 seconds**, observed exit 0 (`unit-hero-home-reconciled.log`). Nine camera/renderer files pass **93/93** after five new Home regressions first reproduce hidden HEAP titles. Native targeted confirmation passes 13 cluster/collection/ownership cases, five recursive Home/Follow viewports, six camera/playback cases and five Hero cases in separate runs; no combined exhaustive pass is claimed. The prior complete 82-case run is **65 passed / 17 failed**, and the prior complete formal 80-case run is **76 passed / four failed**. Both failure sets and initial diagnostic failures remain preserved. [The migration ledger](migration/hero-admission.md) documents the shared fit, corrected optional-dependency/placement oracles, bounded index, stale Home cut proof and unchanged assertions. Final current-source build passes, along with strict browser TypeScript, lint, cached CPU projection 3/3 (90 seeks/270 plans, explicit GC, 1.02 s), all 19 guardrails (1.23 s) and reference integrity. The built main entry is 71,930 gzip bytes; entry/shell static closures 72,358/655,463 are diagnostics. Complete native confirmation and a fresh coherent 96-capture matrix remain required.
+
+
+## Frozen Hero/Home confirmation — 2026-10-18
+
+On clean pushed commit `89a59d05c7b71c5a0baecbbdd48fc827be2299fa`, the serial native reconstruction gate passes **82/82 cases, zero skips, 9.6 minutes, observed exit 0**. This is a curated/native functional mix, not 82 new JVM sessions. The subsequent formal reference matrix passes **80 expected / 80 executed / 80 distinct actual instrumented JVM sessions / zero skips / zero failures**, **9.4 minutes**, observed exit 0. Run identity: `e1d87f99-f0da-43c9-b494-001286fb1ce8`. The runner verifies unchanged HEAD/origin, tracked source and main before/after both phases. All **96** PNG hashes match their own capture reports. Captures, reports, side-by-side comparisons, diffs and logs are archived under `.ggjavaez/qa/reference-exact/matrix-hero-home-confirmed-2026-10-18/`; the source/run manifest is `validation-hero-home-reconciled-run.json`. Prior failing runs remain preserved.
+
+This closes the checkpoint's pending complete native/numerical matrix checks. It does not approve visual convergence, the remaining legacy browser corpus, Dense latency/retention, all-state original-size review or A–G completion. The lead opens all six new Hero captures at original resolution and reopens unchanged `best.png`; their exact hashes and OPEN findings are recorded in `review-hero-home-confirmed.json`. Broad connector glow, weak floor/grid/reflection response, absent region haze, opaque-looking material depth, small runtime text and narrow blank chips remain visible. An independent read-only fit diagnostic over saved actual-JVM worlds preserves the unchanged fixed fonts and finds sub-target typography even in the mandatory-only counterfactual. A lower-distance search variant yields the same fits; neither diagnostic changes production code, proves general infeasibility or waives Requirement 29.17. No unreviewed capture is visually approved.
+
+
+## Retired local inspection and native scope migration — 2026-10-18
+
+Selected closed locals retain their exact captured lifetime in the Inspector without reintroducing a current world row/chip/port. Inspector keyboard selection reaches overflowed live frame storage; all Focus entry points reject absent/retired targets. Exactly two old control browser cases have native 3D successors, preserving the complete branch/loop corpus and original 30-second limits. Defaults pass **2072 / 2142 with 70 explicit opt-in skips**, 175.19 seconds; broader native integration **13/13**, 1.0 minute, and final original-limit confirmation **2/2**, 17.9 seconds, zero skips. Current source typecheck/build, strict browser TypeScript and lint pass; a post-review command/lifetime group passes **53/53**. Actual main entry **71,928 gzip bytes** passes 500,000, with Monaco/Cinematic split. Browser inventory stays **202**, now 84 current reconstruction and 118 remaining older cases; listing is not a full-browser pass. AST records 629 modules/2215 edges/222 reachable and 41 remaining legacy targets, none active. Preserved failures, exact oracle reconciliation and capture review are in [the ledger](migration/retired-locals.md). No Dense or final A–G approval is claimed.
+
+
+## Region atmosphere and floor visibility — 2026-10-18
+
+Two owned world-space haze sprites implement the specified region colours with explicit mask exclusion/restoration. The installed grid shader now applies true empty-world alpha; a longer extent-based fade makes the unchanged physical floor visible in the deep world. Runtime semantics/anchors, floor height/extent, grid spacing/colours and frozen palettes are preserved. Graphics **15/15** and defaults **2076/2146 with 70 explicit opt-in skips** pass, 174.40 seconds. Final native atmosphere/palette **2/2**, recovery **1/1** and Hero **5/5** pass in separate runs; all eight actual face/chip RGB samples remain exact in both tiers. Production build, strict browser TypeScript, lint and the 71,926-byte main-entry gzip gate pass. The lead reviews 16 hash-bound original-size images with OPEN visual findings. Typography, glow, material depth, Home readability, legacy cleanup, Dense budgets and final full-product gates remain open. [Implementation, failed attempts and evidence](migration/region-environment.md).
+
+
+## Captured control facts and native condition migration — 2026-10-18
+
+The current Inspector exposes only its owning invocation's applied-prefix conditions, named exact operands, taken/skipped paths, loop counts/endings and scope evidence. Raw VM jumps remain explicitly separate from unavailable Java results. Five new unit cases preserve all 73 forward/reverse prefixes, exact unavailable/MAX_LONG operands and bounded 10,000-entry lists. Defaults pass **2081 / 2151 with 70 explicit opt-in skips**, 218 files (211 passed/seven skipped), **176.50 seconds**, exit 0. Native integration passes **14/14, zero skips, 1.2 minutes**, including the original nine-condition/four-iteration case under its unchanged 30-second limit. Production typecheck/build, strict browser TypeScript and lint pass. Main entry **71,929 gzip bytes** passes 500,000; entry/shell static closures **72,357/657,265** remain diagnostics, Monaco/Cinematic split. AST: **637 modules / 2235 literal edges / 225 production-reachable / 41 remaining legacy targets / zero active legacy targets**. Default browser inventory stays **203 cases / 57 files**, now **86 native cases / 32 files** and **117 older cases**; listings do not claim a complete browser pass. Semantic/golden/reference guards pass. [The ledger](migration/control-facts.md) preserves original corpus, intermediate test failures and hash-bound OPEN capture reviews. Dense budgets, legacy removal and final A–G/visual gates remain open.
+
+
+## Complete control browser migration and popup layering — 2026-10-18
+
+The five remaining control workflows have native successors; the retired file is removed after a **5/5, zero-skip, 50.3-second** confirmation. A real Replay pointer interception is fixed by removing the enclosing World stacking context and raising only the open settings dock; natural 72-event Replay completes in **18.9 seconds** under the unchanged **32,240-ms** overall limit. Source typecheck/build, strict browser TypeScript and lint pass. Main entry **71,928 gzip bytes**, Monaco/Cinematic split; closures **72,356/657,259** diagnostic bytes. Browser inventory remains **203 / 57 files**, now **91 reconstruction / 33 files** and **112 remaining older cases**; final current-source full native confirmation is pending. AST **637/2236/225/41/0**. Semantic/golden/reference guards are unchanged; the previous full-unit 2081/70 result belongs to the preceding checkpoint. [The migration ledger](migration/control-workflows.md) documents every retained workflow, corrected single-World/Console oracles, initial 3/2 failure and OPEN image review. Dense, legacy and final visual/A–G gates remain open.
+
+
+## Frozen full native confirmation — 2026-10-18
+
+Clean pushed commit `26802ee4016f80d65ec7a9c45ba8d1fc6d665a68` passes **91 expected / 91 executed / 91 passed / zero skipped / zero flaky / zero unexpected**, **662.94 seconds (11.0 minutes)**, observed exit 0. The runner verifies unchanged HEAD/origin, tracked source and protected main before and after; run `200d72ba-ab73-4698-858b-dd9203d7f13d` is recorded in `validation-control-workflows-run.json/log`, `browser-control-workflows-confirmed.json/log` and its unique results directory. It includes the final stronger invocation-count guard and new Scanner/narrow captures. This is the full current reconstruction mix of curated/native and actual-JVM cases, not 91 fresh JVM sessions, the formal 80-session matrix or the complete 203-case default browser corpus. The remaining **112 older browser cases** are still not claimed as passed. The lead opens all three workflow captures at original size; `control-workflow-capture-review-confirmed.json` binds their hashes to OPEN findings. Final visual, Dense latency/retention, remaining legacy cleanup and A–G completion stay open.
+
+
+## Legacy renderer/navigation entries removed — 2026-10-18
+
+Ten audited, isolated old renderer/navigation modules are physically removed, while the Troika ambient declaration is relocated byte-identically and Selection stays unchanged. M7/M8 entry points now explicitly reject their retired browser workflows before browser/bridge/output work; their original source/history/reports and all modern performance gates are preserved. Full defaults pass **2081/2151 with 70 explicit opt-in skips**, **174.51 seconds**, exit 0. All remaining primitive tests are untouched and execute **83/83, zero skips, seven files**; the JSON inventory records expanded cases rather than 59 static templates. Production typecheck/build, strict browser TypeScript, source lint and protected semantic/golden/performance/reference guards pass. All **14 recorded production JS resources remain byte-identical** to clean parent `26802ee`, whose complete **91/91** native run passes with frozen source/refs. This is exact artifact equivalence, not a claimed new browser/performance run on the cleanup commit. Main entry **71,928 gzip bytes**, entry/shell closures **72,356/657,259** diagnostics, Monaco/Cinematic split. AST **627 modules / 2165 edges / 225 production-reachable / 30 remaining legacy targets / zero active legacy targets**. [The cleanup ledger](migration/legacy-entry-removal.md) records consumers, preserved corpora, declaration ownership and evidence limits. Remaining old primitives, aliases, CSS, persistence, 112 older browser cases, visual convergence, Dense budgets and final A–G gates remain open.
+
+
+## Arrays and Inspector placement — 2026-10-18
+
+Defaults pass **2091/2161 with 70 explicit opt-in skips**, **174.38 seconds**, exit 0. All 14 ArraySolid unit cases migrate to current successors before physical removal; five additional cell and five placement/layout regressions pass. Final focused integration **129/129**; native array **5/5**, 24.8 seconds, then array/placement **6/6**, 25.8 seconds, zero skips. Production build/typecheck, strict browser TypeScript, lint and protected/reference guards pass. Main entry **71,928 gzip bytes**, entry/shell closures **72,356/658,670** diagnostics, Monaco/Cinematic split. AST **631/2193/228/27/0**; inventory **204 default / 97 native / 107 older cases**. Complete fixed-commit 97-case confirmation is pending. [The migration ledger](migration/array-placement.md) preserves initial failures, corpus mapping and verification boundaries. Visual convergence, remaining cleanup, Dense budgets and final A–G gates remain open.
+
+
+## Frozen array/placement native confirmation — 2026-10-18
+
+Clean pushed commit `18201a126bf3f62bd36258c76075b837470af927` passes **97 expected / 97 executed / 97 passed / zero skipped / zero flaky / zero unexpected**, **683.64 seconds (11.4 minutes)**, exit 0. Run `394d197d-72f8-46d0-bd1e-91192ac19d0f` verifies unchanged HEAD/origin, tracked source and protected main before/after. Durable evidence: `validation-array-placement-run.json/log`, `browser-array-placement-confirmed.json/log` and unique `native-array-placement-confirmed-results/`. This is the full current native/curated and actual-JVM functional mix, not 97 fresh JVM sessions, the formal 80-session matrix or all 204 default browser cases. The lead reviews all four array/placement images at original resolution and reopens unchanged `best.png`; `array-placement-capture-review.json` binds exact image hashes and OPEN findings to this commit/run. The lower Source occlusion, world typography, acrylic/grid/reflection balance, route glow, Dense budgets, remaining legacy cleanup and final A–G gates remain open.
+
+
+## Seven presentation retirements and Person migration — 2026-10-18
+
+Seven isolated legacy modules are removed; all 14 recorded production JS resources remain byte-identical to clean parent `18201a1`, whose frozen 97-case native run passes. Six Person successors pass **6/6**, zero skips, **19.5 seconds**, preserving original 30-second limits; the superseded file is removed. Defaults pass **2091/2161 with 70 explicit opt-in skips**, **175.06 seconds**, exit 0. All remaining primitive tests are unchanged. Production build/typecheck, strict browser TypeScript, lint and semantic/golden/performance/reference guards pass. Main entry **71,928 gzip bytes**, closures **72,356/658,670** diagnostics; Monaco/Cinematic split. AST **624/2167/228/20/0**; browser inventory **204 default /103 native /101 older**. This is parent 97 plus successor 6 with exact JS equivalence, not a claimed combined 103 or new performance run. [The cleanup ledger](migration/presentation-retirement.md) records corpus reconciliation, source ownership and remaining limits. Final visual, Dense and whole-product gates remain open.
+
+
+## Captured Inspector details and bounded rows — 2026-10-19
+
+Defaults pass **2107/2177 with 70 explicit opt-in skips**, 223 files, **173.66 seconds**, exit 0. Final focused integration 41/41 and native integration 14/14 (zero skips, 1.2 minutes) pass. Cards show captured caller/ancestor, receiver, return and readable inbound/outbound holder facts; ten possible lists share a 20-row cap including overscan, for a 200-row maximum. Production build/typecheck, strict browser TypeScript, lint and protected semantic/golden/performance/reference guards pass. Main entry **71,927 gzip bytes**, closures **72,355/659,894** diagnostics, Monaco/Cinematic split. AST **632/2206/232/20/0**; inventory **206 default /105 native /101 older**. Complete fixed-commit 105-case native confirmation is pending. [The ledger](migration/inspector-details.md) preserves the prefix-oracle correction, type-fixture failures and hash-bound OPEN image review. Remaining actions, legacy cleanup, visual convergence, Dense budgets and A–G completion stay open.
+
+
+## Frozen complete Inspector native confirmation — 2026-10-19
+
+Clean pushed commit `3f9ad852ae0b2490a044763ea4b6b2f107d6cb2b` passes **105 expected /105 executed /105 passed /zero skipped /zero flaky /zero unexpected**, **739.68 seconds (12.3 minutes)**, observed exit 0. Run `4dd3ce59-5722-4495-873b-6fe1c5b79e3d` verifies unchanged HEAD/origin, tracked source and protected main before/after. Evidence: `validation-inspector-details-run.json/log`, `browser-inspector-details-confirmed.json/log` and unique `native-inspector-details-confirmed-results/`. This is the complete current curated/native and actual-JVM functional mix, not 105 fresh JVM sessions, the formal 80-session matrix or all 206 default browser cases. Three fresh native Inspector PNGs are copied into `native-inspector-details-confirmed-captures/`, with run-time bounds and SHA-256 manifests checked before later captures can overwrite generic paths. The lead opens all three archived images at original resolution; their hash-bound `review.json` remains OPEN for visual convergence. Remaining actions, old-browser/module cleanup, world typography/material/glow composition, Dense failures and final A–G gates remain open.
+
+
+## Inspector actions and captured Source — 2026-10-19
+
+Final defaults pass **2124/2194 with 70 explicit opt-in skips**, 226 files (219 passed/seven skipped), **178.90 seconds**, observed exit 0. Four new action cases pass 4/4; affected native integration passes **23/23**, zero skips, **1.9 minutes**, covering Source/debugger at five viewports, draft preservation, repeated temporary Monaco-model release, Person and arrays. Explicit command inventories are updated for two added commands after an initial full-run failure; the complete unchanged checks plus new action checks pass 64/64. Production build/typecheck, strict browser TypeScript, lint and protected/reference guards pass. Main entry **71,927 gzip bytes**, closures **72,355/661,915** diagnostics, Monaco/Cinematic split. AST **638/2234/234/20/0**; inventory **210 default /109 native /101 older**. Parent 3f9 has its frozen 105-case confirmation; no current combined 109 result is inferred. Three archived original-resolution previews remain OPEN for world visual convergence. [Focused ledger and retained failures](migration/inspector-actions.md). Legacy cleanup, Dense failures and final A–G gates remain open.
+
+
+## Unmounted trace-table retirement — 2026-10-19
+
+Three explicitly superseded developer-table files are physically removed after a no-consumer audit. All **14 JS/four CSS production resources remain byte-identical** to clean parent 0cc97f7, whose full defaults and affected native checks pass. Five table-only unit cases are retired with explicit dispositions; semantic tests and all 69 remaining primitive cases are unchanged. Build/typecheck, strict browser TS, lint and protected/reference guards pass. AST **636/2228/234/20/0**; no new full-unit/browser/performance execution is inferred. [Evidence and limits](migration/trace-table-retirement.md). The active legacy surfaces and final A–G gates remain open.
+
+
+## Paused debugger and Dock consolidation — 2026-10-19
+
+Final full defaults pass **2133/2203 with 70 explicit opt-in skips**, 226 files, **177.29 seconds**, observed exit 0. The five retired developer-table cases and fourteen new drawer/server cases explain the nine-case increase from 0cc97f7; all 69 remaining primitive cases are unchanged. A deterministic real-JVM regression reproduces the pre-flush reader/pause-watermark race before its narrow fix; exact malformed-watermark rejection remains. Focused server/drawer/source/layout integration passes 103/103 before two final drawer guards; the current drawer file passes 12/12. Source/Inspector integration passes 13/13 (1.3 minutes); Dock regression passes 13/13 (48.7 seconds); final ownership confirmation passes 2/2 (10.4 seconds). The ledger states their precise source boundaries. Build/typecheck, strict browser TS, lint and protected/reference guards pass. Main entry **71,930 gzip bytes**, closures **72,358/662,743** diagnostics, Monaco/Cinematic split. AST **640/2243/234/20/0**; inventory **214 default /113 native /101 older**. No complete current-source 113-case or new Dense/performance result is inferred. Four hash-bound archived images are reviewed at original resolution; world visual convergence remains OPEN. [Detailed evidence and limitations](migration/debug-drawer.md). Final A–G acceptance remains open.
+
+
+## Contextual Focus command reconciliation — 2026-10-19
+
+The complete frozen native run on clean pushed `b934cd258e5f518337e2e72c3a4da4da09d0ad11` executes all **113 planned cases**, with **111 passed/two failed/zero skipped/zero flaky**, **746.98 seconds (12.4 minutes)**, observed exit 1. Run `1cbd5426-7f4e-49bc-8a8f-c553f614831a` verifies unchanged source/HEAD/origin/main before and after. Evidence remains `validation-debug-drawer-full-run.json/log`, `browser-debug-drawer-full-confirmed.json/log` and its unique results directory. This is a failed complete gate, not a 113-case pass. Both failures are the retired-local tests looking for an Inspector Focus Selection button while the FOCUS overlay correctly makes it Return to World (Requirement 28.6).
+
+The reconciliation preserves every original local value, three-activation scope ending, immutable anchor/port/chip, reverse-restoration and Focus-presence oracle. Focus Selection enablement is checked through its explicit registered Command Palette action, independently of both contextual Exit Focus buttons. Disabled Enter leaves cursor, camera, selection and Focus unchanged. Return to World is verified while a selected local is closed; after returning, the card's disabled Focus is also activated by keyboard without side effects. The original Header/shortcut/World Enter guards after Home remain. No fixture, production command, runtime oracle or original 30-second case limit changes.
+
+An initial replacement mistakenly used the Header Focus toggle as a Focus Selection substitute; that control also acts as Exit Focus during FOCUS. The six-case check retains its four passes/two failures, **31.1 seconds**, in `browser-inspector-context-confirmed.log`. The explicit-command correction passes **6/6**, zero skips, **32.6 seconds** (`browser-inspector-context-command.log`), including both retired-local cases and all four Inspector-action cases. Strict reference-browser TS passes. All `src/` and `server/` files are byte-identical to b934; its full-unit **2133 passed/70 opt-in skips** and build/lint results still describe the production source, not a newly executed unit run. A new complete fixed-commit 113-case confirmation remains pending. Primitive successor drafts are ignored and unexecuted; none of the 69 legacy primitive cases has been removed. Final visual/performance/A–G gates remain open.
+
+
+## Legacy primitive closure — 2026-10-19
+
+Complete frozen parent df4fedc native confirmation ran113planned/executed:112passed/onefailed/zero skipped/flaky,744.71seconds,exit1. Desktop Console focus succeeds but the unchanged two-RAF readiness boundary is223.2ms against200ms; no waiver or complete-gate pass is claimed. After20 unreachable primitive removals and31 new current successor cases, full defaults pass2095/2165 with70opt-in skips,222files,176.54seconds,exit0. All69 old cases passed before deletion; current successor integration139/139 passes. Build/typecheck, browser TS, lint and guards pass; all14JS/fourCSS resources match the parent byte for byte. AST622/2169/234/zero legacy renderer targets. No new native/Dense/visual approval is inferred. [Per-case reconciliation, evidence and limits](migration/primitives-retirement.md). Whole A–G acceptance remains open.
+
+
+## Slot evidence retention — 2026-10-19
+
+Defaults2096passed/70explicit opt-in skips,223files,180.82seconds,exit0. New100-run prefix property passes before/after; focused51/51 and affected native7/7 pass. Build/typecheck/browser TS/lint/protected/reference guards pass. Generated20k projector retention drops1.616MB, but every25% presentation-memory budget still fails (after ratios2.043/0.761/0.646); no Dense/GPU claim. Separate2case/fourcapture actual-JVM check passes with all original numerical thresholds, and root review remainsOPEN. Prior complete113case Console223.2ms failure is retained; current focused Console22.5/5.3ms and10profiled waits do not waive it. [Measured evidence and limits](migration/slot-history.md). Whole A–G acceptance remains open.
+
+
+## World contract and orphan surfaces — 2026-10-19
+
+Defaults2088passed/70explicit opt-in skips,221files,182.89seconds,exit0. Before-retirement42/42 and post-consolidation55/55 focused cases pass. Strict compiler proof preserves all old/new selector fields and assignability both ways. Build/typecheck/browser TS/lint/protected/reference guards pass. All14JS/fourCSS resources match parent2e7bb9b byte for byte; no new browser/performance approval is inferred. AST615/2154/233/zero legacy renderer targets. Root CSS/token/IDE cleanup and final convergence remain open. [Per-case dispositions, type proof and limits](migration/world-contract-consolidation.md). Whole A–G acceptance remains open.
+
+
+## Style and token compatibility retirement — 2026-10-19
+
+Defaults2091passed/70explicit opt-in skips,223files,182.73seconds,exit0. Build/typecheck/browser TS/lint/protected/reference guards pass. Main71756gzip bytes, closures72184/662605 diagnostics, Monaco/Cinematic split. Initial20case native run has19passes/one stale stylesheet-import failure, not a20case pass. A new CSS resource guard reproduces that failure; after the import-only fixture fix, guard/preferences3/3 and the original isolated test1/1 pass. Four archived original-resolution screenshots are root-reviewed and remainOPEN for visual convergence. Inventory113native/214default/101older. No new complete native/Dense/memory/visual approval is inferred. [Evidence, failure and scope](migration/styles-tokens.md). Whole A–G acceptance remains open.
+
+
+Complete frozen confirmation on pushed9e2a612a3d6fa6ba82b33a2862d9a77c4b8eab6f executes **113/113passed, zero skips/failures/flaky**,749.02seconds,exit0 (run9717daad-7593-4786-8cc6-1d3b6fb2a8bc). `validation-styles-tokens-full-run.json` checks source/branch/remote/main guards before and after. Both real-JVM Console cases pass with the unchanged200ms/two-RAF boundary; the previous223.2ms failed run remains recorded. This is the native functional/curated+actual-JVM mix, not113new JVM sessions, the formal80-session capture gate, or final visual/performance approval.
+
+
+## Shared Shell surfaces — 2026-10-19
+
+Defaults2103passed/70explicit opt-in skips,225files,184.54seconds,exit0. Focused87/87 and final affected native12/12 pass; earlier failures and the independently reproduced40px narrow chooser defect remain recorded. Build/typecheck/browser TS/lint/reference/protected guards pass; main71763gzip, closures72191/663441 diagnostic bytes. Eight original-resolution UI captures are root-reviewed with populated World approval stillOPEN. No new complete native, formal capture, Dense or memory approval is inferred. [Evidence, per-case reconciliation and scope](migration/shell-surfaces.md). Whole A–G acceptance remains open.
+
+
+## Native Java projects — 2026-10-19
+
+Five migrated original plain/Maven/Gradle/main-target/broken-POM cases pass5/5,60.82seconds,zero skips/flaky,with six distinct actual JVM sessions. Strict browser TS passes. Production is unchanged frombd30ecd; no full-unit/build rerun is claimed. [Per-case reconciliation and evidence](migration/java-project-workflows.md). Whole A–G acceptance remains open.
+
+
+## Focus Source / Inspector separation — 2026-10-19
+
+Defaults2108passed/70explicit opt-in skips,225files,181.07seconds,exit0. Focused208/208, affected native9/9 and a separate clean serial2/2 actual-JVM capture check pass. Four actual and four curated original-resolution images are root-reviewed; all current numerical capture tolerances pass. Earlier fixture assertion failures and the deliberately interrupted overlapping attempt remain recorded and are not gate passes. Main71760gzip, closures72188/663449 diagnostics. Final visual/performance/full native gates remainOPEN. [Evidence and limits](migration/focus-source-layout.md). Whole A–G acceptance remains open.
+
+
+## Unified Shell Picker — 2026-10-19
+
+Defaults2118passed/70explicit opt-in skips,227files,180.99seconds,exit0. Focused108/108 passes; the combined native20/20 run is followed by final Picker3/3 after path-order/readability polish. All earlier failures remain recorded. Six distinct actual JVM sessions occur in the20-case Java workflows; actual JDT confirms exact symbol navigation. Build/typecheck/browser TS/lint/reference/protected guards pass. Main71761gzip, closures72189/664015 diagnostic bytes. Seven original-resolution UI captures are root-reviewed and source-hash bound through validation. Isolated5,000-file query timings34.50/23.90ms do not establish full-app file-search or Dense performance. Native inventory134/45; default226/65. [Evidence, all16 original-case dispositions and limits](migration/picker.md). Whole A–G acceptance remains open.
+
+
+## Dirty-file Run decision — 2026-10-19
+
+Defaults2124passed/70explicit opt-in skips,228files,184.85seconds,exit0. Focused81/81 and integrated native26/26 pass,130.72seconds,zero skips/flaky,with15 distinct actual JVM sessions. Earlier fixture failures and the confirmed missing-decision RED remain recorded. Eleven operation bodies and generic dirty behavior outside the new Run branch compare exactly with parent0b685a0. Build/typecheck/browser TS/lint/reference/protected guards pass; main71764gzip, closures72192/664489 diagnostic bytes. Three actual workspace/modal originals are root-reviewed and source-hash bound through full checks. Native inventory137/46; default229/66. [Preserved cases, barriers, injected409 and limits](migration/dirty-run.md). Full native/formal, Header timing, performance and whole A–G acceptance remain open.
+
+
+## Header project menu and command presentation — 2026-10-20
+
+Defaults2126passed/70explicit opt-in skips,229files,178.61seconds,exit0. Focused126/126, integrated native43/43 (262.21seconds,17actual JVM sessions) and final27/27 (97.36seconds,11actual sessions) pass,zero failures/skips/flaky in those passing runs. Earlier discovery/fixture failures, lost-Focus RED, host-ref registration failure, tooltip pointer interception and cross-anchor timer RED remain recorded. The workspace hook is byte-identical to parent6970f5e; nine browser files reverse exactly after action/locator relocation, and dirty Run retains every old assertion with three source-flag additions. Build/typecheck, browser TS, lint/reference/protected guards pass; main71764gzip, closures72192/666491 diagnostic bytes. All926 source files stay unchanged through final captures and full checks. Root reviewed20 archived originals; the review explicitly leaves completed-label truncation at1280/760 and World visual convergence OPEN. Native146/47; default238/67;92older cases remain. [Detailed reconciliation, failures and limits](migration/header-controls.md). Global keyboard/Dock/status, transition timing and whole A–G acceptance remain open.
+
+
+## Completion-label fit — 2026-10-20
+
+A preserved native RED measures177px text in97px at1280. After the Header-only CSS correction, affected native14/14 pass,58.19seconds,five actual JVM sessions; full completion labels fit both axes at Home/orbit in all five viewports while4.5 contrast, control bounds and runtime/camera assertions remain unchanged. Root reviewed five updated original Home captures. Strict browser TS, fresh build/typecheck and reference/protected guards pass. All unit/production TypeScript are byte-identical to0c470c5; its2126/70 unit result is reused, with no full-unit rerun claimed. [Evidence and remaining limits](migration/header-controls.md#completion-label-fit-follow-up--2026-10-20). Whole A–G acceptance remains open.
+
+
+## Shell keyboard dispatcher — 2026-10-20
+
+Defaults 2,139 passed/70 explicit opt-in skips, 230 files, 176.75 seconds, exit 0. Focused 89/89 and integrated native 24/24 pass, 126.53 seconds, zero skips/failures/flaky, with 12 distinct actual JVM sessions. Earlier Home-lifecycle and observer fixture failures remain recorded. Build/typecheck, browser TypeScript, lint/reference/protected guards pass; all 929 source files remain unchanged through validation. AST 648/2237/250/zero superseded targets; native 147/48, default 239/68, 92 older cases. [Evidence, comparison and limits](migration/keyboard.md). Dock/status, visual/performance convergence and whole A–G acceptance remain open.
+
+
+## Dock drawers and workspace status — 2026-10-20
+
+Defaults 2,142 passed/70 explicit opt-in skips, 231 files, 185.94 seconds, exit 0. Focused 103/103 and frozen native 48/48 pass, 215.47 seconds, zero skips/failures/flaky. Twelve distinct actual JVM IDs are retained by annotations/attachments; this is not a count of every direct execution or the formal 80-session gate. Earlier fixture/probe failures, the 805 px focus-outline RED at H=800, and the Gradle advisory guard failure remain recorded. The unchanged isolated Gradle case and final full affected set pass. Build/typecheck, browser TypeScript, lint/reference/protected guards pass. All 940 source files stay unchanged through checks; root reviewed 20 archived originals. Tested text-node contrast minima are at least 8.912, including 9.148 for the populated Console; five DOM commit/count samples are at most 0.10 ms, with scope limited to that frontend observation. AST 659/2279/257/zero superseded targets; native 158/49, default 250/69, 92 older cases remain. [Evidence and limits](migration/dock.md). Header 1024 fit, World visual/performance convergence and whole A–G acceptance remain open.
+
+
+## Intermediate Header widths — 2026-10-20
+
+The native RED measures a 62 px word in a 3 px allocation at1024. After the Header CSS correction, focused 4/4 and integrated 18/18 pass,77.30seconds,zero skips/failures/flaky,seven actual JVM sessions. Existing assertions and case bodies are unchanged; two viewport tuples are added to each of the control/contrast matrices. Full completion text fits 108×32px at both1024×768/650, Home/orbit; root reviewed six originals. Fresh build/typecheck/browser TS/lint/reference/protected guards pass. All937 other source files, including every production TypeScript and unit file, are byte-identical to d253fa3; its2142/70 unit result is reused without claiming a rerun. [Evidence and remaining scope](migration/header-controls.md#intermediate-width-label-fit-follow-up--2026-10-20). Whole A–G acceptance remains OPEN.
+
+
+### Closest perspective fit — 2026-10-20
+
+The known-distance RED detects the previous 3% camera margin. The replacement passes 150 generated XYZ containment/minimal-pan witnesses and 186 focused camera/planner/text cases; all five heading-visibility REDs exposed by removing the margin are fixed without changing their assertions. Full defaults: 2,144 passed/70 existing explicit opt-in skips, 231 files, 180.50 seconds. Frozen targeted native: 16/16, zero skips/failures/flaky, 113.80 seconds, ten attached actual JVM IDs. Root reviewed eleven archived originals; typography, matte faces, connector dominance and grid/peripheral composition remain visibly open. Build/typecheck/browser TS/lint/reference/protected checks pass; 940 source files remain unchanged through validation. [Scope and evidence](migration/camera.md#closest-perspective-fit--2026-10-20). No Dense/memory, formal 80-session, full original-browser or whole A–G completion claim.
+
+
+### Reference value insets — 2026-10-20
+
+Four new unit cases and 846 prefix/detail comparisons retain all prior solids, picks and semantic evidence. Three earlier row-geometry cases are explicitly reconciled to distinguish their unchanged row bounds from added decorative parts; all original counts/positions/ports remain asserted and inset checks are added. Initial RED/full-run failures are retained. Final defaults: 2,148 passed/70 existing explicit opt-in skips, 232 files, 176.58 seconds. Native 22/22, 153.29 seconds, fifteen attached actual JVM IDs; separate hardware quality 2/2, one actual exception JVM and Cinematic executed on Apple M4 Pro. Zero native skips/failures/flaky. Root reviewed sixteen archived originals; World/Cinematic visual completion remains OPEN. Build/typechecks/lint/reference/protected checks pass; 942 source files unchanged through validation, with a documented one-unit-file difference from the earlier 22-case browser snapshot. AST 661/2293/257/zero superseded targets; native164/50, default256/70, 92 older cases remain. [Evidence and boundaries](migration/reference-chips.md). Dense/memory, full matrix and whole A–G gates remain open.
+
+
+### Camera collision-query pruning — 2026-10-21
+
+All 146 existing camera tests and 279 exact complete-route comparisons pass (23 saved actual Dense routes plus 256 generated cases). Full defaults: 2,148 passed / 70 existing opt-in skips, 232 files, 181.16 seconds. Native 16/16, 116.85 seconds, zero skips/failures/flaky, ten attached actual JVM IDs; all eleven archived originals are root-reviewed. Build/typechecks/lint/reference/protected checks pass; 942 source files remain unchanged through validation. Exact parent comparison confines the production change to the distance/visibility guard. [Evidence and limits](migration/camera.md#avoid-redundant-collision-queries--2026-10-21). The earlier Dense failure is archived. The current-source full measurement completes every stage and fails seek p50/p95 (99.622 / 120.170 ms) and Focus/Home p95 (150.426 / 182.679 ms); cold loads, all five orbit windows and soak pass. Both complete reports are retained, without weakening thresholds. Whole A–G acceptance remains OPEN.
+
+
+### Connector and flow-planning work — 2026-10-21
+
+Two RED operation counts and 4,000 generated polylines guard bounded work without changing geometry. Exact parent comparisons retain 2,673 routes and 336 complete Dense presentation plans. Full defaults: 2,151 passed / 70 existing opt-in skips, 232 files, 173.60 seconds. Native 29/29, 200.166 seconds, zero skips/failures/flaky, 21 attached actual JVM sessions; all 21 archived originals are root-reviewed, with hardware Cinematic executed. Build/typechecks/lint/reference/protected checks pass; all 942 source files remain byte-identical through validation. The fresh full Dense browser run meets Home and seek p95, cold loads, orbit and soak; seek p50 and Focus still fail. The unchanged Phase 5.5 rich method executes 1/1, no skips, and matches all four graph digests/counts, retaining 354.625 MiB at the largest case against 390 MiB. Single-event scaling passes at 1.03235, while all three presentation-retention ratios still fail the unchanged 0.25 budget; visual and whole A–G gates remain OPEN. [Evidence, source boundary and limits](migration/connector-route-cache.md#path-bounds-and-bounded-flow-planning-work--2026-10-21).
+
+
+### Compact flow indexes — 2026-10-21
+
+All 16 focused cases and exact parent results for 1,278 prefixes / 31,416 API queries pass. Two incorrect diagnostic-fixture assumptions are retained and explained. Full defaults: 2,151 passed / 70 existing opt-in skips, 232 files, 172.45 seconds. Native 11/11, 68.210 seconds, zero skips/failures/flaky, seven attached JVM sessions plus the verified recovery execution; three originals are root-reviewed. Build/typechecks/lint/reference/protected checks pass; only one of 942 source files differs from 06695fc. The unchanged generated probe completes, passes 1.05977 scaling, and lowers its largest presentation delta to 34,185,248 bytes, but all three retained-memory ratios still fail. Parent-source Dense and quality results are not relabelled as fresh. [Evidence and limitations](migration/flow-partition.md#compact-catalog-indexes--2026-10-21). Whole A–G acceptance remains OPEN.
+
+
+## Glyph coverage regression — 2026-10-22
+
+Full defaults pass 2,152 / 2,222 with 70 existing opt-in skips, 232 files, 186.79 seconds. Typechecks/lint/build/integrity/protected checks pass. Native 21/21, zero skips/failures/flaky, 145.156 seconds; thirteen attached actual JVM sessions plus recovery identify fourteen distinct IDs. Byte and production half-float GPU cases preserve opaque coverage through actual glyphs; hardware Cinematic, exact eight-sample palette, context restoration/fallback and lifecycle smoke pass. All nineteen originals are root-reviewed. [Source-bound evidence and limits](migration/unlit-output.md#preserve-face-coverage-under-glyphs--2026-10-22). Visual, Dense and whole A–G gates remain OPEN.
+
+
+## Forensic readability — 2026-10-22
+
+Full defaults: 2,155 passed / 70 existing opt-in skips, 233 files, 189.63 seconds. All existing tests retain their bytes; 156 focused cases and 1,325 exact parent camera-output comparisons pass. Build/typechecks/lint/reference/protected checks pass on 948 hash-bound source files. Native 35/35, zero skips/failures/flaky, 212.219 seconds, twenty-seven attached actual JVM IDs plus verified recovery. Actual screenshot ink, minimum font size, bounds, non-overlap and hardware Cinematic checks pass. A prior size-only candidate is retained as a visual failure due to floor occlusion. All twenty final originals are root-reviewed. [Evidence and limitations](migration/forensic.md#readable-structural-evidence--2026-10-22). Whole A–G acceptance remains OPEN.
+
+
+## Inline ordinal histories — 2026-10-22
+
+Full defaults: 2,155 passed / 70 existing opt-in skips, 233 files, 175.01 seconds. Build/typechecks/lint/reference/protected checks pass on 948 source hashes. Exact parent comparisons pass 32,794 complete scenes plus 119 catch/continuation scenes. Native 21/21, zero skips/failures/flaky, 139.393 seconds, eight attached JVM IDs plus recovery; curated arrays are counted separately. Memory budgets and whole A–G acceptance remain OPEN. [Evidence and limitations](migration/slot-history.md#inline-ordinal-histories--2026-10-22).
+
+
+## Canonical source-event ordinals — 2026-10-22
+
+Full defaults: 2,155 passed / 70 existing opt-in skips, 233 files, 176.47 seconds. Build/typechecks/lint/reference/protected checks pass on 948 stable source hashes. Exact parent comparisons pass 32,794 scenes plus 119 catch/continuation scenes. Native 21/21, zero skips/failures/flaky, 139.227 seconds, eight attached JVM IDs plus recovery; curated arrays counted separately. Four of thirteen archived originals are root-reviewed. Retention, visual and whole A–G gates remain OPEN. [Evidence and rejected candidate](migration/slot-history.md#canonical-source-event-ordinals--2026-10-22).
+
+
+## Visible recording/liveness badges — 2026-10-23
+
+Full defaults: 2,156 passed / 70 existing opt-in skips, 233 files, 180.75 seconds. Build/typechecks/lint/reference/protected checks pass on 949 stable source hashes. Native 30/30, zero skips/failures/flaky, 140.784 seconds, sixteen attached actual JVM IDs. Seven badge viewports include source edits and real input/Stop after recording stops. Separate lifecycle timing passes 3/3. Ten of forty-three originals are root-reviewed. Diagnostic fixture/drawer errors are retained separately. [Evidence and remaining gates](migration/header-controls.md#visible-independent-recordingliveness-facts--2026-10-23). Whole A–G acceptance remains OPEN.
+
+
+## Compact forward dependencies — 2026-10-23
+
+Full defaults: 2,157 passed / 70 existing opt-in skips, 233 files, 181.98 seconds. Build/typechecks/lint/reference/protected checks pass on 949 stable source hashes. Exact parent checks pass 32,794 scenes, 119 caught/cleared scenes and 36/37 frame/heap-owner rebinding scenes; existing assertions are unchanged. Native 27/27, zero skips/failures/flaky, 157.658 seconds, eight attached actual JVM IDs plus recovery; Person/array curated cases classified separately. Four of thirteen originals are root-reviewed. [Evidence and limitations](migration/slot-history.md#compact-forward-dependency-targets--2026-10-23). Whole A–G acceptance remains OPEN.
+
+
+## Full-app 5,000-file search — 2026-10-23
+
+Permanent full-project file-search native regression passes 2/2, zero skips/failures/flaky, 9.325 seconds. Both originals are root-reviewed. All prior 949 source files, full unit inputs and fourteen production JS artifacts are byte-identical; prior full 2,157/70 result is reused explicitly because the new browser file is excluded from Vitest. Typechecks/browser TS/lint/build/reference/protected checks pass again on 950 source hashes. [Actual 5,000-source project, timing values and limits](migration/picker.md#full-production-project-with-5000-files--2026-10-23). Whole A–G remains OPEN.
+
+
+## Static environment capture ownership — 2026-10-23
+
+Full defaults pass 2,157 with 70 explicit opt-in skips (2,227 total), 233 files, 174.05 seconds. Typechecks, browser types, lint, build and reference/protected checks pass on 952 stable source hashes. Confirmed native RED becomes GREEN; broader graphics/replay passes 21/21, zero skips/failures/flaky, 133.597 seconds. Ten actual JVM IDs are identified, plus a separate actual Java fallback case without an attached ID. Curated cases remain separate. The separate unchanged full Dense case executes all ten stages without skipping but records four failed latency budgets and exits 1 on a saved `ERR_NETWORK_IO_SUSPENDED` browser-error assertion; rendering/soak/cold-load checks pass. [Ownership, native evidence and limits](migration/static-environment.md). Whole-product A–G acceptance remains OPEN.
+
+
+## Inspector mount ownership — 2026-10-23
+
+One production guard passes full defaults 2,157 with 70 explicit opt-in skips, 233 files, 179.37 seconds. Typechecks/lint/build/reference/protected checks pass on 952 source hashes. Existing native Inspector/history/array/provenance/replay/recovery cases pass 28/28, zero skips/failures/flaky, 171.472 seconds. Four of fourteen original-size images are root-reviewed; ten remain unapproved. Two fresh actual-JVM diagnostic profiles verify removal of React persistent-record enumeration while no Inspector target exists. [Evidence, lifecycle scope and limitations](migration/idle-inspector.md). Whole A–G acceptance remains OPEN.
+
+
+## Completed-stream ownership — 2026-10-24
+
+Full defaults pass 2,169 with 70 explicit opt-in skips, 233 files, 182.49 seconds. Typechecks, lint, build and reference/protected checks pass on 953 stable source hashes. Native integration passes 29/29, zero skips/failures/flaky, 153.916 seconds, identifying 25 actual JVMs. The new shutdown case observes OPEN during the stop request, then CLOSED after 31 raw / 54 normalized events and final metadata. Initial premature-stop and error-retry candidates remain archived separately. The complete Dense case finishes all ten stages with zero browser errors but exits 1 on three fixed latency budgets; rendering, cold loads and soak pass. [Lifecycle policy, reproduced failures and evidence](migration/stream-retirement.md). Whole-product A–G remains OPEN.
+## Unchanged array-window identity — 2026-10-24
+
+Source `b00adb247ed9e78c7e43a16ff3146640f0817301e15ef4d2c5fe6c1653363508` passes 2,171 unit/property tests with 70 explicit opt-in skips (2,241 total), all type/lint/build/reference/protected checks, and 23/23 native cases with zero skips/failures/flaky results. Sixteen actual JVM IDs are attached; six curated array workflows remain separately classified. All 288 saved Dense plans match the parent. The complete actual-JVM Dense run still fails three unchanged latency budgets. [Commands, counts, source inventories, rejected candidates and evidence](migration/array-window-identity.md). This does not complete final exhaustive A–G acceptance.
+
+## Qualified frame-title validation — 2026-10-24
+
+Source `7113f14766238762f141e445d5f2d1971bafc9f04c8c8c23b62a2405277d0b62` passes 2,173 unit/property tests with 70 explicit opt-in skips (2,243 total), all type/lint/build/reference/protected checks and 31/31 native cases with zero skips/failures/flaky results. Twenty-six distinct JVM IDs are attached; another actual Java fallback case lacks its attached ID, and four cases are curated. All ten Dense stages complete without browser errors, but three unchanged latency budgets still fail. [Commands, counts, source inventory and limitations](migration/frame-title-layout.md). This is not final exhaustive A–G acceptance.
+
+## Rounded inset validation — 2026-10-24
+
+Source `ccf6fc32eed7017ee3b5974c36877e6da1228e2942d3f8ae6c918ee43dc355a3` passes 2,176 default tests with 70 explicit opt-in skips (2,246 total, 234 files), all type/lint/build/reference/protected checks and 41/41 native cases with zero skips/failures/flaky. Thirty actual JVM IDs are attached; the separate no-WebGL actual Java case and ten curated cases are classified explicitly. All 846 saved parent-batch comparisons pass. The complete Dense run still fails three fixed latency budgets, while orbit/cold-load/soak pass. [Commands, test migrations and limits](migration/rounded-value-insets.md). Whole A–G remains OPEN.
+
+## Connector hover validation — 2026-10-25
+
+Source `585ee9f72d8768ae673e4a39d045ee1b4d87571a7e6a19b6f2521870d18806b0` passes 2,184 default tests with 70 explicit opt-in skips (2,254 total, 235 files), typechecks/lint/build/reference/protected checks, 20 focused cases, 846 saved parent-batch comparisons and 45/45 native cases with zero skips/failures/flaky. Thirty-two actual JVM IDs are attached; the additional actual Java fallback and twelve curated cases are classified separately. The complete Dense run still fails three latency budgets. [Commands, counts and limitations](migration/connector-hover.md). Whole A–G remains OPEN.
+
+## Static and virtualized connector origins — 2026-10-25
+
+Source `ae5a19c0de4d4a824a4e7ab2a6969b7f560286b136c4a0bfc4848a8513b2cfeb` passes seven fresh type/lint/build/reference/protected gates and 10/10 native integration cases, zero skips/failures/flaky, 71.914 seconds. Four actual JVM IDs are attached; six array workflows are curated. All 960 prior inputs and fourteen production JS resources are byte-identical, so the parent's 2,184/70 default result is reused explicitly. Four of ten current originals are root reviewed. [Native workflows, diagnostics and limits](migration/connector-origins.md). A–G remains OPEN.
+
+## Focus anchor reconciliation — 2026-10-25
+
+Source `6bb9bfd548110be09420296ad718fafe7e7a66e1a5fc29482d633486d674ccc1` passes 2,184 defaults with 70 explicit opt-in skips (2,254 total, 235 files), typechecks/lint/build/reference checks and protected checks allowing only the demonstrated CameraRig exception. Stronger native preflight passes 4/4. The latest complete native attempt is 50 passed / one source-loading failure / zero skips or flaky cases; 38 attached actual-JVM cases and the separate actual Java fallback pass. Dense completes all ten stages without browser errors but FAILS three fixed latency budgets. [All three combined attempts, isolated traces and limitations](migration/focus-anchor-reconciliation.md). Whole A–G remains OPEN.
+
+## Recorded source containment — 2026-10-25
+
+Final source `5d53f47c432d4c15aee37b03dd9e1568bccea2b325f3a5e9b335233b451674dc` has 963 files. Full defaults pass 2,184/70 explicit skips/2,254 total on identical production/unit/fixture inputs; subsequent excluded browser capture/ID changes are recorded explicitly. Final type/lint/build/reference/protected gates pass. Native integration passes 63/63, zero skips/failures/flaky, 465.171 seconds. All ten Dense stages complete without browser errors, but three fixed latency budgets still FAIL. [Exact source equivalence, commands and counts](migration/recorded-source-containment.md). Whole A–G remains OPEN.
+
+## Stable World text renders — 2026-10-25
+
+Frozen 964-file source a3dd54ca31963a6c759d3f06cf9bcf86b020e29fcc3d8e2a58df37032b026faa passes 2,190 defaults /70 explicit opt-in skips/2,260 total (236 files, 177.27 seconds), eight validation gates and 65/65 native cases (468.330 seconds). Forty-three JVM IDs are attached; the separate actual fallback, nineteen curated and two isolated WebGL cases are distinguished. [Evidence, boundaries and remaining failures](migration/world-text-memo.md). Whole A–G remains OPEN.
+
+## Complete Frame value insets — 2026-10-25
+
+Frozen 965-file source 6bcbe87a946af033d7fe75469f25c556591b0a7f43486ccf48336f0bbc290eb3 passes 2,192 defaults /70 explicit skips/2,262 total (236 files, 172.93 seconds), eight validation gates and 67/67 native cases (468.591 seconds). Full Dense completes without browser errors but fails three fixed latency budgets. [Evidence, boundaries and remaining failures](migration/frame-value-chips.md). Whole A–G remains OPEN.
+
+## Command receipt browser successors — 2026-10-26
+
+Browser-only migration passes seven fresh checks and 17/17 native integration, 95.541 seconds. Production/unit/fixture inputs and fourteen production JS artifacts are byte-identical to f262899, so its 2,192/70 default and failing Dense evidence are explicitly reused. Two older cases migrate; ninety remain. [Preserved assertions, failures and evidence](migration/command-receipts.md). Whole A–G remains OPEN.
+
+## Retained recording handoff — 2026-10-26
+
+Frozen 965-file source 05860f5d7a52802064a5f968f7c21979b34728d85d912643c193b65205672f2b passes 2,192 defaults /70 explicit skips/2,262 total (236 files, 185.58 seconds), eight checks and 38/38 native cases (172.684 seconds), zero native skips/failures/flaky. Twenty-one JVM IDs are known; compile failure is not counted as JVM execution. Eighty-nine older browser cases remain. [Evidence, semantic disposition and remaining gates](migration/recording-handoff.md). Whole A–G remains OPEN.
+
+## Constructor provenance browser successor — 2026-10-28
+
+Browser-only source 048c9a825532587a217269a2f28533bd06d441c8c1df1d0f316705fd7af8f63b (965 files) passes seven fresh checks and 15/15 native cases, 133.128 seconds. All production/unit/fixture inputs and fourteen JS artifacts match 8cd62c4, so its 2,192/70 default result is reused explicitly. Eighty-eight older browser cases remain. [Semantic proof, failures and evidence](migration/provenance-browser.md). Whole A–G remains OPEN.
+
+## Phase 4 cross-feature browser successors — 2026-10-28
+
+Browser-only 965-file source 66efbe46035a53606e96e32fa51e6b6d8302667265eae00db0d8a3cf81e08557 passes seven fresh checks and 8/8 actual-JVM coverage cases in 149.757 seconds. Production/unit/fixtures and fourteen JS resources match 6af3579, so its identical-input 2,192/70 default result is reused explicitly. Eighty older browser cases remain. [Per-case dispositions, failures and evidence](migration/coverage-browser.md). Whole A–G remains OPEN.
+
+## Incremental transport browser successors — 2026-10-28
+
+Browser-only 965-file source fc065d66f389004042eac6a8fcf21bd56ecef37f9a9e8a7f5bc5359eb00107fe passes seven fresh checks and focused 3/3 (32.397 seconds). Identical production/unit/fixture inputs and fourteen JS resources justify explicit reuse of 2,192/70 defaults. Both wider 9/3 integrations and the 240.8 ms diagnostic Console failure are preserved; no whole-integration pass is claimed. [Evidence and explicit limitations](migration/incremental-browser.md). Whole A–G remains OPEN.
+
+## Console publication priority — 2026-10-28
+
+Frozen 965-file source 62e5dc29a4535c1fc180faefdd217b7c5fd6ca4f12d393bd656e4b296ae4a8d2 passes eight checks, fresh 2,192/70 defaults (2,262 total, 236 files, 366.65 seconds) and 18/18 browser cases (158.475 seconds), zero browser skips/failures/flaky. The fixed Dense run completes all ten stages but exits one with four budget failures. [Full evidence and limitations](migration/console-publication.md). Whole A–G remains OPEN.
+
+## Persistence browser successors — 2026-10-28
+
+Frozen 965-file source 83ca242c5efc92cee3327535e9d4517784a2d87ff63dc546acd1ddbddd563d53 passes eight checks including all 197 Shell tests in 20 files and 20/20 browser cases (187.528 seconds). Prior 2,192/70 defaults are earlier evidence, not a fresh whole-suite run on the two wording changes. No fresh Dense run is claimed; four prior budgets remain failed. [Preserved assertions, failures and evidence](migration/persistence-browser.md). Whole A–G remains OPEN.
+
+## Observer browser successors — 2026-10-28
+
+Browser-only 965-file source dac6d9a0e1924558876516c57ba30aacca29b0ae50ed495e81ec3c5a3ba7115d passes seven fresh checks and 22/22 browser cases (227.403 seconds). Production/unit/fixture inputs and fourteen JS resources match f0d8af2; earlier full 2,192/70 and Shell 197/20 evidence is reused explicitly. [Preserved assertions, failures and evidence](migration/observer-browser.md). Whole A–G remains OPEN.
+
+## Focus resize contract — 2026-10-28
+
+Browser-only 966-file source bc54fbdefb301ac4bb07bf41517232dc5b693a50fb7f8854db8ec05fd9a7abc7 passes seven fresh checks and 2/2 new actual-JVM cases (30.879 seconds). All prior 965 inputs and fourteen production JS resources are identical. Prior 22/22 is separate evidence; no combined 24-case execution is claimed. Discovery is 296 cases /82 files, with 74 older cases still open. [Evidence and contract clarification](migration/focus-resize.md). Whole A–G remains OPEN.
+
+## Stable outline buffers — 2026-10-29
+
+Final 968-file source f132bff283a58195126cdf77d6905455c00e6a5172ec532106f771ab67791087 passes seven fresh checks and 85/85 native cases (602.122 seconds). Fresh full defaults on identical production/unit/fixture inputs are 2,195/70 explicit skips/2,265 total, 237 files (386.02 seconds); only a browser hydration prerequisite changes afterward. Fixed Dense completes but exits one with three latency failures. [Source, lifetime proof and full evidence](migration/solid-edge-lifetime.md). Whole A–G remains OPEN.
+
+
+## Complete flow-prefix ownership — 2026-11-01
+
+Final 968-file source 0ddeed5c6450579407d6b8dd76a0fc44403a6b42ed2a6657961e9f278e6d843a passes seven fresh checks and 97/97 native cases, zero skips/failures/flaky, 843.002 seconds. Fresh complete defaults on identical production/unit/fixture inputs are 2,199 passed/70 explicit opt-in skips/2,269 total in 237 files, 264.72 seconds; only one browser resize prerequisite changes afterward, and fourteen built JS resources are byte-identical. Fixed Dense completes all ten stages but exits one with four latency failures. [API equivalence, failed candidates, source and full evidence](migration/flow-prefix-lifetime.md). Whole A–G remains OPEN.
+
+
+## Null and unavailable attachment eligibility — 2026-11-03
+
+Final 968-input source bb9299e6f005d7bb7a970a72754ccb39333b0cd5d3728bd46ce5ef466694cd5d passes seven fresh checks and 99/99 native cases, zero skipped/failed/flaky, 951.657 seconds. Fresh full defaults on identical production/unit/fixture inputs are 2,204 passed/70 explicit opt-in skips/2,274 total, 237 files, 285.24 seconds; only three browser successors differ afterward, with fourteen built JS resources byte-identical. Fixed Dense completes all ten stages but exits one on four latency limits. [Preserved failures, source equivalence and evidence](migration/null-value-ports.md). Whole A–G remains OPEN.
+
+
+## Accepted event lookup ownership — 2026-11-03
+
+Frozen 968-input source eb3ca568659c275780c0db1d450cb7ac67ac8fe5a40ceb6b5cea3a067fe2c980 passes eight fresh checks, complete defaults 2,205/70 explicit opt-in skips/2,275 total in 237 files (291.43 seconds), and 109/109 native cases (1,043.378 seconds), zero native skips/failures/flaky. Saved-input parent proof matches 32,344 complete scenes across 37 workloads. Fixed Dense completes all ten stages but exits one on four latency budgets. [Source, comparisons and limitations](migration/accepted-event-lookup.md). Whole A–G remains OPEN.
+
+
+## Array cell label lifetime — 2026-11-03
+
+Source 3f9dc1e116ba2474e60abae5abbf7950f58b2a95122949f25c161ad4475d22fe passes eight fresh checks: 2,207 default tests, 70 explicit opt-in skips, 2,277 total in 237 files; production/browser types, lint, build, build measurements, references and protected boundaries pass. Exact-parent replay matches 10,338 complete label renders across fifteen normalized inputs. Native integration passes 30/30 with zero skips/failures/flaky results and 21 attached distinct actual JVM IDs; curated and isolated cases are separately classified. [Scope, source and evidence](migration/array-cell-label-lifetime.md). Whole A–G remains OPEN.
+
+
+## Array cell typography — 2026-11-03
+
+Source 67bb4ddb passes eight fresh checks, including 2,207 default tests /70 explicit opt-in skips /2,277 total in 237 files. The 44 focused checks and 10,338 presentation comparisons pass. Native integration passes 25/25 with zero failures/skips/flaky results and sixteen attached distinct actual JVM IDs. [Exact scope and evidence](migration/array-cell-typography.md). Whole A–G remains OPEN.
+
+
+## Face text opacity lifetime — 2026-11-03
+
+Source 18789fe6 passes eight fresh checks, including 2,208 defaults/70 explicit opt-in skips/2,278 total in 237 files; 45 focused checks pass. Native integration passes 47/47 with zero failures/skips/flaky results and 38 attached distinct actual JVM IDs. The unchanged 195-case acceptance gate completes: 191 ordinary passes, four preserved expected-failure contracts, zero failures/skips/todos, and 47/47 observed target JVM launches (262.962 seconds). Expected-failure targets remain unimplemented evidence, not successful behavior. [Source, scopes and logs](migration/face-text-opacity-lifetime.md). Whole A–G remains OPEN.
+
+
+## Current-source JVM convergence — 2026-11-03
+
+Acceptance passes 191 ordinary cases plus four preserved expected-failure contracts (195 total, 47 observed target JVM starts). Reference programs pass 7/7 with seven starts, torture 9/9 with nine starts, and prior coverage/provenance 85/85 with fifty starts (33 inventory +52 JVM-dependent cases). All counts match, with zero required skips/failures. Expected-failure targets remain gaps. [Exact source, process/test distinctions, flags and evidence](migration/current-jvm-convergence.md). Whole A–G remains OPEN.
+
+
+## Source Escape and IDE browser successors — 2026-11-03
+
+Source4b798b34 passes eight fresh checks, including 2,208 defaults/70 explicit opt-in skips/2,278 total in 237 files. Full native integration passes 20/20 with zero failures/skips/flaky results, 11 attached distinct actual JVM IDs and 29 archived originals. Fifteen Java literals match the original IDE driver exactly; older browser cases remaining fall from 74 to 64. [Exact source, assertions, failures and scope](migration/ide-browser-successors.md). Whole A–G remains OPEN.
+
+
+## Debugger browser successors — 2026-11-03
+
+Source4c52141b passes eight checks: 2,209 default passes, 70 explicit opt-in skips, 2,279 total in 237 files (300.71 seconds). Native integration passes 23/23, zero skips/failures/flaky, in 231.433 seconds, with 22 distinct attached actual JVM IDs. All eleven debugger cases migrate; 53 older cases remain. AST inventory is 686 modules/2,413 literal edges/263 reachable/41 nonliteral/zero obsolete targets. [Assertions, rejected experiment, exact source and evidence](migration/debugger-browser-successors.md). Whole A–G remains OPEN.
+
+
+## Independent Error Explorer actions — 2026-11-03
+
+Source 44fd57fa (969 inputs) passes all eight checks: 2,210 default passes, 70 explicit opt-in skips, 2,280 total/237 files (295.94 seconds). Native 39/39 passes with zero failures/skips/flaky in 338.169 seconds, 31 distinct attached actual JVM session IDs and 49 original captures. Default discovery is 298 cases/83 files, not a full-suite passing claim. AST is 687 modules/2,416 literal edges/263 reachable/41 nonliteral/zero obsolete targets. [Exact source, regression and evidence](migration/error-navigation.md). Whole A–G remains OPEN.
+
+
+## Captured return expressions and recursion successors — 2026-11-03
+
+Product/unit source c66556e3 passes eight checks: 2,211 default passes/70 explicit opt-in skips/2,281 total/237 files (295.71 seconds). Final driver source 7c9eaa1a changes only one browser readiness prerequisite afterward; 968 other inputs and all build resources are byte-identical, with fresh browser typecheck/protected guards. Final 37/37 passes in 356.900 seconds, zero failures/skips/flaky, 29 attached distinct actual JVM IDs and 49 archived originals. Four curated cases are migrated; 49 older cases remain. Earlier unit/build executions are not relabelled as fresh driver executions. [Exact assertions, source boundaries and evidence](migration/recursion-browser-successors.md). Whole A–G remains OPEN.
+
+
+## Shared presentation event witnesses — 2026-11-04
+
+Corrected source 80f38870 (971 inputs) passes all eight checks, including 2,217 default passes, 70 explicit opt-in skips and 2,287 total tests/238 files (297.58 seconds). Focused checks pass 35/35; parent equivalence covers 912 scenes, 1,632 plans and 9,696 flow queries. AST is 689 modules/2,426 literal edges/264 reachable/41 nonliteral/zero obsolete targets. The complete second native gate passes 135/135, zero failures/skips/flaky, in 1,343.236 seconds, with 95 distinct attached actual JVM session IDs across 94 cases. It preserves 188 originals, four root-reviewed. The first 134-pass/one-HTTP-504-failure run and three unchanged successful repetitions remain archived separately. [Ownership contract, rejected candidate and measurements](migration/shared-presentation-events.md). Whole A–G remains OPEN.
+
+
+## Complete unavailable-flow snapshots — 2026-11-04
+
+Product/unit source 94e01c3e passes eight checks: 2,220 default passes, 70 explicit opt-in skips, 2,290 total tests/239 files (307.42 seconds). Final driver ff2fa076 changes only the new browser test; all 973 other inputs and all 29 built resources are byte-identical, with fresh browser typecheck/protected guards. Its focused native gate passes 49/49, zero failures/skips/flaky, in 524.712 seconds, with 38 distinct attached actual JVM IDs and 54 originals (four reviewed/50 unreviewed). The older 135-case parent execution is not relabelled fresh. AST: 692 modules/2,433 literal edges/265 reachable/41 nonliteral/zero obsolete targets. [Complete evidence, ownership and source qualification](migration/compact-unavailable-flows.md). Whole A–G remains OPEN.
+
+
+## Error Explorer applied-prefix evidence — 2026-11-04
+
+Source `1e715790` (976 inputs) passes all eight checks: 2,232 default passes, 70 explicit opt-in skips, 2,302 total tests/240 files (292.27 seconds). Final native integration passes 25/25 with zero failures/skips/flaky in 242.972 seconds. The standard attachments identify 23 distinct actual JVM IDs across 23 cases; the archive contains 32 originals (six reviewed/26 unreviewed). Default browser discovery is 304 cases/85 files, not an exhaustive passing result. AST: 694 modules/2,446 literal edges/265 reachable/41 nonliteral/zero obsolete targets. [Exact source, regressions and qualification](migration/error-prefix-evidence.md). Whole A–G remains OPEN.
+
+
+## Arbitrary Java browser successors — 2026-11-04
+
+Browser-driver source `efaa1bb2` passes all five migrated cases in 50.326 seconds, zero failures/skips/flaky, with five distinct attached actual JVM IDs and five reviewed originals. Fresh browser types/protected guards pass. The other 975 source inputs and all 14 measured JS build resources match source `1e715790`; its 2,232-pass/70-explicit-skip validation, build and 25-case native gate retain their earlier execution boundary. Default discovery remains 304 cases/85 files; 44 older cases remain. AST: 694 modules/2,449 literal edges/265 reachable/41 nonliteral/zero obsolete targets. [Exact assertions, source boundaries and evidence](migration/arbitrary-java-browser-successors.md). Whole A–G remains OPEN.
+
+
+## Reference-chip attachment geometry — 2026-11-04
+
+Source `b568613e` qualifies 978 inputs and passes all eight checks: 2,237 default passes / 70 explicit opt-in skips / 2,307 total across 240 files (286.66s). Native 60/60 passes with zero failures/skips/flaky in 604.618 seconds, 49 distinct standard attached actual JVM IDs across 49 cases, 65 originals (seven reviewed/58 unreviewed). AST: 696 modules / 2,464 literal edges / 267 reachable / 42 nonliteral / zero obsolete targets. Default discovery remains 304 cases/85 files, with 44 older cases still OPEN. Separate fresh protected retention and Dense runs execute fully but retain budget failures; no skipped suite is counted as passed. [Exact source, regression and current measurements](migration/reference-chip-ports.md). Whole A–G remains OPEN.
+
+
+## Focus connection hierarchy and target readability — 2026-11-04
+
+Exact source `18463b8538cef4f5ace0bd1e04b5854a34e64459507ce42b0e08b8e83f6f8a54` passes all eight checks: 2,245 default tests, 70 explicit opt-in skips, 2,315 total/241 files, 285.20 seconds; typecheck, browser types, lint, build, metrics, references and protected guards pass. Fresh native integration passes 69/69 in 681.283 seconds, zero skips/failures/flaky. Its archive contains 53 distinct standard attached JVM IDs across 53 cases and 79 original captures, eight reviewed. Earlier interrupted failures and three unchanged five-case confirmations remain separate. Entry gzip 72,164 bytes; Shell static JS closure 676,185 bytes. AST: 699 modules, 2,475 literal edges, 268 production-reachable, 42 nonliteral sites, zero inventoried obsolete targets. Default discovery 306 cases/86 files, 44 older cases still OPEN; discovery is not exhaustive acceptance. [Evidence and source qualification](migration/focus-connection-mask.md).
+
+Fresh source-qualified performance completes all ten Dense stages without workflow errors but still fails four latency limits; Node still fails all three 25% retention limits. Cold median passes in this execution; no speedup/non-regression or whole-product approval follows. See [current measurements](migration/focus-connection-mask.md).
+
+
+## Private layout metadata compaction — 2026-11-04
+
+Exact two-file source `b5256fb366ed6f189133ff2640bf5f725c8a9eab99cf28ee5e9e392ce9814217` passes all eight checks: 2,246 defaults, 70 explicit opt-in skips, 2,316 total/241 files, 302.24 seconds, plus typecheck/browser types/lint/build/metrics/references/protected guards. Entry gzip 72,162 bytes; Shell static JS closure 676,213 bytes. AST 699 modules/2,476 literal edges/268 production-reachable/42 nonliteral sites/zero inventoried obsolete targets. Fresh native 69/69 passes in 700.802 seconds, zero failures/skips/flaky; 53 distinct standard attached JVM IDs across 53 cases; 79 originals, four reviewed/75 unreviewed. ABBA confirms lower medium/large total retention while all 12 memory budgets still fail; fresh Dense completes with five latency failures. [Evidence](migration/compact-layout-slot-metadata.md).
+
+
+## Array captions and precise cell Focus — 2026-11-04
+
+Full source `e1ddb513` passes all eight checks: 2,261 default passes / 70 explicit opt-in skips / 2,331 total, 243 files, 296.17 s (all eight steps 320.872 s). Final driver `3e6e9a41` differs only in the corrected native flow setup; production/unit/fixture/benchmark inputs are byte-identical, and the explicit qualification plus fresh browser TypeScript is retained. Fresh native integration passes 93/93 in 938.597 s (runner 939.149 s), zero skips/failures/flaky; 73 distinct standard attached JVM IDs across 73 cases; 117 original PNGs, six reviewed. The earlier 92/1 and repeated original catalog failure remain archived. Entry static JS closure gzip 72,162 B; Shell static JS closure 677,214 B. AST: 704 modules / 2,497 literal edges / 271 reachable / 42 nonliteral / zero inventoried obsolete. Browser discovery 316/86 is not full execution; 44 older cases and final exhaustive opt-ins remain OPEN. [Exact scope, failed/corrected evidence and source qualification](migration/array-label-placement.md).
+
+Fresh source-qualified Dense completes all ten stages without workflow/lifecycle errors, with four latency failures and one passing cold median. Protected Node still fails all three 25% retention limits; large ratio 0.401609676. Source-bound measurements, maxima, soak scope and unchanged workload SHAs are retained in [the array evidence ledger](migration/array-label-placement.md).
+
+## Array and collection reference chips — 2026-11-05
+
+Source `cafbcb157db3ec973d989cf64375b2df16bf3a0e5f0f6e00ec74dd4435517675` (991 inputs/23 changes) passes all eight checks. Defaults: **2,265 passed / 70 explicit opt-in skips / 2,335 total**, 244 files, 287.79 s; all steps 311.887 s. Fresh native **99/99**, zero skips/failures/flaky, 1,223.357 s (runner 1,223.925); 79 distinct standard attached JVM IDs across 79 cases; 133 original PNGs, six reviewed/127 unreviewed. Both real GPU tiers execute; eight palette samples are exact. Actual main gzip 71,732 B, static entry/Shell JS closure 72,162/677,835 B. AST: 708 modules/2,523 literal edges/272 reachable/42 nonliteral/zero inventoried obsolete. Browser discovery 320/87 is not full execution; older browser cases and exhaustive opt-ins remain open. Fresh Node retention and four Dense latency budgets still fail. [Scope, failed attempts, source qualifications and complete results](migration/structure-reference-chips.md).
+
+## Collection departure clearance and stable connector picking — 2026-11-05
+
+Source `7338d5e216212b623266b4802f468f66c360b063c9db06559a884ed29f8f8fdd` (992 inputs/13 changes) passes all eight checks: 2,274 defaults/70 explicit opt-in skips/2,344 total, 244 files, 291.81 s; all steps 316.149 s. Fresh native **101/101**, zero skips/failures/flaky, 1,211.282 s; 81 distinct standard attached JVM IDs. The archive has 137 original PNGs/five reviewed. Main gzip 71,734 B; static entry/Shell JS closures 72,164/678,366 B. AST: 709 modules/2,527 literal edges/273 reachable/42 nonliteral/zero inventoried obsolete. Discovery 320 cases/87 files is not execution. Fresh Node retention still fails; complete Dense results are recorded in the linked ledger. [Implementation, failed evidence and exact source qualification](migration/reference-departure-clearance.md).
+
+## Shared world inputs and glyph preparation — 2026-11-05
+
+Source `46dd60be` passes all eight checks in 325.266 s. The default suite records 2,275 passes and 70 explicit opt-in skips. Native integration passes 110/110 in 1,250.659 s with 86 standard JVM attachments and 145 original PNGs. Main gzip is 71,732 B. Memory and five Dense timing limits remain open. [Implementation and source evidence](migration/render-frame-preparation.md).
+
+## Recursive headings, slot evidence and array Focus — 2026-11-05
+
+Source `0bd89e66` inventories 993 inputs and passes all eight source checks. The separate native Focus trial passes 24 cases, and the corrected integration passes 120 cases with zero failures, skips or flakes. The earlier 118/120 run remains archived with both traces and its own source inventory. The full browser corpus, opt-in suites, reference review and performance acceptance remain open. [Exact results and capture evidence](migration/recursive-headings-and-slot-retention.md).
+
+## I/O labels and existing shell workflows — 2026-11-06
+
+Source `a3ab39c5` passes all eight source checks and all 12 targeted browser cases. Five actual JVM runs validate mounted I/O count labels across the five viewport sizes. Seven existing browser cases now exercise the current shell and recorded-I/O surfaces. The two earlier trials and their failures remain archived. [Exact source, scope and capture evidence](migration/io-labels-and-shell-workflows.md).
+
+## Connector radiance — 2026-11-06
+
+Source `1639c63e` passes the eight source checks, nine focused native cases and a fresh 127-case combined run with zero skips, failures or flakes. The combined archive contains 157 originals and 96 distinct actual JVM session attachments. The remaining browser, performance, and reference acceptance work stays open. [Paired native evidence and exact source](migration/connector-radiance.md).
+
+## Shared text-parent transforms — 2026-11-06
+
+Source `6cf20bb6` passes all eight source checks and 12 targeted native cases, including real recursion, forensic ink, both GPU palettes and narrow array captions. The six paired Safe Frames match measured geometry and text. The 127-case combined result above belongs to the connector checkpoint. [Regression, exact-source measurements and capture evidence](migration/text-parent-transforms.md).
+
+## Forensic text wrapping — 2026-11-06
+
+Source `7f7d3fac` passes all eight source checks, 2,280 default unit cases and 11 targeted native cases. Short and narrow captures preserve the same text and panel placement while keeping exception names and evidence words readable. [Exact source and paired capture evidence](migration/forensic-word-wrap.md).
+
+## Existing lifecycle workflows — 2026-11-06
+
+Source `a0aa0467` passes all five original lifecycle cases on current controls with seven distinct completed JVM executions. Strict TypeScript and default browser discovery pass. The 320-case default inventory has 32 remaining older cases. [Workload and artifact details](migration/lifecycle-browser-successors.md).
+
+## Recorded stdout preview projection — 2026-11-06
+
+Source `965b4939` passes all eight source checks, 2,281 default unit cases and two desktop and narrow actual-JVM browser probes. These probes qualify recorded preview data and deterministic timeline projection. [Exact source and evidence](migration/io-preview-projection.md).
+
+## Existing Java history motion — 2026-11-06
+
+Source `0598422c` passes the migrated opt-in motion case with one completed actual JVM recording, seven original stills and a native video. Default discovery stays at 320 cases in 87 files. [Exact source and evidence](migration/motion-browser-successor.md).
+
+## Shared immutable layout dimensions — 2026-11-06
+
+Source `f78c2e67` passes all eight source checks and six targeted native array and recursion cases. The complete layout and scene comparison passes on a saved actual JVM recording and 32 generated traces. [Exact source, capture evidence and remaining limits](migration/shared-layout-dimensions.md).
+
+## Reference array Flow endpoints — 2026-11-06
+
+Source `94420b20` passes 12 native cases and the paired desktop/narrow comparison. Final source `e492d144` adds the corrected sparse reference-cell unit assertion and passes all eight source checks with 2,281 default passes. [Exact source, failures and capture evidence](migration/array-flow-port.md).
+
+## Stderr warning glyph — 2026-11-06
+
+Source `fc08fa44` passes all eight source checks, the million-line Console case and two real-JVM desktop and narrow Console cases. [Exact source, glyph evidence and reviewed capture](migration/stderr-warning-glyph.md).
+
+## World stdout count cadence — 2026-11-12
+
+Source `1859444d` passes all eight source checks. The actual JVM scrub records 20 visible count changes after the first observation, down from 63 at baseline. [Exact source and native measurements](migration/stdout-count-cadence.md).
+
+## Existing Java torture browser workflows — 2026-11-12
+
+Source `f7b30fab` passes all nine migrated browser cases with 90 original screenshots and nine distinct JVM sessions. Strict TypeScript and browser discovery pass. The ledger has 22 older cases open. [Exact source, fixture evidence and visual findings](migration/torture-browser-successors.md).
+
+### Counted Java acceptance rerun — 2026-11-12
+
+Revision `379d01d` and source `f7b30fab` execute all 195 assertions in 222.953 seconds with 191 ordinary passes and four preserved expected failures (`allMembers`, `allFollows`, `largeHistory`, `manyInvocations`). The gate observed 47 distinct actual JVM launches and no unexpected failures, skips or todos. The source inventory, JVM launch log and both reports are under `.ggjavaez/qa/reference-exact/acceptance-torture-successor/`.
+
+### Retained Java torture detail views — 2026-11-12
+
+Source `80e77e5e` passes four fresh JVM prerequisites and four retained detail cases in 342.385 seconds with zero failures, skips or flakes. Each reopened ID matches its original JVM recording. The archive contains 14 original detail PNGs. Strict browser TypeScript passes, and 18 older browser cases remain open. [Evidence, earlier driver failures and visual findings](migration/torture-detail-successors.md).
+
+### Retained completion duration — 2026-11-12
+
+Source `af03a4e5` passes all eight source checks and 2,281 default tests with 70 explicit opt-in skips. Three real-JVM reload failures become three passes. The broader 13-case browser integration passes without failures, skips or flakes. [Measured durations, exact source and regression evidence](migration/terminal-duration.md).
+
+### Unified execution workflows — 2026-11-13
+
+Source `2198f118` passes 9/9 native cases in 84.455 seconds with zero failures, skips or flakes. Twelve JVM sessions and a separate pre-launch Stop attempt are recorded. Nine older browser cases remain open. [Preserved workloads and exact source evidence](migration/unified-browser-successors.md).
+
+### Focus camera projection cost — 2026-11-13
+
+Source `4b8f9f0b` passes all eight source checks and 26 native browser cases with zero failures, skips or flakes. The production Dense run completes ten stages and still fails seek p50 and Focus p95. The paired solver diagnostic and exact camera/visual evidence are archived. [Measurements and remaining limits](migration/focus-solver.md).
+
+### Workspace browser workflows — 2026-11-13
+
+Source `1a704c41` passes all five original workspace cases on their preserved protocol fixtures in 36.769 seconds, with zero failures, skips or flakes. Four older product-audit browser cases remain. [Source geometry, fixture scope and earlier failures](migration/workspace-browser-successors.md).
+
+### Product audit browser workflows — 2026-11-13
+
+Source `53073db8` passes all four original product-audit cases in 274.074 seconds with zero failures, skips or flakes. Six actual JVM sessions, 74 PNGs and four videos are indexed. The legacy browser ledger has no remaining open entries. Visual findings and whole-browser, performance and formal matrix gates remain open. [Evidence and scope](migration/product-audit-browser-successors.md).
+
+### Full default browser run and targeted recovery — 2026-11-18
+
+The serial suite on `feb7623` completed **314 passed, four failed and five explicit opt-in skips** across 323 cases and 88 files. Source `9dfe1f99` passes **24 of 24** targeted recovery trials, zero failures, skips or flakes. Six real-project Quick Open trials meet the unchanged 200 ms limit for focus and query updates. Three real JVM Stop trials receive the shutdown recording before retiring observation. The local-asset and byte/half-float mask trials pass on the repaired drivers. A fresh default suite and whole A–G acceptance remain open. [Source, results and first failures](migration/default-browser-recovery.md).
+
+### Array title plate — 2026-11-18
+
+Exact source `f53a0819` passes eight source checks and **27 of 27** native integration cases, with no failures, flakes or skips. Default units record **2,284 passes and 70 explicit opt-in skips** across 244 files. The actual-Java tests verify title glyph placement on the rendered geometry and preserve array cell and connector behavior. Twenty-one distinct JVM sessions and 31 original captures are archived. [Geometry, test boundaries and remaining visual work](migration/array-title-plate.md).
+
+### Floor reflections — 2026-11-18
+
+Source `7d9fe4bd` passes **5 of 5** targeted browser cases and **35** focused unit checks, with typechecks, lint, build and reference guards passing. In the paired array capture the floor renders distinct cyan and violet reflections on the existing geometry. [Measurements and remaining visual and performance checks](migration/floor-reflection-blend.md).

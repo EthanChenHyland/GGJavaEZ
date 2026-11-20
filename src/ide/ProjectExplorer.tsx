@@ -1,10 +1,9 @@
-import { useMemo, useRef, useState } from 'react'
+import { useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { ChevronDown, ChevronRight } from 'lucide-react'
 import type { ProjectEntry } from './contracts'
-import { WorkspaceMenu } from './WorkspaceMenu'
+import { CommandMenu } from '../shell/dialogs/CommandMenu'
 import { explorerMenuCommands } from './contextMenus'
 import { ideCommandDefinitions, type CommandAvailability, type CommandContext, type IdeCommandId } from './commands'
-import './ProjectExplorer.css'
 export { menuTargetIndex } from './contextMenus'
 
 export type TreeAction = 'class' | 'file' | 'folder' | 'rename' | 'delete' | 'reveal' | 'copy' | 'open' | 'refresh'
@@ -49,22 +48,28 @@ export function ProjectExplorer({ tree, active, collapsed, onToggle, onOpen, onA
       event.preventDefault(); const rect = event.currentTarget.getBoundingClientRect(); menuAt(row.entry, rect.left + 24, rect.bottom)
     }
   }
-  return <div className="ide-tree" role="tree" aria-label="Project explorer" onContextMenu={(event) => {
-    if (event.target === event.currentTarget) { event.preventDefault(); menuAt(null, event.clientX, event.clientY) }
-  }}>
-    {visible.map((row) => <div className={`ide-tree-row ${active === row.entry.path ? 'is-active' : ''}`} key={row.entry.path} style={{ paddingLeft: 12 + (row.depth - 1) * 15 }}>
+  // Changing a Shell surface must not rebuild thousands of unchanged file
+  // rows. Event handlers still dispatch through the current committed props,
+  // including project ownership and menu availability after a workspace change.
+  const callbacks = useRef({onTreeKey,menuAt,onToggle,onOpen})
+  useLayoutEffect(()=>{callbacks.current={onTreeKey,menuAt,onToggle,onOpen}})
+  const rows = useMemo(()=>visible.map((row) => <div className={`ide-tree-row ${active === row.entry.path ? 'is-active' : ''}`} key={row.entry.path} style={{ paddingLeft: 12 + (row.depth - 1) * 15 }}>
       <button ref={(node) => { if (node) rowRefs.current.set(row.entry.path, node); else rowRefs.current.delete(row.entry.path) }}
         className="ide-tree-name" role="treeitem" aria-level={row.depth} aria-selected={active === row.entry.path} aria-expanded={row.entry.kind === 'directory' ? !collapsed.has(row.entry.path) : undefined}
         tabIndex={focused === row.entry.path || !focused && visible[0]?.entry.path === row.entry.path ? 0 : -1} title={row.entry.path}
-        onFocus={() => setFocused(row.entry.path)} onKeyDown={(event) => onTreeKey(event, row)}
-        onClick={() => row.entry.kind === 'directory' ? onToggle(row.entry.path) : onOpen(row.entry.path)}
-        onContextMenu={(event) => { event.preventDefault(); event.currentTarget.focus(); setFocused(row.entry.path); menuAt(row.entry, event.clientX, event.clientY) }}>
+        onFocus={() => setFocused(row.entry.path)} onKeyDown={(event) => callbacks.current.onTreeKey(event, row)}
+        onClick={() => row.entry.kind === 'directory' ? callbacks.current.onToggle(row.entry.path) : callbacks.current.onOpen(row.entry.path)}
+        onContextMenu={(event) => { event.preventDefault(); event.currentTarget.focus(); setFocused(row.entry.path); callbacks.current.menuAt(row.entry, event.clientX, event.clientY) }}>
         {row.entry.kind === 'directory' ? collapsed.has(row.entry.path) ? <ChevronRight size={13}/> : <ChevronDown size={13}/> : <span className="ide-java-icon">{row.entry.name.endsWith('.java') ? 'J' : row.entry.name === 'pom.xml' ? 'M' : row.entry.name.includes('gradle') ? 'G' : '·'}</span>}{row.entry.name}
       </button>
-      <button className="ide-entry-more" aria-label={`Actions for ${row.entry.path}`} title="File actions" onClick={(event) => { const rect = event.currentTarget.getBoundingClientRect(); menuAt(row.entry, rect.left, rect.bottom) }}>···</button>
-    </div>)}
+      <button className="ide-entry-more" aria-label={`Actions for ${row.entry.path}`} title="File actions" onClick={(event) => { const rect = event.currentTarget.getBoundingClientRect(); callbacks.current.menuAt(row.entry, rect.left, rect.bottom) }}>···</button>
+    </div>), [visible,active,focused])
+  return <div className="ide-tree" role="tree" aria-label="Project explorer" onContextMenu={(event) => {
+    if (event.target === event.currentTarget) { event.preventDefault(); menuAt(null, event.clientX, event.clientY) }
+  }}>
+    {rows}
     {!tree.length && <p className="ide-empty">Create a Java class or open a project.</p>}
-    {menu && <WorkspaceMenu label={menu.entry ? `Actions for ${menu.entry.path}` : 'Project actions'} x={menu.x} y={menu.y}
+    {menu && <CommandMenu label={menu.entry ? `Actions for ${menu.entry.path}` : 'Project actions'} x={menu.x} y={menu.y}
       items={explorerMenuCommands(menu.entry?.kind ?? null).map((id) => ({ id, label: id === 'resource.rename' ? 'Rename' : ideCommandDefinitions[id].title, ...(availability?.(id, menu.entry, menu.context) ?? { enabled: true }) }))}
       onClose={() => setMenu(null)} onChoose={(id) => {
         const kinds: Partial<Record<IdeCommandId, TreeAction>> = { 'file.open': 'open', 'file.new': 'file', 'java.newClass': 'class', 'folder.new': 'folder', 'resource.rename': 'rename', 'resource.delete': 'delete', 'resource.copyPath': 'copy', 'explorer.reveal': 'reveal' }

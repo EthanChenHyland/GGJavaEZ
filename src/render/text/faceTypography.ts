@@ -1,0 +1,88 @@
+import type {PresentedEntity,SceneEntity,SceneRow,Vec3} from '../../contracts/world'
+import {compactLibraryFace} from '../../world/firstObjectPresentation'
+import {faceRows} from '../../world/faceRows'
+import {displayType} from '../../world/displayType'
+import {world} from '../../theme/tokens'
+import {arrayTitlePlate} from '../../world/arrayCellGeometry'
+import {fitWorldText,localFontText,textAdvance} from './textSystem'
+import {truncateFrameText} from '../../world/valueText'
+/** Preserve the qualified signature within the existing header before falling
+ * back to a width summary. Break only between complete captured code points. */
+function frameTitleLayout(title:string,width:number,size:number,tightTracking:number):{lines:readonly string[];tracking:number}{
+ const bounded=truncateFrameText(title),units=Array.from(bounded,char=>localFontText(char,600)),complete=units.join('')
+ const fits=(text:string,tracking=0)=>textAdvance(text,600,tracking)*size<=Math.max(0,width-.012)
+ if(fits(complete))return{lines:[complete],tracking:0}
+ if(tightTracking&&fits(complete,tightTracking))return{lines:[complete],tracking:tightTracking}
+ let best:{lines:string[];semantic:number;imbalance:number}|undefined
+ for(let split=1;split<units.length;split++){
+  const left=units.slice(0,split).join(''),right=units.slice(split).join('')
+  if(!fits(left)||!fits(right))continue
+  const semantic=left.endsWith('.')?0:1,imbalance=Math.abs(textAdvance(left,600)-textAdvance(right,600))
+  if(!best||semantic<best.semantic||semantic===best.semantic&&imbalance<best.imbalance)best={lines:[left,right],semantic,imbalance}
+ }
+ return{lines:best?.lines??[fitWorldText(bounded,width,size,600,0,28)],tracking:0}
+}
+export function frameTitleLines(title:string,width:number,size=.4):readonly string[]{
+ return frameTitleLayout(title,width,size,0).lines
+}
+/** Preserve the array suffix when the full recorded type exceeds its title area. */
+function fitArrayTitle(title:string,suffix:string,width:number,size:number):string {
+ const local=localFontText(title,600)
+ if(textAdvance(local,600)*size<=width-.012)return local
+ const base=title.slice(0,-suffix.length),available=width-textAdvance(suffix,600)*size-.024
+ if(available>0){
+  const shortened=fitWorldText(base,available,size,600)
+  if(shortened&&textAdvance(shortened+suffix,600)*size<=width-.012)return shortened+suffix
+ }
+ return fitWorldText(local,width,size,600,0,Infinity,'middle')
+}
+/** The renderer and camera admission use the same physical title/identity
+ * planes. These sizes never depend on the semantic zoom metric. */
+export function faceHeading(node:SceneEntity){
+ const {anchor}=node,plate=node.kind==='array'?arrayTitlePlate(anchor):anchor
+ const [x,y,z]=plate.position,[w,h,d]=plate.size,top=y+h/2,face=z+d/2+.085
+ const size=compactLibraryFace(anchor)?.3:.4,identity=node.kind==='frame'?`#${node.invocationNumber}`:node.kind==='class'?'':`#${node.displayId}`
+ const identitySize=node.kind==='collection'?.34:.28,identityWidth=identity?textAdvance(identity,500)*identitySize+.04:0
+ const lengthLabel=node.kind==='array'?`length = ${node.length}`:null,metadataWidth=Math.max(identityWidth,lengthLabel?textAdvance(lengthLabel)*.25+.04:0)
+ const width=Math.max(.1,w-.56-metadataWidth-(metadataWidth?.2:0))
+ const arraySuffix=node.kind==='array'?node.title.match(/(?:\[\])+$/)?.[0]:undefined
+ const arrayTitle=arraySuffix?fitArrayTitle(node.title,arraySuffix,width,size):undefined
+ const frameLayout=node.kind==='frame'?frameTitleLayout(node.title,width,size,-.025):undefined
+ const lines=frameLayout?.lines??(arrayTitle?[arrayTitle]:undefined),singleFrameLine=frameLayout?.lines.length===1
+ // A single line fits below the portion of the header a nearer slab can cover.
+ const titleOffset=singleFrameLine?.61:frameLayout?.lines.length===2?.39:.45
+ const identityOffset=singleFrameLine?.61:node.kind==='array'?.65:.45
+ return{title:{position:[x-w/2+.28,top-titleOffset,face] as Vec3,size,width,lines,tracking:frameLayout?.tracking??0},identityWidth,
+  length:lengthLabel?{text:lengthLabel,position:[x+w/2-.28,top-.25,face] as Vec3,size:.25,width:metadataWidth}:null,
+  identity:node.kind==='class'?null:{position:[x+w/2-.28,top-identityOffset,face] as Vec3,size:identitySize}}
+}
+/** Preserve the bounded captured preview, including runtime reference type,
+ * identity and known summary lengths. The type column is the declared type. */
+export function rowValueLabel(value:SceneRow['value']):string{
+ return value.text
+}
+export interface FaceColumnRow {name:string;type:string;indent?:number}
+/** Text and value-chip geometry share the same measured, scoped column grid. */
+export function faceRowColumns(node:SceneEntity,presented:Pick<PresentedEntity,'detail'>&Partial<Pick<PresentedEntity,'rowSlotIds'>>,model=faceRows(node,presented)){
+ return faceColumns(node.anchor.size[0],presented.detail,model.visible.map(row=>({name:row.name,type:displayType(row.type),
+  indent:node.kind==='frame'&&'scopeDepth'in row?(row.scopeDepth??0)*world.frame.scopeIndent:0})),!!compactLibraryFace(node.anchor))
+}
+export function faceColumns(width:number,detail:'FAR'|'MEDIUM'|'CLOSE'='CLOSE',rows:readonly FaceColumnRow[]=[],compact=false){
+ const available=Math.max(.2,width-.56)
+ if(rows.length&&available>=2){
+  // One aligned grid per face, measured at the actual fixed fonts. Ordinary
+  // names take priority over long type spellings; values retain at least 35%.
+  const measure=(text:string,size:number,weight:400|500)=>textAdvance(localFontText(text,weight),weight)*size+.024
+  const names=Math.max(...rows.map(row=>measure(row.name+(detail==='MEDIUM'?' →':''),compact?.23:.32,500)+(row.indent??0)))
+  let name=Math.min(available*(detail==='MEDIUM'?.5:.36),Math.max(available*.2,names))
+  if(detail==='MEDIUM')return{name,type:0,value:available-name-.2,typeOffset:0,valueOffset:name+.1}
+  const budget=available*.65-.3
+  name=Math.min(name,budget-available*.18)
+  const types=Math.max(...rows.map(row=>measure(row.type,compact?.20:.27,400)))
+  const type=Math.min(available*.3,Math.max(available*.18,types),budget-name)
+  const typeOffset=name+.1,valueOffset=typeOffset+type+.1
+  return{name,type,value:Math.max(available*.35,available-valueOffset-.1),typeOffset,valueOffset}
+ }
+ if(detail==='MEDIUM')return{name:available*.4-.1,type:0,value:available*.6-.1,typeOffset:0,valueOffset:available*.4}
+ return{name:available*.27-.1,type:available*.29-.1,value:available*.44-.1,typeOffset:available*.27,valueOffset:available*.56}
+}

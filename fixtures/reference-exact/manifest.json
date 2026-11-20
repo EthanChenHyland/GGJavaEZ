@@ -1,0 +1,94 @@
+{
+  "domain": {
+    "mainClass": "InventoryApp",
+    "stdout": "QTY 18\nTAGS 3\nLINK tools\n",
+    "stderr": "",
+    "expectedExit": 0,
+    "sceneCounts": {
+      "frames": 4,
+      "objects": 14,
+      "classes": 0,
+      "references": 16
+    }
+  },
+  "recursion": {
+    "mainClass": "SeriesApp",
+    "stdout": "TOTAL 21\n",
+    "stderr": "",
+    "expectedExit": 0,
+    "sceneCounts": {
+      "frames": 8,
+      "objects": 3,
+      "classes": 0,
+      "references": 1
+    }
+  },
+  "array": {
+    "mainClass": "ReorderApp",
+    "stdout": "[1, 2, 3, 6, 8]\n",
+    "stderr": "",
+    "expectedExit": 0,
+    "sceneCounts": {
+      "frames": 1,
+      "objects": 4,
+      "classes": 0,
+      "references": 2
+    }
+  },
+  "exception": {
+    "mainClass": "FailureApp",
+    "stdout": "EXCEPTION READY\n",
+    "stderrContains": [
+      "java.lang.IllegalStateException: failed shipment",
+      "Caused by: java.lang.IllegalArgumentException: bad quantity"
+    ],
+    "expectedExit": "nonzero",
+    "sceneCounts": {
+      "frames": 3,
+      "objects": 7,
+      "classes": 0,
+      "references": 1
+    }
+  },
+  "io": {
+    "mainClass": "StreamApp",
+    "stdout": "READY\nOUT 7\n",
+    "stderr": "CHECK 7\n",
+    "stdin": "7\n",
+    "expectedExit": 0,
+    "sceneCounts": {
+      "frames": 1,
+      "objects": 8,
+      "classes": 0,
+      "references": 2
+    }
+  },
+  "debug": {
+    "mainClass": "PauseApp",
+    "stdout": "BIN 18\n",
+    "stderr": "",
+    "expectedExit": 0,
+    "breakpoint": {
+      "path": "PauseApp.java",
+      "line": 5
+    },
+    "sceneCounts": {
+      "frames": 2,
+      "objects": 4,
+      "classes": 0,
+      "references": 3
+    }
+  },
+  "dense": {
+    "mainClass": "InventoryWorld",
+    "stdout": "WORLD 72\n",
+    "stderr": "",
+    "expectedExit": 0,
+    "sceneCounts": {
+      "frames": 73,
+      "objects": 77,
+      "classes": 0,
+      "references": 107
+    }
+  }
+}

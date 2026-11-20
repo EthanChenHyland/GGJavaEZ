@@ -346,16 +346,31 @@ export class ProjectStore {
     })
   }
 
+  async projectSummary(id) {
+    return (await this.#project(id)).summary
+  }
+
   async listProjects() {
     await this.#ready()
     const entries = await fs.readdir(this.projectsRoot, { withFileTypes: true })
-    const projects = []
+    const directories = []
     for (const entry of entries) {
       if (!ID_PATTERN.test(entry.name)) continue
       if (entry.isSymbolicLink()) fail(400, 'Symlinks are not allowed in projects')
-      if (!entry.isDirectory()) continue
-      projects.push((await this.#project(entry.name)).summary)
+      if (entry.isDirectory()) directories.push(entry)
     }
+    // Metadata reads are independent. Bound concurrency rather than serializing
+    // every project or opening the whole managed catalog at once. Each read
+    // retains the same root, symlink, containment and metadata checks.
+    const projects = new Array(directories.length)
+    let next = 0
+    await Promise.all(Array.from({ length: Math.min(8, directories.length) }, async () => {
+      for (;;) {
+        const index = next++
+        if (index >= directories.length) return
+        projects[index] = (await this.#project(directories[index].name)).summary
+      }
+    }))
     return projects.sort((a, b) => a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id))
   }
 

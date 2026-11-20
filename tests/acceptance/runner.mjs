@@ -11,8 +11,7 @@ import { TraceNormalizer } from '../../src/instrumentation/normalize.ts';
 import { validateTrace } from '../../src/runtime/trace.ts';
 import { seek } from '../../src/runtime/seek.ts';
 import { attachHistory } from '../../src/runtime/history.ts';
-import { layoutForTrace } from '../../src/app/layoutForTrace.ts';
-import { buildSceneModel } from '../../src/world/sceneModel.ts';
+import { projectTrace } from '../../src/testing/projectTrace.ts';
 
 /**
  * Runs one acceptance project through the same production path as IDE Run:
@@ -81,8 +80,9 @@ export async function runAcceptanceProject(projectDir, { stdin = null, stdinDela
     timings.deltaBytes = deltaBytes; timings.rawBatchesHead = rawCursor;
     started = performance.now();
     const final = seek(trace, trace.events.length);
-    const layout = layoutForTrace(trace);
-    const scene = buildSceneModel(final, layout, 'meso');
+    const projection = projectTrace(trace, { sessionEnded: ['exited', 'failed', 'stopped'].includes(snapshot.status), recording: snapshot.recording });
+    const layout = projection.layout;
+    const scene = projection.project(trace.events.length);
     timings.worldMs = Math.round(performance.now() - started);
     snapshot = debuggerSessions.snapshot(sessionId); // One explicit legacy materialization for unchanged fact assertions.
     return { built: true, dependencies: compilation.project.dependencies ?? [], buildSystem: compilation.project.buildSystem, snapshot, trace, capability: normalized.capability, final, layout, scene, timings, mainClass: chosen };

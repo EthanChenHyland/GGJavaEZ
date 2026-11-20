@@ -1,0 +1,11 @@
+# Array title plate
+
+Detailed arrays mount the recorded component type, object identity and `length = n` against their actual title plate. The type and metadata use separate columns, and long type names keep the array suffix when they are shortened. The plate dimensions and geometry are shared by rendering, connector attachment and camera visibility.
+
+Three focused regressions first reproduced the offset between the text plane and the actual plate for lengths 0, 12 and 2,147,483,647. The focused run passed 76 tests after the correction. Four browser preflight trials exercised real 5- and 33-element Java arrays at 1440×900 and 760×900 with normal and reduced motion. Each sampled the actual uploaded title plate dimensions and checked that all glyph corners lay within the face and immediately in front of it. The cell caption and value spacing, selection, cursor and semantic index assertions also passed.
+
+On source `f53a0819dc63662dfe5ea793282e49dd0d2ff232a667ae09c279f63b11edf054`, the wider native run passes 27 of 27 in 496.422 seconds, with no skips, failures or flakes. It includes 21 distinct instrumented JVM session attachments and 31 archived originals. It covers all five viewports and both motion modes for virtual cell Focus, actual array reference attachment, cell and collection chip picking, the face palette in both quality tiers, and the curated array playback and scrubbing workflows.
+
+The original-size indexed-write capture shows `int[]`, `#23` and `length = 5` together on the plate, with all five indexed cells below. The earlier capture places the ID beyond the bottom edge. The reviewed close cell Focus captures keep the selected index and value visible while the tray extends beyond the viewport. The continuous glass backplate from reference 09, stronger floor reflections and the whole-tray framing polish remain open. The source inventory, reports, original and paired captures are under `.ggjavaez/qa/reference-exact/array-title-plane-prototype/`.
+
+All eight source checks pass on the same 996 inputs. The default unit suite reports 2,284 passes and 70 explicit opt-in skips across 244 files in 290.52 seconds. Production build, both TypeScript checks, lint, build measurements, reference integrity and protected-source checks pass.

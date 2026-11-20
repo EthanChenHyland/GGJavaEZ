@@ -1,0 +1,1 @@
+Drives Semantic_Zoom FAR, MEDIUM and CLOSE and Free navigation with 72 domain objects across six types/three packages, a summarized library collection and a primitive array. Expected output: `WORLD 72`. This is a visual hierarchy fixture; the larger Dense_Sample performance gate remains separate.

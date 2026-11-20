@@ -6,24 +6,27 @@ import { generateRawTrace } from '../../src/testing/traceGen.ts';
 import { normalizeTrace } from '../../src/instrumentation/normalize.ts';
 import { validateTrace } from '../../src/runtime/trace.ts';
 import { seek } from '../../src/runtime/seek.ts';
-import { layoutForTrace } from '../../src/app/layoutForTrace.ts';
-import { buildSceneModel } from '../../src/world/sceneModel.ts';
-import { detailedScene } from '../../src/world/detailedScene.ts';
+import { createLayoutEngine } from '../../src/world/layoutEngine.ts';
+import { createSceneProjector } from '../../src/world/sceneProjector.ts';
+import { planPresentation } from '../../src/world/presentationPlanner.ts';
 import { transitionsForTrace } from '../../src/motion/semanticTransition.ts';
 import { runAcceptanceProject } from '../acceptance/runner.mjs';
 
 /**
- * Spec task 0.3 / 0.7: Phase 0 baseline for the *unchanged* pipeline.
- * Writes docs/checkpoints/v12-p0/performance.json (merged with the browser baseline).
+ * Successor to the Phase 0 pipeline probe: the same generators, sample counts,
+ * seeds, stage cap and real-JVM corpus with the production presentation modules.
+ * Historical reports remain unchanged. New stage methods are recorded explicitly.
  * Run: npm run perf:baseline   (VJ_PERF_SIZES=5000,10000 to override sizes)
  */
-const out = 'docs/checkpoints/v12-p0/performance.json';
+const outputRoot = process.env.VJ_PERF_OUTPUT_ROOT ?? '.ggjavaez/qa/reference-exact/pipeline';
+const out = `${outputRoot}/performance.json`;
 const sizes = (process.env.VJ_PERF_SIZES ?? '5000,10000,20000,50000,100000').split(',').map(Number);
 const STAGE_CAP_MS = 180000;
 const capture = { origin: 'jvm', sourceHashes: {}, recordedAt: '1970-01-01T00:00:00.000Z' };
 const time = (work) => { const start = performance.now(); const value = work(); return [value, performance.now() - start]; };
 const pct = (values, p) => { const sorted = [...values].sort((a, b) => a - b); return +sorted[Math.min(sorted.length - 1, Math.floor(p / 100 * sorted.length))].toFixed(2); };
 const round = (value) => Math.round(value * 10) / 10;
+const layoutFor = trace => { const engine = createLayoutEngine(); engine.append(trace.events); return engine.state; };
 
 function pipeline(rawEvents, manifest, demoId) {
   const [normalized, normalizeMs] = time(() => normalizeTrace(rawEvents, manifest, { status: 'complete', exitCode: 0, diagnostic: null }, demoId));
@@ -37,10 +40,11 @@ function pipeline(rawEvents, manifest, demoId) {
   const middle = Math.floor(n / 2);
   seek(trace, middle);
   const adjacent = Array.from({ length: 50 }, (_, i) => time(() => seek(trace, middle + 1 + i))[1]);
-  const [layout, layoutMs] = time(() => layoutForTrace(trace));
+  const [layout, layoutMs] = time(() => layoutFor(trace));
   const final = seek(trace, n);
-  const [scene, sceneMs] = time(() => buildSceneModel(final, layout, 'meso'));
-  const [, detailMs] = time(() => detailedScene(scene, null));
+  const [scene, sceneMs] = time(() => createSceneProjector(trace).project(final, layout, { sessionEnded: true, pausedAtLiveHead: false, liveHead: n,
+    recording: { state: 'FULL', reason: null, budget: null, lastRecordedSeq: null, executionContinued: false } }));
+  const [, detailMs] = time(() => planPresentation({ scene, layout, detailLevel: 'MEDIUM', selection: null, focusTargetId: null, trace: { active: false, scope: 'relevant' } }));
   const [, transitionsMs] = time(() => transitionsForTrace(trace));
   return { normalizedEvents: n, invocations: Object.keys(final.frames).length, objects: Object.keys(final.objects).length,
     normalizeMs: round(normalizeMs), validateMs: round(validateMs), seekColdEndMs: round(seekColdEndMs),
@@ -50,9 +54,9 @@ function pipeline(rawEvents, manifest, demoId) {
     perEventNormalizeValidateUs: round((normalizeMs + validateMs) * 1000 / n) };
 }
 
-/** Today's live path: every publish re-normalizes, re-validates and re-lays-out the whole prefix
- * (IdeWorkspace.acceptExecution → normalizeTrace(all) → validateTrace(all) → createLayout(all)),
- * and the bridge serializes the full rawEvents array on every SSE publish. */
+/** Historical full-prefix control, deliberately not a claim about the current
+ * incremental transport. Retains the original normalization/publication workload
+ * while replacing only the retired layout implementation. */
 function liveIngest(rawEvents, manifest, chunk) {
   let totalMs = 0, totalBytes = 0, firstMs = 0, lastMs = 0, publishes = 0;
   for (let end = chunk; end <= rawEvents.length; end += chunk) {
@@ -60,7 +64,7 @@ function liveIngest(rawEvents, manifest, chunk) {
     const bytes = JSON.stringify({ rawEvents: prefix }).length;
     const [, ms] = time(() => {
       const normalized = normalizeTrace(prefix, manifest, { status: 'live', exitCode: null, diagnostic: null }, 'live');
-      layoutForTrace({ ...validateTrace(normalized.trace, { allowLive: true }), capture });
+      layoutFor({ ...validateTrace(normalized.trace, { allowLive: true }), capture });
     });
     totalMs += ms; totalBytes += bytes; publishes++;
     if (!firstMs) firstMs = ms; lastMs = ms;
@@ -70,10 +74,11 @@ function liveIngest(rawEvents, manifest, chunk) {
     totalSseBytes: totalBytes, lastPublishBytes: JSON.stringify({ rawEvents }).length };
 }
 
-test('Phase 0 pipeline baseline', async () => {
-  const report = { phase: 'v12-p0', recordedAt: new Date().toISOString(), commitBase: '4f07444',
+test('production successor to the Phase 0 pipeline baseline', async () => {
+  const report = { phase: 'reference-exact', recordedAt: new Date().toISOString(), historicalCommitBase: '4f07444',
+    methodology: 'Same original generators, seeds, 30 random seeks, 50 adjacent seeks, sizes, stage cap and three JVM projects. Scene/layout/detail stages use the current layout engine, projector and MEDIUM planner. Live-ingest is an explicit historical full-prefix control, not the current incremental transport.',
     environment: { node: process.version, platform: `${process.platform}/${process.arch}`, cpus: cpus().length, cpuModel: cpus()[0]?.model, memGiB: round(totalmem() / 2 ** 30),
-      note: 'Sandbox Linux container, not the design §10 reference machine. Compare trends, not absolute budgets.' },
+      note: 'Actual host environment; compare methods and distributions before drawing budget conclusions.' },
     synthetic: {}, projection: {}, liveIngest: [], realJvm: {} };
   const measured = [];
   for (const size of sizes) {
@@ -91,7 +96,7 @@ test('Phase 0 pipeline baseline', async () => {
   const slope = xs.map((x, i) => (x - mean(xs)) * (ys[i] - mean(ys))).reduce((a, b) => a + b, 0) / xs.map((x) => (x - mean(xs)) ** 2).reduce((a, b) => a + b, 0);
   const intercept = mean(ys) - slope * mean(xs);
   report.projection = { fittedExponent: round(slope), projected1MSemanticEventsNormalizeValidateMs: Math.round(Math.exp(intercept + slope * Math.log(1e6))),
-    note: '1M events were not run: cost grows super-linearly (exponent > 1) under the current reducer/normalizer.' };
+    note: '1M events were not run; this is a fitted extrapolation, not a measured gate or an assumed growth exponent.' };
   for (const size of [5000, 20000]) {
     const { rawEvents, manifest } = generateRawTrace({ rawEvents: size, seed: 42 });
     report.liveIngest.push(liveIngest(rawEvents, manifest, 1000));
@@ -102,7 +107,7 @@ test('Phase 0 pipeline baseline', async () => {
       normalizedEvents: run.trace.events.length, invocations: Object.keys(run.final.frames).length, ...run.timings,
       sessionSnapshotBytes: JSON.stringify(run.snapshot).length };
   }
-  await mkdir('docs/checkpoints/v12-p0', { recursive: true });
+  await mkdir(outputRoot, { recursive: true });
   const prior = await readFile(out, 'utf8').then(JSON.parse).catch(() => ({}));
   await writeFile(out, `${JSON.stringify({ ...prior, pipeline: report }, null, 1)}\n`);
 }, 1800000);

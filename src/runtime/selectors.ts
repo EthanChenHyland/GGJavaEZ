@@ -1,7 +1,11 @@
-import { referenceIdForSlot, type RuntimeState, type SlotOwner } from '../contracts/runtime'
-import type { SceneReferenceEdge } from '../contracts/world'
+import { referenceIdForSlot, type RuntimeState, type SlotOwner, type SlotId, type ReferenceId, type ObjectId } from '../contracts/runtime'
 
-export type DerivedReference = Pick<SceneReferenceEdge, 'id' | 'source' | 'targetObjectId'>
+/** Preserved selector shape, independent of renderer/layout contracts. */
+export interface DerivedReference {
+  id: ReferenceId
+  source: SlotOwner | { kind: 'class'; classId: string; slotId: SlotId }
+  targetObjectId: ObjectId
+}
 
 /** Live edges only. Returned frames retain history but no longer own visible references. */
 export function getReferences(state: RuntimeState): DerivedReference[] {

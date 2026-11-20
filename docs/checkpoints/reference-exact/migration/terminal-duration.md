@@ -1,0 +1,7 @@
+# Completion duration across retained sessions
+
+The Header uses `ExecutionSession.durationMs`. The recorder and plain runner measure from child launch to its exit using the bridge's monotonic clock. The measurement excludes build and instrumentation preparation, terminal trace cleanup, and time spent reopening the recording. A user Stop with a running child publishes the terminal phase with that child's final duration. A Stop before launch, or a legacy snapshot without the field, has no duration to display.
+
+Three real-JVM browser cases captured the defect on the parent source. Reload changed the reported normal duration from 2.62 s to 7.70 s, Stop from 2.15 s to 6.28 s and Run Without Visualization from 1.26 s to 5.98 s. All three cases pass on source `af03a4e5`. The exact bridge durations are 876 ms, 509 ms and 736 ms respectively. Each header label stays byte-identical across reload, and the bridge retains the same execution ID and duration. The two reports and their session evidence are under `.ggjavaez/qa/reference-exact/terminal-duration-prototype/`.
+
+All eight source checks pass in 279.420 seconds, with 2,281 default passes and 70 explicit opt-in skips. A separate 13-case browser integration passes in 110.682 seconds with zero failures, skips or flakes, covering the three reload regressions, debugger Stop at desktop and narrow sizes, partial recordings at all seven sizes, and prior-recording handoff. Default browser discovery is 323 cases in 88 files.

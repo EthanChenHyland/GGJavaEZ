@@ -1,50 +1,94 @@
 import { describe, expect, it } from 'vitest'
 import { seek } from '../runtime'
 import { loadControlTrace } from '../examples/traces'
-import { layoutForTrace as createLayout } from '../app/layoutForTrace'
-import { buildSceneModel } from './sceneModel'
-import { sceneHomePose } from '../navigation/cameraMotion'
-import { detailDistanceForScene, distance } from '../navigation/navigation'
+import { projectTrace } from '../testing/projectTrace'
+import { planPresentation } from './presentationPlanner'
+import { faceRows, faceRowPort,faceRowPosition } from './faceRows'
+import { homeFraming } from '../camera/homeFraming'
+import { projectionCamera, screenPoint } from '../camera/projection'
+import { world } from '../theme/tokens'
+import {valueChipReferencePort} from './valueChipGeometry'
 
-const trace = loadControlTrace()
-const layout = createLayout(trace)
-describe('persistent scope world', () => {
-  it('reserves one navigable composition and genuine inset solids before execution', () => {
-    expect(layout.layoutKind).toBe('scoped')
-    expect(layout.theater).toBeUndefined()
-    expect(createLayout(trace)).toEqual(layout)
-    for (const scope of Object.values(layout.scopes!)) {
-      expect(scope.anchor.size.every((value) => value > 0)).toBe(true)
-      const frame = layout.anchors[scope.frameId]
-      if (scope.depth) expect(scope.anchor.position[2]).toBeGreaterThan(frame.position[2] + frame.size[2] / 2)
-      for (const id of scope.slotIds) expect(scope.anchor.ports[id]).toBe(frame.ports[id])
-    }
-  })
-  it('restores exact live scopes, values, identities and XYZ ports at every cursor', () => {
-    for (let cursor = trace.events.length; cursor >= 0; cursor--) {
-      const state = seek(trace, cursor)
-      const scene = buildSceneModel(state, layout, 'meso')
-      expect(scene.bounds).toBe(layout.bounds)
-      for (const frame of scene.frames) {
-        expect(frame.anchor).toBe(layout.anchors[frame.id])
-        expect(frame.scopes!.map((scope) => scope.id).sort()).toEqual(Object.values(state.scopes).filter((scope) => scope.frameId === frame.id && scope.status === 'active').map((scope) => scope.id).sort())
-        for (const slot of frame.slots.filter((slot) => slot.role !== 'return')) {
-          expect(slot.port).toBe(layout.anchors[frame.id].ports[slot.id])
-          expect(state.scopes[slot.scopeId!].status).toBe('active')
-          expect(slot.value).toEqual(state.frames[frame.id].locals[slot.id].value)
+const trace = loadControlTrace(), projection = projectTrace(trace), layout = projection.layout
+
+describe('captured scopes through one production runtime world', () => {
+  it('keeps one composition and places recorded dividers inside existing frame geometry', () => {
+    expect(JSON.stringify(projectTrace(trace).layout)).toBe(JSON.stringify(layout))
+    const head = seek(trace, trace.events.length)
+    for (const id of Object.keys(head.scopes)) expect(layout.anchors[id]).toBeUndefined()
+    let dividers = 0
+    for (let cursor = 1; cursor <= trace.events.length; cursor++) {
+      const scene = projection.project(cursor)
+      for (const id of scene.order.frames) {
+        const frame = scene.entities[id]
+        if (frame.kind !== 'frame') throw new Error('Expected frame')
+        for (const row of frame.rows.filter(row => (row.scopeDepth ?? 0) > 0)) {
+          const plan = planPresentation({ scene, layout, detailLevel: 'CLOSE', selection: { kind: 'slot', id: row.slotId }, focusTargetId: null, trace: { active: false, scope: 'relevant' } })
+          const face = faceRows(frame, plan.entities.get(id)!)
+          expect(face.visible.some(item => item.slotId === row.slotId)).toBe(true)
+          for (const divider of face.scopes?.dividers ?? []) {
+            dividers++
+            expect(frame.scopeDividers?.some(actual => actual.label === divider.label && actual.depth === divider.depth)).toBe(true)
+            const top = frame.anchor.position[1] + frame.anchor.size[1] / 2
+            const y = top - face.header - divider.offset
+            expect(y + world.frame.scopeDivider / 2).toBeLessThanOrEqual(top - face.header + 1e-6)
+            expect(y - world.frame.scopeDivider / 2).toBeGreaterThan(frame.anchor.position[1] - frame.anchor.size[1] / 2 + world.frame.pad)
+          }
+          expect(face.visible.length * face.pitch + (face.scopes?.extraHeight ?? 0)).toBeLessThanOrEqual(frame.anchor.size[1] - face.header - world.frame.pad + 1e-6)
+          expect(frame.anchor).toBe(layout.anchors[id])
         }
       }
     }
+    expect(dividers).toBeGreaterThan(0)
   })
-  it('keeps Home stable at all timeline positions and exposes locals at canonical zoom', () => {
-    for (const aspect of [1,1.5,2.1]) {
-      const home = sceneHomePose({ bounds:layout.bounds,stackDepth:layout.stackDepth,layoutKind:layout.layoutKind },layout.homeTarget,{verticalFov:41,aspect})
-      expect(home.position.every(Number.isFinite)).toBe(true)
-      expect(detailDistanceForScene(distance(home.position,home.target),home,{ bounds:layout.bounds,stackDepth:layout.stackDepth,layoutKind:layout.layoutKind })).toBeLessThan(20)
+
+  it('restores exact active scopes, values, identities and presented ports at every cursor', () => {
+    const before = JSON.stringify(layout)
+    for (let cursor = trace.events.length; cursor >= 0; cursor--) {
+      const state = seek(trace, cursor), scene = projection.project(cursor)
+      for (const id of scene.order.frames) {
+        const frame = scene.entities[id]
+        if (frame.kind !== 'frame') throw new Error('Expected frame')
+        expect(frame.anchor).toBe(layout.anchors[id])
+        for (const row of frame.rows) {
+          const slot = state.frames[id].locals[row.slotId]
+          expect(slot).toBeDefined()
+          if (slot.scopeId) {
+            const scope = state.scopes[slot.scopeId]
+            expect(scope.status).toBe('active')
+            expect(row.scopeDepth).toBe(scope.depth)
+          }
+          if (slot.value.kind === 'primitive') expect(row.value.exact).toBe(String(slot.value.value))
+          else if (slot.value.kind === 'reference') expect(row.value).toMatchObject({ kind: 'reference', targetId: slot.value.objectId })
+          const plan = planPresentation({ scene, layout, detailLevel: 'CLOSE', selection: { kind: 'slot', id: row.slotId }, focusTargetId: null, trace: { active: false, scope: 'relevant' } })
+          const point = faceRowPosition(frame, plan.entities.get(id)!, row.slotId)!
+          expect(point).not.toBeNull()
+          expect(point[1]).toBeGreaterThan(frame.anchor.position[1] - frame.anchor.size[1] / 2 + world.frame.pad)
+          expect(faceRowPort(frame,plan.entities.get(id)!,row.slotId)).toEqual(row.value.kind==='null'||row.value.kind==='not-recorded'?null:row.value.kind==='reference'?valueChipReferencePort(frame.anchor,point[1]):point)
+        }
+        for (const divider of frame.scopeDividers ?? []) expect(Object.values(state.scopes).some(scope => scope.frameId === id && scope.status === 'active' && scope.depth === divider.depth && scope.label === divider.label)).toBe(true)
+      }
     }
-    const final = buildSceneModel(seek(trace,trace.events.length),layout,'meso')
-    expect(final.frames).toHaveLength(4)
-    expect(final.frames.every((frame) => frame.invocationStatus === 'completed')).toBe(true)
-    expect(final.objects.map((node) => node.className)).toEqual(['Scanner'])
+    expect(JSON.stringify(layout)).toBe(before)
+  })
+
+  it('fits the retained frame/heap world at all original aspect ratios without a second scoped camera', () => {
+    const scene = projection.project(trace.events.length)
+    const plan = planPresentation({ scene, layout, detailLevel: 'CLOSE', selection: null, focusTargetId: null, trace: { active: false, scope: 'relevant' } })
+    for (const aspect of [1, 1.5, 2.1]) {
+      const viewport = { width: aspect * 1000, height: 1000 }, safe = { x: 12, y: 72, width: viewport.width - 24, height: 816 }
+      const home = homeFraming(scene, plan, safe, viewport, layout), camera = projectionCamera(home.pose, viewport)
+      expect(camera.position.toArray().every(Number.isFinite)).toBe(true)
+      for (const point of home.points) {
+        const screen = screenPoint(point, camera, viewport)
+        expect(screen.x).toBeGreaterThanOrEqual(safe.x - 1)
+        expect(screen.x).toBeLessThanOrEqual(safe.x + safe.width + 1)
+        expect(screen.y).toBeGreaterThanOrEqual(safe.y - 1)
+        expect(screen.y).toBeLessThanOrEqual(safe.y + safe.height + 1)
+      }
+    }
+    expect(scene.order.frames).toHaveLength(4)
+    expect(scene.order.frames.every(id => scene.entities[id].kind === 'frame' && !scene.entities[id].live)).toBe(true)
+    expect(scene.order.objects.map(id => scene.entities[id].title)).toEqual(['Scanner'])
   })
 })

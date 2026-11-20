@@ -28,6 +28,16 @@ export const bridge = {
     onError: (error: unknown) => void): ExecutionStream => {
     let source: EventSource | null = null, stopped = false, timer: ReturnType<typeof setTimeout> | undefined
     let pendingBytes = 0, pending = Promise.resolve()
+    let latest: ExecutionSession | null = null, failedDelivery = false
+    const finishIfCaughtUp = () => {
+      // Process exit can precede delivery of its final raw pages. Recording
+      // limits and input/debug pauses alone never retire process observation.
+      if (stopped || failedDelivery || !latest || !['COMPLETED', 'FAILED', 'STOPPED'].includes(latest.phase) || pendingBytes !== 0 ||
+        // STOPPED is published when Stop is requested, before child exit.
+        latest.phase === 'STOPPED' && !latest.terminalStatus && latest.exitCode === null ||
+        nextSequence() < (latest.rawEventCount ?? latest.rawEvents.length)) return
+      stopped = true; source?.close(); source = null; clearTimeout(timer); timer = undefined
+    }
     const reconnect = () => {
       source?.close(); source = null
       if (stopped || timer) return
@@ -35,13 +45,19 @@ export const bridge = {
       timer = setTimeout(() => { timer = undefined; void pending.then(connect) }, 200)
     }
     const connect = () => {
+      finishIfCaughtUp()
       if (stopped) return
+      failedDelivery = false
       // Use the existing bounded transport maximum during retained catch-up.
       // The server still enforces its 256 KiB frame and per-tick budgets; the
       // client retains the same byte-pressure/reconnect safeguards below.
       source = new EventSource(`/api/execution/${encodeURIComponent(id)}/events?transport=delta&from=${nextSequence()}&limit=1024`)
       source.addEventListener('session', event => {
-        try { onSnapshot(JSON.parse((event as MessageEvent).data) as ExecutionSession) } catch (error) { onError(error) }
+        try {
+          const session = JSON.parse((event as MessageEvent).data) as ExecutionSession
+          if (session.id === id && (!latest || session.revision >= latest.revision)) latest = session
+          onSnapshot(session); finishIfCaughtUp()
+        } catch (error) { onError(error) }
       })
       source.addEventListener('raw', event => {
         const data = (event as MessageEvent<string>).data
@@ -52,7 +68,7 @@ export const bridge = {
         pendingBytes += data.length * 2
         pending = pending.then(async () => {
           if (!stopped) await onRaw(JSON.parse(data) as RawTraceDelta)
-        }).catch(error => { onError(error); reconnect() }).finally(() => { pendingBytes -= data.length * 2 })
+        }).catch(error => { failedDelivery = true; onError(error); reconnect() }).finally(() => { pendingBytes -= data.length * 2; finishIfCaughtUp() })
       })
       source.onerror = reconnect
     }
@@ -62,6 +78,7 @@ export const bridge = {
   health: () => request<{ jdk: JdkStatus }>('/api/health'),
   detectJdk: (home: string | null) => request<JdkStatus>('/api/jdk/detect', 'POST', { home }),
   projects: () => request<ProjectSummary[]>('/api/projects'),
+  project: (id: string) => request<ProjectSummary>(project(id)),
   createProject: (name: string) => request<ProjectSummary>('/api/projects', 'POST', { name }),
   importProject: (name: string, files: { path: string; content: string; encoding?: 'base64' }[]) => request<ProjectSummary>('/api/projects/import', 'POST', { name, files }),
   javaProject: (id: string) => request<JavaProject>(`${project(id)}/java-project`),

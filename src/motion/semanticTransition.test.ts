@@ -3,10 +3,13 @@ import { seek } from '../runtime'
 import { applyEvent, createInitialState } from '../runtime/state'
 import { historyForTrace } from '../runtime/history'
 import { loadArrayTrace, loadControlTrace, loadPersonTrace, loadRecursionTrace } from '../examples/traces'
-import { layoutForTrace as createLayout } from '../app/layoutForTrace'
-import { buildSceneModel } from '../world/sceneModel'
+import { projectTrace } from '../testing/projectTrace'
+import { arrayCellTarget } from '../world/arrayCellTarget'
+import { computeArrayWindow } from '../world/arrayWindow'
+import { presentedFlowPorts } from '../world/flowTopology'
 import type { TraceEvent } from '../contracts/runtime'
-import { endpointPosition, relevantFlowHistory, semanticFlowPoints, transitionIsFlow } from './flowPresentation'
+import { relevantFlowHistory, transitionIsFlow } from './flowSelection'
+import { createConnectorRouter } from '../world/connectorRouter'
 import { deriveSemanticTransition, transitionsForTrace, type SemanticTransition } from './semanticTransition'
 
 describe('semantic transition pipeline', () => {
@@ -34,9 +37,19 @@ describe('semantic transition pipeline', () => {
     const flows = transitionsForTrace(trace)
     const write = flows.find((item) => item.kind === 'array-write' && item.from)
     expect(write).toMatchObject({ evidence: 'observed' })
-    const layout = createLayout(trace)
-    const final = buildSceneModel(seek(trace, trace.events.length), layout, 'meso')
-    expect(endpointPosition(write!.to, layout, final)).toEqual(layout.anchors[write!.to!.id].bodyPort)
+    const projection = projectTrace(trace), final = projection.project(trace.events.length)
+    const target = arrayCellTarget(final, write!.to!.id)!
+    expect(target).not.toBeNull()
+    const window = computeArrayWindow({ recordingId: final.recordingId, arrayId: target.array.id, recordedLength: target.array.length,
+      anchor: target.array.anchor, requestedIndices: [target.index], nominalCellBudget: 128 })
+    const presented = new Map([[target.array.id, {id:target.array.id,mode:'detailed' as const,detail:'CLOSE' as const,opacity:1,pinned:true,pickable:true,highlight:null}]])
+    const windows = new Map([[target.array.id, window]])
+    const destination = presentedFlowPorts(final, presented, windows)(write!.to!)!
+    expect(destination.point).toEqual(window.mapping.get(write!.to!.id)!.port)
+    expect(destination.point).toEqual(projection.layout.anchors[write!.to!.id].bodyPort)
+    for (const cursor of [write!.seq + 1, trace.events.length, write!.seq + 1]) {
+      expect(presentedFlowPorts(projection.project(cursor), presented, windows)(write!.to!)?.point).toEqual(destination.point)
+    }
     expect(relevantFlowHistory(flows, write!.to!.id, trace.events.length).some((item) => item.id === write!.id)).toBe(true)
   })
 
@@ -48,18 +61,20 @@ describe('semantic transition pipeline', () => {
     expect(recursion.filter((item) => item.kind === 'return' && item.to?.kind === 'slot')).toHaveLength(5)
   })
 
-  it('attaches semantic movement beside front-face ports for arbitrary endpoint positions', () => {
+  it('attaches semantic movement to exact ports with a forward curve for arbitrary endpoint positions', () => {
+    const route=createConnectorRouter().forBodies([])
     for (const [from, to] of [
       [[-4, 2, 1], [3, -1, 0]],
       [[2, -5, -2], [-6, 3, 2]],
     ] as const) {
-      const points = semanticFlowPoints([...from], [...to], -4)
+      const points = route([...from], [...to])
       expect(points[0]).toEqual(from)
       expect(points.at(-1)).toEqual(to)
       expect(points[1][2]).toBeGreaterThan(from[2])
-      expect(points[2][2]).toBeGreaterThan(Math.max(from[2], to[2]))
-      expect(points[3][2]).toBe(points[2][2])
-      expect(points.at(-2)![0]).toBeGreaterThan(to[0])
+      const middle=points[Math.floor(points.length/2)]
+      expect(middle[2]).toBeGreaterThan((from[2]+to[2])/2)
+      expect(points.at(-2)![2]).toBeGreaterThan(to[2])
+      expect(points.every(point=>point.every(Number.isFinite))).toBe(true)
     }
   })
 

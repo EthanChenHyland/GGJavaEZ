@@ -1,0 +1,1 @@
+Drives Exception propagation through two nested calls, unwinds and an uncaught exception with a captured cause. Expected stdout: `EXCEPTION READY`; nonzero exit and stderr identifies `failed shipment` and `bad quantity`.

@@ -1,0 +1,13 @@
+# Focus camera projection cost
+
+Focus now computes the centering shift from the four face corners in the camera basis. Each candidate distance uses scalar projected spans. The solver still checks the same width and height bands, caption clearance, yaw, pitch and fallback. It creates the final world-space target after selecting the distance.
+
+The paired Node diagnostic covers 2,160 cases across the five target sizes, both yaw directions, three pitches, varied positions and face shapes, with and without array captions. The largest camera pose difference is `1.41e-11` world units. The two parent passes take 3,039 and 3,006 ms per matrix. The candidate takes 121 and 120 ms. The corrected overlay runs 184 existing tests successfully. The first overlay accidentally discovered ignored archived test copies. Those discovery errors are preserved separately.
+
+Exact source `4b8f9f0b09c9ef0963115182dfad5867fdf2119d6ea4f60f5ff48aa680849b8b` passes all 26 native Focus and related cases in 289.875 seconds with zero failures, skips or flakes. It records 22 distinct JVM sessions and 42 original captures. Review of the narrow virtualized array and desktop StockItem shows the focused target and caption inside the tested bounds, with abbreviated reference labels and overlapping context still visible.
+
+The unchanged Dense workload completes all ten stages against the production QA build using FULL JVM session `28676b05-c21e-4af6-bf38-ea21c3ad9ae8` with 7,492 raw and 9,852 normalized events. The run takes 469.778 seconds with zero stage failures and browser errors. Focus p95 is 133.715 ms against 125 ms. Seek p50 is 66.335 ms against 55 ms. The runner exits 1. Seek p95 83.641 ms, Home p95 132.898 ms and cold-load median 4,754.133 ms pass. The prior production diagnostic measured 150.950 ms Focus p95 on a separate source and JVM run. The two samples do not isolate a causal browser improvement.
+
+Five orbit windows pass the existing distribution and draw-call limits. All max draw-call counts are 99. The longest observed orbit frame interval is 1,000.1 ms. The 61,414.4 ms soak passes with zero median drift and +0.064381% whole-frontend post-GC heap growth. Independent presentation retention remains open. The full-size Dense capture still shows clipped tray/context edges, overlapping connectors, and excessive array glow. Reports, original captures, exact source hashes and CPU profiles are under `.ggjavaez/qa/reference-exact/focus-solver-prototype/`.
+
+All eight source checks pass in 283.474 seconds, including 2,281 default tests and 70 explicit opt-in skips. The standard entry measures 71,733 B gzip.

@@ -1,0 +1,26 @@
+{
+  "extends": "./tsconfig.app.json",
+  "compilerOptions": {
+    "types": [
+      "vite/client",
+      "node"
+    ]
+  },
+  "include": [
+    "e2e/reference",
+    "e2e/camera-controls.spec.ts",
+    "e2e/refinement.spec.ts",
+    "e2e/commands-v12-p4.spec.ts",
+    "e2e/ide-recording-handoff.spec.ts",
+    "e2e/provenance-v12.spec.ts",
+    "e2e/coverage-v12-p4.spec.ts",
+    "e2e/debugger-errors.spec.ts",
+    "e2e/recursion.spec.ts",
+    "e2e/incremental-v12.spec.ts",
+    "e2e/m11-persistence.spec.ts",
+    "e2e/observer-saturation-v12.spec.ts",
+    "playwright.reference.config.ts",
+    "scripts/reference/validation.d.mts",
+    "src/**/*.d.ts"
+  ]
+}

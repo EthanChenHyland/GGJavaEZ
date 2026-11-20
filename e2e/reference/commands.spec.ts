@@ -1,0 +1,38 @@
+import {expect,test} from '@playwright/test'
+test('viewer commands and Escape share canonical Focus and Inspector state',async({page})=>{
+  const errors:string[]=[];page.on('pageerror',error=>errors.push(error.message));
+  await page.goto('/examples?qa=1');
+  const slider=page.getByRole('slider',{name:'Recorded execution position'});
+  await slider.focus();await page.keyboard.press('End');
+  await page.getByRole('button',{name:'Home',exact:true}).click();
+  await page.evaluate(()=>window.__ggjavaezQA!.ready());
+  const world=page.getByRole('application',{name:'Three-dimensional Java runtime world'});
+  await world.focus();await page.keyboard.press('Tab');
+  await expect(page.getByRole('complementary',{name:'Selection inspector'})).toBeVisible();
+  await page.keyboard.press('Alt+Shift+F');
+  await page.evaluate(()=>window.__ggjavaezQA!.ready());
+  await expect(page.getByRole('button',{name:'Focus',exact:true})).toHaveAttribute('aria-pressed','true');
+  const title=await page.locator('.inspector-heading strong').textContent();
+  const focused=await page.evaluate(()=>window.__ggjavaezQA!.cameraPose());
+  await page.mouse.click(800,80);
+  await expect.poll(()=>page.evaluate(()=>window.__ggjavaezQA!.selection())).toBeNull();
+  await expect(page.locator('.inspector-heading strong')).toHaveText(title!);
+  await expect(page.getByRole('button',{name:'Focus',exact:true})).toHaveAttribute('aria-pressed','true');
+  await page.getByRole('button',{name:'Close inspector',exact:true}).focus();
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('complementary',{name:'Selection inspector'})).toHaveCount(0);
+  expect(await page.evaluate(()=>window.__ggjavaezQA!.cameraPose())).toEqual(focused);
+  await expect(page.getByRole('button',{name:'Focus',exact:true})).toHaveAttribute('aria-pressed','true');
+  await world.focus();await page.keyboard.press('Escape');
+  await page.evaluate(()=>window.__ggjavaezQA!.ready());
+  await expect(page.getByRole('button',{name:'Explore',exact:true})).toHaveAttribute('aria-pressed','true');
+  await page.keyboard.press('F1');
+  await expect(page.getByRole('dialog',{name:'Command Palette'})).toHaveCount(1);
+  await page.getByRole('combobox',{name:'Search commands'}).fill('Home');
+  await page.getByRole('option',{name:/Home/}).click();
+  await page.evaluate(()=>window.__ggjavaezQA!.ready());
+  await expect(page.getByRole('dialog',{name:'Command Palette'})).toHaveCount(0);
+  await world.focus();await page.keyboard.press('h');
+  await page.evaluate(()=>window.__ggjavaezQA!.ready());
+  expect(errors).toEqual([]);
+});

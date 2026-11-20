@@ -1,0 +1,20 @@
+.shell-picker-backdrop{position:fixed;inset:0;display:flex;align-items:flex-start;justify-content:center;padding-top:min(13dvh,110px);background:color-mix(in srgb,var(--color-background-bottom) 55%,transparent)}
+.shell-picker{width:min(620px,calc(100vw - 32px));overflow:hidden;border:1px solid var(--color-ui-mode-active-border);border-radius:8px;background:var(--color-ui-glass-fill);box-shadow:0 16px 45px var(--color-background-bottom)}
+.shell-picker-query{display:flex;align-items:center;gap:10px;margin:8px;padding:0 9px;border:1px solid var(--color-ui-mode-active-border);border-radius:4px;color:var(--color-ui-text-muted);background:var(--color-ui-glass-fill)}
+.shell-picker-query:focus-within{border-color:var(--color-semantic-execution)}
+.shell-picker-query input{width:100%;min-width:0;height:37px;border:0;outline:0;background:none;color:var(--color-ui-text);font-size:13px}
+.shell-picker-query input:focus-visible{outline:none}
+.shell-picker-query button{display:grid;place-items:center;flex:none;width:25px;height:25px;border:0;background:none;color:var(--color-ui-text-secondary)}
+.shell-picker-results{max-height:min(50dvh,440px);overflow:auto;padding:0 6px}
+.shell-picker-result{display:flex;align-items:center;justify-content:space-between;gap:16px;box-sizing:border-box;padding:7px 10px;border-radius:4px;color:var(--color-ui-text-secondary);cursor:pointer}
+.shell-picker-result[aria-disabled=true]{color:var(--color-ui-text-muted);cursor:default}
+.shell-picker-result.is-selected{background:var(--color-ui-mode-active-fill);box-shadow:inset 2px 0 var(--color-semantic-execution);color:var(--color-ui-text)}
+.shell-picker-result>span{min-width:0}
+.shell-picker-result strong,.shell-picker-result small{display:block;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.shell-picker-result strong{font-size:12px;font-weight:500}
+.shell-picker-result small{font-size:12px;color:var(--color-ui-text-muted)}
+.shell-picker-result kbd{flex:none;font-size:12px;color:var(--color-ui-text-muted)}
+.shell-picker-foot{display:flex;justify-content:space-between;gap:10px;padding:8px 14px;margin-top:6px;border-top:1px solid var(--color-ui-glass-border);font-size:12px;color:var(--color-ui-text-muted)}
+.shell-picker-empty{padding:18px 14px;color:var(--color-ui-text-muted);font-size:12px}
+.shell-picker :is(input,button){font:inherit;color:inherit}
+.shell-picker {font:400 13px/1.4 Inter,system-ui,sans-serif}

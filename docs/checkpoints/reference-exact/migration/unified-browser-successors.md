@@ -1,0 +1,7 @@
+# Unified execution browser workflows
+
+All nine original workflows run against the current Shell. The inline Java sources and imported fixture trees are preserved. The driver uses the 3D World application, native timeline, Dock, Header status and command palette. Camera checks observe orbit, pan and dolly independently and verify Follow stays canceled through completion. Debug history preserves the paused session ID and exact pause. The first console case checks that the same recorded stdout disappears on rewind and returns at the live head.
+
+The first run found both the Three.js Canvas and the timeline density canvas under the broad World locator. A second run passed eight cases. The Scanner output assertion raced the browser's completion update and the automatic Console collapse. The final driver waits for the browser's Completed state before opening the Console. It also checks the real JVM stdout and the recorded `stdin_read` event. Each test now runs independently while the runner still uses one worker and cleans up only its own active sessions.
+
+Source `2198f118eb19884a2c17fa6cd47d886012fc74627587d90ad3cf4bba6028bca6` passes all nine cases in 84.455 seconds with zero failures, skips or flakes. The archive contains 12 distinct JVM session IDs. The follow-up Stop case separately records an attempt stopped while BUILDING, with no measured JVM duration. Strict browser TypeScript passes. The failed traces, exact input hashes, executed report and session index are under `.ggjavaez/qa/reference-exact/unified-browser-successor/`.

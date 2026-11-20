@@ -1,8 +1,69 @@
 import { describe, expect, it } from 'vitest'
+import fc from 'fast-check'
 import type { Vec3, WorldAnchor } from '../contracts/world'
-import { surfaceConnectorPoints } from './connectorRouting'
+import { Box3, Ray, Vector3 } from 'three'
+import {arrayBackplate} from './arrayCellGeometry'
+import { connectorClearsFaces, curvedPath, roundedConnectorPoints, surfaceConnectorPoints } from './connectorRouting'
 const anchor = (id: string, position: Vec3): WorldAnchor => ({entityId:id,position,size:[4,3,1.7],region:'heap',ports:{},bodyPort:position})
 describe('exterior connector routes', () => {
+  it('protects actual bodies and proud front captions without inventing captions behind a body', () => {
+    const blocker=anchor('blocker',[0,0,0])
+    for(const [z,clear]of [[-1.2,true],[0,false],[1.1,false]] as const){
+      const source=anchor('source',[-8,0,z-.85]),target=anchor('target',[8,0,z-.85])
+      const from:Vec3=[-6,0,z],to:Vec3=[6,0,z]
+      const box=new Box3().setFromCenterAndSize(new Vector3(...blocker.position),new Vector3(...blocker.size))
+      const start=new Vector3(...from),end=new Vector3(...to),hit=new Ray(start,end.clone().sub(start).normalize()).intersectBox(box,new Vector3())
+      expect(!!hit&&hit.distanceTo(start)<=start.distanceTo(end)).toBe(z===0)
+      expect(connectorClearsFaces([from,to],source,target,[source,target,blocker])).toBe(clear)
+    }
+  })
+  it('blocks the rear sheet while leaving unoccupied space in front of it',()=>{
+    const tray=anchor('tray',[0,0,0]),backplate=arrayBackplate(tray)
+    for(const [z,clear]of [[backplate.position[2],false],[backplate.position[2]+.35,true]] as const){
+      const source=anchor('source',[-8,0,z-.85]),target=anchor('target',[8,0,z-.85])
+      expect(connectorClearsFaces([[-6,0,z],[6,0,z]],source,target,[source,target,backplate])).toBe(clear)
+    }
+  })
+  it('rejects opposite-side arrival through a target face and preserves its real row port on the exterior route',()=>{
+    const source=anchor('source',[-8,0,0]),target=anchor('target',[8,0,0]),bodies=[source,target]
+    const from:Vec3=[-6.16,-.4,.905],to:Vec3=[9.84,.3,.905]
+    expect(connectorClearsFaces(curvedPath(from,to),source,target,bodies)).toBe(false)
+    const route=roundedConnectorPoints(surfaceConnectorPoints(from,to,source,target,bodies))
+    expect(route[0]).toEqual(from);expect(route.at(-1)).toEqual(to)
+    expect(connectorClearsFaces(route,source,target,bodies)).toBe(true)
+  })
+  it('rejects wrong-side departure, row wandering and later re-entry into a source face',()=>{
+    const source=anchor('source',[0,0,0]),target=anchor('target',[8,0,0]),bodies=[source,target]
+    const from:Vec3=[1.84,0,.905],to:Vec3=[6.16,0,.905]
+    expect(connectorClearsFaces([from,[-2.5,0,.905],[5.5,2,.905],to],source,target,bodies)).toBe(false)
+    expect(connectorClearsFaces([from,[1.9,.6,.905],[2.5,.6,.905],to],source,target,bodies)).toBe(false)
+    expect(connectorClearsFaces([from,[2.5,0,.905],[0,0,.905],[5.5,2,.905],to],source,target,bodies)).toBe(false)
+  })
+  it('uses actual clipped geometry for diagonal corner clearance and keeps self-reference terminals bounded',()=>{
+    const source=anchor('source',[-8,0,0]),target=anchor('target',[8,0,0]),blocker=anchor('blocker',[0,0,0])
+    const above:Vec3[]=[[-6,0,.905],[-3,2,.905],[0,4,.905],[5.5,4,.905],[5.5,0,.905],[6,0,.905]]
+    expect(connectorClearsFaces(above,source,target,[source,target,blocker])).toBe(true)
+    const from:Vec3=[-6.16,-.5,.905],to:Vec3=[-6.16,.5,.905]
+    const self=roundedConnectorPoints(surfaceConnectorPoints(from,to,source,source,[source]))
+    expect(connectorClearsFaces(self,source,source,[source])).toBe(true)
+    expect(connectorClearsFaces([from,[-10.5,-.5,.905],[-10.5,.5,.905],to],source,source,[source])).toBe(false)
+  })
+  it('keeps rounded routes outside represented information faces without moving canonical ports (100 runs)', () => {
+    fc.assert(fc.property(fc.integer({ min: -8, max: 8 }), fc.integer({ min: -8, max: 8 }), fc.integer({ min: -6, max: 6 }), (sourceY, targetY, obstacleY) => {
+      const source = anchor('source', [-8, sourceY, 0]), target = anchor('target', [8, targetY, 0]), obstruction = anchor('obstruction', [0, obstacleY, 0])
+      const bodies = [source, target, obstruction], before = JSON.stringify(bodies)
+      const from: Vec3 = [-6, sourceY, .9], to: Vec3 = [6, targetY, .9]
+      const points = roundedConnectorPoints(surfaceConnectorPoints(from, to, source, target, bodies))
+      expect(points[0]).toEqual(from); expect(points.at(-1)).toEqual(to)
+      expect(points).toEqual(roundedConnectorPoints(surfaceConnectorPoints(from, to, source, target, bodies)))
+      for (let i = 1; i < points.length; i++) for (const body of bodies) {
+        const a = points[i - 1], b = points[i], [x, y] = body.position, [width, height] = body.size
+        expect(Math.min(a[0], b[0]) < x + width / 2 && Math.max(a[0], b[0]) > x - width / 2
+          && Math.min(a[1], b[1]) < y + height / 2 && Math.max(a[1], b[1]) > y - height / 2).toBe(false)
+      }
+      expect(JSON.stringify(bodies)).toBe(before)
+    }), { numRuns: 100 })
+  })
   it.each(([[-8,2,-4],[8,-3,-2],[0,0,0]] as Vec3[]).map(position=>({position})))('keeps canonical endpoints and approaches information faces from exterior margins ($position)', ({position}) => {
     const source = anchor('source', position), target=anchor('target',[0,0,0])
     const from: Vec3=[position[0]+1.8,position[1]-.5,position[2]+.905],to: Vec3=[-1.84,0,.905]
@@ -34,4 +95,20 @@ describe('exterior connector routes', () => {
     }
     expect(JSON.stringify(bodies)).toBe(before)
   })
+})
+
+
+it('whole-path face rejection agrees with testing every segment across 4,000 generated polylines', () => {
+  const point = fc.tuple(fc.integer({ min: -400, max: 400 }), fc.integer({ min: -400, max: 400 }), fc.integer({ min: -400, max: 400 }))
+    .map(values => values.map(value => value / 10) as unknown as Vec3)
+  const source = anchor('source', [-80, 80, -80]), target = anchor('target', [80, 80, -80])
+  fc.assert(fc.property(fc.array(point, { maxLength: 24 }), fc.array(fc.array(point, { minLength: 2, maxLength: 20 }), { minLength: 40, maxLength: 40 }), (centres, paths) => {
+    // Terminal identities are separate from these blockers, so clearance of a
+    // polyline is precisely the conjunction of its individual segment tests.
+    const bodies = centres.map((position, i) => anchor(`blocker-${i}`, position)), before = JSON.stringify(bodies)
+    for (const points of paths) expect(connectorClearsFaces(points, source, target, bodies)).toBe(
+      points.slice(1).every((to, i) => connectorClearsFaces([points[i], to], source, target, bodies)),
+    )
+    expect(JSON.stringify(bodies)).toBe(before)
+  }), { numRuns: 100, seed: 20261021 })
 })

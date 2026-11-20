@@ -1,0 +1,477 @@
+# Performance evidence
+
+Development preview qualified 2026-11-20 at source `7c172d1c`: **2,330 tests passed / 70 declared opt-in skips / zero failed**, 249 files; all eight source/build/scan checks pass. **23 browser cases pass**, zero skips/flakes, covering editing, actual Java Run/Debug, plain/Maven/Gradle projects, I/O, arrays, failures and hardware-gated Cinematic. npm audit reports zero known vulnerabilities. Original visual convergence and performance acceptance remain open. [Preview scope, source hashes, failures and checks](migration/home-readability-and-matrix-review.md).
+
+Current candidate audit, 2026-11-19: compact Flow cuts remain unintegrated. ABBA Dense presentation retention improves from 21.47–22.88% to 16.62–17.06%, but all generated 25% limits still fail. The complete fresh-JVM built candidate run passes orbit/cold/soak metrics while seek p50/p95 78.02/133.35 ms and Focus/Home p95 168.10/198.15 ms exceed unchanged 55/112/125/152 ms budgets. The report completes all ten stages, with 23 passed, four exceeded and four separately unmeasured budgets. New Home/floor behavior and a separate text-bounds optimization require independent performance qualification. [Source boundaries, regressions and evidence](migration/home-readability-and-matrix-review.md).
+
+Current convergence, 2026-11-19: a qualified Flow-cache overlay brings Focus/Home p95 to **118.11 / 130.93 ms**, passing 125/152; seek p50 **66.36 ms** still fails 55. Its full raw report remains unchanged. A later seek-only Canvas experiment fails and is removed. Current build passes at **71,754 main-entry gzip bytes**. New time comparisons remove only sub-nanosecond subtraction roundoff and retain raw samples and fixed budgets. Generated presentation-retention and final-source Dense gates remain open. [Exact source boundaries, failures and validation](migration/return-follow-and-flow-cut.md).
+
+As of 2026-10-17, performance approval is incomplete. Budgets and required sample counts are unchanged. Historical and current methods are distinguished; passing a frame probe does not waive command latency or memory failures.
+
+## Complete native Dense sample
+
+The most recent completed browser measurement on commit `44f5bc2391bdf191eed9bd2a2874bf12f7828d27` uses a fresh ordinary Java Run, session `012ada8d-beb2-4b75-8d94-8dc4d26496a5` (browser run `b8847180-9a3d-4931-a911-fbcb6db9018c`): 7,492 raw events, 9,852 normalized events, four frames and 33 objects. Source hash `97e6a390f5349cb8a474d5ff2f5de3104bad8c3f86f46fea43ad4b9e841b10da`, exact stdout `TOPOLOGY 73 100 1000 3 true\n`, exit 0 and FULL recording. Real JDT remains enabled. The browser run finishes every stage with no browser errors and exits 1 for unchanged latency limits.
+
+| Metric | Measured | Budget | Phase 5.5 baseline | Result |
+| --- | ---: | ---: | ---: | --- |
+| 100 spread seeks p50 | 99.188 ms | 55 ms | 50.45 ms | Fail |
+| 100 spread seeks p95 | 116.456459 ms | 112 ms | 101.24 ms | Fail |
+| 50 actual cell Focus commands p95 | 167.212083 ms | 125 ms | 110.97 ms | Fail |
+| 50 Home commands p95 | 199.873084 ms | 152 ms | 138.49 ms | Fail |
+| Five fresh frontend loads, median | 3928.589958 ms | 5300 ms | 4816 ms (one sample, excluded JDT) | Pass, differing historical method |
+| Five ≥30 s continuous native orbit windows, median | 16.7 ms | 16.7 ms | — | Pass |
+| Orbit frame intervals p95 across sizes | 17.3–17.4 ms | 33.3 ms | — | Pass |
+| Whole-owner CPU submission p95 across sizes | 2.4–3.0 ms | 6 ms | 3.70 ms | Pass |
+| Every submitted-frame draw-call maximum | 110 | 250 | — | Pass |
+| 60 s soak first/last 10 s median absolute drift | 0% | 10% | — | Pass |
+| Forced-GC whole-frontend soak heap growth | 0.136979571% | 5% | — | Pass |
+
+Command timing includes the real native command, UI commit and two real animation frames. Readiness occurs outside timing. Camera choreography is not replaced by a clock setter. CPU submission is separate from asynchronously resolved GPU time and physical-display FPS. All five viewport windows use elapsed native pointer motion without an additional per-move rAF RPC. Required samples, error checks and failed stages stay in the raw report.
+
+Evidence: `.ggjavaez/qa/reference-exact/browser-world-performance-prefix-reuse.json`, matching log, seek/command profiles and compact summaries. Earlier stable-material and interrupted results remain archived. The optional ten seek and ten Focus/Home profiling samples are additional diagnostics, not substitutions for required samples.
+
+The five windows contain 1,832 / 1,831 / 1,829 / 1,832 / 1,830 actual submissions. Asynchronous GPU queries resolve 1,832 / 1,830 / 1,829 / 1,831 / 1,829 samples; three queries remain pending at their window boundary and none are reported unavailable. GPU p50/p95 ranges are 1.098–2.994 / 5.763–19.054 ms. These are actual queries, with whole-owner pass attribution, not estimates from CPU time. The separate ten-seek profile identifies persistent-record enumeration under React development prop diffing and current-prefix Flow resolution; the ten Focus/Home profile also identifies routing, camera collision planning and batched text work. Profiling samples do not alter the required command samples or limits.
+
+## Generated CPU and retention gate
+
+The current generated gate uses the actual normalizer, history, layout, projector, Flow catalog, router and all three detail-level plans. It passes the single-event comparison (100 measured LINE batches after 20 warmups at each size): 1,000 objects median 0.0111875 ms; 20,000 objects median 0.0122085 ms; ratio 1.091262570 ≤ 2.0. Untouched object identity assertions remain enabled.
+
+| Requested raw events | Semantic retained bytes | Presentation retained bytes | Ratio | Budget/result |
+| --- | ---: | ---: | ---: | --- |
+| 200 | 927536 | 1644584 | 1.773067568 | ≤0.25, fail |
+| 5000 | 12634696 | 9487408 | 0.750901169 | ≤0.25, fail |
+| 20000 | 55695224 | 36239016 | 0.650666492 | ≤0.25, fail |
+
+The presentation checkpoint conservatively includes layout/projector/Flow indexes and caches, the scene and three final plans. Signed forced-GC stage deltas are retained. Post-seek mixed diagnostic retention is not isolated renderer memory. These generated corpora are not the required rich real-JVM semantic-retention measurement (≤390 MiB, historical 354.56 MiB), which remains open. The generated gate exits 1 for retention; it is not an approval waiver.
+
+## Build and remaining work
+
+The current production build passes typecheck and Vite. AppRoot gzip is 352.06 kB and entry index gzip 72.67 kB. Monaco/editor and Cinematic passes/materials are separate chunks. The large-chunk warning remains visible. Requirement 32.7 limits the main entry JavaScript chunk, not the complete dependency closure. `scripts/reference/measure-build.mjs` now checks actual built bytes, SHA-256 and default gzip compression with a decimal 500,000-byte threshold, and reports static dependency closures separately. The actual main HTML entry is **71,915 bytes gzip** and passes 500,000 bytes. AppRoot is 348,716 bytes gzip under this same measurement. The entry static closure sums to 72,343 bytes and the main/Shell static closure to 649,587 bytes; those sums are separate diagnostics, not the entry-chunk limit. Vite console gzip estimates above are distinguished from these post-build file-byte measurements. Monaco/editor API and Cinematic passes occupy separate chunks. The native request-policy checks remain separate, because chunk separation alone does not prove when a chunk is fetched. The large dependency closure remains useful startup evidence, without inventing a second 500 kB criterion.
+
+Central connector material retention greatly reduced shader program lookup cost in the diagnostic profile; unchanged label trees are memoized, route contexts are bounded, Flow endpoint resolution owns one current prefix, and compact-world long seeks choose reconstruction. Full command latency and memory limits still need to pass. Methods and earlier failures are preserved in `migration/performance-methods.md`, `migration/browser-performance-methods.md`, `migration/connector-route-cache.md` and `migration/frame-performance.md`.
+
+## Frame-row/accessibility checkpoint — 2026-10-14
+
+The actual production entry passes at **71,916 gzip bytes**, limit 500,000, with Monaco and Cinematic passes separate (`production-build-row-accessibility-confirmed.json/log`). Entry static closure 72,344 and main/Shell static closure 651,905 bytes are diagnostic totals, not a second entry budget. The same three accepted cached JVM recordings pass all 90 seeded seeks and 270 production plans with explicit GC, **3 expected/executed/passed, zero skipped**, 1.06 seconds (`cached-projection-frame-rows/cached-projection.json`, matching log). This is a cached CPU successor, not a fresh-JVM, browser, GPU or physical-rendering measurement. The new row helper reuses each computed face model; accessibility refreshes changed presentation cuts independently of runtime revision. Prior fixed Dense latency and retained-memory failures remain open and require fresh measurements after cleanup; no budget is waived.
+
+
+## Scoped-face/navigation/editor checkpoint — 2026-10-15
+
+The actual rebuilt main entry is **71,930 gzip bytes**, within the unchanged 500,000-byte Requirement 32.7 limit; Monaco/editor and Cinematic passes remain separate. Entry static closure **72,358** and main/Shell static closure **652,506** bytes remain diagnostics (`production-build-scoped-navigation-editor.json/log`), not a second budget. Vite AppRoot estimates 1160.21 kB / 355.25 kB gzip and retains its large-chunk warning. Source changes keep scope/row work bounded by fixed face capacity and include only captured I/O volumes in existing camera collision geometry. No new Dense latency, GPU, memory or sustained-rendering performance claim is made. Prior fixed Dense seek/Focus/Home and generated retention failures remain open. Cached production projection passes **3 expected/executed/passed, zero skipped**, 90 seeded seeks and 270 plans with explicit GC, 1.00 second (`cached-projection-scoped-navigation-editor/cached-projection.json` and matching log). This reuses accepted recordings and does not claim fresh JVM/browser/GPU/Dense measurements. The full native reconstruction functional suite passes **70/70**, 8.3 minutes; it does not replace the fixed performance measurements.
+
+
+## Return-evidence checkpoint — 2026-10-15
+
+Main-entry default gzip is **71,929 bytes**, passing the unchanged 500,000-byte budget, with Monaco/Cinematic separate (`production-build-return-successors.json/log`). Entry static closure 72,357 and main/Shell static closure 652,403 are diagnostics. Vite AppRoot 1159.74 kB / 355.11 kB gzip retains its large-chunk warning. Source return resolution uses graph incoming/outgoing adjacency and invalidates only the recorded producer invocation when its value is consumed; no full-frame scan is added to that update. Cached production projection passes **3 expected/executed/passed, zero skipped**, 90 seeded seeks and 270 plans with explicit GC, 1.03 seconds (`cached-projection-return-successors/cached-projection.json` and matching log). This reuses accepted recordings rather than claiming fresh JVM/browser/GPU measurements. This checkpoint does not resolve or remeasure fixed Dense latency, GPU or retained-memory failures.
+
+## Face/Classic-removal checkpoint — 2026-10-15
+
+Production build and actual artifact measurement pass (`production-build-face-motion-classic-confirmed.json/log`): main entry **71,931 gzip bytes** against 500,000; Monaco/Cinematic passes remain separate. Entry/static Shell closures are **72,359 / 653,050 bytes**, diagnostic sums rather than new entry budgets. Cached production projection passes **3 expected/executed/passed, zero skipped**, 90 seeded seeks/270 plans with explicit GC in 1.04 seconds (`cached-projection-face-motion-classic.log`). Four guardrail files pass **19/19** in 1.15 seconds. These cached results use previously accepted recordings; they are not fresh-JVM/Dense/native/GPU or memory approval. Library occupancy adds typed-body correctness and needs the unchanged final performance gates. The existing Dense latency and generated retention failures remain unwaived.
+
+The retained 20k generated heap snapshot is now parsed (`perf-heap/retained20k-summary.json`): 4,179,225 nodes and 268,404,249 shallow self bytes, including the runner/live inputs. Categories overlap and are not dominators or presentation-only attribution. This diagnostic does not approve generated retention or actual Dense 390 MiB/25% budgets.
+
+Current storage/heading checkpoint, verified 2026-10-16: actual main entry **71,929 gzip bytes**; static closures **72,357 / 653,419 bytes** remain diagnostics. Build, Monaco/Cinematic chunk separation, cached projection **3/3** (90 seeks/270 plans, explicit GC, 1.03 s) and all **19** guardrails (1.27 s) pass. This is reused-recording CPU/build evidence, not fresh Dense latency, GPU or memory approval.
+
+## Protected unlit output — 2026-10-16, ongoing
+
+Colour correction reuses the existing protection target and final OutputPass, adding one mask sample without a new render pass, target, mesh or draw batch. This is a resource/implementation fact, not a measured GPU-speed improvement. Production artifact measurement passes at **71,928 gzip bytes** for the main entry; **72,356/653,690** entry/shell static closure bytes are diagnostics. Monaco and Cinematic stay split (`production-build-unlit-output.json/log`). Existing Dense latency and generated retention failures remain unwaived; final current-tree performance measurements are still required.
+
+The existing curated-recording native frame-probe smoke observes 103 Interactive submissions with 103 resolved GPU samples, then actual Cinematic activation and 120 total submissions/119 resolved GPU samples at the final boundary. Dropped samples are zero and lifecycle-issue records are empty. The one pending boundary sample is not zero GPU time. This verifies query/render lifecycle through the change; it is neither actual-JVM Dense throughput nor sustained/performance-budget approval (`frame-performance-native.json`).
+
+
+## Timeline/catalog-order checkpoint — 2026-10-17
+
+Actual main-entry gzip is **71,930 bytes**, passing the unchanged 500,000-byte budget; entry/shell static closures **72,358/653,760** are diagnostics (`production-build-order-timeline.json/log`). Cached CPU projection passes **3 expected/executed/passed, zero skips**, 90 seeded seeks/270 plans with explicit GC, 1.02 seconds (`cached-projection-scene-order.log`, `perf-scene-order/`). Sorting touched owners preserves bounded single-LINE updates; full reconstruction sorts already materialized catalog copies. These checks do not remeasure or waive the open Dense latency and retained-memory failures.
+
+
+## Measured face-column checkpoint — 2026-10-17
+
+The main entry remains **71,930 gzip bytes**, within 500,000; entry/shell static closures are **72,358/654,010** diagnostic bytes (`production-build-face-columns.json/log`). Monaco and Cinematic remain split, with the large-chunk warning retained. Font advance measurements operate only on already bounded visible rows. No new Dense latency, retained-memory, sustained-rendering or GPU performance pass is claimed.
+
+## Bounded Hero admission — 2026-10-18
+
+Pre-Home reconciliation build measurement passes at **71,932 gzip bytes** for the actual main entry; **72,360/655,116** entry/shell static closures are diagnostic sums. Monaco/Cinematic stay split and the Vite warning remains. The candidate cut index reuses exact type/package/ownership groups: a 1,000-entity guard observes zero entity reads in warmed exclusion queries, and a 1,000-object Hero group stays whole instead of retrying 512 quiet members. Optional solver trials are bounded by the nominal object budget. The 270-plan cached CPU successor passes three accepted recordings in 1.10 seconds, with all 19 guardrails passing in 1.10 seconds. This does not measure fresh Dense execution, Hero browser latency, retained memory or GPU budgets. Home now fits real heading clearance and reconciles changed LOD destinations; the earlier Dense seek/Focus/Home and presentation-retention failures remain unwaived and require current-source measurement.
+
+Final Home reconciliation build measurement passes at **71,930 gzip main-entry bytes**; diagnostic closures **72,358/655,463**, Monaco/Cinematic split (`production-build-hero-home-reconciled.json/log`). Cached CPU projection passes **3/3**, 90 seeks/270 plans with explicit GC, **1.02 seconds** (`cached-projection-hero-home-reconciled.log`). Current-source Dense command latency, retained memory, sustained GPU/frame windows and the unchanged final budget gates remain open.
+
+
+## Region environment checkpoint — 2026-10-18
+
+The actual production artifact passes at **71,926 main-entry gzip bytes**, against 500,000. Entry/shell static closures **72,354/656,465** remain diagnostics; Monaco/Cinematic are separate and Vite's large-chunk warning is preserved (`production-build-region-environment.json/log`). Two structural haze sprites share one 64×64 alpha map and owned materials; grid visibility changes retain physical geometry. These bounded source/resource properties are not measured Dense/GPU/retention budget approval. Existing Dense seek/Focus/Home and presentation-retention failures remain open. Full defaults and targeted graphics/native correctness pass as documented in [the environment ledger](migration/region-environment.md).
+
+
+## Actual Dense browser measurement — 2026-10-21, source 9e95c68
+
+The unchanged browser method completed every stage on a fresh actual JVM session `c3b938f1-bf50-4f71-82fc-41453a5f91f4`, run `a4500720-d076-429c-a4d0-2f5f04832030`. Source SHA-256 is `97e6a390f5349cb8a474d5ff2f5de3104bad8c3f86f46fea43ad4b9e841b10da`; the 942-file application map is `fc322adab697a55cda72016880483452d2de292526c10c38622b7d9fb95976f9`. The actual recording contains 7,492 raw / 9,852 normalized events, completes with FULL recording and exit zero, and prints `TOPOLOGY 73 100 1000 3 true\n`. JDT remains enabled. All original samples, windows, thresholds and command-readiness boundaries remain unchanged.
+
+| Measurement | Actual | Budget | Result |
+| --- | ---: | ---: | --- |
+| Seek p50, 100 native seeks | 98.634 ms | 55 ms | FAIL |
+| Seek p95 | 100.757 ms | 112 ms | PASS |
+| Focus p95, 50 native pairs | 167.822 ms | 125 ms | FAIL |
+| Home p95 | 200.051 ms | 152 ms | FAIL |
+| Five actual JDT-enabled cold loads, median | 4,046.963 ms | 5,300 ms | PASS |
+| Five sustained orbit windows, median submission interval | 16.7 ms each | 16.7 ms | PASS |
+| Orbit p95 intervals, in viewport order | 17.7 / 18.3 / 18.0 / 17.2 / 17.8 ms | 33.3 ms | PASS |
+| Orbit submission CPU p95 | 2.6 / 2.6 / 2.6 / 2.6 / 3.3 ms | 6 ms | PASS |
+| Maximum draw calls | 123 | 250 | PASS |
+| 60-second soak median frame drift | 0% | 10% | PASS |
+| Whole frontend post-GC heap growth | 0.14317% | 5% | PASS |
+
+The browser gate is **FAIL** and overall performance approval **INCOMPLETE**. Asynchronous GPU queries produced real samples; raw counts, pending queries and timings remain in the report, without substituting zero for missing samples. Rich semantic retention, presentation/semantic retained-memory ratio, single-event ratio and entry gzip are NOT_MEASURED by this browser run. The earlier generated retained-memory failures remain unwaived. Build artifacts are measured separately.
+
+The report, log, source snapshot and optional CPU profiles are archived with hashes in `.ggjavaez/qa/reference-exact/performance-9e95c68/manifest.json`; the saved raw session remains alongside it. Extra profiling uses ten additional seeks and ten Focus/Home pairs outside the fixed command samples. Its call stacks identify route solving among the command costs, without attributing the full command budget to that function. This is a completed failing measurement, not an interrupted or pending run.
+
+
+## Camera guard follow-up — 2026-10-21
+
+The complete unchanged browser method reran on the 942-file camera-guard source map `f55d9aa6b07fea9d10df167b3bbcd02c1ec80483769d2769e9420a17e0b2dce6`, fresh actual JVM `3efabc32-6a77-491e-aca3-d9aa33d1eb89`, run `cddab979-c0fc-4227-b75f-4854924d95dd`. The same source hash, 7,492 raw / 9,852 normalized events, FULL completed recording, exit zero and exact stdout are retained. Every stage completes with all required samples; the command exits 1 at the final unchanged budget assertion, rather than a stage timeout/crash.
+
+| Measurement | Before (9e95c68) | Camera guard | Budget | Current result |
+| --- | ---: | ---: | ---: | --- |
+| Seek p50 | 98.634 ms | 99.622 ms | 55 ms | FAIL |
+| Seek p95 | 100.757 ms | 120.170 ms | 112 ms | FAIL |
+| Focus p95 | 167.822 ms | 150.426 ms | 125 ms | FAIL |
+| Home p95 | 200.051 ms | 182.679 ms | 152 ms | FAIL |
+| Five cold loads, median | 4,046.963 ms | 4,181.682 ms | 5,300 ms | PASS |
+
+These are separate fresh runs, not paired samples; the evidence supports the measured command reduction without attributing all variation to the guard. All five 30-second orbit windows pass: medians 16.7 ms, p95 17.5 / 17.5 / 17.0 / 17.2 / 17.6 ms, CPU p95 2.6 / 2.7 / 2.7 / 2.7 / 3.5 ms, maximum 123 calls. The 60-second soak passes at 0% median frame drift and 0.1296% whole-frontend post-GC heap growth. Real asynchronous GPU samples and pending-query counts remain in the raw report; no semantic-memory attribution is inferred from whole-frontend heap growth. External retention/single-event/build fields remain NOT_MEASURED by the browser method, and the generated retention failures remain open.
+
+Raw report, exact session, optional profiles, command log and source snapshot are archived with hashes in `.ggjavaez/qa/reference-exact/performance-camera-relaxation/manifest.json`. The current browser gate is **FAIL** and whole-product performance approval **INCOMPLETE**. The build separately measures 71,765 main-entry gzip bytes, with Monaco/Cinematic chunks split. This checkpoint does not close the latency, retained-memory, visual or whole A–G gates.
+
+
+The additional seek profile also places most sampled `recordKeys` self-time below React development component-prop diffing (`addObjectDiffToProperties`), rather than a reducer call. That diagnostic stack does not isolate its contribution to the fixed command samples or establish a runtime reducer defect. The protected runtime remains unchanged; no React logging or benchmark boundaries are disabled for performance runs (`performance-camera-relaxation-profile-summary.json`).
+
+
+## Actual Dense after path and flow-planning bounds — 2026-10-21
+
+All ten stages complete on source map `e53b9768aeb92291ea013dc6b1c91cd8c8431a67d30e5e0ea0b14728e4fb1113`, fresh actual JVM `a04493c3-50f3-4f53-ad96-3ec1befee8f2`, run `897680b1-b963-4f82-8dde-bc9236f0e5af`. The same Java source hash, 7,492 raw / 9,852 normalized events, FULL recording, successful exit and exact stdout are retained. The method, JDT, 100 spread seeks, 50 distinct captured Focus/Home pairs, five cold loads, five continuous orbit windows and soak are unchanged.
+
+| Measurement | Camera guard run | Current | Budget | Current result |
+| --- | ---: | ---: | ---: | --- |
+| Seek p50 | 99.622 ms | 98.256 ms | 55 ms | FAIL |
+| Seek p95 | 120.170 ms | 99.956 ms | 112 ms | PASS |
+| Focus p95 | 150.426 ms | 134.409 ms | 125 ms | FAIL |
+| Home p95 | 182.679 ms | 151.487 ms | 152 ms | PASS |
+| Five cold loads, median | 4,181.682 ms | 4,060.694 ms | 5,300 ms | PASS |
+
+All five 30-second orbit windows pass: median submission intervals 16.7 ms, p95 17.4 / 17.5 / 17.5 / 17.5 / 17.3 ms, CPU p95 2.6 / 2.6 / 2.6 / 2.6 / 3.5 ms, maximum 123 calls. The 60-second soak passes at 0% median frame drift and 0.1343% whole-frontend post-GC heap growth. These separate fresh runs have no statistical confidence claim; the earlier failures remain preserved. Home has limited margin in this run. The fixed final browser-budget assertion exits 1 because seek p50 and Focus still fail; the gate remains **FAIL**, with overall performance approval **INCOMPLETE**.
+
+Actual asynchronous whole-render-owner GPU queries are retained as diagnostics, with no GPU budget or physical-display FPS pass inferred:
+
+| Viewport | Resolved samples | Pending at final boundary | GPU p50 / p95 |
+| --- | ---: | ---: | ---: |
+| 1728×1117 | 1,829 | 1 | 4.498 / 22.054 ms |
+| 1440×900 | 1,831 | 1 | 3.607 / 28.487 ms |
+| 1280×800 | 1,830 | 1 | 2.647 / 24.912 ms |
+| 760×900 | 1,831 | 1 | 2.671 / 22.840 ms |
+| 1440×650 | 1,819 | 1 | 2.848 / 26.750 ms |
+
+Report, raw actual session, log, optional profiles and exact 942-file source snapshot are archived with hashes in `performance-world-route-costs/manifest.json` under the QA evidence directory. Build artifacts separately pass at 71,762 main-entry gzip bytes, with Monaco/Cinematic split; static entry/Shell sums of 72,190 / 669,208 bytes are diagnostics.
+
+The exact unchanged Phase 5.5 paired rich-graph method executes 1/1 with zero skips, explicit GC and all four original sizes. Both baseline and enriched graph digests/counts match the old evidence. Its largest controlled case contains 190,031 semantic events, 6,814 invocations, 6,813 calls, 67,849 values and 110,408 edges, retaining **354.625 MiB ≤ 390 MiB**. The original process-delta boundary includes enriched raw facts, semantic events, graph and checkpoint roots, with generator input held outside the measurement. This is synthetic controlled retention, not actual JVM or isolated GPU/SceneModel memory (`perf-world-route-costs-rich/performance.json`, `comparison.json`).
+
+The unchanged modern Node method also completes all three configured corpora and the counterbalanced single-LINE scaling probe, executing 1/1 with zero skips. The 20k/1k actual-object update ratio is **1.03235 ≤ 2**, using 100 measured batches per size after 20 warmup batches. Presentation-retention ratios still fail the 0.25 limit:
+
+| Raw target | Semantic retained delta | Presentation retained delta | Ratio | Result |
+| --- | ---: | ---: | ---: | --- |
+| 200 | 927,960 bytes | 1,639,648 bytes | 1.76694 | FAIL |
+| 5,000 | 12,372,744 bytes | 9,325,152 bytes | 0.75369 | FAIL |
+| 20,000 | 55,805,520 bytes | 35,869,048 bytes | 0.64275 | FAIL |
+
+That test exits 1 at the unchanged retained-memory budget assertion, with all stages completed. Small differences from previous heap samples are not claimed as a material memory improvement. `perf-world-route-costs-modern/modern-world-performance.json` preserves stage deltas, exact input hashes, timings, ownership checks and failures; `performance-world-route-costs-external.json` links these independent gates without altering the browser report's NOT_MEASURED fields. Seek p50, Focus, presentation retention, visual convergence and whole A–G acceptance remain OPEN.
+
+
+## Compact FlowCatalog retention — 2026-10-21
+
+The unchanged explicit-GC generated method reruns all three raw targets and both 100-batch/20-warmup single-event sizes on source `858181a953fcba357cf6cf61f851444f607308aac27a797342cbb966b4c58902`. All raw hashes, graph counts and normalized event counts match 06695fc. Only the FlowCatalog implementation differs among 942 application/test/config files.
+
+| Raw target | Flow index before / after | Whole presentation before / after | Current ratio | Result against 0.25 |
+| --- | ---: | ---: | ---: | --- |
+| 200 | 68,400 / 45,184 bytes | 1,639,648 / 1,623,400 bytes | 1.75427 | FAIL |
+| 5,000 | 1,479,208 / 1,014,360 bytes | 9,325,152 / 8,936,272 bytes | 0.71967 | FAIL |
+| 20,000 | 5,888,408 / 4,073,712 bytes | 35,869,048 / 34,185,248 bytes | 0.61403 | FAIL |
+
+The largest Flow index delta is 1,814,696 bytes lower (30.8%); total presentation delta is 1,683,800 bytes lower (4.69%). These single-construction process deltas do not establish statistical confidence or isolated object bytes. Single-event scaling passes at 1.05977 against 2. The test executes 1/1 with zero skips, completes every stage, and exits 1 at the three unchanged memory-budget failures. Raw reports and the exact comparison are in `perf-flow-catalog-compact-modern/` and `flow-catalog-compact-memory-comparison.json` under the QA evidence directory.
+
+The 06695fc actual Dense/quality/rich results above keep their original source boundary; no new browser command latency, GPU or Cinematic claim is made for this internal-index checkpoint. Build artifacts independently pass at 71,763 main-entry gzip bytes, entry/Shell static sums 72,191 / 669,231 diagnostic bytes, with Monaco/Cinematic separate. Seek p50, Focus, presentation retention and whole-product approval remain OPEN.
+
+
+## Glyph coverage fix boundary — 2026-10-22
+
+The mask blend correction adds no passes or render targets. Actual build: main-entry 71,763 gzip bytes; entry/Shell static closure diagnostics 72,191 / 669,274. Native render-probe lifecycle smoke passes with actual GPU queries and no lifecycle errors; it does not approve Dense sustained rendering or GPU budgets. Earlier Dense/memory results retain their original source boundaries and failures. [Evidence and limits](migration/unlit-output.md#preserve-face-coverage-under-glyphs--2026-10-22).
+
+
+## Forensic footprint boundary — 2026-10-22
+
+Camera-aware structural evidence reuses the existing body/face/outline and text batch without adding passes or render targets. Current main-entry gzip is 71,764 bytes; entry/Shell closure diagnostics are 72,192 / 670,068. Ordinary Home/Hero/Follow outputs match the parent in 1,325 comparisons. This correctness evidence is not fresh Dense, retained-memory or sustained GPU-budget approval; earlier failures retain their source boundaries. [Implementation and limits](migration/forensic.md#readable-structural-evidence--2026-10-22).
+
+
+## Inline ordinal histories — 2026-10-22
+
+The unchanged serial generated probe observes largest projector retention 9,612,680 → 8,794,320 bytes and complete presentation 34,011,128 → 33,220,784 bytes. All three unchanged 0.25 ratios still FAIL; LINE scaling passes at 1.08694 against 2. This single pair is not statistical, JVM, WebGL or Dense latency approval. [Source boundaries, all sizes and limits](migration/slot-history.md#inline-ordinal-histories--2026-10-22).
+
+
+## Canonical source-event ordinals — 2026-10-22
+
+The unchanged generated probe observes largest projector retention 8,800,016 → 7,729,728 bytes and complete presentation 33,284,360 → 32,128,344. All three 0.25 ratios still FAIL; LINE scaling passes at 1.09919 against 2. The smallest presentation delta increases; no universal/statistical or fresh Dense/GPU claim is made. A spatial-bucket candidate is rejected for no useful measured gain. [All sizes and source boundaries](migration/slot-history.md#canonical-source-event-ordinals--2026-10-22).
+
+
+## Visible recording/liveness badges — 2026-10-23
+
+Small actual-JVM timing passes at three sizes: native Run pointerup → Building 59.8–68 ms; observed lifecycle store → Header commit 6.7–12.4 ms, against 100 ms. This is not global/Dense timing approval. The unchanged generated retention ratios remain 1.76615 / 0.67571 / 0.57739, all FAIL 0.25; optional heap attribution follows the fixed checkpoint. Build main-entry 71,761 gzip bytes, Shell closure 670,171 diagnostic bytes. [Methods and boundaries](migration/header-controls.md#visible-independent-recordingliveness-facts--2026-10-23).
+
+
+## Compact forward dependencies — 2026-10-23
+
+The unchanged comparable generated probes observe largest presentation retention 32,208,832 → 31,755,920 bytes (1.4% lower in this pair). Every 0.25 ratio still FAILS; LINE scaling passes 1.24307 against 2. Heap census confirms measured empty/singleton forward Sets are absent; shallow container counts are not dominator retention. An unprofiled after run is retained separately. [All sizes, source boundary and limits](migration/slot-history.md#compact-forward-dependency-targets--2026-10-23). Actual Dense failures remain OPEN.
+
+
+## Full-app 5,000-file search — 2026-10-23
+
+Full-app Quick Open now has measured desktop/narrow 5,000-file evidence: opening 67.8 / 81.4 ms; six query samples 28.6–93.1 ms, all within the unchanged 200 ms boundary. Maximum twelve mounted rows, last match reachable and real source opened. This is after-load sampled file-search evidence, not cold/JDT startup, symbols, Dense or JVM approval. [Methods and retained invalid diagnostics](migration/picker.md#full-production-project-with-5000-files--2026-10-23). Other performance failures remain OPEN.
+
+
+## Static environment capture ownership — 2026-10-23
+
+The actual environment capture counter previously rose 34 → 94 through fourteen public interaction checkpoints and increased again after recovery. The fixed owner stays at 1 throughout; recovery creates a new resource that stays at 1. This proves removal of repeated cube captures, not a measured command-latency gain. Main-entry gzip 71,761 bytes passes; shell static closure 670,269 bytes is diagnostic. The unchanged full Dense gate completes all ten stages but FAILS seek p50/p95 98.745/114.889 ms, Focus p95 134.283 ms and Home p95 165.676 ms against 55/112/125/152. Cold loads, all five orbit windows and the soak pass. One `ERR_NETWORK_IO_SUSPENDED` browser error also fails the runner. No command-latency benefit is demonstrated; Dense and separate retention failures remain OPEN. [Ownership, native evidence and limits](migration/static-environment.md). Whole-product A–G acceptance remains OPEN.
+
+
+## Inspector mount ownership — 2026-10-23
+
+The Inspector now mounts only when its resolved selection/Focus target exists. In two fresh actual-JVM, thirty-seek CPU diagnostics, React prop-diff self time falls 131.084 → 13.325 ms and sampled seek p50 98.596 → 83.294 ms. This removes invisible work without changing runtime storage or disabling diagnostics; it does not pass or replace the formal 55/112 ms seek gate. The latest full Dense report remains the parent 0c10d14 boundary with four latency failures and one suspended event stream. [Evidence, lifecycle scope and limitations](migration/idle-inspector.md). Whole A–G acceptance remains OPEN.
+
+
+## Completed-stream ownership — 2026-10-24
+
+Closed Java recordings previously retained open event streams. Native RED and corrected cases verify retirement after the accepted raw head; stop ordering and raw-error retry remain truthful. The corrected full Dense gate completes all ten stages with zero browser errors/suspended requests. Seek p95 passes 99.577 ms; seek p50 82.597 ms, Focus p95 134.798 ms and Home p95 165.740 ms still fail 55/125/152. Cold loads, all five orbit windows and soak pass. Earlier retention failures remain OPEN. No isolated/statistical latency gain is attributed to SSE retirement. Main-entry gzip 71,759 bytes passes; shell static closure 670,412 is diagnostic. [Lifecycle policy, reproduced failures and evidence](migration/stream-retirement.md). Whole-product A–G remains OPEN.
+
+## Stable array-window ownership — 2026-10-24
+
+Unchanged array windows now retain identity while changed geometry, budgets or admission evidence invalidate it. All 288 compared Dense plans remain equal; the actual component comparator admits 39,756 → 23,650 potential array labels. The complete fresh-JVM browser gate still FAILS seek p50 82.373 ms, Focus p95 135.067 ms and Home p95 165.825 ms. Seek p95 99.727 ms, cold loads, all five orbit windows and soak pass with zero browser errors. This removes redundant work without demonstrating command-latency improvement. Earlier presentation-retention failures and whole-product acceptance remain OPEN. [Proof, full metrics and source boundaries](migration/array-window-identity.md).
+
+## Qualified frame-title layout — 2026-10-24
+
+The two-line title layout keeps one batched text object per title. Main-entry gzip 71,761 bytes passes; Shell closure 670,910 is diagnostic. The unchanged complete actual-JVM Dense gate still FAILS seek p50 82.293 ms, Focus p95 135.221 ms and Home p95 166.041 ms. Seek p95 98.403 ms, cold loads, all five orbit windows and soak pass with zero browser errors. No command-latency gain is demonstrated; earlier presentation-retention failures remain OPEN. [Full metrics, source boundary and evidence](migration/frame-title-layout.md).
+
+## Rounded insets and shared face programs — 2026-10-24
+
+Final source `ccf6fc32eed7017ee3b5974c36877e6da1228e2942d3f8ae6c918ee43dc355a3` completes all ten unchanged actual-JVM Dense stages with zero browser errors. Seek p50 82.628, Focus p95 134.451 and Home p95 165.434 ms still fail 55/125/152 ms; seek p95, cold loads, all five orbit windows and soak pass. The intermediate band-owned candidate and final renderer-owned candidate retain separate full reports/source maps. Additional command profiles sample program-info time 142.623→94.638 ms; these are diagnostic samples across separate runs, not exact calls or statistical latency proof. Fixed Hero counters remain 96 calls, adding one shared geometry and 6,744 submitted triangles. [Full budgets, evidence, resource lifetime and limitations](migration/rounded-value-insets.md). The independent Node retention failures and whole-product acceptance remain OPEN.
+
+## Connector hover cost gate — 2026-10-25
+
+The unchanged ten-stage actual-JVM Dense run completes with zero browser errors. Seek p50 82.306, Focus p95 150.269 and Home p95 166.177 ms fail 55/125/152 ms; seek p95, cold loads, all five sustained orbit windows and soak pass. Focus tail is higher than the preceding run, so no latency non-regression is claimed. Renderer calls remain 102 during orbit; CPU p95 is 2.4/2.4/2.5/2.4/3.2 ms. [All budgets, profiles, source boundaries and retained limitations](migration/connector-hover.md). Presentation-retention and final whole-product gates remain OPEN.
+
+## Test-only origin coverage — 2026-10-25
+
+Static/large-array native coverage changes no production file: all 960 prior inputs and fourteen built JS resources match `91f1161`. Entry gzip stays 71,759 bytes; entry/Shell static closures stay 72,187/673,164 diagnostic bytes. No new timing or retention approval is claimed. The parent's three Dense latency failures and prior independent retention failures remain OPEN. [Source/build proof and checks](migration/connector-origins.md).
+
+## Focus anchor reconciliation — 2026-10-25
+
+Frozen source `6bb9bfd548110be09420296ad718fafe7e7a66e1a5fc29482d633486d674ccc1` completes all ten unchanged Dense stages with zero browser errors/suspended requests. Actual JVM `3fc5b4ba-edfd-4961-a3e4-8012b8eae182` is FULL, 7,492 raw / 9,852 normalized, completed exit 0. Seek p50 82.614 ms, Focus p95 150.605 ms and Home p95 166.599 ms still FAIL 55/125/152 ms. Seek p95 99.854 ms and cold median 4,112.216 ms pass; all orbit/soak budgets pass. Individual frame maxima still reach 207.6/364.7 ms. Whole-frontend post-GC heap growth is -0.02067%; this is not independent presentation-retention approval. Entry gzip is 71,760 bytes. [Complete measurements and limits](migration/focus-anchor-reconciliation.md). Overall performance approval remains FAILED.
+
+## Recorded source containment — 2026-10-25
+
+The exact-source Dense run completes all ten stages with zero browser errors/suspended requests. Seek p50 81.381 ms, Focus p95 134.830 ms and Home p95 166.094 ms still FAIL 55/125/152 ms; seek p95 99.281 ms and cold median 4,112.070 ms pass. All orbit/soak budgets pass, while individual frames still reach 400/486.3/488.4 ms. Whole-frontend post-GC heap growth is +0.12075%; this is not independent presentation-retention approval. Entry gzip is 71,763 bytes. [Complete source-bound measurements](migration/recorded-source-containment.md). Overall performance approval remains FAILED.
+
+## Stable World text renders — 2026-10-25
+
+The component avoids redundant host commits and sampled WorldText JSX time is lower across two extra-command profiles, without a statistical or whole-command improvement claim. All ten unchanged Dense stages finish without browser errors, but seek p50 82.563, Focus p95 149.718 and Home p95 166.797 ms still FAIL. Focus tail is higher than the preceding run. Sustained orbit/soak pass; independent presentation retention remains OPEN. [Evidence, boundaries and remaining failures](migration/world-text-memo.md). Whole A–G remains OPEN.
+
+## Rejected routing probes — 2026-10-25
+
+Exact-path offline probes leave production routing unchanged: bounded edge lookup has a limited isolated-helper result, and scalar clipping is slower on the prepared-call method. Neither establishes browser latency improvement. [Inputs, counts and rejection decisions](migration/routing-probes.md).
+
+## Complete Frame value insets — 2026-10-25
+
+Frame value insets share the existing geometry/material/instance band. Unchanged Dense finishes ten stages with zero browser errors, but seek p50 82.358, Focus p95 134.143 and Home p95 165.603 ms still FAIL. Orbit/soak pass without a no-jank claim; independent presentation retention remains OPEN. [Evidence, boundaries and remaining failures](migration/frame-value-chips.md). Whole A–G remains OPEN.
+
+## Console publication priority — 2026-10-28
+
+Current fixed run 9e3c5a15-d700-4b12-8648-1bf662af5e4d / actual JVM f9a51890-137d-457c-8f9f-688932a72a52 completes all ten stages, 7,492/9,852 events, FULL/exit zero, no browser errors/suspended requests. Runner exit one: seek p50 83.401 ms, Focus p95 166.074, Home p95 175.216 and cold median 6,036.133 exceed unchanged limits. Seek p95 100.538, sustained orbit and soak pass; large frame spikes and independent retention failures remain OPEN. Rejected shader preparation is preserved separately and does not ship. [Full evidence and limitations](migration/console-publication.md). Whole A–G remains OPEN.
+
+## Stable outline buffers — 2026-10-29
+
+Fixed Dense run 6581f946-43b5-474c-8946-b88a5e5726e1 completes all ten stages with fresh actual JVM d94d9c59-2544-4d3b-b3ba-d81ae8610295, 7,492 raw/9,852 normalized Events and zero browser errors. Seek p50 82.246/55, Focus p95 134.865/125 and Home p95 164.942/152 FAIL. Seek p95 99.859/112 and cold median 4,441.033/5,300 pass. Orbit/soak budgets pass, but a 445.4 ms maximum frame interval prevents no-jank approval. Independent 25% retention failures remain OPEN; no causal global improvement is claimed from separate runs. [Source, lifetime proof and full evidence](migration/solid-edge-lifetime.md). Whole A–G remains OPEN.
+
+
+## Complete flow-prefix ownership — 2026-11-01
+
+On M1 Pro/Node 24.22.1, the unchanged independent benchmark measures 31,796,616 →27,529,608 presentation heap bytes at the 20k target versus exact parent production modules. The compact tag backing-store bound adds at most 15,375 bytes; all three 25% ratios still FAIL. Counterbalanced pure planning is approximately 4–5 ms parent versus 6–8 ms compact, after rejecting a 23–26 ms cacheless candidate. Final fixed Dense 51ffadfb completes ten stages with fresh JVM 2152c7df, 7,492/9,852 Events and zero browser/lifecycle errors. Seek 90.673/157.048, Focus 183.829 and Home 215.858 ms FAIL unchanged 55/112/125/152 limits; cold 4,601.898 ms and all orbit/soak budgets pass. An 801 ms maximum frame interval prevents no-jank approval. This is separate from earlier M4 evidence; no global non-regression is claimed. [Methods, source, tradeoff and full metrics](migration/flow-prefix-lifetime.md). Whole A–G remains OPEN.
+
+
+## Null and unavailable attachment eligibility — 2026-11-03
+
+Final-source fixed Dense run 32a8b4b0-c737-4de0-af9b-3c659ce1501f executes fresh FULL JVM d058e336-f4d3-4969-a01b-4cf509d793d0 (7,492 raw/9,852 normalized Events). All ten stages complete without recorded browser/lifecycle/stage errors; runner exits one. Seek p50/p95 84.350/117.167 ms, Focus p95 200.842 and Home p95 215.443 all FAIL unchanged limits; cold median 5,026.650 passes. Maximum frame interval 962.3 ms prevents no-jank acceptance. Four browser external rows remain NOT_MEASURED; independent retention is recorded separately. [Complete measurements and limitations](migration/null-value-ports.md). Whole A–G remains OPEN.
+
+Independent final-source explicit-GC Node retention also fails all three 25% limits: presentation/semantic ratios 1.710636/0.582944/0.493844 at raw targets 200/5,000/20,000. The 20k presentation delta is 27,502,912 bytes, or 27,518,287 including the full endpoint-tag backing-store bound. LINE scaling 1.023085 passes 2.0. These are single-construction generated measurements without a causal/statistical comparison. [Exact counts and stage boundaries](migration/null-value-ports.md).
+
+
+## Accepted event lookup ownership — 2026-11-03
+
+Four independent explicit-GC protected Node runs use parent/candidate/candidate/parent order. At the 20k target, parent presentation deltas 27,502,352/27,502,608 bytes versus candidate 26,220,096/26,219,320 show about 1.28 MB lower measured retention. All twelve 25% budget rows still FAIL; LINE scaling passes in all four runs. This is not exact per-type attribution or statistical CPU non-regression. Fresh Dense a7c44ea5-96fe-41b1-b4b3-3ed5a6da37e0 (FULL JVM 0c78ad4d-a7a6-4703-b689-f5859a746a31) completes all ten stages without recorded browser/lifecycle/stage errors but exits one: seek p50/p95 98.870/117.372 ms, Focus p95 185.012 and Home p95 232.485 all FAIL; cold median 5,038.454 passes. Maximum frame interval 1,002.2 ms prevents no-jank acceptance. [Complete measurements and limitations](migration/accepted-event-lookup.md). Whole A–G remains OPEN.
+
+
+## Array cell label lifetime — 2026-11-03
+
+The real-React regression skips 100 unchanged cell-group commits across twenty equal-value observations. This is local work removal, not a global speed claim. Fresh fixed Dense 1268b129 (FULL actual JVM f9897775; 7,492/9,852 Events) completes ten stages with zero recorded browser/lifecycle errors. Seek p50/p95 99.314/134.502 ms, Focus p95 217.032, Home p95 229.698 and cold median 5,798.346 all FAIL unchanged limits; maximum frame interval 1,006.8 ms prevents no-jank acceptance. A separate twenty-context counterbalanced cold diagnostic on one fresh JVM finds parent medians 5,810.019/4,996.229 versus candidate 5,592.962/4,960.506, showing startup variation without statistical non-regression or substitution for the formal failure. All 76 local Node benchmark inputs are unchanged; its existing retention failures remain. [Methods, source, tradeoff and complete results](migration/array-cell-label-lifetime.md). Whole A–G remains OPEN.
+
+
+## Array cell typography — 2026-11-03
+
+The font-only correction passes build metrics (71,733-byte main entry); all 76 local protected Node dependency inputs are unchanged and prior retention failures remain. Dense is not repeated for this typography cut; latest formal run 1268b129 measured prior source 3f9dc1e and still fails five latency/load limits. No current-source browser performance approval is implied. [Source and boundaries](migration/array-cell-typography.md). Whole A–G remains OPEN.
+
+
+## Face text opacity lifetime — 2026-11-03
+
+Fresh fixed Dense 32dbbcd1 completes ten stages on FULL actual JVM f71a10c5 (7,492/9,852 Events), without recorded browser/lifecycle/stage errors. Seek p50/p95 99.570/117.192 ms, Focus p95 199.919, Home p95 212.697 and cold median 5,665.682 all FAIL unchanged limits. Orbit/soak budgets pass; maximum interval 1,026.4 ms prevents no-jank approval. Small separate native probes show lower dispatch medians but do not establish statistical non-regression. All 76 protected Node inputs are unchanged, and prior retention failures remain. The no-gain routing-grid prototype is rejected. [Full methods and results](migration/face-text-opacity-lifetime.md). Whole A–G remains OPEN.
+
+
+## Source Escape and IDE browser successors — 2026-11-03
+
+The Source Escape/IDE migration passes build metrics (71,732-byte main entry); all 76 local protected Node benchmark inputs are unchanged. Latest Dense evidence remains source187/run32dbbcd1 with five latency/load failures; no new current-source browser performance or retention approval is claimed. [Source and evidence boundary](migration/ide-browser-successors.md). Whole A–G remains OPEN.
+
+
+## Debugger browser successors — 2026-11-03
+
+Production inputs and all 76 protected Node benchmark dependency inputs remain unchanged. Main-entry gzip is 71,732 bytes; Shell closure 672,897 bytes is diagnostic. No new Dense or retention approval is claimed: the latest five Dense latency/load failures and independent retention failures remain OPEN. [Assertions, rejected experiment, exact source and evidence](migration/debugger-browser-successors.md). Whole A–G remains OPEN.
+
+
+## Independent Error Explorer actions — 2026-11-03
+
+Main-entry gzip is 71,734 bytes; diagnostic Shell closure 673,157 bytes. All 76 protected Node benchmark dependency inputs are unchanged. The UI callback/source-receipt change has no new Dense performance approval; prior retention and five latest Dense latency/load failures remain OPEN. [Exact source, regression and evidence](migration/error-navigation.md). Whole A–G remains OPEN.
+
+
+## Captured return expressions and recursion successors — 2026-11-03
+
+Main-entry gzip remains 71,734 bytes; diagnostic Shell closure 673,229 bytes. All 76 protected Node benchmark dependency inputs are unchanged. No new Dense or presentation-retention approval is claimed; historical failures retain their source boundaries. [Exact assertions, source boundaries and evidence](migration/recursion-browser-successors.md). Whole A–G remains OPEN.
+
+
+## Shared presentation event witnesses — 2026-11-04
+
+Four corrected-source parent/candidate/candidate/parent processes reduce 20,000-event presentation retention from 26.218 MB to 24.402–24.403 MB (about 6.9%). The ratio remains 43.804–43.823%; all twelve unchanged 25% retention gates FAIL. All four LINE scaling gates pass. These are Node generated-provenance measurements; no browser latency, JVM/GPU or statistical gain approval follows. Entry gzip is 71,733 bytes; diagnostic Shell closure 673,481 bytes. Fresh Dense run 42fcf420 executes FULL JVM 8ef308bb (7,492 raw/9,852 normalized), completes all ten stages without browser/lifecycle errors, and exits one: seek p50/p95 99.232/116.754 ms, Focus p95 183.950 ms, Home p95 200.423 ms and cold median 5,442.190 ms all FAIL unchanged limits. Maximum frame interval 836.7 ms prevents no-jank approval; four external browser rows remain NOT_MEASURED. [Ownership contract, rejected candidate and measurements](migration/shared-presentation-events.md). Whole A–G remains OPEN.
+
+
+## Complete unavailable-flow snapshots — 2026-11-04
+
+Four protected prototype controls reduce large-corpus retention from about 24.40 MB to 22.81–22.84 MB. A fresh production probe confirms 22,815,656 bytes and ratio 40.976%; all three 25% production retention gates still FAIL. LINE ratio 1.039672 passes 2x. Warm planner median ratios 0.955–1.002 have mixed tails and establish no statistical speedup. Entry gzip remains 71,733 bytes; diagnostic Shell closure 673,925 bytes. Fresh Dense 4703adda executes FULL JVM 76ccd51b, completes all ten stages without browser/lifecycle errors and exits one: seek p50/p95 100.660/132.587 ms, Focus p95 200.430 ms, Home p95 231.764 ms and cold median 5,429.025 ms all FAIL unchanged limits. Maximum frame interval is 924.8 ms; four external rows stay NOT_MEASURED. No latency/statistical gain or no-jank approval. [Complete evidence, ownership and source qualification](migration/compact-unavailable-flows.md). Whole A–G remains OPEN.
+
+
+## Error Explorer applied-prefix evidence — 2026-11-04
+
+Source `1e715790` passes current production build metrics: entry static JS gzip 72,164 bytes; application Shell static closure gzip 674,859 bytes. Error Explorer uses the recording-qualified prefix and a clamped historical throw snapshot, with separate explicit future navigation. No fresh Dense latency or isolated retention measurement is claimed for this source. The formal Dense failures on `ff2fa076` and failed 25% retention budgets recorded for the preceding milestone retain their exact source boundaries and remain OPEN. [Behavior, source qualification and regression evidence](migration/error-prefix-evidence.md).
+
+
+## Reference-chip attachment geometry — 2026-11-04
+
+Fresh source `b568613e` keeps all three 25% retention budgets failing: large 22,812,128 bytes/40.974685%; LINE ratio 1.220114 passes 2x. Fresh Dense 1d05f818 completes FULL JVM a66958b0 and all ten stages without browser/lifecycle errors, exits 1: seek p50/p95=114.190/132.689ms, Focus p95=200.138ms and Home p95=216.737ms FAIL unchanged limits. Cold median 5,028.218 ms PASSES 5,300 ms in this run; no causal speedup or statistical non-regression is inferred. Orbit medians 16.7 ms; maximum interval 932.6 ms precludes no-jank approval. Four external rows remain NOT_MEASURED. Entry gzip 72,163 bytes; Shell closure 675,300 bytes. [Exact source, regression and current measurements](migration/reference-chip-ports.md). Whole A–G remains OPEN.
+
+
+## Focus connection hierarchy and target readability — 2026-11-04
+
+The unchanged protected Node probe runs on source `18463b85` in 21.920 seconds and exits 1 for all three 25% retention budgets. Presentation bytes are 1,570,768 / 6,126,368 / 22,809,632 against semantic bytes 928,056 / 12,372,536 / 55,674,024; ratios 1.692536 / 0.495159 / 0.409700, all FAIL. Three retained final plans account for 1,241,072 / 984,168 / 1,751,008 bytes. LINE 1.449804 passes 2×. All three raw corpus hashes match the prior protected run. The 79-file local dependency closure changes only presentationPlanner; this is CPU/retention evidence, not JVM or GPU evidence and not a memory-improvement claim. Full report/log/summary remain in `focus-connection-mask/production-node/`.
+
+Fresh Dense run `3385a015` records actual FULL JVM `a7e27010` (7,492 raw / 9,852 normalized Events), completed Java exit 0. All ten stages complete with zero browser/stage/lifecycle errors and zero suspended requests. Runner time is 481.564 seconds; benchmark exit 1, archive exit 0. Seek p50 100.478 ms exceeds 55; seek p95 133.344 exceeds 112; Focus p95 217.022 exceeds 125; Home p95 240.301 exceeds 152. Cold median 4,943.850 ms passes 5,300 in this execution. No causal speedup or statistical non-regression is inferred from a single execution.
+
+Orbit medians are 16.7 ms at all five viewports; p95 intervals are 17.4/17.4/17.3/17.0/17.4 ms, CPU p95 3.4/3.4/3.0/2.9/4.1 ms, calls at most 102. Maximum intervals are 23.0/581.6/571.9/312.4/938.2 ms, so long stalls remain. The 61,264.6-ms soak has zero median drift and +0.201136% whole-frontend post-GC heap growth, not isolated presentation retention. Four external rows remain NOT_MEASURED. The original Dense image is root-reviewed with array/index readability, material, glow, aliasing and clipping findings still OPEN. Exact source, reports, profiles, session snapshot, environment and image remain in `performance-focus-connection-mask/`. [Scope and source qualification](migration/focus-connection-mask.md).
+
+
+## Private layout metadata compaction — 2026-11-04
+
+Source `b5256fb3` runs the unchanged protected Node probe in ABBA order, four
+separate processes. Parent runs explicitly substitute only the captured parent
+layout module; candidate runs use default production configuration. All raw
+corpus hashes/GC/seeks/limits remain unchanged. Medium total presentation
+retention falls by 115,168/113,736 bytes in the two pairs; large falls by
+450,728/451,120 bytes. Smallest-corpus totals vary −3,632/+10,248 bytes, so no
+small-corpus reduction is claimed. All 12 retention rows still FAIL 25%; all four
+LINE ratios pass 2×. Per-stage/timing variation is preserved; no speedup or
+statistical latency claim is made.
+
+The preserved second candidate report has presentation bytes 1,553,176/6,013,344/
+22,360,232 and semantic bytes 927,896/12,377,040/55,677,520: ratios 1.673869/.485847/
+.401603. Its LINE 1.738244 passes 2×. This is one of the two real candidate runs,
+not an extra execution. Full reports and source boundaries remain in
+`compact-layout-slot-metadata/`. Fresh Dense run `1514bab2` records actual FULL JVM `e94d507d` (7,492 raw /
+9,852 normalized Events), completed Java exit 0. All ten stages complete with
+zero browser/stage/lifecycle errors and zero suspended requests. Runner time
+is 492.251 seconds; benchmark exit 1 and archive exit 0. Seek p50 115.997 ms
+exceeds 55; seek p95 134.527 exceeds 112; Focus p95 200.786 exceeds 125; Home
+p95 231.572 exceeds 152; cold median 5,556.662 exceeds 5,300. All five latency
+limits FAIL in this execution. These single-source samples do not establish a
+causal latency improvement or statistical non-regression against older runs.
+
+Orbit medians are 16.7 ms at all five viewports; p95 intervals are
+17.5/17.3/17.5/17.5/17.7 ms, CPU p95 3.6/3.9/3.9/4.0/6.0 ms, calls at most
+102. Maximum intervals are 791.0/863.8/903.9/704.8/999.0 ms, so long stalls
+remain. The 61,815.5-ms soak has zero median drift and +0.095072% whole-frontend
+post-GC heap growth, not isolated presentation retention. Four external rows
+remain NOT_MEASURED. Exact source, full reports, profiles, snapshot, environment
+and original image are archived in `performance-compact-layout-slot-metadata/`.
+The original Dense image is root-reviewed; array/index readability, matte
+materials, route glow, aliasing and peripheral clipping remain OPEN.
+
+[Ownership proof, equivalence and source](migration/compact-layout-slot-metadata.md).
+
+
+## Array captions and precise cell Focus — 2026-11-04
+
+Source `3e6e9a41` has a fresh unchanged protected Node execution: exit 1, 22.711 s; retained presentation 1,551,320 / 6,013,264 / 22,361,344 B versus semantic 927,288 / 12,373,200 / 55,679,296 B. All three 25% limits fail; large ratio 0.401609676. LINE scaling 1.298379274 passes 2×. Raw corpus SHAs remain identical, and the 80-input dependency closure imports no font metrics. No isolated speedup claim follows.
+
+Fresh Dense run `d82fde06-1ec2-4b69-a71c-1ede4d076268`, actual FULL JVM `2f04c9a8-8c95-47d8-9719-812eb52a8798` (7,492 raw / 9,852 normalized), completes all ten stages with zero browser/stage/lifecycle errors and zero suspended requests. Runner 482.541 s; benchmark exit 1 / archive 0. Seek p50/p95 109.449/134.347 ms fail 55/112; Focus p95 219.538 fails 125; Home p95 295.945 fails 152. Cold median 5,146.973 ms passes 5,300 in this execution. All five orbit medians 16.7 ms; p95 17.4/17.5/17.8/17.2/17.6; CPU p95 3.4/3.1/3.7/3.0/4.2 ms; maximum calls 102. Maximum intervals 530.5/114.5/258.4/798.3/455.4 ms retain stall findings. The 61,447.4 ms soak shows zero median drift and +0.041295% whole-frontend post-GC heap growth, not isolated presentation retention. Four external rows remain NOT_MEASURED. Full profiles/snapshot/environment/original root-reviewed PNG are preserved under `performance-array-label-placement/`. No causal/statistical or whole-product approval is claimed. [Source and functional qualification](migration/array-label-placement.md).
+
+## Array and collection reference chips — 2026-11-05
+
+Current source `cafbcb15` has fresh protected measurements, not performance approval. Node command exits 1: retained ratios **1.679861980 / 0.486118584 / 0.401708425** exceed 25%; LINE ratio 1.350095238 passes 2×. Actual Dense run `629a6d1e`, JVM `d6221278`, finishes all ten stages, 7,492 raw/9,852 normalized events, no browser/stage/lifecycle errors, benchmark exit 1. Seek p50/p95 **114.991292/133.667667 ms**, Focus p95 **217.819458**, Home p95 **237.409291** all fail unchanged limits. Cold median 5,145.156375 ms passes this execution; orbit medians 16.7 ms, CPU p95 3.2–5.8 ms and maximum 103 calls pass, with maximum intervals up to 823.7 ms retained. Soak +0.084310437% measures whole-frontend post-GC growth, not isolated presentation retention. Main gzip **71,732 B**; entry/Shell static JS closures **72,162/677,835 B** are separate-resource sums, not network timing. [Scope, failed attempts, source qualifications and complete results](migration/structure-reference-chips.md).
+
+## Collection departure clearance and stable connector picking — 2026-11-05
+
+Current artifact measurement: main-entry default gzip 71,734 B against the unchanged 500,000-byte budget; static entry/Shell JS closures 72,164/678,366 B are diagnostic sums. Fresh unchanged Node benchmark exits 1 in 23.172 s: LINE scaling 1.354085985 passes 2×, while all three retention ratios fail 25% (1.690971683 / 0.486100435 / 0.401719120). Corpus raw SHA values match the preceding committed chip measurement. Complete fresh Dense results and source/environment boundaries are recorded in the linked ledger; no causal speedup or performance approval is claimed. [Implementation, failed evidence and exact source qualification](migration/reference-departure-clearance.md).
+
+The fresh Dense run completed all ten stages with zero browser, stage, lifecycle or suspended-request errors. Seek p50/p95 are 103.576/133.923 ms and Focus/Home p95 are 238.576/248.913 ms. All four exceed their limits. Four of five orbit windows exceed both frame interval limits. Cold load, draw calls, submission CPU and soak pass in this run. The full measurement table is in the migration ledger.
+
+## Shared world inputs and glyph preparation — 2026-11-05
+
+Fresh Dense seek p50 and p95 are 83.389 and 117.335 ms. Focus and Home p95 are 185.257 and 209.727 ms. Cold load is 6,041.041 ms. All five exceed their limits. The five orbit windows pass the median, p95, draw-call and CPU budgets while the longest observed interval remains 997.2 ms. The fresh Node run passes LINE scaling at 1.501130931× and exceeds all three retention limits. [Implementation and source evidence](migration/render-frame-preparation.md).
+
+## Flow prefix and connector routing — 2026-11-05
+
+The fresh Dense run measures 83.507 and 116.383 ms for seek p50 and p95, 169.305 and 202.479 ms for Focus and Home p95, and 5,742.960 ms for cold load. All five rows exceed their limits. All five orbit windows pass with 103 draw calls, with a longest observed interval of 951.3 ms. Node LINE scaling passes at 1.252336762×. Its retention ratios of 1.936554777, 0.474984674 and 0.399839359 exceed 25%. [Exact source, route equivalence and measured evidence](migration/flow-routing-work.md).
+
+## Connector selection width and bloom spread — 2026-11-05
+
+Dense cold load passes at 5,008.656 ms. Seek p50 and p95 are 83.837 and 116.852 ms, and Focus and Home p95 are 183.821 and 183.191 ms. Those four rows exceed their limits. All orbit windows pass with 99 draw calls and a maximum observed interval of 880.1 ms. Node LINE scaling passes at 1.330088861×. Its three retention ratios still exceed 25%. [Exact source, visual review and benchmark evidence](migration/connector-core-and-bloom.md).
+
+## Cold Flow endpoints and compact layout indexes — 2026-11-05
+
+Cold Flow prefix resolution is faster in paired CPU diagnostics with exact outputs. The fresh Dense run measures 83.419 and 116.560 ms for seek p50 and p95, 200.073 and 198.438 ms for Focus and Home p95, and 5,655.839 ms for cold load. All five rows exceed their limits. All orbit windows pass with 99 draw calls. Node LINE scaling passes at 1.113996127×. The largest corpus retains 21,906,128 presentation bytes at 39.3%, and all three retention ratios exceed 25%. [Equivalence, source and benchmark evidence](migration/flow-endpoints-and-layout-retention.md).
+
+## Compact slot evidence and committed Focus framing — 2026-11-05
+
+The protected Node run passes LINE scaling at 1.240093×. The largest corpus retains 21,291,416 presentation bytes at 38.246%, and all three retention ratios exceed 25%. Dense completes ten stages with zero browser or stage errors and exceeds all five latency limits. All five orbit windows and the soak pass, with a longest observed interval of 725.4 ms. [Full measurements and exact source](migration/recursive-headings-and-slot-retention.md).
+
+## Shared text-parent transforms — 2026-11-06
+
+The exact matrix probe reduces parent update work while matching all 57,600 sampled label matrices. The fresh Dense run passes cold load, all orbit windows, and soak. Seek, Focus, and Home still exceed four latency limits, and the longest frame interval is 957.8 ms. [Exact source, native pixel comparison and benchmark results](migration/text-parent-transforms.md).
+
+## Built application diagnostic — 2026-11-06
+
+Revision `92dd058` (source `965b49394a5dda42c921dc11b569ce47436f7846e8936ca7db2756904152e1cc`) runs the unchanged protected Dense workload against the built application with QA observation enabled and the real local execution bridge. This is a separate production-mode diagnostic. The preceding development-server report, profiles, capture and normal build resources are preserved with matching hashes.
+
+Run `70cce285-b634-4fde-8eb0-0a7a7fdc0cf8` completes all ten stages in 452.100 seconds with zero browser or stage errors. FULL JVM session `e721cba9-1a19-4f2e-b66e-b6dd4dcdf58d` supplies 7,492 raw and 9,852 normalized events. The raw resource log retains aborted EventSource connections and two canceled language requests. The wrapper including build and archival finishes in 466.881 seconds. The browser gate fails on two unchanged limits.
+
+| Measurement | Measured | Limit | Result |
+| --- | ---: | ---: | --- |
+| Cold load median | 4,596.878 ms | 5,300 ms | Pass |
+| Seek p50 | 66.248 ms | 55 ms | Over |
+| Seek p95 | 82.790 ms | 112 ms | Pass |
+| Focus p95 | 150.950 ms | 125 ms | Over |
+| Home p95 | 140.679 ms | 152 ms | Pass |
+
+All five orbit windows pass. Frame intervals have a 16.7 ms median and 17.2–17.6 ms p95. CPU p95 spans 2.4–3.1 ms and the maximum draw count is 99. The longest observed interval is 799.2 ms. The 61.281-second soak passes with zero median drift and +0.189085% whole-frontend heap growth after CDP GC. The independent presentation-retention limit remains open. The root-reviewed original shows visible peripheral clipping, edge aliasing and overlapping connector glow in the dense world.
+
+The full report, exact JVM capture, profiles, build manifests and reviewed original are under `.ggjavaez/qa/reference-exact/stack-heading-retention/production-browser/`. This run uses a later revision and a different serving mode from the development-server run. The timing difference cannot isolate a single source or serving-mode effect.
+
+## Shared immutable layout dimensions — 2026-11-06
+
+Both alternating candidate runs retain about 0.25 MB less presentation memory on the largest unchanged generated corpus. The largest candidate ratio is about 37.8% against 25%, and all three corpus ratios remain over budget. LINE scaling passes in both runs. [Exact measurements and snapshot equivalence](migration/shared-layout-dimensions.md).

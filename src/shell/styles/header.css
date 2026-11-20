@@ -1,0 +1,61 @@
+.shell-header { position:absolute;left:0;top:0;width:100%;height:var(--header-height);display:flex;align-items:center;gap:16px;padding:0 1.2vw;z-index:4;pointer-events:none }
+.shell-header::before { content:'';position:absolute;inset:0;z-index:-1;pointer-events:none;background:linear-gradient(rgba(8,12,32,.9),rgba(8,12,32,.84));backdrop-filter:blur(18px) saturate(1.2) }
+.shell-header>* { pointer-events:auto }
+.shell-brand { display:flex;align-items:center;gap:13px;flex:none }
+.shell-brand-cube { color:#5CC8FF;filter:drop-shadow(0 0 8px #1F6BFF) }
+.shell-brand strong { display:block;font-size:clamp(18px,2.4vh,26px);font-weight:600;line-height:1.1 }
+.shell-brand small { display:block;font-size:max(12px,1.5vh);color:#A9B8DA;margin-top:7px }
+.shell-header button { display:flex;align-items:center;justify-content:center;gap:8px;border:1px solid rgba(160,190,255,.18);border-radius:8px;background:rgba(8,14,34,.72);color:#A9B8DA;height:clamp(34px,4.1vh,40px);font-size:13px;white-space:nowrap }
+.shell-project { min-width:0;max-width:180px;overflow:hidden;padding:0 10px;margin-left:8px }
+.shell-project span { overflow:hidden;text-overflow:ellipsis }
+.shell-header button svg {flex:none}
+.shell-state { display:flex;flex-direction:column;justify-content:center;min-width:0;max-width:200px;white-space:nowrap;color:var(--color-ui-text-secondary);font-size:12px;line-height:1.35;margin-right:auto }
+.shell-state-primary {display:flex;align-items:center;gap:6px;min-width:0}
+.shell-state-icon {display:inline-flex;flex:none}
+.shell-state-label {overflow:hidden;text-overflow:ellipsis;white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.shell-state[data-has-badges=true] {line-height:1.1}
+.shell-state[data-has-badges=true] .shell-state-label {-webkit-line-clamp:1}
+.shell-state-badges {display:flex;flex-direction:column;min-width:0}
+.shell-state-badges small {font:inherit;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media(min-width:1280px){.shell-state {min-width:200px}}
+.shell-source-changed {font-size:12px;color:var(--color-ui-text-muted);overflow:hidden;text-overflow:ellipsis}
+.shell-state [role=progressbar] svg {animation:shell-build-spin 1s linear infinite}
+.shell-state[data-reduced-motion=true] [role=progressbar] svg {animation:none}
+@keyframes shell-build-spin {to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){.shell-state [role=progressbar] svg {animation:none}}
+.shell-accessible-description {position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;pointer-events:none}
+.shell-run-cluster { display:flex;flex:none;gap:4px;width:min(18vw,260px);min-width:0 }
+.shell-run-cluster button { padding:0 8px }
+.shell-run-cluster .shell-run { color:#5BE3A8;border-color:rgba(91,227,168,.4) }
+.shell-run-cluster .shell-run-icon {width:34px;flex:none}
+.shell-run-icon .shell-command-label {display:none}
+.shell-run-cluster .shell-launch {flex:1;min-width:0}
+.shell-launch .shell-command-label {overflow:hidden;text-overflow:ellipsis;min-width:0}
+.shell-modes { display:flex;gap:14px }
+.shell-modes button { width:clamp(98px,6.7vw,112px) }
+.shell-modes button[aria-pressed=true] { color:#EEF4FF;border:1.5px solid #5CC8FF;background:linear-gradient(rgba(63,140,255,.18),rgba(63,140,255,.18)),rgba(8,14,34,.72);box-shadow:inset 0 0 16px rgba(31,107,255,.3),0 0 14px rgba(31,107,255,.18) }
+.shell--narrow .shell-header { gap:8px }
+.shell--narrow .shell-brand small {display:none}
+.shell--narrow .shell-project {display:flex;width:34px;min-width:34px;padding:0;margin-left:0}
+.shell--narrow .shell-project svg:last-child {display:none}
+.shell--narrow .shell-state {max-width:150px}
+.shell--narrow .shell-brand strong {font-size:18px}
+.shell--narrow .shell-brand-cube svg {width:36px;height:36px}
+.shell--narrow .shell-brand {margin-right:0;gap:8px}
+.shell--narrow .shell-run-cluster {max-width:none;gap:3px}
+.shell--narrow .shell-run-cluster button,.shell--narrow .shell-modes button {width:40px;height:40px;padding:0}
+.shell--narrow .shell-run-cluster button {width:calc((18vw - 9px)/4);min-width:24px;max-width:36px;height:36px;flex:none}
+.shell--narrow .shell-run-cluster .shell-launch {flex:1}
+.shell--narrow .shell-modes {gap:5px}
+.shell--narrow .shell-header button span {display:none}
+
+/* Intermediate desktops retain full mode controls and readable status text. */
+@media(min-width:1024px) and (max-width:1279px){
+ .shell-header {gap:8px}
+ .shell-brand {gap:8px}
+ .shell-brand-cube svg {width:36px;height:36px}
+ .shell-brand small {max-width:100px;line-height:1.25;white-space:normal;margin-top:4px}
+ .shell-project {flex:1;min-width:76px;max-width:120px;margin-left:0;padding:0 8px;gap:6px}
+ .shell-project svg:last-child {display:none}
+ .shell-state {min-width:128px;max-width:180px}
+}

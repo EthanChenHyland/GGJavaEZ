@@ -3,8 +3,7 @@ import type { TraceDocument, TraceEvent } from '../contracts/runtime'
 import { applyEvent, createInitialState, seek, validateTrace } from './index'
 import { loadArrayTrace } from '../examples/traces'
 import type { RecordingStatus } from '../instrumentation/contracts'
-import { createLayout } from '../world/layout'
-import { buildSceneModel } from '../world/sceneModel'
+import { projectTrace } from '../testing/projectTrace'
 
 const source = { fileId: 'src/Main.java', line: 1 }
 type EventPayload = TraceEvent extends infer E ? E extends TraceEvent ? Omit<E, 'eventId' | 'seq' | 'source' | 'label' | 'importance'> : never : never
@@ -100,18 +99,28 @@ describe('partial recording state and replay', () => {
     expect(seek(validateTrace(stopped), 2).status).toBe('partial')
   })
 
-  it('marks last observed frames and references neutral without changing geometry or data', () => {
+  it('retains last observed frames and references without inferring process termination from a recording stop', () => {
     const trace = validateTrace(partialTrace())
-    const layout = createLayout(trace)
-    const before = buildSceneModel(seek(trace, 7), layout, 'meso')
-    const stopped = buildSceneModel(seek(trace, 8), layout, 'meso')
-    expect(stopped.frames.map(f => f.invocationStatus)).toEqual(['stopped', 'stopped'])
-    expect(stopped.frames.every(f => f.historical && !f.active && f.label.endsWith(' · last recorded'))).toBe(true)
-    expect(stopped.frames.map(f => f.anchor)).toEqual(before.frames.map(f => f.anchor))
-    expect(stopped.frames.map(f => f.slots)).toEqual(before.frames.map(f => f.slots))
-    expect(stopped.objects).toEqual(before.objects)
-    expect(stopped.references).toEqual(before.references.map(r => ({ ...r, historical: true })))
-    expect(stopped.frames.every(f => !f.exceptionState)).toBe(true)
+    const projection = projectTrace(trace, { sessionEnded: false })
+    const before = projection.project(7), stopped = projection.project(8)
+    const frames = stopped.order.frames.map(id => stopped.entities[id])
+    expect(stopped.recording).toEqual(recording)
+    expect(stopped.liveStack).toEqual(['main', 'call'])
+    expect(frames.every(frame => frame.kind === 'frame' && frame.live && frame.status.kind === 'running' && frame.exceptionRole === null)).toBe(true)
+    for (const id of stopped.order.frames) {
+      const prior = before.entities[id], frame = stopped.entities[id]
+      if (prior.kind !== 'frame' || frame.kind !== 'frame') throw new Error('Expected captured invocation')
+      expect(frame.anchor).toEqual(prior.anchor)
+      expect(frame.rows).toEqual(prior.rows)
+      expect(frame.sourceLine).toEqual(prior.sourceLine)
+    }
+    expect(stopped.order.objects).toEqual(before.order.objects)
+    for (const id of stopped.order.objects) expect(stopped.entities[id]).toEqual(before.entities[id])
+    expect(stopped.references).toEqual(before.references)
+    const ended = projectTrace(trace, { sessionEnded: true }).project(8)
+    expect(ended.order.frames.map(id => ended.entities[id])).toMatchObject([{live:false,status:{kind:'terminated'}},{live:false,status:{kind:'terminated'}}])
+    expect(ended.references).toEqual(stopped.references)
+    expect(seek(trace, 8).activeFrameIds).toEqual(['main', 'call'])
   })
 })
 
