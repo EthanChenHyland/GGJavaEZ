@@ -3,7 +3,7 @@ import {useFrame,useThree} from '@react-three/fiber'
 import {Group,PerspectiveCamera} from 'three'
 import type {WorldRenderSnapshot} from './worldRenderSnapshot'
 import type {Rect} from '../shell/shellLayout'
-import {color} from '../theme/tokens'
+import {color,world} from '../theme/tokens'
 import {ClusterLabels,clusterLabelParts,clusterLabelNames} from './ClusterLabels'
 import {WorldText} from './FaceText'
 import {textAdvance} from './text/textSystem'
@@ -17,12 +17,19 @@ export function StructuralLabels({snapshot,safeFrame,inspectorRect}:{snapshot:Wo
  const {camera,size}=useThree(),groups=useRef(new Map<string,Group>()),cache=useRef<{entries:readonly StructuralLabelSpec[];bodies:readonly unknown[];key:string}|null>(null)
  const displayNames=useMemo(()=>clusterLabelNames(plan.clusters),[plan.clusters])
  const captions=useMemo(()=>returnCaptions(scene,plan.curves),[scene.returnFlows,plan.curves])
+ const labelledBundles=useMemo(()=>{
+  const selected=plan.bundles.filter(bundle=>bundle.widthPx===world.connector.selectedPx)
+  const summaries=plan.detailLevel==='FAR'
+    ?plan.bundles.filter(bundle=>bundle.widthPx!==world.connector.selectedPx&&bundle.kind==='connector'&&bundle.count>=8)
+      .sort((a,b)=>b.count-a.count||a.id.localeCompare(b.id)).slice(0,3):[]
+  return [...selected,...summaries]
+ },[plan.bundles,plan.detailLevel])
  const entries=useMemo<StructuralLabelSpec[]>(()=>[
   ...captions.map(caption=>({id:caption.id,kind:'return' as const,position:caption.position,size:caption.operands?caption.operandSize:caption.size,localBounds:[-.08,caption.width+.08,caption.operands?-.5:-.2,.2] as const,priority:0,count:1})),
   ...plan.clusters.filter(cluster=>clusterLabelParts(cluster).fits).map(cluster=>{const [x,y,z]=cluster.anchor.position,[w,h,d]=cluster.anchor.size;return{id:cluster.id,kind:'cluster' as const,position:[x,y+h/2+.12,z+d/2+.085] as const,size:.3,localBounds:[-w/2+.2,w/2-.2,.08,.83] as const,priority:cluster.selected?-3:2,count:cluster.members}}),
   ...plan.headings.map(heading=>regionHeadingSpec(heading.id,heading.position)),
-  ...plan.bundles.map(bundle=>{const text=`${bundle.count} ${bundle.kind==='flow'?'flows':bundle.kind==='binding-history'?'past bindings':'references'}`,width=textAdvance(text,500)*.3;return{id:bundle.id,kind:'bundle' as const,position:bundle.points[Math.floor(bundle.points.length/2)],size:.3,localBounds:[-width/2,width/2,-.15,.15] as const,priority:bundle.widthPx===3.5?0:3,count:bundle.count}}),
- ],[plan.clusters,plan.headings,plan.bundles,captions])
+  ...labelledBundles.map(bundle=>{const text=`${bundle.count} ${bundle.kind==='flow'?'flows':bundle.kind==='binding-history'?'past bindings':'references'}`,width=textAdvance(text,500)*.3;return{id:bundle.id,kind:'bundle' as const,position:bundle.points[Math.floor(bundle.points.length/2)],size:.3,localBounds:[-width/2,width/2,-.15,.15] as const,priority:bundle.widthPx===world.connector.selectedPx?0:3,count:bundle.count}}),
+ ],[plan.clusters,plan.headings,labelledBundles,captions])
  const bodies=useMemo(()=>[...solidsInSnapshot(snapshot).filter(solid=>solid.role!=='face').map(solid=>solid.anchor),...scene.io.map(io=>io.anchor),...(plan.exceptionPanel?[exceptionPanelAnchor(plan.exceptionPanel,scene.recording)]:[])],[snapshot,scene.io,scene.recording,plan.exceptionPanel])
  useFrame(()=>{
   if(!(camera instanceof PerspectiveCamera))return

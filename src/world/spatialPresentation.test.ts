@@ -8,7 +8,7 @@ import { seek } from '../runtime'
 import { planPresentation, anchorCorners } from './presentationPlanner'
 import { createFlowCatalog } from './flowCatalog'
 import { clusterHierarchy, clusterId } from './clusterHierarchy'
-import { budgets } from '../theme/tokens'
+import { budgets,world } from '../theme/tokens'
 import { homeFraming } from '../camera/homeFraming'
 import { focusFraming } from '../camera/focusFraming'
 import { buildSolidBatch } from '../render/SolidBatch'
@@ -58,17 +58,17 @@ function fanIn() {
 const fan = fanIn()
 
 describe('adaptive production presentation', () => {
-  it('reserves the wider connector core for selection even when all references are emphasized', () => {
+  it('distinguishes a selection from the current bindings in Trace All', () => {
     const r = rig([object('first'), object('second'), enter('root', null, [slot('firstLink', 'first'), slot('secondLink', 'second')])], false)
     const references = (plan: PresentationPlan) => plan.curves.filter(curve => curve.kind === 'connector')
     const ordinary = references(cut(r, 'CLOSE', null, null, 'all'))
     expect(ordinary).toHaveLength(2)
-    expect(ordinary.map(curve => [curve.opacity, curve.widthPx])).toEqual([[1, 2.5], [1, 2.5]])
+    expect(ordinary.map(curve => [curve.opacity, curve.widthPx])).toEqual(Array(2).fill([world.connector.currentOpacity, world.connector.corePx]))
     const selectedId = ordinary[0].id
     const selected = references(cut(r, 'CLOSE', { kind: 'reference', id: selectedId }, null, 'all'))
     expect(selected).toHaveLength(2)
     for (const curve of selected) {
-      expect(curve.opacity).toBe(1)
+      expect(curve.opacity).toBe(curve.id === selectedId ? 1 : world.connector.currentOpacity)
       expect(curve.widthPx).toBe(curve.id === selectedId ? 3.5 : 2.5)
       expect(curve.points).toEqual(ordinary.find(prior => prior.id === curve.id)?.points)
     }
@@ -193,7 +193,8 @@ describe('adaptive production presentation', () => {
   it('keeps immutable one-hop Focus context and dims every unrelated identity instead of deleting it', () => {
     const r = rig([object('b'), object('a', 'app.Item', [slot('a:field', 'b')]), object('unrelated')]), before = JSON.stringify(r.scene), plan = cut(r, 'MEDIUM', { kind: 'object', id: 'a' }, 'a')
     expect(plan.framing.focus?.neighbours).toEqual(['b'])
-    for (const id of ['a', 'b']) expect(plan.entities.get(id)?.opacity).toBe(1)
+    expect(plan.entities.get('a')?.opacity).toBe(1)
+    expect(plan.entities.get('b')?.opacity).toBe(world.opacity.focusNeighbour)
     expect(plan.entities.get('unrelated')?.opacity).toBeLessThanOrEqual(.25)
     expect(JSON.stringify(r.scene)).toBe(before); accounted(r, plan)
   })
@@ -209,7 +210,7 @@ describe('adaptive production presentation', () => {
     expect(plan.framing.focus!.neighbours).toHaveLength(6)
     expect(plan.framing.focus!.neighbours).not.toContain('neighbor29')
     expect(r.scene.references).toHaveLength(30)
-    for (const id of plan.framing.focus!.neighbours) expect(plan.entities.get(id)?.opacity).toBe(1)
+    for (const id of plan.framing.focus!.neighbours) expect(plan.entities.get(id)?.opacity).toBe(world.opacity.focusNeighbour)
     accounted(r, plan)
   })
   it('prioritizes nearby whole groups while preserving a remote selection across the original 100-near/1000-remote catalog', () => {

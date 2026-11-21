@@ -50,7 +50,7 @@ it('does not promote an earlier exception flow on the same endpoints into the fi
  const flows:FlowCatalog={extend(){},query:()=>[earlier,current],prefix:()=>[earlier,current],iteratePrefix:()=>[earlier,current],atEvent:()=>[],bundles:()=>[],recordedProvenanceOf:()=>[],drawableFlowsOf:()=>[]}
  for(const focusTargetId of[null,scene.order.frames[0]]){
   const plan=planPresentation({scene,layout,flows,detailLevel:'CLOSE',selection:null,focusTargetId,trace:{active:true,scope:'all'}})
-  expect(plan.curves.find(curve=>curve.id===current.id)).toMatchObject({colorRole:'exception',opacity:1})
+  expect(plan.curves.find(curve=>curve.id===current.id)).toMatchObject({colorRole:'exception',opacity:.84,widthPx:2.5})
   expect(plan.curves.find(curve=>curve.id===earlier.id)?.opacity).toBeLessThanOrEqual(.4)
  }
 })

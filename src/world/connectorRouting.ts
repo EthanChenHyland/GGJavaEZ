@@ -2,10 +2,10 @@ import type { Vec3, WorldAnchor } from '../contracts/world'
 
 export interface ConnectorObstacle extends WorldAnchor { frontClearance?: number }
 
-export function curvedPath(from: Vec3, to: Vec3, left = false): Vec3[] {
+export function curvedPath(from: Vec3, to: Vec3, left = false, arrivalSide = -1): Vec3[] {
   const reach = Math.max(.6, Math.min(3, Math.abs(to[0] - from[0]) * .35 + Math.abs(to[1] - from[1]) * .1));
   const a: Vec3 = [from[0] + (left ? -reach : reach), from[1], from[2] + .5];
-  const b: Vec3 = [to[0] - reach, to[1], to[2] + .5];
+  const b: Vec3 = [to[0] + arrivalSide * reach, to[1], to[2] + .5];
   return Array.from({ length: 33 }, (_, i) => {
     const t = i / 32, u = 1 - t;
     return from.map((v, axis) => u ** 3 * v + 3 * u ** 2 * t * a[axis] + 3 * u * t ** 2 * b[axis] + t ** 3 * to[axis]) as unknown as Vec3;

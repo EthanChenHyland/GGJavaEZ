@@ -61,6 +61,10 @@ it('return destinations require prefix-visible assignment evidence, even when th
  const input={scene,layout:layout.state,detailLevel:'CLOSE' as const,selection:null,focusTargetId:null,trace:{active:true,scope:'all' as const}}
  expect(planPresentation(input).curves.filter(curve=>curve.kind==='return')).toEqual([])
  const plan=planPresentation({...input,flows:catalog})
+ const current=planPresentation({...input,flows:catalog,trace:{active:true,scope:'current'}})
+ expect(scene.returnFlows[0].consumerSeq).toBe(write.seq)
+ expect(current.curves.find(curve=>curve.id===sourceEdge.id)).toMatchObject({kind:'return',widthPx:2.5,arrow:true,label:'7'})
+ expect(current.curves.some(curve=>curve.kind==='call'||curve.kind==='connector'||curve.kind==='binding-history')).toBe(false)
  expect(plan.curves.filter(curve=>curve.kind==='return').map(curve=>curve.id)).toEqual([sourceEdge.id])
  expect(plan.headings.filter(heading=>heading.id==='RETURNS')).toHaveLength(1)
  const returnHeading=plan.headings.find(heading=>heading.id==='RETURNS')!,returnBody=plan.curves.find(curve=>curve.kind==='return')!.sourceAnchor!

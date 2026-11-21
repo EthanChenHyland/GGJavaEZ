@@ -1,3 +1,4 @@
+import {world} from '../theme/tokens'
 import { describe, expect, it } from 'vitest'
 import type { RuntimeSlot, TraceDocument, TraceEvent } from '../contracts/runtime'
 import type { PresentationPlan, SceneModel } from '../contracts/world'
@@ -23,7 +24,7 @@ describe('Focus over the full production catalog', () => {
     expect(scene.order.frames).toHaveLength(3)
     expect(object.anchor).toBe(projection.layout.anchors[object.id])
     complete(plan, scene); expect(JSON.stringify(scene)).toBe(before)
-    for (const id of plan.framing.focus!.neighbours) expect(plan.entities.get(id)!.opacity).toBe(1)
+    for (const id of plan.framing.focus!.neighbours) expect(plan.entities.get(id)!.opacity).toBe(world.opacity.focusNeighbour)
   })
 
   it('keeps the focused method geometry and readable detail as the method and main complete', () => {
@@ -75,7 +76,7 @@ describe('deterministic one-hop Focus context', () => {
     const { current, scene } = fixture(), saved = JSON.stringify(scene), plan = focus(scene, current.layout, 'subject')
     expect(plan.framing.focus?.neighbours).toEqual(['a'])
     expect(plan.entities.get('subject')!.opacity).toBe(1)
-    expect(plan.entities.get('a')!.opacity).toBe(1)
+    expect(plan.entities.get('a')!.opacity).toBe(world.opacity.focusNeighbour)
     for (const id of ['caller', 'child', 'grandchild', 'sibling']) {
       expect(scene.entities[id].anchor).toBe(current.layout.anchors[id])
       expect(plan.entities.get(id)!.opacity).toBeLessThanOrEqual(.25)
@@ -88,7 +89,8 @@ describe('deterministic one-hop Focus context', () => {
   it('brightens inbound and outbound one-hop relationships while keeping two-hop objects dimmed', () => {
     const { current, scene } = fixture(), plan = focus(scene, current.layout, 'a')
     expect(plan.framing.focus?.neighbours).toEqual(['subject', 'b'])
-    for (const id of ['a', 'subject', 'b']) expect(plan.entities.get(id)!.opacity).toBe(1)
+    expect(plan.entities.get('a')!.opacity).toBe(1)
+    for (const id of ['subject', 'b']) expect(plan.entities.get(id)!.opacity).toBe(world.opacity.focusNeighbour)
     expect(plan.entities.get('c')!.opacity).toBeLessThanOrEqual(.25)
     complete(plan, scene)
   })
@@ -98,7 +100,7 @@ describe('deterministic one-hop Focus context', () => {
     expect(plan.framing.focus?.neighbours).toEqual(['a'])
     expect(scene.references.some(ref => ref.sourceId === 'jvm:class:Registry' && ref.sourceSlotId === 'Registry.current' && ref.targetId === 'a')).toBe(true)
     expect(plan.entities.get('jvm:class:Registry')!.opacity).toBe(1)
-    expect(plan.entities.get('a')!.opacity).toBe(1)
+    expect(plan.entities.get('a')!.opacity).toBe(world.opacity.focusNeighbour)
     complete(plan, scene)
   })
 
@@ -106,7 +108,7 @@ describe('deterministic one-hop Focus context', () => {
     const { current, scene } = fixture(true), first = focus(scene, current.layout, 'subject'), second = focus(scene, current.layout, 'subject')
     expect(first.framing.focus!.neighbours).toHaveLength(6)
     expect(first.framing.focus!.neighbours).toEqual(second.framing.focus!.neighbours)
-    expect([...first.entities].filter(([, item]) => item.opacity === 1)).toHaveLength(7)
+    expect([...first.entities].filter(([, item]) => item.opacity >= world.opacity.focusNeighbour)).toHaveLength(7)
     for (const cluster of first.clusters) expect(cluster.opacity).toBeLessThanOrEqual(.25)
     expect(scene.references).toHaveLength(50)
     complete(first, scene)

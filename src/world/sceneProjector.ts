@@ -512,7 +512,7 @@ export function createSceneProjector(trace: TraceDocument): SceneProjector {
     const result: SceneReturnFlow[] = []
     for (let i = state.returns.length - 1; i >= 0; i--) {
       const transfer=state.returns[i],returned=provenReturn(transfer.frameId,state)
-      if(returned)result.push({id:returned.edge.id,frameId:transfer.frameId,destination:{entityId:returned.destination.ownerId,slotId:returned.destination.id},value:valueText(transfer.value,{objects:state.objects}),operands:transfer.expression??null,returnSeq:returned.event.seq})
+      if(returned)result.push({id:returned.edge.id,frameId:transfer.frameId,destination:{entityId:returned.destination.ownerId,slotId:returned.destination.id},value:valueText(transfer.value,{objects:state.objects}),operands:transfer.expression??null,returnSeq:returned.event.seq,consumerSeq:returned.consumerSeq})
     }
     return freezeValue(result)
   }

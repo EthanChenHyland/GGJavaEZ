@@ -222,6 +222,7 @@ export interface SceneReturnFlow {
     value: ValueText;
     operands: string | null;
     returnSeq: number;
+    consumerSeq?: number; // accepted write that consumes this exact return value
 }
 export interface SceneExceptionPath {
     exceptionId: ObjectId | null;
@@ -350,6 +351,7 @@ export interface PresentedCluster {
     opacity: number;
     pickable: boolean;
 }
+export type ConnectorWidth = 1.25 | 2.5 | 3.5;
 export interface PresentedCurve {
     id: string;
     kind: 'connector' | 'call' | 'flow' | 'return' | 'exception' | 'binding-history';
@@ -358,7 +360,7 @@ export interface PresentedCurve {
     destinationAnchor?: WorldAnchor;
     colorRole: MaterialRole;
     opacity: number;
-    widthPx: 2.5 | 3.5;
+    widthPx: ConnectorWidth;
     arrow: boolean;
     label?: string;
 }
@@ -370,7 +372,7 @@ interface PresentedBundleBase {
     points: readonly Vec3[];
     colorRole: MaterialRole;
     opacity: number;
-    widthPx: 2.5 | 3.5;
+    widthPx: ConnectorWidth;
     arrow: boolean;
 }
 export type PresentedBundle = PresentedBundleBase & (

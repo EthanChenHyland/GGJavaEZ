@@ -28,7 +28,11 @@ export function createConnectorRouter():ConnectorRouter {
    const route:Route=(from,to,source,target,left=false,departure)=>{
     const key=JSON.stringify([from,to,geometry(source),geometry(target),left,departure]),cached=paths.get(key)
     if(cached){paths.delete(key);paths.set(key,cached);return cached}
-    let points=curvedPath(from,to,left)
+    // Exit/enter the real side of each information face. A right-hand chip
+    // can receive a short curve without cutting across its own face first.
+    const departureLeft=source?(left||from[0]<source.position[0]):left
+    const arrivalSide=target&&to[0]>target.position[0]?1:-1
+    let points=curvedPath(from,to,departureLeft,arrivalSide)
     if(source&&target&&(departure||!clears(points,source,target))){
      const detour=corridor(from,to,source,target,departure)
      let clearPath:Vec3[]|undefined

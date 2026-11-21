@@ -3,6 +3,7 @@ import type {MaterialRole,PresentationPlan,PresentedCurve,SceneModel,Vec3} from 
 import {faceRows,faceRowPort} from '../world/faceRows'
 import {arrayReferenceChipPort,collectionReferenceChipPort} from '../world/structureValueChipGeometry'
 import {arrayCellFocusOpacity} from './arrayCellStyle'
+import {world} from '../theme/tokens'
 
 export interface ReferenceChipPort {id:string;point:Vec3;opacity:number;colorRole:MaterialRole}
 export interface ConnectorPortMarker {point:Vec3;opacity:number;colorRole:MaterialRole;hovered:boolean}
@@ -13,12 +14,13 @@ export function referenceChipPorts(scene:SceneModel,plan:PresentationPlan):Refer
  for(const[id,presented]of plan.entities){
   const node=scene.entities[id]
   if(!node||presented.mode!=='detailed')continue
+  const opacity=presented.opacity*(presented.highlight==='selected'||presented.highlight==='focus'?1:world.connector.chipPortOpacity)
   if(node.kind==='array'){
    const window=plan.cellWindows.get(id);if(!window)continue
    const emphasis=arrayCellFocusOpacity(window)
    for(const[slotId,cell]of window.mapping){
     const value=observedArrayCell(node.cells,cell.index)?.value
-    if(value?.kind==='reference'&&value.observation!=='UNAVAILABLE'&&scene.entities[value.targetId])ports.push({id:slotId,point:arrayReferenceChipPort(cell.anchor),opacity:presented.opacity*emphasis(slotId),colorRole:presented.highlight==='exception'?'exception':'reference'})
+    if(value?.kind==='reference'&&value.observation!=='UNAVAILABLE'&&scene.entities[value.targetId])ports.push({id:slotId,point:arrayReferenceChipPort(cell.anchor),opacity:opacity*emphasis(slotId),colorRole:presented.highlight==='exception'?'exception':'reference'})
    }
    continue
   }
@@ -28,7 +30,7 @@ export function referenceChipPorts(scene:SceneModel,plan:PresentationPlan):Refer
     const add=(slotId:string,value:typeof entry.value,key=false)=>{
      if(value.kind!=='reference'||value.observation==='UNAVAILABLE'||!scene.entities[value.targetId])return
      const point=collectionReferenceChipPort(node.anchor,index,node.collectionKind==='Map',key)
-     if(point)ports.push({id:slotId,point,opacity:presented.opacity,colorRole:presented.highlight==='exception'?'exception':'reference'})
+     if(point)ports.push({id:slotId,point,opacity,colorRole:presented.highlight==='exception'?'exception':'reference'})
     }
     add(entry.slotId,entry.value);if(entry.key&&entry.keySlotId)add(entry.keySlotId,entry.key,true)
    }
@@ -37,7 +39,7 @@ export function referenceChipPorts(scene:SceneModel,plan:PresentationPlan):Refer
   for(const row of model.visible){
    if(row.value.kind!=='reference'||row.value.observation==='UNAVAILABLE'||!scene.entities[row.value.targetId])continue
    const point=faceRowPort(node,presented,row.slotId,model)
-   if(point)ports.push({id:row.slotId,point,opacity:presented.opacity,colorRole:presented.highlight==='exception'?'exception':'reference'})
+   if(point)ports.push({id:row.slotId,point,opacity,colorRole:presented.highlight==='exception'?'exception':'reference'})
   }
  }
  return ports

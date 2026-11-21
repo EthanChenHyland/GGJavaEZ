@@ -1,5 +1,5 @@
 import { BoxGeometry, Color, EdgesGeometry, MeshBasicMaterial, MeshDepthMaterial, MeshDistanceMaterial, MeshStandardMaterial, RGBADepthPacking } from 'three';
-import type { MaterialRole } from '../contracts/world';
+import type { ConnectorWidth, MaterialRole } from '../contracts/world';
 import { color, world } from '../theme/tokens';
 import { qualityStore, type QualityTier } from './quality/qualityStore';
 import {bodyPalette} from './quality/bodyPalette';
@@ -13,8 +13,8 @@ export const unitEdges = new EdgesGeometry(unitBox);
 export const roleColor: Record<MaterialRole, string> = { stack: color.stack.edge, heap: color.heap.edge, class: color.class.edge, reference: color.semantic.execution, call: color.stack.edge, return: color.semantic.return, exception: color.semantic.exception, mutation: color.semantic.mutation, stdout: color.semantic.stdout, stderr: color.semantic.stderr, stdin: color.semantic.stdin };
 /** One material per mounted emphasis band, independent of its changing path
  * geometry. The band owns disposal; shader and mask programs survive updates. */
-export function connectorMaterial(halo:boolean,widthPx:2.5|3.5):LineMaterial {
-    const material=new LineMaterial({vertexColors:true,linewidth:halo?8:widthPx,transparent:true,opacity:halo?.10:1,depthTest:true,depthWrite:false});
+export function connectorMaterial(halo:boolean,widthPx:ConnectorWidth):LineMaterial {
+    const material=new LineMaterial({vertexColors:true,linewidth:halo?world.connector.haloPx:widthPx,transparent:true,opacity:halo?.065:1,depthTest:true,depthWrite:false});
     Object.assign(material,curveAlphaShaders(material.vertexShader,material.fragmentShader));
     material.toneMapped=false;
     material.name=`runtime:connector:${halo?'halo':widthPx}`;

@@ -36,6 +36,7 @@ export interface PlanInput {
         scope: TraceScope;
     };
 }
+const connector = world.connector;
 const category = (node: SceneEntity): 'frames' | 'objects' | 'classes' => node.kind === 'frame' ? 'frames' : node.kind === 'class' ? 'classes' : 'objects';
 const rowIds = (node: SceneEntity): readonly string[] => node.kind === 'frame' || node.kind === 'class' ? node.rows.map(r => r.slotId) : node.kind === 'object' ? node.groups.flatMap(g => g.rows.map(r => r.slotId)) : node.kind === 'array' ? node.cells.map(c => c.slotId) : node.entries.flatMap(e => e.keySlotId ? [e.slotId, e.keySlotId] : [e.slotId]);
 /** Complete catalog in, one accounted hierarchy cut out. Required identities cannot be budgeted away. */
@@ -55,9 +56,13 @@ export function planPresentation(input: PlanInput, previous?: PresentationPlan):
     const expand = (id: string | null | undefined): ReadonlySet<string> => new Set(id ? [id, ...(scene.entities[id] ? rowIds(scene.entities[id]) : [])] : []);
     const priority = { selectedIds: expand(selection?.id), focusedIds: expand(focusTargetId), currentIds: new Set((scene.cursorEvent?.subjects ?? []).flatMap(id => [...expand(id)])) };
     const currentFlows = input.flows?.atEvent(scene.cursor, scene) ?? [];
+    const currentFlowIds = new Set(currentFlows.map(flow => flow.id));
+    if (scene.cursorEvent) for (const returned of scene.returnFlows)
+        if (returned.consumerSeq === scene.cursorEvent.seq) currentFlowIds.add(returned.id);
+    const isCurrentFlow = (flow: RecordedFlow) => currentFlowIds.has(flow.id) || flow.evidenceSeqs.includes(scene.cursorEvent?.seq ?? -1);
     const queriedFlows = input.flows?.query({ cursor: scene.cursor, scene, priority, limit: budget.flows * 3 }) ?? [];
     const targetedFlow = selection?.kind === 'flow' ? queriedFlows.find(flow => flow.id === selection.id) : null;
-    const requiredFlows = [...new Map([...currentFlows, ...(targetedFlow&&!(trace.active&&trace.scope==='current') ? [targetedFlow] : [])].map(flow => [flow.id, flow])).values()];
+    const requiredFlows = [...new Map([...currentFlows, ...queriedFlows.filter(flow => currentFlowIds.has(flow.id)), ...(targetedFlow&&!(trace.active&&trace.scope==='current') ? [targetedFlow] : [])].map(flow => [flow.id, flow])).values()];
     const rowRequests=new Map<string,Set<string>>();
     const requestRow=(slotId:string|undefined)=>{
       const id=owner(slotId),node=id?scene.entities[id]:null;
@@ -149,11 +154,10 @@ export function planPresentation(input: PlanInput, previous?: PresentationPlan):
     let pickableQuiet = 0;
     const add = (id: string, mode: 'detailed' | 'quiet') => {
         const node = scene.entities[id], pinned = mandatory.has(id);
-        const isFocused = id === focused || neighbours.includes(id);
         const forensic = scene.exception && mandatory.get(id)?.has('exception evidence');
         let opacity = node.kind === 'frame' && !node.live ? world.opacity.historicalFrame : mode === 'quiet' ? world.opacity.quiet : 1;
         if (focused)
-            opacity = isFocused ? 1 : Math.min(opacity, world.opacity.focusDim);
+            opacity = id === focused ? 1 : neighbours.includes(id) ? world.opacity.focusNeighbour : Math.min(opacity, world.opacity.focusDim);
         if (forensicState)opacity=forensic?1:Math.min(opacity,world.opacity.forensicDim);
         const canPick = mode === 'detailed' || pinned || pickableQuiet < budget.pickable;
         if (canPick && mode === 'quiet')
@@ -241,78 +245,120 @@ export function planPresentation(input: PlanInput, previous?: PresentationPlan):
     const relevantEntities=new Set([selected,focused,...(scene.cursorEvent?.subjects??[]).map(owner)].filter((id):id is string=>!!id));
     const traceParticipants=new Set<string>();
     const participate=(...ids:(string|undefined)[])=>{for(const id of ids){const resolved=owner(id);if(resolved)traceParticipants.add(resolved)}};
-    const coreWidth=(id:string):PresentedCurve['widthPx']=>id===selection?.id?3.5:2.5;
+    const all = trace.active && trace.scope === 'all';
+    const contextOpacity = all ? connector.allTopologyOpacity : connector.topologyOpacity;
+    const liveFrames = new Set(live);
+    const actedOn = new Set(scene.cursorEvent?.subjects);
+    const coreWidth = (id:string, active=false) => (id===selection?.id
+      ? connector.selectedPx : active ? connector.corePx : connector.contextPx) as PresentedCurve['widthPx'];
     const curves: PresentedCurve[] = [];
-    const curve = (id: string, kind: PresentedCurve['kind'], from: Vec3 | null, to: Vec3 | null, role: MaterialRole, relevant: boolean, left = false, arrow = false, label?: string, source?: WorldAnchor, target?: WorldAnchor, forensicPath = false,departure?:Vec3) => {
-        if (!from || !to)
-            return;
-        const focusCap=focused&&!forensicPath&&!focusConnection(source?.entityId,target?.entityId)?world.opacity.focusDim:1;
-        const baseOpacity=forensicState?(forensicPath?1:Math.min(world.opacity.forensicDim,focused&&!relevant?.25:relevant?1:.35)):focused&&!relevant?.25:relevant?1:.35;
-        const opacity=Math.min(baseOpacity,focusCap);
-        curves.push({ id, kind, points: route(from, to, source, target, left,departure), sourceAnchor:source, destinationAnchor:target, colorRole: role, opacity, widthPx: coreWidth(id), arrow, label });
+    const curve = (id: string, kind: PresentedCurve['kind'], from: Vec3, to: Vec3, colorRole: MaterialRole, opacity: number,
+      source: WorldAnchor, target: WorldAnchor, options: {active?:boolean;left?:boolean;arrow?:boolean;label?:string;departure?:Vec3} = {}) => {
+        curves.push({id,kind,points:route(from,to,source,target,options.left,options.departure),sourceAnchor:source,destinationAnchor:target,
+          colorRole,opacity,widthPx:coreWidth(id,options.active),arrow:!!options.arrow,label:options.label});
     };
-    const referenceRelevant = (ref: SceneModel['references'][number]) => trace.active&&trace.scope==='all'||ref.id===selection?.id||relevantEntities.has(ref.sourceId)||relevantEntities.has(ref.targetId);
+    const activeBinding = (ref: SceneModel['references'][number]) => ref.evidence.changedSeq===scene.cursorEvent?.seq
+      || ref.sourceId===current && actedOn.has(ref.targetId) && !!scene.cursorEvent?.storageIds.length;
+    const referenceRelevant = (ref: SceneModel['references'][number]) => ref.id===selection?.id
+      || activeBinding(ref) || relevantEntities.has(ref.sourceId) || relevantEntities.has(ref.targetId) || ref.sourceId===current;
     const referenceRole = (ref: SceneModel['references'][number]): MaterialRole => ref.overlay??(ref.role==='object-object'?'heap':ref.role==='class-object'?'class':'reference');
-    const referenceOpacity = (refs: readonly SceneModel['references'][number][], relevant: boolean) => Math.min(relevant?1:.35,
-      focused&&!(forensicState&&refs.every(ref=>ref.overlay==='exception'))&&!refs.every(ref=>focusConnection(ref.sourceSlotId??ref.sourceId,ref.targetId))?world.opacity.focusDim:1,
-      forensicState&&!refs.every(ref=>ref.overlay==='exception')?world.opacity.forensicDim:1);
+    const referenceOpacity = (ref: SceneModel['references'][number]) => {
+      if (ref.overlay==='exception') return connector.currentOpacity;
+      if (focused && !focusConnection(ref.sourceSlotId??ref.sourceId,ref.targetId)) return connector.focusAwayOpacity;
+      if (forensicState) return connector.topologyOpacity;
+      if (ref.id===selection?.id || focused) return 1;
+      if (activeBinding(ref)) return connector.currentOpacity;
+      const source=scene.entities[ref.sourceId];
+      if (source?.kind==='frame' && !source.live) return contextOpacity;
+      if (ref.sourceId===current || relevantEntities.has(ref.sourceId) || liveFrames.has(ref.sourceId)&&actedOn.has(ref.targetId)) return connector.directOpacity;
+      return contextOpacity;
+    };
     const {current:topology,historical:historicalTopology}=referencePresentationTopology({scene,entities,clusters,cellWindows,individualLimit:budget.connectors,
       mandatoryIds:new Set([...scene.references.filter(ref=>ref.id===selectedRef?.id||ref.evidence.changedSeq===scene.cursorEvent?.seq).map(ref=>ref.id),...(selectedRef?[selectedRef.id]:[])]),
       priorityIds:new Set(scene.references.filter(referenceRelevant).map(ref=>ref.id)),enabled:!trace.active||trace.scope!=='current'},historicalRefs,trace.active&&trace.scope==='all');
     const requiredRefs=topology.individual.filter(({reference})=>reference.id===selectedRef?.id||reference.evidence.changedSeq===scene.cursorEvent?.seq);
     const requiredHistory=historicalTopology.individual.filter(({reference})=>reference.id===selectedRef?.id),requiredConnectors=[...requiredRefs,...requiredHistory];
     if(requiredConnectors.length>budget.connectors)overflow.push({category:'connectors',nominal:budget.connectors,actual:requiredConnectors.length,mandatoryIds:requiredConnectors.map(item=>item.reference.id),reasons:['selected current/historical connector or current evidence']});
-    for(const {reference:ref,sourcePoint,destinationPoint,sourceAnchor,destinationAnchor,departure}of topology.individual){
-      const relevant=referenceRelevant(ref);
-      curve(ref.id,'connector',sourcePoint,destinationPoint,referenceRole(ref),relevant,false,ref.role==='object-object'||!!ref.overlay,undefined,sourceAnchor,destinationAnchor,ref.overlay==='exception',departure);
-      curves[curves.length-1].opacity=referenceOpacity([ref],relevant);
-      if(relevant)participate(ref.sourceId,ref.targetId);
+    for (const {reference:ref,sourcePoint,destinationPoint,sourceAnchor,destinationAnchor,departure} of topology.individual) {
+      const opacity=referenceOpacity(ref),active=opacity>=connector.currentOpacity && (activeBinding(ref)||!!ref.overlay);
+      curve(ref.id,'connector',sourcePoint,destinationPoint,referenceRole(ref),opacity,sourceAnchor,destinationAnchor,
+        {active,arrow:!!ref.overlay||((active||ref.id===selection?.id)&&ref.role==='object-object'),departure});
+      if(all||referenceRelevant(ref))participate(ref.sourceId,ref.targetId);
     }
-    for(const {reference:ref,sourcePoint,destinationPoint,sourceAnchor,destinationAnchor}of historicalTopology.individual){
-      curve(ref.id,'binding-history',sourcePoint,destinationPoint,referenceRole(ref),ref.id===selection?.id,false,ref.role==='object-object',undefined,sourceAnchor,destinationAnchor);
-      curves[curves.length-1].opacity=Math.min(.25,referenceOpacity([ref],true));
+    for (const {reference:ref,sourcePoint,destinationPoint,sourceAnchor,destinationAnchor} of historicalTopology.individual) {
+      const opacity=ref.id===selection?.id?world.connector.historyOpacity:connector.pastBindingOpacity;
+      curve(ref.id,'binding-history',sourcePoint,destinationPoint,referenceRole(ref),opacity,sourceAnchor,destinationAnchor,
+        {arrow:ref.id===selection?.id&&ref.role==='object-object'});
       participate(ref.sourceId,ref.targetId);
     }
     for (const call of (trace.active&&trace.scope==='current'?[]:scene.callLinks.filter(c => entities.has(c.callerId) && entities.has(c.calleeId)).slice(-budget.calls))) {
         const from = scene.entities[call.callerId].anchor, to = scene.entities[call.calleeId].anchor;
-        const relevant=trace.active&&trace.scope==='all'||relevantEntities.has(call.callerId)||relevantEntities.has(call.calleeId);
-        curve(call.id, 'call', [from.position[0] - from.size[0] / 2, from.position[1] + from.size[1] / 2 - .7, from.position[2] + from.size[2] / 2], [to.position[0] - to.size[0] / 2, to.position[1] + to.size[1] / 2 - .7, to.position[2] + to.size[2] / 2], 'call', relevant, true, false, undefined, from, to);
-        if(relevant)participate(call.callerId,call.calleeId);
+        const direct=call.calleeId===current&&liveFrames.has(call.callerId);
+        const active=direct&&call.callSeq===scene.cursorEvent?.seq;
+        const opacity=focused||forensicState?connector.focusAwayOpacity:direct?connector.directOpacity:liveFrames.has(call.calleeId)?connector.contextOpacity:contextOpacity;
+        curve(call.id, 'call', [from.position[0] - from.size[0] / 2, from.position[1] + from.size[1] / 2 - .7, from.position[2] + from.size[2] / 2],
+          [to.position[0] - to.size[0] / 2, to.position[1] + to.size[1] / 2 - .7, to.position[2] + to.size[2] / 2], 'call', opacity, from, to, {left:true,active});
+        if(all||direct)participate(call.callerId,call.calleeId);
     }
     const flowTopology=buildFlowTopology({scene,entities,cellWindows,flows:input.flows?.iteratePrefix(scene.cursor,scene)??[],limit:budget.flows,
-      mandatoryIds:new Set(requiredFlows.map(flow=>flow.id)),aggregate:trace.active&&trace.scope==='all',
-      priority:flow=>flow.id===selection?.id?0:[flow.from,flow.to].some(point=>point&&priority.focusedIds.has(point.id))?1:flow.evidenceSeqs.includes(scene.cursorEvent?.seq??-1)?2:flowRelevant(flow)?3:4,
-      inScope:flow=>!trace.active||trace.scope==='all'||trace.scope==='current'&&flow.evidenceSeqs.includes(scene.cursorEvent?.seq??-1)||trace.scope==='relevant'&&flowRelevant(flow)});
+      mandatoryIds:new Set(requiredFlows.map(flow=>flow.id)),aggregate:all,
+      priority:flow=>isCurrentFlow(flow)?0:flow.id===selection?.id?1:[flow.from,flow.to].some(point=>point&&priority.focusedIds.has(point.id))?2:flowRelevant(flow)?3:4,
+      inScope:flow=>!trace.active||all||isCurrentFlow(flow)||trace.scope==='relevant'&&flowRelevant(flow)});
     if(flowTopology.mandatory.length>budget.flows)overflow.push({category:'flows',nominal:budget.flows,actual:flowTopology.mandatory.length,mandatoryIds:flowTopology.mandatory,reasons:['drawable selected flow or current evidence']});
+    // An assignment using the same proven return as its source can be drawn
+    // at the same ports. Keep that valid graph edge in the cut, but let the
+    // explicit return own the visible caption, arrow, and contrast.
+    const currentReturnPorts=new Set(flowTopology.individual.filter(({flow})=>flow.kind==='return'&&isCurrentFlow(flow))
+      .map(({flow})=>JSON.stringify([flow.from,flow.to])));
+    const forensicEvidence=new Set(scene.exception?.evidence.eventIds);
+    const isExceptionFlow=(flow:RecordedFlow)=>['throw','unwind','catch'].includes(flow.kind);
+    const isForensicFlow=(flow:RecordedFlow)=>isExceptionFlow(flow)&&flow.evidenceEventIds.some(id=>forensicEvidence.has(id));
+    const latestForensic=flowTopology.individual.reduce<RecordedFlow|null>((latest,{flow})=>
+        isForensicFlow(flow)&&(!latest||flow.evidenceSeqs[0]>latest.evidenceSeqs[0])?flow:latest,null);
     for (const {flow,from,to} of flowTopology.individual) {
-      const exception = ['throw','unwind','catch'].includes(flow.kind), returned = flow.kind === 'return';
-      const relevant=trace.active&&trace.scope==='all'||flowRelevant(flow)||requiredFlows.includes(flow);
-      const forensicPath=exception&&flow.evidenceEventIds.some(id=>scene.exception?.evidence.eventIds.includes(id));
-      curve(flow.id, exception ? 'exception' : returned ? 'return' : 'flow', from.point, to.point, exception ? 'exception' : returned ? 'return' : flow.kind === 'input' ? 'stdin' : flow.kind === 'output' ? flow.to.kind==='io'&&flow.to.id==='stderr'?'stderr':'stdout' : 'reference', relevant, false, exception || returned, flow.valueText ?? undefined, from.anchor, to.anchor,forensicPath);
-      if(relevant)participate(flow.from?.id,flow.to.id);
+      const exception = isExceptionFlow(flow), returned = flow.kind === 'return';
+      const current=isCurrentFlow(flow);
+      const selected=flow.id===selection?.id;
+      const forensicPath=isForensicFlow(flow);
+      const duplicateReturn=!returned&&current&&currentReturnPorts.has(JSON.stringify([flow.from,flow.to]));
+      const offFocus=!!focused&&!focusConnection(flow.from?.id,flow.to.id)&&!forensicPath;
+      const strong=(current||selected||flow.id===latestForensic?.id)&&!duplicateReturn&&!offFocus;
+      const direct=!!focused&&focusConnection(flow.from?.id,flow.to.id);
+      const opacity=offFocus?connector.focusAwayOpacity:strong?(selected?1:connector.currentOpacity):
+        forensicPath||direct?connector.directOpacity:forensicState||duplicateReturn?connector.topologyOpacity:contextOpacity;
+      const role=exception?'exception':returned?'return':flow.kind==='input'?'stdin':flow.kind==='output'
+        ?flow.to.kind==='io'&&flow.to.id==='stderr'?'stderr':'stdout':strong&&['local-field','array-write'].includes(flow.kind)?'mutation':'reference';
+      curve(flow.id,exception?'exception':returned?'return':'flow',from.point,to.point,role,opacity,from.anchor,to.anchor,
+        {active:strong,arrow:strong||forensicPath,label:returned&&strong?flow.valueText??undefined:undefined});
+      if(all||strong||forensicPath||flowRelevant(flow))participate(flow.from?.id,flow.to.id);
     }
     const bundles = topology.bundles.map<PresentationPlan['bundles'][number]>(bundle=>{
-      const relevant=bundle.id===selection?.id||bundle.references.some(referenceRelevant),roles=new Set(bundle.references.map(referenceRole));
-      const opacity=referenceOpacity(bundle.references,relevant);
-      if(relevant)for(const ref of bundle.references)participate(ref.sourceId,ref.targetId);
-      return{id:bundle.id,kind:'connector',from:bundle.from,to:bundle.to,count:bundle.count,points:route(bundle.sourcePoint,bundle.destinationPoint,bundle.sourceAnchor,bundle.destinationAnchor),colorRole:roles.size===1?[...roles][0]:'reference',opacity,widthPx:coreWidth(bundle.id),arrow:bundle.references.every(ref=>ref.role==='object-object'||!!ref.overlay),referenceIds:bundle.references.map(ref=>ref.id)};
+      const relevant=bundle.references.some(referenceRelevant),roles=new Set(bundle.references.map(referenceRole));
+      const selected=bundle.id===selection?.id;
+      const opacity=selected?connector.currentOpacity:focused?connector.focusAwayOpacity:connector.bundleOpacity;
+      if(all||relevant||selected)for(const ref of bundle.references)participate(ref.sourceId,ref.targetId);
+      return{id:bundle.id,kind:'connector',from:bundle.from,to:bundle.to,count:bundle.count,points:route(bundle.sourcePoint,bundle.destinationPoint,bundle.sourceAnchor,bundle.destinationAnchor),colorRole:roles.size===1?[...roles][0]:'reference',opacity,widthPx:coreWidth(bundle.id),arrow:selected,referenceIds:bundle.references.map(ref=>ref.id)};
     });
     for(const bundle of historicalTopology.bundles){
-      const roles=new Set(bundle.references.map(referenceRole));
-      bundles.push({id:bundle.id,kind:'binding-history',from:bundle.from,to:bundle.to,count:bundle.count,points:route(bundle.sourcePoint,bundle.destinationPoint,bundle.sourceAnchor,bundle.destinationAnchor),colorRole:roles.size===1?[...roles][0]:'reference',opacity:Math.min(.25,referenceOpacity(bundle.references,true)),widthPx:coreWidth(bundle.id),arrow:bundle.references.every(ref=>ref.role==='object-object'),referenceIds:bundle.references.map(ref=>ref.id)});
+      const roles=new Set(bundle.references.map(referenceRole)),selected=bundle.id===selection?.id;
+      bundles.push({id:bundle.id,kind:'binding-history',from:bundle.from,to:bundle.to,count:bundle.count,points:route(bundle.sourcePoint,bundle.destinationPoint,bundle.sourceAnchor,bundle.destinationAnchor),colorRole:roles.size===1?[...roles][0]:'reference',opacity:selected?connector.historyOpacity:connector.pastBindingOpacity,widthPx:coreWidth(bundle.id),arrow:selected,referenceIds:bundle.references.map(ref=>ref.id)});
       for(const ref of bundle.references)participate(ref.sourceId,ref.targetId);
     }
     for (const bundle of flowTopology.bundles) {
-      const exemplar=bundle.flows[0],exception=['throw','unwind','catch'].includes(exemplar.kind),returned=exemplar.kind==='return';
-      bundles.push({id:bundle.id,kind:'flow',from:exemplar.from!.id,to:exemplar.to.id,count:bundle.flows.length,points:route(bundle.from.point,bundle.to.point,bundle.from.anchor,bundle.to.anchor),colorRole:exception?'exception':returned?'return':exemplar.kind==='input'?'stdin':exemplar.kind==='output'?exemplar.to.kind==='io'&&exemplar.to.id==='stderr'?'stderr':'stdout':'reference',opacity:Math.min(.35,focused?world.opacity.focusDim:1),widthPx:coreWidth(bundle.id),arrow:exception||returned,flowIds:bundle.flows.map(flow=>flow.id)});
+      const exemplar=bundle.flows[0],exception=['throw','unwind','catch'].includes(exemplar.kind),returned=exemplar.kind==='return',selected=bundle.id===selection?.id;
+      bundles.push({id:bundle.id,kind:'flow',from:exemplar.from!.id,to:exemplar.to.id,count:bundle.flows.length,points:route(bundle.from.point,bundle.to.point,bundle.from.anchor,bundle.to.anchor),colorRole:exception?'exception':returned?'return':exemplar.kind==='input'?'stdin':exemplar.kind==='output'?exemplar.to.kind==='io'&&exemplar.to.id==='stderr'?'stderr':'stdout':'reference',opacity:selected?connector.currentOpacity:focused?connector.focusAwayOpacity:connector.bundleOpacity,widthPx:coreWidth(bundle.id),arrow:selected,flowIds:bundle.flows.map(flow=>flow.id)});
       participate(exemplar.from!.id,exemplar.to.id);
     }
-    if(trace.active)for(const[id,presented]of entities)if(!traceParticipants.has(id)&&!(forensicState&&mandatory.get(id)?.has('exception evidence')))entities.set(id,{...presented,opacity:Math.min(presented.opacity,world.opacity.traceDim)});
-    const headings: PresentationPlan['headings'][number][] = [{ id: 'STACK', position: stackContextHeading(scene,layout.headings.stack), opacity: 1 }, { id: 'HEAP', position: layout.headings.heap, opacity: 1 }, ...(layout.headings.classState ? [{ id: 'CLASS STATE' as const, position: layout.headings.classState, opacity: 1 }] : [])];
-    const returnCurve=curves.find(curve=>curve.kind==='return'),returnAnchor=returnCurve?.sourceAnchor;
+    if (trace.active) for (const [id,presented] of entities) {
+      const essential = id===focused || id===selected || actedOn.has(id) || forensicState&&mandatory.get(id)?.has('exception evidence');
+      if (!essential&&!traceParticipants.has(id))
+        entities.set(id,{...presented,opacity:Math.min(presented.opacity,world.opacity.traceDim)});
+    }
+    const headings: PresentationPlan['headings'][number][] = [{ id: 'STACK', position: stackContextHeading(scene,layout.headings.stack), opacity: world.opacity.regionHeading }, { id: 'HEAP', position: layout.headings.heap, opacity: world.opacity.regionHeading }, ...(layout.headings.classState ? [{ id: 'CLASS STATE' as const, position: layout.headings.classState, opacity: world.opacity.regionHeading }] : [])];
+    const returnCurve=curves.find(curve=>curve.kind==='return'&&curve.label!==undefined),returnAnchor=returnCurve?.sourceAnchor;
     if(returnCurve)headings.push({id:'RETURNS',position:returnAnchor
       ?[returnAnchor.position[0]+returnAnchor.size[0]/2+.45,returnAnchor.position[1]+returnAnchor.size[1]/2+.75,returnAnchor.position[2]+returnAnchor.size[2]/2]
-      :layout.headings.returns,opacity:1});
+      :layout.headings.returns,opacity:world.opacity.returnHeading});
     const homeIds = [...new Set([live.at(-1) ?? scene.order.frames.at(-1), ...live.slice(-4), scene.order.frames[0], ...scene.order.objects.filter(id => layout.anchors[id].region === 'heap').slice(0, 12)])].filter((id): id is string => !!id);
     const hero = [...headings.slice(0, 2).flatMap(h => [h.position, [h.position[0] + 2.4, h.position[1] + .4, h.position[2]] as Vec3]), ...homeIds.flatMap(id => anchorCorners(scene.entities[id].anchor))];
     return { revision: (previous?.revision ?? 0) + 1, sceneRevision: scene.revision, detailLevel, budgetOverflow: overflow, entities, clusters:forensicState?clusters.map(cluster=>({...cluster,opacity:Math.min(cluster.opacity,world.opacity.forensicDim)})):clusters, curves, bundles, referencePresentation:{counts:topology.counts,unavailable:topology.unavailable.map(item=>({id:item.reference.id,reason:item.reason})),internal:topology.internal.map(item=>({id:item.reference.id,clusterId:item.clusterId})),scopeExcluded:topology.scopeExcluded.map(ref=>ref.id)}, historicalReferencePresentation:{counts:{recorded:scene.historicalBindings.length,eligible:historicalTopology.counts.current,drawable:historicalTopology.counts.drawable,individual:historicalTopology.counts.individual,bundled:historicalTopology.counts.bundled,bundleCurves:historicalTopology.counts.bundleCurves,unavailable:historicalTopology.counts.unavailable,internal:historicalTopology.counts.internal,scopeExcluded:historicalTopology.counts.scopeExcluded,lifetimeExcluded:lifetimeExcluded.length},unavailable:historicalTopology.unavailable.map(item=>({id:item.reference.id,reason:item.reason})),internal:historicalTopology.internal.map(item=>({id:item.reference.id,clusterId:item.clusterId})),scopeExcluded:historicalTopology.scopeExcluded.map(ref=>ref.id),lifetimeExcluded:lifetimeExcluded}, flowPresentation:flowTopology.presentation, cellWindows, headings,
