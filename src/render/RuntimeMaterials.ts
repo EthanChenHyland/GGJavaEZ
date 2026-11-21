@@ -1,13 +1,13 @@
-import { BoxGeometry, Color, EdgesGeometry, MeshBasicMaterial, MeshDepthMaterial, MeshDistanceMaterial, MeshStandardMaterial, RGBADepthPacking } from 'three';
+import { BoxGeometry, EdgesGeometry, MeshBasicMaterial, MeshStandardMaterial } from 'three';
 import type { ConnectorWidth, MaterialRole } from '../contracts/world';
-import { color, world } from '../theme/tokens';
+import { acrylic, color, world } from '../theme/tokens';
 import { qualityStore, type QualityTier } from './quality/qualityStore';
 import {bodyPalette} from './quality/bodyPalette';
 import type { BodyRole } from './quality/materialTypes';
-import { applyRoundedBoxMaterial } from './geometry/roundedBox';
 import { applyRoundedChipMaterial } from './geometry/roundedChip';
 import {LineMaterial} from 'three/addons/lines/LineMaterial.js';
 import {curveAlphaShaders} from './curveAlpha';
+import {applyAcrylicSurface} from './quality/acrylicSurface';
 export const unitBox = new BoxGeometry(1, 1, 1);
 export const unitEdges = new EdgesGeometry(unitBox);
 export const roleColor: Record<MaterialRole, string> = { stack: color.stack.edge, heap: color.heap.edge, class: color.class.edge, reference: color.semantic.execution, call: color.stack.edge, return: color.semantic.return, exception: color.semantic.exception, mutation: color.semantic.mutation, stdout: color.semantic.stdout, stderr: color.semantic.stderr, stdin: color.semantic.stdin };
@@ -29,17 +29,20 @@ export function faceMaterial(opacity:number,inset:boolean):MeshBasicMaterial {
     if(existing)return existing;
     const material=new MeshBasicMaterial({color:'white',transparent:opacity<1,opacity,depthWrite:opacity>=1&&!inset,toneMapped:false});
     material.name=`runtime:face:${key}`;
+    material.onBeforeCompile = shader => {
+        shader.vertexShader = 'varying vec2 runtimeFaceUv;\n' + shader.vertexShader.replace('#include <begin_vertex>',
+            '#include <begin_vertex>\nruntimeFaceUv = uv;');
+        shader.fragmentShader = 'varying vec2 runtimeFaceUv;\n' + shader.fragmentShader.replace('#include <opaque_fragment>', `
+            float wash = smoothstep(0.0, 1.0, runtimeFaceUv.y);
+            float sheen = pow(max(0.0, 1.0 - length((runtimeFaceUv - vec2(0.12, 0.98)) * vec2(0.82, 1.05))), 2.1);
+            outgoingLight = outgoingLight * (0.60 + 0.31 * wash + 0.28 * sheen)
+                + vec3(0.005, 0.008, 0.016) * (0.38 + 0.62 * sheen);
+            #include <opaque_fragment>`);
+    };
+    material.customProgramCacheKey = () => 'runtime-readable-acrylic-face-v1';
     if(inset)applyRoundedChipMaterial(material);
     faces.set(key,material);
     return material;
-}
-let roundedDepth: MeshDepthMaterial | null = null;
-let roundedDistance: MeshDistanceMaterial | null = null;
-export function roundedDepthMaterial() {
-    return roundedDepth ??= applyRoundedBoxMaterial(new MeshDepthMaterial({ depthPacking: RGBADepthPacking }));
-}
-export function roundedDistanceMaterial() {
-    return roundedDistance ??= applyRoundedBoxMaterial(new MeshDistanceMaterial());
 }
 export function glassMaterial(role: BodyRole, opacity = 1, tier: QualityTier = 'INTERACTIVE', focusContext = false) {
     const cinematic = tier === 'CINEMATIC' ? qualityStore.getState().cinematicModule : null;
@@ -57,29 +60,11 @@ export function glassMaterial(role: BodyRole, opacity = 1, tier: QualityTier = '
     }
     // Focus context must not leave an opaque depth silhouette over its target.
     // All ordinary, historical, Trace and full-emphasis bands keep depth writes.
-    const material = new MeshStandardMaterial({ color: palette.core, emissive: palette.core, emissiveIntensity: .10, roughness: .22, metalness: .06, envMapIntensity: 1.35, transparent: true, opacity: .78 * opacity, depthWrite });
+    const material = new MeshStandardMaterial({ color: palette.core, emissive: palette.core, emissiveIntensity: .025,
+        roughness: acrylic.interactiveRoughness, metalness: 0, envMapIntensity: acrylic.environment,
+        transparent: true, opacity: acrylic.interactiveOpacity * opacity, depthWrite });
     material.name = `runtime:INTERACTIVE:${role}`;
-    material.onBeforeCompile = shader => {
-        shader.uniforms.runtimeEdgeTint = { value: new Color(palette.edge) };
-        const surfaceVaryings='varying vec3 runtimeBodyPoint;\nvarying vec3 runtimeBodyHalfSize;\n';
-        // Rounded-box expansion composes after this hook, before these captures.
-        shader.vertexShader=surfaceVaryings+shader.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>
-runtimeBodyHalfSize = runtimeRoundedSize() * 0.5;
-runtimeBodyPoint = transformed * runtimeRoundedSize();`);
-        shader.fragmentShader = 'uniform vec3 runtimeEdgeTint;\n'+surfaceVaryings + shader.fragmentShader.replace('#include <opaque_fragment>', `
-float acrylicFacing = clamp(abs(dot(normalize(normal), normalize(vViewPosition))), 0.0, 1.0);
-float acrylicRim = pow(1.0 - acrylicFacing, 2.5);
-// The nearest plane is the surface itself; the second nearest locates its rim.
-// World-unit distances keep the edge band fixed across differently sized bodies.
-vec3 surfaceGap = max(runtimeBodyHalfSize - abs(runtimeBodyPoint), vec3(0.0));
-float edgeDistance = max(min(surfaceGap.x, surfaceGap.y), min(max(surfaceGap.x, surfaceGap.y), surfaceGap.z));
-float edgeBand = 1.0 - smoothstep(0.10, 0.35, edgeDistance);
-// Grazing-angle reflection alone must not turn an entire top/side into emissive ink.
-outgoingLight = outgoingLight * mix(0.62, 1.0, acrylicRim * edgeBand) + runtimeEdgeTint * acrylicRim * 0.72 * edgeBand;
-#include <opaque_fragment>`);
-    };
-    material.customProgramCacheKey = () => 'runtime-acrylic-fresnel-v4-3';
-    applyRoundedBoxMaterial(material);
+    applyAcrylicSurface(material, role);
     materials.set(key, material);
     return material;
 }
@@ -89,7 +74,4 @@ export function disposeRuntimeMaterials(): void {
     faces.clear();
     for (const material of materials.values()) material.dispose();
     materials.clear();
-    roundedDepth?.dispose();
-    roundedDistance?.dispose();
-    roundedDepth = roundedDistance = null;
 }

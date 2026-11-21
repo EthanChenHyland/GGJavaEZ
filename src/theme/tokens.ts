@@ -15,6 +15,8 @@ function freeze<T>(value: T): Readonly<T> {
 }
 export const tokens = freeze(design)
 export const color = tokens.color
+export const lighting = tokens.lighting
+export const acrylic = tokens.acrylic
 export const shell = tokens.shell
 export const world = tokens.world
 export const camera = tokens.camera

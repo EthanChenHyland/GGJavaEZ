@@ -1,8 +1,5 @@
-import { MeshReflectorMaterial } from '@react-three/drei/materials/MeshReflectorMaterial'
-import { BlurPass } from '@react-three/drei/materials/BlurPass'
-import { Color, HalfFloatType, LinearFilter, Matrix4, PerspectiveCamera, Plane, Vector3, Vector4, WebGLRenderTarget } from 'three'
-import type { Camera, Group, Mesh, WebGLProgramParametersWithUniforms, WebGLRenderer, Scene } from 'three'
-import type { FloorModel } from './floorModel'
+import { Color, LinearFilter, Matrix4, MeshPhysicalMaterial, PerspectiveCamera, Plane, Vector3, Vector4, WebGLRenderTarget } from 'three'
+import type { Camera, Material, Mesh, Object3D, Scene, WebGLRenderer } from 'three'
 import { floorStyle } from './floorModel'
 
 /** Same oblique clipping construction as drei, with an explicit facing-away result. */
@@ -14,7 +11,7 @@ export function updateReflectionCamera(mesh: Mesh, camera: Camera, reflection: P
   const rotation = new Matrix4().extractRotation(mesh.matrixWorld)
   const normal = new Vector3(0, 0, 1).applyMatrix4(rotation)
   const view = new Vector3().subVectors(origin, cameraPosition)
-  if (view.dot(normal) > 0) return false
+  if (view.dot(normal) > -.001) return false
   reflection.position.copy(view.reflect(normal).negate().add(origin))
   rotation.extractRotation(camera.matrixWorld)
   const lookAt = new Vector3(0, 0, -1).applyMatrix4(rotation).add(cameraPosition)
@@ -31,102 +28,168 @@ export function updateReflectionCamera(mesh: Mesh, camera: Camera, reflection: P
   const projection = reflection.projectionMatrix.elements
   const q = new Vector4((Math.sign(clip.x) + projection[8]) / projection[0],
     (Math.sign(clip.y) + projection[9]) / projection[5], -1, (1 + projection[10]) / projection[14])
-  clip.multiplyScalar(2 / clip.dot(q))
+  const denominator = clip.dot(q)
+  if (Math.abs(denominator) < 1e-6 || !Number.isFinite(denominator)) return false
+  clip.multiplyScalar(2 / denominator)
   projection[2] = clip.x; projection[6] = clip.y; projection[10] = clip.z + 1; projection[14] = clip.w
   reflection.projectionMatrixInverse.copy(reflection.projectionMatrix).invert()
   return true
 }
 
-/** Own the actual drei material/blur implementation, rather than its wrapper's unexposed FBOs. */
-export function createFloorReflection(gl: WebGLRenderer, model: Pick<FloorModel, 'resolution' | 'blur' | 'mirror' | 'opacity'>) {
-  const target = new WebGLRenderTarget(model.resolution, model.resolution, { type: HalfFloatType, minFilter: LinearFilter, magFilter: LinearFilter })
-  target.texture.generateMipmaps = false
-  const blurred = model.blur[0] + model.blur[1] > 0
-    ? new WebGLRenderTarget(model.resolution, model.resolution, { type: HalfFloatType, depthBuffer: false, stencilBuffer: false }) : null
-  const blur = blurred ? new BlurPass({ gl, resolution: model.resolution, width: model.blur[0], height: model.blur[1], depthScale: 0 }) : null
-  const textureMatrix = new Matrix4(), camera = new PerspectiveCamera()
-  const material = new MeshReflectorMaterial({ color: floorStyle.surface, metalness: .5, roughness: .32,
-    transparent: model.opacity < 1, opacity: model.opacity })
-  material.name = 'runtime-floor-reflector'
-  material.userData.runtimeBloomRole = 'protected'
-  material.tDiffuse = target.texture
-  material.tDiffuseBlur = blurred?.texture ?? target.texture
-  material.textureMatrix = textureMatrix
-  material.mirror = model.mirror
-  material.mixBlur = blurred ? .8 : 0
-  material.hasBlur = !!blurred
-  // The old .7..1.2 perspective-depth threshold reduced reflections to 0.0001.
-  // No reflection clipping/fading is inferred from those unrelated depth values.
-  material.depthScale = 0
-  material.defines = { USE_UV: '', ...(blurred ? { USE_BLUR: '' } : {}) }
-  const reflectorCompile = material.onBeforeCompile
-  material.onBeforeCompile = function (shader: WebGLProgramParametersWithUniforms) {
-    reflectorCompile.call(this, shader)
-    shader.uniforms.runtimeReflectionStep = { value: .75 / model.resolution }
-    // Keep the dark floor albedo. Blend the planar reflection into linear
-    // lighting so the floor tint cannot erase the reflected hues.
-    shader.fragmentShader = shader.fragmentShader
-      .replace('uniform sampler2D tDiffuse;', 'uniform sampler2D tDiffuse;\nuniform float runtimeReflectionStep;')
-      .replace('vec4 base = texture2DProj(tDiffuse, new_vUv);', `
-        vec4 base = texture2DProj(tDiffuse, new_vUv);
-        #ifndef USE_BLUR
-          vec2 reflectedUv = new_vUv.xy / new_vUv.w;
-          vec2 stepX = vec2(runtimeReflectionStep, 0.0);
-          vec2 stepY = vec2(0.0, runtimeReflectionStep);
-          base = 0.5 * base + 0.125 * (
-            texture2D(tDiffuse, reflectedUv + stepX) + texture2D(tDiffuse, reflectedUv - stepX)
-            + texture2D(tDiffuse, reflectedUv + stepY) + texture2D(tDiffuse, reflectedUv - stepY)
-          );
-        #endif
-      `)
-      .replace('diffuseColor.rgb = diffuseColor.rgb * ((1.0 - min(1.0, mirror)) + newMerge.rgb * mixStrength);', `
-        diffuseColor.rgb *= 1.0 - min(1.0, mirror);
-        vec3 runtimePlanarLight = max(newMerge.rgb, vec3(0.0)) * (mirror * 0.48);
-        float runtimePlanarPeak = max(max(runtimePlanarLight.r, runtimePlanarLight.g), runtimePlanarLight.b);
-        runtimePlanarLight *= 0.08 / max(0.08, runtimePlanarPeak);
-      `)
-      .replace('#include <opaque_fragment>', 'outgoingLight += runtimePlanarLight;\n#include <opaque_fragment>')
-  }
-  material.customProgramCacheKey = () => 'runtime-floor-planar-light-v2'
+type CaptureObject = Object3D & { isMesh?: boolean; isLine?: boolean; isPoints?: boolean; isSprite?: boolean }
+
+/** Use layers so an unmarked parent mesh cannot hide its opted-in child. */
+function reflectionMask(scene: Scene, camera: Camera) {
+  const hidden: [Object3D, number][] = []
+  const meshes: Mesh[] = []
+  scene.traverseVisible((object: CaptureObject) => {
+    if (!(object.isMesh || object.isLine || object.isPoints || object.isSprite)) return
+    const tags = object.userData
+    const reflect = object.isMesh && tags.runtimeReflector === true
+      && !tags.runtimeText && !tags.runtimeFloorOverlay && !tags.runtimeAtmosphere
+    if (reflect && camera.layers.test(object.layers)) meshes.push(object as Mesh)
+    if (!reflect && object.layers.mask !== 0) {
+      hidden.push([object, object.layers.mask])
+      object.layers.mask = 0
+    }
+  })
   return {
-    material, target, blurred, camera, textureMatrix,
-    render(scene: Scene, worldCamera: Camera, floor: Mesh, floorGroup: Group) {
-      if (!updateReflectionCamera(floor, worldCamera, camera, textureMatrix)) return false
-      const visibility = floorGroup.visible, previousTarget = gl.getRenderTarget()
-      const xr = gl.xr.enabled, shadow = gl.shadowMap.autoUpdate
-      const viewport = gl.getViewport(new Vector4()), scissor = gl.getScissor(new Vector4()), scissorTest = gl.getScissorTest()
-      try {
-        floorGroup.visible = false
-        gl.xr.enabled = false; gl.shadowMap.autoUpdate = false
-        gl.setRenderTarget(target); gl.setScissorTest(false)
-        gl.state.buffers.depth.setMask(true)
-        gl.clear(); gl.render(scene, camera)
-        if (blur && blurred) blur.render(gl, target, blurred)
-      } finally {
-        floorGroup.visible = visibility
-        gl.xr.enabled = xr; gl.shadowMap.autoUpdate = shadow
-        gl.setRenderTarget(previousTarget); gl.setViewport(viewport); gl.setScissor(scissor); gl.setScissorTest(scissorTest)
-      }
-      return true
-    },
-    dispose() {
-      material.dispose(); target.dispose(); blurred?.dispose()
-      if (blur) {
-        blur.renderTargetA.dispose(); blur.renderTargetB.dispose()
-        blur.convolutionMaterial.dispose(); blur.screen.geometry.dispose(); blur.scene.clear()
-      }
+    meshes,
+    restore() {
+      for (const [object, mask] of hidden) object.layers.mask = mask
     },
   }
 }
 
-/** Restore every capture state, including the clear alpha used by contact maps. */
-export function floorCaptureState(gl: WebGLRenderer) {
-  const target = gl.getRenderTarget(), viewport = gl.getViewport(new Vector4()), scissor = gl.getScissor(new Vector4())
-  const scissorTest = gl.getScissorTest(), clearColor = gl.getClearColor(new Color()), clearAlpha = gl.getClearAlpha()
-  const xr = gl.xr.enabled, shadow = gl.shadowMap.autoUpdate
+function reflectionMaterial(original: Material, floorY: { value: number }) {
+  const material = original.clone()
+  // The main-view acrylic can transmit. The soft floor image needs only its
+  // lighting and shape, so no second camera-owned transmission FBO is created.
+  if (material instanceof MeshPhysicalMaterial) material.transmission = 0
+  material.onBeforeCompile = function (shader, renderer) {
+    original.onBeforeCompile.call(this, shader, renderer)
+    shader.uniforms.runtimeReflectingFloorY = floorY
+    shader.vertexShader = 'varying float runtimeReflectionY;\n' + shader.vertexShader.replace('#include <project_vertex>', `
+      #include <project_vertex>
+      vec4 runtimeReflectionPoint = vec4(transformed, 1.0);
+      #ifdef USE_INSTANCING
+        runtimeReflectionPoint = instanceMatrix * runtimeReflectionPoint;
+      #endif
+      runtimeReflectionY = (modelMatrix * runtimeReflectionPoint).y;
+    `)
+    shader.fragmentShader = 'uniform float runtimeReflectingFloorY; varying float runtimeReflectionY;\n'
+      + shader.fragmentShader.replace('#include <opaque_fragment>', `
+        float reflectionHeight = runtimeReflectionY - runtimeReflectingFloorY;
+        outgoingLight *= 1.0 - smoothstep(0.45, 3.5, reflectionHeight);
+        #include <opaque_fragment>
+      `)
+  }
+  material.customProgramCacheKey = () => original.customProgramCacheKey() + '|runtime-reflection-height'
+  return material
+}
+
+export function createFloorReflection(gl: WebGLRenderer) {
+  const resolution = floorStyle.reflectionResolution
+  const target = new WebGLRenderTarget(resolution, resolution, { minFilter: LinearFilter, magFilter: LinearFilter })
+  target.texture.generateMipmaps = false
+  target.texture.name = 'runtime-floor-reflection'
+  const textureMatrix = new Matrix4()
+  const camera = new PerspectiveCamera()
+  const strength = { value: 0 }
+  const floorY = { value: 0 }
+  const materials = new Map<Material, Material>()
+  const stats = { captures: 0, meshes: 0, materials: 0, resolution, failed: false }
+  let rendering = false, disposed = false
+
+  function retireMaterials(used: ReadonlySet<Material>) {
+    for (const [original, variant] of materials) {
+      if (used.has(original)) continue
+      variant.dispose()
+      materials.delete(original)
+    }
+    stats.materials = materials.size
+  }
+
+  return {
+    target, textureMatrix, strength, stats,
+    render(scene: Scene, worldCamera: Camera, floor: Mesh) {
+      if (rendering || disposed) return false
+      strength.value = 0
+      stats.meshes = 0
+      if (stats.failed || scene.overrideMaterial !== null || !updateReflectionCamera(floor, worldCamera, camera, textureMatrix)) return false
+      camera.layers.mask = worldCamera.layers.mask
+      const background = scene.background, restoreRenderer = floorCaptureState(gl)
+      const mask = reflectionMask(scene, camera)
+      stats.meshes = mask.meshes.length
+      const originals: [Mesh, Material | Material[]][] = []
+      const used = new Set<Material>()
+      const substitute = (original: Material) => {
+        used.add(original)
+        let material = materials.get(original)
+        if (!material) {
+          material = reflectionMaterial(original, floorY)
+          materials.set(original, material)
+        }
+        return material
+      }
+      rendering = true
+      try {
+        if (!mask.meshes.length) return false
+        floorY.value = floor.matrixWorld.elements[13]
+        for (const mesh of mask.meshes) {
+          const original = mesh.material
+          originals.push([mesh, original])
+          mesh.material = Array.isArray(original) ? original.map(substitute) : substitute(original)
+        }
+        scene.background = null
+        gl.xr.enabled = false
+        gl.shadowMap.autoUpdate = false
+        gl.shadowMap.needsUpdate = false
+        gl.autoClear = false
+        gl.setRenderTarget(target)
+        gl.setClearColor(0, 0)
+        gl.clear(true, true, false)
+        gl.render(scene, camera)
+        strength.value = floorStyle.reflectionStrength
+        stats.captures++
+        return true
+      } catch {
+        // Keep the same procedural floor and contacts after a failed capture.
+        // A fresh quality selection or graphics restoration recreates the pass.
+        stats.failed = true
+        return false
+      } finally {
+        scene.background = background
+        for (const [mesh, original] of originals) mesh.material = original
+        mask.restore()
+        rendering = false
+        restoreRenderer()
+        retireMaterials(stats.failed ? new Set() : used)
+      }
+    },
+    dispose() {
+      if (disposed) return
+      disposed = true
+      strength.value = 0
+      retireMaterials(new Set())
+      target.dispose()
+    },
+  }
+}
+
+/** Restore the bound target (including a cube face/mipmap), clear and pass
+ * options. Target-local viewport and scissor come back with the target. */
+function floorCaptureState(gl: WebGLRenderer) {
+  const target = gl.getRenderTarget(), face = gl.getActiveCubeFace(), mip = gl.getActiveMipmapLevel()
+  const clearColor = gl.getClearColor(new Color()), clearAlpha = gl.getClearAlpha()
+  const xr = gl.xr.enabled, shadow = gl.shadowMap.autoUpdate, shadowUpdate = gl.shadowMap.needsUpdate
+  const autoClear = gl.autoClear
   return () => {
-    gl.xr.enabled = xr; gl.shadowMap.autoUpdate = shadow
-    gl.setRenderTarget(target); gl.setViewport(viewport); gl.setScissor(scissor); gl.setScissorTest(scissorTest)
+    gl.setRenderTarget(target, face, mip)
     gl.setClearColor(clearColor, clearAlpha)
+    gl.xr.enabled = xr
+    gl.shadowMap.autoUpdate = shadow
+    gl.shadowMap.needsUpdate = shadowUpdate
+    gl.autoClear = autoClear
   }
 }

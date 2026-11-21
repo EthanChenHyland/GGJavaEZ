@@ -1,58 +1,57 @@
-import type { LayoutState, PresentationPlan, SceneModel, Vec3 } from '../contracts/world'
+import type { LayoutState, Vec3, WorldAnchor } from '../contracts/world'
 import type { QualityTier } from './quality/qualityStore'
 
-/** Floor-specific values from corrected design §19.5 / task 8.2. */
+/** Shared floor palette and optical limits for every runtime presentation. */
 export const floorStyle = Object.freeze({
-  minor: '#1B3A7A', major: '#2A5BC0', surface: '#172745', contact: '#03050C',
+  surface: '#080B14', studio: '#1A2034', grid: '#52617C',
   minorSpacing: 1, majorSpacing: 4, minExtent: 80, extentScale: 2.5,
-  clearance: .5, contactLift: .012, gridLift: .03,
-  gridFadeExtent: 1.5, gridFadeStrength: 2, gridCoverage: .35,
+  clearance: .16, maxReservedGap: .65, contactLift: .012,
+  maxContacts: 40, maxContactHeight: 3,
+  reflectionResolution: 384, reflectionBlur: 2.25, reflectionStrength: .38, reflectionPeak: .06,
 })
 
 export interface FloorModel {
   position: Vec3
   extent: number
   opacity: number
-  resolution: 256 | 1024
-  mirror: .35 | .5
-  blur: readonly [number, number]
-}
-export interface ContactFootprint {
-  id: string
-  position: Vec3
-  size: readonly [number, number]
-  opacity: number
+  studioCenter: readonly [number, number]
+  studioRadius: number
+  reflection: boolean
 }
 
-export function floorModel(layout: Pick<LayoutState, 'bounds'>, quality: QualityTier, hasRecording: boolean): FloorModel {
+type GroundAnchor = Pick<WorldAnchor, 'position' | 'size'>
+
+export function underside(anchor: GroundAnchor): number {
+  return anchor.position[1] - anchor.size[1] / 2
+}
+
+export function floorModel(
+  layout: Pick<LayoutState, 'bounds'>, quality: QualityTier, hasRecording: boolean,
+  represented: readonly GroundAnchor[] = [], home: readonly GroundAnchor[] = [],
+): FloorModel {
   const bounds = layout.bounds
-  const cinematic = quality === 'CINEMATIC'
+  const [x, y, z] = bounds?.center ?? [0, -6, 0]
+  const reservedBottom = y - (bounds?.size[1] ?? 0) / 2
+  const representedBottom = represented.reduce((low, anchor) => Math.min(low, underside(anchor)), Infinity)
+  // Preserve nearby reserved clearance through scrubs. Distant reservations can
+  // put the stage far below every rendered body, so cap their contribution.
+  const bottom = Number.isFinite(representedBottom)
+    ? Math.min(representedBottom, Math.max(reservedBottom, representedBottom - floorStyle.maxReservedGap))
+    : reservedBottom
+  let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity
+  for (const { position, size } of home) {
+    minX = Math.min(minX, position[0] - size[0] / 2)
+    maxX = Math.max(maxX, position[0] + size[0] / 2)
+    minZ = Math.min(minZ, position[2] - size[2] / 2)
+    maxZ = Math.max(maxZ, position[2] + size[2] / 2)
+  }
+  const radius = home.length ? Math.max(maxX - minX, maxZ - minZ) * .82 : 20
   return {
-    position: bounds ? [bounds.center[0], bounds.center[1] - bounds.size[1] / 2 - floorStyle.clearance, bounds.center[2]] : [0, -6, 0],
-    extent: bounds ? Math.max(floorStyle.minExtent, floorStyle.extentScale * Math.max(...bounds.size)) : floorStyle.minExtent,
-    opacity: hasRecording ? 1 : .45,
-    resolution: cinematic ? 1024 : 256,
-    mirror: cinematic ? .5 : .35,
-    blur: cinematic ? [300, 100] : [0, 0],
+    position: [x, bottom - (bounds || represented.length ? floorStyle.clearance : 0), z],
+    extent: Math.max(floorStyle.minExtent, floorStyle.extentScale * Math.max(...bounds?.size ?? [0])),
+    opacity: hasRecording ? 1 : .42,
+    studioCenter: home.length ? [(minX + maxX) / 2, (minZ + maxZ) / 2] : [x, z],
+    studioRadius: Math.max(16, Math.min(radius, 34)),
+    reflection: hasRecording && quality === 'CINEMATIC',
   }
-}
-
-/** Only represented runtime solids cast grounding marks; this never enumerates the unbudgeted scene. */
-export function contactFootprints(scene: Pick<SceneModel, 'entities'>, plan: Pick<PresentationPlan, 'entities' | 'clusters'>, floorY: number): ContactFootprint[] {
-  const footprints: ContactFootprint[] = []
-  for (const [id, presented] of plan.entities) {
-    const node = scene.entities[id]
-    if (!node || node.kind === 'class' || presented.opacity <= 0) continue
-    const { position, size } = node.anchor
-    const distance = Math.max(0, position[1] - size[1] / 2 - floorY)
-    footprints.push({ id, position: [position[0], floorY + floorStyle.contactLift, position[2]],
-      size: [size[0] + 1.2, size[2] + 1.2], opacity: presented.opacity * .32 / (1 + distance * .12) })
-  }
-  for (const cluster of plan.clusters) {
-    if (cluster.anchor.region !== 'stack' && cluster.anchor.region !== 'heap' && cluster.anchor.region !== 'library') continue
-    const { position, size } = cluster.anchor
-    footprints.push({ id: cluster.id, position: [position[0], floorY + floorStyle.contactLift, position[2]],
-      size: [size[0] + 1.2, size[2] + 1.2], opacity: cluster.opacity * .2 })
-  }
-  return footprints
 }

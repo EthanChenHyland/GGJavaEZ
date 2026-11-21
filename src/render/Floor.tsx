@@ -1,78 +1,84 @@
 import { useEffect, useLayoutEffect, useMemo, useRef } from 'react'
-import { Grid } from '@react-three/drei'
-import {useThree} from '@react-three/fiber'
-import {createFloorReflection} from './floorReflection'
-import {createFloorContact} from './floorContact'
-import { Color, Group, Mesh, InstancedBufferAttribute, InstancedMesh, MeshBasicMaterial, Object3D, type ShaderMaterial } from 'three'
+import { useThree } from '@react-three/fiber'
+import { Color, InstancedBufferAttribute, InstancedMesh, Mesh, Object3D } from 'three'
+import { createFloorReflection } from './floorReflection'
+import { contactFootprints, createFloorContactMaterial, floorSupports, type ContactFootprint } from './floorContact'
 import type { WorldRenderSnapshot } from './worldRenderSnapshot'
-import {useQualityStore,type QualityTier} from './quality/qualityStore'
-import { contactFootprints, floorModel, floorStyle, type ContactFootprint } from './floorModel'
-import {registerAuxiliaryPass} from './post/auxiliaryPasses'
-import {configureFloorGrid} from './floorGrid'
+import { useQualityStore, type QualityTier } from './quality/qualityStore'
+import { floorModel, floorStyle } from './floorModel'
+import { registerAuxiliaryPass } from './post/auxiliaryPasses'
+import { createFloorSurface } from './floorGrid'
 
-function ContactBlobs({ footprints }: { footprints: ContactFootprint[] }) {
+const noRaycast = () => undefined
+
+function FloorContacts({ footprints }: { footprints: readonly ContactFootprint[] }) {
   const mesh = useRef<InstancedMesh>(null)
-  const opacity = useMemo(() => new InstancedBufferAttribute(new Float32Array(footprints.map(item => item.opacity)), 1), [footprints])
-  const material = useMemo(() => {
-    const material = new MeshBasicMaterial({ color: new Color(floorStyle.contact), transparent: true, depthWrite: false, toneMapped: false })
-    material.onBeforeCompile = shader => {
-      shader.vertexShader = 'attribute float contactOpacity; varying float footprintOpacity; varying vec2 footprintUv;\n' + shader.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\nfootprintOpacity=contactOpacity; footprintUv=uv;')
-      shader.fragmentShader = 'varying float footprintOpacity; varying vec2 footprintUv;\n' + shader.fragmentShader.replace('#include <opaque_fragment>', '#include <opaque_fragment>\ngl_FragColor.a *= footprintOpacity * pow(max(0.,1.-length(footprintUv*2.-1.)),2.);')
-    }
-    material.customProgramCacheKey = () => 'runtime-contact-blob-v1'
-    return material
-  }, [])
+  const styles = useMemo(() => new InstancedBufferAttribute(new Float32Array(floorStyle.maxContacts * 4), 4), [])
+  const material = useMemo(createFloorContactMaterial, [])
   useEffect(() => () => material.dispose(), [material])
+  useLayoutEffect(() => {
+    const object = mesh.current
+    return () => object?.dispose()
+  }, [])
   useLayoutEffect(() => {
     const object = mesh.current
     if (!object) return
     const transform = new Object3D()
+    const tint = new Color()
+    transform.rotation.x = -Math.PI / 2
     footprints.forEach((item, index) => {
-      transform.position.set(...item.position); transform.rotation.x = -Math.PI / 2; transform.scale.set(item.size[0], item.size[1], 1)
-      transform.updateMatrix(); object.setMatrixAt(index, transform.matrix)
+      transform.position.set(...item.position)
+      transform.scale.set(item.size[0], item.size[1], 1)
+      transform.updateMatrix()
+      object.setMatrixAt(index, transform.matrix)
+      object.setColorAt(index, tint.set(item.accent))
+      styles.setXYZW(index, item.core[0], item.core[1], item.opacity, item.sheen)
     })
-    object.instanceMatrix.needsUpdate = true; object.computeBoundingSphere()
-  }, [footprints])
-  if (!footprints.length) return null
-  return <instancedMesh ref={mesh} args={[undefined, undefined, footprints.length]} material={material} userData={{runtimeBloomRole:'protected',runtimeFloorOverlay:true}} raycast={()=>undefined}>
-    <planeGeometry args={[1,1]}><primitive object={opacity} attach="attributes-contactOpacity"/></planeGeometry>
+    object.count = footprints.length
+    object.instanceMatrix.needsUpdate = styles.needsUpdate = true
+    if (object.instanceColor) object.instanceColor.needsUpdate = true
+    object.computeBoundingSphere()
+  }, [footprints, styles])
+
+  return <instancedMesh ref={mesh} name="runtime-floor-contact" args={[undefined, undefined, floorStyle.maxContacts]}
+    material={material} count={0} visible={footprints.length > 0} renderOrder={-9}
+    userData={{ runtimeBloomRole: 'protected', runtimeFloorOverlay: true }} raycast={noRaycast}>
+    <planeGeometry args={[1, 1]}><primitive object={styles} attach="attributes-runtimeContact" /></planeGeometry>
   </instancedMesh>
 }
 
 export function Floor({ snapshot, quality }: { snapshot: WorldRenderSnapshot; quality: QualityTier }) {
   const { layout, plan, scene } = snapshot.read()
-  const floor = floorModel(layout, quality, scene.liveHead > 0)
-  const footprints = useMemo(() => contactFootprints(scene, plan, floor.position[1]), [scene, plan, floor.position[1]])
-  const {gl,scene:world,camera}=useThree(), group=useRef<Group>(null), surface=useRef<Mesh>(null)
-  const grid=useRef<Mesh>(null),gridOpacity=useMemo(()=>({value:floor.opacity}),[])
-  const lost=useQualityStore(state=>state.contextLost)
-  const reflection=useMemo(()=>lost?null:createFloorReflection(gl,floor),[gl,quality,lost,floor.opacity])
-  const contact=useMemo(()=>quality==='CINEMATIC'&&!lost?createFloorContact(gl,floor,layout.bounds?.size[1]??12):null,
-    [gl,quality,lost,floor.position[0],floor.position[1],floor.position[2],floor.extent])
-  const captured=useRef('')
-  useLayoutEffect(()=>{gridOpacity.value=floor.opacity},[gridOpacity,floor.opacity])
-  useLayoutEffect(()=>{if(grid.current)configureFloorGrid(grid.current.material as ShaderMaterial,gridOpacity)},[reflection,gridOpacity])
-  useEffect(()=>()=>reflection?.dispose(),[reflection])
-  useEffect(()=>{captured.current='';return()=>contact?.dispose()},[contact])
-  useLayoutEffect(()=>registerAuxiliaryPass(gl,'floor',()=>{
-    if(!group.current||!surface.current||!reflection)return
-    const key=`${scene.recordingId}:${plan.revision}`
-    if(contact&&key!==captured.current){contact.render(world,group.current);captured.current=key}
-    reflection.render(world,camera,surface.current,group.current)
-  }),[gl,world,camera,reflection,contact,scene.recordingId,plan.revision])
-  if(!reflection)return null
-  return <group ref={group}>
-    <mesh ref={surface} rotation={[-Math.PI/2,0,0]} position={[...floor.position]} material={reflection.material} dispose={null}
-      userData={{runtimeBloomRole:'protected'}} receiveShadow raycast={()=>undefined}>
-      <planeGeometry args={[floor.extent,floor.extent]}/>
+  const supports = useMemo(() => floorSupports(scene, plan), [scene, plan])
+  const floor = useMemo(() => floorModel(layout, quality, scene.liveHead > 0, supports.map(item => item.anchor),
+    plan.framing.home.ids.flatMap(id => scene.entities[id]?.anchor ?? [])), [layout, plan.framing.home.ids, quality, scene, supports])
+  const floorY = floor.position[1]
+  const footprints = useMemo(() => contactFootprints(supports, floorY), [supports, floorY])
+  const { gl, scene: world, camera } = useThree()
+  const surface = useRef<Mesh>(null)
+  const lost = useQualityStore(state => state.contextLost)
+  const reflection = useMemo(() => floor.reflection && !lost ? createFloorReflection(gl) : null, [gl, floor.reflection, lost])
+  const stage = useMemo(() => createFloorSurface(reflection), [reflection])
+
+  useLayoutEffect(() => stage.update(floor), [stage, floor])
+  useEffect(() => () => stage.material.dispose(), [stage])
+  useEffect(() => () => reflection?.dispose(), [reflection])
+  useLayoutEffect(() => {
+    if (!reflection) return
+    return registerAuxiliaryPass(gl, 'floor', () => {
+      if (surface.current) reflection.render(world, camera, surface.current)
+    })
+  }, [gl, world, camera, reflection])
+
+  return <group>
+    <mesh ref={surface} name="runtime-floor" rotation={[-Math.PI / 2, 0, 0]} position={[...floor.position]}
+      material={stage.material} renderOrder={-10} raycast={noRaycast}
+      userData={{
+        runtimeBloomRole: 'protected', runtimeFloorOverlay: true,
+        runtimeFloorMetrics: { contacts: footprints.length, targets: reflection ? 1 : 0, reflection: reflection?.stats ?? null },
+      }}>
+      <planeGeometry args={[floor.extent, floor.extent]} />
     </mesh>
-    <Grid ref={grid} name="runtime-floor-grid" position={[floor.position[0],floor.position[1]+floorStyle.gridLift,floor.position[2]]} args={[floor.extent,floor.extent]}
-      cellSize={floorStyle.minorSpacing} sectionSize={floorStyle.majorSpacing} cellThickness={.5} sectionThickness={.8}
-      cellColor={floorStyle.minor} sectionColor={floorStyle.major} fadeDistance={floor.extent*floorStyle.gridFadeExtent} fadeStrength={floorStyle.gridFadeStrength} infiniteGrid={false}
-      userData={{runtimeBloomRole:'protected',runtimeFloorOverlay:true}} material-depthWrite={false}/>
-    {contact ? <mesh rotation={[-Math.PI/2,0,0]} position={[floor.position[0],floor.position[1]+floorStyle.contactLift,floor.position[2]]}
-      userData={{runtimeBloomRole:'protected',runtimeFloorOverlay:true}} raycast={()=>undefined}>
-      <planeGeometry args={[floor.extent,floor.extent]}/><meshBasicMaterial map={contact.target.texture} transparent depthWrite={false} toneMapped={false} opacity={.3*floor.opacity}/>
-    </mesh> : <ContactBlobs footprints={footprints}/>}
+    <FloorContacts footprints={footprints} />
   </group>
 }

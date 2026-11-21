@@ -5,8 +5,8 @@ import type { Intersection, Raycaster } from 'three';
 import type { Selection } from '../contracts/interaction';
 import type { PresentationPlan, SceneEntity, SceneModel, Vec3, WorldAnchor } from '../contracts/world';
 import type { WorldRenderSnapshot } from './worldRenderSnapshot';
-import { color, world } from '../theme/tokens';
-import { faceMaterial, glassMaterial, unitBox, roundedDepthMaterial, roundedDistanceMaterial } from './RuntimeMaterials';
+import { acrylic, color, world } from '../theme/tokens';
+import { faceMaterial, glassMaterial, unitBox } from './RuntimeMaterials';
 import { expandRoundedBoxVertex, unitRoundedBox, unitRoundedOutline } from './geometry/roundedBox';
 import { faceRows } from './faceModel';
 import { facePlate } from '../world/facePlate';
@@ -29,6 +29,8 @@ interface Solid {
     opacity: number;
     tint: string;
     edge?: string;
+    finish?: number;
+    accent?: boolean;
     arrayPick?: ArrayWindowPick;
     arrayTrayPart?: 'slab' | 'face' | 'backplate';
     part?: 'reference-chip-rim' | 'reference-chip' | 'primitive-chip-rim' | 'primitive-chip' | 'value-chip-rim' | 'value-chip';
@@ -36,7 +38,7 @@ interface Solid {
 function entityPick(node: SceneEntity): Pick { return { kind: node.kind === 'frame' ? 'frame' : node.kind === 'class' ? 'class' : 'object', id: node.id }; }
 // Pre-composite a subdued rim from the existing palette, keeping opaque value
 // chips in the same face batch and outside the bloom emitter mask.
-const chipRims=Object.fromEntries((['stack','heap','class'] as const).map(role=>{const palette=color[role];return[role,`#${new Color('chip' in palette?palette.chip:palette.face).lerp(new Color(palette.edge),.28).getHexString()}`]}));
+const chipRims=Object.fromEntries((['stack','heap','class'] as const).map(role=>{const palette=color[role];return[role,`#${new Color('chip' in palette?palette.chip:palette.face).lerp(new Color(palette.edge),.13).getHexString()}`]}));
 export function buildSolidBatch(scene: SceneModel, plan: PresentationPlan): Solid[] {
     const solids: Solid[] = [];
     for (const [id, presented] of plan.entities) {
@@ -44,13 +46,18 @@ export function buildSolidBatch(scene: SceneModel, plan: PresentationPlan): Soli
         const [x, y, z] = node.anchor.position, [w, h, d] = node.anchor.size, top = y + h / 2, face = z + d / 2 + .025;
         const pick = entityPick(node), opacity = presented.opacity;
         const edge = presented.highlight === 'exception' ? color.semantic.exception : presented.highlight === 'mutation' ? color.semantic.mutation : presented.highlight ? color.semantic.execution : palette.edge;
+        const forensicContext = presented.highlight === 'exception' && node.kind === 'frame' && node.exceptionRole === 'unwound';
+        const accent = !!presented.highlight && !forensicContext;
+        const finish = accent || (node.kind === 'frame' && node.topOfStack) ? acrylic.current
+            : node.kind === 'frame' && !node.live ? acrylic.historical
+            : presented.mode === 'quiet' ? acrylic.context : acrylic.resting;
         const body = node.kind === 'array' ? arrayTitlePlate(node.anchor) : node.anchor;
-        solids.push({ anchor: body, pick, pickable: presented.pickable, role, opacity, tint: palette.core, edge, ...(node.kind==='array'?{arrayTrayPart:'slab' as const}:{}) });
+        solids.push({ anchor: body, pick, pickable: presented.pickable, role, opacity, tint: palette.core, edge, finish, accent, ...(node.kind==='array'?{arrayTrayPart:'slab' as const}:{}) });
         const plate = (slot: string, position: Vec3, size: Vec3, tint: string, plateOpacity = opacity, arrayPick?: ArrayWindowPick,part?:Solid['part'],arrayTrayPart?:Solid['arrayTrayPart']) => solids.push({ anchor: { ...node.anchor, entityId: slot, position, size, ports: {}, bodyPort: position }, pick: slot === id ? pick : { kind: 'slot', id: slot }, pickable: presented.pickable, role: 'face', opacity: plateOpacity, tint, arrayPick,part,arrayTrayPart });
         if (presented.mode !== 'detailed')
             continue;
         if (node.kind === 'array') {
-            solids.push({anchor:arrayBackplate(node.anchor),pick,pickable:presented.pickable,role,opacity,tint:palette.core,edge,arrayTrayPart:'backplate'});
+            solids.push({anchor:arrayBackplate(node.anchor),pick,pickable:presented.pickable,role,opacity,tint:palette.core,edge,finish:acrylic.context,arrayTrayPart:'backplate'});
             plate(id, [x, body.position[1], z + body.size[2] / 2 + .015], [w - .18, body.size[1] - .18, .035], palette.face, opacity, undefined, undefined, 'face');
         } else {
             plate(id, [x, y, face - .01], [w - .18, h - .18, .035], palette.face);
@@ -99,7 +106,8 @@ export function buildSolidBatch(scene: SceneModel, plan: PresentationPlan): Soli
                 const [cx, cy, cz] = cell.anchor.position;
                 const arrayPick: ArrayWindowPick={recordingId:window!.recordingId,arrayId:node.id,windowRevision:window!.windowRevision,index:cell.index,slotId:id,presentedSlot:cell.presentedSlot};
                 const cellOpacity=opacity*cellFocusOpacity(id);
-                solids.push({ anchor: cell.anchor, pick: { kind: 'slot', id }, pickable: presented.pickable, role: 'heap', opacity:cellOpacity, tint: color.heap.core, edge: targeted(id)?color.semantic.execution:node.activity?.index === cell.index ? node.activity.kind==='write'?color.semantic.mutation:color.semantic.execution : color.heap.edge, arrayPick });
+                const currentCell = targeted(id) || node.activity?.index === cell.index;
+                solids.push({ anchor: cell.anchor, pick: { kind: 'slot', id }, pickable: presented.pickable, role: 'heap', opacity:cellOpacity, tint: color.heap.core, edge: targeted(id)?color.semantic.execution:node.activity?.index === cell.index ? node.activity.kind==='write'?color.semantic.mutation:color.semantic.execution : color.heap.edge, finish:currentCell?acrylic.current:acrylic.resting, accent:currentCell, arrayPick });
                 plate(id, [cx, cy, cz + .79], [1.4, 1.4, .025], color.heap.face, cellOpacity, arrayPick);
                 const value=observedArrayCell(node.cells,cell.index)?.value;
                 if(value?.kind==='reference'&&value.observation!=='UNAVAILABLE'&&scene.entities[value.targetId]){
@@ -113,7 +121,7 @@ export function buildSolidBatch(scene: SceneModel, plan: PresentationPlan): Soli
     for (const cluster of plan.clusters) {
         const role=cluster.anchor.region==='stack'?'stack':cluster.anchor.region==='class'?'class':'heap',palette=color[role];
         const pick:Pick={kind:'cluster',id:cluster.id},[x,y,z]=cluster.anchor.position,[w,h,d]=cluster.anchor.size;
-        solids.push({anchor:cluster.anchor,pick,pickable:cluster.pickable,role,opacity:cluster.opacity,tint:palette.core,edge:cluster.selected?color.semantic.execution:palette.edge});
+        solids.push({anchor:cluster.anchor,pick,pickable:cluster.pickable,role,opacity:cluster.opacity,tint:palette.core,edge:cluster.selected?color.semantic.execution:palette.edge,finish:cluster.selected?acrylic.current:acrylic.context,accent:cluster.selected});
         const position:Vec3=[x,y,z+d/2+.015];
         solids.push({anchor:{...cluster.anchor,entityId:`${cluster.id}:face`,position,size:[w-.18,h-.18,.035],ports:{},bodyPort:position},pick,pickable:cluster.pickable,role:'face',opacity:cluster.opacity,tint:palette.face});
     }
@@ -155,8 +163,12 @@ function Instances({ items, onSelect, onFocus, tier, cellWindows, focused, recor
             return;
         const transform = new Object3D(), tint = new Color();
         mesh.count = items.length;
-        items.forEach((item, index) => { transform.position.set(...item.anchor.position); transform.scale.set(...item.anchor.size); transform.updateMatrix(); mesh.setMatrixAt(index, transform.matrix); if (role === 'face')
-            mesh.setColorAt(index, tint.set(item.tint)); });
+        items.forEach((item, index) => {
+            transform.position.set(...item.anchor.position); transform.scale.set(...item.anchor.size);
+            transform.updateMatrix(); mesh.setMatrixAt(index, transform.matrix);
+            const finish = item.finish ?? acrylic.resting;
+            mesh.setColorAt(index, role === 'face' ? tint.set(item.tint) : tint.setRGB(finish, finish, finish));
+        });
         mesh.instanceMatrix.needsUpdate = true;
         if (mesh.instanceColor)
             mesh.instanceColor.needsUpdate = true;
@@ -164,7 +176,7 @@ function Instances({ items, onSelect, onFocus, tier, cellWindows, focused, recor
     }, [items, role]);
     const titleParts=(import.meta.env.DEV||import.meta.env.VITE_QA==='1')&&items.some(item=>item.arrayTrayPart)
         ?items.map(item=>item.arrayTrayPart?{id:item.pick.id,part:item.arrayTrayPart}:null):undefined;
-    return <instancedMesh ref={ref} args={[undefined, undefined, capacity]} renderOrder={inset?1:0} geometry={role === 'face' ? inset?unitRoundedChip:unitBox : unitRoundedBox} material={role === 'face' ? faceMaterial(opacity,inset) : glassMaterial(role, opacity, tier, focused)} userData={{runtimeBloomRole:'protected',runtimeArrayTrayParts:titleParts,...((import.meta.env.DEV||import.meta.env.VITE_QA==='1')&&inset?{runtimeValueChipParts:items.map(item=>({slotId:item.pick.id,part:item.part!}))}:{})}} customDepthMaterial={role === 'face' ? undefined : roundedDepthMaterial()} customDistanceMaterial={role === 'face' ? undefined : roundedDistanceMaterial()} dispose={null} castShadow={role !== 'face'} receiveShadow raycast={items.some(item => item.pickable) ? canonicalSolidRaycast : noRaycast} onPointerDown={event=>{const item=items[event.instanceId??-1];press.current=item?.pickable?{pick:item.pick,arrayPick:item.arrayPick,recordingId}:null;if(item?.pickable)event.stopPropagation()}} onClick={event => { const item = items[event.instanceId ?? -1]; if (validPress(item)) {
+    return <instancedMesh ref={ref} args={[undefined, undefined, capacity]} renderOrder={inset?1:0} geometry={role === 'face' ? inset?unitRoundedChip:unitBox : unitRoundedBox} material={role === 'face' ? faceMaterial(opacity,inset) : glassMaterial(role, opacity, tier, focused)} userData={{runtimeBloomRole:'protected',runtimeReflector:role!=='face'&&opacity>=.55,runtimeArrayTrayParts:titleParts,...((import.meta.env.DEV||import.meta.env.VITE_QA==='1')&&inset?{runtimeValueChipParts:items.map(item=>({slotId:item.pick.id,part:item.part!}))}:{})}} dispose={null} raycast={items.some(item => item.pickable) ? canonicalSolidRaycast : noRaycast} onPointerDown={event=>{const item=items[event.instanceId??-1];press.current=item?.pickable?{pick:item.pick,arrayPick:item.arrayPick,recordingId}:null;if(item?.pickable)event.stopPropagation()}} onClick={event => { const item = items[event.instanceId ?? -1]; if (validPress(item)) {
         event.stopPropagation();
         onSelect(item!.pick);
     } }} onDoubleClick={event => { const item = items[event.instanceId ?? -1]; if (validPress(item)) {
@@ -184,7 +196,7 @@ const EdgeGeometry=memo(function EdgeGeometry({ items }: {
         const positions: number[] = [], colors: number[] = [], source = unitRoundedOutline.getAttribute('position'), normals = unitRoundedOutline.getAttribute('normal'), tint = new Color();
         const point = new Vector3(), normal = new Vector3(), expanded = new Vector3();
         for (const item of items) {
-            tint.set(item.edge!).multiplyScalar(1.65);
+            tint.set(item.edge!).multiplyScalar(1.03);
             for (let i = 0; i < source.count; i++) {
                 point.fromBufferAttribute(source, i); normal.fromBufferAttribute(normals, i);
                 expandRoundedBoxVertex(point, normal, item.anchor.size, expanded);
@@ -243,7 +255,7 @@ export function SolidBatch({ snapshot, onSelect, onFocus }: {
             const key = `${item.role}:${item.opacity}:${item.part?'inset':'surface'}`, group = groups.get(key) ?? [];
             group.push(item);
             groups.set(key, group);
-            if (item.edge) {
+            if (item.edge && item.accent) {
                 const group = edges.get(item.opacity) ?? [];
                 group.push(item);
                 edges.set(item.opacity, group);

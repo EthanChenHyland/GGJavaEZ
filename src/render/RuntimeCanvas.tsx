@@ -2,7 +2,7 @@ import {representativeFaceHeight} from '../camera/projection'
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { Canvas, useFrame, useThree,events as pointerEvents,type CanvasProps } from '@react-three/fiber';
 import {prioritizeConnectorIntersections} from './geometry/connectorRaycast';
-import { EnvironmentRig } from './EnvironmentRig';
+import { EnvironmentRig, StudioLights } from './EnvironmentRig';
 import type { Selection } from '../contracts/interaction';
 import type { SceneIo } from '../contracts/world';
 import type { WorldRenderSnapshot } from './worldRenderSnapshot';
@@ -16,7 +16,7 @@ import { RuntimeSolid, WorldText } from './RuntimeSolid';
 import {RecordedIoPort} from './RecordedIoPort';
 import {IoPreviewDialog} from '../shell/dock/IoPreviewDialog';
 import { FaceTextBatch, textReadiness } from './FaceText';
-import { ACESFilmicToneMapping, Color, DataTexture, InstancedMesh, Matrix4, PerspectiveCamera, RGBAFormat, SphereGeometry, Sprite, SRGBColorSpace, UnsignedByteType, Vector3 } from 'three';
+import { ACESFilmicToneMapping, Color, DataTexture, InstancedMesh, Matrix4, PerspectiveCamera, RGBAFormat, SphereGeometry, Sprite, SRGBColorSpace, UnsignedByteType, Vector3, type Material } from 'three';
 import type {} from '../qa/worldObservation';
 import { SolidBatch,solidsInSnapshot } from './SolidBatch';
 import { ConnectorTooltip,InteractiveConnectors } from './ConnectorInteraction';
@@ -180,6 +180,23 @@ function Metrics({ snapshot, selection,trace }: {
                     return{x:(p.x+1)*size.width/2,y:(1-p.y)*size.height/2,visible:Math.abs(p.x)<=1&&Math.abs(p.y)<=1&&p.z>=-1&&p.z<=1};
                 },
                 renderer: () => ({ calls: gl.info.render.calls, triangles: gl.info.render.triangles, geometries: gl.info.memory.geometries, textures: gl.info.memory.textures, frame: gl.info.render.frame }),
+                resources: () => {
+                    const materials = new Set<Material>();
+                    let reflectorBatches = 0;
+                    world.traverseVisible(object => {
+                        if (object.userData.runtimeReflector === true) reflectorBatches++;
+                        if (!('material' in object)) return;
+                        const assigned = object.material as Material | Material[] | undefined;
+                        if (Array.isArray(assigned)) assigned.forEach(material => materials.add(material));
+                        else if (assigned) materials.add(assigned);
+                    });
+                    type FloorMetrics = NonNullable<ReturnType<NonNullable<Window['__ggjavaezWorld']>['resources']>['floor']>;
+                    const floor = world.getObjectByName('runtime-floor')?.userData.runtimeFloorMetrics as FloorMetrics | undefined;
+                    return {sceneMaterials:materials.size,programs:gl.info.programs?.length??0,
+                        reflectorBatches,multisampleLimit:gl.capabilities.maxSamples,
+                        composerTargets:postReadiness.renderTargets,
+                        floor:floor?{...floor,reflection:floor.reflection?{...floor.reflection}:null}:null};
+                },
                 connectorPorts:()=>{
                     const ports:ReturnType<NonNullable<Window['__ggjavaezWorld']>['connectorPorts']>[number][]=[],matrix=new Matrix4(),position=new Vector3(),scale=new Vector3();
                     world.traverseVisible(object=>{
@@ -237,6 +254,7 @@ function Metrics({ snapshot, selection,trace }: {
                     const check=()=>{
                         const quality=useQualityStore.getState(),busy=quality.activity.scrubbing||quality.activity.liveTrailing||quality.activity.cameraMoving;
                         const qualityReady=!quality.contextLost&&quality.cinematicStatus!=='loading'&&(quality.setting!=='CINEMATIC'||busy||quality.active==='CINEMATIC'&&quality.compiled);
+                        const environmentReady=quality.capabilities!==null&&(!quality.capabilities.halfFloatColorBuffer||!!world.environment);
                         if(performance.now()-started>10000){reject(new Error(`World readiness timed out: ${textReadiness.pending.size} text jobs pending (${[...textReadiness.pending].join(', ')}); environment ${!!world.environment}; camera moving ${cameraReadiness.moving}; motion ${motionReadiness.animating}; quality ${quality.setting}/${quality.active}/${quality.cinematicStatus}`));return}
                         const current=latest.current;
                         const key=JSON.stringify([current.scene.recordingId,current.scene.revision,current.plan.revision,
@@ -244,7 +262,7 @@ function Metrics({ snapshot, selection,trace }: {
                             ...camera.position.toArray().map(value=>Math.round(value*1e7)),...camera.quaternion.toArray().map(value=>Math.round(value*1e7)),
                             quality.active,quality.compiled,quality.cinematicStatus,textReadiness.lastSync,postReadiness.revision]);
                         if(key!==stableKey){stableKey=key;eligibleFrame=null}
-                        const eligible=textReadiness.mounted&&textReadiness.pending.size===0&&!!world.environment&&!cameraReadiness.moving&&!motionReadiness.animating&&qualityReady&&postReadiness.ready&&postReadiness.frames>=2;
+                        const eligible=textReadiness.mounted&&textReadiness.pending.size===0&&environmentReady&&!cameraReadiness.moving&&!motionReadiness.animating&&qualityReady&&postReadiness.ready&&postReadiness.frames>=2;
                         if(eligible){eligibleFrame??=displayFrame.current;if(displayFrame.current>=eligibleFrame+2){resolve();return}}else eligibleFrame=null;
                         invalidate();requestAnimationFrame(check);
                     };
@@ -311,7 +329,6 @@ export function RuntimeCanvas({ snapshot, viewport, safeFrame,focusContentFrame,
         button:number;
         orbitStarted:boolean;
     } | null>(null), moved = useRef(false);
-    const lightTarget = useMemo(() => ({ x: 4, y: -3, z: 0 }), []);
     useEffect(()=>{
         const element=worldElement.current;if(!element)return
         const wheel=(event:WheelEvent)=>{event.preventDefault();event.stopPropagation();input.current?.wheel(event.deltaX,event.deltaY,event.deltaMode===0&&!event.ctrlKey&&Math.abs(event.deltaY)<50)}
@@ -345,14 +362,11 @@ export function RuntimeCanvas({ snapshot, viewport, safeFrame,focusContentFrame,
                 input.current?.key(event.key, event.shiftKey);
             }
         }}>
-    {!supportsWebGL?<div className="world-graphics-status glass" role="status">The 3D World requires WebGL</div>:<Canvas events={runtimePointerEvents} frameloop="demand" shadows="percentage" dpr={[1, 1.5]} camera={{ fov: 36, position: [7, 5, 24], near: .05, far: 10000 }} gl={{ antialias: false, alpha: false, powerPreference: 'high-performance', toneMapping: ACESFilmicToneMapping }} onPointerMissed={() => { if (!moved.current)
+    {!supportsWebGL?<div className="world-graphics-status glass" role="status">The 3D World requires WebGL</div>:<Canvas events={runtimePointerEvents} frameloop="demand" dpr={[1, 1.5]} camera={{ fov: 36, position: [7, 5, 24], near: .05, far: 10000 }} gl={{ antialias: true, alpha: false, powerPreference: 'high-performance', toneMapping: ACESFilmicToneMapping }} onPointerMissed={() => { if (!moved.current)
         onSelect(null); }}>
       <GradientBackground/>
       <RegionHaze headings={plan.headings} hasRecording={scene.liveHead>0}/>
-      <hemisphereLight args={['#A8C8FF', '#090B22', .25]}/>
-      <directionalLight position={[-10, 12, 9]} intensity={2.2} color="#9CC8FF" castShadow shadow-mapSize={quality === 'CINEMATIC' ? [2048, 2048] : [1024, 1024]} shadow-camera-left={-35} shadow-camera-right={35} shadow-camera-top={20} shadow-camera-bottom={-35}/>
-      <directionalLight position={[14, 4, -9]} intensity={1.8} color="#B57BFF"/>
-      <directionalLight position={[lightTarget.x, lightTarget.y + 10, 8]} intensity={.6} color="#C9D6FF"/>
+      <StudioLights/>
       <Suspense fallback={null}>
         {!contextLost&&<EnvironmentRig/>}
         <Floor snapshot={snapshot} quality={quality}/>

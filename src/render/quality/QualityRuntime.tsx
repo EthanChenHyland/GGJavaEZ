@@ -1,7 +1,8 @@
 import { useEffect, useRef } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
-import { Group, InstancedMesh } from 'three'
-import { disposeRuntimeMaterials, glassMaterial, unitBox } from '../RuntimeMaterials'
+import { Color, Group, InstancedMesh } from 'three'
+import { disposeRuntimeMaterials, glassMaterial } from '../RuntimeMaterials'
+import { unitRoundedBox } from '../geometry/roundedBox'
 import { detectGpuCapabilities } from './gpuCapabilities'
 import { qualityStore, useQualityStore } from './qualityStore'
 import type { BodyRole } from './materialTypes'
@@ -54,8 +55,9 @@ export function QualityRuntime({ guidedMoving }: { guidedMoving(): boolean }) {
     for (const tier of ['INTERACTIVE', 'CINEMATIC'] as const)
       for (const role of ['stack', 'heap', 'class', 'exception'] as BodyRole[])
         for (const emphasis of [1, .25]) {
-          const mesh = new InstancedMesh(unitBox, glassMaterial(role, emphasis, tier), 1)
-          mesh.receiveShadow = true; mesh.castShadow = true; preview.add(mesh)
+          const mesh = new InstancedMesh(unitRoundedBox, glassMaterial(role, emphasis, tier), 1)
+          if (role !== 'exception') mesh.setColorAt(0, new Color(1, 1, 1))
+          preview.add(mesh)
         }
     void gl.compileAsync(preview, camera, scene).then(() => {
       if (!retired) qualityStore.getState().setCompiled(true)

@@ -1,24 +1,41 @@
-import {expect,it} from 'vitest'
-import gridSource from '@react-three/drei/core/Grid.js?raw'
-import {ShaderMaterial} from 'three'
-import {configureFloorGrid,floorGridFragment} from './floorGrid'
+import { expect, it } from 'vitest'
+import { Matrix4, ShaderLib, Texture } from 'three'
+import type { WebGLProgramParametersWithUniforms, WebGLRenderer } from 'three'
+import { createFloorSurface } from './floorGrid'
+import { floorModel } from './floorModel'
 
-it('dims the installed grid coverage after intersections and before discard/output without altering spacing or distance fade',()=>{
- const fragment=gridSource.match(/uniform float cellSize;[\s\S]*?#include <tonemapping_fragment>/)?.[0]
- if(!fragment)throw new Error('Installed grid fragment could not be inspected')
- const material=new ShaderMaterial(),opacity={value:.45},shader={uniforms:{},fragmentShader:fragment,vertexShader:''}
- configureFloorGrid(material,opacity)
- material.onBeforeCompile(shader as Parameters<typeof material.onBeforeCompile>[0],{} as Parameters<typeof material.onBeforeCompile>[1])
- expect(shader.uniforms).toMatchObject({runtimeFloorOpacity:opacity})
- expect(shader.fragmentShader.indexOf('clamp(gl_FragColor.a')).toBeGreaterThan(shader.fragmentShader.indexOf('gl_FragColor.a = mix'))
- expect(shader.fragmentShader.indexOf('* runtimeFloorOpacity')).toBeLessThan(shader.fragmentShader.indexOf('discard;'))
- expect(shader.fragmentShader).toContain('getGrid(cellSize, cellThickness)')
- expect(shader.fragmentShader).toContain('getGrid(sectionSize, sectionThickness)')
- expect(shader.fragmentShader).toContain('pow(d, fadeStrength)')
- expect(material.depthWrite).toBe(false);expect(material.toneMapped).toBe(false)
- opacity.value=1;expect(Reflect.get(shader.uniforms,'runtimeFloorOpacity').value).toBe(1)
- material.dispose()
+function compile(surface: ReturnType<typeof createFloorSurface>) {
+  const shader = { ...ShaderLib.basic, uniforms: {} } as WebGLProgramParametersWithUniforms
+  surface.material.onBeforeCompile(shader, {} as WebGLRenderer)
+  return shader
+}
+
+it('uses a shared, gradient-faded floor and derivative-filtered grid with no Interactive reflection sampler', () => {
+  const surface = createFloorSurface(null)
+  const shader = compile(surface)
+  expect(shader.vertexShader).toContain('floorPosition = (modelMatrix * vec4(transformed, 1.0)).xyz')
+  expect(shader.fragmentShader).toContain('fwidth(tile)')
+  expect(shader.fragmentShader).toContain('diffuseColor.a *= stageEdge * grazing;')
+  expect(shader.fragmentShader).toContain('0.11 * nearGrid')
+  expect(shader.fragmentShader).toContain('max(nearGrid, distantGrid)')
+  expect(shader.fragmentShader).not.toContain('runtimeFloorReflection')
+  expect(surface.material.depthWrite).toBe(false)
+  surface.update(floorModel({ bounds: null }, 'INTERACTIVE', false))
+  expect(surface.material.opacity).toBe(.42)
+  surface.material.dispose()
 })
-it('fails explicitly on an incompatible grid shader instead of silently keeping full-strength empty-world ink',()=>{
- expect(()=>floorGridFragment('void main() {}')).toThrow('Unsupported grid shader')
+
+it('adds a clipped, soft filtered Cinematic reflection through a live strength uniform', () => {
+  const texture = new Texture()
+  const strength = { value: 0 }
+  const surface = createFloorSurface({ target: { texture }, textureMatrix: new Matrix4(), strength })
+  const shader = compile(surface)
+  expect(shader.uniforms.runtimeFloorReflection.value).toBe(texture)
+  expect(shader.uniforms.runtimeFloorReflectionStrength).toBe(strength)
+  expect(shader.fragmentShader).toContain('floorProjection.xy / floorProjection.w')
+  expect(shader.fragmentShader.match(/texture2D\(runtimeFloorReflection/g)).toHaveLength(9)
+  expect(shader.fragmentShader).toContain('runtimeFloorReflectionStrength <= 0.0')
+  expect(shader.fragmentShader).toContain('max(0.06, peak)')
+  surface.material.dispose()
+  texture.dispose()
 })

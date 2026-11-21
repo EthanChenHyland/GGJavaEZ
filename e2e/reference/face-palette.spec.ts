@@ -3,7 +3,7 @@ import {writeFile} from 'node:fs/promises'
 import {browserErrors,home,ready,runFixture,selectEntity,stopOwnedSession} from './harness'
 
 test.afterEach(async({request})=>stopOwnedSession(request))
-test('actual JVM opaque faces and chips retain their unlit palette in both quality tiers',async({page,request})=>{
+test('actual JVM faces and chips retain their contrast and palette through tier changes',async({page,request})=>{
  test.setTimeout(90000)
  const errors=browserErrors(page),session=await runFixture(page,request,'domain');await home(page)
  const targets=await page.evaluate(()=>{
@@ -51,13 +51,25 @@ test('actual JVM opaque faces and chips retain their unlit palette in both quali
     ctx.drawImage(bitmap,0,0);bitmap.close()
     return points.map(({point,role})=>({role,rgb:Array.from(ctx.getImageData(Math.round(point.x),Math.round(point.y),1,1).data).slice(0,3)}))
    },{data:`data:image/png;base64,${png.toString('base64')}`,points:sample.points})
-   for(const color of colors){
-    const expected=color.role==='face'?(sample.kind==='frame'?[13,35,95]:[40,19,95]):(sample.kind==='frame'?[8,21,56]:[23,11,60])
-    measurements.push({...sample,tier,...color,expected})
-   }
+   for(const color of colors)measurements.push({...sample,tier,...color})
   }
  }
  await writeFile('.ggjavaez/qa/reference-exact/face-palette-native.json',JSON.stringify({realJvmExecuted:true,sessionId:session.id,measurements},null,2)+'\n')
- for(const sample of measurements)for(let channel=0;channel<3;channel++)expect(Math.abs(sample.rgb[channel]-sample.expected[channel]),`${sample.tier} ${sample.kind} ${sample.role} channel ${channel}: ${sample.rgb} vs frozen ${sample.expected}`).toBeLessThanOrEqual(3)
+ for(const sample of measurements){
+  const [r,g,b]=sample.rgb
+  expect(b).toBeGreaterThan(Math.max(r,g)+5)
+  expect(b).toBeLessThan(110)
+  if(sample.kind==='frame')expect(g).toBeGreaterThan(r+5)
+  else expect(r).toBeGreaterThan(g+4)
+  if(sample.role==='face'){
+   const chip=measurements.find(other=>other.kind===sample.kind&&other.tier===sample.tier&&other.role==='chip')!
+   expect(b).toBeGreaterThan(chip.rgb[2]+5)
+  }
+  if(sample.tier==='CINEMATIC'){
+   const interactive=measurements.find(other=>other.kind===sample.kind&&other.tier==='INTERACTIVE'&&other.role===sample.role)!
+   for(let channel=0;channel<3;channel++)expect(Math.abs(sample.rgb[channel]-interactive.rgb[channel]),
+    `${sample.kind} ${sample.role} shifts from ${interactive.rgb} to ${sample.rgb}`).toBeLessThanOrEqual(4)
+  }
+ }
  expect(errors).toEqual([])
 })

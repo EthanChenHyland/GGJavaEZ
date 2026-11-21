@@ -13,24 +13,24 @@
       "modeActiveBorder": "#5CC8FF"
     },
     "background": {
-      "top": "#080C20",
-      "bottom": "#03050C",
-      "hazeStack": "#0A2463",
-      "hazeHeap": "#24104F"
+      "top": "#101930",
+      "bottom": "#05070E",
+      "hazeStack": "#102B53",
+      "hazeHeap": "#241B43"
     },
     "stack": {
-      "core": "#1F6BFF",
+      "core": "#2863C2",
       "edge": "#5CC8FF",
       "faceTint": "rgba(18,52,140,0.62)",
-      "face": "#0D235F",
-      "chip": "#081538"
+      "face": "#1B3557",
+      "chip": "#10243E"
     },
     "heap": {
-      "core": "#7A3CF0",
+      "core": "#704DC5",
       "edge": "#C58BFF",
       "faceTint": "rgba(62,26,140,0.62)",
-      "face": "#28135F",
-      "chip": "#170B3C"
+      "face": "#342950",
+      "chip": "#251B3B"
     },
     "class": {
       "core": "#14B8A6",
@@ -53,6 +53,34 @@
       "lineNumber": "#6E7FA6",
       "executionLine": "#3FD8FF"
     }
+  },
+  "lighting": {
+    "sky": "#CBDCFF",
+    "ground": "#242444",
+    "fill": 0.65,
+    "keyColor": "#B6D5FF",
+    "key": 1.65,
+    "rimColor": "#C1A2FF",
+    "rim": 0.85,
+    "bounceColor": "#7689C9",
+    "bounce": 0.28,
+    "stripColor": "#EDF4FF"
+  },
+  "acrylic": {
+    "interactiveRoughness": 0.36,
+    "cinematicRoughness": 0.29,
+    "interactiveOpacity": 0.87,
+    "transmission": 0.3,
+    "thickness": 0.85,
+    "ior": 1.47,
+    "environment": 0.85,
+    "cinematicEnvironment": 1.15,
+    "edgeNear": 0.018,
+    "edgeFar": 0.135,
+    "historical": 0.48,
+    "context": 0.58,
+    "resting": 0.8,
+    "current": 1.0
   },
   "typography": {
     "ui": {

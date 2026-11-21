@@ -24,7 +24,7 @@ it('replaces and releases the buffer when position, dimensions, edge color or me
  const before=current.getAttribute('position').array.slice();shape=item({anchor:{...shape.anchor,position:[4,2,3]}});replace([shape])
  const shifted=current.getAttribute('position').array;for(let index=0;index<shifted.length;index++)expect(shifted[index]-before[index]).toBeCloseTo(index%3===0?3:0,5)
  const oldExtent=Math.max(...Array.from(shifted).filter((_,index)=>index%3===0));shape={...shape,anchor:{...shape.anchor,size:[8,4.65,2.3]}};replace([shape]);expect(Math.max(...Array.from(current.getAttribute('position').array).filter((_,index)=>index%3===0))).toBeGreaterThan(oldExtent)
- shape={...shape,edge:'#ff0000'};replace([shape]);const red=new Color('#ff0000').multiplyScalar(1.65);expect([...current.getAttribute('color').array.slice(0,3)]).toEqual([expect.closeTo(red.r,5),0,0])
+ shape={...shape,edge:'#ff0000'};replace([shape]);const red=new Color('#ff0000').multiplyScalar(1.03);expect([...current.getAttribute('color').array.slice(0,3)]).toEqual([expect.closeTo(red.r,5),0,0])
  const other=item({anchor:{...shape.anchor,entityId:'object/b',position:[-3,0,1]},edge:'#00ff00'}),oneCount=current.getAttribute('position').count
  replace([shape,other]);expect(current.getAttribute('position').count).toBe(oneCount*2)
  const ordered=current.getAttribute('position').array.slice();replace([other,shape]);expect(current.getAttribute('position').array).not.toEqual(ordered)

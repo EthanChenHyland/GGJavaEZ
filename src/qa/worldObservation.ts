@@ -19,11 +19,15 @@ export interface WorldObservation {
   structuralLabels():readonly {id:string;kind:'cluster'|'heading'|'bundle'|'return';visible:boolean;minimumFontPixels:number;bounds:import('../shell/shellLayout').Rect|null}[]
   projectedPoint(id: string): { x:number; y:number; visible:boolean } | null
   renderer(): {calls:number;triangles:number;geometries:number;textures:number;frame:number}
+  resources(): {
+    sceneMaterials:number;programs:number;reflectorBatches:number;multisampleLimit:number;
+    composerTargets:number;floor:{contacts:number;targets:number;reflection:{captures:number;meshes:number;materials:number;resolution:number;failed:boolean}|null}|null
+  }
   connectorPorts():readonly {position:Vec3;radius:number;opacity:number;referenceChip:boolean}[]
   arrayTrayParts():readonly {id:string;part:'slab'|'face'|'backplate';position:Vec3;size:Vec3}[]
   valueChips():readonly {slotId:string;part:string;position:Vec3;size:Vec3}[]
   environment():{id:string;captureVersion:number}|null
-  effects():{ready:boolean;frames:number;revision:number;failure:string;cinematic:boolean}
+  effects():{ready:boolean;frames:number;revision:number;failure:string;cinematic:boolean;buffer:'hdr'|'ldr'|'direct';renderTargets:number}
   atmosphere():readonly {region:string;position:readonly[number,number,number];size:readonly[number,number,number];color:string;opacity:number;visible:boolean;depthWrite:boolean;depthTest:boolean;castShadow:boolean;maxLinearTint:number;maskSize:readonly[number,number]}[]
   framePerformance():import('./framePerformance').FramePerformanceObservation|null
   quality():{setting:string;active:string;compiled:boolean;cinematicStatus:string;availability:{enabled:true}|{enabled:false;reason:string};capabilities:import('../render/quality/gpuCapabilities').GpuCapabilities|null;contextLost:boolean;notice:string|null}

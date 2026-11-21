@@ -156,7 +156,7 @@ it.each(['MEDIUM','CLOSE']as const)('contains captured null, unavailable and Str
  for(const row of faceRows(node,presented).visible){
   const parts=solids.filter(item=>item.pick.kind==='slot'&&item.pick.id===row.slotId),plate=parts.find(item=>!item.part)!,rim=parts.find(item=>item.part==='value-chip-rim')!,fill=parts.find(item=>item.part==='value-chip')!
   expect(parts.map(item=>item.part)).toEqual([undefined,'value-chip-rim','value-chip'])
-  expect(fill.anchor.position[1]).toBe(plate.anchor.position[1]);expect(fill.anchor.size[0]).toBeLessThan(rim.anchor.size[0]);expect(fill.anchor.ports).toEqual({});expect(fill.tint).toBe('#081538')
+  expect(fill.anchor.position[1]).toBe(plate.anchor.position[1]);expect(fill.anchor.size[0]).toBeLessThan(rim.anchor.size[0]);expect(fill.anchor.ports).toEqual({});expect(fill.tint).toBe(color.stack.chip)
   expect(fill.anchor.position[0]-fill.anchor.size[0]/2).toBeGreaterThan(plate.anchor.position[0]-plate.anchor.size[0]/2)
   expect(fill.anchor.position[0]+fill.anchor.size[0]/2).toBeLessThan(plate.anchor.position[0]+plate.anchor.size[0]/2)
   const label=captured.labels.find(label=>label.frameText?.kind==='value'&&label.frameText.slotId===row.slotId)?.children

@@ -10,7 +10,7 @@ it('keeps vertex transforms and discard paths while fully excluding even dim pro
   const mask = createMaskMaterial(source, 1), shader = { ...ShaderLib.basic, uniforms: {} }
   mask.onBeforeCompile(shader as Parameters<typeof mask.onBeforeCompile>[0], renderer)
   expect(shader.vertexShader).toContain('canonical instance transform')
-  expect(shader.fragmentShader).toContain('gl_FragColor = vec4(1.0, 1.0, 0.0, 1.0)')
+  expect(shader.fragmentShader).toContain('gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0)')
   expect(shader.fragmentShader).toContain('if (gl_FragColor.a <= 0.0001) discard')
   expect(mask.opacity).toBe(.25)
   expect(mask.uuid).not.toBe(source.uuid)
@@ -52,8 +52,8 @@ it('separates unlit coverage from hard bloom exclusion without transferring sour
     const source=new MeshBasicMaterial({toneMapped,opacity:.25,transparent:true})
     const mask=createMaskMaterial(source,1),shader={...ShaderLib.basic,uniforms:{}}
     mask.onBeforeCompile(shader as Parameters<typeof mask.onBeforeCompile>[0],renderer)
-    expect(shader.fragmentShader).toContain(`vec4(1.0, 1.0, ${toneMapped?'0.0':'clamp(gl_FragColor.a, 0.0, 1.0)'}, 1.0)`)
-    expect(mask.customProgramCacheKey()).toContain(`unlit-${!toneMapped}-v2`)
+    expect(shader.fragmentShader).toContain(`vec4(1.0, 0.0, ${toneMapped?'0.0':'clamp(gl_FragColor.a, 0.0, 1.0)'}, 1.0)`)
+    expect(mask.customProgramCacheKey()).toContain(`unlit-${!toneMapped}-surface-v3`)
     expect(source.toneMapped).toBe(toneMapped)
     mask.dispose();source.dispose()
   }
@@ -63,7 +63,7 @@ it('excludes soft atmosphere from every mask without suppressing emitters or cha
  const scene=new Group(),material=new SpriteMaterial({opacity:.58,depthWrite:false}),haze=new Sprite(material),edge=new Mesh()
  haze.userData.runtimeAtmosphere='HEAP';edge.userData.runtimeBloomRole='emitter';scene.add(haze,edge)
  const masks=new BloomMaskMaterials(),original=edge.material,disposed=vi.fn();material.addEventListener('dispose',disposed)
- for(const mode of ['emitters','protection','text'] as const)for(const visible of [true,false]){
+ for(const mode of ['emitters','protection'] as const)for(const visible of [true,false]){
   haze.visible=visible
   expect(()=>masks.render(renderer,scene,mode,()=>{
    expect(haze.visible).toBe(false);expect(haze.material).toBe(material)
@@ -86,4 +86,39 @@ it('accumulates unlit Troika protection while leaving source, black and ordinary
   const ordinary = new MeshBasicMaterial({ toneMapped: false }), ordinaryMask = createMaskMaterial(ordinary, 1)
   expect(ordinaryMask.blending).toBe(ordinary.blending); expect(ordinaryMask.blendEquation).toBe(ordinary.blendEquation)
   white.dispose(); black.dispose(); ordinaryMask.dispose(); ordinary.dispose(); text.dispose()
+})
+
+it('records glyph protection separately and leaves translucent emitter overdraw proportional to visible coverage', () => {
+  const text = new BatchedText()
+  text.material = new MeshBasicMaterial({ toneMapped: false, transparent: true, depthWrite: false })
+  text.userData.runtimeText = true
+  text.userData.runtimeBloomRole = 'emitter'
+  const emitter = new Mesh(undefined, new MeshBasicMaterial({ transparent: true, opacity: .1, depthWrite: false }))
+  emitter.userData.runtimeBloomRole = 'emitter'
+  const scene = new Group(); scene.add(text, emitter)
+  const originalText = text.material, originalEmitter = emitter.material
+  const masks = new BloomMaskMaterials()
+  const compile = (mask: typeof text.material) => {
+    const shader = { ...ShaderLib.basic, uniforms: {} }
+    mask.onBeforeCompile(shader as Parameters<typeof mask.onBeforeCompile>[0], renderer)
+    return shader.fragmentShader
+  }
+  try {
+    masks.render(renderer, scene, 'emitters', () => {
+      expect(text.material).not.toBe(originalText)
+      expect(emitter.material).toBe(originalEmitter)
+    })
+    masks.render(renderer, scene, 'protection', () => {
+      expect(compile(text.material)).toContain('vec4(1.0, 1.0, clamp(gl_FragColor.a, 0.0, 1.0), 1.0)')
+      expect(compile(emitter.material)).toContain('vec4(0.0, 0.0, 0.0, clamp(gl_FragColor.a, 0.0, 1.0))')
+      expect(emitter.material.depthWrite).toBe(false)
+    })
+    expect(text.material).toBe(originalText)
+    expect(emitter.material).toBe(originalEmitter)
+  } finally {
+    masks.dispose()
+    text.dispose()
+    emitter.geometry.dispose()
+    originalEmitter.dispose()
+  }
 })
