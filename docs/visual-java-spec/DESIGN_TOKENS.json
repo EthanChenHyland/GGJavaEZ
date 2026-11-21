@@ -95,7 +95,8 @@
         "viewportCapRatio": 0.020,
         "returnCapRatio": 0.013
       },
-      "minProjectedPx": 11
+      "minProjectedPx": 11,
+      "shortFrameTitleSize": 0.56
     }
   },
   "shell": {

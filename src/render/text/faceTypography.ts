@@ -2,7 +2,7 @@ import type {PresentedEntity,SceneEntity,SceneRow,Vec3} from '../../contracts/wo
 import {compactLibraryFace} from '../../world/firstObjectPresentation'
 import {faceRows} from '../../world/faceRows'
 import {displayType} from '../../world/displayType'
-import {world} from '../../theme/tokens'
+import {typography,world} from '../../theme/tokens'
 import {arrayTitlePlate} from '../../world/arrayCellGeometry'
 import {fitWorldText,localFontText,textAdvance} from './textSystem'
 import {truncateFrameText} from '../../world/valueText'
@@ -38,16 +38,21 @@ function fitArrayTitle(title:string,suffix:string,width:number,size:number):stri
 }
 /** The renderer and camera admission use the same physical title/identity
  * planes. These sizes never depend on the semantic zoom metric. */
-export function faceHeading(node:SceneEntity){
+export function faceHeading(node:SceneEntity,shortFrameTitle=false){
  const {anchor}=node,plate=node.kind==='array'?arrayTitlePlate(anchor):anchor
  const [x,y,z]=plate.position,[w,h,d]=plate.size,top=y+h/2,face=z+d/2+.085
- const size=compactLibraryFace(anchor)?.3:.4,identity=node.kind==='frame'?`#${node.invocationNumber}`:node.kind==='class'?'':`#${node.displayId}`
+ const short=node.kind==='frame'&&shortFrameTitle
+ const size=short?typography.world.shortFrameTitleSize:compactLibraryFace(anchor)?.3:.4
+ const identity=node.kind==='frame'?`#${node.invocationNumber}`:node.kind==='class'?'':`#${node.displayId}`
  const identitySize=node.kind==='collection'?.34:.28,identityWidth=identity?textAdvance(identity,500)*identitySize+.04:0
  const lengthLabel=node.kind==='array'?`length = ${node.length}`:null,metadataWidth=Math.max(identityWidth,lengthLabel?textAdvance(lengthLabel)*.25+.04:0)
  const width=Math.max(.1,w-.56-metadataWidth-(metadataWidth?.2:0))
  const arraySuffix=node.kind==='array'?node.title.match(/(?:\[\])+$/)?.[0]:undefined
  const arrayTitle=arraySuffix?fitArrayTitle(node.title,arraySuffix,width,size):undefined
- const frameLayout=node.kind==='frame'?frameTitleLayout(node.title,width,size,-.025):undefined
+ const separator=node.title.lastIndexOf('.',node.title.indexOf('('))
+ const frameLayout=short
+  ?{lines:[fitWorldText(node.title.slice(separator+1),width,size,600)],tracking:0}
+  :node.kind==='frame'?frameTitleLayout(node.title,width,size,-.025):undefined
  const lines=frameLayout?.lines??(arrayTitle?[arrayTitle]:undefined),singleFrameLine=frameLayout?.lines.length===1
  // A single line fits below the portion of the header a nearer slab can cover.
  const titleOffset=singleFrameLine?.61:frameLayout?.lines.length===2?.39:.45

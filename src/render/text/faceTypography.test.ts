@@ -37,6 +37,11 @@ it('keeps a slightly overwide signature on one lower header line with its invoca
  const longer=faceHeading({...frame,title:'InventoryApp.main(String[])'}).title
  expect(longer.lines).toEqual(['InventoryApp.','main(String[])'])
  expect(longer.tracking).toBe(0)
+ const short=faceHeading(frame,true).title
+ expect(short.lines).toEqual(['total(int)'])
+ expect(short.size).toBeGreaterThan(title.size)
+ expect(short.position).toEqual(title.position)
+ expect(textAdvance(short.lines![0],600)*short.size).toBeLessThanOrEqual(short.width)
 })
 it('retains runtime reference types, identities and String length alongside the declared type column',()=>{
  const ref=valueText({kind:'reference',javaType:'Person',objectId:'person'}, {target:{id:'person',displayId:17,className:'Person',fields:{},allocatedAt:'allocation'}})

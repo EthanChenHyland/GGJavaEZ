@@ -33,20 +33,21 @@ type RuntimeSolidProps={
     node: SceneEntity;
     presented: PresentedEntity;
     arrayWindow?: ArrayWindow;
+    shortFrameTitle?: boolean;
 };
 function sameFaceLabels(prior:RuntimeSolidProps,next:RuntimeSolidProps){
     return prior.node===next.node
         &&prior.presented.mode===next.presented.mode&&prior.presented.detail===next.presented.detail
         &&prior.presented.highlight===next.presented.highlight
         &&prior.presented.rowSlotIds===next.presented.rowSlotIds
-        &&prior.arrayWindow===next.arrayWindow;
+        &&prior.arrayWindow===next.arrayWindow&&prior.shortFrameTitle===next.shortFrameTitle;
 }
 /** Face labels share the solid/row geometry model and one glyph batch. */
 export const RuntimeSolid=memo(function RuntimeSolid(props:RuntimeSolidProps){
     if(props.presented.mode!=='detailed')return null;
     return <FaceTextOpacity opacity={props.presented.opacity}><RuntimeSolidLabels {...props}/></FaceTextOpacity>;
 },(prior,next)=>prior.presented.opacity===next.presented.opacity&&sameFaceLabels(prior,next));
-const RuntimeSolidLabels=memo(function RuntimeSolidLabels({node,presented,arrayWindow}:RuntimeSolidProps) {
+const RuntimeSolidLabels=memo(function RuntimeSolidLabels({node,presented,arrayWindow,shortFrameTitle}:RuntimeSolidProps) {
     if (presented.mode !== 'detailed')
         return null;
     const { anchor } = node, [x, y, z] = anchor.position, [w, h, d] = anchor.size, top = y + h / 2, face = z + d / 2 + .085, left = x - w / 2 + .28, opacity = 1;
@@ -55,7 +56,7 @@ const RuntimeSolidLabels=memo(function RuntimeSolidLabels({node,presented,arrayW
     const cellFocusOpacity=arrayWindow?arrayCellFocusOpacity(arrayWindow):()=>1;
     const compact=compactLibraryFace(anchor);
     const identity=node.kind==='frame'?`#${node.invocationNumber}`:node.kind==='class'?'':`#${node.displayId}`;
-    const heading=faceHeading(node),titleSize=heading.title.size;
+    const heading=faceHeading(node,shortFrameTitle),titleSize=heading.title.size;
     const {identityWidth,length}=heading;
     const titleWidth=heading.title.width,titleLines=heading.title.lines,title=titleLines?.join('')??fitWorldText(truncateFrameText(node.title),titleWidth,titleSize,600,0,28);
     const columns=faceRowColumns(node,presented,model);

@@ -6,9 +6,10 @@ import { EnvironmentRig } from './EnvironmentRig';
 import type { Selection } from '../contracts/interaction';
 import type { SceneIo } from '../contracts/world';
 import type { WorldRenderSnapshot } from './worldRenderSnapshot';
-import type { Rect } from '../shell/shellLayout';
+import { viewportClass, type Rect } from '../shell/shellLayout';
+import type { Size } from '../camera/projection';
 import { CameraRig, cameraReadiness, type CameraInput } from '../camera/CameraRig';
-import { color } from '../theme/tokens';
+import { camera as cameraTokens, color } from '../theme/tokens';
 import { useCameraStore } from '../camera/cameraStore';
 import { useInteractionStore } from '../interaction/interactionStore';
 import { RuntimeSolid, WorldText } from './RuntimeSolid';
@@ -264,8 +265,9 @@ function AccessibleCatalog({snapshot,publish}:{snapshot:WorldRenderSnapshot;publ
  })
  return null
 }
-export function RuntimeCanvas({ snapshot, safeFrame,focusContentFrame,inspectorRect, selection, onSelect, onFocus,trace,timeline }: {
+export function RuntimeCanvas({ snapshot, viewport, safeFrame,focusContentFrame,inspectorRect, selection, onSelect, onFocus,trace,timeline }: {
     snapshot: WorldRenderSnapshot;
+    viewport: Size;
     safeFrame: Rect;
     focusContentFrame?:Rect;
     inspectorRect?:Rect|null;
@@ -275,6 +277,7 @@ export function RuntimeCanvas({ snapshot, safeFrame,focusContentFrame,inspectorR
     trace:TraceDocument;timeline:TimelineStore;
 }) {
     const { scene, plan, layout } = snapshot.read();
+    const shortStack = viewportClass(viewport.width,viewport.height)==='SHORT'&&scene.liveStack.length>=cameraTokens.recursion.depth;
     const [inspectingIo,setInspectingIo]=useState<{recordingId:string;channel:SceneIo['id']}|null>(null);
     const inspectedIo=inspectingIo?.recordingId===scene.recordingId?scene.io.find(io=>io.id===inspectingIo.channel):undefined;
     useEffect(()=>{if(inspectingIo&&!inspectedIo)setInspectingIo(null)},[inspectingIo,inspectedIo]);
@@ -355,7 +358,10 @@ export function RuntimeCanvas({ snapshot, safeFrame,focusContentFrame,inspectorR
         <Floor snapshot={snapshot} quality={quality}/>
         <SolidBatch snapshot={snapshot} onSelect={select} onFocus={onFocus}/>
         <FaceTextBatch focusAnchor={focusMaskAnchor}>
-        {[...plan.entities].map(([id, presented]) => <RuntimeSolid key={id} node={scene.entities[id]} presented={presented} arrayWindow={plan.cellWindows.get(id)}/>)}
+        {[...plan.entities].map(([id, presented]) => {
+            const node=scene.entities[id];
+            return <RuntimeSolid key={id} node={node} presented={presented} arrayWindow={plan.cellWindows.get(id)} shortFrameTitle={shortStack&&node.kind==='frame'&&node.live}/>;
+        })}
         <StructuralLabels snapshot={snapshot} safeFrame={safeFrame} inspectorRect={inspectorRect}/>
         <InteractiveConnectors snapshot={snapshot} curves={curves} onSelect={id => { if(plan.bundles.some(bundle=>bundle.id===id))select({kind:'bundle',id}); else if (scene.references.some(ref => ref.id === id)||scene.historicalBindings.some(binding=>binding.id===id))
         select({ kind: 'reference', id }); else if(plan.curves.some(curve=>curve.id===id)) select({kind:'flow',id}); }}/>
