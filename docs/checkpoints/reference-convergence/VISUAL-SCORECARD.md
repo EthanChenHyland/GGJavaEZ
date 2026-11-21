@@ -109,3 +109,24 @@ These are Pass 1 reviewer scores on the inherited nine dimensions and 0–5 scal
 | Dense Home | 2 | 2 | 2 | 2 | 1 | 1 | 1 | 2 | 1 | 1.2 | 1.6 | +0.4 |
 
 Hero and Series gain discernible top and side faces, better placement and readable main subjects. The measured five-cell array keeps its exact values, indices and amber write cue. The Person Focus face fits and keeps the active value legible, while cables, an edge-cropped String and Inspector placement still interfere with context. Completed Person retains returned frames in place. Dense Home recovers the entry frame and a useful Heap subject, with repeated bodies and offscreen context still visible at the margins. See the evidence and viewport measurements in [Pass 1 composition](PASS-1-COMPOSITION.md).
+
+## Pass 2 rescore
+
+Pass 2 uses the same nine equally weighted dimensions. Before is the published Pass 1 score where available. An asterisk marks the last published audit score for a state Pass 1 did not rescore. Matched Pass 1 replays inform the visual comparison for all 12 states. The manual zoom samples and earlier controlled reference poses differ, so their changes are directional. The 19-state baseline remains 37/100. [Matched captures and methods](PASS-2-HIERARCHY.md#evidence-and-measurements)
+
+| State | C | G | Cam | T | M | L | K | I | F | Before /5 | After /5 | Change |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Hero overview | 3 | 3 | 3 | 3 | 1 | 1 | 3 | 4 | 3 | 2.2 | 2.7 | +0.5 |
+| Object Focus | 3 | 2 | 2 | 3 | 1 | 1 | 3 | 3 | 3 | 1.8 | 2.3 | +0.5 |
+| Recursive descent | 3 | 3 | 3 | 3 | 1 | 1 | 3 | 3 | 3 | 2.3 | 2.6 | +0.3 |
+| Return propagation | 3 | 3 | 3 | 3 | 1 | 1 | 3 | 3 | 3 | 2.3 | 2.6 | +0.3 |
+| Array write | 3 | 3 | 3 | 3 | 2 | 2 | 3 | 4 | 3 | 2.7 | 2.9 | +0.2 |
+| Exception | 2 | 2 | 2 | 3 | 1 | 2 | 2 | 4 | 2 | 1.9* | 2.2 | +0.3 |
+| I/O | 2 | 2 | 2 | 2 | 1 | 1 | 3 | 4 | 2 | 1.9* | 2.1 | +0.2 |
+| Completed World | 3 | 3 | 3 | 3 | 1 | 1 | 2 | 4 | 2 | 2.2 | 2.4 | +0.2 |
+| FAR / from Home | 2 | 2 | 2 | 2 | 1 | 2 | 3 | 3 | 2 | 2.0 | 2.1 | +0.1 |
+| MEDIUM | 2 | 2 | 1 | 1 | 1 | 2 | 2 | 2 | 2 | 1.3* | 1.7 | +0.4 |
+| CLOSE | 2 | 2 | 2 | 2 | 1 | 1 | 2 | 2 | 2 | 1.3* | 1.8 | +0.5 |
+| Dense Home | 2 | 2 | 2 | 2 | 1 | 1 | 2 | 2 | 2 | 1.6 | 1.8 | +0.2 |
+
+Person and the five-cell array show the strongest agreement between the mapped line, changed value and timeline caption. The return value is easier to find, although the small recursive faces still hide some operand values. Exception paths and I/O terminal previews remain harder to read at a glance. Dense views gain quieter cables and clearer names but still have crowded margins and insufficient focus. The ratings are reviewer judgments from these captures. Recognition time was not measured.
