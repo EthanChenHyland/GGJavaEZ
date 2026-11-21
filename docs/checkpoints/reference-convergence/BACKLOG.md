@@ -51,4 +51,8 @@ P0 blocks meaningful comparison in the affected setup. P1 marks a major product 
 | 6 | Performance and memory acceptance | Source-bound profiles over the final scene grammar | Fixed Dense gates, generated memory ratios, phase-specific latency attribution, mixed lifecycle resource measurements, and supported environment coverage. |
 | 7 | Native reference and independent review | Successful preceding passes and stable revision | Original-resolution state images, useful motion evidence, quantified latency/resources, cap-aware fallback, and a second source-bound review. |
 
-Start with **Pass 1** using the same real Person line-18 write, the Inventory line-31 write and the deepest SeriesApp calls as the fixed review set. Use normal Run/Home/Follow for acceptance and the staged hero/pose evidence for diagnosis. Compare active-line prominence, subject bounds, visible faces, floor-contact position and caller visibility at all five requested sizes before layering more effects.
+### Pass 1 checkpoint
+
+V01's camera and world composition work is implemented and reviewed on real captures. V05 gains a visible recursive lineage and a smaller RETURNS heading. V11 gains a usable 760×900 composition for the active Person and Inventory writes, with peripheral clipping and crowded routing still visible. Preserve these captures and the array, Focus and manual-navigation gates when changing presentation. See [Pass 1 composition](PASS-1-COMPOSITION.md).
+
+Review the new baseline before proceeding. **Pass 2** should start with V02, V06 and the hierarchy portion of V09. Give the captured active binding and changed row priority over call links, background references and structural titles. Recover meaningful names and exact short values on visible faces. Use the same real Person, Inventory, Series return and five-cell write states. Keep the later pass order above, including dense presentation and fixed resource acceptance.

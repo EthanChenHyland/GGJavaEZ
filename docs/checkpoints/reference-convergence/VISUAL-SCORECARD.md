@@ -1,6 +1,6 @@
 # Visual scorecard
 
-**PARTIALLY CONVERGED · 37/100.** The merged app has the expected shell topology, actual three-dimensional runtime geometry, semantic roles, and working navigation. The current product still reads as a set of brightly outlined information panels. Reference art uses optical depth, floor contact, a strong featured subject and much quieter causal context.
+**Independent audit baseline · PARTIALLY CONVERGED · 37/100.** The merged app has the expected shell topology, actual three-dimensional runtime geometry, semantic roles, and working navigation. The current product still reads as a set of brightly outlined information panels. Reference art uses optical depth, floor contact, a strong featured subject and much quieter causal context.
 
 Each 0–5 dimension contributes equally to a state mean. The 19 state means contribute equally to the final 0–100 score, rounded to a whole number. Reference fidelity scores the perceptual impression of the whole state independently. Interaction state scores what the visual state communicates. Functional gate success alone adds no points.
 
@@ -91,3 +91,21 @@ Two actual workloads inform this table. `runtime-hero-*.png` is the Inventory do
 ## Independent review
 
 A read-only second reviewer separately examined the fresh source-bound originals, verified all 36 image hashes against their capture records and reopened the primary references. Their first priorities were causal connector order, depth/material/floor response and readable framing. They rated the five-cell array strongest and noted the 760 px glyph-loss case, cropped recursive callers and weak Focus isolation. Their 0–10 impressions were directional input. This scorecard uses the stated nine-dimension scale and includes the ordinary, smaller Person workload and supporting states.
+
+
+## Pass 1 rescore
+
+These are Pass 1 reviewer scores on the inherited nine dimensions and 0–5 scale. The audit's 37/100 remains the full 19-state baseline. This narrower retest covers the materially affected states and leaves the full-suite score open. The Focus state uses the same Person subject. FAR is a manual zoom-out from Dense Home, compared with the audit's controlled FAR cut; its score is directional.
+
+| State | C | G | Cam | T | M | L | K | I | F | Before /5 | After /5 | Change |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Hero Overview | 3 | 3 | 3 | 2 | 1 | 1 | 1 | 3 | 3 | 1.8 | 2.2 | +0.4 |
+| Object Focus | 2 | 2 | 2 | 2 | 1 | 1 | 1 | 3 | 2 | 1.8 | 1.8 | 0.0 |
+| Recursive descent | 3 | 3 | 3 | 2 | 1 | 1 | 2 | 3 | 3 | 1.7 | 2.3 | +0.6 |
+| Return propagation | 3 | 3 | 3 | 2 | 1 | 1 | 2 | 3 | 3 | 1.8 | 2.3 | +0.5 |
+| Array write | 3 | 3 | 3 | 3 | 2 | 2 | 2 | 3 | 3 | 2.6 | 2.7 | +0.1 |
+| Completed World | 3 | 3 | 3 | 2 | 1 | 1 | 1 | 4 | 2 | 1.9 | 2.2 | +0.3 |
+| FAR / from Home | 2 | 2 | 2 | 2 | 1 | 2 | 2 | 3 | 2 | 1.9 | 2.0 | +0.1 |
+| Dense Home | 2 | 2 | 2 | 2 | 1 | 1 | 1 | 2 | 1 | 1.2 | 1.6 | +0.4 |
+
+Hero and Series gain discernible top and side faces, better placement and readable main subjects. The measured five-cell array keeps its exact values, indices and amber write cue. The Person Focus face fits and keeps the active value legible, while cables, an edge-cropped String and Inspector placement still interfere with context. Completed Person retains returned frames in place. Dense Home recovers the entry frame and a useful Heap subject, with repeated bodies and offscreen context still visible at the margins. See the evidence and viewport measurements in [Pass 1 composition](PASS-1-COMPOSITION.md).
