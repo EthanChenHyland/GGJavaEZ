@@ -130,3 +130,24 @@ Pass 2 uses the same nine equally weighted dimensions. Before is the published P
 | Dense Home | 2 | 2 | 2 | 2 | 1 | 1 | 2 | 2 | 2 | 1.6 | 1.8 | +0.2 |
 
 Person and the five-cell array show the strongest agreement between the mapped line, changed value and timeline caption. The return value is easier to find, although the small recursive faces still hide some operand values. Exception paths and I/O terminal previews remain harder to read at a glance. Dense views gain quieter cables and clearer names but still have crowded margins and insufficient focus. The ratings are reviewer judgments from these captures. Recognition time was not measured.
+
+## Pass 3 rescore
+
+Scores are equally weighted across the inherited nine dimensions. Before refers to the published Pass 2 score. The manual Dense zoom comparisons are directional because the view commands can settle at different positions within a detail level. The original audit remains 37/100. [Captures and methods](PASS-3-RENDERING.md#evidence-and-measurements)
+
+| State | C | G | Cam | T | M | L | K | I | F | Before /5 | After /5 | Change |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Hero overview | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 4 | 3 | 2.7 | 3.1 | +0.4 |
+| Object Focus | 3 | 2 | 2 | 3 | 3 | 2 | 3 | 3 | 3 | 2.3 | 2.7 | +0.4 |
+| Recursive descent | 3 | 3 | 3 | 3 | 3 | 2 | 3 | 3 | 3 | 2.6 | 2.9 | +0.3 |
+| Return propagation | 3 | 3 | 3 | 3 | 3 | 2 | 3 | 3 | 3 | 2.6 | 2.9 | +0.3 |
+| Array write | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 4 | 3 | 2.9 | 3.1 | +0.2 |
+| Exception | 2 | 2 | 2 | 3 | 3 | 3 | 2 | 4 | 2 | 2.2 | 2.6 | +0.4 |
+| I/O | 2 | 2 | 2 | 2 | 3 | 2 | 3 | 4 | 2 | 2.1 | 2.4 | +0.3 |
+| Completed World | 3 | 3 | 3 | 3 | 2 | 2 | 2 | 4 | 3 | 2.4 | 2.8 | +0.4 |
+| FAR / from Home | 2 | 2 | 2 | 2 | 2 | 2 | 3 | 3 | 2 | 2.1 | 2.2 | +0.1 |
+| MEDIUM | 2 | 2 | 1 | 1 | 3 | 2 | 2 | 2 | 2 | 1.7 | 1.9 | +0.2 |
+| CLOSE | 2 | 2 | 2 | 2 | 3 | 2 | 2 | 2 | 2 | 1.8 | 2.1 | +0.3 |
+| Dense Home | 2 | 2 | 2 | 2 | 3 | 2 | 2 | 2 | 2 | 1.8 | 2.1 | +0.3 |
+
+Across the matched states, qualitative fidelity is **material 3/5**, **lighting 3/5**, **depth 3/5**, and **floor/contact 3/5**. Top and side surfaces still read in grayscale. The reduced line and reflection noise makes Hero and the array clearer. Focus keeps crisp fields but is nearly frontal in the matched pose. Very distant proxies have less edge contrast, and long exception paths and dense peripheral clipping remain visible.

@@ -62,3 +62,9 @@ Review the new baseline before proceeding. **Pass 2** should start with V02, V06
 V02 now gives proved current transfers more weight, quiets older and unrelated routes, and preserves the evidence via Trace and selection. V06 gains shorter frame titles, clearer chips and a larger proved return caption. V09 maps stronger source decoration and a readable current caption to the exact cursor. The first-view portion of V07 now keeps captured object fields ahead of actions. Preserve these cues in later optics and motion work. [Pass 2 hierarchy and measurements](PASS-2-HIERARCHY.md)
 
 Pass 3 should start with V03 and V04. Compare shared face opacity, side and top response, edge resolve, floor contact and reflected legibility at the captured Hero, Focus, return and array poses. Long exterior forensic routes (V12), clipped peripheral faces and weak dense orientation (V08/V11), and abbreviated terminal previews (V13) still need their scheduled passes. Keep the Focus draw-call increase visible in the next matched renderer sample and retain resource qualification under P01/P02.
+
+### Pass 3 checkpoint
+
+V03 and V04 now use a shared acrylic finish, a softer studio rig, a quieter grid with local contact, and a body-only reflection in Cinematic. The matched Hero, Focus and array samples show the remaining gap from the supplied references. Focus still presents the face nearly head-on in its default pose, and close Dense views still have peripheral clipping. The new floor is quieter at FAR, where cluster silhouettes and topology need care in V08. [Pass 3 rendering](PASS-3-RENDERING.md)
+
+Pass 4 should start with V07 and V08. Preserve stable identity and the new glyph and material contrast while making close inspection more spatial and transitions between zoom levels easier to follow. Use V10 and V12 to verify motion and forensic order on the same real traces. Keep fixed resource qualification and sustained performance under P01/P02.
