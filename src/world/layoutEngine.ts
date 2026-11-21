@@ -43,6 +43,7 @@ export function createLayoutEngine(t: WorldLayoutTokens = worldLayoutTokens): La
         height: number;
         next: number;
     }>();
+    const companionColumns = new Map<string, { left: number; top: number; count: number }>();
     const libraryColumns = new Map<string, {
         x: number; width:number; height:number; depth:number;
         next: number;
@@ -55,6 +56,7 @@ export function createLayoutEngine(t: WorldLayoutTokens = worldLayoutTokens): La
     // Geometry needs slot order and heap declaring-class labels, never values.
     const rowGroups = new Map<string, Map<string, string>>();
     let nextLeft = t.frame.w / 2 + t.regions.stackHeapGap, root: WorldAnchor | null = null;
+    let companionLeft = nextLeft + t.regions.heapCompanionOffsetX;
     const clusterPaths = new Map<string, readonly ClusterKey[]>();
     const clusterPath = (type: string, packageName: string, ownership: Ownership | undefined, firstSeq: number): readonly ClusterKey[] => {
         const age = String(Math.floor(firstSeq / 4096));
@@ -138,6 +140,19 @@ export function createLayoutEngine(t: WorldLayoutTokens = worldLayoutTokens): La
                 candidate={entityId:event.objectId,region,position,size:realSize,ports:{},bodyPort:position};
             }while(libraryOccupancy.intersects(candidate));
         }
+        else if (isArray ? count === 0 : kind === 'object' && event.metadata?.ownership !== 'PROJECT') {
+            // Source-observed scalar summaries and empty arrays occupy a rear
+            // tier. They do not consume the foreground allocation columns.
+            let column = companionColumns.get(className);
+            if (!column || column.count >= t.object.tiers) {
+                column = { left: companionLeft, top: t.regions.heapTopY, count: 0 };
+                companionColumns.set(className, column);
+                companionLeft += size[0] + t.object.columnGap;
+            }
+            position = [column.left + size[0] / 2, column.top - size[1] / 2, t.regions.heapCompanionZ];
+            column.top -= size[1] + t.object.tierGap;
+            column.count++;
+        }
         else {
             let column = columns.get(className);
             if (!column) {
@@ -148,7 +163,7 @@ export function createLayoutEngine(t: WorldLayoutTokens = worldLayoutTokens): La
             let candidate: WorldAnchor;
             do {
                 const slot = column.next++;
-                position = [column.left + size[0] / 2, t.regions.heapTopY - (slot % t.object.tiers) * (column.height + t.object.tierGap) - size[1] / 2, Math.floor(slot / t.object.tiers) * t.object.pageStepZ];
+                position = [column.left + size[0] / 2, t.regions.heapTopY - (slot % t.object.tiers) * (column.height + t.object.tierGap) - size[1] / 2, t.regions.heapFrontZ + Math.floor(slot / t.object.tiers) * t.object.pageStepZ];
                 candidate = { entityId: event.objectId, region, position, size, ports: emptyPorts, bodyPort: [position[0] - size[0] / 2, position[1], position[2] + size[2] / 2] };
             } while (heapOccupancy.intersects(candidate));
         }
@@ -186,8 +201,10 @@ export function createLayoutEngine(t: WorldLayoutTokens = worldLayoutTokens): La
                         frameSizes.set(capacity, size);
                     }
                     const parent = event.callerFrameId ? anchors[event.callerFrameId] : null, sibling = lastChild.get(event.callerFrameId);
-                    const top = sibling ? sibling.position[1] + sibling.size[1] / 2 : parent ? parent.position[1] - parent.size[1] / 2 - t.frame.stackGap : 0;
-                    let front = sibling ? sibling.position[2] + sibling.size[2] / 2 + t.frame.depth + t.frame.deckGapZ : parent ? parent.position[2] + parent.size[2] / 2 - t.frame.depthStepZ : t.frame.depth / 2;
+                    const nested = parent && placement[parent.entityId]?.callerId != null;
+                    const descent = nested ? t.frame.nestedDescent : t.frame.descent;
+                    const top = sibling ? sibling.position[1] + sibling.size[1] / 2 : parent ? parent.position[1] + parent.size[1] * (.5 - descent) : 0;
+                    let front = sibling ? sibling.position[2] + sibling.size[2] / 2 + t.frame.depth + t.frame.deckGapZ : parent ? parent.position[2] + parent.size[2] / 2 + t.frame.depthStepZ : t.frame.depth / 2;
                     let anchor: WorldAnchor;
                     for (;;) {
                         const position: Vec3 = [0, top - size[1] / 2, front - size[2] / 2];
@@ -217,7 +234,13 @@ export function createLayoutEngine(t: WorldLayoutTokens = worldLayoutTokens): La
                 }
                 else if (event.type === 'CLASS_OBSERVE' && !anchors[event.classId]) {
                     const capacity = Math.min(event.fields.length, t.classShelf.rowsMax) + 1, height = t.classShelf.header + t.frame.pad + t.classShelf.row * capacity;
-                    const position: Vec3 = [-t.frame.w / 2 + classes.length * t.classShelf.pitchX + t.classShelf.w / 2, 2.175 + height / 2, -2];
+                    const shelvesPerRow = 2;
+                    const column = classes.length % shelvesPerRow, row = Math.floor(classes.length / shelvesPerRow);
+                    // Keep the band above the stack and left of the heap's first column.
+                    const heapLeft = t.frame.w / 2 + t.regions.stackHeapGap;
+                    const firstX = heapLeft - t.classShelf.bandGap - t.classShelf.w / 2;
+                    const rowPitch = t.classShelf.depth + 2 * t.classShelf.bandGap;
+                    const position: Vec3 = [firstX - column * t.classShelf.pitchX, t.classShelf.bandGap + height / 2, -2 - row * rowPitch];
                     const anchor: WorldAnchor = { entityId: event.classId, region: 'class', position, size: [t.classShelf.w, height, t.classShelf.depth], ports: emptyPorts, bodyPort: [position[0], position[1], position[2] + t.classShelf.depth / 2] };
                     add(anchor, event.seq, event.className, event.metadata?.packageName ?? event.className.slice(0,Math.max(0,event.className.lastIndexOf('.'))), event.metadata?.ownership, capacity);
                     ports(anchor, event.fields, capacity, t.classShelf.header, t.classShelf.row);
@@ -250,7 +273,7 @@ export function createLayoutEngine(t: WorldLayoutTokens = worldLayoutTokens): La
             if (snapshot)
                 return snapshot;
             const regions = { stack: regionBounds.stack, heap: regionBounds.heap, library: regionBounds.library, classState: regionBounds.class, io: regionBounds.io };
-            return snapshot = { anchors, placement, regions, bounds: boundsOf(Object.entries(regionBounds).flatMap(([region, bounds]) => bounds ? [{ entityId: region, region: region as Region, position: bounds.center, size: bounds.size, bodyPort: bounds.center, ports: emptyPorts }] : [])), headings: { stack: [0, .75, root?.position[2] ?? 0], heap: [5.8, .3, 0], classState: classes.length ? [classes[0].position[0], classes[0].position[1] + classes[0].size[1] / 2 + .7, -2] : null, returns: [2.95, -.5, 1] } };
+            return snapshot = { anchors, placement, regions, bounds: boundsOf(Object.entries(regionBounds).flatMap(([region, bounds]) => bounds ? [{ entityId: region, region: region as Region, position: bounds.center, size: bounds.size, bodyPort: bounds.center, ports: emptyPorts }] : [])), headings: { stack: [0, .75, root?.position[2] ?? 0], heap: [5.8, .3, 0], classState: classes.length ? [classes[0].position[0], classes[0].position[1] + classes[0].size[1] / 2 + .7, classes[0].position[2]] : null, returns: [2.95, -.5, 1] } };
         },
     };
 }

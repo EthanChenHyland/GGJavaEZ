@@ -91,7 +91,9 @@
       "heading": {
         "capHeight": 0.45,
         "tracking": 0.18,
-        "weight": 600
+        "weight": 600,
+        "viewportCapRatio": 0.020,
+        "returnCapRatio": 0.013
       },
       "minProjectedPx": 11
     }
@@ -196,13 +198,14 @@
       "scopeDivider": 0.36,
       "scopeIndent": 0.18,
       "pad": 0.3,
-      "depth": 1.1,
+      "depth": 1.65,
       "bevel": 0.1,
       "rowAllowance": 3,
       "rowsMin": 2,
       "rowsMax": 11,
-      "stackGap": 0.1,
-      "depthStepZ": 1.25,
+      "descent": 0.76,
+      "nestedDescent": 0.45,
+      "depthStepZ": 2.5,
       "deckGapZ": 0.35
     },
     "object": {
@@ -244,6 +247,9 @@
     "regions": {
       "stackHeapGap": 3.4,
       "heapTopY": -0.6,
+      "heapCompanionOffsetX": 4.8,
+      "heapCompanionZ": -1.1,
+      "heapFrontZ": 2.1,
       "libraryGapZ": 2.0
     },
     "io": {
@@ -280,9 +286,11 @@
   },
   "camera": {
     "fov": 36,
+    "compositionInset": 0.025,
+    "wideRightInset": 0.075,
     "hero": {
-      "yaw": 8,
-      "pitch": -13
+      "yaw": -17,
+      "pitch": -18
     },
     "focus": {
       "yaw": 21,
@@ -291,9 +299,10 @@
       "faceH": 0.45
     },
     "recursion": {
-      "yaw": 18,
-      "pitch": -16,
-      "depth": 4
+      "yaw": -26,
+      "pitch": -15,
+      "depth": 4,
+      "context": 8
     },
     "pitchClamp": [
       -80,
@@ -304,7 +313,8 @@
     "home": {
       "groups": 12,
       "external": 2,
-      "minRepH": 0.04
+      "minRepH": 0.04,
+      "contextScale": 1.24
     }
   },
   "motion": {

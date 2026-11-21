@@ -38,7 +38,7 @@ describe('production lexical scope successors',()=>{
  })
  it('fits captured scope dividers and selected live rows inside separate canonical invocation bodies',()=>{
   const {scene}=cut(18),entry=scene.entities['entry-frame'],call=scene.entities['call-frame']
-  expect(call.anchor.position[1]+call.anchor.size[1]/2).toBeLessThan(entry.anchor.position[1]-entry.anchor.size[1]/2)
+  expect(call.anchor.position[2]-call.anchor.size[2]/2).toBeGreaterThan(entry.anchor.position[2]+entry.anchor.size[2]/2)
   for(const slot of slots.slice(0,7)){
    const id=slot.scopeId?.startsWith('call-')||slot.scopeId==='branch'?'call-frame':'entry-frame',{scene,plan}=cut(18,slot.id),node=scene.entities[id],presented=plan.entities.get(id)!,model=faceRows(node,presented)
    expect(model.visible.some(row=>row.slotId===slot.id)).toBe(true)

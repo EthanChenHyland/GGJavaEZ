@@ -29,7 +29,7 @@ describe('production deep-stack successors',()=>{
    if(index===5)expect(Object.values(state.frames[id].locals).some(slot=>slot.name==='child')).toBe(false)
    expect(node.rows.some(row=>row.slotId.startsWith('return:'))).toBe(false)
    expect(node.rows.some(row=>row.name==='child')).toBe(false)
-   if(index){const parent=scene.entities[scene.order.frames[index-1]].anchor;expect(node.anchor.position[1]).toBeLessThan(parent.position[1]);expect(node.anchor.position[2]).toBeLessThan(parent.position[2])}
+   if(index){const parent=scene.entities[scene.order.frames[index-1]].anchor;expect(node.anchor.position[1]).toBeLessThan(parent.position[1]);expect(node.anchor.position[2]-node.anchor.size[2]/2).toBeGreaterThan(parent.position[2]+parent.size[2]/2)}
   }
  })
  it('keeps every invocation at its canonical anchor across actual descent, unwind, completion and reverse replay',()=>{

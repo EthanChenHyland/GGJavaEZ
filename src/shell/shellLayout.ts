@@ -143,3 +143,19 @@ export function computeShellLayout(input: ShellLayoutInput): ShellLayout {
 
   return { viewportClass: kind, header, source, explorer, timeDock, dockStrip, dockDrawer, inspector, debugBar, sourceHeadingInset, safeFrame }
 }
+
+/** Commands fit against the open workbench surfaces. The base Safe Frame
+ * remains stable for shell layout and opening a transient surface alone. */
+export function worldCommandFrame(layout: ShellLayout): Rect {
+  const safe = layout.safeFrame
+  const left = layout.source.size === 'DRAWER_OPEN'
+    ? Math.max(safe.x, layout.source.x + layout.source.width) : safe.x
+  const top = layout.debugBar ? Math.max(safe.y, layout.debugBar.y + layout.debugBar.height) : safe.y
+  let bottom = safe.y + safe.height
+  if (layout.dockDrawer) bottom = Math.min(bottom, layout.dockDrawer.y)
+  if (layout.viewportClass === 'NARROW' && layout.inspector) bottom = Math.min(bottom, layout.inspector.y)
+  const right = safe.x + safe.width
+  return right > left && bottom > top
+    ? { x: left, y: top, width: right - left, height: bottom - top }
+    : safe
+}

@@ -27,7 +27,7 @@ import { Header } from './Header'
 import type {RecordingChoices} from './HeaderProjectMenu'
 import { DebugBar } from './DebugBar'
 import {ConsoleDrawer} from './dock/ConsoleDrawer'
-import { computeShellLayout } from './shellLayout'
+import { computeShellLayout, worldCommandFrame } from './shellLayout'
 import { useViewport } from './useViewport'
 import { WorldSurface } from './WorldSurface'
 import {capturedSourceReveal,currentSourceReveal,type SourceReveal,type SourceRevealRequest} from './source/sourceReveal'
@@ -64,6 +64,10 @@ export function Shell({ recording, recordingChoices }: ShellProps) {
   useEffect(()=>setSourceReveal(null),[workspace.projectId,workspace.active])
   const appState = useAppState(workspace, focusTargetId, recording)
   const layout = computeShellLayout({ viewport, appState, hasRuntimeWorld: !!recording || !!workspace.visualization, sourceExpanded: !recording && workspace.workspaceMode === 'code', narrowDrawerOpen: workspace.focusSourceOpen, explorerOpen: workspace.explorerOpen, inspector: { open: !!(worldSelection||focusTargetId) && !workspace.inspectorHidden, side: workspace.inspectorSide }, dockDrawer: { open: workspace.bottomOpen, heightRatio: workspace.bottomHeight / 100 }, debugActive: workspace.execution?.kind === 'debug' && workspace.activeExecution })
+  const commandFrame = worldCommandFrame(layout)
+  const captionTop = layout.debugBar ? commandFrame.y : layout.header.height
+  const captionBottom = layout.dockDrawer?.y ?? layout.timeDock.y
+  const focusContentFrame = {...commandFrame, y:captionTop, height:Math.max(0,captionBottom-captionTop)}
   const editorVisible=layout.source.size!=='DRAWER_COLLAPSED'&&!!(activeReveal??(recording?recordedFile:workspace.recordedView??workspace.activeTab))
   const [sourceEditorOpened,setSourceEditorOpened]=useState(editorVisible)
   const mountSourceEditor=sourceEditorOpened||layout.source.size!=='DRAWER_COLLAPSED'
@@ -94,7 +98,7 @@ const sourcePeekLabel=`${activeReveal?.file.name || recordedFile?.name || filena
 return <div className={`shell ide-shell ${debugSession&&activeExecution?'shell--debug-active':''} ${layout.sourceHeadingInset>0?'shell--source-controls-inset':''} ${workspace.explorerOpen ? 'shell--explorer-open' : ''} ${workspace.bottomOpen ? 'shell--drawer-open' : ''} ${layout.viewportClass === 'NARROW' ? 'shell--narrow' : ''} ${layout.source.size === 'DRAWER_COLLAPSED' ? 'shell--source-peek' : ''}`} data-viewport={layout.viewportClass} ref={shellRef} style={geometry as React.CSSProperties}>
     <section className="ide-runtime-panel" aria-label="Runtime visualization area">
             <div className={`ide-runtime-live${recording||visualization ? '' : ' ide-runtime-live--idle'}`}>
-              <WorldSurface viewport={viewport} safeFrame={layout.safeFrame} focusContentFrame={{...layout.safeFrame,y:layout.header.y+layout.header.height,height:Math.max(0,layout.timeDock.y-layout.header.y-layout.header.height)}} inspectorRect={layout.inspector} trace={currentTrace} onRevealSource={revealSource} pausedSource={pause?{location:pausedLocation}:undefined} onSourceChange={recording ? setRecordedLocation : recordingIsCurrent||!visualization&&pause ? handleExecutingSource : undefined} onRuntimeChange={handleRuntimeChange} navigation={runtimeNavigation} suppressInspector={tool === 'errors' && bottomOpen || inspectorHidden} execution={visualization ? { phase: recordingIsCurrent ? execution!.phase : recordedPhase, lens: timelineLens, liveCursor: visualization.trace.events.length, onLensChange: (lens) => setTimelineLens(lens) } : undefined}/>
+              <WorldSurface viewport={viewport} safeFrame={commandFrame} focusContentFrame={focusContentFrame} inspectorRect={layout.inspector} trace={currentTrace} onRevealSource={revealSource} pausedSource={pause?{location:pausedLocation}:undefined} onSourceChange={recording ? setRecordedLocation : recordingIsCurrent||!visualization&&pause ? handleExecutingSource : undefined} onRuntimeChange={handleRuntimeChange} navigation={runtimeNavigation} suppressInspector={tool === 'errors' && bottomOpen || inspectorHidden} execution={visualization ? { phase: recordingIsCurrent ? execution!.phase : recordedPhase, lens: timelineLens, liveCursor: visualization.trace.events.length, onLensChange: (lens) => setTimelineLens(lens) } : undefined}/>
               {workspace.previousRecording && <div className="shell-prior-world glass" role="status">Previous run · {workspace.traceStale ? 'source changed' : 'retained recording'}</div>}
 {!recording && !visualization && <div className="ide-runtime-ready" aria-label={execution?.phase === 'WAITING_FOR_INPUT' ? 'Runtime waiting for input' : 'Runtime ready'}><span>RUNTIME</span><strong>{execution?.phase === 'BUILDING' ? 'Building Java…' : execution?.phase === 'STARTING' ? 'Starting Java…' : execution?.phase === 'WAITING_FOR_INPUT' ? 'Waiting for input' : 'Ready'}</strong><p>{execution?.phase === 'WAITING_FOR_INPUT' ? 'Continue your program in Console.' : execution?.support === 'RUN_ONLY' ? execution.supportReason ?? 'Console execution' : 'Run your Java program to enter the world.'}</p></div>}
             </div>

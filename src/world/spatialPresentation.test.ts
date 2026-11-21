@@ -93,7 +93,7 @@ describe('adaptive production presentation', () => {
     const moved = cut(r, 'CLOSE', { kind: 'object', id: 'o500' }, null, null, [42, 25, 3])
     expect(moved.entities.get('o500')?.pinned).toBe(true)
     expect(moved.clusters.find(cluster => cluster.id === heap.id)?.anchor).toBe(heap.anchor)
-    expect(home(r, first).ids.filter(id => r.scene.entities[id].kind === 'frame')).toEqual(['root', 'child999'])
+    expect(home(r, first).ids.filter(id => r.scene.entities[id].kind === 'frame')).toEqual(['root'])
     accounted(r, moved)
   })
   it('keeps recursive descendants in their observed branch without conflating another root', () => {

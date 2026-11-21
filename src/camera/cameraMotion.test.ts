@@ -115,9 +115,9 @@ describe('canonical responsive Home', () => {
   const poses = []
   for (const aspect of [1.65, 760 / 678]) {
    const view = { width: aspect * 900, height: 900 }, area = { x: 20, y: 94, width: view.width - 40, height: 706 }, framing = homeFraming(scene, plan, area, view, projection.layout)
-   expect(framing.pose.yawDeg).toBe(8); expect(framing.pose.pitchDeg).toBe(-13); fits(framing.pose, framing.points, area, view); poses.push(framing.pose)
+   expect(framing.pose.yawDeg).toBe(tokens.hero.yaw); expect(framing.pose.pitchDeg).toBe(tokens.hero.pitch); fits(framing.pose, framing.points, area, view); poses.push(framing.pose)
   }
-  expect(new Vector3(...cameraPosition(poses[0])).distanceTo(new Vector3(...poses[0].target))).toBe(poses[0].distance)
+  expect(new Vector3(...cameraPosition(poses[0])).distanceTo(new Vector3(...poses[0].target))).toBeCloseTo(poses[0].distance,10)
   expect(poses[1].distance).toBeGreaterThan(poses[0].distance)
  })
 })

@@ -20,11 +20,13 @@ it('keeps the selected structural caption at its anchor before placing region he
  const labels=placeStructuralLabels([heading,selected],camera,viewport,safe)
  expect(labels[1].visible).toBe(true);expect(labels[1].position).toEqual(selected.position)
 })
-it('keeps a lane title in front of a wholly deeper structural body while foreground geometry and UI still block it',()=>{
+it('keeps lane headings clear of visible silhouettes regardless of depth and preserves depth for optional captions',()=>{
  const camera=cameraAt(20),viewport={width:1440,height:900},safe={x:0,y:0,width:1440,height:900},heading=regionHeadingSpec('HEAP',[0,0,0])
  const behind={...safe,nearDepth:100},foreground={...safe,nearDepth:1}
- const visible=placeStructuralLabels([heading],camera,viewport,safe,[behind])[0]
- expect(visible.visible).toBe(true);expect(visible.position).toEqual(heading.position)
+ const caption=spec('caption',0)
+ const visible=placeStructuralLabels([caption],camera,viewport,safe,[behind])[0]
+ expect(visible.visible).toBe(true);expect(visible.position).toEqual(caption.position)
+ expect(placeStructuralLabels([heading],camera,viewport,safe,[behind])[0].visible).toBe(false)
  expect(placeStructuralLabels([heading],camera,viewport,safe,[foreground])[0].visible).toBe(false)
  expect(placeStructuralLabels([heading],camera,viewport,safe,[safe])[0].visible).toBe(false)
 })
@@ -63,7 +65,7 @@ it('keeps region cap heights in the reference band at near/far distances across 
  for(const viewport of[{width:1728,height:1117},{width:1440,height:900},{width:1280,height:800},{width:760,height:900},{width:1440,height:650}])for(const distance of[12,30,200]){
   const camera=cameraAt(distance),before=JSON.stringify(heading),label=projectStructuralLabel(heading,camera,viewport)
   const centre=new Vector3(...label.position),cap=projectedPlaneFontPixels(heading.size*label.scale*.75,centre,camera,viewport)
-  expect(cap/viewport.height).toBeGreaterThanOrEqual(.025);expect(cap/viewport.height).toBeLessThanOrEqual(.033)
+  expect(cap/viewport.height).toBeGreaterThanOrEqual(.017);expect(cap/viewport.height).toBeLessThanOrEqual(.023)
   expect(label.minimumFontPixels).toBeGreaterThanOrEqual(12);expect(JSON.stringify(heading)).toBe(before)
  }
 })
@@ -87,6 +89,6 @@ it('lifts a blocked region heading within two font heights on its original 3D pl
 it('omits a heading when every bounded candidate is obstructed rather than detaching it from its region',()=>{
  const camera=cameraAt(60),viewport={width:1440,height:900},safe={x:0,y:0,width:1440,height:900}
  const heading:StructuralLabelSpec={...spec('STACK',0,1),kind:'heading',size:.6,localBounds:[0,2.4,-.3,.3]}
- const blocked=[0,1,2,3,4].map(lift=>projectStructuralLabel(heading,camera,viewport,lift).bounds!)
+ const blocked=[0,.5,1,1.5,2,4].map(lift=>projectStructuralLabel(heading,camera,viewport,lift).bounds!)
  expect(placeStructuralLabels([heading],camera,viewport,safe,blocked)[0].visible).toBe(false)
 })

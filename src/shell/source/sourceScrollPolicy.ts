@@ -6,10 +6,10 @@ export type SourceScrollAction = 'middle-third' | 'reveal' | 'none'
 /** Presentation policy only. Pause identity is independent of the displayed lens. */
 export function createSourceScrollPolicy() {
  let pauseId: string | null = null, consumedPause: string | null = null
- let revealedTarget: string | null = null, manualUntil = -Infinity
+ let revealedTarget: string | null = null, manuallyScrolledTarget: string | null = null, manualUntil = -Infinity
  return {
-  manualScroll(now: number) { manualUntil = now + 2000 },
-  decide(target: SourceScrollTarget, visible: VisibleSourceLines | null, actualPauseId: string | null, now: number): SourceScrollAction {
+  manualScroll(now: number) { manualUntil = now + 2000; manuallyScrolledTarget = revealedTarget },
+  decide(target: SourceScrollTarget, visible: VisibleSourceLines | null, actualPauseId: string | null, now: number, resized = false): SourceScrollAction {
    if(actualPauseId!==pauseId){pauseId=actualPauseId;consumedPause=null}
    const line=target.line
    if(line===null||!Number.isInteger(line)||line<1||!visible)return 'none'
@@ -20,11 +20,11 @@ export function createSourceScrollPolicy() {
     return 'middle-third'
    }
    if(target.mark==='running')return now<manualUntil||!outside?'none':'reveal'
-   // Repainting/resizing does not undo a later manual scroll. A new Focus
-   // target or History cursor can request reveal, even on the same source line.
+   // Restore a History line lost during resize unless the user scrolled it away.
    const changed=revealedTarget!==target.key
+   if(changed)manuallyScrolledTarget=null
    revealedTarget=target.key
-   return changed&&outside?'reveal':'none'
+   return outside&&(changed||resized&&target.mark==='history'&&manuallyScrolledTarget!==target.key)?'reveal':'none'
   },
   suppressedUntil() { return manualUntil },
  }

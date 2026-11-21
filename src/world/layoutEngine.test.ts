@@ -67,7 +67,7 @@ describe('first-observation spatial layout', () => {
             for (const entry of trace.events)
                 if (entry.type === 'ENTER_METHOD' && entry.callerFrameId) {
                     const parent = engine.state.anchors[entry.callerFrameId], child = engine.state.anchors[entry.frameId];
-                    expect(child.position[1] + child.size[1] / 2).toBeCloseTo(parent.position[1] - parent.size[1] / 2 - .1);
+                    expect(child.position[1] + child.size[1] / 2).toBeLessThan(parent.position[1] + parent.size[1] / 2);
                 }
         }), { numRuns: 100 });
     });

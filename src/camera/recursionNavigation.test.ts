@@ -20,17 +20,16 @@ function fits(home: ReturnType<typeof framing>) {
 }
 
 describe('canonical recursive camera composition', () => {
- it('renders the same nearest-context STACK heading that Home actually frames, without moving any runtime anchor',()=>{
-  const saved=JSON.stringify(projection.layout),first=deepest.entities[deepest.liveStack.slice(-4)[0]],heading=cut().headings.find(heading=>heading.id==='STACK')!
-  expect(heading.position).toEqual([first.anchor.position[0]+first.anchor.size[0]/2+.45,first.anchor.position[1]+first.anchor.size[1]/2+.75,first.anchor.position[2]+first.anchor.size[2]/2])
-  expect(heading.position).not.toEqual(projection.layout.headings.stack)
+ it('renders the same lineage STACK heading that Home actually frames, without moving any runtime anchor',()=>{
+  const saved=JSON.stringify(projection.layout),heading=cut().headings.find(heading=>heading.id==='STACK')!
+  expect(heading.position).toEqual(projection.layout.headings.stack)
   for(const aspect of[.8,1.1,1.54,2.4])expect(framing(deepest,aspect).points).toContainEqual(heading.position)
   for(const id of deepest.order.frames)expect(deepest.entities[id].anchor).toBe(projection.layout.anchors[id])
   expect(JSON.stringify(projection.layout)).toBe(saved)
  })
- it.each([.8, 1.1, 1.54, 2.4])('fits the most recent invocation and its three actual ancestors plus headings at aspect %s', aspect => {
+ it.each([.8, 1.1, 1.54, 2.4])('fits the active invocation and recorded lineage plus headings at aspect %s', aspect => {
   const home = framing(deepest, aspect)
-  expect(home.ids).toEqual(deepest.liveStack.slice(-4)); expect(home.pose.yawDeg).toBe(8); expect(home.pose.pitchDeg).toBe(-13)
+  expect(home.ids).toEqual(deepest.liveStack); expect(home.pose.yawDeg).toBe(tokens.recursion.yaw); expect(home.pose.pitchDeg).toBe(tokens.recursion.pitch)
   fits(home)
   const eye = { position: cameraPosition(home.pose), target: home.pose.target }, boxes = cameraCollisionBoxes(Object.values(deepest.entities).map(node => node.anchor), .05, tokens.fov * Math.PI / 180, aspect), size = projection.layout.bounds!.size
   const limits = { minDistance: tokens.minDistance, maxDistance: 3 * Math.hypot(...size), pan: size.map(value => Math.max(12, Math.hypot(...size), value)) as [number, number, number] }
@@ -40,7 +39,7 @@ describe('canonical recursive camera composition', () => {
   const saved = JSON.stringify(projection.layout)
   for (const cursor of [0, 2, 8, 14, 19, 21, 27, 36, 19]) {
    const scene = projection.project(cursor), home = framing(scene)
-   expect(home.ids.length).toBeLessThanOrEqual(4)
+   expect(home.ids.length).toBeLessThanOrEqual(tokens.recursion.context)
    for (const id of scene.order.frames) expect(scene.entities[id].anchor).toBe(projection.layout.anchors[id])
    if (scene.order.frames.length) expect(home.ids.at(-1)).toBe(scene.liveStack.at(-1) ?? scene.order.frames.at(-1))
    fits(home)
@@ -52,7 +51,7 @@ describe('canonical recursive camera composition', () => {
   for (const aspect of [.8, 1.1, 1.54, 2.4]) {
    const viewport = { width: 1000 * aspect, height: 1000 }, safe = { x: 20, y: 80, width: viewport.width - 40, height: 800 }, plan = planPresentation({ scene, layout: other.layout, detailLevel: 'CLOSE', selection: null, focusTargetId: null, trace: { active: false, scope: 'relevant' } })
    const home = homeFraming(scene, plan, safe, viewport, other.layout)
-   expect(home.pose.yawDeg).toBe(8); expect(home.pose.pitchDeg).toBe(-13)
+   expect(home.pose.yawDeg).toBe(tokens.hero.yaw); expect(home.pose.pitchDeg).toBe(tokens.hero.pitch)
    const camera = projectionCamera(home.pose, viewport)
    for (const point of home.points) { const p = screenPoint(point, camera, viewport); expect(p.x).toBeGreaterThanOrEqual(safe.x); expect(p.x).toBeLessThanOrEqual(safe.x + safe.width); expect(p.y).toBeGreaterThanOrEqual(safe.y); expect(p.y).toBeLessThanOrEqual(safe.y + safe.height) }
   }
@@ -104,12 +103,12 @@ describe('captured recursive descent and return attention', () => {
   expect(cut(scene).curves.filter(curve=>curve.kind==='return')).toEqual([])
   fits(framing(scene))
  })
- it('uses prescribed recursion angles and fits the four nearest actual frames during Follow', () => {
+ it('uses prescribed recursion angles and fits the recorded lineage during Follow', () => {
   const viewport = { width: 1540, height: 1000 }, safe = { x: 20, y: 80, width: 1500, height: 800 }
   for (const cursor of [14, 19, 21, 24]) {
    const scene = projection.project(cursor), next = guidedFollow(scene, cut(scene), trace.events[cursor - 1], useCameraStore.getInitialState().pose, safe, viewport, null)
    if (scene.liveStack.length < 4) continue
-   expect(next.recursion).toBe(true); expect(next.ids).toEqual(scene.liveStack.slice(-4)); expect(next.pose?.yawDeg).toBe(tokens.recursion.yaw); expect(next.pose?.pitchDeg).toBe(tokens.recursion.pitch)
+   expect(next.recursion).toBe(true); expect(next.ids).toEqual(scene.liveStack.slice(-tokens.recursion.context)); expect(next.pose?.yawDeg).toBe(tokens.recursion.yaw); expect(next.pose?.pitchDeg).toBe(tokens.recursion.pitch)
    const camera = projectionCamera(next.pose!, viewport)
    for (const point of next.ids.flatMap(id => anchorCorners(scene.entities[id].anchor))) { const p = screenPoint(point, camera, viewport); expect(p.x).toBeGreaterThanOrEqual(safe.x); expect(p.x).toBeLessThanOrEqual(safe.x + safe.width); expect(p.y).toBeGreaterThanOrEqual(safe.y); expect(p.y).toBeLessThanOrEqual(safe.y + safe.height) }
   }

@@ -2,6 +2,7 @@ import {create} from 'zustand'
 import type {Selection} from '../contracts/interaction'
 import type {DetailLevel} from '../contracts/world'
 import type {OrbitPose} from './projection'
+import {camera} from '../theme/tokens'
 import {focusable,useInteractionStore} from '../interaction/interactionStore'
 export type NavigationMode='EXPLORE'|'FOCUS'|'TRACE'|'HOME'
 export type CameraIntent={kind:'home'}|{kind:'recording'}|{kind:'hero'}|{kind:'focus';targetId:string}|{kind:'exitFocus';pose:OrbitPose;mode:NavigationMode}|{kind:'followPath';flowId:string}|{kind:'cluster';clusterId:string;recordingId:string;cursor:number;memberId?:string}|{kind:'zoom';factor:number}|{kind:'pose';pose:OrbitPose}
@@ -14,7 +15,7 @@ export interface CameraStore {
  frameHero():void
  travelCluster(clusterId:string,recordingId:string,cursor:number):void
 }
-const initialPose:OrbitPose={target:[4,-2,0],distance:24,yawDeg:8,pitchDeg:-13}
+const initialPose:OrbitPose={target:[4,-2,0],distance:24,yawDeg:camera.hero.yaw,pitchDeg:camera.hero.pitch}
 export const useCameraStore=create<CameraStore>((set,get)=>({mode:'EXPLORE',follow:false,pose:initialPose,detailLevel:'MEDIUM',viewTile:'0:0:0',intent:null,intentRevision:0,reducedMotion:false,
  explore(){const interaction=useInteractionStore.getState();interaction.clearTrace();if(interaction.focus){get().exitFocus('EXPLORE');return}set(state=>({mode:'EXPLORE',follow:true,intent:null,intentRevision:state.intentRevision+1}))},
  home(){const interaction=useInteractionStore.getState();interaction.clearFocus();interaction.clearTrace();set(state=>({mode:'HOME',follow:false,intent:{kind:'home'},intentRevision:state.intentRevision+1}))},

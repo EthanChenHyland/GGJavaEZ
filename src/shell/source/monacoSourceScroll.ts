@@ -37,7 +37,7 @@ export function bindMonacoSourceScroll(instance:editor.IStandaloneCodeEditor,mon
   if(disposed||viewFrame!==null)return
   viewFrame=requestAnimationFrame(()=>{viewFrame=null;apply()})
  }
- const apply=()=>{
+ const apply=(resized=false)=>{
   clearRetry()
   if(disposed||!target)return
   bindDom()
@@ -55,7 +55,7 @@ export function bindMonacoSourceScroll(instance:editor.IStandaloneCodeEditor,mon
   // setModel/restoreViewState finishes before Monaco publishes visible ranges.
   // Do not consume a pause while that view is still mounting.
   if(valid&&shown&&(!visible||pendingView)&&now()<viewDeadline)afterModelReady()
-  const action=policy.decide(valid?target:{...target,line:null},pendingView?null:visible,pauseId,now())
+  const action=policy.decide(valid?target:{...target,line:null},pendingView?null:visible,pauseId,now(),resized)
   view={height:dom?.getBoundingClientRect().height??0,visibility:dom?getComputedStyle(dom).visibility:'absent',connected:!!dom?.isConnected,lastDecision:action,valid,rangeCount:ranges.length}
   if(!valid||line===null||!model)return
   programmatic++
@@ -65,14 +65,14 @@ export function bindMonacoSourceScroll(instance:editor.IStandaloneCodeEditor,mon
     const count=Math.max(1,Math.floor((layout.height-layout.horizontalScrollbarHeight-padding.top-padding.bottom)/pitch))
     const first=firstVisibleLineForMiddleThird(line,count,model.getLineCount())
     instance.setScrollTop(Math.max(0,instance.getTopForLineNumber(first)-padding.top),monaco.editor.ScrollType.Immediate)
-   }else if(action==='reveal')instance.revealLineInCenterIfOutsideViewport(line,monaco.editor.ScrollType.Immediate)
+   }else if(action==='reveal')instance.revealLineInCenter(line,monaco.editor.ScrollType.Immediate)
    if(action!=='none')scrollAction={action,line,modelUri:model.uri.toString(),scrollTop:instance.getScrollTop()}
   }finally{programmatic--}
   const until=policy.suppressedUntil()
   if(target.mark==='running'&&until>now())retry=setTimeout(apply,until-now()+1)
  }
  bindDom()
- listeners.push(instance.onDidChangeModel(()=>{viewDeadline=now()+1000;afterModelReady()}),instance.onDidLayoutChange(apply),instance.onDidScrollChange(event=>{
+ listeners.push(instance.onDidChangeModel(()=>{viewDeadline=now()+1000;afterModelReady()}),instance.onDidLayoutChange(()=>apply(true)),instance.onDidScrollChange(event=>{
   if(event.scrollTopChanged&&!programmatic&&now()-userAt<250){policy.manualScroll(now());apply()}
  }))
  return {

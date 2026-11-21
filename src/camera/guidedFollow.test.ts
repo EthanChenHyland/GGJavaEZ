@@ -12,6 +12,7 @@ import {exceptionPanelAnchor,exceptionPanelFor} from '../world/exceptionPanelPla
 import type {SceneExceptionPath} from '../contracts/world'
 import {followInvocations,guidedFollow,isFollowSubjectEvent} from './guidedFollow'
 import {projectionCamera,screenPoint,type OrbitPose} from './projection'
+import {camera as tokens} from '../theme/tokens'
 import {valueText} from '../world/valueText'
 const raw=generateRawTrace({seed:17,rawEvents:80,callRate:.95,maxDepth:9,allocateRate:.1})
 const trace=normalizeTrace(raw.rawEvents,raw.manifest,{status:'complete',exitCode:0,diagnostic:null}).trace
@@ -32,17 +33,17 @@ it('explicit Follow includes the two recorded owners of a visible return without
  const viewport={width:760,height:900},safe={x:16,y:90,width:728,height:650}
  const entered=guidedFollow(returning,presented,null,current,safe,viewport,null)
  expect(entered.ids).toContain(child);expect(entered.ids).toContain(parent)
- expect(entered.ids).toEqual([...followInvocations(returning).slice(-4),child])
+ expect(entered.ids).toEqual([...followInvocations(returning).slice(-tokens.recursion.context),child])
  for(const point of entered.points){const p=screenPoint(point,projectionCamera(entered.pose!,viewport),viewport);expect(p.x).toBeGreaterThanOrEqual(safe.x+11.99);expect(p.x).toBeLessThanOrEqual(safe.x+safe.width-11.99);expect(p.y).toBeGreaterThanOrEqual(safe.y+11.99);expect(p.y).toBeLessThanOrEqual(safe.y+safe.height-11.99)}
  expect(guidedFollow(returning,presented,null,entered.pose!,safe,viewport,true).ids).not.toContain(child)
 })
-it('Property 51: recursive Follow fits the four actual nearest callers and preserves monotone screen centres (100 viewports)',()=>{
+it('Property 51: recursive Follow fits the bounded recorded lineage and preserves monotone screen centres (100 viewports)',()=>{
  const{scene,plan,event}=fixture(7),before=JSON.stringify(scene),chain=followInvocations(scene)
  fc.assert(fc.property(fc.integer({min:760,max:1920}),fc.integer({min:650,max:1117}),(width,height)=>{
   const viewport={width,height},safe={x:width*.3,y:height*.1,width:width*.65,height:height*.73}
   const next=guidedFollow(scene,plan,event,current,safe,viewport,null),pose=next.pose!,camera=projectionCamera(pose,viewport)
-  expect(next.recursion).toBe(true);expect(next.ids).toEqual(chain.slice(-4))
-  expect(pose.yawDeg).toBe(18);expect(pose.pitchDeg).toBe(-16)
+  expect(next.recursion).toBe(true);expect(next.ids).toEqual(chain.slice(-tokens.recursion.context))
+  expect(pose.yawDeg).toBe(tokens.recursion.yaw);expect(pose.pitchDeg).toBe(tokens.recursion.pitch)
   for(const point of next.points){const p=screenPoint(point,camera,viewport);expect(p.x).toBeGreaterThanOrEqual(safe.x);expect(p.x).toBeLessThanOrEqual(safe.x+safe.width);expect(p.y).toBeGreaterThanOrEqual(safe.y);expect(p.y).toBeLessThanOrEqual(safe.y+safe.height)}
   const centres=next.ids.map(id=>screenPoint(scene.entities[id].anchor.position,camera,viewport))
   const xSteps=centres.slice(1).map((point,index)=>point.x-centres[index].x)
@@ -58,11 +59,11 @@ it('does not move again when the recursive subjects already fit, and returns to 
  const first=guidedFollow(deep.scene,deep.plan,deep.event,current,safe,viewport,null)
  expect(guidedFollow(deep.scene,deep.plan,deep.event,first.pose!,safe,viewport,true).pose).toBeNull()
  const shallow=fixture(3),next=guidedFollow(shallow.scene,shallow.plan,shallow.event,first.pose!,safe,viewport,true)
- expect(next.recursion).toBe(false);expect(next.pose?.yawDeg).toBe(8);expect(next.pose?.pitchDeg).toBe(-13)
+ expect(next.recursion).toBe(false);expect(next.pose?.yawDeg).toBe(tokens.hero.yaw);expect(next.pose?.pitchDeg).toBe(tokens.hero.pitch)
  for(const point of next.points){const p=screenPoint(point,projectionCamera(next.pose!,viewport),viewport);expect(p.x).toBeGreaterThanOrEqual(safe.x);expect(p.x).toBeLessThanOrEqual(safe.x+safe.width);expect(p.y).toBeGreaterThanOrEqual(safe.y);expect(p.y).toBeLessThanOrEqual(safe.y+safe.height)}
 })
 it('includes a captured important object mutation, ignores future events, and leaves already included subjects untouched',()=>{
- const{scene,plan,event}=fixture(2),id=scene.order.objects[0],mutation={...event,type:'SET_FIELD',objectId:id,slotId:'captured-field',value:{kind:'primitive',javaType:'int',value:18},importance:'major'} as TraceEvent
+ const{scene,plan,event}=fixture(2),id=scene.order.objects[0],mutation={...event,type:'SET_FIELD',objectId:id,slotId:'captured-field',value:{kind:'primitive',javaType:'int',value:18},importance:'normal'} as TraceEvent
  const observed={...scene,cursorEvent:{...scene.cursorEvent!,subjects:[id]}}
  const viewport={width:1440,height:900},safe={x:430,y:90,width:970,height:660}
  const next=guidedFollow(observed,plan,mutation,{...current,distance:4},safe,viewport,false)
@@ -82,7 +83,7 @@ it('includes captured throwing-frame and Throwable evidence with the structural 
  const before=JSON.stringify(terminal),viewport={width:760,height:900},safe={x:16,y:100,width:728,height:620}
  const next=guidedFollow(terminal,plan,null,{...current,distance:4},safe,viewport,true)
  expect(next.ids).toEqual([throwFrameId,exceptionId]);expect(next.recursion).toBe(false)
- expect(next.pose?.yawDeg).toBe(8);expect(next.pose?.pitchDeg).toBe(-13)
+ expect(next.pose?.yawDeg).toBe(tokens.hero.yaw);expect(next.pose?.pitchDeg).toBe(tokens.hero.pitch)
  const points=[...next.ids.flatMap(id=>anchorCorners(scene.entities[id].anchor)),...anchorCorners(exceptionPanelAnchor(panel,scene.recording))]
  for(const point of points){const p=screenPoint(point,projectionCamera(next.pose!,viewport),viewport);expect(p.x).toBeGreaterThanOrEqual(safe.x);expect(p.x).toBeLessThanOrEqual(safe.x+safe.width);expect(p.y).toBeGreaterThanOrEqual(safe.y);expect(p.y).toBeLessThanOrEqual(safe.y+safe.height)}
  expect(guidedFollow(terminal,plan,null,next.pose!,safe,viewport,false).pose).toBeNull()

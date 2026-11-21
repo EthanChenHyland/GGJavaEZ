@@ -51,6 +51,14 @@ it('an unavailable source or unmounted editor does not consume a pending pause',
  expect(policy.decide(target('paused'),null,'p1',1)).toBe('none')
  expect(policy.decide(target('paused'),visible,'p1',2)).toBe('middle-third')
 })
+it('restores a clipped History line on resize until the user takes over scrolling',()=>{
+ const policy=createSourceScrollPolicy(),history=target('history',22,'cursor:12'),shorter={first:10,last:20}
+ expect(policy.decide(history,visible,null,0)).toBe('none')
+ expect(policy.decide(history,shorter,null,1,true)).toBe('reveal')
+ policy.manualScroll(2)
+ expect(policy.decide(history,shorter,null,3000,true)).toBe('none')
+ expect(policy.decide({...history,key:'cursor:13'},shorter,null,3001)).toBe('reveal')
+})
 it('Property 10: middle-third scrolling stays at the closest permitted centre at file boundaries (100 cases)',()=>{
  fc.assert(fc.property(fc.integer({min:1,max:2000}),fc.integer({min:3,max:120}),fc.nat(),(total,count,n)=>{
   const line=n%total+1,first=firstVisibleLineForMiddleThird(line,count,total),last=Math.min(total,first+count-1)

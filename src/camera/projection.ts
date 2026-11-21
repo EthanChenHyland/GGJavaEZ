@@ -1,7 +1,7 @@
 import { PerspectiveCamera, Vector3 } from 'three';
 import type { Vec3, WorldAnchor } from '../contracts/world';
 import type { Rect } from '../shell/shellLayout';
-import { camera as tokens, detailLevel as bands } from '../theme/tokens';
+import { camera as tokens, detailLevel as bands, shell } from '../theme/tokens';
 import type { DetailLevel, SceneModel } from '../contracts/world';
 export interface OrbitPose {
     target: Vec3;
@@ -29,6 +29,12 @@ export function projectionCamera(pose: OrbitPose, viewport: Size): PerspectiveCa
 export function screenPoint(point: Vec3, camera: PerspectiveCamera, viewport: Size) {
     const projected = new Vector3(...point).project(camera);
     return { x: (projected.x + 1) * viewport.width / 2, y: (1 - projected.y) * viewport.height / 2, z: projected.z };
+}
+/** Leave visual breathing room inside the Shell's hard clipping boundary. */
+export function compositionFrame(safe: Rect, viewport: Size): Rect {
+    const inset = Math.min(safe.width, safe.height) * tokens.compositionInset;
+    const right = viewport.width >= shell.viewport.standardW ? Math.max(inset, safe.width * tokens.wideRightInset) : inset;
+    return { x: safe.x + inset, y: safe.y + inset, width: safe.width - inset - right, height: safe.height - 2 * inset };
 }
 export function fitToSafeFrame(points: readonly Vec3[], angles: {
     yaw: number;

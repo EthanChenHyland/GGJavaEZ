@@ -71,7 +71,7 @@ export function CameraRig({scene,plan,event,layout,safeFrame,focusContentFrame,i
  }
  const begin=(pose:OrbitPose,duration:number,home=false)=>beginWaypoints([pose],duration,home)
  const homeCache=useRef<{scene:SceneModel;key:string;pose:OrbitPose}|null>(null)
- const home=()=>{const current=latest.current,key=framingCutKey;if(homeCache.current?.scene===current.scene&&homeCache.current.key===key)return homeCache.current.pose;const pose=homeFraming(current.scene,current.plan,current.safeFrame,size,layout).pose;homeCache.current={scene:current.scene,key,pose};return pose}
+ const home=()=>{const current=latest.current,key=framingCutKey;if(homeCache.current?.scene===current.scene&&homeCache.current.key===key)return homeCache.current.pose;const pose=homeFraming(current.scene,current.plan,commandArea(),size,layout).pose;homeCache.current={scene:current.scene,key,pose};return pose}
  const commandArea=()=>size.width<1024&&inspectorRect?{...safeFrame,height:Math.max(0,Math.min(safeFrame.y+safeFrame.height,inspectorRect.y-size.height*.01)-safeFrame.y)}:safeFrame
  const focusIntent=useCameraStore.getState().intent
  const focusAnchor=focusIntent?.kind==='focus'?anchorForFocus(focusIntent.targetId):null
@@ -79,7 +79,7 @@ export function CameraRig({scene,plan,event,layout,safeFrame,focusContentFrame,i
  useEffect(()=>{
   if(!(camera instanceof PerspectiveCamera))return
   camera.fov=tokens.fov;camera.near=.05;camera.far=10000;camera.updateProjectionMatrix()
-  if(!initialized.current||recordingId.current!==scene.recordingId){initialized.current=true;recordingId.current=scene.recordingId;lastFollow.current=-1;followRecursion.current=null;begin(heroFraming(scene,plan,safeFrame,size),scene.cursor?600:0);useCameraStore.setState({follow:scene.cursor>0})}
+  if(!initialized.current||recordingId.current!==scene.recordingId){initialized.current=true;recordingId.current=scene.recordingId;lastFollow.current=-1;followRecursion.current=null;begin(home(),scene.cursor?600:0);useCameraStore.setState({follow:scene.cursor>0})}
  },[scene.recordingId,camera])
  useEffect(()=>{
   const state=useCameraStore.getState(),intent=state.intent
@@ -91,7 +91,8 @@ export function CameraRig({scene,plan,event,layout,safeFrame,focusContentFrame,i
   invalidate()
   if(intent.kind==='pose'){move.current=null;camera.position.set(...cameraPosition(intent.pose));controls.current?.target.set(...intent.pose.target);previous.current=eye();return}
   if(intent.kind==='home')begin(home(),motion.homeMs,true)
-  if(intent.kind==='recording'||intent.kind==='hero')begin(heroFraming(scene,plan,safeFrame,size),scene.cursor?600:0)
+  if(intent.kind==='recording')begin(home(),scene.cursor?600:0)
+  if(intent.kind==='hero')begin(heroFraming(scene,plan,commandArea(),size),scene.cursor?600:0)
   if(intent.kind==='exitFocus')begin(intent.pose,motion.exitFocusMs)
   if(intent.kind==='zoom'){move.current=null;const pivot=controls.current?.target??new Vector3();camera.position.sub(pivot).multiplyScalar(intent.factor).add(pivot)}
   if(intent.kind==='followPath'){
@@ -185,7 +186,7 @@ export function CameraRig({scene,plan,event,layout,safeFrame,focusContentFrame,i
   const state=useCameraStore.getState(),focus=useInteractionStore.getState().focus
   if(state.follow&&!move.current&&!focus&&(lastFollow.current!==scene.cursor||followForensic.current!==!!plan.exceptionPanel)){
    lastFollow.current=scene.cursor;followForensic.current=!!plan.exceptionPanel
-   const next=guidedFollow(scene,plan,event,state.pose,safeFrame,size,followRecursion.current)
+   const next=guidedFollow(scene,plan,event,state.pose,commandArea(),size,followRecursion.current)
    followRecursion.current=next.recursion;if(next.pose)begin(next.pose,600)
   }
   if(now-lastDetail.current>=200||lastCursor.current!==scene.cursor){lastDetail.current=now;lastCursor.current=scene.cursor;const next=nextDetailLevel(state.detailLevel,representativeFaceHeight(scene,camera,size),size.height);if(state.detailLevel!==next)state.setDetailLevel(next)}

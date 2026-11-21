@@ -1,5 +1,5 @@
 import type { AppState } from '../state/appState'
-import type { ShellLayout } from '../shell/shellLayout'
+import { worldCommandFrame, type ShellLayout } from '../shell/shellLayout'
 import { useCameraStore } from '../camera/cameraStore'
 import {useInteractionStore} from '../interaction/interactionStore'
 import { cameraPosition } from '../camera/projection'
@@ -15,7 +15,7 @@ function createQaBridge(snapshot: QaSnapshot) {
   return {
     appState: () => snapshot.appState,
     cursor: () => ({cursor: snapshot.cursor, liveHead: snapshot.liveHead}),
-    shellRects: () => ({header: rect('.shell-header'), source: rect('.ide-editor-panel'), timeDock: rect('.world-timeline'), inspector: rect('.inspector'), safeFrame: snapshot.layout.safeFrame}),
+    shellRects: () => ({header: rect('.shell-header'), source: rect('.ide-editor-panel'), timeDock: rect('.world-timeline'), inspector: rect('.inspector'), safeFrame: snapshot.layout.safeFrame, commandFrame: worldCommandFrame(snapshot.layout)}),
     cameraPose: () => {const pose=useCameraStore.getState().pose;return {position:cameraPosition(pose),target:pose.target}},
     navigationState: () => {const {mode,follow}=useCameraStore.getState();return {mode,follow}},
     setCameraPose: (pose: EyePose) => useCameraStore.getState().requestPose(orbitPoseFromEye(pose)),

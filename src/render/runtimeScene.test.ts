@@ -39,13 +39,13 @@ describe('production runtime scene successors',()=>{
    expect(curve.destinationAnchor).toBe(scene.entities[reference.targetId].anchor)
   }
  })
- it('retains every canonical body at every replay prefix with actual callee depth below its caller',()=>{
+ it('retains every canonical body at every replay prefix with actual callee depth descending from its caller',()=>{
   const saved=JSON.stringify(layout)
   for(let cursor=0;cursor<=trace.events.length;cursor++){
    const scene=sceneAt(cursor)
    for(const node of Object.values(scene.entities)){
     expect(node.anchor).toBe(layout.anchors[node.id])
-    if(node.kind==='frame'&&node.callerId){const parent=scene.entities[node.callerId].anchor;expect(node.anchor.position[1]+node.anchor.size[1]/2).toBeLessThan(parent.position[1]-parent.size[1]/2)}
+    if(node.kind==='frame'&&node.callerId){const parent=scene.entities[node.callerId].anchor;expect(node.anchor.position[1]+node.anchor.size[1]/2).toBeLessThan(parent.position[1]+parent.size[1]/2);expect(node.anchor.position[2]-node.anchor.size[2]/2).toBeGreaterThan(parent.position[2]+parent.size[2]/2)}
    }
   }
   expect(sceneAt(0).order).toEqual({frames:[],objects:[],classes:[]})

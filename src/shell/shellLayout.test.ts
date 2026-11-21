@@ -2,7 +2,7 @@ import fc from 'fast-check'
 import { describe, expect, it } from 'vitest'
 import type { AppState } from '../state/appState'
 import { shell } from '../theme/tokens'
-import { computeShellLayout, viewportClass, type Rect, type ShellLayoutInput } from './shellLayout'
+import { computeShellLayout, viewportClass, worldCommandFrame, type Rect, type ShellLayoutInput } from './shellLayout'
 
 // Geometry observes execution/overlays; the remaining fields are inert fixtures.
 // Operational AppState derivation is tested by its owner.
@@ -149,6 +149,18 @@ describe('source size precedence', () => {
 })
 
 describe('transient surfaces and Safe_Frame', () => {
+  it('keeps explicit framing clear of the open narrow source, Console and Inspector surfaces', () => {
+    const base = input(760, 900), closed = computeShellLayout(base)
+    const opened = computeShellLayout({
+      ...base, narrowDrawerOpen: true, inspector: { open: true, side: 'right' },
+      dockDrawer: { open: true, heightRatio: .3 },
+    })
+    const area = worldCommandFrame(opened)
+    expect(opened.safeFrame).toEqual(closed.safeFrame)
+    expect(area.x).toBe(opened.source.x + opened.source.width)
+    expect(area.y + area.height).toBe(Math.min(opened.inspector!.y, opened.dockDrawer!.y))
+    expect(area.width).toBeGreaterThan(0)
+  })
   it('anchors Explorer to Source and hides it behind a collapsed narrow drawer', () => {
     const layout = computeShellLayout(input(1440, 900, { explorerOpen: true }))
     rect(layout.explorer!, { x: 8.64, y: 90, width: 273.6, height: 504 })

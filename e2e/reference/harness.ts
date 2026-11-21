@@ -6,6 +6,7 @@ import type {ExecutionSession} from '../../src/execution/contracts'
 import type {} from '../../src/qa/qaBridge'
 import {normalizeTrace} from '../../src/instrumentation/normalize'
 import {ioPortPreview} from '../../src/world/ioPortText'
+import design from '../../docs/visual-java-spec/DESIGN_TOKENS.json' with {type:'json'}
 import {fitWorldText} from '../../src/render/text/textSystem'
 import manifest from '../../fixtures/reference-exact/manifest.json' with {type:'json'}
 export type FixtureName=keyof typeof manifest
@@ -262,7 +263,7 @@ export async function captureComparison(page:Page,request:APIRequestContext,stat
    if(!label?.visible||!bounds){misses.push(`Hero ${id} heading is not actually visible`);continue}
    if(label.minimumFontPixels<12)misses.push(`Hero ${id} heading is below 12 CSS px`)
    const capHeight=label.minimumFontPixels*.75
-   if(Math.abs(capHeight-.029*before.viewport.height)>.004*before.viewport.height)misses.push(`Hero ${id} heading cap height ${capHeight} misses the reference range`)
+   if(Math.abs(capHeight-design.typography.world.heading.viewportCapRatio*before.viewport.height)>.004*before.viewport.height)misses.push(`Hero ${id} heading cap height ${capHeight} misses the reference range`)
    if(bounds.x<safe.x-1e-5||bounds.y<safe.y-1e-5||bounds.x+bounds.width>safe.x+safe.width+1e-5||bounds.y+bounds.height>safe.y+safe.height+1e-5)misses.push(`Hero ${id} heading lies outside Safe Frame`)
    const top=id==='STACK'?Math.min(...frames.map(frame=>frame.y)):before.world.heap?.y
    if(top!==undefined&&bounds.y+bounds.height>top)misses.push(`Hero ${id} heading is not above its actual represented bodies`)
@@ -295,8 +296,8 @@ export async function captureComparison(page:Page,request:APIRequestContext,stat
   if(pitch< -11||pitch> -5)misses.push(`Focus pitch: ${pitch} degrees, expected −11 to −5`)
  }
  if(state.id==='recursion'){
-  const frames=before.scene.liveStack.slice(-4),safe=before.shell.safeFrame
-  if(frames.length!==4)misses.push('Recursive Follow requires four actual live frames')
+  const frames=before.scene.liveStack.slice(-design.camera.recursion.context),safe=before.shell.commandFrame
+  if(frames.length!==8)misses.push('Recursive Follow requires all eight recorded live frames in Series')
   const centres:{x:number;y:number}[]=[]
   for(const id of frames){
    const body=before.world.entities.find(body=>body.id===id),bounds=body?.bounds,face=body?.face
@@ -307,7 +308,8 @@ export async function captureComparison(page:Page,request:APIRequestContext,stat
   const steps=centres.slice(1).map((point,index)=>({x:point.x-centres[index].x,y:point.y-centres[index].y}))
   if(!steps.every(step=>step.x>=0)&&!steps.every(step=>step.x<=0)||steps.some(step=>step.y<=0))misses.push('Recursive frame centres do not progress monotonically')
   const delta=before.pose.position.map((value,index)=>value-before.pose.target[index]),yaw=Math.atan2(delta[0],delta[2])*180/Math.PI,pitch=-Math.atan2(delta[1],Math.hypot(delta[0],delta[2]))*180/Math.PI
-  if(yaw<14||yaw>22||pitch< -19||pitch> -13)misses.push(`Recursive Follow angles: ${yaw}, ${pitch}; expected +18°/−16° within specified tolerances`)
+  const preferred=design.camera.recursion
+  if(Math.abs(yaw-preferred.yaw)>4||Math.abs(pitch-preferred.pitch)>3)misses.push(`Recursive Follow angles: ${yaw}, ${pitch}; expected ${preferred.yaw}°/${preferred.pitch}° within specified tolerances`)
  }
  const report={runId:process.env.VJ_REFERENCE_RUN_ID??null,id,state:state.id,viewport:viewportLabel,capture:`docs/checkpoints/reference-exact/captures/${id}.png`,sha256:createHash('sha256').update(png).digest('hex'),twin:state.twin,...composed.comparison,sessionId,realJvmExecuted:true,rawEventCount:session.rawEvents.length,build:session.build,sourceManifest:session.sourceManifest,measurements:before,misses}
  const reports=resolve('.ggjavaez/qa/reference-exact/captures');await mkdir(reports,{recursive:true});await writeFile(resolve(reports,`${id}.json`),JSON.stringify(report,null,2)+'\n')

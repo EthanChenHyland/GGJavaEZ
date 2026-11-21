@@ -68,7 +68,7 @@ describe('live debug layout', () => {
     const ids = ['object:one', 'object:many', 'object:three']
     expect(complete.anchors['object:one'].size).toEqual([world.object.w, world.object.header + world.object.pad + 2 * world.object.row, world.object.depth])
     expect(complete.anchors['object:one'].region).toBe('heap')
-    expect(complete.anchors['object:one'].position[2]).toBe(0)
+    expect(complete.anchors['object:one'].position[2]).toBe(world.regions.heapFrontZ)
     for (let cursor = 1; cursor <= trace.events.length; cursor++) {
       const prefix = createLayout({ ...trace, events: trace.events.slice(0, cursor) })
       for (const id of ids.slice(0, cursor)) expect(prefix.anchors[id]).toEqual(complete.anchors[id])

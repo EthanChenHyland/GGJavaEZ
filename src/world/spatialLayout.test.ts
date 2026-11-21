@@ -20,13 +20,26 @@ const cut = (trace: TraceDocument, selection: { kind: 'slot'; id: string } | nul
 }
 
 describe('persistent production runtime geography', () => {
-  it('places first descendants below and behind their recorded caller and siblings on nonoverlapping depth decks', () => {
+  it('keeps source-observed scalar summaries on a rear shelf without displacing the first project object', () => {
+    const string = (id: string, fields: number): TraceEvent => ({
+      ...allocation(id, 'java.lang.String', fields),
+      source: { fileId: 'Unit.java', line: 1 },
+      metadata: { ownership: 'JDK', runtimeType: 'java.lang.String', packageName: 'java.lang' },
+    } as TraceEvent)
+    const project = allocation('a', 'app.A')
+    const solo = createLayout(traceOf([project]))
+    const {anchors} = createLayout(traceOf([string('summary1', 5), string('summary2', 1), project]))
+    expect(anchors.a.position).toEqual(solo.anchors.a.position)
+    expect(anchors.summary1.position[2]).toBeLessThan(anchors.a.position[2])
+    expect(anchors.summary2.position[1] + anchors.summary2.size[1] / 2).toBeLessThan(anchors.summary1.position[1] - anchors.summary1.size[1] / 2)
+  })
+  it('places first descendants downward and toward the camera from their recorded caller and siblings on nonoverlapping depth decks', () => {
     const trace = traceOf([enter('root', null), enter('left', 'root'), enter('deep', 'left'), enter('right', 'root')])
     const layout = createLayout(trace)
     for (const [parent, child] of [['root', 'left'], ['left', 'deep']]) {
       const a = layout.anchors[parent], b = layout.anchors[child]
-      expect(b.position[1]).toBeLessThan(a.position[1] - (a.size[1] + b.size[1]) / 2)
-      expect(b.position[2]).toBeLessThan(a.position[2])
+      expect(b.position[1] + b.size[1] / 2).toBeLessThan(a.position[1] + a.size[1] / 2)
+      expect(b.position[2] - b.size[2] / 2).toBeGreaterThan(a.position[2] + a.size[2] / 2)
     }
     const left = layout.anchors.left, right = layout.anchors.right
     expect(right.position[1] + right.size[1] / 2).toBe(left.position[1] + left.size[1] / 2)
