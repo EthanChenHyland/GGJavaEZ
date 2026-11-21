@@ -1,9 +1,8 @@
 import {expect,test} from '@playwright/test'
 import {writeFile} from 'node:fs/promises'
 import {browserErrors,home,ready,runFixture,seekCursor,selectEntity,stopOwnedSession} from './harness'
-import {truncateFrameText} from '../../src/world/valueText'
 test.afterEach(async({request})=>stopOwnedSession(request))
-for(const viewport of [{width:1440,height:900},{width:760,height:900}])test(`qualified frame titles fit their original header ${viewport.width}x${viewport.height}`,async({page,request})=>{
+for(const viewport of [{width:1440,height:900},{width:760,height:900}])test(`method names and invocation identities fit their original header ${viewport.width}x${viewport.height}`,async({page,request})=>{
  const errors=browserErrors(page);await page.setViewportSize(viewport);const session=await runFixture(page,request,'domain')
  const mutation=await page.evaluate(()=>window.__ggjavaezWorld!.recordedEvents().find(event=>event.type==='SET_FIELD'&&event.value.kind==='primitive'&&event.value.value===18)?.seq)
  expect(mutation).toBeDefined();await seekCursor(page,mutation!+1);await home(page)
@@ -19,7 +18,9 @@ for(const viewport of [{width:1440,height:900},{width:760,height:900}])test(`qua
   await writeFile(`.ggjavaez/qa/reference-exact/frame-title-${viewport.width}x${viewport.height}.json`,JSON.stringify({sessionId:session.id,viewport,observations,errors},null,2)+'\n')
   await page.screenshot({path:`.ggjavaez/qa/reference-exact/frame-title-focus-${viewport.width}x${viewport.height}.png`})
   const title=headings.find(label=>label.kind==='title')!,identity=headings.find(label=>label.kind==='identity')!
-  expect(title.text.replaceAll('\n','')).toBe(truncateFrameText(node.title));expect(title.text).toContain('\n')
+  const qualifiedName=node.title.slice(0,node.title.indexOf('('))
+  expect(title.text).toBe(qualifiedName.slice(qualifiedName.lastIndexOf('.')+1))
+  await expect(page.getByRole('complementary',{name:'Selection inspector'}).locator('.inspector-heading strong')).toHaveAttribute('title',`${node.title} #${node.invocationNumber}`)
   expect(identity.text).toBe(`#${node.invocationNumber}`);expect(title.opacity).toBeGreaterThan(0);expect(title.fontPixels).toBeGreaterThanOrEqual(11)
   const bounds=title.localInkBounds!;expect(bounds).not.toBeNull()
   const [x,y]=title.position,top=node.anchor.position[1]+node.anchor.size[1]/2

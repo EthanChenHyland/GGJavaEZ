@@ -5,10 +5,10 @@ import { graphTransitionEndpoints, type FlowEndpoint } from '../motion/semanticT
 import { seek } from '../runtime'
 import { valueText,hasRecordedValuePort } from './valueText'
 import {collectionEntryFace} from './collectionFace'
-import {consumingWriteDestination,recordedReturnDestination} from './returnEvidence'
+import {consumingWrite,consumingWriteDestination,recordedReturnDestination} from './returnEvidence'
 import {acceptedEventIndex,type AcceptedEventIndex} from './acceptedEventIndex'
 export type FlowKind='argument'|'receiver'|'local-field'|'field-read'|'assignment'|'reference'|'array-read'|'array-write'|'return'|'input'|'output'|'throw'|'unwind'|'catch'
-export interface SceneFlow {id:string;edgeIndex:number;kind:FlowKind;from:FlowEndpoint|null;to:FlowEndpoint;evidenceEventIds:readonly string[];evidenceSeqs:readonly number[];valueText:string|null}
+export interface SceneFlow {id:string;edgeIndex:number;kind:FlowKind;from:FlowEndpoint|null;to:FlowEndpoint;evidenceEventIds:readonly string[];evidenceSeqs:readonly number[];valueText:string|null;consumerSeq?:number}
 export interface RecordedFlow extends Omit<SceneFlow,'to'> {to:FlowEndpoint|null}
 export interface RecordedProvenance {edgeId:string;edgeIndex:number;kind:GraphEdge['kind'];from:string;to:string;originSlotId:string|null;eventId:string;graphEvidence:GraphEdge['evidence'];evidence:Evidence;spatial:{drawable:boolean;reason:string|null}}
 export interface FlowPriorityInput {selectedIds:ReadonlySet<string>;focusedIds:ReadonlySet<string>;currentIds:ReadonlySet<string>}
@@ -94,7 +94,10 @@ export function createFlowCatalog(initialTrace?:TraceDocument):FlowCatalog {
   const value=candidate.value
   const target=value?.kind==='reference'?scene.entities[value.objectId]:null
   const text=value?.kind==='reference'?target?`${target.title} #${'displayId'in target?target.displayId:'?'}`:'⟨not recorded⟩':value?valueText(value).text:null
-  return{id:candidate.edge.id,edgeIndex:candidate.edgeIndex,kind:candidate.kind,from:points.from,to:points.to,evidenceEventIds:[candidate.edge.eventId],evidenceSeqs:[candidate.seq],valueText:text}
+  const prefix=candidate.kind==='input'?stateAt(scene.cursor)?.executionGraph:null
+  const consumer=prefix?consumingWrite(prefix,candidate.edge.to,events):null
+  return{id:candidate.edge.id,edgeIndex:candidate.edgeIndex,kind:candidate.kind,from:points.from,to:points.to,evidenceEventIds:[candidate.edge.eventId],evidenceSeqs:[candidate.seq],valueText:text,
+    ...(consumer?{consumerSeq:consumer.consumerSeq}:{})}
  }
  const resolve=(candidate:Candidate,cursor:number,retain=true):{from:FlowEndpoint|null;to:FlowEndpoint|null}=>{
   const state=stateAt(cursor)

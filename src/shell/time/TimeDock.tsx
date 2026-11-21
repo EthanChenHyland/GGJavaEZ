@@ -3,6 +3,7 @@ import { Pause, Play, RotateCcw, SkipBack, SkipForward, Settings, Rewind } from 
 import type { TraceDocument } from '../../contracts/runtime'
 import type { EmbeddedExecution } from '../runtimeContracts'
 import { createMilestoneIndex } from '../../timeline/milestones'
+import { eventCaption } from '../../timeline/milestonesCaption'
 import { PLAYBACK_SPEEDS } from '../../timeline/playbackState'
 import { timelineCaption, timelineControls } from '../../timeline/timelineControls'
 import { timelineRecordingId, type TimelinePlaybackApi } from '../../timeline/useTimelinePlayback'
@@ -42,6 +43,11 @@ export function TimeDock({ trace, playback, execution, settings }: TimeDockProps
   if (index.current.recordingId !== recordingId || state.liveHead < index.current.milestones.count) index.current = { recordingId, milestones: createMilestoneIndex() }
   index.current.milestones.extend(trace.events, index.current.milestones.count, state.liveHead)
   const caption = timelineCaption(trace.events, state), controls = timelineControls(state)
+  const event = caption.seq === null ? undefined : trace.events[state.cursor - 1]
+  const { headline, context } = event ? eventCaption(event) : { headline: caption.summary }
+  const spokenCaption = context ? `${headline} · ${context}` : headline
+  const summary = spokenCaption === caption.summary ? spokenCaption : `${spokenCaption}. Recorded label: ${caption.summary}`
+  const eventDetails = event ? `Event seq ${event.seq} · ${summary}` : summary
   const [short, setShort] = useState(() => typeof window !== 'undefined' && window.innerWidth >= 1024 && window.innerHeight < 760)
   const menu = useRef<HTMLDetailsElement>(null), menuButton = useRef<HTMLElement>(null)
   useEffect(() => {
@@ -64,12 +70,16 @@ export function TimeDock({ trace, playback, execution, settings }: TimeDockProps
     </div>
     <div className="gg-time-main">
       <div className="gg-time-caption">
-        <strong>{caption.caption}</strong><span className="gg-time-event" title={caption.summary}>{state.cursor === 0 ? caption.summary : `Executing: ${caption.summary}`}</span>
+        <strong className="gg-time-count">{caption.caption}</strong>
+        <span className="gg-time-event" title={eventDetails}>
+          {event && <span className="shell-visually-hidden">Executing: </span>}
+          {headline}{context && <span className="gg-time-context"> · {context}</span>}
+        </span>
         <span className="gg-time-lens">{state.lens}</span>
         {state.lens === 'HISTORY' && <Control className="gg-time-return" label="Return to Live" disabled={!controls.canReturnLive} reason={emptyReason} action={playback.returnToLive}>Return to Live</Control>}
         {execution?.phase === 'PAUSED' && <span className="gg-time-after">{state.liveHead - state.cursor} Events after Cursor</span>}
       </div>
-      <MilestoneTrack index={index.current.milestones} playback={playback} summary={caption.summary} maxLabels={short ? 6 : 12} execution={execution} />
+      <MilestoneTrack index={index.current.milestones} playback={playback} summary={summary} maxLabels={short ? 6 : 12} execution={execution} />
       {stopped && <span className="gg-time-partial" title={`${stopped.state} · raw lastRecordedSeq: ${stopped.lastRecordedSeq ?? 'unavailable'}`}>
         Partial recording · {stopped.reason ?? stopped.state}</span>}
     </div>

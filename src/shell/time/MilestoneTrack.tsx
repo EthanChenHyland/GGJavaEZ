@@ -3,6 +3,7 @@ import type { EmbeddedExecution } from '../runtimeContracts'
 import type { TimelinePlaybackApi } from '../../timeline/useTimelinePlayback'
 import {labelBinCount,type Milestone,type MilestoneIndex} from '../../timeline/milestones'
 import { timelineKeyAction } from '../../timeline/timelineControls'
+import { color } from '../../theme/tokens'
 
 export interface MilestoneTrackProps {
   index: MilestoneIndex
@@ -12,7 +13,9 @@ export interface MilestoneTrackProps {
   execution?: EmbeddedExecution
 }
 const colour: Record<Milestone['kind'], string> = {
-  entry: '#3FD8FF', return: '#FFB23E', allocation: '#C58BFF', exception: '#FF4A5E', input: '#3FD8FF', output: '#5BE3A8',
+  entry: 'var(--color-semantic-execution)', return: 'var(--color-semantic-return)', allocation: 'var(--color-heap-edge)',
+  mutation: 'var(--color-semantic-mutation)', exception: 'var(--color-semantic-exception)',
+  input: 'var(--color-semantic-stdin)', output: 'var(--color-semantic-stdout)',
 }
 
 export function MilestoneTrack({ index, playback, summary, maxLabels, execution }: MilestoneTrackProps) {
@@ -22,6 +25,7 @@ export function MilestoneTrack({ index, playback, summary, maxLabels, execution 
   const { cursor, liveHead } = playback.state
   const empty = liveHead === 0
   const labelled = index.labelled(cursor, width, maxLabels)
+  const bins = labelBinCount(width, maxLabels)
   const stopped = index.recordingStop()
   useLayoutEffect(() => {
     const element = rail.current
@@ -48,9 +52,9 @@ export function MilestoneTrack({ index, playback, summary, maxLabels, execution 
     for (let column = 0; column < pixels; column++) {
       if (!density[column]) continue
       // Mixed past/future columns use future opacity so no future evidence gets full emphasis.
-      context.globalAlpha = Math.ceil((column + 1) * liveHead / pixels) > cursor ? 0.35 : 0.7
-      context.fillStyle = '#A9B8DA'
-      const height = Math.min(14, 2 + Math.log2(1 + density[column]) * 2)
+      context.globalAlpha = Math.ceil((column + 1) * liveHead / pixels) > cursor ? 0.21 : 0.42
+      context.fillStyle = color.ui.textSecondary
+      const height = Math.min(10, 2 + Math.log2(density[column]) * 2)
       context.fillRect(column, 9 - height / 2, 1, height)
     }
     context.globalAlpha = 1
@@ -91,12 +95,18 @@ export function MilestoneTrack({ index, playback, summary, maxLabels, execution 
     onLostPointerCapture={() => { if (activePointer.current !== null) { activePointer.current = null; playback.endScrub() } }}/>
     <div className="gg-time-track__line" aria-hidden="true"><span style={{ width: `${empty ? 0 : cursor / liveHead * 100}%` }} /></div>
     <canvas ref={canvas} className="gg-time-track__density" aria-hidden="true" />
-    {labelled.map((milestone) => <span key={milestone.id} aria-hidden="true"
-      className={`gg-time-milestone${milestone.cursor === cursor ? ' gg-time-milestone--current' : ''}`}
-      style={{ left: `${milestone.cursor / liveHead * 100}%`, opacity: milestone.cursor > cursor ? 0.5 : 1, '--milestone-colour': colour[milestone.kind] } as CSSProperties}
-      title={`${milestone.cursor}: ${milestone.label}`}>
-      <span className="gg-time-milestone__node" /><span className="gg-time-milestone__label" style={{transform:`translateX(${(Math.min(labelBinCount(width,maxLabels)-1,Math.floor(milestone.cursor/liveHead*labelBinCount(width,maxLabels)))+.5)*width/Math.max(1,labelBinCount(width,maxLabels))-milestone.cursor/liveHead*width}px)`}}>{milestone.label}</span>
-    </span>)}
+    {labelled.map((milestone) => {
+      const fraction = milestone.cursor / liveHead
+      const bin = Math.min(bins - 1, Math.floor(fraction * bins))
+      const labelOffset = ((bin + 0.5) / bins - fraction) * width
+      return <span key={milestone.id} aria-hidden="true"
+        className={`gg-time-milestone${milestone.cursor === cursor ? ' gg-time-milestone--current' : ''}`}
+        style={{ left: `${fraction * 100}%`, opacity: milestone.cursor > cursor ? 0.5 : 1, '--milestone-colour': colour[milestone.kind] } as CSSProperties}
+        title={`Event seq ${milestone.seq} · ${milestone.label}`}>
+        <span className="gg-time-milestone__node" />
+        <span className="gg-time-milestone__label" style={{ width: width / bins - 12, transform: `translateX(${labelOffset}px)` }}>{milestone.caption}</span>
+      </span>
+    })}
     {!empty&&<span aria-hidden="true" className="gg-time-cursor" style={{left:`${cursor/liveHead*100}%`}}/>}
     {stopped && <span className="gg-time-track__boundary" aria-label={`Partial recording boundary at applied prefix ${liveHead}: ${stopped.state}; ${stopped.reason ?? 'Reason not recorded'}`}
       title={`${stopped.state} · ${stopped.reason ?? 'Reason not recorded'} · raw lastRecordedSeq: ${stopped.lastRecordedSeq ?? 'unavailable'} · semantic boundary: ${liveHead}`} />}

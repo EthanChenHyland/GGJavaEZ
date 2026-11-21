@@ -44,3 +44,10 @@
 .gg-inspector-control-row {height:52px;display:flex;flex-direction:column;justify-content:center;gap:3px}
 .gg-inspector-control-row :is(strong,small) {overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .gg-inspector-control-row small {color:#A9B8DA;font-size:12px}
+
+/* At-cursor fields precede source and provenance receipts. */
+.gg-inspector .inspector-object-fields { flex:0 1 auto;max-height:156px }
+.gg-inspector .inspector-object-fields--multiple { min-height:104px }
+.gg-inspector .inspector-value--changed > span { font-weight:600 }
+.gg-inspector .inspector-value--changed button { border-color:rgba(255,212,140,.48);font-weight:600;color:#FFE4B3 }
+.gg-inspector .inspector-actions button { background:transparent;color:#A9B8DA }

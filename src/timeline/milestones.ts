@@ -1,6 +1,7 @@
 import type { TraceEvent } from '../contracts/runtime'
 import type { RecordingStatus } from '../instrumentation/contracts'
-export interface Milestone { id: string; seq: number; cursor: number; label: string; importance: TraceEvent['importance']; kind: 'entry' | 'return' | 'allocation' | 'exception' | 'input' | 'output' }
+import { milestoneCaption } from './milestonesCaption'
+export interface Milestone { id: string; seq: number; cursor: number; label: string; caption: string; importance: TraceEvent['importance']; kind: 'entry' | 'return' | 'allocation' | 'mutation' | 'exception' | 'input' | 'output' }
 export interface MilestoneIndex {
   readonly count: number
   extend(events: readonly TraceEvent[], from: number, to?: number): void
@@ -17,31 +18,25 @@ function lowerBound(values: readonly Milestone[], prefix: number): number {
 function kindOf(event: TraceEvent): Milestone['kind'] | null {
   switch (event.type) {
     case 'ENTER_METHOD': return 'entry'
-    case 'RETURN_VALUE': case 'EXIT_METHOD': return 'return'
-    case 'ALLOCATE_OBJECT': case 'ALLOCATE_ARRAY': return 'allocation'
-    case 'THROW_EXCEPTION': case 'UNWIND_EXCEPTION': case 'CATCH_EXCEPTION': return 'exception'
+    case 'RETURN_VALUE': return 'return'
+    case 'ALLOCATE_OBJECT': return !event.metadata || event.metadata.ownership === 'PROJECT' ? 'allocation' : null
+    case 'ALLOCATE_ARRAY': return event.observed && (event.length ?? event.elements.length) === 0 && event.metadata?.ownership !== 'PROJECT' ? null : 'allocation'
+    case 'SET_FIELD': case 'SET_STATIC': case 'ARRAY_WRITE': return 'mutation'
+    case 'THROW_EXCEPTION': case 'CATCH_EXCEPTION': return 'exception'
     case 'INPUT_READ': case 'CONSOLE_INPUT': return 'input'
     case 'OUTPUT_WRITE': case 'CONSOLE_WRITE': return 'output'
-    case 'EXECUTION_FACT':
-      switch (event.fact.kind) {
-        case 'enter': return 'entry'
-        case 'return': case 'exit': return 'return'
-        case 'object': return 'allocation'
-        case 'throw': case 'unwind': case 'catch': return 'exception'
-        case 'io': return event.fact.channel === 'stdin' ? 'input' : 'output'
-        default: return null
-      }
+    // Graph facts, scope/line records and invocation retirement remain exact density ticks.
     default: return null
   }
 }
 const importance = { quiet: 0, normal: 1, major: 2 } as const
 export function labelBinCount(width: number, maximum: 12 | 6): number {
-  return Number.isFinite(width) ? Math.min(maximum, Math.max(0, Math.floor(width / 110))) : 0
+  return Number.isFinite(width) ? Math.min(maximum, Math.max(0, Math.floor(width / 140))) : 0
 }
 
 /** Append-only indexes make labelling O(k log M), independent of the total trace length. */
 export function createMilestoneIndex(): MilestoneIndex {
-  const milestones: Milestone[] = [], ranks: Milestone[][] = [[], [], []]
+  const milestones: Milestone[] = [], ranks: Milestone[][] = [[], [], [], [], []]
   let count = 0, stop: RecordingStatus | null = null
   return {
     get count() { return count },
@@ -53,8 +48,9 @@ export function createMilestoneIndex(): MilestoneIndex {
         if (event.seq !== index) throw new Error('Milestone index requires zero-based normalized Event seq')
         const kind = kindOf(event)
         if (kind) {
-          const item: Milestone = { id: event.eventId, seq: event.seq, cursor: index + 1, label: event.label, importance: event.importance, kind }
-          milestones.push(item); ranks[importance[event.importance]].push(item)
+          const item: Milestone = { id: event.eventId, seq: event.seq, cursor: index + 1, label: event.label, caption: milestoneCaption(event), importance: event.importance, kind }
+          const rank = kind === 'exception' ? 4 : kind === 'mutation' ? 3 : importance[event.importance]
+          milestones.push(item); ranks[rank].push(item)
         }
         if (event.type === 'CAPTURE_STOP') stop = event.recording
       }
@@ -71,7 +67,7 @@ export function createMilestoneIndex(): MilestoneIndex {
       for (let bin = 0; bin < bins; bin++) {
         const first = Math.max(1, Math.ceil(bin * count / bins))
         const last = bin === bins - 1 ? count : Math.ceil((bin + 1) * count / bins) - 1
-        for (let rank = 2; rank >= 0; rank--) {
+        for (let rank = ranks.length - 1; rank >= 0; rank--) {
           const item = ranks[rank][lowerBound(ranks[rank], first)]
           if (item && item.cursor <= last) { chosen[bin] = item; break }
         }

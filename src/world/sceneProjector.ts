@@ -4,6 +4,7 @@ import type { RecordingStatus } from '../instrumentation/contracts'
 import type { Evidence, LayoutState, SceneArray, SceneCollection, SceneClass, SceneEntity, SceneExceptionPath, SceneFrame, SceneIo, SceneModel, SceneObject, SceneReference, SceneReturnFlow, SceneRow, WorldAnchor } from '../contracts/world'
 import { createReductionEngine } from '../runtime/engine'
 import { freezeValue, persistentAppend, persistentArray, persistentPut, persistentRecord } from '../runtime/storage'
+import { runtimeValuesEqual } from '../runtime/valueValidation'
 import { displayType } from './displayType'
 import { collectionSummary } from './collectionSummary'
 import { frameStatus } from './frameStatus'
@@ -414,8 +415,18 @@ export function createSceneProjector(trace: TraceDocument): SceneProjector {
   }
   function objectNode(object: RuntimeObject, anchor: WorldAnchor, state: RuntimeState): SceneObject | SceneArray | SceneCollection {
     const event = state.cursor ? events[state.cursor - 1] : null
+    const previousEvent = events[state.cursor - 2]
+    const fact = event?.type === 'EXECUTION_FACT' ? event.fact : null
+    // The recorder can append provenance immediately after the matching
+    // field update. Keep that same slot prominent when its origin is shown.
+    const fieldWrite = event?.type === 'SET_FIELD' ? event
+      : fact?.kind === 'write' && fact.target.kind === 'field' && fact.target.ownerId === object.id
+        && previousEvent?.type === 'SET_FIELD' && previousEvent.objectId === fact.target.ownerId
+        && previousEvent.slotId === fact.target.id && runtimeValuesEqual(previousEvent.value,fact.value)
+        && previousEvent.source?.fileId === event?.source?.fileId && previousEvent.source?.line === event?.source?.line
+        ? previousEvent : null
     const activity = state.arrayActivity?.objectId === object.id ? state.arrayActivity : null
-    const mutation = event?.type === 'SET_FIELD' && event.objectId === object.id ? { slotId: event.slotId }
+    const mutation = fieldWrite?.objectId === object.id ? { slotId: fieldWrite.slotId }
       : event?.type === 'CREATE_REFERENCE' && event.sourceSlot.kind === 'object' && event.sourceSlot.objectId === object.id ? { slotId: event.sourceSlot.slotId } : null
     const ev = ownerEvidence(object.id, state.cursor)
     const fingerprint = [ev, mutation, activity], cached = objectCache.get(object)

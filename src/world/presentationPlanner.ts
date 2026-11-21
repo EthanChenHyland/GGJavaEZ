@@ -59,10 +59,11 @@ export function planPresentation(input: PlanInput, previous?: PresentationPlan):
     const currentFlowIds = new Set(currentFlows.map(flow => flow.id));
     if (scene.cursorEvent) for (const returned of scene.returnFlows)
         if (returned.consumerSeq === scene.cursorEvent.seq) currentFlowIds.add(returned.id);
-    const isCurrentFlow = (flow: RecordedFlow) => currentFlowIds.has(flow.id) || flow.evidenceSeqs.includes(scene.cursorEvent?.seq ?? -1);
+    const appliedSeq=scene.cursorEvent?.seq??-1;
+    const isCurrentFlow = (flow: RecordedFlow) => currentFlowIds.has(flow.id) || flow.consumerSeq===appliedSeq || flow.evidenceSeqs.includes(appliedSeq);
     const queriedFlows = input.flows?.query({ cursor: scene.cursor, scene, priority, limit: budget.flows * 3 }) ?? [];
     const targetedFlow = selection?.kind === 'flow' ? queriedFlows.find(flow => flow.id === selection.id) : null;
-    const requiredFlows = [...new Map([...currentFlows, ...queriedFlows.filter(flow => currentFlowIds.has(flow.id)), ...(targetedFlow&&!(trace.active&&trace.scope==='current') ? [targetedFlow] : [])].map(flow => [flow.id, flow])).values()];
+    const requiredFlows = [...new Map([...currentFlows, ...queriedFlows.filter(isCurrentFlow), ...(targetedFlow&&!(trace.active&&trace.scope==='current') ? [targetedFlow] : [])].map(flow => [flow.id, flow])).values()];
     const rowRequests=new Map<string,Set<string>>();
     const requestRow=(slotId:string|undefined)=>{
       const id=owner(slotId),node=id?scene.entities[id]:null;

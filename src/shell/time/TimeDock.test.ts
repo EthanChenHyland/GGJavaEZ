@@ -47,7 +47,7 @@ describe('production large-trace rail successors',()=>{
  })
  it('bounds narrow labels and dense ticks without moving any event or cursor coordinate',()=>{
   const values=events(20000),before=JSON.stringify(values),index=createMilestoneIndex();index.extend(values,0)
-  expect(labelBinCount(440,12)).toBe(4);expect(index.labelled(20000,440,12).length).toBeLessThanOrEqual(4)
+  expect(labelBinCount(440,12)).toBe(3);expect(index.labelled(20000,440,12).length).toBeLessThanOrEqual(3)
   expect(index.density(40)).toHaveLength(40);expect([...index.density(40)].reduce((sum,n)=>sum+n,0)).toBe(20000)
   expect(JSON.stringify(values)).toBe(before)
   const short=createMilestoneIndex();short.extend(events(2),0)
@@ -122,5 +122,20 @@ describe('production LIVE/HISTORY rail successors',()=>{
   expect(html).toContain('Play recorded execution');expect(html).toContain('Replay from before execution')
   expect(html).toContain('Recorded execution position');expect(html).toContain('2 / 6');expect(html).toContain('HISTORY')
   expect(html).not.toContain('Continue JVM');expect(html).not.toContain('Reset execution')
+ })
+ it('shows the exact applied write and recorded method context while leaving its raw caption accessible',()=>{
+  const context={owner:'app.Series',name:'total',descriptor:'(I)I',frameId:'main',site:11,rawSeq:49,source:null}
+  const write:TraceEvent={...recorded.events[3],type:'EXECUTION_FACT',label:'JVM write',fact:{kind:'write',context,
+   target:{id:'prior',kind:'variable',ownerId:'main',name:'prior',javaType:'int'},value:{kind:'primitive',javaType:'int',value:0},origin:{kind:'call_result',site:10}}}
+  const arrayWrite:TraceEvent={...recorded.events[4],type:'ARRAY_WRITE',label:'Write [1]',frameId:'main',objectId:'array',index:1,value:{kind:'primitive',javaType:'int',value:8}}
+  const trace={...recorded,events:[...recorded.events.slice(0,3),write,arrayWrite,recorded.events[5]]}
+  const api=playback(trace,4),html=render(trace,api)
+  expect(html).toContain('aria-valuenow="4"')
+  expect(html).toContain('aria-valuetext="prior = 0 · total. Recorded label: JVM write"')
+  expect(html).toContain('title="Event seq 3 · prior = 0 · total. Recorded label: JVM write"')
+  expect(html).toContain('prior = 0<span class="gg-time-context"> · total</span>')
+  api.stepBack();expect(render(trace,api)).not.toContain('prior = 0')
+  api.stepForward();expect(render(trace,api)).toBe(html)
+  api.stepForward();expect(render(trace,api)).toContain('title="Event seq 4 · Write [1] = 8. Recorded label: Write [1]"')
  })
 })

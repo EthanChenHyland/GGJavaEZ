@@ -3,7 +3,7 @@ import type {TraceEvent} from '../contracts/runtime'
 
 /** Resolve only a recorded consumer of this exact value version. Equal values,
  * adjacent events and legacy ReturnTransfer destinations do not establish it. */
-function consumingWrite(graph:ExecutionGraph,valueId:string,events:Pick<ReadonlyMap<string,TraceEvent>,'get'>):{destination:GraphStorage;consumerSeq:number}|null {
+export function consumingWrite(graph:ExecutionGraph,valueId:string,events:Pick<ReadonlyMap<string,TraceEvent>,'get'>):{destination:GraphStorage;consumerSeq:number}|null {
  for(const index of graph.outgoing[valueId]??[]){
   const edge=graph.edges[index],event=events.get(edge.eventId),storage=graph.storage[edge.to]
   if(!storage||!['ASSIGN','FIELD_WRITE','STATIC_WRITE','ARRAY_WRITE'].includes(edge.kind)||event?.type!=='EXECUTION_FACT'||event.fact.kind!=='write')continue

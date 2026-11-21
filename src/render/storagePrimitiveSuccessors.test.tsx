@@ -10,17 +10,19 @@ import {faceRows,faceRowPort} from '../world/faceRows'
 import {presentedFlowPorts} from '../world/flowTopology'
 import {buildSolidBatch} from './SolidBatch'
 import {inspectorEntity,inspectorRows} from './inspection'
-const captured=vi.hoisted(()=>({labels:[]as {children:string;size?:number;weight?:number;position:readonly number[];heading?:{entityId:string;kind:string};frameText?:{kind:string;slotId?:string}}[]}))
+import {color} from '../theme/tokens'
+const captured=vi.hoisted(()=>({labels:[]as {children:string;size?:number;weight?:number;tint?:string;position:readonly number[];heading?:{entityId:string;kind:string};frameText?:{kind:string;slotId?:string}}[]}))
 vi.mock('./FaceText',async importOriginal=>({...await importOriginal<typeof import('./FaceText')>(),WorldText:(props:typeof captured.labels[number])=>{captured.labels.push(props);return null}}))
 import {RuntimeSolid} from './RuntimeSolid'
 const int=(value:number)=>({kind:'primitive' as const,javaType:'int' as const,value})
 const slot=(owner:string,index:number):RuntimeSlot=>({id:`${owner}/captured/${index}`,name:`value${index}`,javaType:'int',value:int(index)})
-function fixture(count=20){
+function fixture(count=20,fieldWrite=false){
  const inputs:object[]=[{type:'PROGRAM_START'},
   {type:'CLASS_OBSERVE',classId:'jvm:class:pkg.Registry',className:'pkg.Registry',initialization:'observed',fields:Array.from({length:count},(_,i)=>slot('class',i))},
   {type:'ENTER_METHOD',frameId:'frame',callerFrameId:null,className:'pkg.Main',methodName:'run',returnType:'void',locals:Array.from({length:count},(_,i)=>slot('frame',i))},
   {type:'ALLOCATE_OBJECT',objectId:'object',displayId:41,className:'pkg.Account',metadata:{ownership:'PROJECT',runtimeType:'pkg.Account',packageName:'pkg'},fields:Array.from({length:count},(_,i)=>slot('object',i))},
   ...Array.from({length:count},(_,i)=>({type:'SET_STATIC',classId:'jvm:class:pkg.Registry',slotId:`class/captured/${i}`,value:int(i)}))]
+ if(fieldWrite)inputs.push({type:'SET_FIELD',objectId:'object',slotId:'object/captured/0',value:int(18)})
  const trace:TraceDocument={schemaVersion:2,demoId:'storage-primitive-unit',sourceFiles:[],events:inputs.map((input,seq)=>({...input,seq,eventId:`storage/${seq}`,source:null,label:'Captured unit storage',importance:'normal'}as TraceEvent))}
  const projection=projectTrace(trace),scene=projection.project(trace.events.length),plan=planPresentation({scene,layout:projection.layout,detailLevel:'CLOSE',selection:null,focusTargetId:null,trace:{active:false,scope:'relevant'}})
  return{trace,projection,scene,plan}
@@ -90,8 +92,26 @@ it.each(['FAR','MEDIUM','CLOSE']as const)('uses current %s row/type policy with 
  expect(captured.labels.find(label=>label.heading?.kind==='title')).toMatchObject({size:.4,weight:600})
  const names=captured.labels.filter(label=>label.frameText?.kind==='name')
  expect(names).toHaveLength(model.visible.length);expect(names.every(label=>label.size===.32&&label.weight===500)).toBe(true)
- if(detail==='MEDIUM'){expect(names.every(label=>label.children.endsWith(' →'))).toBe(true);expect(captured.labels.some(label=>label.size===.27)).toBe(false)}
+ const types=captured.labels.filter(label=>label.children==='int')
+ if(detail==='MEDIUM')expect(names.every(label=>label.children.endsWith(' →'))).toBe(true)
+ expect(types).toHaveLength(detail==='CLOSE'?names.length:0)
+ expect(types.every(label=>label.size!<names[0].size!&&label.tint===color.ui.textMuted)).toBe(true)
  expect(JSON.stringify(node)).toBe(before)
+})
+it('promotes only the recorded changed field at the write prefix, preserving its original chip and port',()=>{
+ const {trace,scene,plan,projection}=fixture(3,true)
+ const before=projection.project(trace.events.length-1).entities.object, after=scene.entities.object
+ if(before.kind!=='object'||after.kind!=='object')throw new Error('Expected recorded object')
+ expect(after.mutation?.slotId).toBe('object/captured/0')
+ const shown=render(before,plan),oldValue=captured.labels.find(label=>label.children==='0')!
+ captured.labels.length=0;render(after,plan)
+ const changed=captured.labels.find(label=>label.children==='18')!
+ expect(changed.size).toBeGreaterThan(oldValue.size!)
+ expect(changed.tint).toBe(color.semantic.mutation)
+ expect(changed.position).toEqual(oldValue.position)
+ expect(captured.labels.filter(label=>label.tint===color.semantic.mutation)).toEqual([changed])
+ expect(faceRowPort(after,shown,after.mutation!.slotId)).toEqual(faceRowPort(before,shown,after.mutation!.slotId))
+ expect(inspectorRows(after).at(0).value.exact).toBe('18')
 })
 it('promotes a selected captured late local into a real bounded row shared by text, picking and Flow endpoint lookup',()=>{
  const {scene,projection}=fixture(),id='frame/captured/19',node=scene.entities.frame,saved=JSON.stringify(node.anchor)
@@ -139,7 +159,9 @@ it.each(['MEDIUM','CLOSE']as const)('contains captured null, unavailable and Str
   expect(fill.anchor.position[1]).toBe(plate.anchor.position[1]);expect(fill.anchor.size[0]).toBeLessThan(rim.anchor.size[0]);expect(fill.anchor.ports).toEqual({});expect(fill.tint).toBe('#081538')
   expect(fill.anchor.position[0]-fill.anchor.size[0]/2).toBeGreaterThan(plate.anchor.position[0]-plate.anchor.size[0]/2)
   expect(fill.anchor.position[0]+fill.anchor.size[0]/2).toBeLessThan(plate.anchor.position[0]+plate.anchor.size[0]/2)
-  expect(captured.labels.find(label=>label.frameText?.kind==='value'&&label.frameText.slotId===row.slotId)?.children).toBe(row.value.text)
+  const label=captured.labels.find(label=>label.frameText?.kind==='value'&&label.frameText.slotId===row.slotId)?.children
+  if(row.value.kind==='not-recorded')expect(label).toMatch(/^(?:⟨not recorded⟩|unrecorded)$/)
+  else expect(label).toBe(row.value.text)
   expect(inspectorRows(node).at(node.rows.findIndex(item=>item.slotId===row.slotId)).value.exact).toBe(row.value.exact)
   if(row.value.kind==='null'||row.value.kind==='not-recorded'){
    expect(faceRowPort(node,presented,row.slotId)).toBeNull()
