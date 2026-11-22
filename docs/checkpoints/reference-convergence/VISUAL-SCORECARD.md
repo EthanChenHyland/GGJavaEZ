@@ -151,3 +151,24 @@ Scores are equally weighted across the inherited nine dimensions. Before refers 
 | Dense Home | 2 | 2 | 2 | 2 | 3 | 2 | 2 | 2 | 2 | 1.8 | 2.1 | +0.3 |
 
 Across the matched states, qualitative fidelity is **material 3/5**, **lighting 3/5**, **depth 3/5**, and **floor/contact 3/5**. Top and side surfaces still read in grayscale. The reduced line and reflection noise makes Hero and the array clearer. Focus keeps crisp fields but is nearly frontal in the matched pose. Very distant proxies have less edge contrast, and long exception paths and dense peripheral clipping remain visible.
+
+## Pass 4 rescore
+
+These are affected-state scores on the inherited nine-dimension rubric. The Pass 3 Free Navigation score is a retrospective from a fresh JVM capture of published `4f59a14`, using the same Dense fixture and one native orbit input. The other Pass 3 scores are the published scores above.
+
+| State | C | G | Cam | T | M | L | K | I | F | Pass 3 | Pass 4 | Δ | What changed |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
+| Object Focus | 3 | 4 | 4 | 4 | 3 | 3 | 2 | 5 | 3 | 2.7 | 3.4 | +0.7 | Readable face, substantial left side and top, two exact fields and visible context. A few direct routes leave the frame. |
+| Recursion | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 4 | 2 | 2.9 | 3.0 | +0.1 | The existing receding stack gains an identifiable entry cue and nearby causal priority. Wide context still reads as a narrow lane. |
+| Return Propagation | 3 | 3 | 3 | 4 | 3 | 3 | 3 | 4 | 3 | 2.9 | 3.2 | +0.3 | Amber motion and the exact result clarify destination ownership. Very short routes can still be hard to follow. |
+| Array Write | 4 | 3 | 3 | 4 | 3 | 3 | 2 | 4 | 3 | 3.1 | 3.2 | +0.1 | Stable cell, legible index and value, and a distinct write mark. The physical silhouette is close to Pass 3. |
+| Exception | 3 | 3 | 3 | 4 | 3 | 3 | 3 | 5 | 3 | 2.6 | 3.3 | +0.7 | Throw, unwind, catch and uncaught states separate. Long red lines recede and the visible path stays with the Stack. |
+| I/O | 2 | 2 | 3 | 2 | 3 | 3 | 2 | 4 | 2 | 2.4 | 2.6 | +0.2 | Consumed input and per-channel output have separate motion. The small endpoint previews still truncate. |
+| Completed World | 3 | 3 | 3 | 3 | 3 | 3 | 2 | 4 | 3 | 2.8 | 3.0 | +0.2 | The actual final values and archived frames remain present, with a useful inspection pose after completion. |
+| FAR | 2 | 3 | 2 | 2 | 3 | 3 | 2 | 3 | 1 | 2.2 | 2.3 | +0.1 | Exact counts and semantic classes improve the summary. Far proxies still read small. |
+| MEDIUM | 2 | 3 | 3 | 2 | 3 | 3 | 2 | 3 | 2 | 1.9 | 2.6 | +0.7 | Smaller local cohorts and quieter singleton links expose groups and nearby structure. Some labels still fall below pixel thresholds. |
+| CLOSE | 2 | 3 | 2 | 3 | 3 | 3 | 2 | 3 | 2 | 2.1 | 2.6 | +0.5 | Entries and primitive values are visible on captured bodies. Very close manual views can crop titles and peripheral volumes. |
+| Dense Home | 2 | 3 | 2 | 2 | 3 | 3 | 2 | 3 | 2 | 2.1 | 2.4 | +0.3 | The collection is inspectable and repeated volume recedes into summaries. The close region still reaches beyond the shell edge. |
+| Free Navigation | 2 | 3 | 3 | 3 | 3 | 3 | 1 | 3 | 2 | 2.3 | 2.6 | +0.3 | The same orbit reveals real nearby collection content and visible grouping. Dense crossing edges and peripheral clips remain. |
+
+These scores cover 12 states and retain the original full-suite 37/100 benchmark. [Pass 4 interaction evidence](PASS-4-INTERACTION.md)

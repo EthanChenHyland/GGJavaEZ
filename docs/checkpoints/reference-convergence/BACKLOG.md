@@ -68,3 +68,9 @@ Pass 3 should start with V03 and V04. Compare shared face opacity, side and top 
 V03 and V04 now use a shared acrylic finish, a softer studio rig, a quieter grid with local contact, and a body-only reflection in Cinematic. The matched Hero, Focus and array samples show the remaining gap from the supplied references. Focus still presents the face nearly head-on in its default pose, and close Dense views still have peripheral clipping. The new floor is quieter at FAR, where cluster silhouettes and topology need care in V08. [Pass 3 rendering](PASS-3-RENDERING.md)
 
 Pass 4 should start with V07 and V08. Preserve stable identity and the new glyph and material contrast while making close inspection more spatial and transitions between zoom levels easier to follow. Use V10 and V12 to verify motion and forensic order on the same real traces. Keep fixed resource qualification and sustained performance under P01/P02.
+
+### Pass 4 checkpoint
+
+V07 gains a three-quarter Focus with readable front values, physical side and top depth, direct caller and reference context, and return to the prior exploration position. V08 gains smaller local admission sets, exact cluster accounting and clearer Medium grouping. V10 gains distinct recorded cues, bounded fast replay and correct landed states under reduced motion. V12 gains phase-local evidence and quieter long routes. The source/runtime execution boundary is unchanged. [Pass 4 interaction and captures](PASS-4-INTERACTION.md)
+
+A later Pass 5 should address V08 and V11 together. Improve useful Dense Home and Close compositions, keep essential titles and detailed structures above the narrow dock and sheet, and make residual membership and relationship direction easier to follow. Preserve the current reference cut and manual camera ownership when refining those surfaces. Terminal preview legibility remains V13. Keep sustained frame budgets, memory and multi-environment acceptance in P01/P02.

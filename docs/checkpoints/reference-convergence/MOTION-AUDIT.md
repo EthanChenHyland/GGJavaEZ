@@ -36,3 +36,22 @@ Source timing defaults include 600 ms Run framing, 900 ms Focus and Home, 300 ms
 The guided cases and manually driven views kept recorded prefix truth while the camera changed. Eleven equivalent Array Home checkpoints across fresh Runs fixed the same center, distance and cursor. The tested control paths included user interruption, but the samples do not establish all interruption timing or every navigation input combination on other GPUs. The [performance baseline](PERFORMANCE-BASELINE.md) reports a separate whole-render probe and explicit CPU/GPU timing boundaries.
 
 Visual motion acceptance remains open. The current flow can be followed when the scene is sparse and when one knows where to look. The dominant animation often reads as updates to individual panels and wires instead of a continuous causal action. [V02 and V10](BACKLOG.md) rank the visual emphasis and staging work.
+
+## Pass 4 motion and interaction scorecard
+
+The 0–5 scores below are qualitative assessments of the native replays, stepped camera/semantic frames, and before/after stills. Camera ownership describes whether the action respects the viewer's current eye and target, including actions that leave the camera in the viewer's hands.
+
+| Sequence | Semantic clarity | Spatial continuity | Smoothness | Camera ownership | Reference-product feel | Observed limit |
+| --- | ---: | ---: | ---: | ---: | ---: | --- |
+| Focus | 4 | 4 | 4 | 5 | 3 | Fixed direct routes and a large Inspector can still divide attention. |
+| Semantic zoom | 3 | 4 | 3 | 5 | 3 | The layout holds. Retained cut boundaries can still make label and proxy swaps perceptible. |
+| Call entry | 4 | 4 | 3 | 5 | 3 | An opaque or unproved caller relationship limits the cue to the invocation. |
+| Allocation | 4 | 5 | 4 | 5 | 3 | A new volume is clear at the visible anchor. A distant one can be hard to find. |
+| Binding | 4 | 4 | 3 | 5 | 3 | Destination emphasis carries cases where the captured source has no presented port. |
+| Mutation | 4 | 5 | 4 | 5 | 3 | The old exact value is easiest to see at the prior cursor or in the timeline caption. |
+| Return | 4 | 4 | 4 | 5 | 3 | Very short routes or hidden destination rows limit the spatial cue. |
+| Exception propagation | 4 | 4 | 3 | 5 | 3 | Path marks are local at each phase. Complete JVM cause and stack evidence are unavailable in some recorded prefixes. |
+| Timeline playback | 3 | 4 | 3 | 5 | 3 | Technical events still interrupt the pacing between meaningful steps. |
+| Arbitrary scrub | 4 | 5 | 4 | 5 | 4 | A large jump trades animation for fast state reconstruction at the exact prefix. |
+
+The evidence distinguishes the sampled production animation clock from the playback cursor. Mark, route and pending-count samples are emitted by the rendered layer. Selected frames are assembled into clips with pauses between scenarios. Interactive playback timing is a separate native capture. [Pass 4 screenshots and motion evidence](PASS-4-INTERACTION.md#evidence-and-qualification)
