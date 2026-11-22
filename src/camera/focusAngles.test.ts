@@ -7,13 +7,28 @@ import {focusAngles} from './focusAngles'
 import {clusterAnchor} from '../world/clusterAnchor'
 
 const anchor=(id:string,x:number,z=0,region:WorldAnchor['region']='stack'):WorldAnchor=>({entityId:id,region,position:[x,-4,z],size:[4.8,7.5,2.4],ports:{},bodyPort:[x,-4,z+1.2]})
-it('preserves the real-entity neighbour preference and points structural proxies out of their region',()=>{
+it('uses the nearest recorded neighbour to choose the exposed side and points structural proxies out of their region',()=>{
  const frame=anchor('frame',0)
- expect(focusAngles(frame,[]).yaw).toBe(21)
- expect(focusAngles(frame,[anchor('left',-8)]).yaw).toBe(21)
- expect(focusAngles(frame,[anchor('right',8)]).yaw).toBe(-21)
+ expect(focusAngles(frame,[]).yaw).toBeLessThan(-30)
+ expect(focusAngles(frame,[anchor('left',-8)]).yaw).toBeGreaterThan(30)
+ expect(focusAngles(frame,[anchor('right',8)]).yaw).toBeLessThan(-30)
+ const neighbours=[anchor('left',-8),anchor('right',4),anchor('far-left',-12)]
+ expect(focusAngles(frame,neighbours)).toEqual(focusAngles(frame,[neighbours[1]]))
  for(const region of ['stack','class','heap','library'] as const){
   expect(focusAngles({...frame,region},[],true)).toEqual({yaw:region==='stack'||region==='class'?-21:21,pitch:-8})
+ }
+})
+it('preserves an oblique sight line when the shell shifts the body off-axis',()=>{
+ const body=anchor('object',9,3,'heap')
+ const viewports=[{width:1440,height:900},{width:760,height:900}]
+ const areas=[{x:654,y:90,width:764,height:675},{x:24,y:60,width:713,height:561}]
+ for(const [i,viewport] of viewports.entries()){
+  const area=areas[i],angles=focusAngles(body,[anchor('companion',0)],false,{area,viewport})
+  const pose=focusFraming(body,angles,area,viewport)
+  const [x,y,z]=cameraPosition(pose).map((point,axis)=>point-body.position[axis])
+  const yaw=Math.atan2(x,z)*180/Math.PI,pitch=Math.atan2(y,Math.hypot(x,z))*180/Math.PI
+  expect(yaw).toBeGreaterThan(25);expect(yaw).toBeLessThan(40)
+  expect(pitch).toBeGreaterThan(12);expect(pitch).toBeLessThan(24)
  }
 })
 it('leaves a stack-proxy Focus dolly outside the actual slab collision band',()=>{

@@ -20,9 +20,10 @@ export interface InspectorActions {
  focusActive:boolean;focus:CommandAvailability;reveal:CommandAvailability;copy:CommandAvailability;notice:string
  activate(id:InspectorCommandId):Promise<void>
 }
-export function Inspector({actions,selection,scene,runtime,flows,plan,onClose,onFocus,onReturn,onSelectRow,onSelectEntity}:{
+export function Inspector({actions,selection,scene,runtime,flows,plan,onClose,onFocus,onReturn,onSelectRow,onSelectEntity,onExploreCluster}:{
  actions?:InspectorActions;selection:Selection;scene:SceneModel;runtime:RuntimeState;flows?:FlowCatalog;plan:PresentationPlan
  onClose():void;onFocus():void;onReturn():void;onSelectRow(slotId:string):void;onSelectEntity(selection:NonNullable<Selection>):void
+ onExploreCluster?(id:string):void
 }) {
  const [expanded,setExpanded]=useState<InspectorRow|null>(null),[copyMessage,setCopyMessage]=useState('');
  const [historyOpen,setHistoryOpen]=useState(false)
@@ -68,6 +69,7 @@ export function Inspector({actions,selection,scene,runtime,flows,plan,onClose,on
   <p>{status}</p>
   {node?.kind==='object'&&values}
   <div className="inspector-actions">
+   {cluster&&onExploreCluster&&<button onClick={()=>onExploreCluster(cluster.id)}>Explore members</button>}
    <button aria-label={focusActive?'Return to World':'Focus selection'} title={focusAvailability.enabled?focusActive?'Return to World':'Focus selection':focusAvailability.reason} aria-description={focusAvailability.enabled?undefined:focusAvailability.reason} aria-disabled={!focusAvailability.enabled} onClick={()=>{if(focusAvailability.enabled){if(focusActive)onReturn();else onFocus()}}}>{focusActive?<CornerUpLeft size={14}/>:<Crosshair size={14}/>} {focusActive?'Return to World':'Focus'}</button>
    <button title={revealAvailability.enabled?'Reveal Source':revealAvailability.reason} aria-description={revealAvailability.enabled?undefined:revealAvailability.reason} aria-disabled={!revealAvailability.enabled} onClick={()=>activate('view.revealSource')}><FileSearch size={14}/>Reveal Source</button>
    <button title={copyAvailability.enabled?'Copy Value':copyAvailability.reason} aria-description={copyAvailability.enabled?undefined:copyAvailability.reason} aria-disabled={!copyAvailability.enabled} onClick={()=>activate('view.copyValue')}><Copy size={14}/>Copy Value</button>

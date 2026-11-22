@@ -20,7 +20,7 @@ describe('semantic transition pipeline', () => {
     const after = seek(trace, index + 1)
     const prior = before.objects['object:person:17'].fields
     const flow = deriveSemanticTransition(before, trace.events[index], after)!
-    expect(flow).toMatchObject({ kind: 'field-write', evidence: 'local', value: { value: 18 } })
+    expect(flow).toMatchObject({ kind: 'field-write', evidence: 'local', previousValue: { value: 0 }, value: { value: 18 } })
     expect(flow).not.toHaveProperty('from')
     expect(flow.to?.id).toContain('person:17:age')
     expect(transitionIsFlow(flow)).toBe(false)
@@ -36,7 +36,7 @@ describe('semantic transition pipeline', () => {
     const trace = loadArrayTrace()
     const flows = transitionsForTrace(trace)
     const write = flows.find((item) => item.kind === 'array-write' && item.from)
-    expect(write).toMatchObject({ evidence: 'observed' })
+    expect(write).toMatchObject({ evidence: 'observed', previousValue: { value: 8 }, value: { value: 3 } })
     const projection = projectTrace(trace), final = projection.project(trace.events.length)
     const target = arrayCellTarget(final, write!.to!.id)!
     expect(target).not.toBeNull()

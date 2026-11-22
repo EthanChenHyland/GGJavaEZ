@@ -35,14 +35,17 @@ describe('production navigation state', () => {
     expect(useCameraStore.getState()).toMatchObject({ mode: 'HOME', intent: { kind: 'home' } })
     expect(useInteractionStore.getState()).toMatchObject({ preFocus: null, focus: null, selection: { kind: 'object', id: 'unit/object' } })
   })
-  it('remembers the original pre-Focus pose/mode and preserves Focus on manual input before an exact return', () => {
+  it('remembers the pre-Focus pose and Trace scope through manual input and refocus', () => {
     const camera = useCameraStore.getState(), pose = camera.pose
-    camera.enterTrace(); camera.focus({ kind: 'object', id: 'unit/object' })
-    expect(useInteractionStore.getState().preFocus).toEqual({ pose, mode: 'TRACE' })
-    camera.userInput(); expect(useInteractionStore.getState().focus?.targetId).toBe('unit/object')
+    camera.enterTrace(); useInteractionStore.getState().setTraceScope('all');camera.focus({ kind: 'frame', id: 'unit/frame' })
+    expect(useInteractionStore.getState().preFocus).toEqual({ pose, mode: 'TRACE', trace: { active: true, scope: 'all' } })
+    useInteractionStore.getState().enterTrace(); useInteractionStore.getState().setTraceScope('current')
+    camera.focus({ kind: 'object', id: 'unit/object' });camera.userInput()
+    expect(useInteractionStore.getState().focus?.targetId).toBe('unit/object')
+    expect(useCameraStore.getState().intent).toBeNull()
     camera.exitFocus()
     expect(useCameraStore.getState()).toMatchObject({ mode: 'TRACE', intent: { kind: 'exitFocus', pose, mode: 'TRACE' } })
-    expect(useInteractionStore.getState()).toMatchObject({ focus: null, preFocus: null, selection: { kind: 'object', id: 'unit/object' }, trace: { active: true } })
+    expect(useInteractionStore.getState()).toMatchObject({ focus: null, preFocus: null, selection: { kind: 'object', id: 'unit/object' }, trace: { active: true, scope: 'all' } })
   })
   it('resolves actual object/field owners and selected connector terminals without permitting connector Focus', () => {
     const object = scene.entities['unit/object'], reference = scene.references[0]

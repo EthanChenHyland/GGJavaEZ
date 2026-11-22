@@ -5,7 +5,7 @@ import {far,clickCluster} from './clusterInteractions'
 test.afterEach(async({request})=>stopOwnedSession(request))
 
 const scenarios=[{width:1728,height:1117},{width:1440,height:900},{width:1280,height:800},{width:760,height:900},{width:1440,height:650},{width:1440,height:900,reduced:true},{width:1440,height:900,heap:true},{width:760,height:900,heap:true}]
-for(const scenario of scenarios)test(`cluster double-click travels without changing runtime or Focus ${scenario.width}x${scenario.height}${'reduced'in scenario?' reduced':''}${'heap'in scenario?' heap':''}`,async({page,request})=>{
+for(const scenario of scenarios)test(`cluster travel preserves runtime and Focus ${scenario.width}x${scenario.height}${'reduced'in scenario?' reduced':''}${'heap'in scenario?' heap':''}`,async({page,request})=>{
  test.setTimeout(60000);await page.setViewportSize(scenario);await page.emulateMedia({reducedMotion:'no-preference'})
  const errors=browserErrors(page);await runFixture(page,request,'dense');await home(page);await far(page)
  if(scenario.width===1440&&scenario.height===900&&!('reduced'in scenario)){
@@ -20,7 +20,15 @@ for(const scenario of scenarios)test(`cluster double-click travels without chang
  if('reduced'in scenario)await page.emulateMedia({reducedMotion:'reduce'})
  const step=async(ms:number)=>page.evaluate(async ms=>{window.__ggjavaezQA!.clock.step(ms);await new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve())));return window.__ggjavaezQA!.cameraPose()},ms)
  const region='heap'in scenario?'heap' as const:undefined
- await step(0);const cluster=await clickCluster(page,true,region);await step(0)
+ const travel=async()=>{
+  // The narrow Inspector sheet can cover the first selected proxy. The
+  // Inspector action and an unobstructed double-click use the same travel.
+  const sheetTravel=scenario.width<1024&&!region
+  const target=await clickCluster(page,!sheetTravel,region)
+  if(sheetTravel)await page.getByRole('button',{name:'Explore members',exact:true}).click()
+  return target
+ }
+ await step(0);const cluster=await travel();await step(0)
  if(region)expect(cluster.anchor.region).toBe(region)
  if(!('reduced'in scenario)){
   const middle=await step(450);expect(middle).not.toEqual(start);await step(449);await step(1)
@@ -49,7 +57,7 @@ for(const scenario of scenarios)test(`cluster double-click travels without chang
   // zooming out. Use native Home to establish this independent cancellation
   // interaction when there is no Focus to preserve; do not teleport via QA.
   if(!before.focus){await page.getByRole('complementary',{name:'Selection inspector'}).getByRole('button',{name:'Close inspector'}).click();await home(page)}
-  await far(page);expect(await facts()).toEqual(before);await step(0);await clickCluster(page,true,region);await step(200)
+  await far(page);expect(await facts()).toEqual(before);await step(0);await travel();await step(200)
   const selection=await page.evaluate(()=>window.__ggjavaezQA!.selection())
   await page.locator('.world-canvas').focus();await page.keyboard.press('ArrowRight');const cancelled=await step(0)
   expect(await step(2000)).toEqual(cancelled);expect(await facts()).toEqual(before)

@@ -72,14 +72,14 @@ function fixture(wide = false, registry = false) {
 }
 
 describe('deterministic one-hop Focus context', () => {
-  it('keeps reference neighbors bright while retaining captured callers and children as dimmed context', () => {
+  it('keeps recorded callers, callees and reference neighbours above unrelated context', () => {
     const { current, scene } = fixture(), saved = JSON.stringify(scene), plan = focus(scene, current.layout, 'subject')
-    expect(plan.framing.focus?.neighbours).toEqual(['a'])
+    expect(plan.framing.focus?.neighbours).toEqual(['caller', 'child', 'a'])
     expect(plan.entities.get('subject')!.opacity).toBe(1)
     expect(plan.entities.get('a')!.opacity).toBe(world.opacity.focusNeighbour)
     for (const id of ['caller', 'child', 'grandchild', 'sibling']) {
       expect(scene.entities[id].anchor).toBe(current.layout.anchors[id])
-      expect(plan.entities.get(id)!.opacity).toBeLessThanOrEqual(.25)
+      expect(plan.entities.get(id)!.opacity).toBe(['caller', 'child'].includes(id)?world.opacity.focusNeighbour:world.opacity.focusDim)
     }
     expect(scene.callLinks.map(link => [link.callerId, link.calleeId])).toContainEqual(['caller', 'subject'])
     expect(scene.callLinks.map(link => [link.callerId, link.calleeId])).toContainEqual(['subject', 'child'])

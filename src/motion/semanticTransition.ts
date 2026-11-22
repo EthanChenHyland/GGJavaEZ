@@ -1,5 +1,5 @@
 import { arrayElementSlotId, type RuntimeState, type RuntimeValue, type TraceDocument, type TraceEvent } from '../contracts/runtime'
-import type { ExecutionGraph, GraphEdge, GraphEdgeKind } from '../contracts/executionGraph'
+import type { ExecutionGraph, GraphEdge, GraphEdgeKind, GraphStorage } from '../contracts/executionGraph'
 import { historyForTrace } from '../runtime/history'
 import { persistentAppend, persistentArray } from '../runtime/storage'
 
@@ -12,7 +12,7 @@ export type FlowEndpoint =
 
 /** correlated remains a legacy renderer type only; this module never emits it. */
 export type FlowEvidence = 'observed' | 'bytecode-derived' | 'correlated' | 'local'
-export type SemanticTransitionKind = 'assignment' | 'parameter' | 'return' | 'allocation' | 'field-write' | 'reference' | 'null' | 'field-read' | 'array-read' | 'array-write' | 'input' | 'output' | 'branch' | 'loop' | 'frame-enter' | 'frame-exit' | 'exception'
+export type SemanticTransitionKind = 'assignment' | 'parameter' | 'receiver' | 'return' | 'allocation' | 'field-write' | 'reference' | 'null' | 'field-read' | 'array-read' | 'array-write' | 'input' | 'output' | 'branch' | 'loop' | 'frame-enter' | 'frame-exit' | 'throw' | 'unwind' | 'catch' | 'uncaught'
 
 /** Presentation facts only. Never store these in RuntimeState or use them to advance execution. */
 export interface SemanticTransition {
@@ -21,6 +21,10 @@ export interface SemanticTransition {
   kind: SemanticTransitionKind
   label: string
   value?: RuntimeValue
+  previousValue?: RuntimeValue
+  /** Exact appended edge, and (if different) its route in the current presentation. */
+  edgeId?: string
+  routeId?: string
   from?: FlowEndpoint
   to?: FlowEndpoint
   evidence: FlowEvidence
@@ -32,6 +36,10 @@ const slot = (id: string): FlowEndpoint => ({ kind: 'slot', id })
 const frame = (id: string): FlowEndpoint => ({ kind: 'frame', id })
 const object = (id: string): FlowEndpoint => ({ kind: 'object', id })
 const io = (id: 'stdin' | 'stdout' | 'stderr'): FlowEndpoint => ({ kind: 'io', id })
+const arrayCell = (state: RuntimeState, objectId: string, index: number) => {
+  const array = state.objects[objectId]?.array
+  return array?.elements[index] ?? array?.sparseElements?.[index]
+}
 
 /** Resolve only identities with existing runtime geometry. Graph values/calls are
  * not geometry: direct producer edges can reveal a storage endpoint, but a
@@ -82,10 +90,10 @@ function graphEndpoint(id: string, state: RuntimeState, graph: ExecutionGraph, r
 
 const directProducerKinds = new Set<GraphEdgeKind>(['ASSIGN', 'FIELD_READ', 'STATIC_READ', 'ARRAY_READ', 'RETURN', 'INPUT_CONSUME'])
 const edgeKinds: Partial<Record<GraphEdgeKind, SemanticTransitionKind>> = {
-  CALL: 'frame-enter', ARGUMENT_BIND: 'parameter', RECEIVER_BIND: 'reference', RETURN: 'return',
+  CALL: 'frame-enter', ARGUMENT_BIND: 'parameter', RECEIVER_BIND: 'receiver', RETURN: 'return',
   ASSIGN: 'assignment', FIELD_WRITE: 'field-write', FIELD_READ: 'field-read', ARRAY_WRITE: 'array-write',
   ARRAY_READ: 'array-read', STATIC_READ: 'field-read', STATIC_WRITE: 'field-write', REFERENCE_BIND: 'reference', INPUT_CONSUME: 'input', OUTPUT: 'output',
-  THROW: 'exception', UNWIND: 'exception', CATCH: 'exception', CONSTRUCT: 'allocation',
+  THROW: 'throw', UNWIND: 'unwind', CATCH: 'catch',
 }
 
 /** Resolve the physical endpoints without constructing motion presentation data. */
@@ -118,13 +126,47 @@ export function graphTransitionEndpoints(event: TraceEvent, edge: GraphEdge, sta
 export function graphTransition(event: TraceEvent, edge: GraphEdge, state: RuntimeState, graph: ExecutionGraph, includeStructural = false): SemanticTransition | null {
   const kind = edgeKinds[edge.kind]
   if (!kind) return null // COMPUTE has no physical value geometry yet.
-  const { from, to } = graphTransitionEndpoints(event, edge, state, graph)
-  if (!to && !includeStructural) return null
+  // Completion records must not animate a second copy of the returned value.
+  if (kind === 'return' && (graph.invocations[edge.from] || graph.calls[edge.from])) return null
+  let { from, to } = graphTransitionEndpoints(event, edge, state, graph)
+  // The physical exception object is optional. The recorded invocation still
+  // identifies the local cue; the call operation's duplicate THROW does not.
+  if (kind === 'throw' && from?.kind !== 'frame' && !includeStructural) return null
+  if (kind === 'input' && from?.id === 'stdin' && !to) { to = from; from = undefined }
+  if (!to && !(from && (kind === 'unwind' || kind === 'throw')) && !includeStructural) return null
   const valueId = graph.storage[edge.from]?.valueId
   const value = graph.values[edge.from] ?? graph.values[edge.to] ?? (valueId ? graph.values[valueId] : undefined)
-  return { id: `${event.eventId}:${edge.id}`, seq: event.seq, kind, label: event.label,
+  return { id: `${event.eventId}:${edge.id}`, edgeId: edge.id, seq: event.seq, kind, label: event.label,
+    ...(kind === 'frame-enter' && graph.calls[edge.from] ? { routeId: edge.from } : {}),
     source: edge.context.source, importance: event.importance, value: value?.value,
     ...(from ? { from } : {}), to, evidence: from ? edge.evidence === 'bytecode-derived' ? 'bytecode-derived' : 'observed' : 'local' }
+}
+
+function previousSlotValue(state: RuntimeState, target: Omit<GraphStorage, 'valueId' | 'writerInvocationId'>): RuntimeValue | undefined {
+  if (target.kind === 'variable') return state.frames[target.ownerId]?.locals[target.id]?.value
+  if (target.kind === 'static') return state.classes?.[target.ownerId]?.statics[target.id]?.value
+  if (target.kind === 'field') return state.objects[target.ownerId]?.fields[target.id]?.value
+  const index = Number(target.id.slice(`${target.ownerId}:element:`.length))
+  const cell = Number.isSafeInteger(index) && index >= 0 ? arrayCell(state, target.ownerId, index) : undefined
+  return cell && cell.id === target.id ? cell.value : undefined
+}
+
+/** The consuming write is a separate accepted event. Follow the exact dynamic
+ * call result back to its accepted producer edge, never a same-valued return. */
+function consumedCallResult(event: Extract<TraceEvent, { type: 'EXECUTION_FACT' }>, edge: GraphEdge, graph: ExecutionGraph, transition: SemanticTransition) {
+  if (event.fact.kind !== 'write' || event.fact.origin.kind !== 'call_result' || transition.evidence === 'local') return null
+  const inbound = graph.incoming[edge.from] ?? []
+  // Producer links precede all consumers and are a small prefix of this
+  // adjacency vector even when a value is used by many later invocations.
+  let input: GraphEdge | undefined, returned: GraphEdge | undefined
+  for (let i = 0; i < Math.min(inbound.length, 8); i++) {
+    const candidate = graph.edges[inbound[i]]
+    if (candidate.kind === 'INPUT_CONSUME' && graph.io[candidate.from]?.kind === 'input-consume') input ??= candidate
+    if (candidate.kind === 'RETURN' && !graph.calls[candidate.from] && !graph.invocations[candidate.from]) returned ??= candidate
+  }
+  if (input && transition.from?.kind === 'io' && transition.from.id === 'stdin') return { kind: 'input' as const, routeId: input.id }
+  if (returned && transition.from?.kind === 'slot' && transition.from.id.startsWith('return:')) return { kind: 'return' as const, routeId: returned.id }
+  return null
 }
 
 /** New graph edges only. No prefix scans, name matching, equal-value matching or
@@ -141,7 +183,15 @@ export function deriveSemanticTransitions(before: RuntimeState, event: TraceEven
     const edge = graph.edges[index]
     if (edge.eventId !== event.eventId) continue
     const transition = graphTransition(event, edge, after, graph)
-    if (transition) result.push(transition)
+    if (!transition) continue
+    if (event.fact.kind === 'write' && edge.to === event.fact.target.id) {
+      transition.previousValue = previousSlotValue(before, event.fact.target)
+      // The fact is the actual new value, independent of whether it was
+      // computed, unavailable, or reconciling a raw observation.
+      transition.value = event.fact.value
+      Object.assign(transition, consumedCallResult(event, edge, graph, transition))
+    }
+    result.push(transition)
   }
   return result
 }
@@ -161,14 +211,14 @@ export function deriveSemanticTransition(before: RuntimeState, event: TraceEvent
     case 'ASSIGN_LOCAL': {
       const target = after.frames[event.frameId]?.locals[event.slotId]
       if (!target) return null
-      return { ...base, kind: 'assignment', value: event.value, to: slot(event.slotId), evidence: 'local' }
+      return { ...base, kind: 'assignment', value: event.value, previousValue: before.frames[event.frameId]?.locals[event.slotId]?.value, to: slot(event.slotId), evidence: 'local' }
     }
     case 'ENTER_METHOD':
       // Enriched recordings prove calls separately. Stack adjacency may cross an
       // opaque library callback and must not be rendered as a direct invocation.
       if (before.executionGraph || after.executionGraph) return { ...base, kind: 'frame-enter', to: frame(event.frameId), evidence: 'local' }
       return { ...base, kind: 'frame-enter', from: event.callerFrameId ? frame(event.callerFrameId) : undefined,
-        to: frame(event.frameId), evidence: 'observed' }
+        to: frame(event.frameId), routeId: `call:${event.eventId}`, evidence: 'observed' }
     case 'EXIT_METHOD':
       if (before.executionGraph || after.executionGraph) return { ...base, kind: 'frame-exit', from: frame(event.frameId), evidence: 'local' }
       return { ...base, kind: 'frame-exit', from: frame(event.frameId),
@@ -180,14 +230,21 @@ export function deriveSemanticTransition(before: RuntimeState, event: TraceEvent
     case 'SET_FIELD': {
       const field = after.objects[event.objectId]?.fields[event.slotId]
       if (!field) return null
-      return { ...base, kind: 'field-write', value: event.value, to: slot(event.slotId), evidence: 'local' }
+      return { ...base, kind: 'field-write', value: event.value, previousValue: before.objects[event.objectId]?.fields[event.slotId]?.value, to: slot(event.slotId), evidence: 'local' }
     }
-    case 'CREATE_REFERENCE': return { ...base, kind: 'reference', from: slot(event.sourceSlot.slotId), to: object(event.targetObjectId),
-      value: { kind: 'reference', javaType: event.javaType, objectId: event.targetObjectId }, evidence: 'observed' }
+    case 'SET_STATIC': return { ...base, kind: 'field-write', value: event.value, previousValue: before.classes?.[event.classId]?.statics[event.slotId]?.value,
+      to: slot(event.slotId), evidence: 'local' }
+    case 'CREATE_REFERENCE': {
+      const owner = event.sourceSlot
+      const receiver = owner.kind === 'frame' && after.frames[owner.frameId]?.locals[owner.slotId]?.name === 'this'
+      const holder = slot(owner.slotId), target = object(event.targetObjectId)
+      return { ...base, kind: receiver ? 'receiver' : 'reference', from: receiver ? target : holder, to: receiver ? holder : target,
+        value: { kind: 'reference', javaType: event.javaType, objectId: event.targetObjectId }, evidence: 'observed' }
+    }
     case 'CLEAR_REFERENCE': return { ...base, kind: 'null', to: slot(event.sourceSlot.slotId), value: { kind: 'null' }, evidence: 'observed' }
     case 'ARRAY_READ': return { ...base, kind: 'array-read', value: event.value, from: slot(arrayElementSlotId(event.objectId, event.index)),
       to: event.destinationSlotId ? slot(event.destinationSlotId) : undefined, evidence: 'observed' }
-    case 'ARRAY_WRITE': return { ...base, kind: 'array-write', value: event.value,
+    case 'ARRAY_WRITE': return { ...base, kind: 'array-write', value: event.value, previousValue: arrayCell(before, event.objectId, event.index)?.value,
       from: event.from ? event.from.kind === 'slot' ? slot(event.from.slotId) : slot(arrayElementSlotId(event.objectId, event.from.index)) : undefined,
       to: slot(arrayElementSlotId(event.objectId, event.index)), evidence: event.from ? 'observed' : 'local' }
     case 'INPUT_READ': return { ...base, kind: 'input', value: event.value, from: io('stdin'), to: slot(event.destinationSlotId), evidence: 'observed' }
@@ -201,9 +258,19 @@ export function deriveSemanticTransition(before: RuntimeState, event: TraceEvent
     case 'EVALUATE_CONDITION': return { ...base, kind: event.kind === 'loop' ? 'loop' : 'branch', to: frame(event.frameId), evidence: 'observed' }
     case 'LOOP_ITERATION': return { ...base, kind: 'loop', to: frame(event.frameId), evidence: 'observed' }
     case 'BRANCH_EVALUATE': return { ...base, kind: 'branch', to: frame(event.frameId), evidence: 'observed' }
-    case 'THROW_EXCEPTION': return { ...base, kind: 'exception', from: frame(event.frameId), to: object(event.exceptionId), evidence: 'observed' }
-    case 'UNWIND_EXCEPTION': return { ...base, kind: 'exception', from: frame(event.frameId),
-      to: before.frames[event.frameId]?.callerFrameId ? frame(before.frames[event.frameId].callerFrameId!) : undefined, evidence: 'observed' }
+    case 'THROW_EXCEPTION': return { ...base, kind: 'throw', from: frame(event.frameId), to: object(event.exceptionId), evidence: 'observed' }
+    case 'UNWIND_EXCEPTION': {
+      const caller = before.executionGraph ? before.executionGraph.invocations[event.frameId]?.callerInvocationId : before.frames[event.frameId]?.callerFrameId
+      return { ...base, kind: 'unwind', from: frame(event.frameId), to: caller ? frame(caller) : undefined, evidence: 'observed' }
+    }
+    case 'CATCH_EXCEPTION': return { ...base, kind: 'catch', from: object(event.exceptionId), to: frame(event.frameId), evidence: 'observed' }
+    case 'PROGRAM_ABORT': {
+      const failure = after.exceptions.at(-1)
+      const origin = failure?.frameIds.at(-1)
+      return event.reason === 'program_crashed' && failure && !failure.caughtBy && origin
+        ? { ...base, kind: 'uncaught', from: frame(origin), to: object(failure.exceptionId), evidence: 'observed' }
+        : null
+    }
     default: return null
   }
 }

@@ -2,6 +2,7 @@ import type {Selection} from '../contracts/interaction'
 import type {ClusterKey,DetailLevel,LayoutState,PresentedCluster,SceneModel,WorldAnchor} from '../contracts/world'
 import {clusterHierarchy,clusterId,liveDepthId,liveDepthLabel,type ClusterNode} from './clusterHierarchy'
 import {recordedOwnership} from './recordedOwnership'
+import {world} from '../theme/tokens'
 
 export type ClusterCutLevel='type'|'package'|'ownership'
 export interface ResidualGroup {id:string;key:ClusterKey;members:string[]}
@@ -64,6 +65,7 @@ export function presentationClusters(scene:SceneModel,layout:LayoutState,residua
  return groups.map(group=>{
   const node=hierarchy.get(group.id)
   if(!node)throw new Error(`Cluster has no canonical recorded placement: ${group.id}`)
-  return{id:group.id,key:group.key,label:group.id===liveDepthId?liveDepthLabel(scene,layout,group.members):node.label,members:group.members.length,memberIds:group.members,selected:selection?.kind==='cluster'&&selection.id===group.id,anchor:node.anchor,opacity:focused?.25:.55,pickable:true}
+  const selected=selection?.kind==='cluster'&&selection.id===group.id
+  return{id:group.id,key:group.key,label:group.id===liveDepthId?liveDepthLabel(scene,layout,group.members):node.label,members:group.members.length,memberIds:group.members,selected,anchor:node.anchor,opacity:selected?1:focused?world.opacity.focusDim:world.opacity.quiet,pickable:true}
  })
 }

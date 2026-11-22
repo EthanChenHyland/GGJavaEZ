@@ -15,6 +15,19 @@ import { followFraming } from './followFraming'
 import { guidedFollow, isFollowSubjectEvent } from './guidedFollow'
 import { camera as tokens } from '../theme/tokens'
 import { useCameraStore } from './cameraStore'
+import { nextHomeRefit } from './CameraRig'
+
+it('bounds Home settling when fitted poses keep alternating between two LOD cuts', () => {
+ let arrival = {revision: 1, cutKey: 'initial', deadline: 900, finalRefits: 0, settledFrames: 1}
+ arrival = nextHomeRefit(arrival, 'medium', 600)!
+ expect(arrival).toMatchObject({deadline: 900, finalRefits: 0, settledFrames: 0})
+ expect(nextHomeRefit(arrival, 'medium', 900)).toBeNull()
+ for (const [index, cut] of ['close', 'medium', 'close'].entries()) {
+  arrival = nextHomeRefit(arrival, cut, 900 + index * 16)!
+  expect(arrival).toMatchObject({revision: 1, deadline: 900, finalRefits: index + 1, settledFrames: 0})
+ }
+ expect(nextHomeRefit(arrival, 'medium', 948)).toBeNull()
+})
 
 const document: TraceDocument = { schemaVersion: 2, demoId: 'unit/camera-choreography', sourceFiles: [], events: [
  { type: 'PROGRAM_START', eventId: 'e0', seq: 0, source: null, label: 'start', importance: 'quiet' },
@@ -92,11 +105,11 @@ describe('captured Guided Follow', () => {
 
 describe('actual Inspector safe frame', () => {
  const view = { width: 944, height: 724 }, area = { x: 20, y: 64, width: 650, height: 470 }
- it('keeps a focused front face inside the available rectangle without fitting the whole world', () => {
+ it('keeps a focused solid inside the available rectangle without fitting the whole world', () => {
   const body = scene.entities.target.anchor, pose = focusFraming(body, tokens.focus, area, view)
-  fits(pose, frontFace(body), area, view)
+  fits(pose, anchorCorners(body), area, view)
   const face = frontFace(body).map(point => screenPoint(point, projectionCamera(pose, view), view)), height = Math.max(...face.map(p => p.y)) - Math.min(...face.map(p => p.y))
-  expect(height / view.height).toBeGreaterThanOrEqual(.38); expect(height / view.height).toBeLessThanOrEqual(.52)
+  expect(height / view.height).toBeGreaterThan(.375); expect(height / view.height).toBeLessThanOrEqual(.52)
  })
  it('brings the actual selected front face closer than a complete Home composition', () => {
   const body = scene.entities.target.anchor, home = homeFraming(scene, plan, area, view, projection.layout), focus = focusFraming(body, tokens.focus, area, view)

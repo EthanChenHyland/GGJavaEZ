@@ -400,7 +400,7 @@
       "flows": 12,
       "pickable": 40,
       "cells": 48,
-      "quiet": 512
+      "quiet": 24
     },
     "CLOSE": {
       "frames": 24,
@@ -412,7 +412,7 @@
       "flows": 20,
       "pickable": 64,
       "cells": 128,
-      "quiet": 256
+      "quiet": 16
     }
   },
   "detailLevel": {

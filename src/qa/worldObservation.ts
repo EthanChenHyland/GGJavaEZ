@@ -30,6 +30,7 @@ export interface WorldObservation {
   effects():{ready:boolean;frames:number;revision:number;failure:string;cinematic:boolean;buffer:'hdr'|'ldr'|'direct';renderTargets:number}
   atmosphere():readonly {region:string;position:readonly[number,number,number];size:readonly[number,number,number];color:string;opacity:number;visible:boolean;depthWrite:boolean;depthTest:boolean;castShadow:boolean;maxLinearTint:number;maskSize:readonly[number,number]}[]
   framePerformance():import('./framePerformance').FramePerformanceObservation|null
+  motion(): Readonly<typeof import('../render/MotionLayer').motionReadiness>
   quality():{setting:string;active:string;compiled:boolean;cinematicStatus:string;availability:{enabled:true}|{enabled:false;reason:string};capabilities:import('../render/quality/gpuCapabilities').GpuCapabilities|null;contextLost:boolean;notice:string|null}
   ready(): Promise<void>
 }

@@ -20,8 +20,10 @@ export function faceRows(node: SceneEntity, presented: Pick<PresentedEntity,'det
     const limit = presented.detail === 'FAR' ? 0 : presented.detail === 'MEDIUM' ? 4 : node.kind === 'frame' ? 10 : 12;
     let count=Math.min(capacity,limit);
     const choose=()=>{
-      if(node.kind==='frame'&&presented.rowSlotIds?.length){
-        const captured=new Set(rows.map(row=>row.slotId));
+      if(presented.rowSlotIds?.length){
+        // Frame storage may be windowed. Heap and Class rows have a fixed
+        // face position, so only a physically anchored row can be promoted.
+        const captured=new Set(rows.filter(row=>node.kind==='frame'||node.anchor.ports[row.slotId]).map(row=>row.slotId));
         const requested=[...new Set(presented.rowSlotIds)].filter(id=>captured.has(id)).slice(0,count);
         const chosen=new Set(requested);
         for(const row of rows){if(chosen.size>=count)break;chosen.add(row.slotId)}

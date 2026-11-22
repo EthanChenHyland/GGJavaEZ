@@ -8,11 +8,12 @@ export interface WorldHover {
  pointer?:readonly[number,number]
  presentation?:{recordingId:string;cursor:number;revision:number}
 }
+type TraceView = {active:boolean;scope:TraceScope}
 export interface InteractionState {
  selection:Selection
  focus:{targetId:string;kind:'frame'|'object'|'class'|'arrayCell'|'cluster'}|null
- preFocus:{pose:OrbitPose;mode:NavigationMode}|null
- trace:{active:boolean;scope:TraceScope}
+ preFocus:{pose:OrbitPose;mode:NavigationMode;trace:TraceView}|null
+ trace:TraceView
  hover:WorldHover|null
  setHover(hover:WorldHover|null):void
  select(selection:Selection):void
@@ -31,7 +32,7 @@ export const useInteractionStore=create<InteractionState>(set=>({selection:null,
   return{hover}
  }),
  select:selection=>set({selection}),
- setFocus:(selection,pose,mode)=>{if(!focusable(selection))return;set(state=>({selection,focus:{targetId:selection.id,kind:selection.kind==='slot'?'arrayCell':selection.kind as 'frame'|'object'|'class'|'cluster'},preFocus:state.preFocus??{pose,mode},trace:{...state.trace,active:false}}))},
+ setFocus:(selection,pose,mode)=>{if(!focusable(selection))return;set(state=>({selection,focus:{targetId:selection.id,kind:selection.kind==='slot'?'arrayCell':selection.kind as 'frame'|'object'|'class'|'cluster'},preFocus:state.preFocus??{pose,mode,trace:state.trace},trace:{...state.trace,active:false}}))},
  clearFocus:()=>set({focus:null,preFocus:null}),
  enterTrace:()=>set({trace:{active:true,scope:'relevant'}}),
  setTraceScope:scope=>set(state=>({trace:{...state.trace,scope}})),

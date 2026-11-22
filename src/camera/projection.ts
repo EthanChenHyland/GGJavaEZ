@@ -90,9 +90,19 @@ export function frontFace(anchor: WorldAnchor): Vec3[] {
     return [[x - w / 2, y - h / 2, z + d / 2], [x + w / 2, y - h / 2, z + d / 2], [x - w / 2, y + h / 2, z + d / 2], [x + w / 2, y + h / 2, z + d / 2]];
 }
 export function representativeFaceHeight(scene: SceneModel, camera: PerspectiveCamera, viewport: Size): number | null {
-    const candidates = Object.values(scene.entities).map(node => ({ node, p: screenPoint(node.anchor.position, camera, viewport) }))
-        .filter(item => item.p.z > -1 && item.p.z < 1)
-        .sort((a, b) => Math.hypot(a.p.x - viewport.width / 2, a.p.y - viewport.height / 2) - Math.hypot(b.p.x - viewport.width / 2, b.p.y - viewport.height / 2) || a.node.id.localeCompare(b.node.id)).slice(0, bands.representatives);
+    // Retain only the nearest canonical representatives. The active cut,
+    // cluster silhouettes and optional labels cannot feed back into zoom.
+    const candidates: {node: SceneModel['entities'][string]; distance: number}[] = [];
+    const projected = new Vector3();
+    for (const node of Object.values(scene.entities)) {
+        projected.set(...node.anchor.position).project(camera);
+        if (!(projected.z > -1 && projected.z < 1)) continue;
+        const distance = Math.hypot(projected.x * viewport.width / 2, projected.y * viewport.height / 2);
+        const index = candidates.findIndex(item => distance < item.distance || distance === item.distance && node.id.localeCompare(item.node.id) < 0);
+        if (index >= 0) candidates.splice(index, 0, {node, distance});
+        else if (candidates.length < bands.representatives) candidates.push({node, distance});
+        if (candidates.length > bands.representatives) candidates.pop();
+    }
     const heights = candidates.map(({ node }) => { const points = frontFace(node.anchor).map(p => screenPoint(p, camera, viewport)); return Math.max(...points.map(p => p.y)) - Math.min(...points.map(p => p.y)); }).sort((a, b) => a - b);
     return heights.length ? heights[Math.floor(heights.length / 2)] : null;
 }

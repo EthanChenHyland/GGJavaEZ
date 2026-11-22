@@ -4,6 +4,11 @@ import {WorldText} from './FaceText'
 import {fitWorldText,textAdvance} from './text/textSystem'
 import {displayType} from '../world/displayType'
 
+const category:Record<PresentedCluster['key']['kind'],string> = {
+ class:'CLASSES', type:'TYPE', package:'PACKAGE', ownership:'ORIGIN',
+ collection:'COLLECTION', 'invocation-branch':'FRAMES', 'execution-age':'EVENT RANGE',
+}
+
 /** Package previews may simplify only when no different canonical key shares
  * the displayed name. Neither lookup nor selection ever uses the preview. */
 export function clusterLabelNames(clusters:readonly (Pick<PresentedCluster,'id'|'label'>&Partial<Pick<PresentedCluster,'key'>>)[]):Map<string,string> {
@@ -24,6 +29,6 @@ export function ClusterLabels({cluster,displayLabel}:{cluster:PresentedCluster;d
  return <>
   <WorldText position={[-w/2+.2,.68,0]} size={parts.size} weight={500} width={Math.max(.01,parts.width-parts.countWidth-.12)} opacity={cluster.opacity} minimumPixels={12}>{parts.key}</WorldText>
   <WorldText position={[w/2-.2,.68,0]} size={parts.size} weight={500} width={parts.countWidth} align="right" opacity={cluster.opacity} minimumPixels={12}>{parts.count}</WorldText>
-  <WorldText position={[-w/2+.2,.23,0]} size={.3} weight={500} tracking={.08} width={parts.width} tint={color.ui.textSecondary} opacity={cluster.opacity} minimumPixels={12}>CLUSTER</WorldText>
+  <WorldText position={[-w/2+.2,.23,0]} size={.3} weight={500} tracking={.08} width={parts.width} tint={color.ui.textSecondary} opacity={cluster.opacity} minimumPixels={12}>{category[cluster.key.kind]}</WorldText>
  </>
 }

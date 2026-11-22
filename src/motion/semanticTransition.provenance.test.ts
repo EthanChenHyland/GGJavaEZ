@@ -67,7 +67,8 @@ describe('truthful graph motion', () => {
       callId: 'call-1', receiver: null, parameters: [{ slotId: 'amount', name: 'amount', javaType: 'int', value: scalar() }] }, 'enter')
     expect(transitions).toContainEqual(expect.objectContaining({ kind: 'parameter', from: { kind: 'slot', id: 'x' },
       to: { kind: 'slot', id: 'amount' }, evidence: 'bytecode-derived' }))
-    expect(transitions).toContainEqual(expect.objectContaining({ kind: 'frame-enter', from: { kind: 'frame', id: 'caller' }, to: { kind: 'frame', id: 'child' } }))
+    expect(transitions).toContainEqual(expect.objectContaining({ kind: 'frame-enter', routeId: 'call-1',
+      from: { kind: 'frame', id: 'caller' }, to: { kind: 'frame', id: 'child' } }))
   })
 
   it.each(['constant', 'computed', 'unknown'] as const)('keeps %s destinations local without borrowing an equal-valued variable', kind => {
@@ -116,7 +117,7 @@ describe('truthful graph motion', () => {
     const entered = step(call, { kind: 'enter', invocationId: 'child', callerInvocationId: 'caller', callId: 'alias-call', method: declared,
       receiver: reference, parameters: [{ slotId: 'recipient', name: 'recipient', javaType: 'Ledger', value: reference }] }, 'alias-enter').transitions
     expect(entered).toContainEqual(expect.objectContaining({ kind: 'parameter', from: { kind: 'slot', id: 'b' }, to: { kind: 'slot', id: 'recipient' } }))
-    expect(entered).toContainEqual(expect.objectContaining({ kind: 'reference', from: { kind: 'slot', id: 'p' }, to: { kind: 'slot', id: receiverSlot } }))
+    expect(entered).toContainEqual(expect.objectContaining({ kind: 'receiver', from: { kind: 'slot', id: 'p' }, to: { kind: 'slot', id: receiverSlot } }))
     expect(entered.some(item => item.from?.id === 'a')).toBe(false)
   })
 
@@ -164,7 +165,8 @@ describe('truthful graph motion', () => {
     const valueId = graph.invocations.child.returnValueId!
     const state = { ...returned.after, executionGraph: { ...graph, results: { ...graph.results, 'caller:7': valueId } } }
     expect(step(state, { kind: 'write', target: storage('destination'), value: scalar(), origin: { kind: 'call_result', site: 7 } }, 'receive').transition)
-      .toMatchObject({ from: { kind: 'slot', id: 'return:child' }, to: { kind: 'slot', id: 'destination' } })
+      .toMatchObject({ kind: 'return', routeId: returned.transition!.edgeId,
+        from: { kind: 'slot', id: 'return:child' }, to: { kind: 'slot', id: 'destination' } })
   })
 
   it('does not substitute an entire invocation for a return value without geometry', () => {
@@ -188,12 +190,43 @@ describe('truthful graph motion', () => {
     expect(deriveSemanticTransition(before, consoleInput, before)).not.toHaveProperty('from')
     const call = step(before, { kind: 'call', callId: 'read-call', declared: { ...method, name: 'read' }, invokeKind: 'virtual', receiver: null,
       arguments: [], argumentOrigins: [], receiverOrigin: { kind: 'unknown' } }, 'read-call').after
-    const consumed = step(call, { kind: 'call-return', callId: 'read-call', value: scalar(), inputText: '25' }, 'consumed').after
-    expect(step(consumed, { kind: 'write', target: storage('destination'), value: scalar(), origin: { kind: 'call_result', site: 7 } }, 'read-destination').transition)
-      .toMatchObject({ kind: 'assignment', from: { kind: 'io', id: 'stdin' }, to: { kind: 'slot', id: 'destination' } })
-    const output = step(consumed, { kind: 'io', channel: 'stderr', text: 'value=25', callId: 'read-call' }, 'output').transition!
+    const consumed = step(call, { kind: 'call-return', callId: 'read-call', value: scalar(), inputText: '25' }, 'consumed')
+    expect(consumed.transition).toMatchObject({ kind: 'input', to: { kind: 'io', id: 'stdin' }, evidence: 'local' })
+    expect(step(consumed.after, { kind: 'write', target: storage('destination'), value: scalar(), origin: { kind: 'call_result', site: 7 } }, 'read-destination').transition)
+      .toMatchObject({ kind: 'input', routeId: consumed.transition!.edgeId,
+        from: { kind: 'io', id: 'stdin' }, to: { kind: 'slot', id: 'destination' } })
+    const output = step(consumed.after, { kind: 'io', channel: 'stderr', text: 'value=25', callId: 'read-call' }, 'output').transition!
     expect(output).toMatchObject({ kind: 'output', evidence: 'local', to: { kind: 'io', id: 'stderr' } })
     expect(output).not.toHaveProperty('from')
+  })
+
+  it('uses each recorded throw, unwind and catch independently with no borrowed ancestry', () => {
+    const state = { ...initial(), status: 'running' as const }
+    const base = { seq: 0, source: null, label: 'Exception evidence', importance: 'major' as const }
+    const thrown: TraceEvent = { ...base, eventId: 'raw-throw', type: 'THROW_EXCEPTION', exceptionId: 'error', frameId: 'child',
+      className: 'java.lang.IllegalStateException', message: 'bad state', explicit: true }
+    const unwind: TraceEvent = { ...base, seq: 1, eventId: 'raw-unwind', type: 'UNWIND_EXCEPTION', exceptionId: 'error', frameId: 'child' }
+    const caught: TraceEvent = { ...base, seq: 2, eventId: 'raw-catch', type: 'CATCH_EXCEPTION', exceptionId: 'error', frameId: 'caller' }
+    const first = applyEvent(state, thrown), next = applyEvent(first, unwind), resolved = applyEvent(next, caught)
+    expect(deriveSemanticTransition(state, thrown, first)).toMatchObject({ kind: 'throw', from: { id: 'child' }, to: { id: 'error' } })
+    expect(deriveSemanticTransition(first, unwind, next)).toMatchObject({ kind: 'unwind', from: { id: 'child' }, to: { id: 'caller' } })
+    expect(deriveSemanticTransition(first, unwind, next)?.previousValue).toBeUndefined()
+    expect(deriveSemanticTransition(next, caught, resolved)).toMatchObject({ kind: 'catch', from: { id: 'error' }, to: { id: 'caller' } })
+
+    const enriched = step(state, { kind: 'enter', invocationId: 'child', callerInvocationId: 'caller', method,
+      receiver: null, parameters: [] }, 'opaque-entry').after
+    expect(deriveSemanticTransition(enriched, unwind, enriched)?.to).toBeUndefined()
+    const graphThrow = step(enriched, { kind: 'throw', invocationId: 'child', exceptionId: 'error', className: thrown.className }, 'graph-throw')
+    expect(graphThrow.transition).toMatchObject({ kind: 'throw', from: { id: 'child' } })
+    expect(graphThrow.transition?.to).toBeUndefined() // exception ID known, physical heap endpoint absent
+    const graphUnwind = step(graphThrow.after, { kind: 'unwind', invocationId: 'child', exceptionId: 'error' }, 'graph-unwind')
+    expect(graphUnwind.transition).toMatchObject({ kind: 'unwind', from: { id: 'child' } })
+
+    const terminal: TraceEvent = { ...base, seq: next.cursor, eventId: 'failed', type: 'PROGRAM_ABORT', reason: 'program_crashed', message: 'exit' }
+    expect(deriveSemanticTransition(next, terminal, applyEvent(next, terminal))).toMatchObject({ kind: 'uncaught', to: { id: 'error' } })
+    const unrelatedAbort = { ...terminal, seq: resolved.cursor }
+    expect(deriveSemanticTransition(resolved, unrelatedAbort, applyEvent(resolved, unrelatedAbort))).toBeNull()
+    expect(deriveSemanticTransition(next, { ...terminal, reason: 'instrumentation_failed' }, next)).toBeNull()
   })
 
   it('omits graph endpoints without runtime geometry', () => {

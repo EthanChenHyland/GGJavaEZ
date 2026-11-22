@@ -8,13 +8,14 @@ import type {TraceEvent} from '../contracts/runtime'
 import type {Rect} from '../shell/shellLayout'
 import {useCameraStore} from './cameraStore'
 import {useInteractionStore} from '../interaction/interactionStore'
+import {spatialFocusTarget} from '../interaction/focusTarget'
 import {camera as tokens,motion} from '../theme/tokens'
 import {cameraPosition,nextDetailLevel,representativeFaceHeight,type OrbitPose} from './projection'
 import {cameraCollisionAnchors,cameraCollisionBoxes,constrainCameraPose,type EyePose} from './cameraConstraints'
 import {homeFraming} from './homeFraming'
 import {heroFraming} from './heroFraming'
 import {guidedFollow} from './guidedFollow'
-import {focusFraming} from './focusFraming'
+import {focusFraming,focusRefit,type PreviousFocusFrame} from './focusFraming'
 import {focusAngles} from './focusAngles'
 import {followPathFraming} from './followPathFraming'
 import {clusterFraming} from './clusterFraming'
@@ -24,6 +25,13 @@ import {arrayCellCaptionPoints,arrayCellIndexLabel} from '../render/text/arrayIn
 import {productionClock} from '../motion/clock'
 export interface CameraInput {cancel():void;orbit():void;key(key:string,shift:boolean):void;wheel(dx:number,dy:number,pixelPan:boolean):void;shift(value:boolean):void}
 export const cameraReadiness={moving:false}
+interface HomeArrival {revision:number;cutKey:string;deadline:number;finalRefits:number;settledFrames:number}
+const finalHomeRefitLimit=3
+export function nextHomeRefit(home:HomeArrival,cutKey:string,now:number):HomeArrival|null {
+ const arrived=now>=home.deadline
+ if(cutKey===home.cutKey||arrived&&home.finalRefits>=finalHomeRefitLimit)return null
+ return {...home,cutKey,finalRefits:home.finalRefits+(arrived?1:0),settledFrames:0}
+}
 const tuple=(v:Vector3):Vec3=>[v.x,v.y,v.z]
 const ease=(t:number)=>t<.5?4*t*t*t:1-(-2*t+2)**3/2
 export function orbitPoseFromEye(eye:EyePose):OrbitPose {
@@ -34,7 +42,7 @@ export function orbitPoseFromEye(eye:EyePose):OrbitPose {
 export function CameraRig({scene,plan,event,layout,safeFrame,focusContentFrame,inspectorRect,input}:{scene:SceneModel;plan:PresentationPlan;event:TraceEvent|null;layout:LayoutState;safeFrame:Rect;focusContentFrame?:Rect;inspectorRect?:Rect|null;input:RefObject<CameraInput|null>}) {
  const {camera,size,invalidate}=useThree(),controls=useRef<Controls>(null),intentRevision=useCameraStore(state=>state.intentRevision)
  useEffect(()=>productionClock.subscribe(invalidate),[invalidate])
- const move=useRef<(GuidedTravel&{start:number;duration:number;home:boolean;homeKey?:string;settledFrames?:number;flowId?:string;flowPrefix?:{recordingId:string;cursor:number}})|null>(null)
+ const move=useRef<(GuidedTravel&{start:number;duration:number;home?:HomeArrival;flowId?:string;flowPrefix?:{recordingId:string;cursor:number}})|null>(null)
  const initialized=useRef(false),recordingId=useRef(scene.recordingId),lastDetail=useRef(-Infinity),lastCursor=useRef(-1),lastFollow=useRef(-1)
  const followEnabled=useCameraStore(state=>state.follow),followRecursion=useRef<boolean|null>(null),followForensic=useRef(false)
  useEffect(()=>{lastFollow.current=-1;followRecursion.current=null;invalidate()},[followEnabled,invalidate])
@@ -49,24 +57,18 @@ export function CameraRig({scene,plan,event,layout,safeFrame,focusContentFrame,i
  // commands retain their own lifecycle; user input clears the Hero intent.
  const framingCutKey=JSON.stringify([scene.recordingId,scene.cursor,plan.detailLevel,[...plan.entities.keys()],[...plan.pinned],plan.clusters.map(cluster=>cluster.id),safeFrame,size.width,size.height])
  const handledIntent=useRef(-1)
- const focusRequest=useRef<{revision:number;anchorKey:string;deadline:number}|null>(null)
- const cellForFocus=(targetId:string)=>{
-  const {scene,plan}=latest.current
-  for(const window of plan.cellWindows.values()){
-   const cell=window.mapping.get(targetId)
-   if(cell)return{cell,array:scene.entities[window.arrayId]}
-  }
-  return null
- }
- const anchorForFocus=(targetId:string)=>{
-  const {scene,plan}=latest.current,owner=plan.framing.focus?.targetId??targetId
-  return cellForFocus(targetId)?.cell.anchor??scene.entities[owner]?.anchor??plan.clusters.find(cluster=>cluster.id===targetId)?.anchor
+ const focusRequest=useRef<(PreviousFocusFrame&{revision:number;angles:ReturnType<typeof focusAngles>})|null>(null)
+ const targetForFocus=()=>{
+  const focus=useInteractionStore.getState().focus
+  return focus?spatialFocusTarget(latest.current.scene,latest.current.plan,focus):null
  }
  const reduced=()=>useCameraStore.getState().reducedMotion||matchMedia('(prefers-reduced-motion: reduce)').matches
  const beginWaypoints=(poses:readonly OrbitPose[],duration:number,home=false,flowId?:string)=>{
   if(!poses.length)return
   const travel=guidedTravel(eye(),poses,latest.current.boxes,layout.bounds?.center,latest.current.limits)
-  move.current={...travel,start:productionClock.now(),duration:reduced()?0:duration,home,homeKey:home?framingCutKey:undefined,flowId,flowPrefix:flowId?{recordingId:scene.recordingId,cursor:scene.cursor}:undefined}
+  const start=productionClock.now(),travelDuration=reduced()?0:duration
+  const arrival=home?{revision:useCameraStore.getState().intentRevision,cutKey:framingCutKey,deadline:start+travelDuration,finalRefits:0,settledFrames:0}:undefined
+  move.current={...travel,start,duration:travelDuration,home:arrival,flowId,flowPrefix:flowId?{recordingId:scene.recordingId,cursor:scene.cursor}:undefined}
   invalidate()
  }
  const begin=(pose:OrbitPose,duration:number,home=false)=>beginWaypoints([pose],duration,home)
@@ -74,8 +76,11 @@ export function CameraRig({scene,plan,event,layout,safeFrame,focusContentFrame,i
  const home=()=>{const current=latest.current,key=framingCutKey;if(homeCache.current?.scene===current.scene&&homeCache.current.key===key)return homeCache.current.pose;const pose=homeFraming(current.scene,current.plan,commandArea(),size,layout).pose;homeCache.current={scene:current.scene,key,pose};return pose}
  const commandArea=()=>size.width<1024&&inspectorRect?{...safeFrame,height:Math.max(0,Math.min(safeFrame.y+safeFrame.height,inspectorRect.y-size.height*.01)-safeFrame.y)}:safeFrame
  const focusIntent=useCameraStore.getState().intent
- const focusAnchor=focusIntent?.kind==='focus'?anchorForFocus(focusIntent.targetId):null
- const focusAnchorKey=focusAnchor?JSON.stringify([focusAnchor.entityId,focusAnchor.region,focusAnchor.position,focusAnchor.size]):null
+ const focusTarget=focusIntent?.kind==='focus'?targetForFocus():null
+ const focusAnchor=focusTarget?.anchor
+ const focusAnchorKey=focusAnchor?JSON.stringify([focusAnchor.entityId,focusAnchor.position,focusAnchor.size]):null
+ const focusFrameKey=focusTarget?JSON.stringify([commandArea(),focusContentFrame]):null
+ const viewportKey=`${size.width}:${size.height}`
  useEffect(()=>{
   if(!(camera instanceof PerspectiveCamera))return
   camera.fov=tokens.fov;camera.near=.05;camera.far=10000;camera.updateProjectionMatrix()
@@ -93,7 +98,11 @@ export function CameraRig({scene,plan,event,layout,safeFrame,focusContentFrame,i
   if(intent.kind==='home')begin(home(),motion.homeMs,true)
   if(intent.kind==='recording')begin(home(),scene.cursor?600:0)
   if(intent.kind==='hero')begin(heroFraming(scene,plan,commandArea(),size),scene.cursor?600:0)
-  if(intent.kind==='exitFocus')begin(intent.pose,motion.exitFocusMs)
+  if(intent.kind==='exitFocus'){
+   const requested={position:cameraPosition(intent.pose),target:intent.pose.target}
+   const safe=constrainCameraPose(requested,requested,latest.current.boxes,layout.bounds?.center,latest.current.limits)
+   begin(orbitPoseFromEye(safe),motion.exitFocusMs)
+  }
   if(intent.kind==='zoom'){move.current=null;const pivot=controls.current?.target??new Vector3();camera.position.sub(pivot).multiplyScalar(intent.factor).add(pivot)}
   if(intent.kind==='followPath'){
    const curve=plan.curves.find(curve=>curve.id===intent.flowId)
@@ -114,7 +123,7 @@ export function CameraRig({scene,plan,event,layout,safeFrame,focusContentFrame,i
    // Resolve one actual prefix-owned member. This changes only the accounted
    // presentation cut; Focus, selection and the runtime catalog stay intact.
    useCameraStore.setState({intent:{...intent,memberId:destination.memberId}})
-   move.current={...route,start:productionClock.now(),duration:reduced()?0:900,home:false}
+   move.current={...route,start:productionClock.now(),duration:reduced()?0:900}
    invalidate()
   }
  },[intentRevision,framingCutKey])
@@ -122,10 +131,21 @@ export function CameraRig({scene,plan,event,layout,safeFrame,focusContentFrame,i
  // motion move may finish in one frame and trigger another cell mapping.
  useLayoutEffect(()=>{
   const {intent,intentRevision:revision}=useCameraStore.getState()
-  if(intent?.kind!=='focus'||revision!==intentRevision||!focusAnchor||!focusAnchorKey)return
-  const prior=focusRequest.current
-  if(prior?.revision===revision&&prior.anchorKey===focusAnchorKey)return
-  const anchor=focusAnchor
+  if(intent?.kind!=='focus'||revision!==intentRevision)return
+  const prior=focusRequest.current?.revision===revision?focusRequest.current:null
+  if(!focusTarget||!focusAnchorKey||!focusFrameKey){
+   // Retain the semantic selection while an earlier prefix has no body.
+   // In-flight travel has no destination at that prefix.
+   if(prior&&move.current)prior.interrupted=true
+   move.current=null
+   invalidate()
+   return
+  }
+  const now=productionClock.now()
+  const frame={anchorKey:focusAnchorKey,frameKey:focusFrameKey,viewportKey}
+  const refit=focusRefit(prior,frame,!!move.current)
+  if(!refit)return
+  const {anchor,cell}=focusTarget
   // Opening a narrow sheet never moves the camera by itself. An explicit
   // Focus request uses the free rectangle above that actual visible sheet.
   const area=commandArea()
@@ -133,20 +153,23 @@ export function CameraRig({scene,plan,event,layout,safeFrame,focusContentFrame,i
   // Semantic zoom can repack a virtualized cell during this command. Follow
   // its current anchor without extending the original arrival deadline.
   // User input clears the intent, so later exploration never triggers refits.
-  const deadline=prior?.revision===intentRevision?prior.deadline:productionClock.now()+(reduced()?0:motion.focusMs)
-  focusRequest.current={revision:intentRevision,anchorKey:focusAnchorKey,deadline}
-  const focusedCell=cellForFocus(intent.targetId)
+  let deadline=prior?.deadline??now+motion.focusMs
+  if(refit==='resume')deadline=Math.max(deadline,now+motion.settleMs)
+  if(refit==='resize'&&deadline<=now)deadline=now+motion.settleMs
+  if(reduced())deadline=now
+  const angles=prior?.frameKey===focusFrameKey&&prior.viewportKey===viewportKey?prior.angles:focusAngles(anchor,neighbours,useInteractionStore.getState().focus?.kind==='cluster',{area,viewport:size})
+  focusRequest.current={...frame,revision,deadline,angles}
   const free=focusContentFrame??area
   const captionArea={...free,x:area.x,width:area.width,height:Math.max(0,Math.min(free.y+free.height,size.width<1024&&inspectorRect?inspectorRect.y:Infinity)-free.y)}
-  const activity=focusedCell?.array?.kind==='array'&&focusedCell.array.activity?.index===focusedCell.cell.index?focusedCell.array.activity.kind:null
-  const content=focusedCell?{points:arrayCellCaptionPoints(focusedCell.cell.anchor,arrayCellIndexLabel(focusedCell.cell.index,activity)),area:captionArea}:undefined
+  const captionPoints=cell?([null,'read','write'] as const).flatMap(activity=>arrayCellCaptionPoints(anchor,arrayCellIndexLabel(cell.index,activity))):null
+  const content=captionPoints?{points:captionPoints,area:captionArea}:undefined
   cameraReadiness.moving=true
-  begin(focusFraming(anchor,focusAngles(anchor,neighbours,useInteractionStore.getState().focus?.kind==='cluster'),area,size,content),Math.max(0,deadline-productionClock.now()))
- },[intentRevision,focusAnchorKey])
+  begin(focusFraming(anchor,angles,area,size,content,neighbours),Math.max(0,deadline-now))
+ },[intentRevision,focusAnchorKey,focusFrameKey,viewportKey])
  useEffect(()=>{
   const cancel=()=>{move.current=null;lastFollow.current=-1;useCameraStore.getState().setPose(orbitPoseFromEye(eye()));useCameraStore.getState().userInput();invalidate()}
   const orbit=()=>{
-   const focus=useInteractionStore.getState().focus,anchor=focus?anchorForFocus(focus.targetId):null
+   const anchor=targetForFocus()?.anchor
    if(!anchor||!controls.current)return
    controls.current.target.set(...anchor.position)
    // Rebase only the pivot. Preserve the last safe eye for swept collision
@@ -164,7 +187,7 @@ export function CameraRig({scene,plan,event,layout,safeFrame,focusContentFrame,i
  useFrame(()=>{
   const control=controls.current;if(!control||!(camera instanceof PerspectiveCamera))return
   const selected=useInteractionStore.getState().selection
-  const intent=useCameraStore.getState().intent
+  const {intent,intentRevision}=useCameraStore.getState()
   if(intent?.kind==='cluster'&&(intent.recordingId!==scene.recordingId||intent.cursor!==scene.cursor)){
    move.current=null;useCameraStore.setState({intent:null});invalidate()
   }
@@ -172,14 +195,34 @@ export function CameraRig({scene,plan,event,layout,safeFrame,focusContentFrame,i
   if(flowMove?.flowId&&(selected?.kind!=='flow'||selected.id!==flowMove.flowId||flowMove.flowPrefix?.recordingId!==scene.recordingId||flowMove.flowPrefix?.cursor!==scene.cursor||!plan.curves.some(curve=>curve.id===flowMove.flowId)))move.current=null
   const now=productionClock.now()
   let travel=move.current
-  if(travel?.home&&travel.homeKey!==framingCutKey){
-   // LOD can replace a detailed library body with a proxy during travel. Refit
-   // that committed cut while preserving the original arrival deadline.
-   const route=guidedTravel(eye(),[home()],latest.current.boxes,layout.bounds?.center,latest.current.limits)
-   travel=move.current={...route,start:now,duration:Math.max(0,travel.start+travel.duration-now),home:true,homeKey:framingCutKey,settledFrames:0}
+  if(travel?.home){
+   if(intent?.kind!=='home'||travel.home.revision!==intentRevision)travel=move.current=null
+   else{
+    // The visible cut can change on arrival. Allow bounded cleanup so two
+    // alternating LOD cuts cannot indefinitely restart Home's settle frames.
+    const arrival=nextHomeRefit(travel.home,framingCutKey,now)
+    if(arrival){
+     const route=guidedTravel(eye(),[home()],latest.current.boxes,layout.bounds?.center,latest.current.limits)
+     travel=move.current={...route,start:now,duration:Math.max(0,arrival.deadline-now),home:arrival}
+    }
+   }
   }
   cameraReadiness.moving=!!travel
-  if(travel){const t=travel.duration?Math.min(1,(now-travel.start)/travel.duration):1,pose=travelPose(travel,ease(t));camera.position.set(...pose.position);control.target.set(...pose.target);if(t===1){lastDetail.current=-Infinity;if(!travel.home||(travel.settledFrames=(travel.settledFrames??0)+1)>=2){move.current=null;if(travel.home)useCameraStore.setState({mode:'EXPLORE',intent:null})}}}
+  if(travel){
+   const t=travel.duration?Math.min(1,(now-travel.start)/travel.duration):1
+   const pose=travelPose(travel,ease(t))
+   camera.position.set(...pose.position);control.target.set(...pose.target)
+   // An immediate reframe uses the collision-checked endpoint. Sweeping the
+   // straight line from the old eye would block it at a planned detour.
+   if(!travel.duration)previous.current=pose
+   if(t===1){
+    lastDetail.current=-Infinity
+    if(!travel.home||++travel.home.settledFrames>=2){
+     move.current=null
+     if(travel.home)useCameraStore.setState({mode:'EXPLORE',intent:null})
+    }
+   }
+  }
   control.update()
   const safe=constrainCameraPose(eye(),previous.current,latest.current.boxes,layout.bounds?.center,latest.current.limits);camera.position.set(...safe.position);control.target.set(...safe.target);camera.lookAt(control.target);camera.updateMatrixWorld();previous.current=safe
   useCameraStore.getState().setPose(orbitPoseFromEye(safe))

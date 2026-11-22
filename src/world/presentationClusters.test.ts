@@ -8,6 +8,7 @@ import {presentationClusters,prepareClusterClearance} from './presentationCluste
 import {clusterHierarchy} from './clusterHierarchy'
 import {planPresentation} from './presentationPlanner'
 import {faceRows} from './faceRows'
+import {budgets} from '../theme/tokens'
 const overlap=(a:WorldAnchor,b:WorldAnchor)=>a.position.every((v,i)=>Math.abs(v-b.position[i])<(a.size[i]+b.size[i])/2-1e-6)
 
 // Explicit normalized unit fixtures, not evidence of JVM execution.
@@ -175,5 +176,23 @@ it('keeps an unadmitted large Hero group whole while ordinary exploration retain
  expect(hero.accounting).toEqual({detailed:1,quiet:0,clustered:1000,total:1001})
  expect(hero.entities.get('frame')).toMatchObject({pinned:true,pickable:true})
  expect(hero.clusters.flatMap(cluster=>cluster.memberIds)).toEqual(scene.order.objects)
- expect(planPresentation(input).accounting.quiet).toBe(512)
+ expect(planPresentation(input).accounting.quiet).toBe(budgets.MEDIUM.quiet)
+})
+it('reveals real nearby members from a large type while preserving selection, proxy anchor and exact cut',()=>{
+ const data=catalog([...Array.from({length:130},(_,i)=>allocation(i,`object-${i}`,'app.Entry','PROJECT')),end(130)])
+ const scene=data.at(),selected='object-129',anchor=scene.entities[selected].anchor
+ const viewTile=anchor.position.map(value=>Math.floor(value/12)) as unknown as readonly [number,number,number]
+ const input={scene,layout:data.layout.state,selection:{kind:'object' as const,id:selected},focusTargetId:null,viewTile,trace:{active:false,scope:'relevant' as const}}
+ const far=planPresentation({...input,detailLevel:'FAR'})
+ const medium=planPresentation({...input,detailLevel:'MEDIUM'},far)
+ const close=planPresentation({...input,detailLevel:'CLOSE'},medium)
+ for(const plan of [far,medium,close]){
+  expect(plan.entities.get(selected)).toMatchObject({pinned:true,highlight:'selected',pickable:true})
+  expect(plan.clusters[0].anchor).toEqual(far.clusters[0].anchor)
+  expect(new Set([...plan.entities.keys(),...plan.clusters.flatMap(cluster=>cluster.memberIds)]).size).toBe(scene.order.objects.length)
+  expect(plan.accounting.quiet).toBeLessThanOrEqual(budgets[plan.detailLevel].quiet)
+ }
+ expect(far.accounting.detailed).toBe(1)
+ expect(medium.accounting.detailed).toBeGreaterThan(far.accounting.detailed)
+ expect(close.accounting.detailed).toBeGreaterThanOrEqual(medium.accounting.detailed)
 })

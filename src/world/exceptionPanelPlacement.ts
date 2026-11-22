@@ -1,13 +1,16 @@
 import type {SceneModel,PresentationPlan,WorldAnchor} from '../contracts/world'
 import {buildExceptionPanelModel,layoutExceptionPanel} from '../render/exceptionPanelModel'
-/** Structural evidence beside the actual throwing frame, away from +X heap.
+import {forensicPhaseAtCursor} from './forensicPresentation'
+
+/** Structural evidence stays on the Stack side of the recorded invocation.
  * This never reserves, moves or creates a runtime identity. */
 export function exceptionPanelFor(scene:SceneModel):PresentationPlan['exceptionPanel']{
- const content=scene.exception
- if(!content?.uncaught||scene.cursor!==scene.liveHead)return null
+ const content=scene.exception,phase=forensicPhaseAtCursor(scene)
+ if(!content||!phase)return null
  const size=layoutExceptionPanel(buildExceptionPanelModel(content,scene.recording.state)).size
- const frame=content.throwFrameId?scene.entities[content.throwFrameId]:null
- const anchor=frame?.kind==='frame'?frame.anchor:Object.values(scene.entities).find(node=>node.kind==='frame')?.anchor
+ const frameId=phase==='uncaught'?content.throwFrameId:content.current?.frameId
+ const frame=scene.entities[frameId??''],origin=scene.entities[content.throwFrameId??'']
+ const anchor=frame?.kind==='frame'?frame.anchor:origin?.kind==='frame'?origin.anchor:undefined
  const position=anchor?[anchor.position[0]-anchor.size[0]/2-.8-size[0]/2,anchor.position[1],anchor.position[2]+anchor.size[2]/2-size[2]/2] as const:[-5,0,0] as const
  return{position,content}
 }

@@ -27,6 +27,37 @@ it('retains every captured entry while bounding the face to eight stack entries'
  expect(model.captions).toContain('Cause-chain completeness not recorded')
  expect(model.captions).toContain('Stack bounds unavailable · counts cover captured lines only')
 })
+
+it('keeps terminal geometry and evidence detail with one compact uncaught caption',()=>{
+ const content=path({message:'failed shipment',unwound:['origin','caller','main']})
+ const previous=layoutExceptionPanel(buildExceptionPanelModel({...content,uncaught:false},'FULL'))
+ const terminal=layoutExceptionPanel(buildExceptionPanelModel(content,'FULL'))
+ expect(terminal.lines[0]).toMatchObject({tone:'phase',text:'Uncaught · 3 unwound'})
+ expect(terminal.lines.length).toBe(previous.lines.length+1)
+ expect(terminal.size[0]).toBe(previous.size[0])
+ expect(terminal.size[2]).toBe(previous.size[2])
+ expect(terminal.size[1]-previous.size[1]).toBeCloseTo(.432)
+})
+
+it('reads the observed sites in throw-to-handler order and keeps stack evidence independent',()=>{
+ const content=path({uncaught:false,catchFrameId:'handler',stack:Array.from({length:4},(_,i)=>`captured ${i+1}`),stackEvidence:observed,
+  throwLine:{fileId:'src/Failing.java',line:14},current:{eventId:'catch',phase:'catch',frameId:'handler',source:{fileId:'src/Runner.java',line:9}}})
+ const model=buildExceptionPanelModel(content,'FULL')
+ expect(model).toMatchObject({phase:'Caught',sites:['Throw site · Failing.java:14','Catch site · Runner.java:9'],stackLines:['captured 1','captured 2'],remainingStackLines:2})
+ expect(model.captured.stack).toHaveLength(4)
+ expect(model.captions).toContain('Stack bounds unavailable · counts cover captured lines only')
+ const lines=layoutExceptionPanel(model).lines.map(line=>line.text).join('')
+ expect(lines.indexOf('Throw site')).toBeLessThan(lines.indexOf('Catch site'))
+ expect(lines.indexOf('Catch site')).toBeLessThan(lines.indexOf('captured 1'))
+})
+
+it('labels a currently propagating partial path without implying a handler or uncaught exit',()=>{
+ const content=path({uncaught:false,complete:false,unwound:['throwing'],current:{eventId:'unwind',phase:'unwind',frameId:'throwing',source:null}})
+ const active=buildExceptionPanelModel(content,'FULL')
+ expect(active).toMatchObject({phase:'Unwinding · 1 unwound',sites:['Throw site unavailable','Unwind site unavailable'],stackLines:[]})
+ expect(active.captions.some(caption=>caption.includes('path incomplete'))).toBe(false)
+ expect(buildExceptionPanelModel(content,'STOPPED_ERROR').captions).toContain('Exception path incomplete · STOPPED_ERROR')
+})
 it('wraps qualified names and unsupported Unicode without losing or splitting escape groups',()=>{
  const text='pkg.App$Nested.failure 😀  whitespace retained'
  const wrapped=wrapExceptionPanelText(text,2.2,.27,400,32)

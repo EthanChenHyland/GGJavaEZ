@@ -1,6 +1,7 @@
 import type { Evidence, SceneExceptionPath, Vec3 } from '../contracts/world';
 import type { RecordingStatus } from '../instrumentation/contracts';
 import { typography, world } from '../theme/tokens';
+import { forensicCaptions } from '../world/forensicPresentation';
 import { localFontText, textAdvance, type FontWeight } from './text/textSystem';
 
 export interface ExceptionPanelModel {
@@ -8,6 +9,8 @@ export interface ExceptionPanelModel {
     captured: SceneExceptionPath;
     header: string;
     message: string;
+    phase: string | null;
+    sites: readonly string[];
     stackLines: readonly string[];
     remainingStackLines: number;
     stackRemainder: string | null;
@@ -31,9 +34,12 @@ export function buildExceptionPanelModel(
     content: SceneExceptionPath,
     recordingState: RecordingStatus['state'],
 ): ExceptionPanelModel {
-    const remainingStackLines = Math.max(0, content.stack.length - 8);
+    const { phase, sites } = forensicCaptions(content);
+    const active = content.current && !content.uncaught;
+    const stackLimit = active ? 2 : 8;
+    const remainingStackLines = Math.max(0, content.stack.length - stackLimit);
     const captions: string[] = [];
-    if (!content.complete || content.evidence.kind === 'unavailable' || content.throwFrameId === null)
+    if ((!content.complete && (!active || recordingState !== 'FULL')) || content.evidence.kind === 'unavailable' || content.throwFrameId === null)
         captions.push(`Exception path incomplete · ${recordingState}`);
     if (content.throwFrameId === null) captions.push('Throw frame unavailable · not recorded');
     const pathCaption = evidenceCaption('Path evidence', content.evidence);
@@ -59,7 +65,8 @@ export function buildExceptionPanelModel(
         captured: content,
         header: content.className || 'Exception class unavailable',
         message: content.message === null ? 'message: unavailable or null' : `message: ${content.message}`,
-        stackLines: content.stack.slice(0, 8),
+        phase, sites,
+        stackLines: content.stack.slice(0, stackLimit),
         remainingStackLines,
         stackRemainder: remainingStackLines ? `${remainingStackLines} more · captured stack lines` : null,
         causeIds: content.causes,
@@ -125,7 +132,7 @@ export interface ExceptionPanelLine {
     position: Vec3;
     size: number;
     weight: FontWeight;
-    tone: 'title' | 'content' | 'caption';
+    tone: 'phase' | 'title' | 'content' | 'caption';
 }
 
 export interface ExceptionPanelLayout {
@@ -183,9 +190,15 @@ export function layoutExceptionPanel(model: ExceptionPanelModel): ExceptionPanel
         }
     };
 
-    entry('exception class', model.header, titleSize, 600, 'title', 16);
+    const active = model.captured.current && !model.captured.uncaught;
+    if (model.phase) append(model.phase, captionSize, 600, 'phase', 1);
+    entry('exception class', model.header, titleSize, 600, 'title', active ? 4 : 16);
     height += padding;
-    entry('message', model.message, messageSize, 500, 'content', 16);
+    entry('message', model.message, messageSize, 500, 'content', active ? 3 : 16);
+    if (model.sites.length) {
+        height += padding;
+        for (const site of model.sites) entry('source site', site, captionSize, 500, 'caption', 2);
+    }
     if (model.stackLines.length) height += padding;
     model.stackLines.forEach((line, index) => {
         entry(`captured stack line ${index + 1}`, line, captionSize, 400, 'content', 4);

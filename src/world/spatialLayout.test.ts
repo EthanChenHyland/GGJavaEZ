@@ -127,8 +127,9 @@ describe('persistent production runtime geography', () => {
       const plan = planPresentation({ scene, layout, detailLevel, selection: { kind: 'reference', id: scene.references[0].id }, focusTargetId: null, trace: { active: false, scope: 'relevant' } })
       expect(plan.entities.get(event.classId)?.pinned).toBe(true)
       expect(scene.entities[event.classId].anchor).toBe(layout.anchors[event.classId])
-      if (detailLevel === 'FAR') expect(plan.referencePresentation.unavailable.map(item => item.id)).toContain(scene.references[0].id)
-      else expect(plan.curves.find(curve => curve.id === scene.references[0].id)?.points[0]).toEqual(faceRowPort(scene.entities[event.classId],plan.entities.get(event.classId)!,'static:shared'))
+      const port=faceRowPort(scene.entities[event.classId],plan.entities.get(event.classId)!,'static:shared')
+      expect(port).not.toBeNull()
+      expect(plan.curves.find(curve => curve.id === scene.references[0].id)?.points[0]).toEqual(port)
     }
   })
 })

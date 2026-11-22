@@ -282,7 +282,8 @@ export async function captureComparison(page:Page,request:APIRequestContext,stat
   }
  }
  if(state.id==='focus'||state.id==='object-inspection'){
-  const target=before.world.entities.find(body=>body.id===before.selection?.id)?.face
+  const body=before.world.entities.find(body=>body.id===before.selection?.id)
+  const node=body&&before.scene.entities[body.id],target=body?.face
   if(!target)misses.push('Focus front face missing')
   else{
    if(target.height<.38*before.viewport.height||target.height>.52*before.viewport.height)misses.push(`Focus height: ${target.height/before.viewport.height} H, expected .38–.52 H`)
@@ -291,9 +292,16 @@ export async function captureComparison(page:Page,request:APIRequestContext,stat
    const inspector=before.shell.inspector
    if(inspector&&target.x<inspector.x+inspector.width&&target.x+target.width>inspector.x&&target.y<inspector.y+inspector.height&&target.y+target.height>inspector.y)misses.push('Focus face is covered by the actual Inspector rectangle')
   }
-  const delta=before.pose.position.map((value,index)=>value-before.pose.target[index]),yaw=Math.abs(Math.atan2(delta[0],delta[2])*180/Math.PI),pitch=-Math.atan2(delta[1],Math.hypot(delta[0],delta[2]))*180/Math.PI
-  if(yaw<18||yaw>24)misses.push(`Focus yaw: ${yaw} degrees, expected 18–24`)
-  if(pitch< -11||pitch> -5)misses.push(`Focus pitch: ${pitch} degrees, expected −11 to −5`)
+  const bounds=body?.bounds,safe=before.shell.commandFrame
+  if(!bounds||bounds.x<safe.x-1||bounds.y<safe.y-1||bounds.x+bounds.width>safe.x+safe.width+1||bounds.y+bounds.height>safe.y+safe.height+1)misses.push('Focus volume is outside the actual free World rectangle')
+  if(node&&target&&bounds){
+   // Measure the line from the actual object to the eye. The camera pivot is
+   // panned away from the object when the Inspector occupies half the screen.
+   const delta=before.pose.position.map((value,index)=>value-node.anchor.position[index])
+   const yaw=Math.abs(Math.atan2(delta[0],delta[2])*180/Math.PI),elevation=Math.atan2(delta[1],Math.hypot(delta[0],delta[2]))*180/Math.PI
+   if(yaw<18||yaw>50||elevation<7||elevation>36)misses.push(`Focus sight line misses the readable three-quarter range: ${yaw}° yaw, ${elevation}° elevation`)
+   if(bounds.width-target.width<8||bounds.height-target.height<6)misses.push('Focus shows too little projected side and top depth')
+  }
  }
  if(state.id==='recursion'){
   const frames=before.scene.liveStack.slice(-design.camera.recursion.context),safe=before.shell.commandFrame

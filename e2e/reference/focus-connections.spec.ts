@@ -32,7 +32,7 @@ function checkMask(value:Awaited<ReturnType<typeof observation>>,targetId:string
  }
  return{outsideReferences,outsideCalls,directReferences}
 }
-for(const viewport of[{width:1440,height:900},{width:760,height:900}])test(`actual Focus caps indirect connections across Trace All and keeps callers as dim context ${viewport.width}x${viewport.height}`,async({page,request},info)=>{
+for(const viewport of[{width:1440,height:900},{width:760,height:900}])test(`actual Focus retains direct caller context and caps indirect connections across Trace All ${viewport.width}x${viewport.height}`,async({page,request},info)=>{
  await page.setViewportSize(viewport);const errors=browserErrors(page),session=await runFixture(page,request,'domain')
  const targets=await page.evaluate(()=>{
   const scene=window.__ggjavaezWorld!.scene()
@@ -48,8 +48,9 @@ for(const viewport of[{width:1440,height:900},{width:760,height:900}])test(`actu
   expect(beforeCounts.directReferences).toBeGreaterThan(0);expect(beforeCounts.outsideCalls).toBeGreaterThan(0)
   if(kind==='object')expect(beforeCounts.outsideReferences).toBeGreaterThan(0)
   else{
-   expect(before.framing!.neighbours).not.toContain(targets.callerId)
-   expect(before.entities[targets.callerId].opacity).toBeLessThanOrEqual(.25)
+   expect(before.framing!.neighbours).toContain(targets.callerId)
+   expect(before.entities[targets.callerId].opacity).toBeGreaterThan(.25)
+   expect(before.entities[targets.callerId].opacity).toBeLessThan(1)
    expect(before.entities[targetId]).toEqual({opacity:1,detail:'CLOSE'})
   }
   await page.getByRole('button',{name:'Trace',exact:true}).click()

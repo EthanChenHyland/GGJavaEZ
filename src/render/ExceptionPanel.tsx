@@ -50,10 +50,17 @@ function ExceptionPanelContent({panel,recordingState,safeFrame}:{panel:NonNullab
  const edgeMaterial=useMemo(()=>new LineBasicMaterial({color:color.semantic.exception,depthWrite:false,toneMapped:false}),[])
  useEffect(()=>()=>outline.dispose(),[outline])
  useEffect(()=>()=>{faceMaterial.dispose();edgeMaterial.dispose()},[faceMaterial,edgeMaterial])
- return <group ref={host} name="exception-panel">
+ const phase=panel.content.uncaught?'uncaught':panel.content.current?.phase
+ const caught=phase==='catch'
+ const tint=(tone:typeof layout.lines[number]['tone'])=>{
+  if(tone==='phase')return caught?color.semantic.execution:color.semantic.exception
+  if(tone==='title'&&!caught)return color.semantic.exception
+  return tone==='caption'?color.ui.textSecondary:color.ui.text
+ }
+ return <group ref={host} name="exception-panel" userData={{runtimeExceptionPhase:phase}}>
   <instancedMesh ref={body} name="exception-panel-body" args={[undefined,undefined,1]} geometry={unitRoundedBox} material={glassMaterial('exception',1,tier)} dispose={null} raycast={noRaycast} userData={{runtimeBloomRole:'protected'}}/>
   <mesh ref={face} geometry={unitBox} material={faceMaterial} position={[0,0,layout.size[2]/2+.015]} dispose={null} raycast={noRaycast} userData={{runtimeBloomRole:'protected'}}/>
-  <lineSegments geometry={outline} material={edgeMaterial} dispose={null} raycast={noRaycast} userData={{runtimeBloomRole:'emitter'}}/>
-  <group ref={ink}>{layout.lines.map((line,index)=><WorldText exceptionText key={index} position={line.position} size={line.size} weight={line.weight} width={layout.textWidth} tint={line.tone==='title'?color.semantic.exception:line.tone==='caption'?color.ui.textSecondary:color.ui.text}>{line.text}</WorldText>)}</group>
+  <lineSegments geometry={outline} material={edgeMaterial} dispose={null} raycast={noRaycast} userData={{runtimeBloomRole:caught?'protected':'emitter'}}/>
+  <group ref={ink}>{layout.lines.map((line,index)=><WorldText exceptionText key={index} position={line.position} size={line.size} weight={line.weight} width={layout.textWidth} tint={tint(line.tone)}>{line.text}</WorldText>)}</group>
  </group>
 }

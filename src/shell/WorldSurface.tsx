@@ -52,7 +52,9 @@ export function WorldSurface({ trace, onSourceChange, onRevealSource, onRuntimeC
     const inspectorSelection=selection??(focus?{kind:focus.kind==='arrayCell'?'slot':focus.kind==='cluster'?'cluster':focus.kind,id:focus.targetId} as NonNullable<Selection>:null);
     useEffect(()=>{if(inspectorSelection)shellStore.setState({inspectorHidden:false})},[inspectorSelection?.id]);
     const detail = useCameraStore(state => state.detailLevel);
-    const viewTile=useCameraStore(state=>state.viewTile);
+    // Home solves against a repeatable cut. A tile crossed en route must not
+    // choose different optional geometry and change that command's destination.
+    const viewTile=useCameraStore(state=>state.mode==='HOME'?null:state.viewTile);
     const cameraIntent = useCameraStore(state => state.intent?.kind==='cluster'?state.intent:undefined);
     const heroRequested=useCameraStore(state=>state.intent?.kind==='hero'||state.intent?.kind==='recording');
     const heroViewport=useMemo(()=>heroRequested?{safeFrame,viewport}:undefined,[heroRequested,safeFrame.x,safeFrame.y,safeFrame.width,safeFrame.height,viewport.width,viewport.height]);
@@ -81,7 +83,7 @@ export function WorldSurface({ trace, onSourceChange, onRevealSource, onRuntimeC
     const plan = useMemo(() => {
         const previous=compiler.previousPlan?{...compiler.previousPlan,cellWindows:compiler.windows}:undefined;
         const clusterTravelMemberId=cameraIntent?.kind==='cluster'&&cameraIntent.recordingId===scene.recordingId&&cameraIntent.cursor===scene.cursor?cameraIntent.memberId:undefined;
-        const next=planPresentation({ scene, flows, router:compiler.router, layout, detailLevel: detail, selection, focusTargetId: focus?.targetId ?? null, clusterTravelMemberId, viewTile:viewTile.split(':').map(Number) as [number,number,number], trace: traceState,hero:heroViewport },previous);
+        const next=planPresentation({ scene, flows, router:compiler.router, layout, detailLevel: detail, selection, focusTargetId: focus?.targetId ?? null, clusterTravelMemberId, viewTile:viewTile?.split(':').map(Number) as [number,number,number]|undefined, trace: traceState,hero:heroViewport },previous);
         compiler.previousPlan=next;
         for(const[id,window]of next.cellWindows)compiler.windows.set(id,window);
         return next;
@@ -135,6 +137,7 @@ export function WorldSurface({ trace, onSourceChange, onRevealSource, onRuntimeC
     useEffect(() => { onSourceChange?.(sourceFileId&&sourceLine?{fileId:sourceFileId,line:sourceLine}:null); }, [sourceFileId,sourceLine,onSourceChange,trace.demoId]);
     useEffect(() => { useCameraStore.getState().resetRecording(!!execution&&trace.events.length>0); }, [trace.demoId]);
     const select = (next: Selection) => {
+        if (next) shellStore.setState({inspectorHidden:false});
         setSelection(next);
     };
     const inspectionFocus=worldCommandAvailability(focus?'navigation.exitFocus':'navigation.focusSelection',{
@@ -145,7 +148,7 @@ export function WorldSurface({ trace, onSourceChange, onRevealSource, onRuntimeC
     const focusSelection = (target=inspectorSelection) => { if (canFocusWorldSelection(scene,plan,target))useCameraStore.getState().focus(target); };
     return <section className="world-panel" aria-label="Runtime world">
     <RuntimeCanvas trace={trace} timeline={playback.store} snapshot={renderSnapshot} viewport={viewport} safeFrame={safeFrame} focusContentFrame={focusContentFrame} inspectorRect={suppressInspector?null:inspectorRect} selection={selection} onSelect={select} onFocus={focusSelection}/>
-    {!suppressInspector && inspectorSelection && <Inspector actions={{focusActive:!!focus,focus:inspectionFocus,reveal:inspectorCommandAvailability('view.revealSource',inspectionState),copy:inspectorCommandAvailability('view.copyValue',inspectionState),activate:executeInspectorCommand,notice:inspectionNotice}} selection={inspectorSelection} scene={scene} runtime={runtime} flows={flows} plan={plan} onClose={() => shellStore.setState({inspectorHidden:true})} onFocus={focusSelection} onSelectRow={id=>setSelection({kind:'slot',id})} onSelectEntity={select} onReturn={()=>useCameraStore.getState().exitFocus()}/>}
+    {!suppressInspector && inspectorSelection && <Inspector actions={{focusActive:!!focus,focus:inspectionFocus,reveal:inspectorCommandAvailability('view.revealSource',inspectionState),copy:inspectorCommandAvailability('view.copyValue',inspectionState),activate:executeInspectorCommand,notice:inspectionNotice}} selection={inspectorSelection} scene={scene} runtime={runtime} flows={flows} plan={plan} onClose={() => shellStore.setState({inspectorHidden:true})} onFocus={focusSelection} onSelectRow={id=>setSelection({kind:'slot',id})} onSelectEntity={select} onReturn={()=>useCameraStore.getState().exitFocus()} onExploreCluster={id=>useCameraStore.getState().travelCluster(id,scene.recordingId,scene.cursor)}/>}
     <div className="world-timeline"><TimeDock trace={trace} playback={playback} execution={execution} settings={{reducedMotion,onReducedMotionChange:useQualityStore.getState().setReducedMotion,quality,onQualityChange:tier=>{void useQualityStore.getState().selectQuality(tier)},cinematicAvailable:cinematic.enabled,cinematicReason:cinematic.enabled?undefined:cinematic.reason}}/></div>
     {qualityNotice&&<div className="world-quality-notice glass" role="status">{qualityNotice}<button onClick={()=>useQualityStore.getState().clearNotice()} aria-label="Dismiss rendering notice">×</button></div>}
     {traceState.active && <div className="world-settings glass" role="group" aria-label="Trace scope">{(['relevant', 'current', 'all'] as const).map(item => <button key={item} aria-pressed={scope === item} onClick={() => setScope(item)}>{item[0].toUpperCase() + item.slice(1)}</button>)}</div>}

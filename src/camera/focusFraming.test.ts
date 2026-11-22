@@ -2,8 +2,9 @@ import { expect, it } from 'vitest';
 import { Vector3 } from 'three';
 import type { Vec3, WorldAnchor } from '../contracts/world';
 import type { Rect } from '../shell/shellLayout';
-import { focusFraming } from './focusFraming';
-import { arrayCellCaptionPoints } from '../render/text/arrayIndexLayout';
+import { focusFraming, focusRefit } from './focusFraming';
+import { focusAngles } from './focusAngles';
+import { arrayCellCaptionPoints, arrayCellIndexLabel } from '../render/text/arrayIndexLayout';
 import { fitToSafeFrame, projectionCamera, screenPoint, type OrbitPose, type Size } from './projection';
 
 const viewports: Size[] = [
@@ -18,6 +19,21 @@ function corners(node: WorldAnchor): Vec3[] {
     const [x, y, z] = node.position, [w, h, d] = node.size;
     return [[x - w / 2, y - h / 2, z + d / 2], [x + w / 2, y - h / 2, z + d / 2],
         [x - w / 2, y + h / 2, z + d / 2], [x + w / 2, y + h / 2, z + d / 2]];
+}
+function silhouette(node: WorldAnchor): Vec3[] {
+    const face = corners(node);
+    return [...face, ...face.map(([x,y,z]): Vec3 => [x,y,z - node.size[2]])];
+}
+function expectInside(points: readonly Vec3[], pose: OrbitPose, viewport: Size, area: Rect) {
+    const camera = projectionCamera(pose, viewport);
+    for (const point of points.map(point => screenPoint(point, camera, viewport))) {
+        expect(point.x).toBeGreaterThanOrEqual(area.x - 1e-5);
+        expect(point.x).toBeLessThanOrEqual(area.x + area.width + 1e-5);
+        expect(point.y).toBeGreaterThanOrEqual(area.y - 1e-5);
+        expect(point.y).toBeLessThanOrEqual(area.y + area.height + 1e-5);
+        expect(point.z).toBeGreaterThan(-1);
+        expect(point.z).toBeLessThan(1);
+    }
 }
 function observe(node: WorldAnchor, pose: OrbitPose, viewport: Size) {
     const camera = projectionCamera(pose, viewport);
@@ -165,9 +181,18 @@ it('preserves projection under world translation, depth changes and realistic un
 it('honors width priority across realistic field counts using independently observed screen bounds', () => {
     for (const viewport of viewports) for (const height of [1.95, 4.05, 6.75, 10.35, 15.6]) for (const yaw of [-21, 21]) {
         const safe = safeFrame(viewport), node = anchor([5.2, height, 2.3], [-7, -11, -4]);
-        const observed = assertProjection(node, focusFraming(node, { yaw, pitch: -8 }, safe, viewport), safe, viewport, yaw);
+        const pose = focusFraming(node, { yaw, pitch: -8 }, safe, viewport);
+        const observed = observe(node, pose, viewport);
+        expectInside(silhouette(node), pose, viewport, safe);
         const w = observed.width / viewport.width, h = observed.height / viewport.height;
-        if (w < .25 - 1e-6) expect(h).toBeCloseTo(.52, 6);
+        const shellLimitsSubject = (h < .38 - 1e-6) || (w < .25 - 1e-6 && h < .52 - 1e-6);
+        if (shellLimitsSubject) {
+            const bounds = silhouette(node).map(point => screenPoint(point, projectionCamera(pose, viewport), viewport));
+            const edges = [Math.min(...bounds.map(p => p.x)) - safe.x, safe.x + safe.width - Math.max(...bounds.map(p => p.x)),
+                Math.min(...bounds.map(p => p.y)) - safe.y, safe.y + safe.height - Math.max(...bounds.map(p => p.y))];
+            expect(Math.min(...edges)).toBeCloseTo(0, 4);
+        }
+        else if (w < .25 - 1e-6) expect(h).toBeCloseTo(.52, 6);
         else if (w > .35 + 1e-6) expect(h).toBeCloseTo(.38, 6);
         else {
             // A deviation from the preferred height is justified only by a
@@ -177,13 +202,54 @@ it('honors width priority across realistic field counts using independently obse
     }
 });
 
-it('returns a finite truthful-height pose when an extreme width cannot also fit the supplied rectangle', () => {
+it('preserves the whole silhouette when an extreme width cannot also meet the preferred face height', () => {
     const viewport = viewports[1], safe = safeFrame(viewport), node = anchor([32, 1.3, 1.1]);
     const pose = focusFraming(node, { yaw: 21, pitch: -8 }, safe, viewport);
     expect([...pose.target, pose.distance, pose.yawDeg, pose.pitchDeg].every(Number.isFinite)).toBe(true);
-    const observed = assertProjection(node, pose, safe, viewport, 21);
-    expect(observed.height / viewport.height).toBeCloseTo(.38, 6);
-    expect(observed.width).toBeGreaterThan(safe.width);
+    expectInside(silhouette(node), pose, viewport, safe);
+    const observed = observe(node, pose, viewport);
+    expect(observed.height / viewport.height).toBeLessThan(.38);
+    expect(observed.width).toBeGreaterThan(safe.width * .95);
+});
+
+it('fits an oblique cell and its largest index caption above Inspector at desktop and narrow widths', () => {
+    for (const viewport of viewports) {
+        const safe = viewport.width < 1024 ? { x: 40, y: 56, width: 720, height: 565 } : safeFrame(viewport);
+        const cell = anchor([1.55, 1.55, 1.55], [38.625, -7.665, .06]);
+        const caption = ([null,'read','write'] as const).flatMap(activity => arrayCellCaptionPoints(cell, arrayCellIndexLabel(6500, activity)));
+        const angles = focusAngles(cell, [], false, { area: safe, viewport });
+        const pose = focusFraming(cell, angles, safe, viewport, { points: caption, area: safe });
+        expectInside(silhouette(cell), pose, viewport, safe);
+        expectInside(caption, pose, viewport, safe);
+        expect(observe(cell, pose, viewport).height).toBeGreaterThanOrEqual(viewport.height * .38 - 1);
+    }
+});
+
+it('uses available space for a direct neighbour without backing the camera away from the subject', () => {
+    const viewport = viewports[1], safe = { x: 410, y: 90, width: 700, height: 675 }, angles = { yaw: -25, pitch: -14 };
+    const subject = anchor([4, 3.5, 1.8], [0, 0, 0]);
+    const neighbour = { ...anchor([1.2, 1.2, 1.1], [6, 0, -2]), entityId: 'confirmed-neighbour' };
+    const offscreen = { ...neighbour, position: [70, 0, -2] as Vec3 };
+    const alone = focusFraming(subject, angles, safe, viewport);
+    const contextual = focusFraming(subject, angles, safe, viewport, undefined, [offscreen, neighbour]);
+    expect(screenPoint(silhouette(neighbour)[1], projectionCamera(alone, viewport), viewport).x).toBeGreaterThan(safe.x + safe.width);
+    expect(contextual.distance).toBe(alone.distance);
+    expect(contextual.target).not.toEqual(alone.target);
+    expectInside(silhouette(subject), contextual, viewport, safe);
+    expectInside(silhouette(neighbour), contextual, viewport, safe);
+});
+
+it('distinguishes interrupted Focus, viewport changes, and a drawer around a settled pose', () => {
+    const frame = { anchorKey: 'body', frameKey: 'default', viewportKey: '1440:900' };
+    const previous = { ...frame, deadline: 900 };
+    expect(focusRefit(null, frame, false)).toBe('enter');
+    expect(focusRefit(previous, frame, false)).toBeNull();
+    expect(focusRefit({ ...previous, interrupted: true }, frame, false)).toBe('resume');
+    expect(focusRefit(previous, { ...frame, frameKey: 'drawer' }, true)).toBe('adjust');
+    expect(focusRefit(previous, { ...frame, frameKey: 'drawer' }, false)).toBeNull();
+    expect(focusRefit(previous, { ...frame, viewportKey: '760:900' }, true)).toBe('resize');
+    expect(focusRefit(previous, { ...frame, viewportKey: '760:900' }, false)).toBeNull();
+    expect(focusRefit(previous, { ...frame, anchorKey: 'repacked-cell' }, false)).toBe('repack');
 });
 
 it('has a finite fallback for degenerate geometry and invalid viewport bounds', () => {

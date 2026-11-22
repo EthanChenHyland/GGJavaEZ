@@ -1,5 +1,6 @@
 import {expect,it} from 'vitest'
 import type {SceneExceptionPath} from '../contracts/world'
+import type {RawRuntimeEvent} from '../instrumentation/contracts'
 import {normalizeTrace} from '../instrumentation/normalize'
 import {seek} from '../runtime'
 import {generateRawTrace} from '../testing/traceGen'
@@ -28,19 +29,53 @@ it('adds structural evidence only at the uncaught live head without changing sem
  expect(exceptionPanelFor({...scene,exception:{...scene.exception!,uncaught:false}})).toBeNull()
  expect(exceptionPanelFor({...scene,exception:null})).toBeNull()
 })
-it('keeps captured path entities opaque through Focus and Trace while dimming the forensic context',()=>{
+it('preserves explicit Focus and the forensic evidence when dimming other context',()=>{
  const{scene,layout}=fixture(),target=scene.order.frames[0],throwing=scene.exception!.throwFrameId!
  const input={scene,layout,detailLevel:'CLOSE' as const,selection:{kind:'frame' as const,id:target},focusTargetId:target,trace:{active:true,scope:'relevant' as const}}
  const plan=planPresentation(input)
  expect(plan.exceptionPanel).not.toBeNull()
  expect(plan.entities.get(throwing)).toMatchObject({opacity:1,pinned:true,highlight:'exception'})
- for(const[id,entity]of plan.entities)if(id!==throwing)expect(entity.opacity).toBeLessThanOrEqual(.4)
+ expect(plan.entities.get(target)).toMatchObject({opacity:1,pinned:true})
+ for(const[id,entity]of plan.entities)if(id!==throwing&&id!==target)expect(entity.opacity).toBeLessThanOrEqual(.4)
  for(const cluster of plan.clusters)expect(cluster.opacity).toBeLessThanOrEqual(.4)
  for(const curve of plan.curves)expect(curve.opacity).toBeLessThanOrEqual(curve.colorRole==='exception'?1:.4)
  const history=planPresentation({...input,scene:{...scene,cursor:scene.cursor-1},focusTargetId:null,trace:{active:false,scope:'relevant'}})
  expect(history.exceptionPanel).toBeNull()
  const next=planPresentation({...input,scene:{...scene,exception:null},focusTargetId:null,trace:{active:false,scope:'relevant'}})
  expect(next.exceptionPanel).toBeNull()
+})
+
+it('places the panel beside the exact throw, unwind and catch invocations in an observed prefix',()=>{
+ const raw=[
+  {type:'enter',frameId:'catcher',methodName:'run',callerFrameId:null,receiver:null,parameters:[]},
+  {type:'enter',frameId:'origin',methodName:'fail',callerFrameId:'catcher',receiver:null,parameters:[]},
+  {type:'throw',frameId:'origin',methodName:'fail',objectId:'failure',className:'pkg.Failure',message:'boom',explicit:true},
+  {type:'unwind',frameId:'origin',methodName:'fail',objectId:'failure'},
+  {type:'catch',frameId:'catcher',methodName:'run',objectId:'failure'},
+  {type:'exit',frameId:'catcher',methodName:'run'},
+ ].map((event,seq)=>({v:1,provenanceVersion:1,seq,site:seq,line:seq+3,threadId:'1',className:'pkg.App',descriptor:'()V',...event})) as RawRuntimeEvent[]
+ const trace=normalizeTrace(raw,{sources:[],classes:[]},{status:'complete',exitCode:0,diagnostic:null}).trace
+ const layout=createLayoutEngine();layout.append(trace.events)
+ const projector=createSceneProjector(trace)
+ const project=(cursor:number)=>projector.project(seek(trace,cursor),layout.state,{sessionEnded:true,pausedAtLiveHead:false,liveHead:trace.events.length,recording:{state:'FULL',reason:null,budget:null,lastRecordedSeq:null,executionContinued:false}})
+ const snapshots=trace.events.map(event=>({event,scene:project(event.seq+1)}))
+ for(const phase of ['throw','unwind','catch'] as const){
+  const type={throw:'THROW_EXCEPTION',unwind:'UNWIND_EXCEPTION',catch:'CATCH_EXCEPTION'}[phase]
+  const frameId=phase==='catch'?'jvm:frame:catcher':'jvm:frame:origin'
+  const matches=snapshots.filter(({event})=>event.type===type||event.type==='EXECUTION_FACT'&&event.fact.kind===phase)
+  expect(matches).toHaveLength(2)
+  for(const {event,scene} of matches){
+   const panel=exceptionPanelFor(scene),frame=scene.entities[frameId].anchor
+   expect(panel?.content.current).toMatchObject({eventId:event.eventId,phase,frameId})
+   expect(panel?.position[1]).toBe(frame.position[1])
+   expect(scene.entities[frameId].anchor).toBe(layout.state.anchors[frameId])
+  }
+ }
+ const ordinary=snapshots.find(({event})=>event.type==='EXIT_METHOD')!.scene
+ expect(exceptionPanelFor(ordinary)).toBeNull()
+ const caught=snapshots.find(({event})=>event.type==='CATCH_EXCEPTION')!.scene
+ expect(exceptionPanelFor({...caught,cursorEvent:ordinary.cursorEvent})).toBeNull()
+ expect(exceptionPanelFor(project(trace.events.length))).toBeNull()
 })
 it('does not promote an earlier exception flow on the same endpoints into the final recorded path',()=>{
  const{scene,layout}=fixture(),from=scene.exception!.throwFrameId!,to=scene.order.objects[0]

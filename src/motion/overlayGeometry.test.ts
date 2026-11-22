@@ -6,15 +6,22 @@ import { historyForTrace } from '../runtime/history'
 import { createLayoutEngine } from '../world/layoutEngine'
 import { createSceneProjector } from '../world/sceneProjector'
 import { planPresentation } from '../world/presentationPlanner'
+import { createFlowCatalog } from '../world/flowCatalog'
 import { createVirtualClock } from './clock'
 import { createTransitionPlayer, type AnimationStep } from './transitionPlayer'
-import { motionCurve, motionSubjects, overlayEmphasis } from './overlayGeometry'
+import { motionCurve, motionMarks, motionSubjects, motionTravel, visitMotionMark, visitMotionTravel } from './overlayGeometry'
 import type { TraceDocument } from '../contracts/runtime'
+import type { Vec3 } from '../contracts/world'
+import type { RawRuntimeEvent } from '../instrumentation/contracts'
+import { normalizeTrace } from '../instrumentation/normalize'
 
 function view(trace: TraceDocument, cursor: number) {
   const layout = createLayoutEngine(); layout.append(trace.events)
-  const scene = createSceneProjector(trace).project(seek(trace, cursor), layout.state, { sessionEnded: false, pausedAtLiveHead: false, liveHead: trace.events.length, recording: { state: 'FULL', reason: null, budget: null, lastRecordedSeq: null, executionContinued: false } })
-  const plan = planPresentation({ scene, layout: layout.state, detailLevel: 'CLOSE', selection: null, focusTargetId: null, trace: { active: false, scope: 'relevant' } })
+  const state = seek(trace, cursor)
+  const scene = createSceneProjector(trace).project(state, layout.state, { sessionEnded: false, pausedAtLiveHead: false, liveHead: trace.events.length, recording: { state: 'FULL', reason: null, budget: null, lastRecordedSeq: null, executionContinued: false } })
+  const flows = state.executionGraph ? createFlowCatalog() : undefined
+  if (state.executionGraph) flows!.extend(state.executionGraph, trace)
+  const plan = planPresentation({ scene, layout: layout.state, flows, detailLevel: 'CLOSE', selection: null, focusTargetId: null, trace: { active: false, scope: 'relevant' } })
   return { scene, plan }
 }
 function step(trace: TraceDocument, cursor: number): AnimationStep {
@@ -24,19 +31,59 @@ function step(trace: TraceDocument, cursor: number): AnimationStep {
   if (!overlay) throw new Error('Expected an actual recorded step')
   return overlay.step
 }
-it('allocation outline scales .92→1 without changing any canonical body, port or face anchor (100 runs)', () => {
+it('allocation reveals a bounded volume around the canonical anchor without changing it (100 runs)', () => {
   const trace = loadPersonTrace(), allocation = step(trace, 9), { scene, plan } = view(trace, 9)
   const before = JSON.stringify(scene), subjects = motionSubjects(scene, plan)
-  expect(overlayEmphasis({ step: allocation, progress: 0, static: false }).scale).toBe(.92)
-  expect(overlayEmphasis({ step: allocation, progress: 1, static: false })).toEqual({ scale: 1, alpha: 0 })
-  expect(subjects.get(allocation.subjects[0])?.anchor).toBe(scene.entities[allocation.subjects[0]].anchor)
+  const anchor = subjects.get(allocation.subjects[0])!.anchor
+  expect(anchor).toBe(scene.entities[allocation.subjects[0]].anchor)
+  const planes = (progress: number) => {
+    const depths = new Set<number>()
+    const mark = motionMarks({ step: allocation, progress, static: false })[0]
+    visitMotionMark(anchor, mark, (a, b) => { depths.add(a[2]); depths.add(b[2]) })
+    return depths
+  }
+  expect(planes(0).size).toBe(1)
+  expect(planes(.72).size).toBe(2)
   fc.assert(fc.property(fc.double({ min: 0, max: 1, noNaN: true }), progress => {
-    const emphasis = overlayEmphasis({ step: allocation, progress, static: false })
-    expect(emphasis.scale).toBeGreaterThanOrEqual(.92); expect(emphasis.scale).toBeLessThanOrEqual(1)
-    expect(emphasis.alpha).toBeGreaterThanOrEqual(0); expect(emphasis.alpha).toBeLessThanOrEqual(.68)
-    expect(overlayEmphasis({ step: allocation, progress, static: true })).toEqual({ scale: 1, alpha: .55 })
+    const [mark] = motionMarks({ step: allocation, progress, static: false })
+    expect(mark.opacity).toBeGreaterThanOrEqual(0)
+    expect(mark.opacity).toBeLessThanOrEqual(1)
+    expect(motionMarks({ step: allocation, progress, static: true })[0]).toMatchObject({ progress: 1, opacity: .76 })
     expect(JSON.stringify(scene)).toBe(before)
   }), { numRuns: 100 })
+})
+
+it('distinguishes frame arrival, receiver, array change, return and exception cues at the same anchor', () => {
+  const { scene } = view(loadPersonTrace(), 9)
+  const stepFact = step(loadPersonTrace(), 9)
+  const point = { kind: 'object' as const, id: stepFact.subjects[0] }, anchor = scene.entities[point.id].anchor
+  const kinds = ['entry', 'allocation', 'receiver', 'field-write', 'array-write', 'return', 'throw', 'unwind', 'catch'] as const
+  const distinct = new Set<string>()
+  for (const kind of kinds) {
+    const frame = { step: { ...stepFact, kind, transition: { ...stepFact.transition, from: point, to: { ...point, id: 'target' } } },
+      progress: .43, static: false }
+    const segments: [Vec3, Vec3][] = []
+    for (const mark of motionMarks(frame)) visitMotionMark(anchor, mark, (a, b) => segments.push([a, b]))
+    expect(segments.length).toBeLessThanOrEqual(24)
+    expect(segments.flat(2).every(Number.isFinite)).toBe(true)
+    distinct.add(JSON.stringify(segments))
+    expect(motionTravel({ ...frame, static: true })).toBeNull()
+    expect(motionMarks({ ...frame, static: true }).every(mark => mark.progress === 1)).toBe(true)
+  }
+  expect(distinct.size).toBe(kinds.length)
+})
+
+it('clips forward and reverse travel to the actual polyline without drawing shortcuts', () => {
+  const points: Vec3[] = [[0, 0, 0], [1, 0, 0], [1, 1, 0], [1, 1, 1]]
+  const visit = (reverse: boolean) => {
+    const result: [Vec3, Vec3][] = []
+    expect(visitMotionTravel(points, { start: 0, end: .5 }, reverse, (a, b) => result.push([a, b]))).toBe(true)
+    return result
+  }
+  expect(visit(false)).toEqual([[points[0], points[1]], [points[1], [1, .5, 0]]])
+  expect(visit(true)).toEqual([[[1, .5, 0], points[2]], [points[2], points[3]]])
+  expect(visitMotionTravel(Array.from({ length: 130 }, () => points[0]), { start: 0, end: 1 }, false,
+    () => { throw new Error('The route is outside the overlay budget') })).toBe(false)
 })
 it('uses the canonical visible slot/cell bounds and excludes quiet or absent subjects', () => {
   const trace = loadPersonTrace(), { scene, plan } = view(trace, 18)
@@ -64,6 +111,43 @@ it('travels only on the exact currently presented reference or graph-edge curve 
   expect(motionCurve({ ...reference, flowId: 'absent-recorded-edge' }, subjects, curves)).toBeUndefined()
   expect(motionCurve({ ...reference, transition: { ...reference.transition, to: { kind: 'object', id: 'other-identity' } } }, subjects, curves)).toBeUndefined()
   expect(motionCurve(reference, subjects, new Map())).toBeUndefined()
+})
+
+it('matches the projected call ID and marks both ends of a proved return at its consuming prefix', () => {
+  const caller = { v: 1, provenanceVersion: 1, coverageVersion: 1, threadId: '1', frameId: 'caller', className: 'Probe', methodName: 'main', descriptor: '()V', line: 1, site: 0 } as const
+  const child = { ...caller, frameId: 'child', methodName: 'value', descriptor: '()I' } as const
+  const value = { kind: 'int', value: 7 } as const
+  const events: RawRuntimeEvent[] = [
+    { ...caller, type: 'enter', seq: 0, callerFrameId: null, receiver: null, parameters: [] },
+    { ...caller, type: 'call', seq: 1, callId: 'recorded-call', invokeKind: 'static', owner: 'Probe',
+      name: 'value', callDescriptor: '()I', receiver: null, arguments: [], argumentOrigins: [], receiverOrigin: { kind: 'unknown' } },
+    { ...child, type: 'enter', seq: 2, callerFrameId: 'caller', callId: 'recorded-call', receiver: null, parameters: [] },
+    { ...child, type: 'return', seq: 3, value, origin: { kind: 'constant', value } },
+    { ...child, type: 'exit', seq: 4 },
+    { ...caller, type: 'call_return', seq: 5, callId: 'recorded-call', value },
+    { ...caller, type: 'local', seq: 6, site: 1, slot: 2, name: 'result', descriptor: 'I', liveRange: '2:0:999', value, origin: { kind: 'call_result', site: 0 } },
+    { ...caller, type: 'exit', seq: 7 },
+  ]
+  const trace = normalizeTrace(events, { sources: [], classes: [] }, { status: 'complete', exitCode: 0, diagnostic: null }).trace
+  const entry = trace.events.find(event => event.type === 'EXECUTION_FACT' && event.fact.kind === 'enter' && event.fact.callId)!
+  const entryView = view(trace, entry.seq + 1)
+  const entered = step(trace, entry.seq + 1)
+  expect(entered.kind).toBe('entry')
+  expect(entered.transition.routeId).toBe(entryView.scene.callLinks[0].id)
+  expect(motionCurve(entered, motionSubjects(entryView.scene, entryView.plan), new Map(entryView.plan.curves.map(curve => [curve.id, curve]))))
+    .toMatchObject({ id: entryView.scene.callLinks[0].id, kind: 'call' })
+
+  const write = trace.events.find(event => event.type === 'EXECUTION_FACT' && event.fact.kind === 'write' && event.fact.origin.kind === 'call_result')!
+  const destinationView = view(trace, write.seq + 1)
+  const returned = step(trace, write.seq + 1), subjects = motionSubjects(destinationView.scene, destinationView.plan)
+  const curve = motionCurve(returned, subjects, new Map(destinationView.plan.curves.map(line => [line.id, line])))!
+  expect(curve).toMatchObject({ id: destinationView.scene.returnFlows[0].id, kind: 'return' })
+  const source = subjects.get(returned.transition.from!.id)
+  expect(source).toMatchObject({ id: returned.transition.from!.id, anchor: { position: curve.points[0] } })
+  expect(subjects.get(returned.transition.to!.id)).toBeDefined()
+  expect(motionMarks({ step: returned, progress: .4, static: false }).map(mark => mark.id))
+    .toEqual([source!.id, returned.transition.to!.id])
+  expect(motionSubjects(destinationView.scene, { ...destinationView.plan, curves: [] }).has(returned.transition.from!.id)).toBe(false)
 })
 
 it('scoped face motion outlines coincide with the actual whole-row geometry throughout captured replay',async()=>{

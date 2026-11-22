@@ -80,14 +80,17 @@ it('caps indirect neighbour references and call links during Focus, including Tr
  expect(JSON.stringify(scene)).toBe(before)
 })
 
-it('preserves recorded callers as dim context outside the reference-only Frame Focus neighbourhood',()=>{
+it('keeps the recorded caller and its link in the bounded direct Frame Focus neighbourhood',()=>{
  const{trace}=heroTrace(),projection=projectTrace(trace),scene=projection.project(trace.events.length)
  const input={scene,layout:projection.layout,detailLevel:'CLOSE' as const,selection:{kind:'frame' as const,id:'setter'},focusTargetId:'setter',trace:{active:false,scope:'relevant' as const}}
  const plan=planPresentation(input)
  expect(plan.framing.focus!.neighbours).toContain('first-record')
- expect(plan.framing.focus!.neighbours).not.toContain('entry')
+ expect(plan.framing.focus!.neighbours).toContain('entry')
  expect(plan.framing.focus!.neighbours.length).toBeLessThanOrEqual(6)
- expect(scene.callLinks.some(call=>call.callerId==='entry'&&call.calleeId==='setter')).toBe(true)
- expect(plan.entities.get('entry')!.opacity).toBeLessThanOrEqual(.25)
+ const actualCall=scene.callLinks.find(call=>call.callerId==='entry'&&call.calleeId==='setter')
+ expect(actualCall).toBeDefined()
+ expect(plan.curves.find(curve=>curve.id===actualCall?.id)?.opacity).toBe(1)
+ expect(plan.entities.get('entry')!.opacity).toBeGreaterThan(.25)
+ expect(plan.entities.get('entry')!.opacity).toBeLessThan(1)
  expect(plan.framing.focus).toEqual(planPresentation(input).framing.focus)
 })

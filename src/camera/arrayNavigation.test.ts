@@ -12,6 +12,7 @@ import { frontFace, projectionCamera, screenPoint, representativeFaceHeight, nex
 import { cameraCollisionBoxes, cameraSegmentHit, collisionSafeRoute, constrainCameraPose } from './cameraConstraints'
 import { useCameraStore } from './cameraStore'
 import { useInteractionStore } from '../interaction/interactionStore'
+import { spatialFocusTarget } from '../interaction/focusTarget'
 import { camera as tokens } from '../theme/tokens'
 import { inspectorEntity } from '../render/inspection'
 
@@ -106,9 +107,18 @@ describe('continuous array navigation and Focus memory', () => {
  })
  it('keeps an absent focused cell unavailable until its matching captured array prefix arrives', () => {
   const id = arrayElementSlotId(objectId, 2), before = cut(2, id), present = cut(3, id)
+  const focus = { kind: 'arrayCell', targetId: id } as const
   expect(before.plan.framing.focus).toBeNull(); expect(before.plan.cellWindows.has(objectId)).toBe(false)
   expect(before.plan.structural.some(item => item.text === 'Not present at this point in time')).toBe(true)
-  expect(present.plan.cellWindows.get(objectId)!.mapping.get(id)?.index).toBe(2)
+  expect(spatialFocusTarget(before.scene, before.plan, focus)).toBeNull()
+  expect(spatialFocusTarget(present.scene, present.plan, focus)?.cell?.index).toBe(2)
+  expect(spatialFocusTarget(present.scene, { ...present.plan, cellWindows: new Map() }, focus)).toBeNull()
+  const window = present.plan.cellWindows.get(objectId)!
+  const cell = window.mapping.get(id)!
+  const anchor = { ...cell.anchor, position: [40, -5, 2] as const }
+  const remapped = { ...window, mapping: new Map([[id, { ...cell, presentedSlot: 0, anchor }]]) }
+  const next = spatialFocusTarget(present.scene, { ...present.plan, cellWindows: new Map([[objectId, remapped]]) }, focus)
+  expect(next).toMatchObject({ anchor, cell: { index: 2, presentedSlot: 0 } })
  })
  it('invalidates pending array travel and Follow on user input without dropping Focus or selection', () => {
   const camera = useCameraStore.getState(), id = arrayElementSlotId(objectId, 2)

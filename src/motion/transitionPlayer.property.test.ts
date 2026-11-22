@@ -1,4 +1,4 @@
-import {expect,it} from 'vitest'
+import {expect,it,vi} from 'vitest'
 import fc from 'fast-check'
 import {loadPersonTrace} from '../examples/traces'
 import {historyForTrace} from '../runtime/history'
@@ -85,22 +85,38 @@ it('Property 56: motion cannot alter committed cursor/runtime/selection/pose/sce
   expect(JSON.stringify(selection)).toBe(selectionText);expect(JSON.stringify(pose)).toBe(poseText);expect(JSON.stringify(trace)).toBe(initialTrace)
  }),{numRuns:100})
 })
-it('reduced motion marks every changed subject, with no eight-step truncation, until the next cursor change',()=>{
+it('reduced motion marks only the destination event after a seek, without reading its crossed interval',()=>{
  const{trace,clock,player}=setup()
- player.cursorChanged({from:0,to:trace.events.length,reason:'seek',speed:1,reducedMotion:true})
+ const history=historyForTrace(trace),materialize=vi.spyOn(history,'materialize')
+ const target=trace.events.findIndex(event=>event.type==='SET_FIELD')+1
+ player.cursorChanged({from:0,to:target,reason:'seek',speed:1,reducedMotion:true})
  const initial=player.sample(clock.now(),()=>true)
- expect(initial.overlays.length).toBeGreaterThan(8);expect(player.pendingCount).toBe(0)
+ expect(initial.overlays.map(item=>item.step.seq)).toEqual([target-1]);expect(player.pendingCount).toBe(0)
+ expect(materialize.mock.calls.map(([cursor])=>cursor)).toEqual([target-1,target])
  clock.step(2000);expect(player.sample(clock.now(),()=>true)).toEqual(initial)
- player.cursorChanged({from:trace.events.length,to:trace.events.length,reason:'lens',speed:1,reducedMotion:true})
+ player.cursorChanged({from:target,to:target,reason:'lens',speed:1,reducedMotion:true})
  expect(player.sample(clock.now(),()=>true)).toEqual(initial)
- player.cursorChanged({from:trace.events.length,to:1,reason:'seek',speed:1,reducedMotion:true})
+ player.cursorChanged({from:target,to:1,reason:'seek',speed:1,reducedMotion:true})
  expect(player.sample(clock.now(),()=>true).overlays).not.toEqual(initial.overlays)
+ materialize.mockRestore()
 })
 it('activating reduced motion finishes the active overlay immediately and retains recorded static subjects',()=>{
  const{clock,player}=setup()
  player.cursorChanged({from:1,to:2,reason:'play',speed:1,reducedMotion:false});player.sample(clock.now(),()=>true);clock.step(80)
  player.cursorChanged({from:2,to:2,reason:'seek',speed:1,reducedMotion:true})
  expect(player.pendingCount).toBe(0);expect(player.sample(clock.now(),()=>true)).toMatchObject({animating:false,settle:null,overlays:[{static:true,progress:1}]})
+})
+it('coalesces fast batches to the latest applied event and at most two steps',()=>{
+ const{trace,clock,player}=setup()
+ const target=trace.events.findIndex(event=>event.type==='SET_FIELD')+1
+ const history=historyForTrace(trace),materialize=vi.spyOn(history,'materialize')
+ player.cursorChanged({from:0,to:target,reason:'live',speed:4,reducedMotion:false})
+ expect(materialize.mock.calls.map(([cursor])=>cursor)).toEqual([target-1,target])
+ expect(player.pendingCount).toBeLessThanOrEqual(2)
+ expect(player.sample(clock.now(),()=>true).overlays[0]?.step.seq).toBe(target-1)
+ clock.step(151)
+ expect(player.sample(clock.now(),()=>true).animating).toBe(false)
+ materialize.mockRestore()
 })
 it('submitted but unconsumed stdin bytes cause no motion or static runtime highlight',()=>{
  const trace:TraceDocument={...loadPersonTrace(),schemaVersion:2,events:[

@@ -15,6 +15,7 @@ import {createRecordedReferenceBindings} from './recordedReferenceBindings'
 import {acceptedEventIndex} from './acceptedEventIndex'
 import {recordedReturnDestination} from './returnEvidence'
 import {currentStorage} from './currentStorage'
+import {observedExceptionEvent} from './forensicPresentation'
 
 export interface ProjectionContext {
   sessionEnded: boolean
@@ -55,9 +56,6 @@ function appendOrdinal(values: OrdinalHistory, ordinal: number): OrdinalHistory 
   if (typeof values === 'number') return [values, ordinal]
   values.push(ordinal)
   return values
-}
-function ordinalValues(values: OrdinalHistory): readonly number[] {
-  return values === undefined ? [] : typeof values === 'number' ? [values] : values
 }
 function lastBefore(values: number | readonly number[] | undefined, cursor: number): number | null {
   if (values === undefined) return null
@@ -528,22 +526,33 @@ export function createSceneProjector(trace: TraceDocument): SceneProjector {
     return freezeValue(result)
   }
   function exceptionPath(state: RuntimeState, context: ProjectionContext): SceneExceptionPath | null {
-    const fact = state.exceptions.at(-1)
+    const observed = observedExceptionEvent(events[state.cursor - 1], events[state.cursor - 2])
+    let fact = state.exceptions.at(-1)
+    if (observed && fact && observed.exceptionId !== fact.exceptionId) {
+      for (let index = state.exceptions.length - 2; index >= 0; index--) {
+        const candidate = state.exceptions[index]
+        if (candidate.exceptionId === observed.exceptionId) { fact = candidate; break }
+      }
+    }
     if (!fact) return null
     const seq = seqOf(fact.eventId, state.cursor)
     if (seq === null) return null
-    if(fact.caughtBy){const caught=lastBefore(ordinalValues(owners.get(fact.caughtBy)?.changes).filter(index=>events[index].type==='CATCH_EXCEPTION'&& (events[index] as Extract<TraceEvent,{type:'CATCH_EXCEPTION'}>).exceptionId===fact.exceptionId)??[],state.cursor);if(caught!==null&&state.cursor>caught+1)return null}
+    const current = observed?.exceptionId === fact.exceptionId ? {
+      eventId: observed.eventId, phase: observed.phase, frameId: observed.frameId, source: observed.source,
+    } : undefined
+    if (fact.caughtBy && (current?.phase !== 'catch' || current.frameId !== fact.caughtBy)) return null
     const ids = [fact.eventId]
     // Retain recorded unwind/catch graph evidence by identity, including opaque crossings.
     const graph = state.executionGraph
-    for (const index of graph?.incoming[fact.exceptionId] ?? []) { const edge = graph!.edges[index]; if (['THROW', 'UNWIND'].includes(edge.kind) && seqOf(edge.eventId, state.cursor) !== null) ids.push(edge.eventId) }
-    for (const index of graph?.outgoing[fact.exceptionId] ?? []) { const edge = graph!.edges[index]; if (edge.kind === 'CATCH' && seqOf(edge.eventId, state.cursor) !== null) ids.push(edge.eventId) }
+    const inEpisode = (id: string) => (seqOf(id, state.cursor) ?? -1) >= seq
+    for (const index of graph?.incoming[fact.exceptionId] ?? []) { const edge = graph!.edges[index]; if (['THROW', 'UNWIND'].includes(edge.kind) && inEpisode(edge.eventId)) ids.push(edge.eventId) }
+    for (const index of graph?.outgoing[fact.exceptionId] ?? []) { const edge = graph!.edges[index]; if (edge.kind === 'CATCH' && inEpisode(edge.eventId)) ids.push(edge.eventId) }
     const uncaught = !fact.caughtBy && state.status === 'aborted' && !!state.abortReason?.startsWith('program_crashed:')
     return freezeValue({ exceptionId: fact.exceptionId, className: fact.className, simpleName: displayType(fact.className), message: fact.message,
       throwFrameId: fact.frameIds.at(-1) ?? null, unwound: fact.unwoundFrameIds, catchFrameId: fact.caughtBy ?? null,
       uncaught, causes: [], complete: !!fact.caughtBy || uncaught && context.sessionEnded && state.cursor === context.liveHead,
       throwLine: fact.source, stack: [], causeEvidence: unavailable('No captured cause-chain fact'), stackEvidence: unavailable('No captured stack-text fact'),
-      evidence: { ...evidence(seq, Math.max(...ids.map(id => seqOf(id, state.cursor) ?? seq)), state.cursor), eventIds: [...new Set(ids)] } })
+      evidence: { ...evidence(seq, Math.max(...ids.map(id => seqOf(id, state.cursor) ?? seq)), state.cursor), eventIds: [...new Set(ids)] }, ...(current ? {current} : {}) })
   }
   function addIo(channels: Channels, id: SceneIo['id'], text: string, eventId: string) {
     const old = channels.get(id)

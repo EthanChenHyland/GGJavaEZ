@@ -248,6 +248,7 @@ function Metrics({ snapshot, selection,trace }: {
                     });return result;
                 },
                 framePerformance:()=>postPerformance?.snapshot()??null,
+                motion:()=>({...motionReadiness}),
                 quality:()=>{const state=useQualityStore.getState();return{setting:state.setting,active:state.active,compiled:state.compiled,cinematicStatus:state.cinematicStatus,availability:state.cinematicAvailable,capabilities:state.capabilities,contextLost:state.contextLost,notice:state.notice}},
                 ready:()=>new Promise<void>((resolve,reject)=>{
                     const started=performance.now();let eligibleFrame:number|null=null,stableKey='';

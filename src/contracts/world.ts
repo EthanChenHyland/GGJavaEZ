@@ -240,6 +240,13 @@ export interface SceneExceptionPath {
     causeEvidence: Evidence;
     stackEvidence: Evidence;
     evidence: Evidence;
+    /** Exact applied throw, unwind or catch for this observed exception episode. */
+    current?: {
+        eventId: EventId;
+        phase: 'throw' | 'unwind' | 'catch';
+        frameId: FrameId;
+        source: SourceLocation | null;
+    };
 }
 export interface SceneIo {
     evidence: Evidence;
