@@ -172,3 +172,29 @@ These are affected-state scores on the inherited nine-dimension rubric. The Pass
 | Free Navigation | 2 | 3 | 3 | 3 | 3 | 3 | 1 | 3 | 2 | 2.3 | 2.6 | +0.3 | The same orbit reveals real nearby collection content and visible grouping. Dense crossing edges and peripheral clips remain. |
 
 These scores cover 12 states and retain the original full-suite 37/100 benchmark. [Pass 4 interaction evidence](PASS-4-INTERACTION.md)
+
+## Pass 5 rescore
+
+The inherited nine dimensions retain equal weight. Hero carries its published 3.1 forward as the Pass 4 comparison because Pass 4 did not regrade it. A dash indicates a new dedicated scale state. Scores use the native stills and corresponding interaction evidence. The original 37/100 remains the historical full-suite baseline.
+
+| State | C | G | Cam | T | M | L | K | I | F | Pass 4 | Pass 5 | Δ | Observed result |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
+| Hero Overview | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 4 | 3 | 3.1¹ | 3.1 | 0.0 | The age write and Stack–Heap relationship retain their size and depth. |
+| Object Focus | 3 | 4 | 4 | 4 | 3 | 3 | 2 | 5 | 3 | 3.4 | 3.4 | 0.0 | Desktop composition holds. The narrow face and exact fields now share the screen with playback. |
+| I/O | 3 | 2 | 3 | 3 | 3 | 3 | 2 | 4 | 2 | 2.6 | 2.8 | +0.2 | Stream names and counts read together. The endpoint face still limits the excerpt. |
+| Completed World | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 4 | 3 | 3.0 | 3.1 | +0.1 | Retained entry, Heap, history access and terminal evidence remain visible or inspectable. |
+| FAR | 2 | 3 | 2 | 3 | 3 | 3 | 2 | 3 | 2 | 2.3 | 2.6 | +0.3 | Type and count captions read as one unit. Some underlying proxy volumes still look distant. |
+| MEDIUM | 3 | 3 | 3 | 3 | 3 | 3 | 2 | 3 | 2 | 2.6 | 2.8 | +0.2 | Group silhouettes and labels survive a smaller cut. Several outgoing routes still cross the scene. |
+| CLOSE | 3 | 3 | 3 | 3 | 3 | 3 | 2 | 4 | 2 | 2.6 | 2.9 | +0.3 | Selected/current detail takes priority. Manual navigation can still crop optional volumes. |
+| Dense Home | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 4 | 3 | 2.4 | 3.1 | +0.7 | The entry and its retained Heap binding dominate the view. More distant groups remain navigable. |
+| Free Navigation | 3 | 3 | 3 | 3 | 3 | 3 | 2 | 3 | 2 | 2.6 | 2.8 | +0.2 | Manual input exposes depth and retains recognizable summaries. Oblique cuts can still cross edges. |
+| Dense FAR | 2 | 3 | 2 | 3 | 3 | 3 | 2 | 3 | 2 | — | 2.6 | — | Exact residual counts and branch/type captions improve orientation. Several actual volumes are still very small. |
+| Dense MEDIUM | 3 | 3 | 3 | 3 | 3 | 3 | 2 | 3 | 2 | — | 2.8 | — | A smaller local cohort leaves room for group identities and their directed relationships. |
+| Dense CLOSE | 3 | 3 | 3 | 3 | 3 | 3 | 2 | 4 | 2 | — | 2.9 | — | Local values read, and Focus keeps the collection and primary binding in view. Optional geometry still clips. |
+| Narrow 760×900 | 3 | 3 | 4 | 3 | 3 | 3 | 2 | 5 | 3 | — | 3.2 | — | The same timeline stays reachable under the sheet. Wide context can run beyond the sides. |
+| Short 1440×650 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 4 | 2 | — | 3.0 | — | Recursion, Inspector and playback fit with limited vertical breathing room. |
+| Large Array | 3 | 3 | 4 | 4 | 3 | 3 | 2 | 5 | 3 | — | 3.3 | — | The focused index and value read, and surrounding cells remain navigable through the array window. |
+| Large Collection | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 5 | 3 | — | 3.2 | — | Size and coverage are visible, with exact recorded members accessible through the Inspector. |
+| Large I/O | 3 | 2 | 3 | 3 | 3 | 3 | 2 | 5 | 2 | — | 2.9 | — | Separate channels and exact Console rows survive volume. The spatial excerpts are necessarily short. |
+
+¹ Carried forward from Pass 3. The ordinary Series, return, five-cell write and exception regression anchors retained their Pass 4 rubric scores of 3.0, 3.2, 3.2 and 3.3. [Pass 5 scale evidence](PASS-5-SCALE.md)
