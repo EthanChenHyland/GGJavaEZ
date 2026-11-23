@@ -84,7 +84,7 @@ type WorldTextProps = {
     opacity?: number;
     weight?:400|500|600;
     tracking?:number;
-    minimumPixels?:11|12;
+    minimumPixels?:number;
     lines?:readonly string[];
     truncation?:'middle'|'end';
     heading?:{entityId:string;kind:'title'|'identity'|'length'};

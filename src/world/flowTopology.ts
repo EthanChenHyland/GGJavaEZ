@@ -14,6 +14,7 @@ export interface DrawableFlow {flow:SceneFlow;from:FlowPort;to:FlowPort}
 export interface FlowTopologyInput {
  scene:SceneModel;entities:ReadonlyMap<string,PresentedEntity>;cellWindows:ReadonlyMap<string,ArrayWindow>
  flows:Iterable<RecordedFlow>;limit:number;mandatoryIds:ReadonlySet<string>
+ bundleLimit?:number;selectedBundleId?:string
  priority(flow:RecordedFlow):number;inScope(flow:RecordedFlow):boolean;aggregate:boolean
 }
 
@@ -92,7 +93,16 @@ export function buildFlowTopology(input:FlowTopologyInput){
   const flow=item.flow,id=`presentation:flow-bundle:${JSON.stringify([input.scene.recordingId,flow.from!.kind,flow.from!.id,flow.to.kind,flow.to.id,flow.kind])}`
   const group=groups.get(id)??{id,from:item.from,to:item.to,flows:[]};group.flows.push(flow);groups.set(id,group)
  }
- const bundles=[...groups.values()].sort((a,b)=>a.id<b.id?-1:a.id>b.id?1:0),bundled=bundles.reduce((sum,bundle)=>sum+bundle.flows.length,0)
+ const orderedGroups=[...groups.values()]
+ if(input.bundleLimit===undefined)orderedGroups.sort((a,b)=>a.id<b.id?-1:a.id>b.id?1:0)
+ else orderedGroups.sort((a,b)=>Number(b.id===input.selectedBundleId)-Number(a.id===input.selectedBundleId)
+   ||input.priority(a.flows[0])-input.priority(b.flows[0])||b.flows.length-a.flows.length||a.id.localeCompare(b.id))
+ const bundles=orderedGroups.filter((group,index)=>{
+  if(input.bundleLimit===undefined||index<input.bundleLimit||group.id===input.selectedBundleId)return true
+  for(const flow of group.flows)scopeExcluded.push(flow.id)
+  return false
+ })
+ const bundled=bundles.reduce((sum,bundle)=>sum+bundle.flows.length,0)
  const unavailable=unavailableFlowSnapshot(unavailableIds,unavailableCodes.join(''))
  const presentation:FlowPresentation={counts:{recorded,drawable:individual.length+bundled,individual:individual.length,bundled,bundleCurves:bundles.length,unavailable:unavailable.length,scopeExcluded:scopeExcluded.length},individualIds:individual.map(item=>item.flow.id),unavailable,scopeExcluded}
  return{individual,bundles,presentation,mandatory:mandatory.map(item=>item.flow.id)}

@@ -13,6 +13,8 @@ export interface ReferenceTopologyInput {
   clusters: readonly PresentedCluster[]
   cellWindows: ReadonlyMap<string, ArrayWindow>
   individualLimit: number
+  bundleLimit?: number
+  selectedBundleId?: string
   mandatoryIds: ReadonlySet<string>
   priorityIds?: ReadonlySet<string>
   enabled?: boolean
@@ -214,7 +216,16 @@ export function buildReferenceTopology(input: ReferenceTopologyInput): Reference
       group.references.push(candidate.reference)
       groups.set(id, group)
     }
-    for (const [id, group] of [...groups].sort(([a], [b]) => compareId(a, b))) {
+    const orderedGroups=[...groups].map(([id,group])=>({id,group,priority:group.references.some(reference=>input.priorityIds?.has(reference.id))}));
+    if(input.bundleLimit!==undefined)orderedGroups.sort((a,b)=>
+      Number(b.id===input.selectedBundleId)-Number(a.id===input.selectedBundleId)
+      ||Number(b.priority)-Number(a.priority)||b.group.references.length-a.group.references.length||compareId(a.id,b.id))
+    else orderedGroups.sort((a,b)=>compareId(a.id,b.id))
+    for (const [index,{id,group}] of orderedGroups.entries()) {
+      if(input.bundleLimit!==undefined&&index>=input.bundleLimit&&id!==input.selectedBundleId){
+        for(const reference of group.references)scopeExcluded.push(reference)
+        continue
+      }
       const sourceAnchor = group.from.anchor, destinationAnchor = group.to.anchor
       bundles.push({ id, from: group.from.id, to: group.to.id, sourceAnchor, destinationAnchor,
         sourcePoint: nearestFace(sourceAnchor, destinationAnchor.position),

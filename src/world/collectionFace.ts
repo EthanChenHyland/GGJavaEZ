@@ -1,4 +1,4 @@
-import type {Vec3,WorldAnchor} from '../contracts/world'
+import type {SceneCollection,Vec3,WorldAnchor} from '../contracts/world'
 import {world} from '../theme/tokens'
 
 /** Reservation geometry only. Callers provide captured entry indices; this
@@ -14,4 +14,16 @@ export function collectionEntryFace(anchor:WorldAnchor,index:number,map=false){
   value:[cx+(map?w/(columns*4):0),cy,face+.06]as Vec3,
   key:map?[cx-w/(columns*4),cy,face+.06]as Vec3:null,
   valueWidth:map?width/2-.04:width}
+}
+
+/** Account for presentation and capture separately. The caller supplies the
+ * actual visible count from its cut; this helper never admits or remaps slots. */
+export function collectionFaceSummary(node:Pick<SceneCollection,'size'|'recordedEntries'>,visibleCount:number){
+ const hidden=node.recordedEntries-visibleCount
+ const unrecorded=node.size-node.recordedEntries
+ const coverage=[
+  ...(hidden>0?[`${hidden} hidden`]:[]),
+  ...(unrecorded>0?[`${unrecorded} unrecorded`]:[]),
+ ]
+ return{hidden,unrecorded,sizeCaption:`size = ${node.size}`,coverageCaption:coverage.join(' · ')}
 }

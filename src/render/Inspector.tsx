@@ -8,10 +8,12 @@ import { frameStatusText } from '../world/frameStatus'
 import { inspectorEntity, inspectorSelectionTitle, inspectorRetiredLocal, inspectorProvenance, inspectorRows, type InspectorRow } from './inspection'
 import { VirtualList,VirtualListRowLimit } from '../shell/VirtualList'
 import { arrayCellTarget } from '../world/arrayCellTarget'
+import { faceRows } from '../world/faceRows'
 import { canFocusWorldSelection } from '../interaction/focusTarget'
 import {historicalSceneReference} from '../world/historicalReference'
 import {InspectorControlFacts} from './InspectorControlFacts'
 import {InspectorArrayFacts} from './InspectorArrayFacts'
+import {InspectorCollection} from './InspectorCollection'
 import {InspectorInvocationFacts} from './InspectorInvocationFacts'
 import {InspectorReferenceFact,InspectorReferences} from './InspectorReferences'
 import type {CommandAvailability,InspectorCommandId} from '../ide/commands'
@@ -30,7 +32,7 @@ export function Inspector({actions,selection,scene,runtime,flows,plan,onClose,on
  const [flowsOpen,setFlowsOpen]=useState(false)
  const node=useMemo(()=>inspectorEntity(scene,selection),[scene,selection])
  const retired=useMemo(()=>node?null:inspectorRetiredLocal(runtime,selection),[node,runtime,selection])
- const rows=useMemo(()=>node?inspectorRows(node):retired?{count:1,at:()=>retired.row}:null,[node,retired])
+ const rows=useMemo(()=>node?node.kind==='collection'?null:inspectorRows(node):retired?{count:1,at:()=>retired.row}:null,[node,retired])
  const flow=useMemo(()=>selection?.kind==='flow'?runtime.executionGraph?.edges.find(edge=>edge.id===selection.id):undefined,[selection,runtime.executionGraph])
  const provenance=useMemo(()=>inspectorProvenance(flows,selection,node,scene.cursor,flow),[flows,selection,node,scene.cursor,flow])
  const flowEvidence=flow?provenance.find(item=>item.edgeId===flow.id):undefined
@@ -45,8 +47,11 @@ export function Inspector({actions,selection,scene,runtime,flows,plan,onClose,on
  const canFocus=canFocusWorldSelection(scene,plan,selection),unavailableReference=reference?(historicalBinding?plan.historicalReferencePresentation:plan.referencePresentation).unavailable.find(item=>item.id===reference.id):undefined
  const bundleReferences=(bundle?.referenceIds??[]).flatMap(id=>referenceMap.has(id)?[referenceMap.get(id)!]:[])
  const selectedCell=arrayCellTarget(scene,selection.kind==='slot'?selection.id:null)
+ const collectionKind=node?.kind==='object'&&node.summaryUnavailable?runtime.objects[node.id]?.library?.kind:null
+ const collectionUnavailable=collectionKind&&['LIST','SET','MAP','QUEUE','DEQUE'].includes(collectionKind)
  const title=inspectorSelectionTitle(selection,node,{flowKind:flow?.kind,cluster,bundle,retiredName:retired?.row.name})
  const status=node?.kind==='frame'?frameStatusText(node.status):node?.kind==='array'?`${selectedCell?`index ${selectedCell.index} · `:''}length ${node.length} · ${node.cells.length} cells captured`:node?.kind==='collection'?`size ${node.size} · ${node.recordedEntries} entries captured · ${node.size-node.recordedEntries} not recorded`:node?.kind==='object'?`${node.fieldCount} fields`:node?.kind==='class'?`static · ${node.initialization}`:retired?'Scope closed · last captured local value':flow?'Recorded graph edge':cluster?`Structural summary · ${cluster.members} recorded entities`:bundle?'Structural summary':selection.kind==='cluster'?'Cluster is not in the current presentation':'Not present at this point in time'
+ const collectionCut=node?.kind==='collection'?plan.entities.get(node.id):undefined
  const source=node?.kind==='frame'?node.sourceLine:node?.kind==='object'?node.allocationSite:retired?.lifetime.source??flow?.context.source
  const copy=(text:string)=>void navigator.clipboard.writeText(text).then(()=>setCopyMessage('Captured text copied'),()=>setCopyMessage('Clipboard access unavailable'))
  const focusActive=actions?.focusActive??false
@@ -59,7 +64,7 @@ export function Inspector({actions,selection,scene,runtime,flows,plan,onClose,on
   setCopyMessage('')
   void actions.activate(id).catch(error=>setCopyMessage(error instanceof Error?error.message:String(error)))
  }
- const values=!cluster&&!bundle&&<VirtualList key={selection.id} className={node?.kind==='object'?(node.fieldCount>1?'inspector-values inspector-object-fields inspector-object-fields--multiple':'inspector-values inspector-object-fields'):'inspector-values'} count={rows?.count??0} rowHeight={52} label="Recorded values" initialIndex={selectedCell?.index??0}>{index=>{
+ const values=node?.kind!=='collection'&&!cluster&&!bundle&&<VirtualList key={selection.id} className={node?.kind==='object'?(node.fieldCount>1?'inspector-values inspector-object-fields inspector-object-fields--multiple':'inspector-values inspector-object-fields'):'inspector-values'} count={rows?.count??0} rowHeight={52} label="Recorded values" initialIndex={selectedCell?.index??0}>{index=>{
     const row=rows!.at(index);return <div className={node?.kind==='object'&&node.mutation?.slotId===row.slotId?'inspector-value inspector-value--changed':'inspector-value'}><span title={row.slotId}>{row.key?.exact??row.name}<small>{row.type}</small></span>{node?.kind==='array'&&<button aria-label={`Reveal index ${index}`} title={`Reveal the recorded identity of index ${index}`} onClick={()=>onSelectRow(row.slotId)}>↗</button>}{node?.kind==='frame'&&<button aria-label={`Select ${row.name} storage`} title={`Select recorded ${row.name} storage`} aria-pressed={selection.kind==='slot'&&selection.id===row.slotId} onClick={()=>onSelectRow(row.slotId)}>↗</button>}<button title={`${row.value.observation}${row.value.reason?` · ${row.value.reason}`:''} · Inspect captured value`} aria-label={`Inspect ${row.name}`} onClick={()=>setExpanded(row)}>{row.value.exact}</button></div>;
   }}</VirtualList>
  // At most ten lists coexist (eight base lists plus loops/scopes). A shared
@@ -67,6 +72,7 @@ export function Inspector({actions,selection,scene,runtime,flows,plan,onClose,on
  return <VirtualListRowLimit.Provider value={20}><aside className="inspector glass gg-inspector" aria-label="Selection inspector" onKeyDown={event=>{if(event.key==='Escape'){event.preventDefault();event.stopPropagation();onClose()}}}>
   <div className="inspector-heading"><strong className={cluster?'inspector-cluster-title':undefined} title={title}>{cluster?<><span>Cluster · {cluster.label}</span><span> ×{cluster.members}</span></>:title}</strong><button aria-label="Close inspector" title="Close inspector" onClick={onClose}><X size={16}/></button></div>
   <p>{status}</p>
+  {collectionUnavailable&&<p>Collection observation · UNAVAILABLE</p>}
   {node?.kind==='object'&&values}
   <div className="inspector-actions">
    {cluster&&onExploreCluster&&<button onClick={()=>onExploreCluster(cluster.id)}>Explore members</button>}
@@ -92,6 +98,9 @@ export function Inspector({actions,selection,scene,runtime,flows,plan,onClose,on
   {node?.kind==='frame'&&<InspectorInvocationFacts runtime={runtime} scene={scene} node={node}/>}
   {(node?.kind==='frame'||retired)&&<InspectorControlFacts runtime={runtime} frameId={node?.kind==='frame'?node.id:retired!.lifetime.frameId}/>}
   {node?.kind==='array'&&<InspectorArrayFacts runtime={runtime} objectId={node.id} index={selectedCell?.index??null}/>}
+  {node?.kind==='collection'&&<InspectorCollection node={node} object={runtime.objects[node.id]}
+    visibleCount={collectionCut?.mode==='detailed'?faceRows(node,collectionCut).visible.length:0}
+    selectedSlot={selection.kind==='slot'?selection.id:null} onInspect={setExpanded}/>}
   {cluster&&<VirtualList key={cluster.id} className="inspector-values inspector-members" count={cluster.memberIds.length} rowHeight={52} label="Cluster members">{index=>{
     const member=scene.entities[cluster.memberIds[index]],kind=member.kind==='frame'?'frame':member.kind==='class'?'class':'object';
     const label=member.kind==='frame'?`${member.title} #${member.invocationNumber}`:member.kind==='class'?`${member.title} static state`:`${member.title} #${member.displayId}`;
@@ -108,11 +117,11 @@ export function Inspector({actions,selection,scene,runtime,flows,plan,onClose,on
    <VirtualList count={provenance.length} rowHeight={76} label="Graph evidence" className="gg-inspector-provenance">{index=>{const item=provenance[index];return <div className="gg-inspector-record"><strong>{item.kind} · {item.graphEvidence}</strong><span title={`${item.from} → ${item.to}`}>{item.from} → {item.to}</span><small title={item.spatial.reason??''}>{item.evidence.introducedSeq} · {item.eventId} · {item.spatial.drawable?'spatial mapping available':'not drawable'}</small></div>}}</VirtualList>
   </details>}
   <details><summary>Current reference presentation · {plan.referencePresentation.counts.current} recorded</summary>
-   <p>{plan.referencePresentation.counts.individual} individual · {plan.referencePresentation.counts.bundled} aggregated · {plan.referencePresentation.counts.internal} inside collapsed clusters · {plan.referencePresentation.counts.unavailable} unavailable · {plan.referencePresentation.counts.scopeExcluded} excluded by Trace scope</p>
+   <p>{plan.referencePresentation.counts.individual} individual · {plan.referencePresentation.counts.bundled} aggregated · {plan.referencePresentation.counts.internal} inside collapsed clusters · {plan.referencePresentation.counts.unavailable} unavailable · {plan.referencePresentation.counts.scopeExcluded} outside Trace scope or presentation budget</p>
    <VirtualList count={plan.referencePresentation.unavailable.length} rowHeight={76} label="Unavailable reference geometry" className="gg-inspector-provenance">{index=>{const item=plan.referencePresentation.unavailable[index],ref=referenceMap.get(item.id);return <div className="gg-inspector-record"><strong title={item.id}>{item.id}</strong><span title={ref?`${ref.sourceSlotId} → ${ref.targetId}`:item.id}>{ref?`${ref.sourceSlotId} → ${ref.targetId}`:item.id}</span><small title={item.reason}>{item.reason}</small></div>}}</VirtualList>
   </details>
   <details open={historyOpen} onToggle={event=>setHistoryOpen(event.currentTarget.open)}><summary>Historical bindings · {plan.historicalReferencePresentation.counts.recorded} recorded</summary>
-   {historyOpen&&<><p>{plan.historicalReferencePresentation.counts.individual} individual · {plan.historicalReferencePresentation.counts.bundled} aggregated · {plan.historicalReferencePresentation.counts.internal} inside collapsed clusters · {plan.historicalReferencePresentation.counts.unavailable} unavailable · {plan.historicalReferencePresentation.counts.scopeExcluded} excluded by Trace scope · {plan.historicalReferencePresentation.counts.lifetimeExcluded} retired or unavailable endings</p>
+   {historyOpen&&<><p>{plan.historicalReferencePresentation.counts.individual} individual · {plan.historicalReferencePresentation.counts.bundled} aggregated · {plan.historicalReferencePresentation.counts.internal} inside collapsed clusters · {plan.historicalReferencePresentation.counts.unavailable} unavailable · {plan.historicalReferencePresentation.counts.scopeExcluded} outside Trace scope or presentation budget · {plan.historicalReferencePresentation.counts.lifetimeExcluded} retired or unavailable endings</p>
    <VirtualList count={scene.historicalBindings.length} rowHeight={76} label="Historical bindings" className="gg-inspector-provenance">{index=>{const binding=scene.historicalBindings[index];return <button className="inspector-member inspector-reference-member" aria-label={`Inspect historical binding ${binding.id}`} title={`${binding.sourceSlotId} → ${binding.targetId}`} onClick={()=>onSelectEntity({kind:'reference',id:binding.id})}><span>{binding.sourceSlotId}<small>→ {binding.targetId}</small><small>Event {binding.introducedSeq} → {binding.endSeq} · {binding.endKind}</small></span></button>}}</VirtualList></>}
   </details>
   <details open={flowsOpen} onToggle={event=>setFlowsOpen(event.currentTarget.open)}><summary>Flow presentation · {plan.flowPresentation.counts.recorded} supported records</summary>

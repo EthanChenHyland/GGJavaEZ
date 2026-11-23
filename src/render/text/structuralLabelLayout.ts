@@ -6,8 +6,8 @@ import {projectedPlaneFontPixels,textAdvance,type FontWeight} from './textSystem
 import {typography} from '../../theme/tokens'
 export const regionHeadingStyle={size:.6,...typography.world.heading,weight:typography.world.heading.weight as FontWeight} as const
 export interface StructuralLabelSpec {
- id:string;kind:'cluster'|'heading'|'bundle'|'return';position:Vec3;size:number;
- localBounds:readonly[number,number,number,number];priority:number;count:number
+ id:string;kind:'cluster'|'heading'|'bundle'|'return'|'subject';position:Vec3;size:number;
+ localBounds:readonly[number,number,number,number];priority:number;count:number;minimumPx?:number;maximumScale?:number
 }
 export interface ProjectedStructuralLabel {id:string;position:Vec3;scale:number;bounds:Rect|null;minimumFontPixels:number;visible:boolean;farDepth?:number}
 export interface StructuralObstacle extends Rect {nearDepth?:number}
@@ -54,7 +54,8 @@ export function projectStructuralLabel(spec:StructuralLabelSpec,camera:Perspecti
  // title takes less space so the recorded value has room beside the stack.
  const capRatio=regionHeadingStyle.capHeight/regionHeadingStyle.size
  const preferred=spec.kind==='heading'?viewport.height*(spec.id==='RETURNS'?regionHeadingStyle.returnCapRatio:regionHeadingStyle.viewportCapRatio)/(capRatio*nominal):1
- let scale=Math.max(preferred,12.25/nominal),points:Vector3[]=[],minimumFontPixels=0
+ const minimum=spec.minimumPx??12,maximumScale=spec.maximumScale??Infinity
+ let scale=Math.min(maximumScale,Math.max(preferred,(minimum+.25)/nominal)),points:Vector3[]=[],minimumFontPixels=0
  let position:Vec3=spec.position
  const [left,right,bottom,top]=spec.localBounds
  for(let iteration=0;iteration<4;iteration++){
@@ -63,11 +64,11 @@ export function projectStructuralLabel(spec:StructuralLabelSpec,camera:Perspecti
   position=[spec.position[0],spec.position[1]+lift*spec.size*Math.max(1,scale),spec.position[2]]
   points=[left,right].flatMap(x=>[bottom,top].map(y=>new Vector3(position[0]+x*scale,position[1]+y*scale,position[2])))
   minimumFontPixels=Math.min(...points.map(point=>projectedPlaneFontPixels(spec.size*scale,point,camera,viewport)))
-  if(minimumFontPixels>=12||!(minimumFontPixels>0))break
-  scale*=12.25/minimumFontPixels
+  if(minimumFontPixels>=minimum||!(minimumFontPixels>0)||scale>=maximumScale)break
+  scale=Math.min(maximumScale,scale*(minimum+.25)/minimumFontPixels)
  }
  const projected=points.map(point=>point.clone().project(camera))
- if(!(minimumFontPixels>=12)||projected.some(point=>!Number.isFinite(point.x)||!Number.isFinite(point.y)||point.z<=-1||point.z>=1))return{id:spec.id,position,scale,bounds:null,minimumFontPixels,visible:false}
+ if(!(minimumFontPixels>=minimum)||projected.some(point=>!Number.isFinite(point.x)||!Number.isFinite(point.y)||point.z<=-1||point.z>=1))return{id:spec.id,position,scale,bounds:null,minimumFontPixels,visible:false}
  const xs=projected.map(point=>(point.x+1)*viewport.width/2),ys=projected.map(point=>(1-point.y)*viewport.height/2)
  return{id:spec.id,position,scale,minimumFontPixels,visible:false,farDepth:Math.max(...points.map(point=>-point.clone().applyMatrix4(camera.matrixWorldInverse).z)),bounds:{x:Math.min(...xs),y:Math.min(...ys),width:Math.max(...xs)-Math.min(...xs),height:Math.max(...ys)-Math.min(...ys)}}
 }
@@ -80,7 +81,7 @@ export function placeStructuralLabels(specs:readonly StructuralLabelSpec[],camer
   // Tracked region titles can need to clear both a body and another heading.
   // Keep the same bounded world plane rather than hiding a required lane title
   // after only the first two, still-obstructed candidates.
-  for(const lift of spec.kind==='heading'?[0,.5,1,1.5,2,4]:spec.kind==='cluster'?[0,1,2,3,4]:spec.kind==='return'?[0,-1,-2,-3,-4,-5,-6,1,2,3,4,5,6]:[0,1,2]){
+  for(const lift of spec.kind==='heading'?[0,.5,1,1.5,2,4]:spec.kind==='cluster'||spec.kind==='subject'?[0,1,2,3,4]:spec.kind==='return'?[0,-1,-2,-3,-4,-5,-6,1,2,3,4,5,6]:[0,1,2]){
    if(lift)label=projectStructuralLabel(spec,camera,viewport,lift);const rect=label.bounds
    if(!rect||!inside(rect,safe)||blocked.some(area=>(spec.kind==='heading'||area.nearDepth===undefined||label.farDepth===undefined||area.nearDepth<=label.farDepth)&&structuralRectsOverlap(rect,area))||occupied.some(area=>structuralRectsOverlap(rect,area)))continue
    label.visible=true;occupied.push(rect);break

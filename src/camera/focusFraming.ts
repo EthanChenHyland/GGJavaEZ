@@ -41,6 +41,7 @@ export function focusFraming(
   viewport: Size,
   content?: FocusContent,
   neighbours: readonly WorldAnchor[] = [],
+  contextPan = .12,
 ): OrbitPose {
   const fallback: OrbitPose = {
     target: anchor.position.every(Number.isFinite) ? [...anchor.position] : [0, 0, 0],
@@ -149,7 +150,7 @@ export function focusFraming(
   const baseHeight = span('y', yShift, distance)
   // Preserve one direct neighbour when there is already room at this scale.
   // Context can use a small pan and cannot shrink or crop the subject.
-  const xTravel = safe.width * .12 * distance / focalPixels
+  const xTravel = safe.width * contextPan * distance / focalPixels
   const yTravel = safe.height * .08 * distance / focalPixels
   for (const neighbour of neighbours) {
     const points = anchorCorners(neighbour).map(coordinates)

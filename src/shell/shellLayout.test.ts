@@ -41,16 +41,18 @@ describe('viewportClass', () => {
 })
 
 describe('computeShellLayout reference rectangles', () => {
-  it('leaves room above the narrow Focus sheet for the actual cell face and its above-cell caption',()=>{
-    const normal=computeShellLayout(input(760,900,{inspector:{open:true,side:'right'}}));
-    const focused=computeShellLayout(input(760,900,{appState:state('COMPLETED',['FOCUS']),inspector:{open:true,side:'right'}}));
-    expect(normal.inspector!.height).toBe(405);
-    expect(focused.inspector!.height).toBe(270);
-    expect(focused.inspector!.y+focused.inspector!.height).toBe(900);
-    expect(focused.inspector!.height).toBeLessThanOrEqual(900*.45);
-    expect(focused.safeFrame).toEqual(normal.safeFrame);
-    expect(focused.timeDock).toEqual(normal.timeDock);
-  });
+  it('keeps room for the narrow Focus solid and a usable Inspector above the same timeline', () => {
+    const selected = input(760, 900, { inspector: { open: true, side: 'right' } })
+    const normal = computeShellLayout(selected)
+    const focused = computeShellLayout({ ...selected, appState: state('COMPLETED', ['FOCUS']) })
+    const sheet = focused.inspector!, frame = worldCommandFrame(focused)
+    expect(sheet).toEqual(normal.inspector)
+    expect(sheet.height).toBeGreaterThanOrEqual(156)
+    expect(sheet.y + sheet.height).toBeLessThan(focused.timeDock.y)
+    expect(frame.height).toBeGreaterThan(550)
+    expect(frame.y + frame.height).toBeCloseTo(sheet.y)
+    expect(focused.timeDock).toEqual(computeShellLayout(input(760, 900)).timeDock)
+  })
   it('reserves the actual left Inspector as well as source chrome without moving the narrow World',()=>{
     const desktop=computeShellLayout(input(1440,900,{inspector:{open:true,side:'left'}}))
     expect(desktop.inspector!.x+desktop.inspector!.width).toBeLessThan(720)
@@ -160,6 +162,7 @@ describe('transient surfaces and Safe_Frame', () => {
     expect(area.x).toBe(opened.source.x + opened.source.width)
     expect(area.y + area.height).toBe(Math.min(opened.inspector!.y, opened.dockDrawer!.y))
     expect(area.width).toBeGreaterThan(0)
+    expect(opened.source.y + opened.source.height).toBeLessThan(opened.inspector!.y)
   })
   it('anchors Explorer to Source and hides it behind a collapsed narrow drawer', () => {
     const layout = computeShellLayout(input(1440, 900, { explorerOpen: true }))
@@ -185,12 +188,23 @@ describe('transient surfaces and Safe_Frame', () => {
     expect(left.source).toEqual(computeShellLayout(input()).source)
     expect(computeShellLayout(input(1728, 1117, { inspector: { open: true, side: 'right' } })).inspector!.width).toBeCloseTo(345.6)
   })
-  it('narrow Inspector is a bottom sheet independent of desktop side', () => {
+  it('aligns the narrow bottom sheet with Time Dock independently of desktop side', () => {
     const data = input(760, 900, { inspector: { open: true, side: 'right' } })
     const right = computeShellLayout(data)
-    rect(right.inspector!, { x: 0, y: 495, width: 760, height: 405 })
+    expect(right.inspector!.x).toBe(right.timeDock.x)
+    expect(right.inspector!.width).toBe(right.timeDock.width)
+    expect(right.inspector!.y + right.inspector!.height).toBeLessThan(right.timeDock.y)
     expect(computeShellLayout({ ...data, inspector: { open: true, side: 'left' } })).toEqual(right)
     expect(right.safeFrame).toEqual(computeShellLayout(input(760, 900)).safeFrame)
+  })
+  it('ends the short desktop Inspector above the timeline while preserving Source', () => {
+    const data = input(1440, 650, { appState: state('COMPLETED', ['FOCUS']) })
+    const closed = computeShellLayout(data)
+    const open = computeShellLayout({ ...data, inspector: { open: true, side: 'left' } })
+    expect(open.inspector!.height).toBeGreaterThan(300)
+    expect(open.inspector!.y + open.inspector!.height).toBeLessThan(open.timeDock.y)
+    expect(open.timeDock).toEqual(closed.timeDock)
+    expect(open.source).toEqual(closed.source)
   })
   it.each([[1440, 650], [1024, 400], [3840, 759]])('SHORT keeps at least .55H at %i × %i', (w, h) => {
     const layout = computeShellLayout(input(w, h, { sourceExpanded: true, appState: state('DEBUG_PAUSED', ['FOCUS']) }))

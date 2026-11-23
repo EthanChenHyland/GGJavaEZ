@@ -16,7 +16,7 @@ export interface WorldObservation {
   arrayText():readonly {entityId:string;slotId:string;kind:'index'|'value';text:string;position:Vec3;opacity:number;fontPixels:number;localInkBounds:readonly number[]|null;bounds:import('./worldProjection').ProjectedRect|null}[]
   ioText():readonly {channel:'stdin'|'stdout'|'stderr';text:string;opacity:number;fontPixels:number;position:Vec3;bounds:import('./worldProjection').ProjectedRect|null}[]
   exceptionText():readonly {text:string;opacity:number;fontPixels:number;position:readonly[number,number,number];bounds:import('./worldProjection').ProjectedRect|null}[]
-  structuralLabels():readonly {id:string;kind:'cluster'|'heading'|'bundle'|'return';visible:boolean;minimumFontPixels:number;bounds:import('../shell/shellLayout').Rect|null}[]
+  structuralLabels():readonly {id:string;kind:import('../render/text/structuralLabelLayout').StructuralLabelSpec['kind'];visible:boolean;minimumFontPixels:number;bounds:import('../shell/shellLayout').Rect|null}[]
   projectedPoint(id: string): { x:number; y:number; visible:boolean } | null
   renderer(): {calls:number;triangles:number;geometries:number;textures:number;frame:number}
   resources(): {

@@ -9,7 +9,8 @@ import type {Rect} from '../shell/shellLayout'
 import {useCameraStore} from './cameraStore'
 import {useInteractionStore} from '../interaction/interactionStore'
 import {spatialFocusTarget} from '../interaction/focusTarget'
-import {camera as tokens,motion} from '../theme/tokens'
+import {camera as tokens,motion,presentationScale} from '../theme/tokens'
+import {isDenseWorld} from '../world/presentationDensity'
 import {cameraPosition,nextDetailLevel,representativeFaceHeight,type OrbitPose} from './projection'
 import {cameraCollisionAnchors,cameraCollisionBoxes,constrainCameraPose,type EyePose} from './cameraConstraints'
 import {homeFraming} from './homeFraming'
@@ -164,7 +165,8 @@ export function CameraRig({scene,plan,event,layout,safeFrame,focusContentFrame,i
   const captionPoints=cell?([null,'read','write'] as const).flatMap(activity=>arrayCellCaptionPoints(anchor,arrayCellIndexLabel(cell.index,activity))):null
   const content=captionPoints?{points:captionPoints,area:captionArea}:undefined
   cameraReadiness.moving=true
-  begin(focusFraming(anchor,angles,area,size,content,neighbours),Math.max(0,deadline-now))
+  const contextPan=isDenseWorld(scene)?presentationScale.focusContextPan:undefined
+  begin(focusFraming(anchor,angles,area,size,content,neighbours,contextPan),Math.max(0,deadline-now))
  },[intentRevision,focusAnchorKey,focusFrameKey,viewportKey])
  useEffect(()=>{
   const cancel=()=>{move.current=null;lastFollow.current=-1;useCameraStore.getState().setPose(orbitPoseFromEye(eye()));useCameraStore.getState().userInput();invalidate()}

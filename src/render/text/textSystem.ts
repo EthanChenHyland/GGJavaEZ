@@ -38,7 +38,7 @@ export function projectedFontPixels(size:number,point:Vector3,camera:Camera,view
  if(depth<camera.near||depth>camera.far)return 0
  return size*viewportHeight/(2*Math.tan(camera.fov*Math.PI/360)*depth)
 }
-export const worldTextVisible=(pixels:number,minimum:11|12=11)=>Number.isFinite(pixels)&&pixels>=minimum
+export const worldTextVisible=(pixels:number,minimum=11)=>Number.isFinite(pixels)&&pixels>=minimum
 
 /** Text stays on a real XY plane: oblique views foreshorten either font span,
  * independently of distance. Vertical is the default for structural labels. */

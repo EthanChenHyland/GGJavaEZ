@@ -3,7 +3,7 @@ import { expect, test, type APIRequestContext, type Page } from '@playwright/tes
 import type { SceneIo } from '../../src/contracts/world'
 import type { ExecutionSession } from '../../src/execution/contracts'
 import { normalizeTrace } from '../../src/instrumentation/normalize'
-import { fitWorldText } from '../../src/render/text/textSystem'
+import { recordedIoPortText } from '../../src/render/RecordedIoPortText'
 import { browserErrors, currentSession, focusSelection, home, ready, seekCursor, selectEntity, startFixture, stopOwnedSession } from './harness'
 
 const ownedProjects = new Set<string>()
@@ -55,9 +55,11 @@ async function expectPort(page: Page, channel: SceneIo['id'], expected: { lines:
   // readout or independently completed count/preview members cannot satisfy it.
   expect(observed.labels).toHaveLength(1)
   const label = observed.labels[0], io = observed.io!
-  const glyph = channel === 'stderr' ? '⚠' : channel === 'stdout' ? '→' : '←'
-  const fitted = fitWorldText(`${glyph} ${expected.display}`, io.anchor.size[0] - .24, .32, 500, 0, Infinity, 'end')
-  expect(label.text).toBe(`${expected.lines}\n${fitted}`)
+  expect(label.text).toBe(recordedIoPortText(io, io.anchor.size[0]).join('\n'))
+  const [header, excerpt] = label.text.split('\n')
+  expect(header).toBe(`${channel} ${expected.lines}`)
+  expect(expected.display.startsWith(excerpt.replace(/…$/, ''))).toBe(true)
+  if (excerpt !== expected.display) expect(excerpt.endsWith('…')).toBe(true)
   expect(label.opacity).toBeGreaterThan(0)
   expect(label.fontPixels).toBeGreaterThanOrEqual(11)
   expect(label.bounds).not.toBeNull()

@@ -2,7 +2,7 @@ import { arrayBackplate,arrayTitlePlate } from './arrayCellGeometry';
 import {exceptionPanelFor,exceptionPanelAnchor} from './exceptionPanelPlacement'
 import type { Selection } from '../contracts/interaction';
 import type { ArrayIndexReason, DetailLevel, EntityId, LayoutState, MaterialRole, PresentationPlan, PresentedCurve, PresentedEntity, SceneEntity, SceneModel, TraceScope, Vec3, WorldAnchor } from '../contracts/world';
-import { budgets, world } from '../theme/tokens';
+import { budgets, presentationScale, world } from '../theme/tokens';
 import { computeArrayWindow, type ArrayWindow } from './arrayWindow';
 import type { FlowCatalog, RecordedFlow } from './flowCatalog';
 import { arrayCellTarget } from './arrayCellTarget';
@@ -15,7 +15,8 @@ import {faceRows} from './faceRows';
 import {referencePresentationTopology} from './referencePresentationTopology';
 import {historicalReferenceCatalog} from './historicalReference';
 import {buildFlowTopology} from './flowTopology';
-import {stackContextHeading} from './invocationContext';
+import {contextInvocations,stackContextHeading} from './invocationContext';
+import {isDenseWorld,overviewHeapSubject} from './presentationDensity';
 import {anchorCorners} from './anchorGeometry';
 import {solveHeroFraming,type HeroViewport} from '../camera/heroFraming';
 export {anchorCorners} from './anchorGeometry';
@@ -29,6 +30,7 @@ export interface PlanInput {
     focusTargetId: EntityId | null;
     clusterTravelMemberId?: EntityId;
     viewTile?: Vec3; // coarse target tile only; continuous orbit does not re-plan
+    viewportCut?: {overview: boolean; compact: boolean};
     /** Scripted Hero admission only. User exploration never inherits this cut. */
     hero?:HeroViewport;
     trace: {
@@ -41,7 +43,12 @@ const category = (node: SceneEntity): 'frames' | 'objects' | 'classes' => node.k
 const rowIds = (node: SceneEntity): readonly string[] => node.kind === 'frame' || node.kind === 'class' ? node.rows.map(r => r.slotId) : node.kind === 'object' ? node.groups.flatMap(g => g.rows.map(r => r.slotId)) : node.kind === 'array' ? node.cells.map(c => c.slotId) : node.entries.flatMap(e => e.keySlotId ? [e.slotId, e.keySlotId] : [e.slotId]);
 /** Complete catalog in, one accounted hierarchy cut out. Required identities cannot be budgeted away. */
 export function planPresentation(input: PlanInput, previous?: PresentationPlan): PresentationPlan {
-    const { scene, layout, detailLevel, selection, focusTargetId, trace } = input, budget = budgets[detailLevel];
+    const { scene, layout, detailLevel, selection, focusTargetId, trace } = input;
+    const dense=!!input.viewportCut&&isDenseWorld(scene),overview=dense&&input.viewportCut!.overview&&!focusTargetId;
+    const base=budgets[detailLevel];
+    const scale=overview?presentationScale.overview:detailLevel==='CLOSE'?presentationScale.close:presentationScale.medium;
+    const budget=dense&&detailLevel!=='FAR'?{...base,frames:Math.min(base.frames,scale.frames),objects:Math.min(base.objects,scale.objects),
+        classes:Math.min(base.classes,scale.classes),quiet:Math.min(base.quiet,scale.quiet),clusters:scale.clusters}:base;
     const exceptionPanel=exceptionPanelFor(scene),forensicState=!!exceptionPanel;
     const forensicEvidence=new Set(forensicState ? scene.exception?.evidence.eventIds : undefined);
     const isExceptionFlow=(flow:RecordedFlow)=>flow.kind==='throw'||flow.kind==='unwind'||flow.kind==='catch';
@@ -102,6 +109,10 @@ export function planPresentation(input: PlanInput, previous?: PresentationPlan):
     for (const id of live.slice(-4))
         pin(id, 'executing invocation and nearest ancestors');
     const current = live.at(-1);
+    const overviewFrames=overview?contextInvocations(scene):[];
+    const overviewObject=overview?overviewHeapSubject(scene,overviewFrames.at(-1)):undefined;
+    for(const frame of overviewFrames)pin(frame,'Home invocation path');
+    pin(overviewObject,'Home heap relationship');
     for (const ref of scene.references)
         if (ref.sourceId === current)
             pin(ref.targetId, 'direct executing-frame reference');
@@ -118,7 +129,10 @@ export function planPresentation(input: PlanInput, previous?: PresentationPlan):
       const neighbour = owner(source ? flow.to.id : destination ? flow.from?.id : null);
       return neighbour && neighbour !== focused ? [neighbour] : [];
     }) : [];
-    const neighbours = [...new Set([...invocationNeighbours.slice(0, 2), ...eventNeighbours, ...referenceNeighbours, ...invocationNeighbours])].filter(id=>scene.entities[id]).slice(0,6);
+    // One binding is useful context at dense inspection scale. Invocation
+    // and current-event endpoints take priority over a collection's other members.
+    const contextReferences=dense?referenceNeighbours.slice(0,1):referenceNeighbours;
+    const neighbours = [...new Set([...invocationNeighbours.slice(0, 2), ...eventNeighbours, ...contextReferences, ...(dense?[]:invocationNeighbours)])].filter(id=>scene.entities[id]).slice(0,6);
     const focusContext=new Set([focused,...neighbours]);
     const focusConnection=(source:string|null|undefined,target:string|null|undefined)=>{
         if(!focused)return true;
@@ -201,7 +215,10 @@ export function planPresentation(input: PlanInput, previous?: PresentationPlan):
             pickableQuiet++;
         const requested=[...(rowRequests.get(id)??[])],prior=previous?.entities.get(id)?.rowSlotIds;
         const rowSlotIds=prior&&prior.length===requested.length&&prior.every((slot,index)=>slot===requested[index])?prior:requested;
-        entities.set(id, { id, mode, detail: id === focused ? 'CLOSE' : detailLevel==='FAR'&&requested.length?'MEDIUM':detailLevel, opacity, pinned, pickable: canPick,
+        const showDetail = id === focused || id === selected && detailLevel==='CLOSE' ? 'CLOSE'
+          : detailLevel==='FAR'&&requested.length?'MEDIUM'
+          : detailLevel==='CLOSE'&&dense&&!requested.length&&(overview||!pinned&&!oneHop.has(id))?'MEDIUM':detailLevel;
+        entities.set(id, { id, mode, detail:showDetail, opacity, pinned, pickable: canPick,
             ...(requested.length?{rowSlotIds}:{}),
             highlight: forensic ? 'exception' : id === selected ? 'selected' : id === focused ? 'focus' : node.kind === 'object' && node.mutation ? 'mutation' : scene.cursorEvent?.subjects.includes(id) ? 'current' : null });
     };
@@ -213,12 +230,12 @@ export function planPresentation(input: PlanInput, previous?: PresentationPlan):
             overflow.push({ category: cat, nominal: budget[cat], actual: required.length, mandatoryIds: required, reasons: [...new Set(required.flatMap(id => [...mandatory.get(id)!]))] });
         const optional = residualGroups(scene,layout,ids.filter(id => category(scene.entities[id]) === cat && !mandatory.has(id) && !collapsedExternal(id)),detailLevel)
           .map(group=>({...group,rank:rank(group.members)})).sort((a,b)=>(heroActive?Number(b.members.includes(heroSeed!))-Number(a.members.includes(heroSeed!)):0)||compareRank(a.rank,b.rank)||a.id.localeCompare(b.id));
-        let remaining = Math.max(0, budget[cat] - required.length);
+        let remaining = overview&&!live.length&&cat==='frames'?0:Math.max(0, budget[cat] - required.length);
         for (const group of optional) {
             if (!remaining) break;
             let members=group.members.filter(id=>!entities.has(id));
-            if(hasLocalCut && members.length>remaining && (group.rank.hop===0 || group.rank.distance<=3))
-                members=localMembers(members,Math.min(remaining,detailLevel==='CLOSE'?8:3));
+            if(hasLocalCut && (members.length>remaining || dense&&members.length>4) && (group.rank.hop===0 || group.rank.distance<=3))
+                members=localMembers(members,Math.min(remaining,detailLevel==='CLOSE'?(dense?4:8):3));
             if(!members.length||members.length>remaining)continue;
             const targets=[...new Set(members.flatMap(dependencies))],additional=targets.filter(target=>!reservedObjects.has(target)&&!members.includes(target));
             const cost = additional.length + (cat === 'objects' ? members.length : 0);
@@ -265,8 +282,12 @@ export function planPresentation(input: PlanInput, previous?: PresentationPlan):
         if (node.kind !== 'array' || presented.mode !== 'detailed') continue;
         const requested = [...(arrayRequests.get(id) ?? [])]; remainingMandatory -= requested.length;
         const reasons=(reason:ArrayIndexReason)=>requested.filter(index=>arrayReasons.get(id)?.get(index)?.has(reason));
+        const localLimit=node.length>16&&input.viewportCut
+          ? (input.viewportCut.compact?presentationScale.compactArrayCells:presentationScale.largeArrayCells)[overview&&detailLevel==='CLOSE'?'MEDIUM':detailLevel]
+          : budget.cells;
+        const nominal = Math.max(requested.length, Math.min(localLimit,remainingCells-remainingMandatory));
         const window = computeArrayWindow({ recordingId: scene.recordingId, arrayId: id, recordedLength: node.length, anchor: node.anchor,
-            nominalCellBudget: Math.max(requested.length, remainingCells - remainingMandatory), requestedIndices: reasons('requested'),
+            nominalCellBudget: nominal, requestedIndices: reasons('requested'),
             selectedIndices:reasons('selected'),focusedIndices:reasons('focused'),currentIndices:reasons('current'),
             previous: previous?.cellWindows.get(id) as ArrayWindow | undefined });
         cellWindows.set(id, window); remainingCells -= window.visible.length; mandatoryCells.push(...window.budgetOverflow.mandatoryIds);
@@ -278,12 +299,12 @@ export function planPresentation(input: PlanInput, previous?: PresentationPlan):
       // An array's reserved envelope is not a visible face. Route around the
       // actual header, plate and current cell mapping.
       bodyAnchors.set(id, node.kind === 'array' ? arrayTitlePlate(anchor) : anchor);
-      if (node.kind==='array'&&presented.mode==='detailed') backs.push(arrayBackplate(anchor));
+      if (node.kind==='array'&&presented.mode==='detailed') backs.push(arrayBackplate(anchor,cellWindows.get(id)));
     }
     const cellAnchors = new Map([...cellWindows.values()].flatMap(window => [...window.mapping].map(([id, cell]) => [id, cell.anchor] as const)));
     const routeBodies = [...bodyAnchors.values(), ...backs, ...cellAnchors.values(), ...scene.io.map(io => io.anchor), ...clusters.map(cluster => cluster.anchor),...(exceptionPanel?[exceptionPanelAnchor(exceptionPanel,scene.recording)]:[])];
     const route = (input.router??createConnectorRouter()).forBodies(routeBodies);
-    const relevantEntities=new Set([selected,focused,...(scene.cursorEvent?.subjects??[]).map(owner)].filter((id):id is string=>!!id));
+    const relevantEntities=new Set([selected,focused,overviewObject,...(scene.cursorEvent?.subjects??[]).map(owner)].filter((id):id is string=>!!id));
     const traceParticipants=new Set<string>();
     const participate=(...ids:(string|undefined)[])=>{for(const id of ids){const resolved=owner(id);if(resolved)traceParticipants.add(resolved)}};
     const all = trace.active && trace.scope === 'all';
@@ -309,12 +330,15 @@ export function planPresentation(input: PlanInput, previous?: PresentationPlan):
       if (ref.overlay==='exception'&&forensicState) return connector.directOpacity;
       if (forensicState) return connector.topologyOpacity;
       if (activeBinding(ref)) return connector.currentOpacity;
+      if (ref.targetId===overviewObject && ref.sourceId===overviewFrames.at(-1)) return connector.directOpacity;
       const source=scene.entities[ref.sourceId];
       if (source?.kind==='frame' && !source.live) return contextOpacity;
       if (ref.sourceId===current || relevantEntities.has(ref.sourceId) || liveFrames.has(ref.sourceId)&&actedOn.has(ref.targetId)) return connector.directOpacity;
       return contextOpacity;
     };
-    const {current:topology,historical:historicalTopology}=referencePresentationTopology({scene,entities,clusters,cellWindows,individualLimit:budget.connectors,
+    const bundleLimit=dense?(all?presentationScale.allBundleLimit:presentationScale.bundleLimit[detailLevel]):undefined;
+    const {current:topology,historical:historicalTopology}=referencePresentationTopology({scene,entities,clusters,cellWindows,
+      individualLimit:dense&&!all?Math.min(budget.connectors,detailLevel==='CLOSE'?20:12):budget.connectors,bundleLimit,selectedBundleId:selection?.kind==='bundle'?selection.id:undefined,
       mandatoryIds:new Set([...scene.references.filter(ref=>ref.id===selectedRef?.id||ref.evidence.changedSeq===scene.cursorEvent?.seq).map(ref=>ref.id),...(selectedRef?[selectedRef.id]:[])]),
       priorityIds:new Set(scene.references.filter(referenceRelevant).map(ref=>ref.id)),enabled:!trace.active||trace.scope!=='current'},historicalRefs,trace.active&&trace.scope==='all');
     const requiredRefs=topology.individual.filter(({reference})=>reference.id===selectedRef?.id||reference.evidence.changedSeq===scene.cursorEvent?.seq);
@@ -348,6 +372,7 @@ export function planPresentation(input: PlanInput, previous?: PresentationPlan):
         if(all||direct||focusDirect)participate(call.callerId,call.calleeId);
     }
     const flowTopology=buildFlowTopology({scene,entities,cellWindows,flows:input.flows?.iteratePrefix(scene.cursor,scene)??[],limit:budget.flows,
+      bundleLimit,selectedBundleId:selection?.kind==='bundle'?selection.id:undefined,
       mandatoryIds:new Set(requiredFlows.map(flow=>flow.id)),aggregate:all,
       priority:flow=>isCurrentFlow(flow)?0:flow.id===selection?.id?1:isForensicFlow(flow)?2:[flow.from,flow.to].some(point=>point&&priority.focusedIds.has(point.id))?3:flowRelevant(flow)?4:5,
       inScope:flow=>!trace.active||all||isCurrentFlow(flow)||trace.scope==='relevant'&&(flowRelevant(flow)||isForensicFlow(flow))});
@@ -385,7 +410,7 @@ export function planPresentation(input: PlanInput, previous?: PresentationPlan):
     const bundles = topology.bundles.map<PresentationPlan['bundles'][number]>(bundle=>{
       const relevant=bundle.references.some(referenceRelevant),roles=new Set(bundle.references.map(referenceRole));
       const selected=bundle.id===selection?.id;
-      const opacity=selected?connector.currentOpacity:focused||forensicState?connector.focusAwayOpacity:
+      const opacity=selected?connector.currentOpacity:focused||forensicState||overview&&!all?connector.focusAwayOpacity:
         all||detailLevel==='FAR'||relevant||bundle.count>=4?connector.bundleOpacity:connector.topologyOpacity;
       if(all||relevant||selected)for(const ref of bundle.references)participate(ref.sourceId,ref.targetId);
       return{id:bundle.id,kind:'connector',from:bundle.from,to:bundle.to,count:bundle.count,points:route(bundle.sourcePoint,bundle.destinationPoint,bundle.sourceAnchor,bundle.destinationAnchor),colorRole:roles.size===1?[...roles][0]:'reference',opacity,widthPx:coreWidth(bundle.id),arrow:selected,referenceIds:bundle.references.map(ref=>ref.id)};

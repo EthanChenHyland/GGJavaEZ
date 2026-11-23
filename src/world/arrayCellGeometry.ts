@@ -1,4 +1,4 @@
-import type { Vec3, WorldAnchor } from '../contracts/world'
+import type { ArrayWindow, Vec3, WorldAnchor } from '../contracts/world'
 import { world } from '../theme/tokens'
 import type { ConnectorObstacle } from './connectorRouting'
 
@@ -10,14 +10,18 @@ export function arrayTitlePlate(tray: WorldAnchor): WorldAnchor {
     ports: {}, bodyPort: [x, centerY, z + backplate / 2] }
 }
 
-/** The tray reserves its rear sheet from allocation. Window changes only
- * reassign front cell slots, so the backing stays fixed through time. */
-export function arrayBackplate(tray: WorldAnchor): ConnectorObstacle {
-  const thickness = world.array.backplate
+/** Compact a virtualized tray to its presented rows. Its top plane, cell
+ * coordinate system and canonical reservation stay at the original anchor. */
+export function arrayBackplate(tray: WorldAnchor, window?: ArrayWindow): ConnectorObstacle {
+  const {backplate:thickness,titlePlate,indexLabel,cell,gap} = world.array
   const [x,y,z] = tray.position
   const back = z - tray.size[2] / 2
-  return { ...tray, entityId: `${tray.entityId}:backplate`, position: [x,y,back + thickness / 2],
-    size: [tray.size[0],tray.size[1],thickness], ports: {}, bodyPort: [x,y,back + thickness],
+  const height = window?.virtualized
+    ? Math.min(tray.size[1],titlePlate+indexLabel+(cell+gap)*Math.max(1,window.presentedRows))
+    : tray.size[1]
+  const centerY=y+(tray.size[1]-height)/2
+  return { ...tray, entityId: `${tray.entityId}:backplate`, position: [x,centerY,back + thickness / 2],
+    size: [tray.size[0],height,thickness], ports: {}, bodyPort: [x,centerY,back + thickness],
     frontClearance: 0 }
 }
 

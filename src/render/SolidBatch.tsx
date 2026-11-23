@@ -57,7 +57,7 @@ export function buildSolidBatch(scene: SceneModel, plan: PresentationPlan): Soli
         if (presented.mode !== 'detailed')
             continue;
         if (node.kind === 'array') {
-            solids.push({anchor:arrayBackplate(node.anchor),pick,pickable:presented.pickable,role,opacity,tint:palette.core,edge,finish:acrylic.context,arrayTrayPart:'backplate'});
+            solids.push({anchor:arrayBackplate(node.anchor,plan.cellWindows.get(node.id)),pick,pickable:presented.pickable,role,opacity,tint:palette.core,edge,finish:acrylic.context,arrayTrayPart:'backplate'});
             plate(id, [x, body.position[1], z + body.size[2] / 2 + .015], [w - .18, body.size[1] - .18, .035], palette.face, opacity, undefined, undefined, 'face');
         } else {
             plate(id, [x, y, face - .01], [w - .18, h - .18, .035], palette.face);

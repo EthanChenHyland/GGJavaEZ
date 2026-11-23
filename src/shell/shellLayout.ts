@@ -32,6 +32,7 @@ export interface ShellLayout {
 }
 
 const clamp = (value: number, min: number, max: number): number => Math.min(max, Math.max(min, value))
+const inspectorGapPx = 8
 
 export function viewportClass(width: number, height: number): ViewportClass {
   if (width < shell.viewport.standardW) return 'NARROW'
@@ -85,11 +86,6 @@ export function computeShellLayout(input: ShellLayoutInput): ShellLayout {
     source = { x: shell.source.x * w, y: shell.source.y * h, width, height, size }
   }
 
-  const explorer: Rect | null = input.explorerOpen && (!narrow || input.narrowDrawerOpen) ? {
-    x: source.x, y: source.y,
-    width: (shell.explorer.wMin + shell.explorer.wMax) / 2 * w,
-    height: source.height,
-  } : null
   // This rectangle is the visual band. Toggle hit boxes are separately 24 px
   // tall, bottom-aligned, extending into control-free Time_Dock padding (§2).
   const stripHeight = Math.min(shell.dock.stripMaxPx, shell.timeDock.bottom * h)
@@ -105,21 +101,35 @@ export function computeShellLayout(input: ShellLayoutInput): ShellLayout {
   let inspector: Rect | null = null
   if (input.inspector.open) {
     if (narrow) {
-      // A Focus target needs room for its full-size face and runtime captions.
-      // Content remains virtualized in the shorter sheet; 45% stays the cap.
-      const height = Math.min(shell.inspector.sheetMaxH,input.appState.overlays.includes('FOCUS') ? .30 : shell.inspector.sheetMaxH) * h
-      inspector = { x: 0, y: h - height, width: w, height }
+      // Fit the sheet into the work area between the header and timeline.
+      // The same footprint preserves the framing when selection enters Focus.
+      const bottom = timeDock.y - inspectorGapPx
+      const available = Math.max(0, bottom - header.height)
+      const height = Math.min(clamp(available * .23, 156, 196), available * shell.inspector.sheetMaxH)
+      inspector = { x: timeDock.x, y: bottom - height, width: timeDock.width, height }
     } else {
       const width = Math.max(shell.inspector.w * w, shell.inspector.minPx)
+      const y = shell.inspector.top * h
+      const height = kind === 'SHORT'
+        ? clamp(timeDock.y - y - inspectorGapPx, 0, shell.inspector.maxH * h)
+        : shell.inspector.maxH * h
       inspector = {
         // The left half also contains Source. Prefer the available space beside
         // it, clamped to the required opposite half; never resize Source.
         x: input.inspector.side === 'right' ? shell.inspector.rightEdge * w - width
           : Math.min(w/2-width,Math.max((1-shell.inspector.rightEdge)*w,source.x+source.width+.01*w)),
-        y: shell.inspector.top * h, width, height: shell.inspector.maxH * h,
+        y, width, height,
       }
     }
   }
+  if (narrow && inspector && source.size === 'DRAWER_OPEN') {
+    source.height = Math.max(0, inspector.y - inspectorGapPx - source.y)
+  }
+  const explorer: Rect | null = input.explorerOpen && (!narrow || input.narrowDrawerOpen) ? {
+    x: source.x, y: source.y,
+    width: (shell.explorer.wMin + shell.explorer.wMax) / 2 * w,
+    height: source.height,
+  } : null
   // Six compact controls. The spec fixes centering/top, not total bar width.
   const debugWidth = Math.min(w, 6 * shell.modeButton.maxPx + 5 * shell.modeButton.gapPx)
   const debugBar: Rect | null = input.debugActive ? {

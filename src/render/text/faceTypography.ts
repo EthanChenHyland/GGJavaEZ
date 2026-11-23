@@ -72,7 +72,7 @@ export function faceHeading(node:SceneEntity,shortFrameTitle=false){
  const frame=node.kind==='frame'?frameHeading(node.title,width,size,short):null
  const lines=frame?[frame.text]:arrayTitle?[arrayTitle]:undefined
  // Place live names below the edge of a nearer recursive slab.
- const titleOffset=frame ? short ? .61 : .57 : .45
+ const titleOffset=frame ? short ? .61 : .57 : node.kind==='array'&&node.length>16 ? .28 : .45
  const identityOffset=frame ? titleOffset : node.kind==='array' ? .65 : .45
  const position=[x-w/2+.28,top-titleOffset,face] as Vec3
  const parameters=frame?.parameters

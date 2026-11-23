@@ -262,7 +262,8 @@
       "rows": 12,
       "columns": 2,
       "pitch": 0.56,
-      "sizeRow": 0.7
+      "sizeRow": 0.7,
+      "labelSize": 0.39
     },
     "classShelf": {
       "w": 5.2,
@@ -420,5 +421,18 @@
     "farH": 0.05,
     "hysteresis": 0.15,
     "representatives": 5
+  },
+  "presentationScale": {
+    "denseThreshold": 54,
+    "focusContextPan": 0.28,
+    "overview": { "frames": 5, "objects": 5, "classes": 3, "quiet": 0, "clusters": 12 },
+    "close": { "frames": 8, "objects": 16, "classes": 4, "quiet": 4, "clusters": 12 },
+    "medium": { "frames": 6, "objects": 12, "classes": 4, "quiet": 3, "clusters": 12 },
+    "largeArrayCells": { "FAR": 2, "MEDIUM": 8, "CLOSE": 24 },
+    "compactArrayCells": { "FAR": 2, "MEDIUM": 6, "CLOSE": 16 },
+    "bundleLimit": { "FAR": 10, "MEDIUM": 16, "CLOSE": 18 },
+    "allBundleLimit": 64,
+    "clusterLabels": { "wide": 10, "compact": 7 },
+    "clusterLabelMinimumPx": 13
   }
 }

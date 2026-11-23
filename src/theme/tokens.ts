@@ -24,5 +24,6 @@ export const motion = tokens.motion
 export const budgets = tokens.budgets
 export const detailLevel = tokens.detailLevel
 export const typography = tokens.typography
+export const presentationScale = tokens.presentationScale
 
 export const shellLayers = { world: 0, source: 2, overlay: 3, controls: 2, inspector: 3, header: 4, dialog: 5 } as const

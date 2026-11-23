@@ -5,9 +5,8 @@ import {randomUUID} from 'node:crypto'
 import type {ExecutionSession} from '../../src/execution/contracts'
 import type {} from '../../src/qa/qaBridge'
 import {normalizeTrace} from '../../src/instrumentation/normalize'
-import {ioPortPreview} from '../../src/world/ioPortText'
+import {recordedIoPortText} from '../../src/render/RecordedIoPortText'
 import design from '../../docs/visual-java-spec/DESIGN_TOKENS.json' with {type:'json'}
-import {fitWorldText} from '../../src/render/text/textSystem'
 import manifest from '../../fixtures/reference-exact/manifest.json' with {type:'json'}
 export type FixtureName=keyof typeof manifest
 const ownedProjects=new Map<FixtureName,string>()
@@ -240,10 +239,8 @@ export async function captureComparison(page:Page,request:APIRequestContext,stat
   }
  }
  if(state.id==='io')for(const io of before.scene.io){
-  const label=before.ioText.find(label=>label.channel===io.id),preview=ioPortPreview(io)
-  const glyph=io.id==='stderr'?'⚠':io.id==='stdout'?'→':'←'
-  const row=`${glyph} ${preview.available?preview.displayText||'""':'—'}`
-  const exactText=`${io.lines}\n${fitWorldText(row,io.anchor.size[0]-.24,.32,500,0,Infinity,'end')}`
+  const label=before.ioText.find(label=>label.channel===io.id)
+  const exactText=recordedIoPortText(io,io.anchor.size[0]).join('\n')
   if(!label||label.text!==exactText||label.opacity<=0||label.fontPixels<11||!label.bounds||label.bounds.width<=0||label.bounds.height<=0)misses.push(`I/O channel ${io.id} has no readable exact count and bounded preview`)
  }
  if(state.id==='runtime-hero'){

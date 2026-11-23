@@ -54,7 +54,9 @@ export function WorldSurface({ trace, onSourceChange, onRevealSource, onRuntimeC
     const detail = useCameraStore(state => state.detailLevel);
     // Home solves against a repeatable cut. A tile crossed en route must not
     // choose different optional geometry and change that command's destination.
-    const viewTile=useCameraStore(state=>state.mode==='HOME'?null:state.viewTile);
+    const overview=useCameraStore(state=>state.overview);
+    const viewTile=useCameraStore(state=>state.overview&&!focus?null:state.viewTile);
+    const compact=viewport.width<1024||viewport.height<760;
     const cameraIntent = useCameraStore(state => state.intent?.kind==='cluster'?state.intent:undefined);
     const heroRequested=useCameraStore(state=>state.intent?.kind==='hero'||state.intent?.kind==='recording');
     const heroViewport=useMemo(()=>heroRequested?{safeFrame,viewport}:undefined,[heroRequested,safeFrame.x,safeFrame.y,safeFrame.width,safeFrame.height,viewport.width,viewport.height]);
@@ -83,11 +85,11 @@ export function WorldSurface({ trace, onSourceChange, onRevealSource, onRuntimeC
     const plan = useMemo(() => {
         const previous=compiler.previousPlan?{...compiler.previousPlan,cellWindows:compiler.windows}:undefined;
         const clusterTravelMemberId=cameraIntent?.kind==='cluster'&&cameraIntent.recordingId===scene.recordingId&&cameraIntent.cursor===scene.cursor?cameraIntent.memberId:undefined;
-        const next=planPresentation({ scene, flows, router:compiler.router, layout, detailLevel: detail, selection, focusTargetId: focus?.targetId ?? null, clusterTravelMemberId, viewTile:viewTile?.split(':').map(Number) as [number,number,number]|undefined, trace: traceState,hero:heroViewport },previous);
+        const next=planPresentation({ scene, flows, router:compiler.router, layout, detailLevel: detail, selection, focusTargetId: focus?.targetId ?? null, clusterTravelMemberId, viewTile:viewTile?.split(':').map(Number) as [number,number,number]|undefined, trace: traceState,hero:heroViewport,viewportCut:{overview,compact} },previous);
         compiler.previousPlan=next;
         for(const[id,window]of next.cellWindows)compiler.windows.set(id,window);
         return next;
-    }, [compiler,scene, flows, layout, detail, selection, focus, traceState,cameraIntent,viewTile,heroViewport]);
+    }, [compiler,scene, flows, layout, detail, selection, focus, traceState,cameraIntent,viewTile,heroViewport,overview,compact]);
     const renderSnapshot = useMemo(() => new WorldRenderSnapshot({ scene, plan, layout }), [scene, plan, layout]);
     const placedInspector=useRef<string|null>(null);
     useLayoutEffect(()=>{

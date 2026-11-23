@@ -46,6 +46,15 @@ it('groups genuine directed semantic pairs and roles with exact constituents des
  for(const bundle of result.bundles){expect(new Set(bundle.flows.map(flow=>flow.kind)).size).toBe(1);expect(bundle.from.point).toEqual(faceRowPort(f.scene.entities.source,f.plan.entities.get('source')!,'opaque/field/0'))}
  expect(buildFlowTopology({...f.input,flows:[...flows].reverse()})).toEqual(result)
 })
+it('keeps the selected dense bundle and exact flow partition when other aggregates exceed the cut',()=>{
+ const f=fixture(),flows=[f.flow('required'),f.flow('first',undefined,'reference'),f.flow('selected',undefined,'local-field')]
+ const input={...f.input,flows,limit:1,mandatoryIds:new Set(['required'])}
+ const selected=buildFlowTopology(input).bundles.find(bundle=>bundle.flows[0].id==='selected')!
+ const bounded=buildFlowTopology({...input,bundleLimit:1,selectedBundleId:selected.id})
+ expect(bounded.bundles).toEqual([selected])
+ expect(bounded.presentation.scopeExcluded).toEqual(['first'])
+ assertPartition(bounded,flows.map(flow=>flow.id))
+})
 it('never substitutes quiet/hidden/retired storage or collapsed bodies for real provenance ports',()=>{
  const f=fixture(),flows=[f.flow('visible'),f.flow('hidden','opaque/field/19'),f.flow('retired','missing lifetime')]
  const result=buildFlowTopology({...f.input,flows});assertPartition(result,flows.map(flow=>flow.id));expect(result.presentation.counts.unavailable).toBe(2)

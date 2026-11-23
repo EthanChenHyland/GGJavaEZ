@@ -122,6 +122,16 @@ describe('current reference topology over a presented cut', () => {
     conservation(result)
   })
 
+  it('preserves a selected bundle and accounts for every relationship deferred by a dense budget', () => {
+    const model = scene([object('source', [row('one', 'near'), row('two', 'far')]), object('near', [], 8), object('far', [], 16)])
+    const input = inputFor(model, { individualLimit: 0 })
+    const selected = buildReferenceTopology(input).bundles.find(bundle => bundle.to === 'far')!
+    const bounded = buildReferenceTopology({ ...input, bundleLimit: 1, selectedBundleId: selected.id })
+    expect(bounded.bundles).toEqual([selected])
+    expect(bounded.scopeExcluded.map(reference => reference.sourceSlotId)).toEqual(['one'])
+    conservation(bounded)
+  })
+
   it('uses visible face rows, rejects hidden/quiet slots, and never substitutes a missing source port', () => {
     const source = object('source', Array.from({ length: 5 }, (_, index) => row(`slot ${index}`, 'target')))
     const model = scene([source, object('target', [], 8)])

@@ -27,9 +27,13 @@ for(const viewport of [{width:1440,height:900},{width:760,height:900}])test(`act
  expect(focused.visible.length).toBe(24);expect(focused.presented.detail).toBe('CLOSE');expect(focused.node.anchor).toEqual(collection.anchor)
  expect(focused.renderer.calls).toBeLessThanOrEqual(250)
  expect(focused.text.filter(label=>label.kind==='value').map(label=>label.slotId)).toEqual(focused.visible)
- expect(focused.text.find(label=>label.kind==='size')?.text).toBe(`size = ${collection.size}`);expect(focused.text.find(label=>label.kind==='more')?.text).toBe(`+${collection.size-24} more`)
- for(const label of focused.text){expect(label.opacity).toBeGreaterThan(0);expect(label.fontPixels).toBeGreaterThanOrEqual(12);expect(label.planePixels).toBeGreaterThanOrEqual(12);expect(label.widthPixels).toBeGreaterThanOrEqual(12)}
- for(const label of focused.headings){expect(label.opacity).toBeGreaterThan(0);expect(label.fontPixels).toBeGreaterThanOrEqual(12);expect(label.planePixels).toBeGreaterThanOrEqual(12);expect(label.widthPixels).toBeGreaterThanOrEqual(12)}
+ expect(focused.text.find(label=>label.kind==='size')?.text).toBe(`size = ${collection.size}`)
+ const coverage=[collection.recordedEntries>24?`${collection.recordedEntries-24} hidden`:'',collection.size>collection.recordedEntries?`${collection.size-collection.recordedEntries} unrecorded`:''].filter(Boolean).join(' · ')
+ expect(focused.text.find(label=>label.kind==='more')?.text).toBe(coverage)
+ for(const label of [...focused.text,...focused.headings]){
+  expect(label.opacity,label.text).toBeGreaterThan(0)
+  expect(Math.min(label.fontPixels,label.planePixels,label.widthPixels),label.text).toBeGreaterThanOrEqual(12)
+ }
  await page.screenshot({path:`.ggjavaez/qa/reference-exact/collection-before-pick-${viewport.width}x${viewport.height}.png`})
  await writeFile(`.ggjavaez/qa/reference-exact/collection-before-pick-${viewport.width}x${viewport.height}.json`,JSON.stringify({realJvmExecuted:true,sessionId:session.id,allocation,focused},null,2)+'\n')
  const camera=new PerspectiveCamera(36,viewport.width/viewport.height,.05,10000);camera.position.set(...focused.pose.position);camera.lookAt(...focused.pose.target);camera.updateMatrixWorld()

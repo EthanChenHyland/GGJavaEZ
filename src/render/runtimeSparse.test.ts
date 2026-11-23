@@ -8,9 +8,12 @@ import {presentedFlowPorts} from '../world/flowTopology'
 import {accessibleEntities} from '../interaction/accessibleEntities'
 import {inspectorRows,inspectorEntity} from './inspection'
 import {buildSolidBatch} from './SolidBatch'
-import {budgets} from '../theme/tokens'
+import {budgets,presentationScale} from '../theme/tokens'
 import {faceRowPort} from '../world/faceRows'
 import type {Selection} from '../contracts/interaction'
+import {arrayBackplate} from '../world/arrayCellGeometry'
+import {arrayCellIndexLabel,arrayIndexSize,arrayIndexWidth} from './text/arrayIndexLayout'
+import {textAdvance} from './text/textSystem'
 function view(options:Parameters<typeof sparseTrace>[0]={},selection:Selection={kind:'object',id:arrayId}){
  const trace=sparseTrace(options),projection=projectTrace(trace),scene=projection.project(trace.events.length),plan=planPresentation({scene,layout:projection.layout,detailLevel:'CLOSE',selection,focusTargetId:null,trace:{active:false,scope:'relevant'}})
  const array=scene.entities[arrayId],storage=scene.entities[classId];if(array.kind!=='array'||storage.kind!=='class')throw new Error('Expected actual sparse/class records')
@@ -73,6 +76,23 @@ describe('production static/sparse successors',()=>{
   expect(inspectorRows(array).at(3900).value.exact).toBe('3900')
   expect(presentedFlowPorts(scene,plan.entities,plan.cellWindows)({kind:'slot',id:slotId})?.point).toEqual(window.mapping.get(slotId)!.port)
   expect(buildSolidBatch(scene,plan).some(item=>item.pick.id===slotId&&item.pickable)).toBe(true)
+ })
+ it('retains the focused index and true connector port within a compact large-array window',()=>{
+  const {scene,projection,array}=view({references:true}),slotId=arrayElementSlotId(arrayId,750000)
+  const cut=(detailLevel:'CLOSE'|'MEDIUM'|'FAR')=>planPresentation({scene,layout:projection.layout,detailLevel,selection:{kind:'slot',id:slotId},focusTargetId:slotId,viewportCut:{compact:true,overview:false},trace:{active:false,scope:'relevant'}})
+  const top=(anchor:typeof array.anchor)=>anchor.position[1]+anchor.size[1]/2
+  for(const level of ['CLOSE','MEDIUM','FAR'] as const){
+   const plan=cut(level),window=plan.cellWindows.get(arrayId)!,backplate=arrayBackplate(array.anchor,window)
+   expect(window.visible.length).toBeLessThanOrEqual(presentationScale.compactArrayCells[level])
+   expect(window.hiddenCount+window.visible.length).toBe(array.length)
+   expect(window.mapping.get(slotId)?.index).toBe(750000)
+   expect(window.budgetOverflow.reasons.get(slotId)).toEqual(['selected','focused'])
+   expect(top(backplate)).toBeCloseTo(top(array.anchor),12)
+   expect(backplate.size[1]).toBeLessThan(array.anchor.size[1])
+   expect(plan.curves.find(curve=>curve.id===referenceIdForSlot(slotId))?.points[0]).toEqual(presentedFlowPorts(scene,plan.entities,plan.cellWindows)({kind:'slot',id:slotId})?.point)
+  }
+  const label=arrayCellIndexLabel(750000,'write')
+  expect(textAdvance(label,500)*arrayIndexSize(label)).toBeLessThan(arrayIndexWidth)
  })
  it('attaches a reference-array edge to its actual selected cell and preserves the full long target identity',()=>{
   const slotId=arrayElementSlotId(arrayId,750000),id=referenceIdForSlot(slotId),{scene,plan,array,window,trace}=view({references:true},{kind:'reference',id})

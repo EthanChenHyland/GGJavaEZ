@@ -7,7 +7,7 @@ import {textReadiness,WorldText} from './FaceText'
 import {faceMaterial,glassMaterial,unitBox} from './RuntimeMaterials'
 import {unitRoundedBox} from './geometry/roundedBox'
 import {useQualityStore} from './quality/qualityStore'
-import {ioPortPreview} from '../world/ioPortText'
+import {ioFaceTextInset,ioFaceTextSize,recordedIoPortText} from './RecordedIoPortText'
 
 /** A single recorded channel, never a floating card per output line. */
 export function RecordedIoPort({io,onInspect}:{io:SceneIo;onInspect():void}){
@@ -40,16 +40,16 @@ export function RecordedIoPort({io,onInspect}:{io:SceneIo;onInspect():void}){
   }
  },[width,height,depth])
  useEffect(()=>{const meshes=[body.current,face.current];return()=>meshes.forEach(mesh=>mesh?.dispose())},[])
- const source=io.id==='stdout'?{...io,...published}:io,preview=ioPortPreview(source)
- const tint=color.semantic[io.id],textWidth=width-.24,textSize=.32,front=depth/2+.04
- const glyph=io.id==='stderr'?'⚠':io.id==='stdout'?'→':'←'
+ const source=io.id==='stdout'?{...io,...published}:io
+ const lines=recordedIoPortText(source,width)
+ const tint=color.semantic[io.id],textWidth=width-2*ioFaceTextInset,front=depth/2+.04
  const inspect=(event:ThreeEvent<MouseEvent>)=>{event.stopPropagation();onInspect()}
  return <group name={`io-port-${io.id}`} position={[...io.anchor.position]}>
   <instancedMesh ref={body} args={[undefined,undefined,1]} geometry={unitRoundedBox} material={glassMaterial(io.id,1,tier)} dispose={null} userData={{runtimeBloomRole:'protected',runtimeIoPort:io.id}} onClick={inspect}/>
   <instancedMesh ref={face} args={[undefined,undefined,1]} geometry={unitBox} material={faceMaterial(1,false)} dispose={null} userData={{runtimeBloomRole:'protected'}} onClick={inspect}/>
   {/* One glyph member publishes the counter and preview atomically. Separate
       members could complete asynchronous layouts on different frames. */}
-  <WorldText position={[-width/2+.12,0,front]} width={textWidth} size={textSize} weight={500} tint={tint} truncation="end"
-   lines={[String(source.lines),`${glyph} ${preview.available?preview.displayText||'""':'—'}`]} ioText={{channel:io.id}}>{String(source.lines)}</WorldText>
+  <WorldText position={[-width/2+ioFaceTextInset,0,front]} width={textWidth} size={ioFaceTextSize} weight={500} tint={tint} truncation="end"
+   lines={lines} ioText={{channel:io.id}}>{lines[0]}</WorldText>
  </group>
 }

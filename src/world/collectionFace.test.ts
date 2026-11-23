@@ -5,7 +5,7 @@ import {createLayoutEngine} from './layoutEngine'
 import {createSceneProjector} from './sceneProjector'
 import {planPresentation} from './presentationPlanner'
 import {faceRows} from './faceRows'
-import {collectionEntryFace} from './collectionFace'
+import {collectionEntryFace,collectionFaceSummary} from './collectionFace'
 import {buildSolidBatch} from '../render/SolidBatch'
 import {referenceChipPorts} from '../render/referenceChipPorts'
 
@@ -24,6 +24,15 @@ function fixture(map=false,source=true){
  const sceneAt=(cursor:number)=>projector.project(seek(trace,cursor),layout.state,{sessionEnded:true,pausedAtLiveHead:false,liveHead:events.length,recording:{state:'FULL',reason:null,budget:null,lastRecordedSeq:null,executionContinued:false}})
  return{events,trace,layout,sceneAt}
 }
+it('accounts for hidden captured entries separately from missing capture at every presentation cut',()=>{
+ const counts=Object.freeze({size:1000,recordedEntries:32})
+ expect(collectionFaceSummary(counts,0)).toEqual({hidden:32,unrecorded:968,sizeCaption:'size = 1000',coverageCaption:'32 hidden · 968 unrecorded'})
+ expect(collectionFaceSummary(counts,8).coverageCaption).toBe('24 hidden · 968 unrecorded')
+ expect(collectionFaceSummary(counts,24).coverageCaption).toBe('8 hidden · 968 unrecorded')
+ expect(collectionFaceSummary({size:16,recordedEntries:16},8).coverageCaption).toBe('8 hidden')
+ expect(collectionFaceSummary({size:16,recordedEntries:16},16).coverageCaption).toBe('')
+ expect(collectionFaceSummary({size:16,recordedEntries:0},0).coverageCaption).toBe('16 unrecorded')
+})
 describe('collection reservations and physical entry faces',()=>{
  it('reserves first-source geometry once, without leaking a later summary into an earlier prefix',()=>{
   const f=fixture();f.layout.append(f.events.slice(0,2));const initial=f.layout.state.anchors.container
