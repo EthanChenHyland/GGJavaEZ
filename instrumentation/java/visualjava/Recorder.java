@@ -167,7 +167,7 @@ public final class Recorder {
   }
   private static boolean begin() {
     if (stopped) return false;
-    long thread=Thread.currentThread().threadId();
+    long thread=JdkAccess.currentThreadId();
     if (firstThread == 0) { firstThread=thread; recordingContext=CONTROL.get(); }
     else if (thread != firstThread) {
       stop("STOPPED_UNSUPPORTED", "Multiple application threads detected", null);
@@ -246,7 +246,7 @@ public final class Recorder {
     String created="o" + (++objectSequence); IDS.put(object, created); return created;
   }
   private static String context(String type, Frame frame, int line, int site, String classOverride, String descriptorOverride, long sequence) {
-    return "\"v\":1,\"provenanceVersion\":1,\"coverageVersion\":1,\"seq\":" + sequence + ",\"threadId\":" + quote(Long.toString(Thread.currentThread().threadId()))
+    return "\"v\":1,\"provenanceVersion\":1,\"coverageVersion\":1,\"seq\":" + sequence + ",\"threadId\":" + quote(Long.toString(JdkAccess.currentThreadId()))
       + ",\"type\":" + quote(type) + ",\"frameId\":" + quote(frame == null ? null : frame.id)
       + ",\"className\":" + quote(classOverride == null ? frame == null ? null : frame.owner : classOverride) + ",\"methodName\":" + quote(frame == null ? null : frame.method)
       + ",\"descriptor\":" + quote(descriptorOverride == null ? frame == null ? null : frame.descriptor : descriptorOverride) + ",\"line\":" + (line > 0 ? line : "null")
@@ -301,7 +301,8 @@ public final class Recorder {
   }
   /** Decode only while recording; original streams receive every byte, even on failure. */
   private static PrintStream wrapped(PrintStream original, String channel) {
-    Charset charset=original.charset();
+    Charset charset=JdkAccess.startupStreamCharset(original,channel);
+    if (charset==null) return original;
     CharsetDecoder decoder=charset.newDecoder().onMalformedInput(CodingErrorAction.REPLACE).onUnmappableCharacter(CodingErrorAction.REPLACE);
     return new PrintStream(new OutputStream() {
       private byte[] undecoded=EMPTY_BYTES;
@@ -651,7 +652,7 @@ public final class Recorder {
       }
     }
   }
-  private static String debugId(int depth) { return "debug:"+Thread.currentThread().threadId()+":"+depth; }
+  private static String debugId(int depth) { return "debug:"+JdkAccess.currentThreadId()+":"+depth; }
   /** Overflow is represented by depth, not retained frames. Recover only current metadata. */
   private static Frame checkpointFrame(int line,int site) {
     ControlContext c=CONTROL.get();

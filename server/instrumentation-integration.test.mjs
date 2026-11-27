@@ -1,10 +1,11 @@
 import { test, expect } from 'vitest';
-import { execFileSync } from 'node:child_process';
-import { mkdtemp, mkdir, writeFile, rm } from 'node:fs/promises';
+import { execFileSync, spawnSync } from 'node:child_process';
+import { mkdtemp, mkdir, readFile, writeFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { runInstrumented } from './instrumentation-provider.mjs';
+import { prepareInstrumented, runInstrumented } from './instrumentation-provider.mjs';
 import { buildInstrumentationSourceManifest } from './instrumentation-sources.mjs';
+import { detectJdk } from './jdk.mjs';
 import { normalizeTrace } from '../src/instrumentation/normalize.ts';
 import { validateTrace } from '../src/runtime/trace.ts';
 import { seek } from '../src/runtime/seek.ts';
@@ -251,6 +252,78 @@ test('wrapped Unicode byte fragments decode exactly while direct/replaced stream
   expect(trace.events.filter(event=>event.type==='CONSOLE_WRITE').map(event=>event.text).join('')).toBe('é🙂');
   expect(result.capability.features.console.status).toBe('partial');
   expect(result.capability.features.console.reason).toContain('unknown ordering');
+});
+
+test('wrapped startup streams preserve each channel’s original bytes and the actual main thread ID', async () => {
+  const jdk = await detectJdk();
+  expect(jdk.available, jdk.error).toBe(true);
+  const legacy = Number(jdk.version.split('.')[0]) === 17;
+  const stdoutEncoding = legacy ? 'UTF-16BE' : 'UTF-8';
+  const stderrEncoding = legacy ? 'ISO-8859-1' : 'UTF-8';
+  const propertyPrefix = legacy ? 'sun.' : '';
+  const jvmArgs = [`-D${propertyPrefix}stdout.encoding=${stdoutEncoding}`, `-D${propertyPrefix}stderr.encoding=${stderrEncoding}`];
+  const projectRoot = await mkdtemp(join(tmpdir(), 'visual-java-stream-compatibility-'));
+  const classesDir = join(projectRoot, '.classes');
+  const main = join(projectRoot, 'Main.java');
+  const launch = { javaPath: jdk.javaPath, javacPath: jdk.javacPath, projectRoot, classesDir, mainClass: 'Main', jvmArgs, programArgs: [stdoutEncoding] };
+  const execute = args => {
+    const child = spawnSync(launch.javaPath, args, { cwd: projectRoot, timeout: 8000 });
+    expect(child.error).toBeUndefined();
+    expect(child.status, child.stderr.toString()).toBe(0);
+    return child;
+  };
+  let prepared;
+  try {
+    await writeFile(main, `public class Main {
+  static { System.out.print("é:"); }
+  public static void main(String[] args) {
+    System.out.println(Thread.currentThread().getId());
+    byte[] bytes = "🙂".getBytes(java.nio.charset.Charset.forName(args[0]));
+    for (byte value : bytes) System.out.write(value);
+    System.out.flush();
+    System.err.println("err café");
+  }
+}`);
+    execFileSync(launch.javacPath, ['-encoding', 'UTF-8', '-g:lines,vars,source', '-d', classesDir, main]);
+    const plain = execute([...jvmArgs, '-cp', classesDir, 'Main', ...launch.programArgs]);
+    prepared = await prepareInstrumented(launch);
+    const observed = execute(prepared.args);
+    expect(observed.stdout).toEqual(plain.stdout);
+    expect(observed.stderr).toEqual(plain.stderr);
+    const stdout = new TextDecoder(stdoutEncoding).decode(plain.stdout);
+    const stderr = new TextDecoder(stderrEncoding).decode(plain.stderr);
+    const threadId = /^é:(\d+)\r?\n🙂$/.exec(stdout)?.[1];
+    expect(threadId).toBeDefined();
+    expect(stderr).toMatch(/^err café\r?\n$/);
+    const raw = (await readFile(prepared.trace, 'utf8')).trim().split('\n').map(JSON.parse);
+    for (const [channel, expected] of [['stdout', stdout], ['stderr', stderr]]) {
+      expect(raw.filter(event => event.type === 'console' && event.channel === channel).map(event => event.text).join('')).toBe(expected);
+    }
+    expect([...new Set(raw.map(event => event.threadId))]).toEqual([threadId]);
+  } finally {
+    await prepared?.cleanup();
+    await rm(projectRoot, { recursive: true, force: true });
+  }
+}, 20000);
+
+test('a secondary custom thread never calls its getId override in the recorder', async () => {
+  const { capture } = await recorded({ 'Main.java': `public class Main {
+  static int calls;
+  static class Worker extends Thread {
+    @Override public long getId() { calls++; return 1; }
+    @Override public void run() { int x = 1; }
+  }
+  public static void main(String[] args) throws Exception {
+    Thread worker = new Worker();
+    worker.start();
+    worker.join();
+    System.out.println("override calls=" + calls);
+  }
+}` });
+  expect(capture.status).toBe('complete');
+  expect(capture.exitCode).toBe(0);
+  expect(capture.stdout.trimEnd()).toBe('override calls=0');
+  expect(capture.recording).toMatchObject({ state: 'STOPPED_UNSUPPORTED', reason: 'Multiple application threads detected' });
 });
 
 test('caught custom getMessage override is never executed by exception inspection', async () => {

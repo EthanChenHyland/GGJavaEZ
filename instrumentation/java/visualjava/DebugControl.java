@@ -130,7 +130,7 @@ public final class DebugControl {
    * and Continue/breakpoints are unchanged. No runtime facts are synthesized. */
   public static void returnBoundary(String frameId, String owner, String method, int line, int depth, long rawCount) {
     synchronized (MONITOR) {
-      if (!enabled || paused || !mode.equals("stepOut") || Thread.currentThread().threadId() != stepThread || depth >= stepDepth) return;
+      if (!enabled || paused || !mode.equals("stepOut") || JdkAccess.currentThreadId() != stepThread || depth >= stepDepth) return;
       checkpoint(frameId, owner, method, line, depth, rawCount, false);
     }
   }
@@ -142,7 +142,7 @@ public final class DebugControl {
       try {
         while ((!configured || paused) && failure == null) MONITOR.wait();
         if (failure != null) return;
-        long thread = Thread.currentThread().threadId();
+        long thread = JdkAccess.currentThreadId();
         String reason = exception ? "exception" : mode.equals("entry") ? "entry"
           : mode.equals("pause") ? "pause" : BREAKPOINTS.contains(owner + ":" + line) ? "breakpoint"
           : thread == stepThread && (mode.equals("stepInto") || mode.equals("stepOver") && depth <= stepDepth
