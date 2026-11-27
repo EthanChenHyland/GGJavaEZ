@@ -1,7 +1,8 @@
 import { expect, test, type Page } from '@playwright/test'
 import { mkdir } from 'node:fs/promises'
 import {ready,seekCursor} from './reference/harness'
-import {projectCommand} from './reference/menuActions'
+import {projectCommand,selectProject} from './reference/menuActions'
+import {renameIntentKey} from '../src/ide/bridge'
 
 const output = `${process.env.VJ_QA_OUTPUT_ROOT ?? '.ggjavaez/qa/reference-exact'}/commands`
 async function rename(page: Page, from: string, to: string) {
@@ -73,6 +74,8 @@ test('folder rename keeps captured sources immutable and proves the new highligh
   const source = 'public class Main {\n public static void main(String[] args) {\n  int value = 12;\n  System.out.println(value);\n }\n}\n'
   const imported = await request.post('/api/projects/import', { data: { name: 'Phase4 source binding', files: [{ path: 'src/Main.java', content: source }] } })
   const { id } = await imported.json()
+  const other = await request.post('/api/projects/import', { data: { name: 'Phase4 other project', files: [{ path: 'Main.java', content: source }] } })
+  const { id: otherId } = await other.json()
   await page.addInitScript(id => localStorage.setItem('ggjavaez:project', id), id)
   await page.goto('/?qa=1')
   await page.getByRole('button', { name: 'Run', exact: true }).click()
@@ -95,7 +98,19 @@ test('folder rename keeps captured sources immutable and proves the new highligh
   await expect.poll(()=>page.evaluate(()=>window.__ggjavaezWorld?.scene().recordingId)).toBe(`execution:${captured.id}`)
   await seekCursor(page,cursor);await ready(page)
   await expect(page.locator('.monaco-editor .executing-line')).toBeVisible()
+  await selectProject(page, otherId)
+  await selectProject(page, id)
   await rename(page, 'src', 'moved')
+  const bindingKey = `ggjavaez:source-bindings:${id}:${captured.id}`
+  await expect.poll(() => page.evaluate(key => JSON.parse(localStorage.getItem(key) ?? 'null'), bindingKey))
+    .toMatchObject({ sources: [{ fileId: 'src/Main.java', workspacePath: 'moved/Main.java' }] })
+  await expect.poll(() => page.evaluate(key => localStorage.getItem(key), renameIntentKey(id)), { timeout: 30000 }).toBeNull()
+  expect((await current()).id).toBe(captured.id)
+  await page.reload()
+  await expect.poll(() => page.evaluate(() => window.__ggjavaezWorld?.scene().recordingId), { timeout: 30000 })
+    .toBe(`execution:${captured.id}`)
+  await seekCursor(page, cursor)
+  await ready(page)
   await expect(page.locator('.ide-editor-foot')).toContainText('moved/Main.java')
   await expect(page.locator('.monaco-editor .executing-line')).toBeVisible()
   const after = await current()

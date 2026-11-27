@@ -109,7 +109,14 @@ export function EditableJavaEditor({ projectId, path, value, onChange, diagnosti
     listenersRef.current.push(instance.onMouseDown((event) => {
       if (event.target.type === monaco.editor.MouseTargetType.GUTTER_GLYPH_MARGIN && event.target.position) toggleRef.current?.(event.target.position.lineNumber)
     }),instance.onDidChangeModelContent(applyCurrentLine),instance.onDidDispose(clearEditorBindings))
-    instance.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode[ideShortcuts.save.code], () => saveRef.current())
+    // addCommand leaves its handler in Monaco's global command registry.
+    // The disposable action releases this editor and its workspace on close.
+    listenersRef.current.push(instance.addAction({
+      id: 'visual-java.save',
+      label: 'Save File',
+      keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode[ideShortcuts.save.code]],
+      run: () => saveRef.current(),
+    }))
     listenersRef.current.push(instance.addAction({
       id: 'visual-java.toggle-breakpoint',
       label: 'Toggle Breakpoint',

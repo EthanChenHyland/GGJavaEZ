@@ -354,14 +354,20 @@ export function useWorkspace(recordingViewer = false) {
   }, [languageClient, openFile])
 
   const switchProject = useCallback(async (nextId: string, stopExisting = true) => {
+    let attachableSessionId: string | undefined
     if (stopExisting) {
       const current = await bridge.executionCurrent()
+      attachableSessionId = current?.id
       if (current && ['BUILDING', 'STARTING', 'RUNNING', 'WAITING_FOR_INPUT', 'PAUSED'].includes(current.phase)) await bridge.executionStop(current.id)
     }
     workspaceGeneration.current++; sourceRequest.current++
     inputProjectEpoch.current++
     projectIdRef.current = nextId
     tabsRef.current = []; activeRef.current = ''; treeRef.current = []; navRef.current = null; executionRef.current = null
+    // The bridge's latest session can still hydrate on a later reload. Keep
+    // its binding available to a rename even after leaving and reentering.
+    for (const id of sourceBindings.current.keys()) if (id !== attachableSessionId) sourceBindings.current.delete(id)
+    sessionWorkspaceGeneration.current.clear()
     cwdInvalidRef.current = false
     setProjectId(nextId); setTabs([]); setActive(''); setRecordedView(null); setMappedExecutingSource(null);setSourceUnavailable(false);setSourceFileProof(null); setCwdInvalid(false)
     setBuild(null)
@@ -621,7 +627,10 @@ export function useWorkspace(recordingViewer = false) {
     }
     clearTimeout(publication.timer); publication.timer = undefined; publication.at = performance.now()
     normalizedSignature.current = signature
-    if (runtimeSessionId.current !== session.id) { setTimelineLens('LIVE'); executionStore.setState({runtime:null,runtimeRecordingId:null}); setRuntimeSelection(null); runtimeSessionId.current = session.id }
+    if (runtimeSessionId.current !== session.id) {
+      setTimelineLens('LIVE'); executionStore.setState({runtime:null,runtimeRecordingId:null}); setRuntimeSelection(null); runtimeSessionId.current = session.id
+      for (const id of sourceBindings.current.keys()) if (id !== session.id) sourceBindings.current.delete(id)
+    }
     if (committedIngest.current && committedIngest.current !== ingest) retiredIngests.current.push(committedIngest.current)
     committedIngest.current = ingest
     executionStore.setState({ visualization:{ sessionId: session.id, trace: ingest.publishTrace(), capability: normalized.capability }, worldExecution:session })
@@ -651,7 +660,14 @@ export function useWorkspace(recordingViewer = false) {
     executionRef.current = session; setExecution(session)
     consoleInput.reconcile()
     if (executionStore.getState().visualization?.sessionId === session.id) executionStore.setState({worldExecution:session})
-    if (!sessionWorkspaceGeneration.current.has(session.id)) sessionWorkspaceGeneration.current.set(session.id, workspaceGeneration.current)
+    if (!sessionWorkspaceGeneration.current.has(session.id)) {
+      sessionWorkspaceGeneration.current.clear()
+      sessionWorkspaceGeneration.current.set(session.id, workspaceGeneration.current)
+      // A failed build leaves the previous recording available for source
+      // inspection. Durable rename receipts can still be restored on reload.
+      const recordedId = executionStore.getState().visualization?.sessionId
+      for (const id of sourceBindings.current.keys()) if (id !== session.id && id !== recordedId) sourceBindings.current.delete(id)
+    }
     if (session.sourceManifest.sources.length && !sourceBindings.current.has(session.id)) {
       let stored: unknown
       try { stored = JSON.parse(localStorage.getItem(`ggjavaez:source-bindings:${session.projectId}:${session.id}`) ?? 'null') } catch { /* captured paths are the conservative default */ }
