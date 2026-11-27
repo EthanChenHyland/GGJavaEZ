@@ -5,6 +5,7 @@ import {PerspectiveCamera,Vector3} from 'three'
 import type {ExecutionSession} from '../../src/execution/contracts'
 import {normalizeTrace} from '../../src/instrumentation/normalize'
 import {historyForTrace} from '../../src/runtime/history'
+import design from '../../docs/visual-java-spec/DESIGN_TOKENS.json' with {type:'json'}
 import {browserErrors,currentSession,focusSelection,home,ready,selectEntity} from './harness'
 
 const ownedProjects=new Set<string>()
@@ -124,12 +125,21 @@ for(const viewport of[{width:1440,height:900},{width:760,height:900}])for(const 
    if(node?.kind!=='array')throw new Error('Expected the recorded array')
    return{cursor:world.scene().cursor,focus:window.__ggjavaezQA!.focusTarget(),shell:window.__ggjavaezQA!.shellRects(),
     cells:[...windowForArray.mapping].map(([slotId,cell])=>({slotId,...cell})),labels:world.arrayText().filter(label=>label.entityId===arrayId),
+    detail:world.plan().detailLevel,hidden:windowForArray.hiddenCount,
+    omitted:windowForArray.ellipses.reduce((count,gap)=>count+gap.hidden,0),
     headings:world.runtimeHeadings().filter(label=>label.entityId===arrayId),
     trayParts:world.arrayTrayParts().filter(part=>part.id===arrayId),
     title:node.title,displayId:node.displayId}
   },array.id)
   expect(observed.focus?.targetId).toBe(`${array.id}:element:${index}`)
-  expect(observed.cells).toHaveLength(array.length)
+  if(array.length===5)expect(observed.cells).toHaveLength(array.length)
+  else {
+   const caps=viewport.width<1024?design.presentationScale.compactArrayCells:design.presentationScale.largeArrayCells
+   expect(observed.cells.length).toBeLessThanOrEqual(caps[observed.detail])
+   expect(observed.hidden).toBeGreaterThan(0)
+  }
+  expect(observed.cells.length+observed.hidden).toBe(array.length)
+  expect(observed.omitted).toBe(observed.hidden)
   expect(observed.trayParts.map(part=>part.part).sort()).toEqual(['backplate','face','slab'])
   const slab=observed.trayParts.find(part=>part.part==='slab')!,face=observed.trayParts.find(part=>part.part==='face')!
   expect(slab.size[1]).toBeCloseTo(.9,5);expect(slab.size[2]).toBeCloseTo(.12,5)

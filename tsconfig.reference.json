@@ -19,6 +19,8 @@
     "e2e/incremental-v12.spec.ts",
     "e2e/m11-persistence.spec.ts",
     "e2e/observer-saturation-v12.spec.ts",
+    "perf-e2e/pass6-lifecycle.spec.ts",
+    "playwright.perf.config.ts",
     "playwright.reference.config.ts",
     "scripts/reference/validation.d.mts",
     "src/**/*.d.ts"
