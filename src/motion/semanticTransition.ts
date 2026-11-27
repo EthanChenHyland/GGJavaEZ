@@ -96,21 +96,31 @@ const edgeKinds: Partial<Record<GraphEdgeKind, SemanticTransitionKind>> = {
   THROW: 'throw', UNWIND: 'unwind', CATCH: 'catch',
 }
 
+/** A prefix scan can reuse top-level answers. Recursive walks still have
+ * their own shared work and depth limits, independent of the scan order. */
+function scanEndpoint(id: string, state: RuntimeState, graph: ExecutionGraph, cache?: Map<string, FlowEndpoint | null>): FlowEndpoint | undefined {
+  const known = cache?.get(id)
+  if (known !== undefined) return known ?? undefined
+  const endpoint = graphEndpoint(id, state, graph)
+  if (cache && cache.size < 512) cache.set(id, endpoint ?? null)
+  return endpoint
+}
+
 /** Resolve the physical endpoints without constructing motion presentation data. */
-export function graphTransitionEndpoints(event: TraceEvent, edge: GraphEdge, state: RuntimeState, graph: ExecutionGraph): { from: FlowEndpoint | undefined; to: FlowEndpoint | undefined } {
-  let to = graphEndpoint(edge.to, state, graph)
-  let from = edge.evidence === 'unknown' ? undefined : graphEndpoint(edge.originSlotId ?? edge.from, state, graph)
+export function graphTransitionEndpoints(event: TraceEvent, edge: GraphEdge, state: RuntimeState, graph: ExecutionGraph, cache?: Map<string, FlowEndpoint | null>): { from: FlowEndpoint | undefined; to: FlowEndpoint | undefined } {
+  let to = scanEndpoint(edge.to, state, graph, cache)
+  let from = edge.evidence === 'unknown' ? undefined : scanEndpoint(edge.originSlotId ?? edge.from, state, graph, cache)
   if (event.type === 'EXECUTION_FACT' && edge.evidence !== 'unknown' && !edge.originSlotId) {
     const fact = event.fact
     // Retained raw recipes are a fallback for edges without the exact load slot.
     // A consumer's explicit bytecode slot recipe disambiguates aliases and works
     // even when that slot was initialized from a literal/computed/unknown root.
     const origin = fact.kind === 'write' && edge.to === fact.target.id || fact.kind === 'return' && edge.kind === 'RETURN' ? fact.origin : undefined
-    if (origin?.kind === 'local' && edge.to !== origin.slotId) from = graphEndpoint(origin.slotId, state, graph)
+    if (origin?.kind === 'local' && edge.to !== origin.slotId) from = scanEndpoint(origin.slotId, state, graph, cache)
   }
   if (edge.kind === 'CALL') {
     const call = graph.calls[edge.from]
-    if (call?.callerInvocationId) from = graphEndpoint(call.callerInvocationId, state, graph)
+    if (call?.callerInvocationId) from = scanEndpoint(call.callerInvocationId, state, graph, cache)
   }
   // Completion and output-operation edges do not prove a value left a frame.
   if (edge.kind === 'RETURN' && (graph.invocations[edge.from] || graph.calls[edge.from])) from = undefined

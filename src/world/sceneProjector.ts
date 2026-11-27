@@ -45,7 +45,7 @@ interface OwnerHistory { introduced: number; changes: OrdinalHistory; sources: O
 type DependencyTargets = string | ReadonlySet<string>
 const dependencyValues = (value: DependencyTargets | undefined): Iterable<string> => typeof value === 'string' ? [value] : value ?? []
 const hasDependency = (value: DependencyTargets | undefined, id: string): boolean => typeof value === 'string' ? value === id : value?.has(id) ?? false
-interface CachedNode<T> { anchor: WorldAnchor; fingerprint: readonly unknown[]; dependencies: readonly (RuntimeObject | string)[]; node: T }
+interface CachedNode<T> { input: RuntimeFrame | RuntimeObject | RuntimeClass; anchor: WorldAnchor; fingerprint: readonly unknown[]; dependencies: readonly (RuntimeObject | string)[]; node: T }
 const ioPreviewCharacters = 60
 interface LineSummary { breaks: number; partial: boolean; pendingCR: boolean; current: string; currentLength: number; last: string; first: string; changed: string }
 type Channels = Map<SceneIo['id'], LineSummary>
@@ -173,9 +173,12 @@ export function createSceneProjector(trace: TraceDocument): SceneProjector {
   const owners = new Map<string, OwnerHistory>(), slotOwners = new Map<string, string>()
   const bindingHistory=createRecordedReferenceBindings(trace.demoId,acceptedEventIndex(trace))
   const byEvent=bindingHistory.events
-  const frameCache = new WeakMap<RuntimeFrame, CachedNode<SceneFrame>>()
-  const objectCache = new WeakMap<RuntimeObject, CachedNode<SceneObject | SceneArray | SceneCollection>>()
-  const classCache = new WeakMap<RuntimeClass, CachedNode<SceneClass>>()
+  // Semantic checkpoints keep their immutable leaves alive. Cache one current
+  // projection per identity so revisiting checkpoints cannot retain a scene
+  // node for every visited version of the same owner.
+  const frameCache = new Map<string, CachedNode<SceneFrame>>()
+  const objectCache = new Map<string, CachedNode<SceneObject | SceneArray | SceneCollection>>()
+  const classCache = new Map<string, CachedNode<SceneClass>>()
   const referencesCache = new WeakMap<SceneEntity, readonly SceneReference[]>()
   const graphIoCache = new WeakMap<ExecutionGraph['io'], Channels>(), consoleIoCache = new WeakMap<RuntimeState['console'], Channels>()
   let priorGraphIo: { graph: ExecutionGraph; channels: Channels } | null = null
@@ -385,8 +388,8 @@ export function createSceneProjector(trace: TraceDocument): SceneProjector {
     const topOfStack = live && state.activeFrameIds.at(-1) === frame.id
     const ev = ownerEvidence(frame.id, state.cursor)
     const fingerprint = [status, sourceLine, live, topOfStack, exceptionRole, ev, invocation?.method, invocation?.metadata?.ownership]
-    const cached = frameCache.get(frame)
-    if (cached?.anchor === anchor && sameProjectionKey(cached.fingerprint, fingerprint) && dependenciesCurrent(cached.dependencies, state)) return cached.node
+    const cached = frameCache.get(frame.id)
+    if (cached?.input === frame && cached.anchor === anchor && sameProjectionKey(cached.fingerprint, fingerprint) && dependenciesCurrent(cached.dependencies, state)) return cached.node
     const slots = Object.values(frame.locals), deps = targetDependencies(slots, state)
     const history = owners.get(frame.id)
     const ordered = slots.filter(slot => slot.name === 'this' || slot.role === 'parameter' || firstSlotAssignment(history?.slots?.get(slot.id)) < state.cursor)
@@ -409,7 +412,7 @@ export function createSceneProjector(trace: TraceDocument): SceneProjector {
       title: frameTitle(frame, invocation ? { method: invocation.method } : { parameterTypes: parameters }), callerId: frame.callerFrameId, depth: frame.depth,
       rows, ...(scopeDividers.length ? { scopeDividers } : {}), status, live, topOfStack, exceptionRole, sourceLine, anchor,
       ownership: invocation?.metadata?.ownership ?? 'PROJECT', evidence: ev })
-    frameCache.set(frame, { anchor, fingerprint, dependencies: deps, node }); return node
+    frameCache.set(frame.id, { input: frame, anchor, fingerprint, dependencies: deps, node }); return node
   }
   function objectNode(object: RuntimeObject, anchor: WorldAnchor, state: RuntimeState): SceneObject | SceneArray | SceneCollection {
     const event = state.cursor ? events[state.cursor - 1] : null
@@ -427,8 +430,8 @@ export function createSceneProjector(trace: TraceDocument): SceneProjector {
     const mutation = fieldWrite?.objectId === object.id ? { slotId: fieldWrite.slotId }
       : event?.type === 'CREATE_REFERENCE' && event.sourceSlot.kind === 'object' && event.sourceSlot.objectId === object.id ? { slotId: event.sourceSlot.slotId } : null
     const ev = ownerEvidence(object.id, state.cursor)
-    const fingerprint = [ev, mutation, activity], cached = objectCache.get(object)
-    if (cached?.anchor === anchor && sameProjectionKey(cached.fingerprint, fingerprint) && dependenciesCurrent(cached.dependencies, state)) return cached.node
+    const fingerprint = [ev, mutation, activity], cached = objectCache.get(object.id)
+    if (cached?.input === object && cached.anchor === anchor && sameProjectionKey(cached.fingerprint, fingerprint) && dependenciesCurrent(cached.dependencies, state)) return cached.node
     const cells = object.array ? [...object.array.elements.map((slot, index) => ({ slot, index })), ...Object.entries(object.array.sparseElements ?? {}).map(([index, slot]) => ({ slot, index: Number(index) }))].sort((a, b) => a.index - b.index) : []
     const fields = Object.values(object.fields).filter(slot => !slot.static)
     const deps = targetDependencies([...fields, ...cells.map(cell => cell.slot)], state)
@@ -442,7 +445,7 @@ export function createSceneProjector(trace: TraceDocument): SceneProjector {
         outOfBounds: null, anchor, ownership: object.metadata?.ownership ?? (anchor.region==='heap'?'PROJECT':'LIBRARY'), evidence: ev }
     } else if (object.library && ['LIST','SET','MAP','QUEUE','DEQUE'].includes(object.library.kind)) {
       const summary=collectionSummary(object,anchor,{cursor:state.cursor,eventSeq:id=>seqOf(id,state.cursor),objects:state.objects});
-      if(summary){freezeValue(summary);objectCache.set(object,{anchor,fingerprint,dependencies:deps,node:summary});return summary}
+      if(summary){freezeValue(summary);objectCache.set(object.id,{input:object,anchor,fingerprint,dependencies:deps,node:summary});return summary}
       node={kind:'object',id:object.id,displayId:object.displayId,title:displayType(object.className),groups:[],fieldCount:fields.length,summaryUnavailable:true,allocationSite:byEvent.get(object.allocatedAt)?.source??null,anchor,ownership:object.metadata?.ownership??(anchor.region==='heap'?'PROJECT':'LIBRARY'),evidence:ev,mutation:null}
     } else {
       const groups = new Map<string, SceneRow[]>()
@@ -462,17 +465,17 @@ export function createSceneProjector(trace: TraceDocument): SceneProjector {
         ...(object.library ? { summaryUnavailable: true } : {}), allocationSite: allocation?.source ?? null,
         anchor, ownership: object.metadata?.ownership ?? (anchor.region==='heap'?'PROJECT':'LIBRARY'), evidence: ev, mutation }
     }
-    freezeValue(node); objectCache.set(object, { anchor, fingerprint, dependencies: deps, node }); return node
+    freezeValue(node); objectCache.set(object.id, { input: object, anchor, fingerprint, dependencies: deps, node }); return node
   }
   function classNode(value: RuntimeClass, anchor: WorldAnchor, state: RuntimeState): SceneClass {
     const history = owners.get(value.id), ev = ownerEvidence(value.id, state.cursor)
-    const fingerprint = [ev], cached = classCache.get(value)
-    if (cached?.anchor === anchor && sameProjectionKey(cached.fingerprint, fingerprint) && dependenciesCurrent(cached.dependencies, state)) return cached.node
+    const fingerprint = [ev], cached = classCache.get(value.id)
+    if (cached?.input === value && cached.anchor === anchor && sameProjectionKey(cached.fingerprint, fingerprint) && dependenciesCurrent(cached.dependencies, state)) return cached.node
     const slots = Object.values(value.statics).filter(slot => firstSlotWrite(history?.slots?.get(slot.id)) < state.cursor)
     const deps = targetDependencies(slots, state)
     const node: SceneClass = freezeValue({ kind: 'class', id: value.id, title: displayType(value.className), packageName: value.metadata?.packageName ?? value.className.slice(0, Math.max(0, value.className.lastIndexOf('.'))),
       initialization: value.initialization, rows: slots.map(slot => row(slot, 'static', value.id, state, anchor)), anchor, evidence: ev })
-    classCache.set(value, { anchor, fingerprint, dependencies: deps, node }); return node
+    classCache.set(value.id, { input: value, anchor, fingerprint, dependencies: deps, node }); return node
   }
   function refs(node: SceneEntity): readonly SceneReference[] {
     const cached = referencesCache.get(node)
@@ -667,6 +670,8 @@ export function createSceneProjector(trace: TraceDocument): SceneProjector {
       for (const object of Object.values(state.objects).sort((a,b)=>introduction(a.id,state)-introduction(b.id,state))) { const anchor = layout.anchors[object.id]; if (anchor && seqOf(object.allocatedAt, state.cursor) !== null) { const node = objectNode(object, anchor, state); entities = persistentPut(entities, object.id, node); objects.push(object.id) } }
       for (const value of Object.values(state.classes ?? {}).sort((a,b)=>introduction(a.id,state)-introduction(b.id,state))) { const anchor = layout.anchors[value.id]; if (anchor && seqOf(value.observedAt, state.cursor) !== null) { const node = classNode(value, anchor, state); entities = persistentPut(entities, value.id, node); classes.push(value.id) } }
     }
+    for (const cache of [frameCache, objectCache, classCache])
+      for (const id of cache.keys()) if (!Object.hasOwn(entities, id)) cache.delete(id)
     for (const id of [...frames, ...objects, ...classes]) { const node = entities[id]; indexReferences(node, refs(node)); setDependencies(id, node) }
     return assemble(state, layout, context, entities, { frames: persistentArray(frames), objects: persistentArray(objects), classes: persistentArray(classes) }, referenceSnapshot(referenceGroups), callLinks(state), returnFlows(state))
   }

@@ -76,10 +76,11 @@ export function buildFlowTopology(input:FlowTopologyInput){
  for(const flow of input.flows){
   recorded++
   if(seen.has(flow.id))throw new Error(`Duplicate recorded flow ID: ${flow.id}`);seen.add(flow.id)
-  if(flow.evidenceSeqs.some(seq=>seq>=input.scene.cursor))throw new Error('Flow evidence is outside the applied prefix')
+  for(const seq of flow.evidenceSeqs)if(seq>=input.scene.cursor)throw new Error('Flow evidence is outside the applied prefix')
   if(!input.inScope(flow)){scopeExcluded.push(flow.id);continue}
+  if(!flow.from||!flow.to){unavailableIds.push(flow.id);unavailableCodes.push(!flow.from?'0':'1');continue}
   const from=port(flow.from,flow.kind==='return'),to=port(flow.to)
-  if(!from||!to){unavailableIds.push(flow.id);unavailableCodes.push(!flow.from?'0':!flow.to?'1':!from?'2':'3');continue}
+  if(!from||!to){unavailableIds.push(flow.id);unavailableCodes.push(!from?'2':'3');continue}
   available.push({flow:flow as SceneFlow,from,to})
  }
  // Priority is a pure policy for this cut; evaluate it once per drawable edge.

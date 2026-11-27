@@ -90,11 +90,12 @@ function closedPrefix(items: readonly ReferenceBinding[], length: number): reado
  * Historical order is closure seq then batch order; current order is first binding
  * of the opaque owner/slot pair. Roles are captured at interval introduction.
  */
-export function createReferenceBindingHistory(recordingId: string): ReferenceBindingHistory {
+export function createReferenceBindingHistory(recordingId: string, options: { validatedEvents?: boolean } = {}): ReferenceBindingHistory {
   if (typeof recordingId !== 'string') throw new TypeError('recordingId must be a string')
   const histories = new Map<string, BindingHistory>()
   const closed: ReferenceBinding[] = []
-  const eventIds = new Set<string>()
+  // The recording adapter has already validated every accepted event ID.
+  const eventIds = options.validatedEvents ? null : new Set<string>()
   let lastSeq = -1, accepted = 0
   let snapshot: {count:number;values:readonly ReferenceBinding[]}|undefined
 
@@ -104,7 +105,7 @@ export function createReferenceBindingHistory(recordingId: string): ReferenceBin
     append(seq: number, eventId: string, observations: readonly BindingObservation[]): void {
       requireOrdinal(seq, 'seq')
       if (seq <= lastSeq) throw new RangeError('seq must strictly increase')
-      if (typeof eventId !== 'string' || eventId.length === 0 || eventIds.has(eventId)) {
+      if (typeof eventId !== 'string' || eventId.length === 0 || eventIds?.has(eventId)) {
         throw new TypeError('eventId must be nonempty and unique')
       }
       if (!Array.isArray(observations)) throw new TypeError('observations must be an array')
@@ -182,7 +183,7 @@ export function createReferenceBindingHistory(recordingId: string): ReferenceBin
         }
       }
       lastSeq = seq
-      eventIds.add(eventId)
+      eventIds?.add(eventId)
       accepted++
     },
 

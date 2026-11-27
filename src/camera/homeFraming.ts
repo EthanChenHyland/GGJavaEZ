@@ -33,6 +33,20 @@ export function homeFraming(scene:SceneModel,plan:PresentationPlan,safeFrame:Rec
  }
  const bodies=[...[...plan.entities.keys()].map(body),...plan.clusters.map(cluster=>cluster.anchor),...scene.io.map(io=>io.anchor),...(plan.exceptionPanel?[exceptionPanelAnchor(plan.exceptionPanel,scene.recording)]:[])]
  const evidence=plan.exceptionPanel?{anchor:exceptionPanelAnchor(plan.exceptionPanel,scene.recording),layout:layoutExceptionPanel(buildExceptionPanelModel(plan.exceptionPanel.content,scene.recording.state))}:null
+ // Different candidate bodies can yield the same safe-frame pose. Reuse
+ // those label and panel footprints while testing this one Home request.
+ const footprints=new Map<string,Vec3[]>()
+ const footprint=(pose:OrbitPose,camera:ReturnType<typeof projectionCamera>)=>{
+  const key=JSON.stringify([pose.target,pose.distance])
+  const prior=footprints.get(key)
+  if(prior)return prior
+  const presented=evidence?projectExceptionPanel(evidence.anchor,evidence.layout,camera,viewport,area):null
+  const clearance=presented?bodies.map(body=>body.entityId===presented.anchor.entityId?presented.anchor:body):bodies
+  const points=[...(presented?anchorCorners(presented.anchor):[]),...(specs.length?structuralLabelFitPoints(specs,clearance,camera,viewport):[])]
+  if(footprints.size===16)footprints.delete(footprints.keys().next().value!)
+  footprints.set(key,points)
+  return points
+ }
  const fit=(points:readonly Vec3[])=>{
   let pose=fitToSafeFrame(points,angles,area,viewport),fitted=[...points]
   // Structural glyphs retain their projected size as the camera moves, so
@@ -40,9 +54,7 @@ export function homeFraming(scene:SceneModel,plan:PresentationPlan,safeFrame:Rec
   // new footprint instead of relying on extra zoom-out to conceal clipping.
   for(let refine=0;refine<(evidence?32:16);refine++){
    const camera=projectionCamera(pose,viewport)
-   const presented=evidence?projectExceptionPanel(evidence.anchor,evidence.layout,camera,viewport,area):null
-   const clearance=presented?bodies.map(body=>body.entityId===presented.anchor.entityId?presented.anchor:body):bodies
-   fitted=[...points,...(presented?anchorCorners(presented.anchor):[]),...structuralLabelFitPoints(specs,clearance,camera,viewport)]
+   fitted=[...points,...footprint(pose,camera)]
    if(fitted.every(point=>{const p=screenPoint(point,camera,viewport);return p.z>-1&&p.z<1&&p.x>=area.x&&p.x<=area.x+area.width&&p.y>=area.y&&p.y<=area.y+area.height}))break
    pose=fitToSafeFrame(fitted,angles,area,viewport)
   }

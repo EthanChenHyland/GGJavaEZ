@@ -99,7 +99,7 @@ export function createFlowCatalog(initialTrace?:TraceDocument):FlowCatalog {
   return{id:candidate.edge.id,edgeIndex:candidate.edgeIndex,kind:candidate.kind,from:points.from,to:points.to,evidenceEventIds:[candidate.edge.eventId],evidenceSeqs:[candidate.seq],valueText:text,
     ...(consumer?{consumerSeq:consumer.consumerSeq}:{})}
  }
- const resolve=(candidate:Candidate,cursor:number,retain=true):{from:FlowEndpoint|null;to:FlowEndpoint|null}=>{
+ const resolve=(candidate:Candidate,cursor:number,retain=true,cache?:Map<string,FlowEndpoint|null>):{from:FlowEndpoint|null;to:FlowEndpoint|null}=>{
   const state=stateAt(cursor)
   if(!state||candidate.seq>=cursor)return{from:null,to:null}
   const prior=resolvedCache.get(candidate.edgeIndex);if(prior)return prior
@@ -122,7 +122,7 @@ export function createFlowCatalog(initialTrace?:TraceDocument):FlowCatalog {
    const storage=consumingWriteDestination(prefix,edge.to,events)
    to=storage?{kind:'slot',id:storage.id}:null
   }else{
-   const endpoints=graphTransitionEndpoints(events.get(edge.eventId)!,edge,state,prefix)
+   const endpoints=graphTransitionEndpoints(events.get(edge.eventId)!,edge,state,prefix,cache)
    from=endpoints.from??(edge.evidence==='unknown'?null:physical(edge.originSlotId??edge.from,state))
    to=endpoints.to??physical(edge.to,state)
   }
@@ -142,10 +142,11 @@ export function createFlowCatalog(initialTrace?:TraceDocument):FlowCatalog {
  // caller snapshots remain independent of later replay and graph extension.
  function* iterate(cursor:number,scene:SceneModel,retain:boolean,edgeLimit:number):IterableIterator<RecordedFlow>{
   lastScene=scene
+  const endpoints=new Map<string,FlowEndpoint|null>()
   for(let index=0;index<edgeLimit&&edgeEventOrdinals[index]<cursor;index++){
    const candidate=candidateAt(index)
    if(!candidate)continue
-   const points=resolve(candidate,cursor,retain),flow=formatted(candidate,scene,points)
+   const points=resolve(candidate,cursor,retain,endpoints),flow=formatted(candidate,scene,points)
    yield flow??{id:candidate.edge.id,edgeIndex:candidate.edgeIndex,kind:candidate.kind,from:points.from,to:points.to,evidenceEventIds:[candidate.edge.eventId],evidenceSeqs:[candidate.seq],valueText:null}
   }
  }

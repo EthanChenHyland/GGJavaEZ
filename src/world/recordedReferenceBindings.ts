@@ -8,9 +8,9 @@ import {createAcceptedEventIndex,type AcceptedEventIndex} from './acceptedEventI
  * No RuntimeState transition, writer, Java operation or future value is inferred.
  */
 export function createRecordedReferenceBindings(recordingId:string,index:AcceptedEventIndex=createAcceptedEventIndex()){
- const history=createReferenceBindingHistory(recordingId)
+ const history=createReferenceBindingHistory(recordingId,{validatedEvents:true})
  const fields=new Map<string,Set<string>>(),summaries=new Map<string,Set<string>>()
- const locals=new Map<string,Map<string,string|undefined>>()
+ const locals=new Map<string,Map<string,string>>()
  // The envelope validator owns these accepted witnesses. Consumers receive
  // lookup only, so projection need not retain a duplicate event-ID index.
  let indexed=0,lastEventId:string|undefined
@@ -27,8 +27,13 @@ export function createRecordedReferenceBindings(recordingId:string,index:Accepte
    for(;indexed<events.length;indexed++){
     const event=events[indexed],observations=new Map<string,BindingObservation>()
     const add=(sourceId:string,sourceSlotId:string,value:RuntimeValue|null,role:SceneReference['role'],mode:BindingObservation['mode']='observe')=>observations.set(JSON.stringify([sourceId,sourceSlotId]),{sourceId,sourceSlotId,value,role,mode})
+    const forgetLocal=(id:string,slotId:string)=>{
+     const slots=locals.get(id)
+     if(slots?.delete(slotId)&&!slots.size)locals.delete(id)
+    }
     const frame=(id:string,slot:RuntimeSlot)=>{
-     const slots=locals.get(id)??new Map<string,string|undefined>();slots.set(slot.id,slot.scopeId);locals.set(id,slots)
+     if(slot.scopeId===undefined)forgetLocal(id,slot.id)
+     else{const slots=locals.get(id)??new Map<string,string>();slots.set(slot.id,slot.scopeId);locals.set(id,slots)}
      add(id,slot.id,slot.value,'frame-object')
     }
     const observedFields=(id:string,slots:readonly RuntimeSlot[],replace=false)=>{
@@ -40,14 +45,15 @@ export function createRecordedReferenceBindings(recordingId:string,index:Accepte
     const closeLocals=(frameId:string,scopeId?:string)=>{
      const slots=locals.get(frameId)
      if(!slots)return
-     for(const[slotId,scope]of slots)if(scope!==undefined&&(scopeId===undefined||scope===scopeId)){
+     for(const[slotId,scope]of slots)if(scopeId===undefined||scope===scopeId){
       add(frameId,slotId,null,'frame-object','retire');slots.delete(slotId)
      }
+     if(!slots.size)locals.delete(frameId)
     }
     switch(event.type){
      case 'ENTER_METHOD':for(const slot of event.locals)frame(event.frameId,slot);break
      case 'DECLARE_LOCAL':frame(event.frameId,event.slot);break
-     case 'REMOVE_LOCAL':add(event.frameId,event.slotId,null,'frame-object','retire');locals.get(event.frameId)?.delete(event.slotId);break
+     case 'REMOVE_LOCAL':add(event.frameId,event.slotId,null,'frame-object','retire');forgetLocal(event.frameId,event.slotId);break
      case 'EXIT_SCOPE':closeLocals(event.frameId,event.scopeId);break
      case 'EXIT_METHOD':case 'UNWIND_EXCEPTION':closeLocals(event.frameId);break
      case 'ASSIGN_LOCAL':add(event.frameId,event.slotId,event.value,'frame-object','write');break
