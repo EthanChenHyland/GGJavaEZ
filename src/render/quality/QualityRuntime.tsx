@@ -8,6 +8,7 @@ import { qualityStore, useQualityStore } from './qualityStore'
 import type { BodyRole } from './materialTypes'
 import {renderActivity,requestAnimationFrameRender} from '../renderActivity'
 import {graphicsRecovery} from '../graphicsRecovery'
+import {releaseLostSceneBindings} from './releaseLostSceneBindings'
 
 /** Owns only material preparation and quality decisions, never the camera or scene model. */
 export function QualityRuntime({ guidedMoving }: { guidedMoving(): boolean }) {
@@ -25,6 +26,7 @@ export function QualityRuntime({ guidedMoving }: { guidedMoving(): boolean }) {
     graphicsRecovery.retry=retry
     const lost = (event: Event) => {
       event.preventDefault(); qualityStore.getState().setContextLost(true)
+      releaseLostSceneBindings(scene,gl)
       if(recoveryTimer)clearTimeout(recoveryTimer)
       recoveryTimer=setTimeout(()=>{if(qualityStore.getState().contextLost)qualityStore.setState({notice:'The World could not be restored'})},2000)
     }
@@ -43,7 +45,7 @@ export function QualityRuntime({ guidedMoving }: { guidedMoving(): boolean }) {
       qualityStore.getState().setCompiled(false)
       disposeRuntimeMaterials()
     }
-  }, [gl])
+  }, [gl,scene])
   useEffect(() => {
     setDpr(Math.min(window.devicePixelRatio || 1, active === 'CINEMATIC' ? 2 : 1.5))
   }, [active, setDpr])
