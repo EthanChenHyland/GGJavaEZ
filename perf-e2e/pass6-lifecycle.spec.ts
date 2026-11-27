@@ -311,6 +311,7 @@ test('same-project repeated Runs, quality round trips, and WebGL recovery', asyn
     }
     const afterRuns = await log.checkpoint(cdp, 'quality-0')
     expect(afterRuns.state.quality).toBe('INTERACTIVE')
+    await snapshotHeap(cdp, 'quality-0')
     const available = await page.evaluate(() => window.__ggjavaezWorld!.quality().availability)
     await log.write({ cinematicAvailability: available })
     if (available.enabled) {
@@ -327,6 +328,7 @@ test('same-project repeated Runs, quality round trips, and WebGL recovery', asyn
         } : undefined)
         if (sample) equivalent(afterRuns, await log.checkpoint(cdp, 'quality-' + trip), true)
       }
+      await snapshotHeap(cdp, 'quality-final')
     } else {
       await settings(page).click()
       const toggle = button(page, 'Rendering quality: INTERACTIVE')
